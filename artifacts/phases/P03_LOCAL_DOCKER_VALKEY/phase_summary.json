@@ -1,0 +1,33 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+  "run_id": "P03_LOCAL_DOCKER_VALKEY-cluster_smoke-20260628",
+  "created_at": "2026-06-28T00:00:00Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "status": "PASS",
+  "summary": "P03 implemented a Docker-sandboxed Valkey runtime that created a real six-node Valkey 9.1.0 cluster, exposed localhost endpoints for independent probing, verified cluster state and SET/GET data path, and removed all owned Docker resources during cleanup.",
+  "required_artifacts": [
+    "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/phase_summary.json",
+    "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json",
+    "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+    "artifacts/gates/P03_LOCAL_DOCKER_VALKEY/gate_result.json"
+  ],
+  "missing_metrics": [],
+  "risks": [
+    {
+      "risk": "Cluster creation currently targets the P03 six-node smoke scenario only; broader lifecycle scenarios are intentionally left to later phases.",
+      "severity": "low",
+      "required_before_next_phase": false
+    }
+  ],
+  "real_valkey": {
+    "version": "9.1.0",
+    "nodes_observed": 6,
+    "cluster_state": "ok",
+    "data_path_result": "PASS"
+  }
+}

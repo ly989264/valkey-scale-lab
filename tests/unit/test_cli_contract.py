@@ -24,21 +24,6 @@ def test_help_succeeds(capsys: pytest.CaptureFixture[str]) -> None:
     "argv",
     [
         [
-            "gate",
-            "scenario",
-            "--phase",
-            "P00_REPO_CONTRACT",
-            "--scenario",
-            "noop",
-            "--config",
-            "run.yaml",
-            "--artifacts-dir",
-            "artifacts/tmp",
-            "--state-out",
-            "state.json",
-        ],
-        ["gate", "cleanup", "--state", "state.json", "--artifacts-dir", "artifacts/tmp", "--out", "cleanup.json"],
-        [
             "fault",
             "apply",
             "--state",

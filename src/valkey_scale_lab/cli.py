@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Sequence
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
+from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
 
 
 UNIMPLEMENTED = (
@@ -42,6 +44,30 @@ def _plan(args: argparse.Namespace) -> int:
         print(f"ERROR: plan: {exc}", file=sys.stderr)
         return 1
     return 0
+
+
+def _gate_scenario(args: argparse.Namespace) -> int:
+    try:
+        create_scenario(
+            phase=args.phase,
+            scenario=args.scenario,
+            config_path=args.config,
+            artifacts_dir=args.artifacts_dir,
+            state_out=args.state_out,
+        )
+    except DockerRuntimeError as exc:
+        print(f"ERROR: gate scenario: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _gate_cleanup(args: argparse.Namespace) -> int:
+    try:
+        report = cleanup_scenario(state_path=args.state, artifacts_dir=args.artifacts_dir, out_path=args.out)
+    except (DockerRuntimeError, OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"ERROR: gate cleanup: {exc}", file=sys.stderr)
+        return 1
+    return 0 if report["status"] == "PASS" else 1
 
 
 def _add_unimplemented(parser: argparse.ArgumentParser, command: str) -> None:
@@ -84,12 +110,12 @@ def build_parser() -> argparse.ArgumentParser:
     scenario.add_argument("--config", required=True)
     scenario.add_argument("--artifacts-dir", required=True)
     scenario.add_argument("--state-out", required=True)
-    _add_unimplemented(scenario, "gate scenario")
+    scenario.set_defaults(func=_gate_scenario)
     cleanup = gate_sub.add_parser("cleanup", help="Cleanup a scenario from state.")
     cleanup.add_argument("--state", required=True)
     cleanup.add_argument("--artifacts-dir", required=True)
     cleanup.add_argument("--out", required=True)
-    _add_unimplemented(cleanup, "gate cleanup")
+    cleanup.set_defaults(func=_gate_cleanup)
     _add_unimplemented(gate, "gate")
 
     fault = sub.add_parser("fault", help="Apply and clear sandboxed faults.")
