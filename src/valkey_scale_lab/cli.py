@@ -6,6 +6,7 @@ from collections.abc import Sequence
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
+from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 
 
 UNIMPLEMENTED = (
@@ -31,6 +32,15 @@ def _config_validate(args: argparse.Namespace) -> int:
 
 def _config_emit_schema(args: argparse.Namespace) -> int:
     emit_schema_report(args.out)
+    return 0
+
+
+def _plan(args: argparse.Namespace) -> int:
+    try:
+        create_plan_file(args.config, args.out, dry_run=args.dry_run)
+    except PlannerError as exc:
+        print(f"ERROR: plan: {exc}", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -64,7 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     plan.add_argument("--config", required=True, help="Path to a run configuration file.")
     plan.add_argument("--out", required=True, help="Path for cluster_plan.json.")
     plan.add_argument("--dry-run", action="store_true", help="Plan without starting processes.")
-    _add_unimplemented(plan, "plan")
+    plan.set_defaults(func=_plan)
 
     gate = sub.add_parser("gate", help="Run gate lifecycle scenarios.")
     gate_sub = gate.add_subparsers(dest="gate_command", metavar="<gate-command>")

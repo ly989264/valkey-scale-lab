@@ -1,0 +1,168 @@
+{
+  "artifact_type": "cluster_plan",
+  "azs": [
+    "az-a",
+    "az-b",
+    "az-c"
+  ],
+  "config_path": "templates/configs/local_az_3x2.yaml",
+  "constraints": {
+    "allow_1000_env": null,
+    "az_balanced": true,
+    "default_node_cap": 100,
+    "dry_run": false,
+    "host_capacity": [
+      {
+        "available_memory_mb": null,
+        "host_id": "local",
+        "planned_nodes": 6,
+        "reason": "host memory is auto; runtime preflight will probe physical capacity",
+        "required_memory_mb": 768,
+        "status": "SKIPPED_WITH_REASON"
+      }
+    ],
+    "host_capacity_checked": true,
+    "no_execution": false,
+    "non_ha_single_az": false,
+    "opt_in_1000": false,
+    "port_collision_checked": true,
+    "primary_replica_distinct_az": true,
+    "required_1000_env_value": null
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "directories": {
+    "run_root": "artifacts/runtime/P02_PLANNER-local-20260628",
+    "state_dir": "artifacts/runtime/P02_PLANNER-local-20260628/state"
+  },
+  "hosts": [
+    "local"
+  ],
+  "node_count": 6,
+  "nodes": [
+    {
+      "az_id": "az-a",
+      "client_port": 7100,
+      "cluster_bus_port": 17100,
+      "container_name": "vslab-p02-planner-local-20260628-shard-0000-primary",
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0000-primary",
+      "dry_run": false,
+      "host_id": "local",
+      "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0000-primary",
+      "logical_id": "shard-0000-primary",
+      "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0000-primary.pid",
+      "resource_limits": {
+        "memory_mb": 128
+      },
+      "role": "primary",
+      "shard_id": "shard-0000",
+      "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0000-primary.json"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7101,
+      "cluster_bus_port": 17101,
+      "container_name": "vslab-p02-planner-local-20260628-shard-0000-replica-00",
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0000-replica-00",
+      "dry_run": false,
+      "host_id": "local",
+      "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0000-replica-00",
+      "logical_id": "shard-0000-replica-00",
+      "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0000-replica-00.pid",
+      "resource_limits": {
+        "memory_mb": 128
+      },
+      "role": "replica",
+      "shard_id": "shard-0000",
+      "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0000-replica-00.json"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7102,
+      "cluster_bus_port": 17102,
+      "container_name": "vslab-p02-planner-local-20260628-shard-0001-primary",
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0001-primary",
+      "dry_run": false,
+      "host_id": "local",
+      "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0001-primary",
+      "logical_id": "shard-0001-primary",
+      "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0001-primary.pid",
+      "resource_limits": {
+        "memory_mb": 128
+      },
+      "role": "primary",
+      "shard_id": "shard-0001",
+      "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0001-primary.json"
+    },
+    {
+      "az_id": "az-c",
+      "client_port": 7103,
+      "cluster_bus_port": 17103,
+      "container_name": "vslab-p02-planner-local-20260628-shard-0001-replica-00",
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0001-replica-00",
+      "dry_run": false,
+      "host_id": "local",
+      "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0001-replica-00",
+      "logical_id": "shard-0001-replica-00",
+      "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0001-replica-00.pid",
+      "resource_limits": {
+        "memory_mb": 128
+      },
+      "role": "replica",
+      "shard_id": "shard-0001",
+      "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0001-replica-00.json"
+    },
+    {
+      "az_id": "az-c",
+      "client_port": 7104,
+      "cluster_bus_port": 17104,
+      "container_name": "vslab-p02-planner-local-20260628-shard-0002-primary",
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0002-primary",
+      "dry_run": false,
+      "host_id": "local",
+      "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0002-primary",
+      "logical_id": "shard-0002-primary",
+      "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0002-primary.pid",
+      "resource_limits": {
+        "memory_mb": 128
+      },
+      "role": "primary",
+      "shard_id": "shard-0002",
+      "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0002-primary.json"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7105,
+      "cluster_bus_port": 17105,
+      "container_name": "vslab-p02-planner-local-20260628-shard-0002-replica-00",
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0002-replica-00",
+      "dry_run": false,
+      "host_id": "local",
+      "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0002-replica-00",
+      "logical_id": "shard-0002-replica-00",
+      "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0002-replica-00.pid",
+      "resource_limits": {
+        "memory_mb": 128
+      },
+      "role": "replica",
+      "shard_id": "shard-0002",
+      "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0002-replica-00.json"
+    }
+  ],
+  "phase_id": "P02_PLANNER",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "replicas_per_shard": 1,
+  "run_id": "P02_PLANNER-local-20260628",
+  "runtime": {
+    "dry_run": false,
+    "network_mode": "container_namespace",
+    "provider": "docker",
+    "sandbox_mode": "container_namespace",
+    "valkey_image": "valkey/valkey:9.1.0"
+  },
+  "schema_version": "v1",
+  "shard_count": 3,
+  "status": "PASS"
+}

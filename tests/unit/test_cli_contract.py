@@ -23,7 +23,6 @@ def test_help_succeeds(capsys: pytest.CaptureFixture[str]) -> None:
 @pytest.mark.parametrize(
     "argv",
     [
-        ["plan", "--config", "run.yaml", "--out", "cluster_plan.json"],
         [
             "gate",
             "scenario",
