@@ -35,6 +35,12 @@ def test_p10_node_specs_preserve_multi_host_placement() -> None:
     assert [node["host_id"] for node in nodes] == ["local-a", "local-b", "local-a", "local-b", "local-a", "local-b"]
 
 
+def test_p13_node_specs_use_slower_cluster_failure_timeout() -> None:
+    config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_50.yaml"))
+    nodes = docker_runtime._node_specs(config, "P13_SCALE_LADDER_50_100", "scale_50")
+    assert {node["cluster_node_timeout"] for node in nodes} == {"600000"}
+
+
 def test_slot_ranges_cover_all_slots_for_scale_rungs() -> None:
     ranges = docker_runtime._slot_ranges(15)
     assert ranges[0][0] <= 8014 <= ranges[0][1]
@@ -42,6 +48,173 @@ def test_slot_ranges_cover_all_slots_for_scale_rungs() -> None:
     assert sum((end - start + 1) for start, end in ranges) == 16384
     assert sorted(ranges)[0][0] == 0
     assert sorted(ranges)[-1][1] == 16383
+
+
+def test_scale_timeout_grows_with_node_count() -> None:
+    assert docker_runtime._scale_timeout([{}] * 6, floor=90.0, per_node=5.0) == 90.0
+    assert docker_runtime._scale_timeout([{}] * 100, floor=90.0, per_node=5.0) == 500.0
+
+
+def test_replicate_with_retry_succeeds_after_transient_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = {"count": 0}
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return docker_runtime.DockerResult("", "not known yet", 1)
+        return docker_runtime.DockerResult("OK", "", 0)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+    monkeypatch.setattr(docker_runtime.time, "sleep", lambda _: None)
+    docker_runtime._replicate_with_retry("container", "master-id", timeout=1)
+    assert calls["count"] == 2
+
+
+def test_mesh_meet_connects_each_distinct_pair(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        calls.append(args)
+        return docker_runtime.DockerResult("OK", "", 0)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+    docker_runtime._mesh_meet(
+        [
+            {"logical_id": "a", "container_name": "ca", "container_ip": "10.0.0.1"},
+            {"logical_id": "b", "container_name": "cb", "container_ip": "10.0.0.2"},
+            {"logical_id": "c", "container_name": "cc", "container_ip": "10.0.0.3"},
+        ]
+    )
+
+    assert len(calls) == 6
+    assert all(call[2:6] == ["valkey-cli", "-p", "6379", "CLUSTER"] for call in calls)
+
+
+def test_runtime_state_contains_cleanup_and_probe_fields() -> None:
+    config = {"hosts": [{"host_id": "local"}]}
+    state = docker_runtime._runtime_state(
+        "P13_SCALE_LADDER_50_100",
+        "scale_50",
+        "run",
+        "network",
+        config,
+        [
+            {
+                "logical_id": "shard-0000-primary",
+                "host_id": "local",
+                "client_port": 7000,
+                "az_id": "az-a",
+                "role": "primary",
+                "container_id": "cid",
+                "container_name": "container",
+                "container_ip": "172.18.0.2",
+                "pid": 123,
+                "shard_id": "shard-0000",
+            }
+        ],
+    )
+
+    assert state["runtime"]["sandbox_network"] is True
+    assert state["runtime"]["run_id"] == "run"
+    assert state["nodes"][0]["host"] == "127.0.0.1"
+    assert state["nodes"][0]["client_port"] == 7000
+    assert state["nodes"][0]["container_id"] == "cid"
+
+
+def test_any_node_wait_helpers_accept_one_observable_ok_node(monkeypatch: pytest.MonkeyPatch) -> None:
+    responses = {
+        "bad": "cluster_state:fail\ncluster_known_nodes:1\ncluster_slots_assigned:0\n",
+        "good": "cluster_state:ok\ncluster_known_nodes:50\ncluster_slots_assigned:16384\n",
+    }
+
+    def fake_cli(container: str, *args, timeout: int = 60, check: bool = True) -> str:
+        return responses[container]
+
+    monkeypatch.setattr(docker_runtime, "run_container_cli", fake_cli)
+    nodes = [{"container_name": "bad"}, {"container_name": "good"}]
+
+    docker_runtime._wait_cluster_known_any(nodes, expected=50, timeout=1)
+    docker_runtime._wait_cluster_slots_assigned_any(nodes, timeout=1)
+    docker_runtime._wait_cluster_ok_any(nodes, timeout=1)
+
+
+def test_incremental_meet_waits_for_each_new_node(monkeypatch: pytest.MonkeyPatch) -> None:
+    waits: list[int] = []
+    meets: list[str] = []
+
+    def fake_meet_pair(first: dict, node: dict) -> None:
+        meets.append(node["logical_id"])
+
+    def fake_wait(node: dict, expected: int, timeout: float) -> None:
+        waits.append(expected)
+
+    monkeypatch.setattr(docker_runtime, "_meet_pair", fake_meet_pair)
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_integrated_at_least", fake_wait)
+
+    first = {"logical_id": "shard-0000-primary"}
+    docker_runtime._incremental_meet(
+        first,
+        [
+            first,
+            {"logical_id": "shard-0001-primary"},
+            {"logical_id": "shard-0002-primary"},
+        ],
+        timeout=60,
+    )
+
+    assert meets == ["shard-0001-primary", "shard-0002-primary"]
+    assert waits == [2, 3, 3]
+
+
+def test_large_cluster_configures_one_membership_domain(monkeypatch: pytest.MonkeyPatch) -> None:
+    meet_groups: list[list[str]] = []
+
+    def fake_incremental_meet(first: dict, nodes: list[dict], *, timeout: float, expected_start: int = 1) -> None:
+        meet_groups.append([node["logical_id"] for node in nodes])
+
+    def fake_cli(container: str, *args, timeout: int = 60, check: bool = True) -> str:
+        if args == ("PING",):
+            return "PONG"
+        if args[:2] == ("CLUSTER", "MYID"):
+            return f"id-{container}"
+        if args[:2] == ("CLUSTER", "INFO"):
+            return "cluster_state:ok\ncluster_known_nodes:50\ncluster_slots_assigned:16384\n"
+        return "OK"
+
+    nodes = [
+        {
+            "logical_id": f"shard-{idx:04d}-primary",
+            "container_name": f"p{idx}",
+            "container_ip": f"172.18.0.{idx + 2}",
+            "role": "primary",
+            "shard_id": f"shard-{idx:04d}",
+        }
+        for idx in range(25)
+    ]
+    nodes.extend(
+        {
+            "logical_id": f"shard-{idx:04d}-replica-00",
+            "container_name": f"r{idx}",
+            "container_ip": f"172.18.1.{idx + 2}",
+            "role": "replica",
+            "shard_id": f"shard-{idx:04d}",
+        }
+        for idx in range(25)
+    )
+    monkeypatch.setattr(docker_runtime, "_incremental_meet", fake_incremental_meet)
+    monkeypatch.setattr(docker_runtime, "run_container_cli", fake_cli)
+    monkeypatch.setattr(docker_runtime, "run_docker", lambda *args, **kwargs: docker_runtime.DockerResult("OK", "", 0))
+    monkeypatch.setattr(docker_runtime, "_meet_pair", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_add_slots", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_replicate_with_retry", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_wait_host_probe_ready", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_integrated_at_least", lambda *args, **kwargs: None)
+
+    operations = docker_runtime._configure_large_cluster(nodes)
+
+    assert len(meet_groups) == 1
+    assert len(meet_groups[0]) == 25
+    assert [op["operation"] for op in operations] == ["meet_primaries", "add_slots", "add_replica", "host_probe_ready"]
 
 
 def test_port_collision_check_rejects_bound_port(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -68,6 +241,7 @@ def test_cleanup_report_shape_without_owned_resources(tmp_path: Path, monkeypatc
         "schema_version": "v1",
         "cluster_id": "test",
         "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+        "scenario": "cluster_smoke",
         "runtime": {"run_id": "test-run"},
         "nodes": [],
     }
@@ -78,6 +252,7 @@ def test_cleanup_report_shape_without_owned_resources(tmp_path: Path, monkeypatc
     report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
     assert report["status"] == "PASS"
     assert report["resources_remaining"] == []
+    assert (tmp_path / "cleanup_report_cluster_smoke.json").exists()
 
 
 def test_cleanup_removes_fault_state_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -44,6 +44,14 @@ def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -
     assert (tmp_path / "phase_summary.json").exists()
 
 
+def test_scale_phase_summary_uses_p13_required_paths(tmp_path: Path) -> None:
+    docker_runtime.write_scale_phase_summary(tmp_path / "phase_summary.json", "P13_SCALE_LADDER_50_100")
+    summary = json.loads((tmp_path / "phase_summary.json").read_text(encoding="utf-8"))
+    assert summary["phase_id"] == "P13_SCALE_LADDER_50_100"
+    assert "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json" in summary["required_artifacts"]
+    assert "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json" in summary["required_artifacts"]
+
+
 def _nodes(count: int) -> list[dict]:
     primaries = count // 2
     nodes = []

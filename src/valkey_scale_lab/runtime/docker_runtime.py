@@ -31,13 +31,16 @@ class DockerResult:
 
 
 def run_docker(args: list[str], timeout: int = 120, check: bool = True) -> DockerResult:
-    proc = subprocess.run(
-        ["docker", *args],
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=timeout,
-    )
+    try:
+        proc = subprocess.run(
+            ["docker", *args],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise DockerRuntimeError(f"docker {' '.join(args)} timed out after {timeout} seconds") from exc
     result = DockerResult(proc.stdout, proc.stderr, int(proc.returncode))
     if check and proc.returncode != 0:
         raise DockerRuntimeError(f"docker {' '.join(args)} failed exit={proc.returncode}: {proc.stderr.strip()}")
@@ -74,6 +77,8 @@ def create_scenario(
         ("P11_STABILITY_SOAK", "stability_soak_smoke"),
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
+        ("P13_SCALE_LADDER_50_100", "scale_50"),
+        ("P13_SCALE_LADDER_50_100", "scale_100"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     run_id = _run_id(phase, scenario)
@@ -130,6 +135,8 @@ def create_scenario(
             node["pid"] = _container_pid(container_id)
             node["container_ip"] = _container_ip(container_id, network_name)
             started.append(node)
+        state = _runtime_state(phase, scenario, run_id, network_name, config, nodes)
+        _write_state(Path(state_out), state)
         operations = _configure_cluster(nodes)
         if phase == "P04_CLUSTER_MANAGEMENT_OPS":
             operations.extend(_run_management_ops(nodes))
@@ -144,41 +151,9 @@ def create_scenario(
             write_p10_phase_summary(artifacts / "phase_summary.json", run_id)
         if phase == "P11_STABILITY_SOAK":
             write_stability_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        if phase == "P12_SCALE_LADDER_10_30":
+        if phase in {"P12_SCALE_LADDER_10_30", "P13_SCALE_LADDER_50_100"}:
             write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        state = {
-            "schema_version": "v1",
-            "cluster_id": run_id,
-            "phase_id": phase,
-            "scenario": scenario,
-            "runtime": {
-                "type": "docker",
-                "sandbox_network": True,
-                "network_name": network_name,
-                "run_id": run_id,
-                "project": PROJECT,
-                "hosts": [host.get("host_id") for host in config.get("hosts", [])],
-            },
-            "nodes": [
-                {
-                    "logical_id": node["logical_id"],
-                    "host_id": node.get("host_id", "local"),
-                    "host": "127.0.0.1",
-                    "client_port": node["client_port"],
-                    "az_id": node["az_id"],
-                    "role": node["role"],
-                    "container_id": node["container_id"],
-                    "container_name": node["container_name"],
-                    "container_ip": node["container_ip"],
-                    "pid": node["pid"],
-                    "shard_id": node["shard_id"],
-                }
-                for node in nodes
-            ],
-        }
-        out = Path(state_out)
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        _write_state(Path(state_out), state)
         return state
     except Exception:
         cleanup_by_label(phase=phase, run_id=run_id)
@@ -218,7 +193,56 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    scenario = state.get("scenario")
+    if scenario:
+        scenario_out = out.parent / f"cleanup_report_{scenario}.json"
+        scenario_out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
+
+
+def _runtime_state(
+    phase: str,
+    scenario: str,
+    run_id: str,
+    network_name: str,
+    config: dict[str, Any],
+    nodes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "schema_version": "v1",
+        "cluster_id": run_id,
+        "phase_id": phase,
+        "scenario": scenario,
+        "runtime": {
+            "type": "docker",
+            "sandbox_network": True,
+            "network_name": network_name,
+            "run_id": run_id,
+            "project": PROJECT,
+            "hosts": [host.get("host_id") for host in config.get("hosts", [])],
+        },
+        "nodes": [
+            {
+                "logical_id": node["logical_id"],
+                "host_id": node.get("host_id", "local"),
+                "host": "127.0.0.1",
+                "client_port": node["client_port"],
+                "az_id": node["az_id"],
+                "role": node["role"],
+                "container_id": node["container_id"],
+                "container_name": node["container_name"],
+                "container_ip": node["container_ip"],
+                "pid": node["pid"],
+                "shard_id": node["shard_id"],
+            }
+            for node in nodes
+        ],
+    }
+
+
+def _write_state(path: Path, state: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _append_p10_orchestrator_cleanup(artifacts_dir: Path, resources_remaining: list[dict[str, Any]]) -> None:
@@ -310,7 +334,7 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
     role = "primary" if role_suffix == "primary" else "replica"
     logical_id = f"{shard_id}-{role_suffix}"
     safe_run = (run_id or _run_id(phase, scenario)).lower().replace("_", "-")
-    return {
+    spec = {
         "logical_id": logical_id,
         "shard_id": shard_id,
         "role": role,
@@ -322,6 +346,9 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
         "phase": phase,
         "scenario": scenario,
     }
+    if phase == "P13_SCALE_LADDER_50_100":
+        spec["cluster_node_timeout"] = "600000"
+    return spec
 
 
 def _start_container(node: dict[str, Any], network_name: str, image: str, phase: str, scenario: str, run_id: str) -> str:
@@ -353,7 +380,7 @@ def _start_container(node: dict[str, Any], network_name: str, image: str, phase:
         "--cluster-config-file",
         "nodes.conf",
         "--cluster-node-timeout",
-        "5000",
+        str(node.get("cluster_node_timeout", "5000")),
         "--appendonly",
         "no",
         "--protected-mode",
@@ -369,13 +396,17 @@ def _start_container(node: dict[str, Any], network_name: str, image: str, phase:
 
 
 def _configure_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if len(nodes) > 30:
+        return _configure_large_cluster(nodes)
     operations: list[dict[str, Any]] = []
-    _wait_for_nodes(nodes)
+    node_timeout = _scale_timeout(nodes, floor=60.0, per_node=2.0)
+    converge_timeout = _scale_timeout(nodes, floor=90.0, per_node=5.0)
+    _wait_for_nodes(nodes, timeout=node_timeout)
     first = nodes[0]
     meet_started = time.monotonic()
     for node in nodes[1:]:
         run_container_cli(first["container_name"], "CLUSTER", "MEET", node["container_ip"], "6379", timeout=30)
-    _wait_cluster_known(nodes, expected=len(nodes), timeout=90)
+    _wait_cluster_known(nodes, expected=len(nodes), timeout=converge_timeout)
     operations.append(_operation("meet", "PASS", meet_started, {"nodes_joined": len(nodes) - 1, "cluster_known_nodes": len(nodes)}))
 
     primaries = [node for node in nodes if node["role"] == "primary"]
@@ -384,7 +415,7 @@ def _configure_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     slots_started = time.monotonic()
     for primary, (start, end) in zip(primaries, slot_ranges):
         _add_slots(primary["container_name"], start, end)
-    _wait_cluster_slots_assigned(nodes, timeout=90)
+    _wait_cluster_slots_assigned(nodes, timeout=converge_timeout)
     operations.append(_operation("add_slots", "PASS", slots_started, {"slots_assigned": 16384, "primary_count": len(primaries)}))
 
     replicate_started = time.monotonic()
@@ -392,9 +423,244 @@ def _configure_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for replica in replicas:
         master_id = primary_ids[replica["shard_id"]]
         run_container_cli(replica["container_name"], "CLUSTER", "REPLICATE", master_id, timeout=30)
-    _wait_cluster_ok(nodes, timeout=90)
+    _wait_cluster_ok(nodes, timeout=converge_timeout)
     operations.append(_operation("add_replica", "PASS", replicate_started, {"replica_count": len(replicas), "cluster_state": "ok"}))
     return operations
+
+
+def _configure_large_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    operations: list[dict[str, Any]] = []
+    node_timeout = _scale_timeout(nodes, floor=60.0, per_node=2.0)
+    _wait_for_nodes(nodes, timeout=node_timeout)
+    converge_timeout = _scale_timeout(nodes, floor=300.0, per_node=8.0)
+    first = nodes[0]
+    primaries = [node for node in nodes if node["role"] == "primary"]
+    replicas = [node for node in nodes if node["role"] == "replica"]
+
+    meet_started = time.monotonic()
+    _incremental_meet(first, primaries, timeout=converge_timeout)
+    operations.append(
+        _operation(
+            "meet_primaries",
+            "PASS",
+            meet_started,
+            {
+                "nodes_joined": len(primaries) - 1,
+                "cluster_known_nodes": _cluster_known_nodes(first),
+            },
+        )
+    )
+
+    slots_started = time.monotonic()
+    for primary, (start, end) in zip(primaries, _slot_ranges(len(primaries))):
+        _add_slots(primary["container_name"], start, end)
+    _wait_cluster_slots_assigned([first], timeout=converge_timeout)
+    _wait_cluster_ok([first], timeout=converge_timeout)
+    operations.append(_operation("add_slots", "PASS", slots_started, {"slots_assigned": 16384, "primary_count": len(primaries)}))
+
+    replica_started = time.monotonic()
+    primary_ids = {node["shard_id"]: run_container_cli(node["container_name"], "CLUSTER", "MYID") for node in primaries}
+    integrated_expected = len(primaries)
+    for replica in replicas:
+        master = next(node for node in primaries if node["shard_id"] == replica["shard_id"])
+        _meet_pair(first, replica)
+        run_docker(
+            ["exec", replica["container_name"], "valkey-cli", "-p", "6379", "CLUSTER", "MEET", master["container_ip"], "6379"],
+            timeout=30,
+            check=False,
+        )
+        _replicate_with_retry(replica["container_name"], primary_ids[replica["shard_id"]], timeout=120.0)
+        integrated_expected += 1
+        _wait_cluster_integrated_at_least(first, expected=integrated_expected, timeout=90.0)
+    _wait_cluster_known([first], expected=len(nodes), timeout=converge_timeout)
+    _wait_cluster_ok([first], timeout=converge_timeout)
+    host_probe_started = time.monotonic()
+    _wait_host_probe_ready(nodes, expected_known_nodes=len(nodes), timeout=_scale_timeout(nodes, floor=180.0, per_node=4.0))
+    operations.append(
+        _operation(
+            "add_replica",
+            "PASS",
+            replica_started,
+            {
+                "replica_count": len(replicas),
+                "cluster_state": "ok",
+                "cluster_known_nodes": _cluster_known_nodes(first),
+            },
+        )
+    )
+    operations.append(_operation("host_probe_ready", "PASS", host_probe_started, {"nodes_ready": len(nodes)}))
+    return operations
+
+
+def _incremental_meet(
+    first: dict[str, Any],
+    nodes: list[dict[str, Any]],
+    *,
+    timeout: float,
+    expected_start: int = 1,
+) -> None:
+    deadline = time.monotonic() + timeout
+    joined = 0
+    for node in nodes:
+        if node["logical_id"] == first["logical_id"]:
+            continue
+        joined += 1
+        expected = expected_start + joined
+        _meet_pair(first, node)
+        _wait_cluster_integrated_at_least(first, expected=expected, timeout=max(5.0, min(45.0, deadline - time.monotonic())))
+    final_expected = expected_start + joined
+    _wait_cluster_integrated_at_least(first, expected=final_expected, timeout=max(5.0, min(60.0, deadline - time.monotonic())))
+
+
+def _meet_pair(first: dict[str, Any], node: dict[str, Any]) -> None:
+    run_container_cli(first["container_name"], "CLUSTER", "MEET", node["container_ip"], "6379", timeout=30)
+    run_docker(
+        ["exec", node["container_name"], "valkey-cli", "-p", "6379", "CLUSTER", "MEET", first["container_ip"], "6379"],
+        timeout=30,
+        check=False,
+    )
+
+
+def _wait_cluster_known_at_least(node: dict[str, Any], expected: int, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            if _cluster_known_nodes(node) >= expected:
+                return
+        except Exception:
+            pass
+        time.sleep(1)
+    raise DockerRuntimeError(f"cluster meet did not reach at least {expected} known nodes")
+
+
+def _wait_cluster_integrated_at_least(node: dict[str, Any], expected: int, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            if _cluster_integrated_nodes(node) >= expected:
+                return
+        except Exception:
+            pass
+        time.sleep(1)
+    raise DockerRuntimeError(f"cluster meet did not integrate at least {expected} nodes")
+
+
+def _cluster_integrated_nodes(node: dict[str, Any]) -> int:
+    text = run_container_cli(node["container_name"], "CLUSTER", "NODES", timeout=5)
+    count = 0
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 8:
+            continue
+        flags = set(parts[2].split(","))
+        if flags.intersection({"fail", "handshake", "noaddr"}):
+            continue
+        if parts[7] == "connected":
+            count += 1
+    return count
+
+
+def _wait_host_probe_ready(nodes: list[dict[str, Any]], expected_known_nodes: int, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    last_ready = 0
+    while time.monotonic() < deadline:
+        ready = 0
+        for node in nodes:
+            try:
+                pong = _host_command("127.0.0.1", int(node["client_port"]), "PING", timeout=2.0)
+                server = str(_host_command("127.0.0.1", int(node["client_port"]), "INFO", "server", timeout=2.0))
+                cluster_info = str(_host_command("127.0.0.1", int(node["client_port"]), "CLUSTER", "INFO", timeout=2.0))
+                cluster_nodes = str(_host_command("127.0.0.1", int(node["client_port"]), "CLUSTER", "NODES", timeout=2.0))
+                known_nodes = _info_value(cluster_info, "cluster_known_nodes")
+                if (
+                    pong == "PONG"
+                    and "valkey_version:9.1." in server
+                    and _info_value(cluster_info, "cluster_state") == "ok"
+                    and known_nodes is not None
+                    and int(known_nodes) >= expected_known_nodes
+                    and "fail" not in cluster_nodes
+                    and "handshake" not in cluster_nodes
+                ):
+                    ready += 1
+            except Exception:
+                pass
+        if ready == len(nodes):
+            return
+        last_ready = ready
+        time.sleep(2)
+    raise DockerRuntimeError(f"host probe readiness reached {last_ready}/{len(nodes)} nodes")
+
+
+def _host_command(host: str, port: int, *args: Any, timeout: float = 2.0) -> Any:
+    with socket.create_connection((host, port), timeout=timeout) as sock:
+        sock.settimeout(timeout)
+        sock.sendall(_encode_resp(*args))
+        return _read_resp(sock.makefile("rb"))
+
+
+def _encode_resp(*args: Any) -> bytes:
+    parts = [f"*{len(args)}\r\n".encode("utf-8")]
+    for arg in args:
+        data = str(arg).encode("utf-8")
+        parts.append(f"${len(data)}\r\n".encode("utf-8"))
+        parts.append(data + b"\r\n")
+    return b"".join(parts)
+
+
+def _read_resp(fp: Any) -> Any:
+    prefix = fp.read(1)
+    if prefix == b"+":
+        return _read_resp_line(fp).decode("utf-8", errors="replace")
+    if prefix == b"-":
+        raise DockerRuntimeError(_read_resp_line(fp).decode("utf-8", errors="replace"))
+    if prefix == b":":
+        return int(_read_resp_line(fp))
+    if prefix == b"$":
+        size = int(_read_resp_line(fp))
+        if size == -1:
+            return None
+        data = fp.read(size)
+        _ = fp.read(2)
+        return data.decode("utf-8", errors="replace")
+    if prefix == b"*":
+        size = int(_read_resp_line(fp))
+        return [_read_resp(fp) for _ in range(size)]
+    raise DockerRuntimeError(f"unknown RESP prefix {prefix!r}")
+
+
+def _read_resp_line(fp: Any) -> bytes:
+    line = fp.readline()
+    if not line.endswith(b"\r\n"):
+        raise DockerRuntimeError("invalid RESP line")
+    return line[:-2]
+
+
+def _mesh_meet(nodes: list[dict[str, Any]]) -> None:
+    for source in nodes:
+        for target in nodes:
+            if source["logical_id"] == target["logical_id"]:
+                continue
+            run_docker(
+                ["exec", source["container_name"], "valkey-cli", "-p", "6379", "CLUSTER", "MEET", target["container_ip"], "6379"],
+                timeout=30,
+                check=False,
+            )
+
+
+def _replicate_with_retry(container: str, master_id: str, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    last_error = ""
+    while time.monotonic() < deadline:
+        result = run_docker(["exec", container, "valkey-cli", "-p", "6379", "CLUSTER", "REPLICATE", master_id], timeout=30, check=False)
+        if result.returncode == 0:
+            return
+        last_error = result.stderr.strip() or result.stdout.strip()
+        time.sleep(2)
+    raise DockerRuntimeError(f"CLUSTER REPLICATE did not succeed for {container}: {last_error}")
+
+
+def _scale_timeout(nodes: list[dict[str, Any]], *, floor: float, per_node: float) -> float:
+    return max(floor, len(nodes) * per_node)
 
 
 def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> bool:
@@ -410,6 +676,8 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
         ("P11_STABILITY_SOAK", "stability_soak_smoke"): {6},
         ("P12_SCALE_LADDER_10_30", "scale_10"): {10},
         ("P12_SCALE_LADDER_10_30", "scale_30"): {30},
+        ("P13_SCALE_LADDER_50_100", "scale_50"): {50},
+        ("P13_SCALE_LADDER_50_100", "scale_100"): {100},
     }
     return node_count in expected.get((phase, scenario), set())
 
@@ -463,6 +731,19 @@ def _wait_cluster_known(nodes: list[dict[str, Any]], expected: int, timeout: flo
     raise DockerRuntimeError("cluster meet did not converge to expected node count")
 
 
+def _wait_cluster_known_any(nodes: list[dict[str, Any]], expected: int, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for node in nodes:
+            try:
+                if _cluster_known_nodes(node) == expected:
+                    return
+            except Exception:
+                pass
+        time.sleep(1)
+    raise DockerRuntimeError("cluster meet did not become visible from any node")
+
+
 def _wait_cluster_slots_assigned(nodes: list[dict[str, Any]], timeout: float) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -479,6 +760,20 @@ def _wait_cluster_slots_assigned(nodes: list[dict[str, Any]], timeout: float) ->
     raise DockerRuntimeError("cluster slots were not fully assigned")
 
 
+def _wait_cluster_slots_assigned_any(nodes: list[dict[str, Any]], timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for node in nodes:
+            try:
+                info = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=5)
+                if _info_value(info, "cluster_slots_assigned") == "16384":
+                    return
+            except Exception:
+                pass
+        time.sleep(1)
+    raise DockerRuntimeError("cluster slots were not visible as fully assigned from any node")
+
+
 def _wait_cluster_ok(nodes: list[dict[str, Any]], timeout: float) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -493,6 +788,29 @@ def _wait_cluster_ok(nodes: list[dict[str, Any]], timeout: float) -> None:
             return
         time.sleep(1)
     raise DockerRuntimeError("cluster did not reach ok state")
+
+
+def _wait_cluster_ok_any(nodes: list[dict[str, Any]], timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for node in nodes:
+            try:
+                info = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=5)
+                if _info_value(info, "cluster_state") == "ok":
+                    return
+            except Exception:
+                pass
+        time.sleep(1)
+    raise DockerRuntimeError("cluster did not reach observable ok state from any node")
+
+
+def _cluster_known_nodes(node: dict[str, Any]) -> int:
+    info = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=5)
+    value = _info_value(info, "cluster_known_nodes")
+    try:
+        return int(value)
+    except ValueError:
+        return 0
 
 
 def _run_management_ops(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1027,7 +1345,7 @@ def write_scale_ladder_artifacts(
         "schema_version": "v1",
         "artifact_type": "scale_ladder_report",
         "phase_id": phase,
-        "run_id": "P12_SCALE_LADDER_10_30-scale-ladder-20260628",
+        "run_id": f"{phase}-scale-ladder-20260628",
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if rungs and all(item.get("status") == "PASS" for item in rungs) else "FAIL",
@@ -1040,32 +1358,40 @@ def write_scale_ladder_artifacts(
         },
     }
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    write_scale_phase_summary(phase_summary_path)
+    write_scale_phase_summary(phase_summary_path, phase)
 
 
-def write_scale_phase_summary(path: Path) -> None:
+def write_scale_phase_summary(path: Path, phase: str) -> None:
+    if phase == "P13_SCALE_LADDER_50_100":
+        rungs = [50, 100]
+        summary_text = "P13 completes the default scale ceiling by running real 50-node and 100-node Valkey scale rungs with resource preflight, independent e2e evidence, cleanup protection, baseline snapshots, and a scale ladder comparison artifact."
+        risk = "Scale ladder comparison reaches the default 100-node ceiling on a single Docker host; host-specific resource limits may vary."
+    else:
+        rungs = [10, 30]
+        summary_text = "P12 runs real 10-node and 30-node Valkey scale rungs with resource preflight, independent e2e evidence, rung metrics, management summaries, and a scale ladder comparison artifact."
+        risk = "Scale ladder comparison uses bounded local single-host Docker rungs; host-specific resource limits may vary."
     summary = {
         "schema_version": "v1",
         "artifact_type": "phase_summary",
-        "phase_id": "P12_SCALE_LADDER_10_30",
-        "run_id": "P12_SCALE_LADDER_10_30-scale-ladder-20260628",
+        "phase_id": phase,
+        "run_id": f"{phase}-scale-ladder-20260628",
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS",
-        "summary": "P12 runs real 10-node and 30-node Valkey scale rungs with resource preflight, independent e2e evidence, rung metrics, management summaries, and a scale ladder comparison artifact.",
+        "summary": summary_text,
         "required_artifacts": [
-            "artifacts/phases/P12_SCALE_LADDER_10_30/phase_summary.json",
-            "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_10.json",
-            "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
-            "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_10.json",
-            "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
-            "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json",
-            "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json",
+            f"artifacts/phases/{phase}/phase_summary.json",
+            f"artifacts/phases/{phase}/resource_preflight_{rungs[0]}.json",
+            f"artifacts/phases/{phase}/resource_preflight_{rungs[1]}.json",
+            f"artifacts/phases/{phase}/valkey_e2e_evidence_{rungs[0]}.json",
+            f"artifacts/phases/{phase}/valkey_e2e_evidence_{rungs[1]}.json",
+            f"artifacts/phases/{phase}/scale_ladder_report.json",
+            f"artifacts/phases/{phase}/cleanup_report.json",
         ],
         "missing_metrics": [],
         "risks": [
             {
-                "risk": "Scale ladder comparison uses bounded local single-host Docker rungs; host-specific resource limits may vary.",
+                "risk": risk,
                 "severity": "low",
                 "required_before_next_phase": False,
             }
