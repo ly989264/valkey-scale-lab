@@ -1,0 +1,33 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "Remote transport latency is deferred until explicit multi-host inventory is supplied.",
+      "metric": "remote_ssh_latency_ms",
+      "reason": "P10 automatic gate uses local loopback orchestration; no remote SSH transport is contacted.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/phase_summary.json",
+    "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json",
+    "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "Automatic P10 validates the remote-agent abstraction locally; real cross-host SSH execution remains configuration-dependent.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P10_MULTI_HOST_ORCHESTRATION-orchestrated_localhost-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P10 introduced host inventory validation and a local remote-agent abstraction, then ran a real six-node Valkey 9.1.0 localhost scenario through the orchestration layer with host identity preserved in state and artifacts."
+}

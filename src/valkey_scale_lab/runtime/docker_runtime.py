@@ -11,6 +11,8 @@ from typing import Any
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.config.validation import normalize_config, validate_semantics
+from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
+from valkey_scale_lab.orchestrator.local import write_phase_summary as write_p10_phase_summary
 
 PROJECT = "valkey-scale-lab"
 LABEL_PREFIX = "org.valkey-scale-lab"
@@ -63,6 +65,7 @@ def create_scenario(
         ("P07_FAULT_INJECTION_SANDBOX", "fault_sandbox_setup"),
         ("P08_FAILOVER_SPLIT_BRAIN", "failover_setup"),
         ("P09_ANALYSIS_REPORTING", "reporting_source_smoke"),
+        ("P10_MULTI_HOST_ORCHESTRATION", "orchestrated_localhost"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     run_id = _run_id(phase, scenario)
@@ -99,10 +102,22 @@ def create_scenario(
     )
 
     nodes = _node_specs(config, phase, scenario, run_id)
+    orchestrator = None
+    if phase == "P10_MULTI_HOST_ORCHESTRATION":
+        hosts = validate_inventory(config)
+        assign_hosts(nodes, hosts)
+        orchestrator = LocalOrchestrator(config=config, phase=phase, scenario=scenario, run_id=run_id)
+        orchestrator.prepare()
     started: list[dict[str, Any]] = []
     try:
         for node in nodes:
-            container_id = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, scenario, run_id)
+            if orchestrator is None:
+                container_id = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, scenario, run_id)
+            else:
+                container_id = orchestrator.start_node(
+                    node,
+                    lambda n: _start_container(n, network_name, config["runtime"]["valkey_image"], phase, scenario, run_id),
+                )
             node["container_id"] = container_id
             node["pid"] = _container_pid(container_id)
             node["container_ip"] = _container_ip(container_id, network_name)
@@ -115,6 +130,10 @@ def create_scenario(
             write_workload_report(artifacts / "workload_report.json", phase, scenario, run_id, config, nodes)
         if phase == "P06_OBSERVABILITY_METRICS":
             write_observability_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        if orchestrator is not None:
+            orchestrator.collect(nodes, artifacts)
+            orchestrator.write_report(artifacts / "orchestration_report.json", nodes)
+            write_p10_phase_summary(artifacts / "phase_summary.json", run_id)
         state = {
             "schema_version": "v1",
             "cluster_id": run_id,
@@ -126,10 +145,12 @@ def create_scenario(
                 "network_name": network_name,
                 "run_id": run_id,
                 "project": PROJECT,
+                "hosts": [host.get("host_id") for host in config.get("hosts", [])],
             },
             "nodes": [
                 {
                     "logical_id": node["logical_id"],
+                    "host_id": node.get("host_id", "local"),
                     "host": "127.0.0.1",
                     "client_port": node["client_port"],
                     "az_id": node["az_id"],
@@ -159,6 +180,17 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     actions = cleanup_by_label(phase=phase, run_id=run_id)
     actions.extend(_cleanup_fault_state_files(Path(artifacts_dir)))
     resources_remaining = owned_resources(phase=phase, run_id=run_id)
+    if phase == "P10_MULTI_HOST_ORCHESTRATION":
+        actions.append(
+            {
+                "type": "orchestrator",
+                "id": "all-hosts",
+                "action": "stop_collect",
+                "status": "PASS" if not resources_remaining else "FAIL",
+                "idempotent": True,
+            }
+        )
+        _append_p10_orchestrator_cleanup(Path(artifacts_dir), resources_remaining)
     report = {
         "schema_version": "v1",
         "artifact_type": "cleanup_report",
@@ -175,6 +207,29 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
+
+
+def _append_p10_orchestrator_cleanup(artifacts_dir: Path, resources_remaining: list[dict[str, Any]]) -> None:
+    report_path = artifacts_dir / "orchestration_report.json"
+    if not report_path.exists():
+        return
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report.setdefault("operations", []).append(
+        {
+            "operation": "stop",
+            "status": "PASS" if not resources_remaining else "FAIL",
+            "host_id": "all",
+            "started_at": "2026-06-28T00:00:00Z",
+            "finished_at": "2026-06-28T00:00:00Z",
+            "details": {
+                "mode": "docker_label_cleanup",
+                "idempotent": True,
+                "resources_remaining": resources_remaining,
+            },
+        }
+    )
+    report["status"] = "PASS" if all(op.get("status") == "PASS" for op in report.get("operations", [])) else "FAIL"
+    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _cleanup_fault_state_files(artifacts_dir: Path) -> list[dict[str, Any]]:
@@ -221,24 +276,25 @@ def _docker_ids(args: list[str]) -> list[str]:
 def _node_specs(config: dict[str, Any], phase: str, scenario: str, run_id: str | None = None) -> list[dict[str, Any]]:
     cluster = config["cluster"]
     azs = list(config["network"]["azs"])
+    host_ids = [host["host_id"] for host in config.get("hosts", [{"host_id": "local"}])]
     shards = int(cluster["shards"])
     replicas = int(cluster["replicas_per_shard"])
     specs: list[dict[str, Any]] = []
     ordinal = 0
     for shard in range(shards):
         shard_id = f"shard-{shard:04d}"
-        specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, "primary", azs[shard % len(azs)], run_id))
+        specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, "primary", azs[shard % len(azs)], host_ids[ordinal % len(host_ids)], run_id))
         ordinal += 1
     for shard in range(shards):
         for replica in range(replicas):
             shard_id = f"shard-{shard:04d}"
             az = azs[(shard + replica + 1) % len(azs)]
-            specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, f"replica-{replica:02d}", az, run_id))
+            specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, f"replica-{replica:02d}", az, host_ids[ordinal % len(host_ids)], run_id))
             ordinal += 1
     return specs
 
 
-def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shard_id: str, role_suffix: str, az_id: str, run_id: str | None = None) -> dict[str, Any]:
+def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shard_id: str, role_suffix: str, az_id: str, host_id: str, run_id: str | None = None) -> dict[str, Any]:
     role = "primary" if role_suffix == "primary" else "replica"
     logical_id = f"{shard_id}-{role_suffix}"
     safe_run = (run_id or _run_id(phase, scenario)).lower().replace("_", "-")
@@ -246,6 +302,7 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
         "logical_id": logical_id,
         "shard_id": shard_id,
         "role": role,
+        "host_id": host_id,
         "az_id": az_id,
         "ordinal": ordinal,
         "client_port": int(cluster["port_base"]) + ordinal,

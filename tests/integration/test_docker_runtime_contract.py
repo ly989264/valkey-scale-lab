@@ -22,6 +22,17 @@ def test_p03_node_specs_are_deterministic() -> None:
     assert [node["client_port"] for node in nodes] == [7000, 7001, 7002, 7003, 7004, 7005]
     assert len({node["container_name"] for node in nodes}) == 6
     assert "p03-local-docker-valkey-cluster-smoke" in nodes[0]["container_name"]
+    assert {node["host_id"] for node in nodes} == {"local"}
+
+
+def test_p10_node_specs_preserve_multi_host_placement() -> None:
+    config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/single_mac_6node.yaml"))
+    config["hosts"] = [
+        {"host_id": "local-a", "ip": "127.0.0.1", "docker_endpoint": "local", "labels": ["worker"]},
+        {"host_id": "local-b", "ip": "127.0.0.1", "docker_endpoint": "local", "labels": ["worker"]},
+    ]
+    nodes = docker_runtime._node_specs(config, "P10_MULTI_HOST_ORCHESTRATION", "orchestrated_localhost")
+    assert [node["host_id"] for node in nodes] == ["local-a", "local-b", "local-a", "local-b", "local-a", "local-b"]
 
 
 def test_port_collision_check_rejects_bound_port(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -78,6 +89,36 @@ def test_cleanup_removes_fault_state_files(tmp_path: Path, monkeypatch: pytest.M
     assert report["status"] == "PASS"
     assert not fault_state.exists()
     assert any(action["type"] == "fault_state" for action in report["cleanup_actions"])
+
+
+def test_p10_cleanup_appends_orchestrator_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = {
+        "schema_version": "v1",
+        "cluster_id": "test",
+        "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+        "runtime": {"run_id": "test-run"},
+        "nodes": [],
+    }
+    state_path = tmp_path / "state.json"
+    state_path.write_text(docker_runtime.json.dumps(state), encoding="utf-8")
+    orch_report = {
+        "schema_version": "v1",
+        "artifact_type": "orchestration_report",
+        "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+        "run_id": "test-run",
+        "status": "PASS",
+        "operations": [{"operation": "prepare", "status": "PASS"}],
+    }
+    (tmp_path / "orchestration_report.json").write_text(docker_runtime.json.dumps(orch_report), encoding="utf-8")
+    monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
+
+    report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
+    updated = docker_runtime.json.loads((tmp_path / "orchestration_report.json").read_text(encoding="utf-8"))
+
+    assert report["status"] == "PASS"
+    assert updated["operations"][-1]["operation"] == "stop"
+    assert updated["operations"][-1]["details"]["idempotent"] is True
 
 
 def test_management_ops_report_taxonomy(tmp_path: Path) -> None:

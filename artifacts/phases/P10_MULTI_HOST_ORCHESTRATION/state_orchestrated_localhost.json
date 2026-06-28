@@ -1,0 +1,96 @@
+{
+  "cluster_id": "P10_MULTI_HOST_ORCHESTRATION-orchestrated_localhost-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "19d05f3b32fbce56bfa59d68267cc85c379541e170db58bf65759f7d6bbfd8e9",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p10-multi-host-orchestration-orchestrated-localhost-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 2980,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "cdb5ded9491fd1421b053352c9d8c7232b7b97e14a9f257d35b1f0d4eec3539f",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p10-multi-host-orchestration-orchestrated-localhost-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 3056,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "dc57478b92ac17982c9ad667565c0292c7bbb8788206731d64a9099f5d9d3aa8",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p10-multi-host-orchestration-orchestrated-localhost-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 3127,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "ea04197bff435e560e96e4f563995b245a8992ce25b1d844814d14ceb6c4f2ae",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p10-multi-host-orchestration-orchestrated-localhost-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 3205,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "a915ce6bf417135cc09586296b5957f992b1ff460100f122f46255b5743e5b24",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p10-multi-host-orchestration-orchestrated-localhost-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 3280,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "2e3d5118349f11d604d2f7844871f3bc96e3613c4ec0dcfc09063b4de38e6615",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p10-multi-host-orchestration-orchestrated-localhost-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 3355,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+  "runtime": {
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p10-multi-host-orchestration-orchestrated_localhost",
+    "project": "valkey-scale-lab",
+    "run_id": "P10_MULTI_HOST_ORCHESTRATION-orchestrated_localhost-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "orchestrated_localhost",
+  "schema_version": "v1"
+}

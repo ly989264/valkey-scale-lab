@@ -1,0 +1,180 @@
+{
+  "artifact_type": "orchestration_report",
+  "created_at": "2026-06-28T00:00:00Z",
+  "hosts": [
+    {
+      "docker_endpoint": "local",
+      "host_id": "local",
+      "ip": "127.0.0.1",
+      "labels": [
+        "controller",
+        "worker"
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "details": {
+        "docker_endpoint": "local",
+        "mode": "local_loopback"
+      },
+      "finished_at": "2026-06-28T00:00:00Z",
+      "host_id": "local",
+      "operation": "prepare",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "container_id": "19d05f3b32fbce56bfa59d68267cc85c379541e170db58bf65759f7d6bbfd8e9",
+        "duration_seconds": 0.122772,
+        "logical_id": "shard-0000-primary"
+      },
+      "finished_at": "2026-06-28T00:00:00Z",
+      "host_id": "local",
+      "operation": "start",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "container_id": "cdb5ded9491fd1421b053352c9d8c7232b7b97e14a9f257d35b1f0d4eec3539f",
+        "duration_seconds": 0.113828,
+        "logical_id": "shard-0001-primary"
+      },
+      "finished_at": "2026-06-28T00:00:00Z",
+      "host_id": "local",
+      "operation": "start",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "container_id": "dc57478b92ac17982c9ad667565c0292c7bbb8788206731d64a9099f5d9d3aa8",
+        "duration_seconds": 0.110305,
+        "logical_id": "shard-0002-primary"
+      },
+      "finished_at": "2026-06-28T00:00:00Z",
+      "host_id": "local",
+      "operation": "start",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "container_id": "ea04197bff435e560e96e4f563995b245a8992ce25b1d844814d14ceb6c4f2ae",
+        "duration_seconds": 0.099051,
+        "logical_id": "shard-0000-replica-00"
+      },
+      "finished_at": "2026-06-28T00:00:00Z",
+      "host_id": "local",
+      "operation": "start",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "container_id": "a915ce6bf417135cc09586296b5957f992b1ff460100f122f46255b5743e5b24",
+        "duration_seconds": 0.108206,
+        "logical_id": "shard-0001-replica-00"
+      },
+      "finished_at": "2026-06-28T00:00:00Z",
+      "host_id": "local",
+      "operation": "start",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "container_id": "2e3d5118349f11d604d2f7844871f3bc96e3613c4ec0dcfc09063b4de38e6615",
+        "duration_seconds": 0.09885,
+        "logical_id": "shard-0002-replica-00"
+      },
+      "finished_at": "2026-06-28T00:00:00Z",
+      "host_id": "local",
+      "operation": "start",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "artifacts_dir": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION",
+        "node_count": 6
+      },
+      "finished_at": "2026-06-28T00:00:00Z",
+      "host_id": "local",
+      "operation": "collect",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "idempotent": true,
+        "mode": "docker_label_cleanup",
+        "resources_remaining": []
+      },
+      "finished_at": "2026-06-28T00:00:00Z",
+      "host_id": "all",
+      "operation": "stop",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    }
+  ],
+  "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+  "placements": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "role": "replica"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "role": "replica"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "role": "replica"
+    }
+  ],
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P10_MULTI_HOST_ORCHESTRATION-orchestrated_localhost-20260628",
+  "safety": {
+    "host_network_mutation": false,
+    "remote_cleanup_idempotent": true,
+    "requires_sudo": false
+  },
+  "schema_version": "v1",
+  "status": "PASS"
+}
