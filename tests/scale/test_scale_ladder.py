@@ -21,13 +21,15 @@ def test_resource_preflight_reports_port_and_cleanup_checks(tmp_path: Path, monk
 
 
 def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -> None:
+    expected = {"count": 10}
+
     def fake_cli(container: str, *args, timeout: int = 60, check: bool = True) -> str:
         if args[:2] == ("INFO", "server"):
             return "valkey_version:9.1.0\n"
         if args[:2] == ("INFO", "default"):
             return "used_memory:1000\ntotal_commands_processed:10\n"
         if args[:2] == ("CLUSTER", "INFO"):
-            return "cluster_state:ok\ncluster_known_nodes:10\n"
+            return f"cluster_state:ok\ncluster_known_nodes:{expected['count']}\n"
         return "OK"
 
     monkeypatch.setattr(docker_runtime, "run_container_cli", fake_cli)
@@ -35,6 +37,7 @@ def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -
     nodes_30 = _nodes(30)
 
     docker_runtime.write_scale_ladder_artifacts(tmp_path, "P12_SCALE_LADDER_10_30", "scale_10", "run-10", {"profile_name": "scale_10"}, nodes_10)
+    expected["count"] = 30
     docker_runtime.write_scale_ladder_artifacts(tmp_path, "P12_SCALE_LADDER_10_30", "scale_30", "run-30", {"profile_name": "scale_30"}, nodes_30)
 
     report = json.loads((tmp_path / "scale_ladder_report.json").read_text(encoding="utf-8"))
@@ -42,6 +45,32 @@ def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -
     assert report["summary"]["rung_counts_observed"] == [10, 30]
     assert report["summary"]["comparison"]["node_count_multiplier"] == 3.0
     assert (tmp_path / "phase_summary.json").exists()
+
+
+def test_scale_rung_fails_when_membership_is_fragmented(tmp_path: Path, monkeypatch) -> None:
+    def fake_cli(container: str, *args, timeout: int = 60, check: bool = True) -> str:
+        if args[:2] == ("INFO", "server"):
+            return "valkey_version:9.1.0\n"
+        if args[:2] == ("INFO", "default"):
+            return "used_memory:1000\ntotal_commands_processed:10\n"
+        if args[:2] == ("CLUSTER", "INFO"):
+            return "cluster_state:ok\ncluster_known_nodes:6\n"
+        return "OK"
+
+    monkeypatch.setattr(docker_runtime, "run_container_cli", fake_cli)
+    docker_runtime.write_scale_ladder_artifacts(
+        tmp_path,
+        "P13_SCALE_LADDER_50_100",
+        "scale_50",
+        "run-50",
+        {"profile_name": "scale_50"},
+        _nodes(50),
+    )
+
+    rung = json.loads((tmp_path / "scale_rung_50.json").read_text(encoding="utf-8"))
+    assert rung["status"] == "FAIL"
+    assert rung["management"]["cluster_known_nodes_min"] == 6
+    assert rung["management"]["cluster_known_nodes_max"] == 6
 
 
 def test_scale_phase_summary_uses_p13_required_paths(tmp_path: Path) -> None:

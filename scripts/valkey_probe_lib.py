@@ -224,8 +224,29 @@ def wait_for_cluster_ok(endpoints: list[Endpoint], min_nodes: int, timeout_secon
     while time.monotonic() < deadline:
         probes = [probe_endpoint(ep) for ep in endpoints]
         last = probes
-        ok = [p for p in probes if p.get("status") == "PASS"]
-        if len(ok) >= min_nodes and any(p.get("cluster_state") == "ok" for p in ok):
+        ok = [p for p in probes if _probe_has_full_membership(p, min_nodes)]
+        if len(ok) >= min_nodes:
             return True, probes
         time.sleep(interval)
     return False, last
+
+
+def _probe_has_full_membership(probe: dict[str, Any], min_nodes: int) -> bool:
+    if probe.get("status") != "PASS" or probe.get("cluster_state") != "ok":
+        return False
+    try:
+        known_nodes = int(probe.get("cluster_known_nodes") or 0)
+    except (TypeError, ValueError):
+        return False
+    cluster_nodes = probe.get("cluster_nodes")
+    if not isinstance(cluster_nodes, dict):
+        return False
+    if known_nodes < min_nodes or len(cluster_nodes) < min_nodes:
+        return False
+    for node in cluster_nodes.values():
+        flags = set(node.get("flags") or [])
+        if flags.intersection({"fail", "handshake", "noaddr"}):
+            return False
+        if node.get("link_state") != "connected":
+            return False
+    return True

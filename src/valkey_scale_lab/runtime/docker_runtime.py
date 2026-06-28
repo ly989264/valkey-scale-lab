@@ -1280,6 +1280,7 @@ def write_scale_ladder_artifacts(
     primaries = [node for node in nodes if node["role"] == "primary"]
     replicas = [node for node in nodes if node["role"] == "replica"]
     cluster_states: list[str] = []
+    cluster_known_nodes: list[int | str] = []
     versions: set[str] = set()
     memory_values: list[int] = []
     command_counts: list[int] = []
@@ -1293,6 +1294,7 @@ def write_scale_ladder_artifacts(
             if version:
                 versions.add(version)
             cluster_states.append(cluster_info.get("cluster_state", "MISSING"))
+            cluster_known_nodes.append(_int_or_missing(cluster_info.get("cluster_known_nodes")))
             used_memory = _int_or_missing(default_info.get("used_memory"))
             commands = _int_or_missing(default_info.get("total_commands_processed"))
             if isinstance(used_memory, int):
@@ -1302,6 +1304,9 @@ def write_scale_ladder_artifacts(
         except Exception as exc:  # noqa: BLE001
             sample_errors.append({"logical_id": node["logical_id"], "error": repr(exc)})
 
+    no_sample_errors = not sample_errors
+    all_nodes_report_ok = all(state == "ok" for state in cluster_states)
+    full_membership_observed = all(value == node_count for value in cluster_known_nodes)
     rung = {
         "schema_version": "v1",
         "artifact_type": "scale_rung_summary",
@@ -1309,7 +1314,7 @@ def write_scale_ladder_artifacts(
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if not sample_errors and all(state == "ok" for state in cluster_states) else "FAIL",
+        "status": "PASS" if no_sample_errors and all_nodes_report_ok and full_membership_observed else "FAIL",
         "rung": node_count,
         "scenario": scenario,
         "config_path": config.get("profile_name", "MISSING"),
@@ -1324,6 +1329,7 @@ def write_scale_ladder_artifacts(
         },
         "valkey_versions": sorted(versions),
         "cluster_states": sorted(set(cluster_states)),
+        "cluster_known_nodes_observed": cluster_known_nodes,
         "metrics": {
             "total_used_memory": sum(memory_values) if memory_values else "MISSING",
             "avg_used_memory": round(sum(memory_values) / len(memory_values), 6) if memory_values else "MISSING",
@@ -1333,6 +1339,8 @@ def write_scale_ladder_artifacts(
             "slot_ranges": [{"start": start, "end": end} for start, end in _slot_ranges(len(primaries))],
             "slots_assigned": 16384,
             "cluster_known_nodes_expected": node_count,
+            "cluster_known_nodes_min": min((value for value in cluster_known_nodes if isinstance(value, int)), default="MISSING"),
+            "cluster_known_nodes_max": max((value for value in cluster_known_nodes if isinstance(value, int)), default="MISSING"),
         },
         "evidence_path": f"artifacts/phases/{phase}/valkey_e2e_evidence_{node_count}.json",
         "errors": sample_errors,
