@@ -1,0 +1,34 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+  "run_id": "P07_FAULT_INJECTION_SANDBOX-fault_sandbox_setup-20260628",
+  "created_at": "2026-06-28T00:00:00Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "status": "PASS",
+  "summary": "P07 implemented sandbox-scoped fault apply/clear lifecycle for a real six-node Valkey 9.1.0 Docker cluster, recording a network-delay fault report with host-network and firewall mutation checks set false and clearing all fault state before cleanup.",
+  "required_artifacts": [
+    "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/phase_summary.json",
+    "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
+    "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+    "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+    "artifacts/gates/P07_FAULT_INJECTION_SANDBOX/gate_result.json"
+  ],
+  "missing_metrics": [],
+  "risks": [
+    {
+      "risk": "P07 uses the explicit sandbox proxy fallback for network-delay lifecycle proof; container netem impairment remains for later platform-specific expansion.",
+      "severity": "low",
+      "required_before_next_phase": false
+    }
+  ],
+  "real_valkey": {
+    "version": "9.1.0",
+    "nodes_observed": 6,
+    "cluster_state": "ok",
+    "data_path_result": "SKIPPED_WITH_REASON"
+  }
+}

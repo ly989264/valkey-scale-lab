@@ -7,6 +7,7 @@ from collections.abc import Sequence
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
+from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
 
@@ -70,6 +71,29 @@ def _gate_cleanup(args: argparse.Namespace) -> int:
     return 0 if report["status"] == "PASS" else 1
 
 
+def _fault_apply(args: argparse.Namespace) -> int:
+    try:
+        apply_fault(
+            state_path=args.state,
+            target_logical_id=args.target_logical_id,
+            fault_json=args.fault_json,
+            out_path=args.out,
+        )
+    except FaultError as exc:
+        print(f"ERROR: fault apply: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _fault_clear(args: argparse.Namespace) -> int:
+    try:
+        clear_fault(state_path=args.state, fault_id=args.fault_id, out_path=args.out)
+    except FaultError as exc:
+        print(f"ERROR: fault clear: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def _add_unimplemented(parser: argparse.ArgumentParser, command: str) -> None:
     parser.set_defaults(func=_unimplemented, contract_command=command)
 
@@ -125,12 +149,12 @@ def build_parser() -> argparse.ArgumentParser:
     apply.add_argument("--target-logical-id", required=True)
     apply.add_argument("--fault-json", required=True)
     apply.add_argument("--out", required=True)
-    _add_unimplemented(apply, "fault apply")
+    apply.set_defaults(func=_fault_apply)
     clear = fault_sub.add_parser("clear", help="Clear a sandboxed fault.")
     clear.add_argument("--state", required=True)
     clear.add_argument("--fault-id", required=True)
     clear.add_argument("--out", required=True)
-    _add_unimplemented(clear, "fault clear")
+    clear.set_defaults(func=_fault_clear)
     _add_unimplemented(fault, "fault")
 
     analyze = sub.add_parser("analyze", help="Analyze machine-readable artifacts.")

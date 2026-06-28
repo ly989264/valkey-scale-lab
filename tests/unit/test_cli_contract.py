@@ -23,19 +23,6 @@ def test_help_succeeds(capsys: pytest.CaptureFixture[str]) -> None:
 @pytest.mark.parametrize(
     "argv",
     [
-        [
-            "fault",
-            "apply",
-            "--state",
-            "state.json",
-            "--target-logical-id",
-            "shard-0000-primary",
-            "--fault-json",
-            "{}",
-            "--out",
-            "fault_apply.json",
-        ],
-        ["fault", "clear", "--state", "state.json", "--fault-id", "fault-1", "--out", "fault_clear.json"],
         ["analyze", "--artifacts-dir", "artifacts", "--out", "analysis.json"],
         ["report", "--artifacts-dir", "artifacts", "--out", "report"],
     ],

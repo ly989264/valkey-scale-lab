@@ -1,0 +1,19 @@
+{
+  "artifact_type": "fault_clear",
+  "cleared": true,
+  "created_at": "2026-06-28T00:00:00Z",
+  "fault_id": "fault-sandbox-smoke",
+  "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P07_FAULT_INJECTION_SANDBOX-fault_sandbox_setup-20260628",
+  "safety_checks": {
+    "global_firewall_mutated": false,
+    "host_network_mutated": false,
+    "sandbox_only": true
+  },
+  "schema_version": "v1",
+  "status": "PASS"
+}

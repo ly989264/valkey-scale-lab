@@ -1,0 +1,1 @@
+PASS fault_safety_gate out=artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json fault_report=artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json

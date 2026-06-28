@@ -1,0 +1,87 @@
+{
+  "cluster_id": "P07_FAULT_INJECTION_SANDBOX-fault_sandbox_setup-20260628",
+  "nodes": [
+    {
+      "az_id": "az-a",
+      "client_port": 7100,
+      "container_id": "0fbadfc58444980c1ba0e8fab5bac0d2031948103eb4d2240fd70e429b063c2d",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p07-fault-injection-sandbox-fault-sandbox-setup-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-primary",
+      "pid": 563,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7101,
+      "container_id": "8df7373e2372f6fa639ad12a9a1a1c4eb628aeb1fdb65ba0d3ab2375ff59b412",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p07-fault-injection-sandbox-fault-sandbox-setup-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-primary",
+      "pid": 641,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-c",
+      "client_port": 7102,
+      "container_id": "79fb01950559a821017d674eb230e20f9f6705c1c73d3a2683f0da0b654f5aaf",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p07-fault-injection-sandbox-fault-sandbox-setup-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-primary",
+      "pid": 717,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7103,
+      "container_id": "2cd8a825fdbd2f8ad218b67d39e4976602893d7ee1f23671b728077ddc801e75",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p07-fault-injection-sandbox-fault-sandbox-setup-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 792,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-c",
+      "client_port": 7104,
+      "container_id": "297f4dd65f111765bfa8e3c45dc443cbbfddd62a2ae5e45398ce077be6ae9970",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p07-fault-injection-sandbox-fault-sandbox-setup-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 868,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7105,
+      "container_id": "f4afbd334b39822cb1bd93d85fa781ba0cc9e10504845036bac9a32711091c2b",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p07-fault-injection-sandbox-fault-sandbox-setup-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 943,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+  "runtime": {
+    "network_name": "vslab-p07-fault-injection-sandbox-fault_sandbox_setup",
+    "project": "valkey-scale-lab",
+    "run_id": "P07_FAULT_INJECTION_SANDBOX-fault_sandbox_setup-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "fault_sandbox_setup",
+  "schema_version": "v1"
+}

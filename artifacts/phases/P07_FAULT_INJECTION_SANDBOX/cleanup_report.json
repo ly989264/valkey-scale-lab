@@ -1,0 +1,107 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX",
+  "cleanup_actions": [
+    {
+      "action": "stop",
+      "id": "f4afbd334b39",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "f4afbd334b39",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "297f4dd65f11",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "297f4dd65f11",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "2cd8a825fdbd",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "2cd8a825fdbd",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "79fb01950559",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "79fb01950559",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "8df7373e2372",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "8df7373e2372",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "0fbadfc58444",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "0fbadfc58444",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "9522d06f8025",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P07_FAULT_INJECTION_SANDBOX-fault_sandbox_setup-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}
