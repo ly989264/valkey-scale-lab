@@ -35,6 +35,15 @@ def test_p10_node_specs_preserve_multi_host_placement() -> None:
     assert [node["host_id"] for node in nodes] == ["local-a", "local-b", "local-a", "local-b", "local-a", "local-b"]
 
 
+def test_slot_ranges_cover_all_slots_for_scale_rungs() -> None:
+    ranges = docker_runtime._slot_ranges(15)
+    assert ranges[0][0] <= 8014 <= ranges[0][1]
+    assert len(ranges) == 15
+    assert sum((end - start + 1) for start, end in ranges) == 16384
+    assert sorted(ranges)[0][0] == 0
+    assert sorted(ranges)[-1][1] == 16383
+
+
 def test_port_collision_check_rejects_bound_port(monkeypatch: pytest.MonkeyPatch) -> None:
     class FakeSocket:
         def __enter__(self) -> "FakeSocket":

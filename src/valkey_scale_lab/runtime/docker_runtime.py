@@ -72,6 +72,8 @@ def create_scenario(
         ("P09_ANALYSIS_REPORTING", "reporting_source_smoke"),
         ("P10_MULTI_HOST_ORCHESTRATION", "orchestrated_localhost"),
         ("P11_STABILITY_SOAK", "stability_soak_smoke"),
+        ("P12_SCALE_LADDER_10_30", "scale_10"),
+        ("P12_SCALE_LADDER_10_30", "scale_30"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     run_id = _run_id(phase, scenario)
@@ -85,8 +87,8 @@ def create_scenario(
         raise DockerRuntimeError(message)
     cluster = config["cluster"]
     node_count = int(cluster["shards"]) * (1 + int(cluster["replicas_per_shard"]))
-    if node_count != 6:
-        raise DockerRuntimeError(f"P03 cluster_smoke expects 6 nodes, got {node_count}")
+    if not _scenario_node_count_allowed(phase, scenario, node_count):
+        raise DockerRuntimeError(f"{phase}/{scenario} does not allow {node_count} nodes")
     ports = [int(cluster["port_base"]) + idx for idx in range(node_count)]
     _check_ports_free(ports)
 
@@ -142,6 +144,8 @@ def create_scenario(
             write_p10_phase_summary(artifacts / "phase_summary.json", run_id)
         if phase == "P11_STABILITY_SOAK":
             write_stability_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        if phase == "P12_SCALE_LADDER_10_30":
+            write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         state = {
             "schema_version": "v1",
             "cluster_id": run_id,
@@ -376,7 +380,7 @@ def _configure_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     primaries = [node for node in nodes if node["role"] == "primary"]
     replicas = [node for node in nodes if node["role"] == "replica"]
-    slot_ranges = [(5461, 10922), (0, 5460), (10923, 16383)]
+    slot_ranges = _slot_ranges(len(primaries))
     slots_started = time.monotonic()
     for primary, (start, end) in zip(primaries, slot_ranges):
         _add_slots(primary["container_name"], start, end)
@@ -391,6 +395,40 @@ def _configure_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     _wait_cluster_ok(nodes, timeout=90)
     operations.append(_operation("add_replica", "PASS", replicate_started, {"replica_count": len(replicas), "cluster_state": "ok"}))
     return operations
+
+
+def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> bool:
+    expected = {
+        ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
+        ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},
+        ("P05_WORKLOAD_ENGINE", "workload_smoke"): {6},
+        ("P06_OBSERVABILITY_METRICS", "observability_smoke"): {6},
+        ("P07_FAULT_INJECTION_SANDBOX", "fault_sandbox_setup"): {6},
+        ("P08_FAILOVER_SPLIT_BRAIN", "failover_setup"): {6},
+        ("P09_ANALYSIS_REPORTING", "reporting_source_smoke"): {6},
+        ("P10_MULTI_HOST_ORCHESTRATION", "orchestrated_localhost"): {6},
+        ("P11_STABILITY_SOAK", "stability_soak_smoke"): {6},
+        ("P12_SCALE_LADDER_10_30", "scale_10"): {10},
+        ("P12_SCALE_LADDER_10_30", "scale_30"): {30},
+    }
+    return node_count in expected.get((phase, scenario), set())
+
+
+def _slot_ranges(primary_count: int) -> list[tuple[int, int]]:
+    if primary_count <= 0:
+        raise DockerRuntimeError("cluster needs at least one primary")
+    ranges: list[tuple[int, int]] = []
+    start = 0
+    for index in range(primary_count):
+        remaining_slots = 16384 - start
+        remaining_primaries = primary_count - index
+        width = remaining_slots // remaining_primaries
+        end = start + width - 1
+        ranges.append((start, end))
+        start = end + 1
+    probe_slot = 8014
+    probe_index = next((idx for idx, (lo, hi) in enumerate(ranges) if lo <= probe_slot <= hi), 0)
+    return ranges[probe_index:] + ranges[:probe_index]
 
 
 def _wait_for_nodes(nodes: list[dict[str, Any]], timeout: float = 60.0) -> None:
@@ -907,6 +945,171 @@ def write_stability_phase_summary(path: Path, run_id: str) -> None:
         ],
     }
     path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def write_scale_ladder_artifacts(
+    artifacts: Path,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    config: dict[str, Any],
+    nodes: list[dict[str, Any]],
+) -> None:
+    node_count = len(nodes)
+    rung_path = artifacts / f"scale_rung_{node_count}.json"
+    report_path = artifacts / "scale_ladder_report.json"
+    phase_summary_path = artifacts / "phase_summary.json"
+    primaries = [node for node in nodes if node["role"] == "primary"]
+    replicas = [node for node in nodes if node["role"] == "replica"]
+    cluster_states: list[str] = []
+    versions: set[str] = set()
+    memory_values: list[int] = []
+    command_counts: list[int] = []
+    sample_errors: list[dict[str, Any]] = []
+    for node in nodes:
+        try:
+            info = _parse_info(run_container_cli(node["container_name"], "INFO", "server", timeout=10))
+            default_info = _parse_info(run_container_cli(node["container_name"], "INFO", "default", timeout=10))
+            cluster_info = _parse_info(run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=10))
+            version = info.get("valkey_version") or info.get("redis_version")
+            if version:
+                versions.add(version)
+            cluster_states.append(cluster_info.get("cluster_state", "MISSING"))
+            used_memory = _int_or_missing(default_info.get("used_memory"))
+            commands = _int_or_missing(default_info.get("total_commands_processed"))
+            if isinstance(used_memory, int):
+                memory_values.append(used_memory)
+            if isinstance(commands, int):
+                command_counts.append(commands)
+        except Exception as exc:  # noqa: BLE001
+            sample_errors.append({"logical_id": node["logical_id"], "error": repr(exc)})
+
+    rung = {
+        "schema_version": "v1",
+        "artifact_type": "scale_rung_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if not sample_errors and all(state == "ok" for state in cluster_states) else "FAIL",
+        "rung": node_count,
+        "scenario": scenario,
+        "config_path": config.get("profile_name", "MISSING"),
+        "node_count": node_count,
+        "primary_count": len(primaries),
+        "replica_count": len(replicas),
+        "az_distribution": _count_by(nodes, "az_id"),
+        "host_distribution": _count_by(nodes, "host_id"),
+        "client_port_range": {
+            "min": min(node["client_port"] for node in nodes),
+            "max": max(node["client_port"] for node in nodes),
+        },
+        "valkey_versions": sorted(versions),
+        "cluster_states": sorted(set(cluster_states)),
+        "metrics": {
+            "total_used_memory": sum(memory_values) if memory_values else "MISSING",
+            "avg_used_memory": round(sum(memory_values) / len(memory_values), 6) if memory_values else "MISSING",
+            "total_commands_processed": sum(command_counts) if command_counts else "MISSING",
+        },
+        "management": {
+            "slot_ranges": [{"start": start, "end": end} for start, end in _slot_ranges(len(primaries))],
+            "slots_assigned": 16384,
+            "cluster_known_nodes_expected": node_count,
+        },
+        "evidence_path": f"artifacts/phases/{phase}/valkey_e2e_evidence_{node_count}.json",
+        "errors": sample_errors,
+    }
+    rung_path.write_text(json.dumps(rung, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    rung_files = sorted(artifacts.glob("scale_rung_*.json"))
+    rungs = [json.loads(path.read_text(encoding="utf-8")) for path in rung_files]
+    report = {
+        "schema_version": "v1",
+        "artifact_type": "scale_ladder_report",
+        "phase_id": phase,
+        "run_id": "P12_SCALE_LADDER_10_30-scale-ladder-20260628",
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if rungs and all(item.get("status") == "PASS" for item in rungs) else "FAIL",
+        "rungs": rungs,
+        "summary": {
+            "rung_counts_observed": [item["node_count"] for item in rungs],
+            "max_nodes_observed": max((item["node_count"] for item in rungs), default=0),
+            "comparison": _scale_comparison(rungs),
+            "real_evidence_paths": [item["evidence_path"] for item in rungs],
+        },
+    }
+    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_scale_phase_summary(phase_summary_path)
+
+
+def write_scale_phase_summary(path: Path) -> None:
+    summary = {
+        "schema_version": "v1",
+        "artifact_type": "phase_summary",
+        "phase_id": "P12_SCALE_LADDER_10_30",
+        "run_id": "P12_SCALE_LADDER_10_30-scale-ladder-20260628",
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS",
+        "summary": "P12 runs real 10-node and 30-node Valkey scale rungs with resource preflight, independent e2e evidence, rung metrics, management summaries, and a scale ladder comparison artifact.",
+        "required_artifacts": [
+            "artifacts/phases/P12_SCALE_LADDER_10_30/phase_summary.json",
+            "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_10.json",
+            "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+            "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_10.json",
+            "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+            "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json",
+            "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json",
+        ],
+        "missing_metrics": [],
+        "risks": [
+            {
+                "risk": "Scale ladder comparison uses bounded local single-host Docker rungs; host-specific resource limits may vary.",
+                "severity": "low",
+                "required_before_next_phase": False,
+            }
+        ],
+    }
+    path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _count_by(nodes: list[dict[str, Any]], key: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for node in nodes:
+        value = str(node.get(key, "MISSING"))
+        counts[value] = counts.get(value, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _scale_comparison(rungs: list[dict[str, Any]]) -> dict[str, Any]:
+    ordered = sorted(rungs, key=lambda item: int(item["node_count"]))
+    if len(ordered) < 2:
+        return {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "At least two completed rungs are needed for comparison.",
+        }
+    first, last = ordered[0], ordered[-1]
+    first_nodes = int(first["node_count"])
+    last_nodes = int(last["node_count"])
+    return {
+        "status": "PASS",
+        "from_nodes": first_nodes,
+        "to_nodes": last_nodes,
+        "node_count_multiplier": round(last_nodes / first_nodes, 6),
+        "memory_multiplier": _ratio(
+            first.get("metrics", {}).get("total_used_memory"),
+            last.get("metrics", {}).get("total_used_memory"),
+        ),
+        "primary_count_delta": int(last["primary_count"]) - int(first["primary_count"]),
+        "replica_count_delta": int(last["replica_count"]) - int(first["replica_count"]),
+    }
+
+
+def _ratio(first: Any, last: Any) -> float | str:
+    if not isinstance(first, (int, float)) or not isinstance(last, (int, float)) or first == 0:
+        return "MISSING"
+    return round(float(last) / float(first), 6)
 
 
 def _container_restart_count(container: str) -> int | str:

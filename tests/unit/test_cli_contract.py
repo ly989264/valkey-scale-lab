@@ -20,7 +20,7 @@ def test_help_succeeds(capsys: pytest.CaptureFixture[str]) -> None:
     assert "fault" in out
 
 
-@pytest.mark.parametrize("argv", [["analyze", "--help"], ["report", "--help"]])
+@pytest.mark.parametrize("argv", [["analyze", "--help"], ["report", "--help"], ["resource", "preflight", "--help"]])
 def test_analysis_and_report_help_succeed(argv: list[str]) -> None:
     with pytest.raises(SystemExit) as exc:
         main(argv)

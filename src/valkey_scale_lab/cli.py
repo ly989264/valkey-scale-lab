@@ -11,6 +11,7 @@ from valkey_scale_lab.config.validation import emit_schema_report, validate_conf
 from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.report import ReportError, render_report
+from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
 
 
@@ -114,6 +115,15 @@ def _report(args: argparse.Namespace) -> int:
     return 0
 
 
+def _resource_preflight(args: argparse.Namespace) -> int:
+    try:
+        report = run_resource_preflight(args.config, args.out, dry_run=args.dry_run)
+    except ResourcePreflightError as exc:
+        print(f"ERROR: resource preflight: {exc}", file=sys.stderr)
+        return 1
+    return 0 if report["can_run"] else 1
+
+
 def _add_unimplemented(parser: argparse.ArgumentParser, command: str) -> None:
     parser.set_defaults(func=_unimplemented, contract_command=command)
 
@@ -187,6 +197,15 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument("--out-dir", required=True, help="Directory for rendered reports.")
     report.add_argument("--index-out", required=True, help="Path for report_index.json.")
     report.set_defaults(func=_report)
+
+    resource = sub.add_parser("resource", help="Resource checks for scale rungs.")
+    resource_sub = resource.add_subparsers(dest="resource_command", metavar="<resource-command>")
+    preflight = resource_sub.add_parser("preflight", help="Run resource preflight for a scale config.")
+    preflight.add_argument("--config", required=True)
+    preflight.add_argument("--out", required=True)
+    preflight.add_argument("--dry-run", action="store_true")
+    preflight.set_defaults(func=_resource_preflight)
+    _add_unimplemented(resource, "resource")
 
     return parser
 

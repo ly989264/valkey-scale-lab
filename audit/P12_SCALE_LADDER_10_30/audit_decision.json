@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P12_SCALE_LADDER_10_30",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-28T08:08:57Z",
+  "gate_result_path": "artifacts/gates/P12_SCALE_LADDER_10_30/gate_result.json",
+  "gate_result_sha256": "843f65f17da7481357eb7fa683780d59c724a3f4c35141474bb82af8896f73dc",
+  "artifact_paths": [
+    "artifacts/phases/P12_SCALE_LADDER_10_30/phase_summary.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_10.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_10.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json"
+  ],
+  "risks": [
+    {
+      "risk": "Single-host Docker resource limits may vary by machine.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "Resource preflight is present and fails closed for P12/P13 scale rungs."
+    }
+  ],
+  "rationale": "All P12 manifest gates passed with exact command text and matching log hashes; required artifacts exist and validate; resource preflights for 10 and 30 nodes are PASS/can_run true and fail closed; real Valkey evidence shows Valkey 9.1.0, probe PASS, data path PASS, and at least the required node counts; the scale ladder report is PASS with 10/30 rung metrics, management summaries, and comparison; cleanup is PASS with no remaining owned Docker resources; safety constraints are preserved."
+}
