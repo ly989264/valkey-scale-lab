@@ -1,0 +1,34 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "No runtime cluster claims are made by this phase.",
+      "metric": "real_valkey_e2e_evidence",
+      "reason": "P01_CONFIG_SCHEMA is a fake-only configuration validation phase; real Valkey evidence begins at P03.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P01_CONFIG_SCHEMA",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P01_CONFIG_SCHEMA/phase_summary.json",
+    "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_report.json",
+    "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_multi_az_report.json",
+    "artifacts/phases/P01_CONFIG_SCHEMA/config_schema_report.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "YAML support is intentionally limited to the repository's JSON-compatible template style until a dependency policy is introduced.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P01_CONFIG_SCHEMA-local-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P01 implemented deterministic run configuration parsing, normalization, schema reporting, and semantic validation for safety, runtime, host, AZ, cluster, workload, fault, and 1000-node opt-in settings."
+}

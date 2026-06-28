@@ -1,7 +1,8 @@
 {
   "schema_version": "v1",
   "completed_phases": [
-    "P00_REPO_CONTRACT"
+    "P00_REPO_CONTRACT",
+    "P01_CONFIG_SCHEMA"
   ],
-  "last_updated": "2026-06-28T05:20:37.431687Z"
+  "last_updated": "2026-06-28T05:32:54.521262Z"
 }

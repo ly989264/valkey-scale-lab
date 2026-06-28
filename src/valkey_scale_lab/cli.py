@@ -5,6 +5,7 @@ import sys
 from collections.abc import Sequence
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
 
 
 UNIMPLEMENTED = (
@@ -21,6 +22,16 @@ def _unimplemented(args: argparse.Namespace) -> int:
     command = getattr(args, "contract_command", "command")
     print(f"ERROR: {command}: {UNIMPLEMENTED}", file=sys.stderr)
     return 2
+
+
+def _config_validate(args: argparse.Namespace) -> int:
+    report = validate_config_file(args.config, args.out)
+    return 0 if report["valid"] else 1
+
+
+def _config_emit_schema(args: argparse.Namespace) -> int:
+    emit_schema_report(args.out)
+    return 0
 
 
 def _add_unimplemented(parser: argparse.ArgumentParser, command: str) -> None:
@@ -43,10 +54,10 @@ def build_parser() -> argparse.ArgumentParser:
     validate = config_sub.add_parser("validate", help="Validate a run config.")
     validate.add_argument("--config", required=True, help="Path to a run configuration file.")
     validate.add_argument("--out", required=True, help="Path for the validation report JSON.")
-    _add_unimplemented(validate, "config validate")
+    validate.set_defaults(func=_config_validate)
     emit_schema = config_sub.add_parser("emit-schema", help="Emit the config schema report.")
     emit_schema.add_argument("--out", required=True, help="Path for the schema report JSON.")
-    _add_unimplemented(emit_schema, "config emit-schema")
+    emit_schema.set_defaults(func=_config_emit_schema)
     _add_unimplemented(config, "config")
 
     plan = sub.add_parser("plan", help="Create a deterministic cluster plan.")

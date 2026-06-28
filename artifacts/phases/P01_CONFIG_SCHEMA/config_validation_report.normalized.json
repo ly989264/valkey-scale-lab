@@ -1,0 +1,58 @@
+{
+  "cluster": {
+    "cluster_bus_port_base": 17000,
+    "node_memory_limit_mb": 128,
+    "port_base": 7000,
+    "replicas_per_shard": 1,
+    "shards": 3
+  },
+  "faults": [],
+  "hosts": [
+    {
+      "arch": "auto",
+      "disk_gb": "auto",
+      "docker_endpoint": "local",
+      "host_id": "local",
+      "ip": "127.0.0.1",
+      "labels": [
+        "controller",
+        "worker"
+      ],
+      "memory_gb": "auto",
+      "os": "auto"
+    }
+  ],
+  "metadata": {},
+  "network": {
+    "azs": [
+      "az-local"
+    ],
+    "virtual_az_mode": "single"
+  },
+  "profile_name": "single_mac_6node",
+  "runtime": {
+    "dry_run": false,
+    "provider": "docker",
+    "sandbox_mode": "container_namespace",
+    "valkey_image": "valkey/valkey:9.1.0"
+  },
+  "safety": {
+    "allow_1000_nodes": false,
+    "cleanup_on_error": true,
+    "default_max_nodes": 100,
+    "forbid_host_network_mutation": true,
+    "require_sandbox_network": true
+  },
+  "scale_profile": {},
+  "schema_version": "v1",
+  "workload": {
+    "enabled": true,
+    "hotspot_key_fraction": 0.01,
+    "hotspot_qps": 20,
+    "pipeline": 1,
+    "read_ratio": 0.8,
+    "timing": "all_run",
+    "uniform_qps": 100,
+    "write_ratio": 0.2
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "artifact_type": "config_schema_report",
+  "constraints": [
+    {
+      "description": "Automatic/default execution must not exceed 100 Valkey nodes.",
+      "name": "default_node_cap",
+      "status": "PASS"
+    },
+    {
+      "description": "Runtime image must declare a Valkey 9.1.x tag.",
+      "name": "valkey_version",
+      "status": "PASS"
+    },
+    {
+      "description": "Configs must require sandbox networking and forbid host network mutation.",
+      "name": "sandbox_network",
+      "status": "PASS"
+    },
+    {
+      "description": "1000-node configs require allow_1000_nodes, opt_in_1000, dry_run_only, and runtime.dry_run.",
+      "name": "scale_1000_opt_in",
+      "status": "PASS"
+    },
+    {
+      "description": "Enabled workloads must have read_ratio + write_ratio equal to 1.0.",
+      "name": "workload_ratios",
+      "status": "PASS"
+    }
+  ],
+  "created_at": "2026-06-28T00:00:00Z",
+  "defaults": {
+    "default_max_nodes": 100,
+    "faults": [],
+    "runtime.dry_run": false,
+    "runtime.provider": "docker",
+    "runtime.sandbox_mode": "container_namespace",
+    "safety.allow_1000_nodes": false,
+    "workload.enabled": false
+  },
+  "phase_id": "P01_CONFIG_SCHEMA",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P01_CONFIG_SCHEMA-local-20260628",
+  "schema_path": "schemas/config/run_config.schema.json",
+  "schema_version": "v1",
+  "status": "PASS"
+}
