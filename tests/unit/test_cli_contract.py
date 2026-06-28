@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from valkey_scale_lab import __version__
-from valkey_scale_lab.cli import UNIMPLEMENTED, main
+from valkey_scale_lab.cli import main
 
 
 def test_version_is_available() -> None:
@@ -20,15 +20,8 @@ def test_help_succeeds(capsys: pytest.CaptureFixture[str]) -> None:
     assert "fault" in out
 
 
-@pytest.mark.parametrize(
-    "argv",
-    [
-        ["analyze", "--artifacts-dir", "artifacts", "--out", "analysis.json"],
-        ["report", "--artifacts-dir", "artifacts", "--out", "report"],
-    ],
-)
-def test_contract_commands_are_explicitly_unimplemented(
-    argv: list[str], capsys: pytest.CaptureFixture[str]
-) -> None:
-    assert main(argv) == 2
-    assert UNIMPLEMENTED in capsys.readouterr().err
+@pytest.mark.parametrize("argv", [["analyze", "--help"], ["report", "--help"]])
+def test_analysis_and_report_help_succeed(argv: list[str]) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(argv)
+    assert exc.value.code == 0

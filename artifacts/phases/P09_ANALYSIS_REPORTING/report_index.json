@@ -1,0 +1,39 @@
+{
+  "analysis_path": "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+  "artifact_type": "report_index",
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "reports": [
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report/metrics.csv",
+      "sha256": "d1416d8d8d593ab954a400c7246b0da5078a51dd02aa9d9883b64e660bd5da89"
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report/missing_metrics.csv",
+      "sha256": "224f1e25ab07899c5aa8a66498ff0e3f55962a773a8221c07c73f0291e6edf80"
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report/baseline_comparison.csv",
+      "sha256": "5488bd12abe6a456238b2000fca81b590a32b12415e0cc77f3dee3cb90fe6b43"
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report/metric_chart.svg",
+      "sha256": "e42ef18d8078f00658b303358a288e1b4888cca25bb06ba3237e35568cd12d74"
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report/report.md",
+      "sha256": "fea53cf8823fcd980a4f63eb2d682dfc5b71784335d858245f8584728424be7b"
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report/index.html",
+      "sha256": "867768731e995019949dec1b2b1159d17528524fff9d9534ac18ead947308a31"
+    }
+  ],
+  "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

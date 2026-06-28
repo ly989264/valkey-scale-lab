@@ -6,9 +6,11 @@ import sys
 from collections.abc import Sequence
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab.analysis import AnalysisError, create_analysis_summary
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
 from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
+from valkey_scale_lab.report import ReportError, render_report
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
 
 
@@ -94,6 +96,24 @@ def _fault_clear(args: argparse.Namespace) -> int:
     return 0
 
 
+def _analyze(args: argparse.Namespace) -> int:
+    try:
+        create_analysis_summary(args.input, args.out)
+    except AnalysisError as exc:
+        print(f"ERROR: analyze: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _report(args: argparse.Namespace) -> int:
+    try:
+        render_report(args.analysis, args.out_dir, args.index_out)
+    except ReportError as exc:
+        print(f"ERROR: report: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def _add_unimplemented(parser: argparse.ArgumentParser, command: str) -> None:
     parser.set_defaults(func=_unimplemented, contract_command=command)
 
@@ -158,14 +178,15 @@ def build_parser() -> argparse.ArgumentParser:
     _add_unimplemented(fault, "fault")
 
     analyze = sub.add_parser("analyze", help="Analyze machine-readable artifacts.")
-    analyze.add_argument("--artifacts-dir", required=True)
+    analyze.add_argument("--input", required=True, help="Input artifact directory to analyze.")
     analyze.add_argument("--out", required=True)
-    _add_unimplemented(analyze, "analyze")
+    analyze.set_defaults(func=_analyze)
 
     report = sub.add_parser("report", help="Render reports from artifacts.")
-    report.add_argument("--artifacts-dir", required=True)
-    report.add_argument("--out", required=True)
-    _add_unimplemented(report, "report")
+    report.add_argument("--analysis", required=True, help="Path to analysis_summary.json.")
+    report.add_argument("--out-dir", required=True, help="Directory for rendered reports.")
+    report.add_argument("--index-out", required=True, help="Path for report_index.json.")
+    report.set_defaults(func=_report)
 
     return parser
 

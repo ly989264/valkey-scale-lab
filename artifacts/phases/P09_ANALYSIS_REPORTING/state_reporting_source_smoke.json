@@ -1,0 +1,87 @@
+{
+  "cluster_id": "P09_ANALYSIS_REPORTING-reporting_source_smoke-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "e5dd89d211179573e91e3b7d75760ef5ee396584bb8e36838b48b3d1fecce345",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p09-analysis-reporting-reporting-source-smoke-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-primary",
+      "pid": 567,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "f67802bfba045155185be7d28593fc0ffa3314bfcdf6ac88855e45be8d4b9bf5",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p09-analysis-reporting-reporting-source-smoke-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-primary",
+      "pid": 643,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "9c3094cc50b0caa8e5bc14776357fd3f767a7f7dc15aacfd6835bdf026e930ff",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p09-analysis-reporting-reporting-source-smoke-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-primary",
+      "pid": 720,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "d34ef3bdb506b1c7d0fb8413144f1ab358f68f5dcf2cbc6775650f1efaea7065",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p09-analysis-reporting-reporting-source-smoke-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 793,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "52d5b2ddd7507dcf12651d4786e660a3f5339748c4433ce12faa48171732ecb7",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p09-analysis-reporting-reporting-source-smoke-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 867,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "9517a270740c902176e2f4a5d5c937220c6277bd3393cc2b8a247544e11ca3c0",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p09-analysis-reporting-reporting-source-smoke-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 945,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "runtime": {
+    "network_name": "vslab-p09-analysis-reporting-reporting_source_smoke",
+    "project": "valkey-scale-lab",
+    "run_id": "P09_ANALYSIS_REPORTING-reporting_source_smoke-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "reporting_source_smoke",
+  "schema_version": "v1"
+}

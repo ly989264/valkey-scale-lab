@@ -1,0 +1,44 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "P08 records the absence explicitly and does not fabricate split-brain duration.",
+      "metric": "split_brain_duration_ms",
+      "reason": "The primary-stop failover gate did not measure a split-brain window.",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "report_index": "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+  "report_outputs": [
+    "artifacts/phases/P09_ANALYSIS_REPORTING/report/metrics.csv",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/report/missing_metrics.csv",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/report/baseline_comparison.csv",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/report/metric_chart.svg",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/report/report.md",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/report/index.html"
+  ],
+  "required_artifacts": [
+    "artifacts/phases/P09_ANALYSIS_REPORTING/phase_summary.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "Baseline comparison is initialized with NO_BASELINE_YET until a versioned baseline exists.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P09 analyzed prior real Valkey failover artifacts and rendered deterministic machine-readable, tabular, chart, HTML, and markdown report outputs without inventing missing metrics."
+}

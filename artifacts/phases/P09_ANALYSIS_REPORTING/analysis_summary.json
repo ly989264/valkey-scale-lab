@@ -1,0 +1,175 @@
+{
+  "artifact_type": "analysis_summary",
+  "baseline_comparison": {
+    "artifact_type": "baseline_comparison",
+    "baseline_source": {
+      "reason": "No versioned baseline artifact exists for the first analysis-reporting phase.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "comparisons": [
+      {
+        "baseline_value": null,
+        "current_value": 5,
+        "delta": null,
+        "metric": "nodes_observed_after_fault",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      },
+      {
+        "baseline_value": null,
+        "current_value": 408.125,
+        "delta": null,
+        "metric": "failover_latency_ms",
+        "status": "NO_BASELINE_YET",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "split_brain_duration_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": 0,
+        "delta": null,
+        "metric": "cleanup_resources_remaining",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      }
+    ],
+    "created_at": "2026-06-28T00:00:00Z",
+    "phase_id": "P09_ANALYSIS_REPORTING",
+    "producer": {
+      "name": "valkey-scale-lab",
+      "version": "0.0.0"
+    },
+    "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+    "schema_version": "v1",
+    "source_dir": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN",
+    "status": "NO_BASELINE_YET"
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "findings": [
+    {
+      "name": "source_phase",
+      "source_phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+      "source_run_id": "P08_FAILOVER_SPLIT_BRAIN-failover_setup-20260628",
+      "status": "PASS"
+    },
+    {
+      "cluster_state_observed": "ok",
+      "name": "real_valkey_evidence",
+      "nodes_observed": 5,
+      "real_valkey": true,
+      "status": "PASS",
+      "valkey_versions": [
+        "9.1.0"
+      ]
+    },
+    {
+      "failover_latency_ms": 408.125,
+      "name": "failover",
+      "old_primary_node_id": "e2126f4f1543a8f06b6f429a5647ce7b344bef4e",
+      "promoted_node_id": "e9ab2ea9eefb4276749c1f44ed32fc65dc3fe622",
+      "status": "PASS",
+      "target_logical_id": "shard-0000-primary"
+    },
+    {
+      "name": "cleanup",
+      "resources_remaining": [],
+      "status": "PASS"
+    }
+  ],
+  "metrics": [
+    {
+      "name": "nodes_observed_after_fault",
+      "status": "PASS",
+      "unit": "count",
+      "value": 5
+    },
+    {
+      "name": "failover_latency_ms",
+      "status": "PASS",
+      "unit": "ms",
+      "value": 408.125
+    },
+    {
+      "name": "split_brain_duration_ms",
+      "reason": "not_measured_by_primary_stop_gate",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "cleanup_resources_remaining",
+      "status": "PASS",
+      "unit": "count",
+      "value": 0
+    }
+  ],
+  "missing_metrics": [
+    {
+      "impact": "P08 records the absence explicitly and does not fabricate split-brain duration.",
+      "metric": "split_brain_duration_ms",
+      "reason": "The primary-stop failover gate did not measure a split-brain window.",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+  "schema_version": "v1",
+  "sidecars": [
+    {
+      "artifact_type": "baseline_comparison",
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/baseline_comparison.json",
+      "sha256": "d2ad6c7d2e8d0b114312a2b409451d6deaa4c5ed75aaa6f97be47910db887101"
+    }
+  ],
+  "source": {
+    "input_dir": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN",
+    "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+    "run_id": "P08_FAILOVER_SPLIT_BRAIN-failover_setup-20260628"
+  },
+  "source_artifacts": [
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+      "sha256": "6b13f0e39a6d486b0e6c6b2dfd02c62cf3c272027194da624ba3c1fb0c07c966"
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+      "sha256": "f11772a63e7817ce0156c39c69de8d97f398fe7c4d56b4a68d23ec5bf6a31064"
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_apply.json",
+      "sha256": "cbd7168f9160b2f3ef203e4daa22aacddbfcb58a22fc36fa0f09c4d082b8cc8d"
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_primary_stop_spec.json",
+      "sha256": "12dd50c54ad5a92f6ee817431ba130a4fb924d377ebce251c0f97829d83772d7"
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_report.json",
+      "sha256": "459f2539ea79f4889f3b6fb1a4c8f70d297d74cdd624cb8dd317a871fa67e36b"
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/phase_summary.json",
+      "sha256": "37d42516bcf1d280aaee119a2b00bc7c28888517258a9f05b49c02946270a0b3"
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/state_failover.json",
+      "sha256": "7812527cf5644344209a213e2fb067349b9cbf223cc70e00b123103d193b2af3"
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
+      "sha256": "ee839b8aaa22ab8e1c69482499bbf2e49fb6b8a57b7557b0ed801c5fb86df558"
+    }
+  ],
+  "status": "PASS"
+}

@@ -62,6 +62,7 @@ def create_scenario(
         ("P06_OBSERVABILITY_METRICS", "observability_smoke"),
         ("P07_FAULT_INJECTION_SANDBOX", "fault_sandbox_setup"),
         ("P08_FAILOVER_SPLIT_BRAIN", "failover_setup"),
+        ("P09_ANALYSIS_REPORTING", "reporting_source_smoke"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     run_id = _run_id(phase, scenario)
