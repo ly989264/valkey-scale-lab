@@ -1,0 +1,96 @@
+{
+  "cluster_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "745cf74fe6eab3db1b354e8103259b571eb56a07e37bb31843d59e64691d3967",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p11-stability-soak-stability-soak-smoke-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 4273,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "8baf7a2c72cbcc5bd182a243658dddb659b0babaa2c27aeef658a1a69fe80c44",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p11-stability-soak-stability-soak-smoke-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 4347,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "aa16942825b7b5aa51c65d09ef1e93a6e33b55ea4e83881b135343714e29adf1",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p11-stability-soak-stability-soak-smoke-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 4423,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "2b9eaa94680c899abc15a7798280782d84a99b5ab46c69051f8b51b045882237",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p11-stability-soak-stability-soak-smoke-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 4497,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "660d1c43671bd46572e62243d546c4b6f29eef3be65dc98a71051667589c565c",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p11-stability-soak-stability-soak-smoke-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 4573,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "79a331920ffea26366572098a57506db4c129c2e8a8fff67df853f264729ef79",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p11-stability-soak-stability-soak-smoke-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 4647,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P11_STABILITY_SOAK",
+  "runtime": {
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p11-stability-soak-stability_soak_smoke",
+    "project": "valkey-scale-lab",
+    "run_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "stability_soak_smoke",
+  "schema_version": "v1"
+}

@@ -1,0 +1,170 @@
+{
+  "artifact_type": "stability_report",
+  "baseline_comparison_path": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
+  "created_at": "2026-06-28T00:00:00Z",
+  "duration_seconds": 4.785493,
+  "metrics_timeseries_path": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
+  "phase_id": "P11_STABILITY_SOAK",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+  "scenario": "stability_soak_smoke",
+  "schema_version": "v1",
+  "soak_profile": {
+    "bounded": true,
+    "configured_max_nodes": 6,
+    "interval_count": 3,
+    "ops_per_interval": 12,
+    "total_operations_attempted": 36
+  },
+  "status": "PASS",
+  "summary": {
+    "baseline": {
+      "artifact_type": "stability_baseline_comparison",
+      "baseline_source": {
+        "reason": "No previous stability baseline artifact exists for this first soak phase.",
+        "status": "SKIPPED_WITH_REASON"
+      },
+      "comparisons": [
+        {
+          "baseline_value": null,
+          "current_value": 0,
+          "delta": null,
+          "metric": "error_count",
+          "status": "NO_BASELINE_YET"
+        },
+        {
+          "baseline_value": null,
+          "current_value": 25136,
+          "delta": null,
+          "metric": "max_memory_growth_bytes",
+          "status": "NO_BASELINE_YET"
+        }
+      ],
+      "created_at": "2026-06-28T00:00:00Z",
+      "phase_id": "P11_STABILITY_SOAK",
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "run_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+      "schema_version": "v1",
+      "status": "NO_BASELINE_YET"
+    },
+    "errors": {
+      "classification": "none",
+      "items": []
+    },
+    "leaks": {
+      "max_growth_bytes": 25136,
+      "nodes": [
+        {
+          "first_used_memory": 3043048,
+          "growth_bytes": 24688,
+          "last_used_memory": 3067736,
+          "logical_id": "shard-0000-primary",
+          "status": "PASS"
+        },
+        {
+          "first_used_memory": 2921232,
+          "growth_bytes": 24688,
+          "last_used_memory": 2945920,
+          "logical_id": "shard-0000-replica-00",
+          "status": "PASS"
+        },
+        {
+          "first_used_memory": 3068272,
+          "growth_bytes": 25136,
+          "last_used_memory": 3093408,
+          "logical_id": "shard-0001-primary",
+          "status": "PASS"
+        },
+        {
+          "first_used_memory": 2921744,
+          "growth_bytes": 24688,
+          "last_used_memory": 2946432,
+          "logical_id": "shard-0001-replica-00",
+          "status": "PASS"
+        },
+        {
+          "first_used_memory": 3018320,
+          "growth_bytes": 24688,
+          "last_used_memory": 3043008,
+          "logical_id": "shard-0002-primary",
+          "status": "PASS"
+        },
+        {
+          "first_used_memory": 2922064,
+          "growth_bytes": 24688,
+          "last_used_memory": 2946752,
+          "logical_id": "shard-0002-replica-00",
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    },
+    "metrics": {
+      "interval_count": 3,
+      "sample_count": 18,
+      "samples_per_interval": 6
+    },
+    "nodes_observed": 6,
+    "restarts": {
+      "events": [
+        {
+          "after": 0,
+          "before": 0,
+          "delta": 0,
+          "logical_id": "shard-0000-primary"
+        },
+        {
+          "after": 0,
+          "before": 0,
+          "delta": 0,
+          "logical_id": "shard-0000-replica-00"
+        },
+        {
+          "after": 0,
+          "before": 0,
+          "delta": 0,
+          "logical_id": "shard-0001-primary"
+        },
+        {
+          "after": 0,
+          "before": 0,
+          "delta": 0,
+          "logical_id": "shard-0001-replica-00"
+        },
+        {
+          "after": 0,
+          "before": 0,
+          "delta": 0,
+          "logical_id": "shard-0002-primary"
+        },
+        {
+          "after": 0,
+          "before": 0,
+          "delta": 0,
+          "logical_id": "shard-0002-replica-00"
+        }
+      ],
+      "total_restart_delta": 0
+    },
+    "workload": {
+      "attempted_operations": 36,
+      "completed_operations": 36,
+      "error_count": 0,
+      "latency_ms": {
+        "max": 78.899625,
+        "min": 50.2895,
+        "p50": 64.807437,
+        "p95": 72.695823,
+        "p99": 77.050852,
+        "sample_count": 36,
+        "unit": "ms"
+      }
+    }
+  }
+}

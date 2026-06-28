@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P11_STABILITY_SOAK",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-28T07:49:12Z",
+  "gate_result_path": "artifacts/gates/P11_STABILITY_SOAK/gate_result.json",
+  "gate_result_sha256": "a218c55a5996bc8012bbaa4b4c3930aafc7c58fca7bbe2f7bbf4d1d378154ad5",
+  "artifact_paths": [
+    "artifacts/phases/P11_STABILITY_SOAK/phase_summary.json",
+    "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+    "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+    "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+    "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
+    "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
+    "artifacts/phases/P11_STABILITY_SOAK/state_stability_soak_smoke.json"
+  ],
+  "risks": [
+    {
+      "risk": "Automatic soak duration is intentionally short for local CI bounds.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "Longer soak windows should remain explicit opt-in profiles."
+    }
+  ],
+  "rationale": "All P11 manifest gates passed with exact command text and matching log hashes. Required artifacts validated, real Valkey evidence proves six Valkey 9.1.x nodes with PASS probe and data path, stability artifacts encode bounded soak and first-run baseline semantics without fabricated baseline values, cleanup is PASS with no remaining P11-owned Docker resources, and safety rules are preserved."
+}

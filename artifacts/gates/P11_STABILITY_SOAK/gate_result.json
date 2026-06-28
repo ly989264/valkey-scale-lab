@@ -1,0 +1,91 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "gate_result",
+  "phase_id": "P11_STABILITY_SOAK",
+  "created_at": "2026-06-28T07:43:25.202735Z",
+  "runner": "scripts/codex_gate.py",
+  "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+  "status": "PASS",
+  "environment": {
+    "python_version": "3.9.6",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "cwd": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab"
+  },
+  "gates": [
+    {
+      "name": "harness_precheck",
+      "kind": "harness",
+      "command": "python3 scripts/codex_gate.py precheck --phase P11_STABILITY_SOAK",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T07:43:07.503896Z",
+      "finished_at": "2026-06-28T07:43:07.557717Z",
+      "duration_seconds": 0.053638,
+      "stdout_path": "artifacts/gates/P11_STABILITY_SOAK/stdout/harness_precheck.log",
+      "stderr_path": "artifacts/gates/P11_STABILITY_SOAK/stderr/harness_precheck.log",
+      "stdout_sha256": "3591d68c686880196094ce9a19dac5431d5124dac1b48f3726d50831604ab1da",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "safety_static_scan",
+      "kind": "safety",
+      "command": "python3 scripts/safety_scan.py",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T07:43:07.558455Z",
+      "finished_at": "2026-06-28T07:43:07.629313Z",
+      "duration_seconds": 0.070883,
+      "stdout_path": "artifacts/gates/P11_STABILITY_SOAK/stdout/safety_static_scan.log",
+      "stderr_path": "artifacts/gates/P11_STABILITY_SOAK/stderr/safety_static_scan.log",
+      "stdout_sha256": "f8fde750db39ced3e3a16fbca2feb217f0ddd15b8a1fa2e9ac507ded2231ac1b",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "stability_tests",
+      "kind": "unit",
+      "command": "python3 -m pytest -q tests/unit tests/stability tests/integration",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T07:43:07.629927Z",
+      "finished_at": "2026-06-28T07:43:08.010172Z",
+      "duration_seconds": 0.380292,
+      "stdout_path": "artifacts/gates/P11_STABILITY_SOAK/stdout/stability_tests.log",
+      "stderr_path": "artifacts/gates/P11_STABILITY_SOAK/stderr/stability_tests.log",
+      "stdout_sha256": "9cd8ed5985521bdaab22bee5053bc7e634bde6fb78526f59384bb6640281a033",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "stability_real_gate",
+      "kind": "real_valkey_e2e",
+      "command": "python3 scripts/valkey_e2e_gate.py --phase P11_STABILITY_SOAK --config templates/configs/single_mac_6node.yaml --scenario stability_soak_smoke --out artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T07:43:08.010877Z",
+      "finished_at": "2026-06-28T07:43:25.156255Z",
+      "duration_seconds": 17.145584,
+      "stdout_path": "artifacts/gates/P11_STABILITY_SOAK/stdout/stability_real_gate.log",
+      "stderr_path": "artifacts/gates/P11_STABILITY_SOAK/stderr/stability_real_gate.log",
+      "stdout_sha256": "f64f51695bbc4ee15d3f52f93427809aa629d613345cf5a01543650f1b2803e3",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "cleanup_report_check",
+      "kind": "cleanup",
+      "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T07:43:25.157201Z",
+      "finished_at": "2026-06-28T07:43:25.202255Z",
+      "duration_seconds": 0.045079,
+      "stdout_path": "artifacts/gates/P11_STABILITY_SOAK/stdout/cleanup_report_check.log",
+      "stderr_path": "artifacts/gates/P11_STABILITY_SOAK/stderr/cleanup_report_check.log",
+      "stdout_sha256": "79ca535fa349c8e2394a8d1707352fe1d69da4c1cba58d0c99ad5edae1c704b2",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}
