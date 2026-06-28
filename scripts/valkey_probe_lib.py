@@ -91,6 +91,7 @@ class Endpoint:
     password: str | None = None
     az_id: str | None = None
     role: str | None = None
+    container_ip: str | None = None
 
     @classmethod
     def from_node(cls, node: dict[str, Any]) -> "Endpoint":
@@ -101,6 +102,7 @@ class Endpoint:
             password=node.get("password"),
             az_id=node.get("az_id"),
             role=node.get("role"),
+            container_ip=node.get("container_ip"),
         )
 
 
@@ -200,10 +202,19 @@ def execute_cluster_command(endpoints: list[Endpoint], *args: Any, timeout: floa
             if not target:
                 raise
             host, port = target
-            ep = Endpoint(logical_id=f"redirect-{host}:{port}", host=host, port=port, password=ep.password)
+            ep = _redirect_endpoint(endpoints, host, port, ep.password)
             if exc.message.startswith("ASK"):
                 RespConnection(ep.host, ep.port, ep.password, timeout=timeout).execute("ASKING")
     raise RuntimeError("too many cluster redirects")
+
+
+def _redirect_endpoint(endpoints: list[Endpoint], host: str, port: int, password: str | None) -> Endpoint:
+    for endpoint in endpoints:
+        if endpoint.host == host and endpoint.port == port:
+            return endpoint
+        if endpoint.container_ip == host and port == 6379:
+            return endpoint
+    return Endpoint(logical_id=f"redirect-{host}:{port}", host=host, port=port, password=password)
 
 
 def load_state(path: Path) -> dict[str, Any]:
@@ -221,17 +232,28 @@ def endpoints_from_state(state: dict[str, Any]) -> list[Endpoint]:
 def wait_for_cluster_ok(endpoints: list[Endpoint], min_nodes: int, timeout_seconds: float = 60.0, interval: float = 1.0) -> tuple[bool, list[dict[str, Any]]]:
     deadline = time.monotonic() + timeout_seconds
     last: list[dict[str, Any]] = []
+    expected_role_counts = _expected_role_counts(endpoints)
     while time.monotonic() < deadline:
         probes = [probe_endpoint(ep) for ep in endpoints]
         last = probes
-        ok = [p for p in probes if _probe_has_full_membership(p, min_nodes)]
+        ok = [p for p in probes if _probe_has_full_membership(p, min_nodes, expected_role_counts)]
         if len(ok) >= min_nodes:
             return True, probes
         time.sleep(interval)
     return False, last
 
 
-def _probe_has_full_membership(probe: dict[str, Any], min_nodes: int) -> bool:
+def _expected_role_counts(endpoints: list[Endpoint]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for endpoint in endpoints:
+        role = getattr(endpoint, "role", None)
+        if role not in {"primary", "replica"}:
+            return {}
+        counts[role] = counts.get(role, 0) + 1
+    return counts
+
+
+def _probe_has_full_membership(probe: dict[str, Any], min_nodes: int, expected_role_counts: dict[str, int] | None = None) -> bool:
     if probe.get("status") != "PASS" or probe.get("cluster_state") != "ok":
         return False
     try:
@@ -243,10 +265,18 @@ def _probe_has_full_membership(probe: dict[str, Any], min_nodes: int) -> bool:
         return False
     if known_nodes < min_nodes or len(cluster_nodes) < min_nodes:
         return False
+    observed_role_counts: dict[str, int] = {}
     for node in cluster_nodes.values():
         flags = set(node.get("flags") or [])
         if flags.intersection({"fail", "handshake", "noaddr"}):
             return False
         if node.get("link_state") != "connected":
             return False
+        role = str(node.get("role"))
+        if role in {"primary", "replica"}:
+            observed_role_counts[role] = observed_role_counts.get(role, 0) + 1
+    if expected_role_counts:
+        for role, expected in expected_role_counts.items():
+            if observed_role_counts.get(role, 0) != expected:
+                return False
     return True

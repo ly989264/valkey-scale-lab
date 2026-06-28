@@ -33,6 +33,45 @@ def write_json(path: Path, obj: dict[str, Any]) -> None:
     path.write_text(json.dumps(obj, indent=2, sort_keys=False) + "\n", encoding="utf-8")
 
 
+def role_counts_from_probes(probes: list[dict[str, Any]]) -> dict[str, int]:
+    for probe in probes:
+        cluster_nodes = probe.get("cluster_nodes")
+        if probe.get("status") != "PASS" or not isinstance(cluster_nodes, dict):
+            continue
+        counts = {"primary": 0, "replica": 0, "handshake": 0, "fail": 0, "pfail": 0}
+        for node in cluster_nodes.values():
+            flags = set(node.get("flags") or [])
+            if "handshake" in flags:
+                counts["handshake"] += 1
+            if "fail" in flags:
+                counts["fail"] += 1
+            if "fail?" in flags or "pfail" in flags:
+                counts["pfail"] += 1
+            if node.get("link_state") != "connected" or flags.intersection({"handshake", "fail", "noaddr"}):
+                continue
+            role = str(node.get("role"))
+            if role in {"primary", "replica"}:
+                counts[role] += 1
+        return counts
+    return {"primary": 0, "replica": 0, "handshake": 0, "fail": 0, "pfail": 0}
+
+
+def node_processes_from_state(state: dict[str, Any]) -> list[dict[str, Any]]:
+    keys = [
+        "logical_id",
+        "nodehost_id",
+        "pid",
+        "client_port",
+        "cluster_bus_port",
+        "role",
+        "shard_id",
+        "data_dir",
+        "log_file",
+        "config_file",
+    ]
+    return [{key: node.get(key, "MISSING") for key in keys} for node in state.get("nodes", [])]
+
+
 def cleanup(phase: str, state_path: Path, artifact_dir: Path, timeout: int) -> tuple[str, Path, str, str, int]:
     cleanup_path = artifact_dir / "cleanup_report.json"
     cmd = [
@@ -111,18 +150,23 @@ def main() -> int:
     errors: list[str] = []
     valkey_versions: list[str] = []
     cluster_state = "unknown"
+    state: dict[str, Any] = {}
 
     try:
         proc = run_cmd(setup_cmd, timeout=args.setup_timeout)
         setup_stdout.write_text(proc.stdout, encoding="utf-8", errors="replace")
         setup_stderr.write_text(proc.stderr, encoding="utf-8", errors="replace")
+        if state_path.exists():
+            try:
+                state = load_state(state_path)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"setup wrote unreadable state file: {exc!r}")
         if proc.returncode != 0:
             errors.append(f"setup command failed exit={proc.returncode}")
         elif not state_path.exists():
             errors.append(f"setup did not write state file {state_path}")
         else:
             setup_status = "PASS"
-            state = load_state(state_path)
             runtime = state.get("runtime", {})
             if runtime.get("sandbox_network") is not True:
                 errors.append("state.runtime.sandbox_network must be true")
@@ -204,6 +248,11 @@ def main() -> int:
             "stderr_path": str(setup_stderr),
         },
         "probes": probes,
+        "runtime": state.get("runtime", {}),
+        "nodehosts": state.get("nodehosts", []),
+        "node_processes": node_processes_from_state(state),
+        "role_counts": role_counts_from_probes(probes),
+        "cluster_snapshots": state.get("cluster_snapshots", []),
         "cleanup": {
             "status": cleanup_status,
             "path": str(cleanup_path),

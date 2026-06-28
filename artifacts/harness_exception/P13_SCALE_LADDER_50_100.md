@@ -26,6 +26,12 @@ The scale rung artifact now records `cluster_known_nodes_observed`, `cluster_kno
 and `cluster_known_nodes_max`, and marks the rung `FAIL` unless every sampled node observes the
 expected node count.
 
+`scripts/valkey_e2e_gate.py` now also carries through process-runtime evidence from the state
+file: runtime type, nodehost containers, logical node process metadata, role counts, cluster
+snapshots, data-path result, and cleanup report path. This strengthens the real gate by making
+the P13 docker-contained process-per-node runtime auditable without relying on artifact presence
+alone.
+
 ## Before/After Behavior
 
 Before: 100 reachable Valkey endpoints split into 4-node or 6-node clusters could satisfy the
@@ -33,3 +39,6 @@ wrapper because all endpoints responded and at least one small cluster reported 
 
 After: the same fragmented run fails because no endpoint proves full 50-node or 100-node
 membership. The artifact view also fails the rung instead of reporting only the expected count.
+For the process runtime, a run is only credible when the evidence shows the expected Valkey
+process count, primary/replica role counts, clean cluster snapshots, data-path PASS, and cleanup
+PASS.

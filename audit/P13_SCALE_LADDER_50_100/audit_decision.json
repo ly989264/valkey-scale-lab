@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P13_SCALE_LADDER_50_100",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-28T16:26:43Z",
+  "gate_result_path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json",
+  "gate_result_sha256": "12b755de65c8e845ccba3aae89d8a3851a1230a590696b2a1337620a02eb1a64",
+  "artifact_paths": [
+    "artifacts/phases/P13_SCALE_LADDER_50_100/phase_summary.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json"
+  ],
+  "risks": [
+    {
+      "risk": "None identified from inspected evidence.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "P13 completes the automatic phase ceiling; P14 remains explicit opt-in only."
+    }
+  ],
+  "rationale": "All P13 manifest gates ran and passed; gate command text and log SHA256 values match; required artifacts exist and validate against their schemas; real Valkey evidence proves live Valkey 9.1.0 at 50 and 100 nodes with full membership, data-path PASS, clean role counts, and Docker-sandboxed runtime metadata; cleanup reports show no owned resources remaining and safety checks pass."
+}

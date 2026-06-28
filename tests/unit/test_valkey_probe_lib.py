@@ -45,11 +45,36 @@ def test_wait_for_cluster_ok_accepts_full_membership(monkeypatch) -> None:
     assert len(observed) == 100
 
 
-def _cluster_nodes(count: int) -> dict[str, dict[str, object]]:
+def test_wait_for_cluster_ok_rejects_master_only_when_replicas_expected(monkeypatch) -> None:
+    probe = {
+        "status": "PASS",
+        "cluster_state": "ok",
+        "cluster_known_nodes": 4,
+        "cluster_nodes": _cluster_nodes(4, role="primary"),
+    }
+    endpoints = [
+        valkey_probe_lib.Endpoint("p0", "127.0.0.1", 7000, role="primary"),
+        valkey_probe_lib.Endpoint("p1", "127.0.0.1", 7001, role="primary"),
+        valkey_probe_lib.Endpoint("r0", "127.0.0.1", 7002, role="replica"),
+        valkey_probe_lib.Endpoint("r1", "127.0.0.1", 7003, role="replica"),
+    ]
+
+    monkeypatch.setattr(valkey_probe_lib, "probe_endpoint", lambda endpoint: dict(probe))
+    monkeypatch.setattr(valkey_probe_lib.time, "sleep", lambda _: None)
+
+    ok, observed = valkey_probe_lib.wait_for_cluster_ok(endpoints, min_nodes=4, timeout_seconds=0.01)
+
+    assert ok is False
+    assert len(observed) == 4
+
+
+def _cluster_nodes(count: int, role: str = "primary") -> dict[str, dict[str, object]]:
+    flags = ["master"] if role == "primary" else ["slave"]
     return {
         f"node-{index}": {
-            "flags": ["master"],
+            "flags": flags,
             "link_state": "connected",
+            "role": role,
         }
         for index in range(count)
     }

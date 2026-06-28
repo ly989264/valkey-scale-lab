@@ -1,0 +1,30 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [],
+  "phase_id": "P13_SCALE_LADDER_50_100",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P13_SCALE_LADDER_50_100/phase_summary.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "Scale ladder comparison reaches the default 100-node ceiling on a single Docker host; host-specific resource limits may vary.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P13_SCALE_LADDER_50_100-scale-ladder-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P13 completes the default scale ceiling by running real 50-node and 100-node Valkey scale rungs with resource preflight, independent e2e evidence, cleanup protection, baseline snapshots, and a scale ladder comparison artifact."
+}

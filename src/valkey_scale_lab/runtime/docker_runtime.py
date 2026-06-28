@@ -94,8 +94,22 @@ def create_scenario(
     node_count = int(cluster["shards"]) * (1 + int(cluster["replicas_per_shard"]))
     if not _scenario_node_count_allowed(phase, scenario, node_count):
         raise DockerRuntimeError(f"{phase}/{scenario} does not allow {node_count} nodes")
-    ports = [int(cluster["port_base"]) + idx for idx in range(node_count)]
+    nodes = _node_specs(config, phase, scenario, run_id)
+    ports = [node["client_port"] for node in nodes]
+    if _uses_docker_process_runtime(phase, scenario):
+        ports.extend(node["cluster_bus_port"] for node in nodes)
     _check_ports_free(ports)
+
+    if _uses_docker_process_runtime(phase, scenario):
+        return _create_process_scenario(
+            phase=phase,
+            scenario=scenario,
+            run_id=run_id,
+            config=config,
+            artifacts=artifacts,
+            state_out=Path(state_out),
+            nodes=nodes,
+        )
 
     network_name = _network_name(phase, scenario)
     cleanup_by_label(phase=phase, run_id=run_id)
@@ -114,7 +128,6 @@ def create_scenario(
         timeout=120,
     )
 
-    nodes = _node_specs(config, phase, scenario, run_id)
     orchestrator = None
     if phase == "P10_MULTI_HOST_ORCHESTRATION":
         hosts = validate_inventory(config)
@@ -155,8 +168,15 @@ def create_scenario(
             write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         _write_state(Path(state_out), state)
         return state
-    except Exception:
-        cleanup_by_label(phase=phase, run_id=run_id)
+    except Exception as exc:
+        try:
+            snapshots.append(_process_cluster_summary("failure", nodes))
+            state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
+            state["runtime"]["setup_error"] = repr(exc)
+            _write_state(state_out, state)
+            _cleanup_process_scenario(state=state, artifacts_dir=artifacts, out_path=artifacts / "cleanup_report.json")
+        except Exception:
+            cleanup_by_label(phase=phase, run_id=run_id)
         raise
 
 
@@ -164,6 +184,8 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     state = json.loads(Path(state_path).read_text(encoding="utf-8"))
     phase = state.get("phase_id", "P03_LOCAL_DOCKER_VALKEY")
     run_id = state.get("runtime", {}).get("run_id", _run_id(str(phase), str(state.get("scenario", "cluster_smoke"))))
+    if state.get("runtime", {}).get("type") == "docker_process":
+        return _cleanup_process_scenario(state=state, artifacts_dir=Path(artifacts_dir), out_path=Path(out_path))
     actions = cleanup_by_label(phase=phase, run_id=run_id)
     actions.extend(_cleanup_fault_state_files(Path(artifacts_dir)))
     resources_remaining = owned_resources(phase=phase, run_id=run_id)
@@ -240,6 +262,251 @@ def _runtime_state(
     }
 
 
+def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
+    return phase == "P13_SCALE_LADDER_50_100" and scenario in {"scale_50", "scale_100"}
+
+
+def _create_process_scenario(
+    *,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    config: dict[str, Any],
+    artifacts: Path,
+    state_out: Path,
+    nodes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    network_name = _network_name(phase, scenario)
+    cleanup_by_label(phase=phase, run_id=run_id)
+    run_docker(
+        [
+            "network",
+            "create",
+            "--label",
+            f"{LABEL_PREFIX}.project={PROJECT}",
+            "--label",
+            f"{LABEL_PREFIX}.phase={phase}",
+            "--label",
+            f"{LABEL_PREFIX}.run_id={run_id}",
+            network_name,
+        ],
+        timeout=120,
+    )
+    nodehosts = _process_nodehosts(config, nodes, phase, scenario, run_id)
+    snapshots: list[dict[str, Any]] = []
+    try:
+        for nodehost in nodehosts:
+            container_id = _start_nodehost(nodehost, network_name, config["runtime"]["valkey_image"], phase, scenario, run_id)
+            nodehost["container_id"] = container_id
+            nodehost["container_ip"] = _container_ip(container_id, network_name)
+        nodehost_by_id = {nodehost["nodehost_id"]: nodehost for nodehost in nodehosts}
+        for node in nodes:
+            nodehost = nodehost_by_id[node["nodehost_id"]]
+            _prepare_process_node(node, nodehost, artifacts, run_id)
+            _start_process_node(node)
+        _wait_process_nodes_ready(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0))
+        state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
+        _write_state(state_out, state)
+        operations, snapshots = _configure_process_cluster(nodes)
+        snapshots_path = artifacts / f"cluster_snapshots_{scenario}.json"
+        snapshots_path.write_text(json.dumps(snapshots, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
+        state["runtime"]["cluster_snapshot_path"] = snapshots_path.as_posix()
+        state["runtime"]["operations"] = operations
+        _write_state(state_out, state)
+        write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        return state
+    except Exception:
+        cleanup_by_label(phase=phase, run_id=run_id)
+        raise
+
+
+def _process_nodehosts(
+    config: dict[str, Any],
+    nodes: list[dict[str, Any]],
+    phase: str,
+    scenario: str,
+    run_id: str,
+) -> list[dict[str, Any]]:
+    safe_run = run_id.lower().replace("_", "-")
+    azs = [az for az in config["network"]["azs"] if any(node["az_id"] == az for node in nodes)]
+    nodehosts: list[dict[str, Any]] = []
+    for ordinal, az in enumerate(azs):
+        hosted = [node for node in nodes if node["az_id"] == az]
+        nodehost_id = f"nodehost-{az}"
+        for node in hosted:
+            node["runtime_type"] = "docker_process"
+            node["nodehost_id"] = nodehost_id
+        ports = sorted([node["client_port"] for node in hosted] + [node["cluster_bus_port"] for node in hosted])
+        nodehosts.append(
+            {
+                "nodehost_id": nodehost_id,
+                "az_id": az,
+                "host_id": "local",
+                "ordinal": ordinal,
+                "container_name": f"vslab-{safe_run}-{nodehost_id}",
+                "ports": ports,
+                "logical_node_count": len(hosted),
+            }
+        )
+    return nodehosts
+
+
+def _start_nodehost(
+    nodehost: dict[str, Any],
+    network_name: str,
+    image: str,
+    phase: str,
+    scenario: str,
+    run_id: str,
+) -> str:
+    args = [
+        "run",
+        "-d",
+        "--name",
+        nodehost["container_name"],
+        "--network",
+        network_name,
+        "--label",
+        f"{LABEL_PREFIX}.project={PROJECT}",
+        "--label",
+        f"{LABEL_PREFIX}.phase={phase}",
+        "--label",
+        f"{LABEL_PREFIX}.run_id={run_id}",
+        "--label",
+        f"{LABEL_PREFIX}.scenario={scenario}",
+        "--label",
+        f"{LABEL_PREFIX}.nodehost_id={nodehost['nodehost_id']}",
+    ]
+    for port in nodehost["ports"]:
+        args.extend(["-p", f"127.0.0.1:{port}:{port}"])
+    args.extend([image, "sleep", "infinity"])
+    return run_docker(args, timeout=180).stdout.strip()
+
+
+def _prepare_process_node(node: dict[str, Any], nodehost: dict[str, Any], artifacts: Path, run_id: str) -> None:
+    data_dir = f"/tmp/valkey-scale-lab/{run_id}/{node['logical_id']}"
+    config_file = f"{data_dir}/valkey.conf"
+    log_file = f"{data_dir}/valkey.log"
+    local_config_dir = artifacts / "node_configs"
+    local_config_dir.mkdir(parents=True, exist_ok=True)
+    local_config = local_config_dir / f"{node['logical_id']}.conf"
+    config_text = "\n".join(
+        [
+            f"port {node['client_port']}",
+            "bind 0.0.0.0",
+            "protected-mode no",
+            "cluster-enabled yes",
+            "cluster-config-file nodes.conf",
+            f"cluster-node-timeout {node.get('cluster_node_timeout', '60000')}",
+            f"cluster-port {node['cluster_bus_port']}",
+            f"cluster-announce-ip {nodehost['container_ip']}",
+            f"cluster-announce-port {node['client_port']}",
+            f"cluster-announce-bus-port {node['cluster_bus_port']}",
+            "appendonly no",
+            f"dir {data_dir}",
+            "daemonize yes",
+            f"pidfile {data_dir}/valkey.pid",
+            f"logfile {log_file}",
+            "",
+        ]
+    )
+    local_config.write_text(config_text, encoding="utf-8")
+    node.update(
+        {
+            "nodehost_container_id": nodehost["container_id"],
+            "nodehost_container_name": nodehost["container_name"],
+            "nodehost_container_ip": nodehost["container_ip"],
+            "container_id": nodehost["container_id"],
+            "container_name": nodehost["container_name"],
+            "container_ip": nodehost["container_ip"],
+            "data_dir": data_dir,
+            "log_file": log_file,
+            "config_file": config_file,
+            "config_artifact_file": local_config.as_posix(),
+        }
+    )
+    run_docker(["exec", nodehost["container_name"], "mkdir", "-p", data_dir], timeout=30)
+    run_docker(["cp", local_config.as_posix(), f"{nodehost['container_name']}:{config_file}"], timeout=30)
+
+
+def _start_process_node(node: dict[str, Any]) -> None:
+    run_docker(["exec", node["nodehost_container_name"], "valkey-server", node["config_file"]], timeout=30)
+    deadline = time.monotonic() + 15
+    while time.monotonic() < deadline:
+        result = run_docker(["exec", node["nodehost_container_name"], "cat", f"{node['data_dir']}/valkey.pid"], timeout=5, check=False)
+        if result.returncode == 0 and result.stdout.strip():
+            node["pid"] = int(result.stdout.strip())
+            return
+        time.sleep(0.5)
+    raise DockerRuntimeError(f"{node['logical_id']} did not write pid file")
+
+
+def _process_runtime_state(
+    phase: str,
+    scenario: str,
+    run_id: str,
+    network_name: str,
+    config: dict[str, Any],
+    nodehosts: list[dict[str, Any]],
+    nodes: list[dict[str, Any]],
+    snapshots: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "schema_version": "v1",
+        "cluster_id": run_id,
+        "phase_id": phase,
+        "scenario": scenario,
+        "runtime": {
+            "type": "docker_process",
+            "sandbox_network": True,
+            "network_name": network_name,
+            "run_id": run_id,
+            "project": PROJECT,
+            "nodehost_count": len(nodehosts),
+            "logical_node_count": len(nodes),
+        },
+        "nodehosts": [
+            {
+                "nodehost_id": nodehost["nodehost_id"],
+                "az_id": nodehost["az_id"],
+                "host_id": nodehost["host_id"],
+                "container_id": nodehost["container_id"],
+                "container_name": nodehost["container_name"],
+                "container_ip": nodehost["container_ip"],
+                "ports": nodehost["ports"],
+                "logical_node_count": nodehost["logical_node_count"],
+            }
+            for nodehost in nodehosts
+        ],
+        "nodes": [
+            {
+                "logical_id": node["logical_id"],
+                "nodehost_id": node["nodehost_id"],
+                "host_id": node.get("host_id", "local"),
+                "host": "127.0.0.1",
+                "client_port": node["client_port"],
+                "cluster_bus_port": node["cluster_bus_port"],
+                "az_id": node["az_id"],
+                "role": node["role"],
+                "shard_id": node["shard_id"],
+                "pid": node["pid"],
+                "data_dir": node["data_dir"],
+                "log_file": node["log_file"],
+                "config_file": node["config_file"],
+                "config_artifact_file": node["config_artifact_file"],
+                "container_id": node["nodehost_container_id"],
+                "container_name": node["nodehost_container_name"],
+                "container_ip": node["nodehost_container_ip"],
+                "nodehost_container_name": node["nodehost_container_name"],
+                "nodehost_container_ip": node["nodehost_container_ip"],
+            }
+            for node in nodes
+        ],
+        "cluster_snapshots": snapshots,
+    }
+
+
 def _write_state(path: Path, state: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -292,6 +559,88 @@ def cleanup_by_label(*, phase: str, run_id: str) -> list[dict[str, Any]]:
     return actions
 
 
+def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out_path: Path) -> dict[str, Any]:
+    phase = str(state.get("phase_id", "P13_SCALE_LADDER_50_100"))
+    run_id = str(state.get("runtime", {}).get("run_id", _run_id(phase, str(state.get("scenario", "scale_50")))))
+    actions: list[dict[str, Any]] = []
+    nodehosts = {nodehost["nodehost_id"]: nodehost for nodehost in state.get("nodehosts", [])}
+    nodes = list(state.get("nodes", []))
+    for node in nodes:
+        container = str(node.get("nodehost_container_name") or node.get("container_name"))
+        pid = str(node.get("pid"))
+        kill = run_docker(["exec", container, "kill", "-TERM", pid], timeout=10, check=False)
+        actions.append(
+            {
+                "type": "valkey_process",
+                "id": node.get("logical_id", pid),
+                "nodehost_id": node.get("nodehost_id", "MISSING"),
+                "pid": node.get("pid", "MISSING"),
+                "action": "terminate",
+                "status": "PASS" if kill.returncode == 0 else "SKIPPED_WITH_REASON",
+                "stderr": kill.stderr.strip(),
+            }
+        )
+    for node in nodes:
+        container = str(node.get("nodehost_container_name") or node.get("container_name"))
+        pid = str(node.get("pid"))
+        gone = _wait_container_pid_gone(container, pid, timeout=15.0)
+        actions.append(
+            {
+                "type": "valkey_process",
+                "id": node.get("logical_id", pid),
+                "nodehost_id": node.get("nodehost_id", "MISSING"),
+                "pid": node.get("pid", "MISSING"),
+                "action": "verify_exit",
+                "status": "PASS" if gone else "FAIL",
+            }
+        )
+    for nodehost in nodehosts.values():
+        container = str(nodehost["container_name"])
+        pgrep = run_docker(["exec", container, "pgrep", "-x", "valkey-server"], timeout=10, check=False)
+        actions.append(
+            {
+                "type": "nodehost",
+                "id": nodehost["nodehost_id"],
+                "container_name": container,
+                "action": "verify_no_valkey_processes",
+                "status": "PASS" if pgrep.returncode != 0 else "FAIL",
+                "stdout": pgrep.stdout.strip(),
+                "stderr": pgrep.stderr.strip(),
+            }
+        )
+    actions.extend(cleanup_by_label(phase=phase, run_id=run_id))
+    actions.extend(_cleanup_fault_state_files(artifacts_dir))
+    resources_remaining = owned_resources(phase=phase, run_id=run_id)
+    report = {
+        "schema_version": "v1",
+        "artifact_type": "cleanup_report",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if not resources_remaining and all(action.get("status") != "FAIL" for action in actions) else "FAIL",
+        "resources_remaining": resources_remaining,
+        "cleanup_actions": actions,
+        "artifacts_dir": str(artifacts_dir),
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    scenario = state.get("scenario")
+    if scenario:
+        (out_path.parent / f"cleanup_report_{scenario}.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return report
+
+
+def _wait_container_pid_gone(container: str, pid: str, timeout: float) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        result = run_docker(["exec", container, "kill", "-0", pid], timeout=5, check=False)
+        if result.returncode != 0:
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def owned_resources(*, phase: str, run_id: str) -> list[dict[str, Any]]:
     label_args = ["--filter", f"label={LABEL_PREFIX}.project={PROJECT}", "--filter", f"label={LABEL_PREFIX}.phase={phase}", "--filter", f"label={LABEL_PREFIX}.run_id={run_id}"]
     resources: list[dict[str, Any]] = []
@@ -342,6 +691,7 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
         "az_id": az_id,
         "ordinal": ordinal,
         "client_port": int(cluster["port_base"]) + ordinal,
+        "cluster_bus_port": int(cluster.get("cluster_bus_port_base", int(cluster["port_base"]) + 10000)) + ordinal,
         "container_name": f"vslab-{safe_run}-{logical_id}",
         "phase": phase,
         "scenario": scenario,
@@ -428,6 +778,312 @@ def _configure_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return operations
 
 
+def run_node_cli(node: dict[str, Any], *args: Any, timeout: int = 60, check: bool = True) -> str:
+    if node.get("runtime_type") == "docker_process" or node.get("nodehost_container_name"):
+        result = run_docker(
+            ["exec", node["nodehost_container_name"], "valkey-cli", "-p", str(node["client_port"]), *[str(arg) for arg in args]],
+            timeout=timeout,
+            check=check,
+        )
+        return result.stdout.strip()
+    return run_container_cli(node["container_name"], *args, timeout=timeout, check=check)
+
+
+def run_node_cluster_cli(node: dict[str, Any], *args: Any, timeout: int = 60, check: bool = True) -> str:
+    if node.get("runtime_type") == "docker_process" or node.get("nodehost_container_name"):
+        result = run_docker(
+            ["exec", node["nodehost_container_name"], "valkey-cli", "-c", "-p", str(node["client_port"]), *[str(arg) for arg in args]],
+            timeout=timeout,
+            check=check,
+        )
+        return result.stdout.strip()
+    return run_container_cluster_cli(node["container_name"], *args, timeout=timeout, check=check)
+
+
+def _configure_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    operations: list[dict[str, Any]] = []
+    snapshots: list[dict[str, Any]] = []
+    timeout = _scale_timeout(nodes, floor=300.0, per_node=8.0)
+    primaries = [node for node in nodes if node["role"] == "primary"]
+    replicas = [node for node in nodes if node["role"] == "replica"]
+    first = primaries[0]
+
+    meet_started = time.monotonic()
+    for expected, primary in enumerate(primaries[1:], start=2):
+        run_node_cli(first, "CLUSTER", "MEET", primary["nodehost_container_ip"], primary["client_port"], timeout=30)
+        _wait_process_integrated(first, expected=expected, timeout=90.0)
+    _wait_process_known(primaries, expected=len(primaries), timeout=timeout)
+    snapshots.append(_process_cluster_summary("after_meet_primaries", nodes))
+    operations.append(_operation("meet_primaries", "PASS", meet_started, snapshots[-1]))
+
+    slots_started = time.monotonic()
+    for primary, (start, end) in zip(primaries, _slot_ranges(len(primaries))):
+        _add_slots_node(primary, start, end)
+    _wait_process_slots_assigned(primaries, timeout=timeout)
+    _wait_process_cluster_ok(primaries, timeout=timeout)
+    snapshots.append(_process_cluster_summary("after_add_slots", nodes))
+    operations.append(_operation("add_slots", "PASS", slots_started, snapshots[-1]))
+
+    replica_started = time.monotonic()
+    primary_ids = {node["shard_id"]: run_node_cli(node, "CLUSTER", "MYID", timeout=30) for node in primaries}
+    primary_by_shard = {node["shard_id"]: node for node in primaries}
+    for expected, replica in enumerate(replicas, start=len(primaries) + 1):
+        primary = primary_by_shard[replica["shard_id"]]
+        run_node_cli(first, "CLUSTER", "MEET", replica["nodehost_container_ip"], replica["client_port"], timeout=30)
+        _wait_process_integrated(first, expected=expected, timeout=90.0)
+        run_node_cli(replica, "CLUSTER", "MEET", primary["nodehost_container_ip"], primary["client_port"], timeout=30, check=False)
+        _wait_process_knows_node_id(replica, primary_ids[replica["shard_id"]], timeout=90.0)
+        _replicate_process_node(replica, primary_ids[replica["shard_id"]], timeout=90.0)
+        _wait_process_replica_of(replica, primary_ids[replica["shard_id"]], timeout=90.0)
+    _wait_process_known(nodes, expected=len(nodes), timeout=timeout)
+    _wait_process_cluster_ok(nodes, timeout=timeout)
+    _wait_process_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout)
+    snapshots.append(_process_cluster_summary("after_add_replicas", nodes))
+    operations.append(_operation("add_replicas", "PASS", replica_started, snapshots[-1]))
+
+    final_started = time.monotonic()
+    _wait_process_snapshot_clean(nodes, expected_nodes=len(nodes), expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout)
+    snapshots.append(_process_cluster_summary("final", nodes))
+    operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
+    return operations, snapshots
+
+
+def _add_slots_node(node: dict[str, Any], start: int, end: int) -> None:
+    batch: list[int] = []
+    for slot in range(start, end + 1):
+        batch.append(slot)
+        if len(batch) == 500:
+            run_node_cli(node, "CLUSTER", "ADDSLOTS", *batch, timeout=60)
+            batch = []
+    if batch:
+        run_node_cli(node, "CLUSTER", "ADDSLOTS", *batch, timeout=60)
+
+
+def _wait_process_nodes_ready(nodes: list[dict[str, Any]], timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        ready = 0
+        for node in nodes:
+            try:
+                if run_node_cli(node, "PING", timeout=5) == "PONG":
+                    ready += 1
+            except Exception:
+                pass
+        if ready == len(nodes):
+            return
+        time.sleep(1)
+    raise DockerRuntimeError(f"process runtime nodes ready timeout reached {ready}/{len(nodes)}")
+
+
+def _wait_process_known(nodes: list[dict[str, Any]], expected: int, timeout: float) -> None:
+    _wait_process_predicate(nodes, timeout, f"cluster_known_nodes did not converge to {expected}", lambda snap: snap["known_nodes"] == expected)
+
+
+def _wait_process_cluster_ok(nodes: list[dict[str, Any]], timeout: float) -> None:
+    _wait_process_predicate(nodes, timeout, "cluster_state did not reach ok", lambda snap: snap["cluster_state"] == "ok")
+
+
+def _wait_process_slots_assigned(nodes: list[dict[str, Any]], timeout: float) -> None:
+    _wait_process_predicate(nodes, timeout, "cluster slots were not fully assigned", lambda snap: snap["slots_assigned"] == 16384 and snap["slots_ok"] == 16384 and snap["slots_fail"] == 0)
+
+
+def _wait_process_role_counts(nodes: list[dict[str, Any]], *, expected_primaries: int, expected_replicas: int, timeout: float) -> None:
+    _wait_process_predicate(
+        nodes,
+        timeout,
+        f"cluster role counts did not converge to {expected_primaries} primaries and {expected_replicas} replicas",
+        lambda snap: snap["primary_count"] == expected_primaries and snap["replica_count"] == expected_replicas,
+    )
+
+
+def _wait_process_snapshot_clean(
+    nodes: list[dict[str, Any]],
+    *,
+    expected_nodes: int,
+    expected_primaries: int,
+    expected_replicas: int,
+    timeout: float,
+) -> None:
+    def clean(snap: dict[str, Any]) -> bool:
+        return (
+            snap["cluster_state"] == "ok"
+            and snap["known_nodes"] == expected_nodes
+            and snap["primary_count"] == expected_primaries
+            and snap["replica_count"] == expected_replicas
+            and snap["handshake_count"] == 0
+            and snap["fail_count"] == 0
+            and snap["pfail_count"] == 0
+            and snap["slots_assigned"] == 16384
+            and snap["slots_ok"] == 16384
+            and snap["slots_fail"] == 0
+        )
+
+    _wait_process_predicate(nodes, timeout, "cluster clean snapshot did not converge", clean)
+
+
+def _wait_process_predicate(nodes: list[dict[str, Any]], timeout: float, message: str, predicate: Any) -> None:
+    deadline = time.monotonic() + timeout
+    last: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        snapshots = [_process_node_snapshot(node) for node in nodes]
+        failing = [snap for snap in snapshots if snap.get("probe_status") != "PASS" or not predicate(snap)]
+        if not failing:
+            return
+        last = failing[0]
+        time.sleep(1)
+    raise DockerRuntimeError(f"{message}; last_snapshot={last}")
+
+
+def _wait_process_integrated(node: dict[str, Any], expected: int, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    last: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        snap = _process_node_snapshot(node)
+        last = snap
+        if snap["known_nodes"] >= expected and snap["handshake_count"] == 0 and snap["fail_count"] == 0 and snap["pfail_count"] == 0:
+            return
+        time.sleep(1)
+    raise DockerRuntimeError(f"cluster meet did not integrate at least {expected} nodes; last_snapshot={last}")
+
+
+def _replicate_process_node(node: dict[str, Any], master_id: str, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    last_error = ""
+    while time.monotonic() < deadline:
+        result = run_docker(
+            ["exec", node["nodehost_container_name"], "valkey-cli", "-p", str(node["client_port"]), "CLUSTER", "REPLICATE", master_id],
+            timeout=30,
+            check=False,
+        )
+        if result.returncode == 0:
+            return
+        last_error = result.stderr.strip() or result.stdout.strip()
+        time.sleep(2)
+    raise DockerRuntimeError(f"CLUSTER REPLICATE did not succeed for {node['logical_id']}: {last_error}")
+
+
+def _wait_process_knows_node_id(node: dict[str, Any], node_id: str, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    last_snapshot: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        try:
+            text = run_node_cli(node, "CLUSTER", "NODES", timeout=5)
+            if any(line.startswith(node_id + " ") for line in text.splitlines()):
+                return
+            last_snapshot = _process_node_snapshot(node)
+        except Exception:
+            pass
+        time.sleep(1)
+    raise DockerRuntimeError(f"{node['logical_id']} did not learn node id {node_id}; last_snapshot={last_snapshot}")
+
+
+def _wait_process_replica_of(node: dict[str, Any], master_id: str, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if _process_node_is_replica_of(node, master_id):
+            return
+        time.sleep(1)
+    raise DockerRuntimeError(f"{node['logical_id']} did not become replica of {master_id}")
+
+
+def _process_node_is_replica_of(node: dict[str, Any], master_id: str) -> bool:
+    text = run_node_cli(node, "CLUSTER", "NODES", timeout=5)
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 8 or "myself" not in parts[2].split(","):
+            continue
+        flags = set(parts[2].split(","))
+        return ("slave" in flags or "replica" in flags) and parts[3] == master_id and parts[7] == "connected"
+    return False
+
+
+def _process_node_snapshot(node: dict[str, Any]) -> dict[str, Any]:
+    try:
+        info = _parse_info(run_node_cli(node, "CLUSTER", "INFO", timeout=5))
+        nodes_text = run_node_cli(node, "CLUSTER", "NODES", timeout=5)
+        counts = _cluster_node_text_counts(nodes_text)
+        return {
+            "logical_id": node["logical_id"],
+            "probe_status": "PASS",
+            "cluster_state": info.get("cluster_state", "unknown"),
+            "known_nodes": _int_or_zero(info.get("cluster_known_nodes")),
+            "primary_count": counts["primary_count"],
+            "replica_count": counts["replica_count"],
+            "handshake_count": counts["handshake_count"],
+            "fail_count": counts["fail_count"],
+            "pfail_count": counts["pfail_count"],
+            "slots_assigned": _int_or_zero(info.get("cluster_slots_assigned")),
+            "slots_ok": _int_or_zero(info.get("cluster_slots_ok")),
+            "slots_fail": _int_or_zero(info.get("cluster_slots_fail")),
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "logical_id": node["logical_id"],
+            "probe_status": "FAIL",
+            "error": repr(exc),
+            "cluster_state": "unknown",
+            "known_nodes": 0,
+            "primary_count": 0,
+            "replica_count": 0,
+            "handshake_count": 0,
+            "fail_count": 0,
+            "pfail_count": 0,
+            "slots_assigned": 0,
+            "slots_ok": 0,
+            "slots_fail": 0,
+        }
+
+
+def _cluster_node_text_counts(text: str) -> dict[str, int]:
+    counts = {"primary_count": 0, "replica_count": 0, "handshake_count": 0, "fail_count": 0, "pfail_count": 0}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 8:
+            continue
+        flags = set(parts[2].split(","))
+        if "handshake" in flags:
+            counts["handshake_count"] += 1
+        if "fail" in flags:
+            counts["fail_count"] += 1
+        if "fail?" in flags or "pfail" in flags:
+            counts["pfail_count"] += 1
+        if parts[7] != "connected" or flags.intersection({"handshake", "fail", "noaddr"}):
+            continue
+        if "master" in flags:
+            counts["primary_count"] += 1
+        elif "slave" in flags or "replica" in flags:
+            counts["replica_count"] += 1
+    return counts
+
+
+def _process_cluster_summary(label: str, nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    samples = [_process_node_snapshot(node) for node in nodes]
+    return {
+        "label": label,
+        "node_count": len(nodes),
+        "sample_count": len(samples),
+        "known_nodes": min((sample["known_nodes"] for sample in samples), default=0),
+        "known_nodes_max": max((sample["known_nodes"] for sample in samples), default=0),
+        "primary_count": min((sample["primary_count"] for sample in samples), default=0),
+        "replica_count": min((sample["replica_count"] for sample in samples), default=0),
+        "handshake_count": max((sample["handshake_count"] for sample in samples), default=0),
+        "fail_count": max((sample["fail_count"] for sample in samples), default=0),
+        "pfail_count": max((sample["pfail_count"] for sample in samples), default=0),
+        "slots_assigned": min((sample["slots_assigned"] for sample in samples), default=0),
+        "slots_ok": min((sample["slots_ok"] for sample in samples), default=0),
+        "slots_fail": max((sample["slots_fail"] for sample in samples), default=0),
+        "cluster_states": sorted({sample["cluster_state"] for sample in samples}),
+        "samples": samples,
+    }
+
+
+def _int_or_zero(value: Any) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
 def _configure_large_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     operations: list[dict[str, Any]] = []
     node_timeout = _scale_timeout(nodes, floor=60.0, per_node=2.0)
@@ -437,59 +1093,78 @@ def _configure_large_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]
     primaries = [node for node in nodes if node["role"] == "primary"]
     replicas = [node for node in nodes if node["role"] == "replica"]
 
-    meet_started = time.monotonic()
-    _incremental_meet(first, primaries, timeout=converge_timeout)
+    create_started = time.monotonic()
+    create_output = _create_large_cluster(primaries, replicas, timeout=converge_timeout)
+    _wait_cluster_known(nodes, expected=len(nodes), timeout=converge_timeout)
+    _wait_cluster_slots_assigned(nodes, timeout=converge_timeout)
+    _wait_cluster_ok(nodes, timeout=converge_timeout)
+    _wait_cluster_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=converge_timeout)
     operations.append(
         _operation(
-            "meet_primaries",
+            "cluster_create",
             "PASS",
-            meet_started,
+            create_started,
             {
-                "nodes_joined": len(primaries) - 1,
-                "cluster_known_nodes": _cluster_known_nodes(first),
-            },
-        )
-    )
-
-    slots_started = time.monotonic()
-    for primary, (start, end) in zip(primaries, _slot_ranges(len(primaries))):
-        _add_slots(primary["container_name"], start, end)
-    _wait_cluster_slots_assigned([first], timeout=converge_timeout)
-    _wait_cluster_ok([first], timeout=converge_timeout)
-    operations.append(_operation("add_slots", "PASS", slots_started, {"slots_assigned": 16384, "primary_count": len(primaries)}))
-
-    replica_started = time.monotonic()
-    primary_ids = {node["shard_id"]: run_container_cli(node["container_name"], "CLUSTER", "MYID") for node in primaries}
-    integrated_expected = len(primaries)
-    for replica in replicas:
-        master = next(node for node in primaries if node["shard_id"] == replica["shard_id"])
-        _meet_pair(first, replica)
-        run_docker(
-            ["exec", replica["container_name"], "valkey-cli", "-p", "6379", "CLUSTER", "MEET", master["container_ip"], "6379"],
-            timeout=30,
-            check=False,
-        )
-        _replicate_with_retry(replica["container_name"], primary_ids[replica["shard_id"]], timeout=120.0)
-        integrated_expected += 1
-        _wait_cluster_integrated_at_least(first, expected=integrated_expected, timeout=90.0)
-    _wait_cluster_known([first], expected=len(nodes), timeout=converge_timeout)
-    _wait_cluster_ok([first], timeout=converge_timeout)
-    host_probe_started = time.monotonic()
-    _wait_host_probe_ready(nodes, expected_known_nodes=len(nodes), timeout=_scale_timeout(nodes, floor=180.0, per_node=4.0))
-    operations.append(
-        _operation(
-            "add_replica",
-            "PASS",
-            replica_started,
-            {
+                "primary_count": len(primaries),
                 "replica_count": len(replicas),
-                "cluster_state": "ok",
                 "cluster_known_nodes": _cluster_known_nodes(first),
+                "output_tail": create_output[-1000:],
             },
         )
     )
-    operations.append(_operation("host_probe_ready", "PASS", host_probe_started, {"nodes_ready": len(nodes)}))
     return operations
+
+
+def _create_large_cluster(primaries: list[dict[str, Any]], replicas: list[dict[str, Any]], timeout: float) -> str:
+    if not primaries:
+        raise DockerRuntimeError("large cluster create requires at least one primary")
+    nodes = [*primaries, *replicas]
+    output = [_create_cluster_with_replica_candidates(primaries, replicas, timeout=timeout)]
+    _wait_cluster_known(nodes, expected=len(nodes), timeout=min(360.0, timeout))
+    if replicas:
+        output.append(_configure_large_cluster_replicas(primaries, replicas, timeout=timeout))
+    return "\n".join(part for part in output if part)
+
+
+def _create_cluster_with_replica_candidates(primaries: list[dict[str, Any]], replicas: list[dict[str, Any]], timeout: float) -> str:
+    if replicas and len(replicas) % len(primaries) != 0:
+        raise DockerRuntimeError("large cluster create requires an even replica count per primary")
+    replicas_per_primary = len(replicas) // len(primaries)
+    nodes = [*primaries, *replicas]
+    addresses = [f"{node['container_ip']}:6379" for node in nodes]
+    args = [
+        "exec",
+        primaries[0]["container_name"],
+        "valkey-cli",
+        "--cluster",
+        "create",
+        *addresses,
+    ]
+    if replicas:
+        args.extend(["--cluster-replicas", str(replicas_per_primary)])
+    args.append("--cluster-yes")
+    try:
+        return run_docker(args, timeout=min(300, int(timeout))).stdout.strip()
+    except DockerRuntimeError as exc:
+        if "timed out" not in str(exc):
+            raise
+        _wait_cluster_known(nodes, expected=len(nodes), timeout=min(360.0, timeout))
+        return "cluster create client timed out after membership became visible"
+
+
+def _configure_large_cluster_replicas(primaries: list[dict[str, Any]], replicas: list[dict[str, Any]], timeout: float) -> str:
+    primary_ids = {node["shard_id"]: run_container_cli(node["container_name"], "CLUSTER", "MYID") for node in primaries}
+    deadline = time.monotonic() + timeout
+    outputs: list[str] = []
+    for replica in replicas:
+        master_id = primary_ids[replica["shard_id"]]
+        _ensure_replica_of(replica, master_id, timeout=max(10.0, min(120.0, deadline - time.monotonic())))
+        outputs.append(f"replica {replica['logical_id']} configured for primary {replica['shard_id']}")
+    return "\n".join(outputs)
+
+
+def _meet_new_node(first: dict[str, Any], node: dict[str, Any]) -> None:
+    run_container_cli(first["container_name"], "CLUSTER", "MEET", node["container_ip"], "6379", timeout=30)
 
 
 def _incremental_meet(
@@ -659,6 +1334,46 @@ def _replicate_with_retry(container: str, master_id: str, timeout: float) -> Non
     raise DockerRuntimeError(f"CLUSTER REPLICATE did not succeed for {container}: {last_error}")
 
 
+def _ensure_replica_of(replica: dict[str, Any], master_id: str, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    last_error = ""
+    while time.monotonic() < deadline:
+        if _is_replica_of(replica, master_id):
+            return
+        result = run_docker(
+            ["exec", replica["container_name"], "valkey-cli", "-p", "6379", "CLUSTER", "REPLICATE", master_id],
+            timeout=30,
+            check=False,
+        )
+        if result.returncode != 0:
+            last_error = result.stderr.strip() or result.stdout.strip()
+        time.sleep(2)
+    raise DockerRuntimeError(f"{replica['logical_id']} did not become replica of {master_id}: {last_error}")
+
+
+def _wait_replica_of(replica: dict[str, Any], master_id: str, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            if _is_replica_of(replica, master_id):
+                return
+        except Exception:
+            pass
+        time.sleep(1)
+    raise DockerRuntimeError(f"{replica['logical_id']} did not become replica of {master_id}")
+
+
+def _is_replica_of(replica: dict[str, Any], master_id: str) -> bool:
+    text = run_container_cli(replica["container_name"], "CLUSTER", "NODES", timeout=5)
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 8 or "myself" not in parts[2].split(","):
+            continue
+        flags = set(parts[2].split(","))
+        return ("slave" in flags or "replica" in flags) and parts[3] == master_id and parts[7] == "connected"
+    return False
+
+
 def _scale_timeout(nodes: list[dict[str, Any]], *, floor: float, per_node: float) -> float:
     return max(floor, len(nodes) * per_node)
 
@@ -802,6 +1517,55 @@ def _wait_cluster_ok_any(nodes: list[dict[str, Any]], timeout: float) -> None:
                 pass
         time.sleep(1)
     raise DockerRuntimeError("cluster did not reach observable ok state from any node")
+
+
+def _wait_cluster_role_counts(
+    nodes: list[dict[str, Any]],
+    *,
+    expected_primaries: int,
+    expected_replicas: int,
+    timeout: float,
+) -> None:
+    deadline = time.monotonic() + timeout
+    expected_total = expected_primaries + expected_replicas
+    while time.monotonic() < deadline:
+        checks = []
+        for node in nodes:
+            try:
+                counts = _cluster_role_counts(node)
+                checks.append(
+                    counts.get("primary", 0) == expected_primaries
+                    and counts.get("replica", 0) == expected_replicas
+                    and counts.get("total", 0) == expected_total
+                )
+            except Exception:
+                checks.append(False)
+        if checks and all(checks):
+            return
+        time.sleep(1)
+    raise DockerRuntimeError(
+        f"cluster role counts did not converge to {expected_primaries} primaries and {expected_replicas} replicas"
+    )
+
+
+def _cluster_role_counts(node: dict[str, Any]) -> dict[str, int]:
+    text = run_container_cli(node["container_name"], "CLUSTER", "NODES", timeout=5)
+    counts = {"primary": 0, "replica": 0, "total": 0}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 8:
+            continue
+        flags = set(parts[2].split(","))
+        if flags.intersection({"fail", "handshake", "noaddr"}):
+            continue
+        if parts[7] != "connected":
+            continue
+        if "master" in flags:
+            counts["primary"] += 1
+        elif "slave" in flags or "replica" in flags:
+            counts["replica"] += 1
+        counts["total"] += 1
+    return counts
 
 
 def _cluster_known_nodes(node: dict[str, Any]) -> int:
@@ -1287,9 +2051,9 @@ def write_scale_ladder_artifacts(
     sample_errors: list[dict[str, Any]] = []
     for node in nodes:
         try:
-            info = _parse_info(run_container_cli(node["container_name"], "INFO", "server", timeout=10))
-            default_info = _parse_info(run_container_cli(node["container_name"], "INFO", "default", timeout=10))
-            cluster_info = _parse_info(run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=10))
+            info = _parse_info(run_node_cli(node, "INFO", "server", timeout=10))
+            default_info = _parse_info(run_node_cli(node, "INFO", "default", timeout=10))
+            cluster_info = _parse_info(run_node_cli(node, "CLUSTER", "INFO", timeout=10))
             version = info.get("valkey_version") or info.get("redis_version")
             if version:
                 versions.add(version)

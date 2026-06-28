@@ -49,11 +49,11 @@
     },
     {
       "path": "scripts/valkey_e2e_gate.py",
-      "sha256": "6c096ee86fe018c7df19c40aae1cef509aa715be8adcb3fd5d484114af5ca5a1"
+      "sha256": "1a9cda58f3c482e7d18679058852cc5f1006be5ae2a29d0eaa872c9e0770e3cf"
     },
     {
       "path": "scripts/valkey_probe_lib.py",
-      "sha256": "1b9882fc7736c2199ac90633cc2e24345601c7379e6fbad03a360396924c3782"
+      "sha256": "d75489d15e4657e38c13b8e5cfc76a83c5a1542e42a8255b7e5721cca7dd6161"
     },
     {
       "path": "schemas/artifact/analysis_summary.schema.json",
