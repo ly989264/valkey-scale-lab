@@ -92,3 +92,18 @@ def test_empty_latency_summary_marks_missing() -> None:
     assert summary["p50"]["status"] == "MISSING"
     assert summary["p95"]["status"] == "MISSING"
     assert summary["p99"]["status"] == "MISSING"
+
+
+def test_parse_info_and_missing_integer_encoding() -> None:
+    parsed = docker_runtime._parse_info("# Server\nuptime_in_seconds:12\nused_memory:not-an-int\n")
+    assert parsed["uptime_in_seconds"] == "12"
+    assert docker_runtime._int_or_missing(parsed["uptime_in_seconds"]) == 12
+    assert docker_runtime._int_or_missing(parsed["used_memory"]) == "MISSING"
+    assert docker_runtime._int_or_missing(None) == "MISSING"
+
+
+def test_event_shape() -> None:
+    event = docker_runtime._event("P06_OBSERVABILITY_METRICS", "run", "sampled", "info", {"node": "n1"})
+    assert event["artifact_type"] == "event"
+    assert event["severity"] == "info"
+    assert event["details"]["node"] == "n1"

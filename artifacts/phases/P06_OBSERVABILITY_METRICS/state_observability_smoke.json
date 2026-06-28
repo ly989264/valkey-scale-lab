@@ -1,0 +1,87 @@
+{
+  "cluster_id": "P06_OBSERVABILITY_METRICS-observability_smoke-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "adf722ad7f93fa00b480904ecaa6c59249fd435989e8e54151b849b21907e59d",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p06-observability-metrics-observability-smoke-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-primary",
+      "pid": 600,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "833d091a4eac74f6fcf108d7bf741ff464ba505cc66c8532fc2a12f5524a64a0",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p06-observability-metrics-observability-smoke-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-primary",
+      "pid": 678,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "670c6f7f225a2150c2346965e3e0dd42f09b826d9bd260549c37b737d54108e9",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p06-observability-metrics-observability-smoke-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-primary",
+      "pid": 754,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "95539d83b7c76369cd0f8d23b1fa237921c12322ef0be63cc627ea7ff5ffa631",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p06-observability-metrics-observability-smoke-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 830,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "d7425a45d38e822ec86b47f28b8f052d8dcd6cde0f6bb623019784e3265d6e2b",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p06-observability-metrics-observability-smoke-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 905,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "452841d27669c575cfb1963af525b466840fd48dc8eab84165c41318a54b4fb2",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p06-observability-metrics-observability-smoke-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 978,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P06_OBSERVABILITY_METRICS",
+  "runtime": {
+    "network_name": "vslab-p06-observability-metrics-observability_smoke",
+    "project": "valkey-scale-lab",
+    "run_id": "P06_OBSERVABILITY_METRICS-observability_smoke-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "observability_smoke",
+  "schema_version": "v1"
+}

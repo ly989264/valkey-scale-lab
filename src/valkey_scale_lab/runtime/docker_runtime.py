@@ -59,6 +59,7 @@ def create_scenario(
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"),
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"),
         ("P05_WORKLOAD_ENGINE", "workload_smoke"),
+        ("P06_OBSERVABILITY_METRICS", "observability_smoke"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     run_id = _run_id(phase, scenario)
@@ -109,6 +110,8 @@ def create_scenario(
             write_management_ops_report(artifacts / "management_ops_report.json", phase, scenario, run_id, operations)
         if phase == "P05_WORKLOAD_ENGINE":
             write_workload_report(artifacts / "workload_report.json", phase, scenario, run_id, config, nodes)
+        if phase == "P06_OBSERVABILITY_METRICS":
+            write_observability_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         state = {
             "schema_version": "v1",
             "cluster_id": run_id,
@@ -563,6 +566,135 @@ def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, co
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def write_observability_artifacts(
+    artifacts: Path,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    config: dict[str, Any],
+    nodes: list[dict[str, Any]],
+) -> None:
+    metrics_path = artifacts / "metrics_timeseries.jsonl"
+    events_path = artifacts / "events.jsonl"
+    log_dir = artifacts / "container_logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    metric_lines: list[dict[str, Any]] = []
+    event_lines: list[dict[str, Any]] = [
+        _event(phase, run_id, "observability_collection_started", "info", {"scenario": scenario, "nodes": len(nodes)}),
+    ]
+
+    for node in nodes:
+        info = _parse_info(run_container_cli(node["container_name"], "INFO", "default", timeout=10))
+        cluster_info_raw = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=10)
+        cluster_nodes_raw = run_container_cli(node["container_name"], "CLUSTER", "NODES", timeout=10)
+        cluster_info = _parse_info(cluster_info_raw)
+        docker_stats = _docker_stats(node["container_name"])
+        logs = run_docker(["logs", "--tail", "50", node["container_name"]], timeout=30, check=False)
+        log_path = log_dir / f"{node['logical_id']}.log"
+        log_path.write_text(logs.stdout + logs.stderr, encoding="utf-8", errors="replace")
+        metric_lines.append(
+            {
+                "schema_version": "v1",
+                "artifact_type": "metric_sample",
+                "phase_id": phase,
+                "run_id": run_id,
+                "timestamp": "2026-06-28T00:00:00Z",
+                "source": node["logical_id"],
+                "metrics": {
+                    "valkey": {
+                        "uptime_in_seconds": _int_or_missing(info.get("uptime_in_seconds")),
+                        "connected_clients": _int_or_missing(info.get("connected_clients")),
+                        "used_memory": _int_or_missing(info.get("used_memory")),
+                        "total_commands_processed": _int_or_missing(info.get("total_commands_processed")),
+                    },
+                    "cluster": {
+                        "cluster_state": cluster_info.get("cluster_state", "MISSING"),
+                        "cluster_known_nodes": _int_or_missing(cluster_info.get("cluster_known_nodes")),
+                        "cluster_slots_assigned": _int_or_missing(cluster_info.get("cluster_slots_assigned")),
+                        "cluster_nodes_line_count": len([line for line in cluster_nodes_raw.splitlines() if line.strip()]),
+                    },
+                    "docker": docker_stats,
+                    "logs": {
+                        "path": log_path.as_posix(),
+                        "status": "PASS" if log_path.exists() else "MISSING",
+                    },
+                },
+            }
+        )
+        event_lines.append(
+            _event(
+                phase,
+                run_id,
+                "node_metrics_sampled",
+                "info",
+                {"logical_id": node["logical_id"], "cluster_state": cluster_info.get("cluster_state", "MISSING")},
+            )
+        )
+
+    event_lines.append(_event(phase, run_id, "observability_collection_finished", "info", {"sample_count": len(metric_lines)}))
+    metrics_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in metric_lines) + "\n", encoding="utf-8")
+    events_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in event_lines) + "\n", encoding="utf-8")
+
+
+def _event(phase: str, run_id: str, event_type: str, severity: str, details: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "schema_version": "v1",
+        "artifact_type": "event",
+        "phase_id": phase,
+        "run_id": run_id,
+        "timestamp": "2026-06-28T00:00:00Z",
+        "event_type": event_type,
+        "severity": severity,
+        "details": details,
+    }
+
+
+def _docker_stats(container: str) -> dict[str, Any]:
+    result = run_docker(
+        ["stats", "--no-stream", "--format", "{{json .}}", container],
+        timeout=30,
+        check=False,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        return {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": result.stderr.strip() or "docker stats unavailable",
+        }
+    try:
+        raw = json.loads(result.stdout.splitlines()[0])
+    except json.JSONDecodeError as exc:
+        return {"status": "MISSING", "reason": f"docker stats JSON parse failed: {exc}"}
+    return {
+        "status": "PASS",
+        "cpu_percent": raw.get("CPUPerc", "MISSING"),
+        "memory_usage": raw.get("MemUsage", "MISSING"),
+        "memory_percent": raw.get("MemPerc", "MISSING"),
+        "net_io": raw.get("NetIO", "MISSING"),
+        "block_io": raw.get("BlockIO", "MISSING"),
+        "pids": raw.get("PIDs", "MISSING"),
+    }
+
+
+def _parse_info(text: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        values[key] = value
+    return values
+
+
+def _int_or_missing(value: Any) -> int | str:
+    if value is None:
+        return "MISSING"
+    try:
+        return int(str(value))
+    except ValueError:
+        return "MISSING"
 
 
 def _latency_summary(values_ms: list[float]) -> dict[str, Any]:
