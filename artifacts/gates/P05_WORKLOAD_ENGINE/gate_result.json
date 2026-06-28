@@ -1,0 +1,91 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "gate_result",
+  "phase_id": "P05_WORKLOAD_ENGINE",
+  "created_at": "2026-06-28T06:22:10.564673Z",
+  "runner": "scripts/codex_gate.py",
+  "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+  "status": "PASS",
+  "environment": {
+    "python_version": "3.9.6",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "cwd": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab"
+  },
+  "gates": [
+    {
+      "name": "harness_precheck",
+      "kind": "harness",
+      "command": "python3 scripts/codex_gate.py precheck --phase P05_WORKLOAD_ENGINE",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T06:21:51.765636Z",
+      "finished_at": "2026-06-28T06:21:51.818641Z",
+      "duration_seconds": 0.052788,
+      "stdout_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stdout/harness_precheck.log",
+      "stderr_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stderr/harness_precheck.log",
+      "stdout_sha256": "3591d68c686880196094ce9a19dac5431d5124dac1b48f3726d50831604ab1da",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "safety_static_scan",
+      "kind": "safety",
+      "command": "python3 scripts/safety_scan.py",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T06:21:51.819365Z",
+      "finished_at": "2026-06-28T06:21:51.876253Z",
+      "duration_seconds": 0.05691,
+      "stdout_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stdout/safety_static_scan.log",
+      "stderr_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stderr/safety_static_scan.log",
+      "stdout_sha256": "f8fde750db39ced3e3a16fbca2feb217f0ddd15b8a1fa2e9ac507ded2231ac1b",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "unit_and_integration_tests",
+      "kind": "unit",
+      "command": "python3 -m pytest -q tests/unit tests/integration",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T06:21:51.876874Z",
+      "finished_at": "2026-06-28T06:21:52.045700Z",
+      "duration_seconds": 0.168853,
+      "stdout_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stdout/unit_and_integration_tests.log",
+      "stderr_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stderr/unit_and_integration_tests.log",
+      "stdout_sha256": "c90552887b15f0dd338283c6b09a470ebacdbd4677c68174867fe21155a8b633",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "real_valkey_e2e",
+      "kind": "real_valkey_e2e",
+      "command": "python3 scripts/valkey_e2e_gate.py --phase P05_WORKLOAD_ENGINE --config templates/configs/single_mac_6node.yaml --scenario workload_smoke --out artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T06:21:52.046338Z",
+      "finished_at": "2026-06-28T06:22:10.522121Z",
+      "duration_seconds": 18.47532,
+      "stdout_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stdout/real_valkey_e2e.log",
+      "stderr_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stderr/real_valkey_e2e.log",
+      "stdout_sha256": "fadf34191c1c4a4b90d292f5fbb9fb9dc95d5a6f05487234c269217807adf1d8",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "cleanup_report_check",
+      "kind": "cleanup",
+      "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-28T06:22:10.522883Z",
+      "finished_at": "2026-06-28T06:22:10.564173Z",
+      "duration_seconds": 0.041313,
+      "stdout_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stdout/cleanup_report_check.log",
+      "stderr_path": "artifacts/gates/P05_WORKLOAD_ENGINE/stderr/cleanup_report_check.log",
+      "stdout_sha256": "41f8a2a28366432a949cbb2643f1966ae5dbe07e351c1c4250ecdd95141350bb",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

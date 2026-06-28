@@ -58,6 +58,7 @@ def create_scenario(
     if (phase, scenario) not in {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"),
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"),
+        ("P05_WORKLOAD_ENGINE", "workload_smoke"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     run_id = _run_id(phase, scenario)
@@ -106,6 +107,8 @@ def create_scenario(
         if phase == "P04_CLUSTER_MANAGEMENT_OPS":
             operations.extend(_run_management_ops(nodes))
             write_management_ops_report(artifacts / "management_ops_report.json", phase, scenario, run_id, operations)
+        if phase == "P05_WORKLOAD_ENGINE":
+            write_workload_report(artifacts / "workload_report.json", phase, scenario, run_id, config, nodes)
         state = {
             "schema_version": "v1",
             "cluster_id": run_id,
@@ -454,6 +457,138 @@ def write_management_ops_report(path: Path, phase: str, scenario: str, run_id: s
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, config: dict[str, Any], nodes: list[dict[str, Any]]) -> None:
+    workload = config.get("workload", {})
+    requested_qps = float(workload.get("uniform_qps", 0)) + float(workload.get("hotspot_qps", 0))
+    read_ratio = float(workload.get("read_ratio", 0.8))
+    write_ratio = float(workload.get("write_ratio", 0.2))
+    pipeline = int(workload.get("pipeline", 1) or 1)
+    total_ops = 100
+    write_ops = max(1, int(total_ops * write_ratio))
+    read_ops = total_ops - write_ops
+    key_count = max(10, write_ops)
+    target = nodes[0]["container_name"]
+    latencies_ms: list[float] = []
+    error_items: list[dict[str, Any]] = []
+    timeout_count = 0
+    started = time.monotonic()
+
+    for idx in range(write_ops):
+        key = f"{{vslab-probe}}:workload:{idx % key_count}"
+        value = f"value-{idx}"
+        op_started = time.monotonic()
+        try:
+            result = run_container_cli(target, "SET", key, value, timeout=10)
+            latencies_ms.append((time.monotonic() - op_started) * 1000)
+            if result.upper() != "OK":
+                error_items.append({"operation": "SET", "key": key, "error": f"unexpected result {result!r}"})
+        except subprocess.TimeoutExpired:
+            timeout_count += 1
+            error_items.append({"operation": "SET", "key": key, "error": "timeout"})
+        except Exception as exc:  # noqa: BLE001
+            error_items.append({"operation": "SET", "key": key, "error": repr(exc)})
+
+    for idx in range(read_ops):
+        key = f"{{vslab-probe}}:workload:{idx % key_count}"
+        op_started = time.monotonic()
+        try:
+            _ = run_container_cli(target, "GET", key, timeout=10)
+            latencies_ms.append((time.monotonic() - op_started) * 1000)
+        except subprocess.TimeoutExpired:
+            timeout_count += 1
+            error_items.append({"operation": "GET", "key": key, "error": "timeout"})
+        except Exception as exc:  # noqa: BLE001
+            error_items.append({"operation": "GET", "key": key, "error": repr(exc)})
+
+    duration = max(time.monotonic() - started, 0.000001)
+    completed_ops = len(latencies_ms)
+    report = {
+        "schema_version": "v1",
+        "artifact_type": "workload_report",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if not error_items else "FAIL",
+        "scenario": scenario,
+        "requested_qps": requested_qps,
+        "achieved_qps": round(completed_ops / duration, 6),
+        "operation_counts": {
+            "requested_total": total_ops,
+            "completed_total": completed_ops,
+            "writes": write_ops,
+            "reads": read_ops,
+        },
+        "workload_model": {
+            "read_ratio": read_ratio,
+            "write_ratio": write_ratio,
+            "uniform_qps": workload.get("uniform_qps", 0),
+            "hotspot_qps": workload.get("hotspot_qps", 0),
+            "hotspot_key_fraction": workload.get("hotspot_key_fraction", "MISSING"),
+            "pipeline": pipeline,
+            "keyspace": key_count,
+        },
+        "timing_windows": [
+            {
+                "name": str(workload.get("timing", "all_run")),
+                "status": "PASS",
+                "duration_seconds": round(duration, 6),
+                "operations": completed_ops,
+            },
+            {
+                "name": "before_fault",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "P05 workload_smoke has no fault window.",
+            },
+            {
+                "name": "during_fault",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "P05 workload_smoke has no fault window.",
+            },
+            {
+                "name": "after_recovery",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "P05 workload_smoke has no recovery window.",
+            },
+        ],
+        "latency": _latency_summary(latencies_ms),
+        "errors": {
+            "total": len(error_items),
+            "timeout_count": timeout_count,
+            "items": error_items,
+            "classification": "none" if not error_items else "data_path_error",
+        },
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _latency_summary(values_ms: list[float]) -> dict[str, Any]:
+    if not values_ms:
+        missing = {"status": "MISSING", "reason": "no completed workload operations"}
+        return {"unit": "ms", "p50": missing, "p95": missing, "p99": missing, "sample_count": 0}
+    ordered = sorted(values_ms)
+    return {
+        "unit": "ms",
+        "p50": round(_percentile(ordered, 50), 6),
+        "p95": round(_percentile(ordered, 95), 6),
+        "p99": round(_percentile(ordered, 99), 6),
+        "min": round(ordered[0], 6),
+        "max": round(ordered[-1], 6),
+        "sample_count": len(ordered),
+    }
+
+
+def _percentile(ordered: list[float], percentile: float) -> float:
+    if len(ordered) == 1:
+        return ordered[0]
+    rank = (percentile / 100.0) * (len(ordered) - 1)
+    lower = int(rank)
+    upper = min(lower + 1, len(ordered) - 1)
+    weight = rank - lower
+    return ordered[lower] * (1 - weight) + ordered[upper] * weight
 
 
 def _operation(name: str, status: str, started_monotonic: float, details: dict[str, Any]) -> dict[str, Any]:

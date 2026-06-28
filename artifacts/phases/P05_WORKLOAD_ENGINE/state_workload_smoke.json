@@ -1,0 +1,87 @@
+{
+  "cluster_id": "P05_WORKLOAD_ENGINE-workload_smoke-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "b5a6e75e79e0cabaed9402e778c25eb60818d83d08debc287aa0e452ad71567e",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p05-workload-engine-workload-smoke-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-primary",
+      "pid": 3160,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "b6f6d368cf793ced8f153bb192371de66897de52535f47794a62f2429c07baf6",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p05-workload-engine-workload-smoke-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-primary",
+      "pid": 3235,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "84111c939d620265db18ac27fb5e14160eed102ae8d61947331908a6f3bb8ad5",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p05-workload-engine-workload-smoke-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-primary",
+      "pid": 3312,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "1302f36d4e8993c5457c8a758dd93e110d7d420f8fefb5c486dfe5627c1183b1",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p05-workload-engine-workload-smoke-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 3386,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "5dd1d58d2f79a3aa846bdacadd325b8724de80de7cfcb0b59e68d1de552abec8",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p05-workload-engine-workload-smoke-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 3459,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "778f71bb38c58d97a7053b511f1fe3e42122835930ac6163f0d89540a6326c9f",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p05-workload-engine-workload-smoke-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 3535,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P05_WORKLOAD_ENGINE",
+  "runtime": {
+    "network_name": "vslab-p05-workload-engine-workload_smoke",
+    "project": "valkey-scale-lab",
+    "run_id": "P05_WORKLOAD_ENGINE-workload_smoke-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "workload_smoke",
+  "schema_version": "v1"
+}

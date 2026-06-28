@@ -77,3 +77,18 @@ def test_management_ops_report_taxonomy(tmp_path: Path) -> None:
     assert report["status"] == "PASS"
     assert report["summary"]["passed"] == 1
     assert report["summary"]["skipped_with_reason"] == 1
+
+
+def test_latency_summary_has_required_percentiles() -> None:
+    summary = docker_runtime._latency_summary([1.0, 2.0, 3.0, 4.0])
+    assert summary["p50"] == 2.5
+    assert summary["p95"] > summary["p50"]
+    assert summary["p99"] >= summary["p95"]
+    assert summary["sample_count"] == 4
+
+
+def test_empty_latency_summary_marks_missing() -> None:
+    summary = docker_runtime._latency_summary([])
+    assert summary["p50"]["status"] == "MISSING"
+    assert summary["p95"]["status"] == "MISSING"
+    assert summary["p99"]["status"] == "MISSING"
