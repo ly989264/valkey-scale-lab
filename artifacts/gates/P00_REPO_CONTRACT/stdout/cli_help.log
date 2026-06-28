@@ -1,0 +1,17 @@
+usage: python3 -m valkey_scale_lab.cli [-h] [--version] <command> ...
+
+Valkey scale lab CLI. P00 exposes the command contract; later phases implement
+runtime behavior.
+
+positional arguments:
+  <command>
+    config    Validate and emit run configuration artifacts.
+    plan      Create a deterministic cluster plan.
+    gate      Run gate lifecycle scenarios.
+    fault     Apply and clear sandboxed faults.
+    analyze   Analyze machine-readable artifacts.
+    report    Render reports from artifacts.
+
+optional arguments:
+  -h, --help  show this help message and exit
+  --version   show program's version number and exit

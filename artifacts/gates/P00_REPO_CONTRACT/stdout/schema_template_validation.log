@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/gate_result.schema.json instance=templates/artifacts/gate_result.example.json
