@@ -1,0 +1,124 @@
+{
+  "artifact_type": "management_ops_report",
+  "created_at": "2026-06-28T00:00:00Z",
+  "operations": [
+    {
+      "details": {
+        "cluster_known_nodes": 6,
+        "nodes_joined": 5
+      },
+      "duration_seconds": 2.130454,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "meet",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "primary_count": 3,
+        "slots_assigned": 16384
+      },
+      "duration_seconds": 5.402461,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "add_slots",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "cluster_state": "ok",
+        "replica_count": 3
+      },
+      "duration_seconds": 2.180246,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "add_replica",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "cluster_state": "ok"
+      },
+      "duration_seconds": 0.365994,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "convergence_check",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "line_count": 6
+      },
+      "duration_seconds": 0.057098,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "cluster_nodes",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "cluster_known_nodes": "6",
+        "cluster_state": "ok"
+      },
+      "duration_seconds": 0.063141,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "cluster_info",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "duration_seconds": 0.0,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "remove_node",
+      "reason": "P04 records taxonomy only; destructive removal is deferred until a dedicated lifecycle phase.",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "duration_seconds": 0.0,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "reshard",
+      "reason": "P04 smoke cluster keeps slot ownership stable for wrapper data-path proof.",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "duration_seconds": 0.0,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "rebalance",
+      "reason": "Valkey cluster rebalance orchestration is deferred until management expansion.",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "duration_seconds": 0.0,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "rolling_restart",
+      "reason": "Restart orchestration is deferred to later stability/fault phases.",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P04_CLUSTER_MANAGEMENT_OPS-management_ops-20260628",
+  "scenario": "management_ops",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": {
+    "cluster_safe_for_cleanup": true,
+    "error_taxonomy": {
+      "FAIL": "operation attempted but did not complete or converge",
+      "PASS": "operation completed and convergence was observed",
+      "SKIPPED_WITH_REASON": "operation intentionally not executed with an explicit reason",
+      "UNSUPPORTED": "operation unavailable in current runtime scope"
+    },
+    "failed": 0,
+    "passed": 6,
+    "skipped_with_reason": 4,
+    "total_operations": 10
+  }
+}

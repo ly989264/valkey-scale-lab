@@ -21,6 +21,7 @@ def test_p03_node_specs_are_deterministic() -> None:
     ]
     assert [node["client_port"] for node in nodes] == [7000, 7001, 7002, 7003, 7004, 7005]
     assert len({node["container_name"] for node in nodes}) == 6
+    assert "p03-local-docker-valkey-cluster-smoke" in nodes[0]["container_name"]
 
 
 def test_port_collision_check_rejects_bound_port(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -57,3 +58,22 @@ def test_cleanup_report_shape_without_owned_resources(tmp_path: Path, monkeypatc
     report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
     assert report["status"] == "PASS"
     assert report["resources_remaining"] == []
+
+
+def test_management_ops_report_taxonomy(tmp_path: Path) -> None:
+    operations = [
+        {"operation": "meet", "status": "PASS", "duration_seconds": 0.1},
+        {
+            "operation": "remove_node",
+            "status": "SKIPPED_WITH_REASON",
+            "duration_seconds": 0.0,
+            "reason": "not destructive in smoke",
+        },
+    ]
+    out = tmp_path / "management_ops_report.json"
+    docker_runtime.write_management_ops_report(out, "P04_CLUSTER_MANAGEMENT_OPS", "management_ops", "run", operations)
+    report = docker_runtime.json.loads(out.read_text(encoding="utf-8"))
+    assert report["artifact_type"] == "management_ops_report"
+    assert report["status"] == "PASS"
+    assert report["summary"]["passed"] == 1
+    assert report["summary"]["skipped_with_reason"] == 1

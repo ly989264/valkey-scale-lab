@@ -1,0 +1,26 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-28T06:17:31Z",
+  "gate_result_path": "artifacts/gates/P04_CLUSTER_MANAGEMENT_OPS/gate_result.json",
+  "gate_result_sha256": "978e642e288711dd6662a1bbe7ca459137673b1389bf6ee82012619fc93e65ad",
+  "artifact_paths": [
+    "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/phase_summary.json",
+    "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json",
+    "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+    "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json"
+  ],
+  "risks": [
+    {
+      "risk": "Destructive management operations are taxonomy/deferred entries in P04.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "remove_node, reshard, rebalance, and rolling_restart are marked SKIPPED_WITH_REASON, not PASS."
+    }
+  ],
+  "rationale": "All P04 manifest gates ran and passed with command text matching the manifest and stdout/stderr SHA256 values matching gate_result.json. Required artifacts exist and validate against schemas. valkey_e2e_evidence.json proves live Valkey 9.1.0 with real_valkey true, probe PASS, six nodes observed, cluster_state_observed ok, and data_path_result PASS. management_ops_report.json records timed PASS operations and marks deferred operations SKIPPED_WITH_REASON. cleanup_report.json is PASS with no resources_remaining, and Docker label checks found no owned P04 containers or networks."
+}

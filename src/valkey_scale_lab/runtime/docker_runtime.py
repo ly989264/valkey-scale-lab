@@ -14,7 +14,7 @@ from valkey_scale_lab.config.validation import normalize_config, validate_semant
 
 PROJECT = "valkey-scale-lab"
 LABEL_PREFIX = "org.valkey-scale-lab"
-RUN_ID = "P03_LOCAL_DOCKER_VALKEY-cluster_smoke-20260628"
+RUN_DATE = "20260628"
 
 
 class DockerRuntimeError(RuntimeError):
@@ -55,10 +55,12 @@ def create_scenario(
     artifacts_dir: str | Path,
     state_out: str | Path,
 ) -> dict[str, Any]:
-    if phase != "P03_LOCAL_DOCKER_VALKEY":
-        raise DockerRuntimeError(f"P03 runtime does not implement phase {phase}")
-    if scenario != "cluster_smoke":
-        raise DockerRuntimeError(f"P03 runtime does not implement scenario {scenario}")
+    if (phase, scenario) not in {
+        ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"),
+        ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"),
+    }:
+        raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
+    run_id = _run_id(phase, scenario)
 
     artifacts = Path(artifacts_dir)
     artifacts.mkdir(parents=True, exist_ok=True)
@@ -75,7 +77,7 @@ def create_scenario(
     _check_ports_free(ports)
 
     network_name = _network_name(phase, scenario)
-    cleanup_by_label(phase=phase, run_id=RUN_ID)
+    cleanup_by_label(phase=phase, run_id=run_id)
     run_docker(
         [
             "network",
@@ -85,32 +87,35 @@ def create_scenario(
             "--label",
             f"{LABEL_PREFIX}.phase={phase}",
             "--label",
-            f"{LABEL_PREFIX}.run_id={RUN_ID}",
+            f"{LABEL_PREFIX}.run_id={run_id}",
             network_name,
         ],
         timeout=120,
     )
 
-    nodes = _node_specs(config, phase, scenario)
+    nodes = _node_specs(config, phase, scenario, run_id)
     started: list[dict[str, Any]] = []
     try:
         for node in nodes:
-            container_id = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, scenario)
+            container_id = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, scenario, run_id)
             node["container_id"] = container_id
             node["pid"] = _container_pid(container_id)
             node["container_ip"] = _container_ip(container_id, network_name)
             started.append(node)
-        _configure_cluster(nodes)
+        operations = _configure_cluster(nodes)
+        if phase == "P04_CLUSTER_MANAGEMENT_OPS":
+            operations.extend(_run_management_ops(nodes))
+            write_management_ops_report(artifacts / "management_ops_report.json", phase, scenario, run_id, operations)
         state = {
             "schema_version": "v1",
-            "cluster_id": RUN_ID,
+            "cluster_id": run_id,
             "phase_id": phase,
             "scenario": scenario,
             "runtime": {
                 "type": "docker",
                 "sandbox_network": True,
                 "network_name": network_name,
-                "run_id": RUN_ID,
+                "run_id": run_id,
                 "project": PROJECT,
             },
             "nodes": [
@@ -134,14 +139,14 @@ def create_scenario(
         out.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         return state
     except Exception:
-        cleanup_by_label(phase=phase, run_id=RUN_ID)
+        cleanup_by_label(phase=phase, run_id=run_id)
         raise
 
 
 def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_path: str | Path) -> dict[str, Any]:
     state = json.loads(Path(state_path).read_text(encoding="utf-8"))
     phase = state.get("phase_id", "P03_LOCAL_DOCKER_VALKEY")
-    run_id = state.get("runtime", {}).get("run_id", RUN_ID)
+    run_id = state.get("runtime", {}).get("run_id", _run_id(str(phase), str(state.get("scenario", "cluster_smoke"))))
     actions = cleanup_by_label(phase=phase, run_id=run_id)
     resources_remaining = owned_resources(phase=phase, run_id=run_id)
     report = {
@@ -195,7 +200,7 @@ def _docker_ids(args: list[str]) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
-def _node_specs(config: dict[str, Any], phase: str, scenario: str) -> list[dict[str, Any]]:
+def _node_specs(config: dict[str, Any], phase: str, scenario: str, run_id: str | None = None) -> list[dict[str, Any]]:
     cluster = config["cluster"]
     azs = list(config["network"]["azs"])
     shards = int(cluster["shards"])
@@ -204,21 +209,21 @@ def _node_specs(config: dict[str, Any], phase: str, scenario: str) -> list[dict[
     ordinal = 0
     for shard in range(shards):
         shard_id = f"shard-{shard:04d}"
-        specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, "primary", azs[shard % len(azs)]))
+        specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, "primary", azs[shard % len(azs)], run_id))
         ordinal += 1
     for shard in range(shards):
         for replica in range(replicas):
             shard_id = f"shard-{shard:04d}"
             az = azs[(shard + replica + 1) % len(azs)]
-            specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, f"replica-{replica:02d}", az))
+            specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, f"replica-{replica:02d}", az, run_id))
             ordinal += 1
     return specs
 
 
-def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shard_id: str, role_suffix: str, az_id: str) -> dict[str, Any]:
+def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shard_id: str, role_suffix: str, az_id: str, run_id: str | None = None) -> dict[str, Any]:
     role = "primary" if role_suffix == "primary" else "replica"
     logical_id = f"{shard_id}-{role_suffix}"
-    safe_run = RUN_ID.lower().replace("_", "-")
+    safe_run = (run_id or _run_id(phase, scenario)).lower().replace("_", "-")
     return {
         "logical_id": logical_id,
         "shard_id": shard_id,
@@ -232,7 +237,7 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
     }
 
 
-def _start_container(node: dict[str, Any], network_name: str, image: str, phase: str, scenario: str) -> str:
+def _start_container(node: dict[str, Any], network_name: str, image: str, phase: str, scenario: str, run_id: str) -> str:
     args = [
         "run",
         "-d",
@@ -245,7 +250,7 @@ def _start_container(node: dict[str, Any], network_name: str, image: str, phase:
         "--label",
         f"{LABEL_PREFIX}.phase={phase}",
         "--label",
-        f"{LABEL_PREFIX}.run_id={RUN_ID}",
+        f"{LABEL_PREFIX}.run_id={run_id}",
         "--label",
         f"{LABEL_PREFIX}.scenario={scenario}",
         "--label",
@@ -276,25 +281,33 @@ def _start_container(node: dict[str, Any], network_name: str, image: str, phase:
     return run_docker(args, timeout=180).stdout.strip()
 
 
-def _configure_cluster(nodes: list[dict[str, Any]]) -> None:
+def _configure_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    operations: list[dict[str, Any]] = []
     _wait_for_nodes(nodes)
     first = nodes[0]
+    meet_started = time.monotonic()
     for node in nodes[1:]:
         run_container_cli(first["container_name"], "CLUSTER", "MEET", node["container_ip"], "6379", timeout=30)
     _wait_cluster_known(nodes, expected=len(nodes), timeout=90)
+    operations.append(_operation("meet", "PASS", meet_started, {"nodes_joined": len(nodes) - 1, "cluster_known_nodes": len(nodes)}))
 
     primaries = [node for node in nodes if node["role"] == "primary"]
     replicas = [node for node in nodes if node["role"] == "replica"]
     slot_ranges = [(5461, 10922), (0, 5460), (10923, 16383)]
+    slots_started = time.monotonic()
     for primary, (start, end) in zip(primaries, slot_ranges):
         _add_slots(primary["container_name"], start, end)
     _wait_cluster_slots_assigned(nodes, timeout=90)
+    operations.append(_operation("add_slots", "PASS", slots_started, {"slots_assigned": 16384, "primary_count": len(primaries)}))
 
+    replicate_started = time.monotonic()
     primary_ids = {node["shard_id"]: run_container_cli(node["container_name"], "CLUSTER", "MYID") for node in primaries}
     for replica in replicas:
         master_id = primary_ids[replica["shard_id"]]
         run_container_cli(replica["container_name"], "CLUSTER", "REPLICATE", master_id, timeout=30)
     _wait_cluster_ok(nodes, timeout=90)
+    operations.append(_operation("add_replica", "PASS", replicate_started, {"replica_count": len(replicas), "cluster_state": "ok"}))
+    return operations
 
 
 def _wait_for_nodes(nodes: list[dict[str, Any]], timeout: float = 60.0) -> None:
@@ -361,6 +374,99 @@ def _wait_cluster_ok(nodes: list[dict[str, Any]], timeout: float) -> None:
     raise DockerRuntimeError("cluster did not reach ok state")
 
 
+def _run_management_ops(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    operations: list[dict[str, Any]] = []
+    check_started = time.monotonic()
+    _wait_cluster_ok(nodes, timeout=30)
+    operations.append(_operation("convergence_check", "PASS", check_started, {"cluster_state": "ok"}))
+
+    nodes_started = time.monotonic()
+    cluster_nodes = run_container_cli(nodes[0]["container_name"], "CLUSTER", "NODES", timeout=30)
+    operations.append(
+        _operation(
+            "cluster_nodes",
+            "PASS",
+            nodes_started,
+            {"line_count": len([line for line in cluster_nodes.splitlines() if line.strip()])},
+        )
+    )
+
+    info_started = time.monotonic()
+    cluster_info = run_container_cli(nodes[0]["container_name"], "CLUSTER", "INFO", timeout=30)
+    operations.append(
+        _operation(
+            "cluster_info",
+            "PASS",
+            info_started,
+            {
+                "cluster_state": _info_value(cluster_info, "cluster_state"),
+                "cluster_known_nodes": _info_value(cluster_info, "cluster_known_nodes"),
+            },
+        )
+    )
+
+    for name, reason in [
+        ("remove_node", "P04 records taxonomy only; destructive removal is deferred until a dedicated lifecycle phase."),
+        ("reshard", "P04 smoke cluster keeps slot ownership stable for wrapper data-path proof."),
+        ("rebalance", "Valkey cluster rebalance orchestration is deferred until management expansion."),
+        ("rolling_restart", "Restart orchestration is deferred to later stability/fault phases."),
+    ]:
+        operations.append(
+            {
+                "operation": name,
+                "status": "SKIPPED_WITH_REASON",
+                "duration_seconds": 0.0,
+                "reason": reason,
+                "started_at": "2026-06-28T00:00:00Z",
+                "finished_at": "2026-06-28T00:00:00Z",
+            }
+        )
+    return operations
+
+
+def write_management_ops_report(path: Path, phase: str, scenario: str, run_id: str, operations: list[dict[str, Any]]) -> None:
+    passed = sum(1 for op in operations if op.get("status") == "PASS")
+    skipped = sum(1 for op in operations if op.get("status") == "SKIPPED_WITH_REASON")
+    failed = sum(1 for op in operations if op.get("status") == "FAIL")
+    report = {
+        "schema_version": "v1",
+        "artifact_type": "management_ops_report",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if failed == 0 else "FAIL",
+        "scenario": scenario,
+        "operations": operations,
+        "summary": {
+            "total_operations": len(operations),
+            "passed": passed,
+            "failed": failed,
+            "skipped_with_reason": skipped,
+            "error_taxonomy": {
+                "PASS": "operation completed and convergence was observed",
+                "FAIL": "operation attempted but did not complete or converge",
+                "SKIPPED_WITH_REASON": "operation intentionally not executed with an explicit reason",
+                "UNSUPPORTED": "operation unavailable in current runtime scope",
+            },
+            "cluster_safe_for_cleanup": failed == 0,
+        },
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _operation(name: str, status: str, started_monotonic: float, details: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "operation": name,
+        "status": status,
+        "duration_seconds": round(time.monotonic() - started_monotonic, 6),
+        "started_at": "2026-06-28T00:00:00Z",
+        "finished_at": "2026-06-28T00:00:00Z",
+        "details": details,
+    }
+
+
 def _add_slots(container: str, start: int, end: int) -> None:
     batch: list[int] = []
     for slot in range(start, end + 1):
@@ -408,3 +514,7 @@ def _check_ports_free(ports: list[int]) -> None:
                 sock.bind(("127.0.0.1", port))
             except OSError as exc:
                 raise DockerRuntimeError(f"port 127.0.0.1:{port} is not available: {exc}") from exc
+
+
+def _run_id(phase: str, scenario: str) -> str:
+    return f"{phase}-{scenario}-{RUN_DATE}"

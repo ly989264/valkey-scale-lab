@@ -1,0 +1,87 @@
+{
+  "cluster_id": "P04_CLUSTER_MANAGEMENT_OPS-management_ops-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "cb8271d776fa17d92343b07e3b7b5f887c28b5ced5314ee0ec36db6820943884",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p04-cluster-management-ops-management-ops-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-primary",
+      "pid": 570,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "c8813147b21028fb65267d03d81ad9afdf8bbd91d6699371b9a2f4c9ccf496d0",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p04-cluster-management-ops-management-ops-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-primary",
+      "pid": 649,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "ce638a4b7309391f888a039523c53a6d924157ba51d2cb24bd53b93cc0a8ff14",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p04-cluster-management-ops-management-ops-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-primary",
+      "pid": 725,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "1c89fb67f4894aed0f28bff3e3e7dccbbc09b631334810d4bbf79e65ebf82e7e",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p04-cluster-management-ops-management-ops-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 801,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "f6c4ead838a27685e9f1bfba4c31d088cad42688aa2bf6644ece61310735f63d",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p04-cluster-management-ops-management-ops-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 881,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "8a8924285f3c51c7a196f333323446978c90ca3cbe45ce80454e32d30adffb53",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p04-cluster-management-ops-management-ops-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 956,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+  "runtime": {
+    "network_name": "vslab-p04-cluster-management-ops-management_ops",
+    "project": "valkey-scale-lab",
+    "run_id": "P04_CLUSTER_MANAGEMENT_OPS-management_ops-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "management_ops",
+  "schema_version": "v1"
+}
