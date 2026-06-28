@@ -61,6 +61,7 @@ def create_scenario(
         ("P05_WORKLOAD_ENGINE", "workload_smoke"),
         ("P06_OBSERVABILITY_METRICS", "observability_smoke"),
         ("P07_FAULT_INJECTION_SANDBOX", "fault_sandbox_setup"),
+        ("P08_FAILOVER_SPLIT_BRAIN", "failover_setup"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     run_id = _run_id(phase, scenario)
@@ -155,6 +156,7 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     phase = state.get("phase_id", "P03_LOCAL_DOCKER_VALKEY")
     run_id = state.get("runtime", {}).get("run_id", _run_id(str(phase), str(state.get("scenario", "cluster_smoke"))))
     actions = cleanup_by_label(phase=phase, run_id=run_id)
+    actions.extend(_cleanup_fault_state_files(Path(artifacts_dir)))
     resources_remaining = owned_resources(phase=phase, run_id=run_id)
     report = {
         "schema_version": "v1",
@@ -172,6 +174,14 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
+
+
+def _cleanup_fault_state_files(artifacts_dir: Path) -> list[dict[str, Any]]:
+    actions: list[dict[str, Any]] = []
+    for path in sorted(artifacts_dir.glob("fault_state_*.json")):
+        path.unlink()
+        actions.append({"type": "fault_state", "id": path.name, "action": "remove", "status": "PASS"})
+    return actions
 
 
 def cleanup_by_label(*, phase: str, run_id: str) -> list[dict[str, Any]]:

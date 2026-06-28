@@ -1,0 +1,41 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+  "run_id": "P08_FAILOVER_SPLIT_BRAIN-failover_setup-20260628",
+  "created_at": "2026-06-28T00:00:00Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "status": "PASS",
+  "summary": "P08 proved primary-stop failover on a real six-node Valkey 9.1.0 Docker cluster by stopping an owned primary container through the project fault API, observing replica promotion, recording failover latency, and preserving cleanup safety.",
+  "required_artifacts": [
+    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/phase_summary.json",
+    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
+    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/gate_result.json"
+  ],
+  "missing_metrics": [
+    {
+      "metric": "split_brain_duration_ms",
+      "status": "MISSING",
+      "reason": "The primary-stop failover gate did not measure a split-brain window.",
+      "impact": "P08 records the absence explicitly and does not fabricate split-brain duration."
+    }
+  ],
+  "risks": [
+    {
+      "risk": "Minority/majority partition analysis is represented by explicit missing split-brain duration in the primary-stop gate and should be expanded in later fault scenarios.",
+      "severity": "low",
+      "required_before_next_phase": false
+    }
+  ],
+  "real_valkey": {
+    "version": "9.1.0",
+    "nodes_observed_after_fault": 5,
+    "cluster_state": "ok",
+    "promotion_observed": true
+  }
+}

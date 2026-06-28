@@ -1,0 +1,30 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "failover_report",
+  "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+  "run_id": "phase-P08_FAILOVER_SPLIT_BRAIN-primary-stop",
+  "created_at": "2026-06-28T07:02:05.305987Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "failovers": [
+    {
+      "fault_id": "fault-primary-stop",
+      "target_logical_id": "shard-0000-primary",
+      "old_primary_node_id": "e2126f4f1543a8f06b6f429a5647ce7b344bef4e",
+      "promoted_node_id": "e9ab2ea9eefb4276749c1f44ed32fc65dc3fe622",
+      "failover_latency_ms": 408.125
+    }
+  ],
+  "summary": {
+    "primary_stop_observed": true,
+    "promotion_observed": true,
+    "split_brain_duration_ms": {
+      "value": null,
+      "status": "MISSING",
+      "reason": "not_measured_by_primary_stop_gate"
+    }
+  }
+}

@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab.runtime.docker_runtime import run_docker
 
 
 class FaultError(RuntimeError):
@@ -21,7 +22,7 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
     fault_type = str(spec.get("type") or spec.get("fault_type") or "unknown")
     if spec.get("forbid_host_network_mutation") is not True:
         raise FaultError("fault spec must forbid host network mutation")
-    if fault_type not in {"network_delay", "network_loss", "network_partition", "network_flap", "process_stop", "process_restart"}:
+    if fault_type not in {"network_delay", "network_loss", "network_partition", "network_flap", "process_stop", "process_restart", "node_stop"}:
         raise FaultError(f"unsupported fault type {fault_type}")
 
     fault_state = _fault_state_path(state_path, fault_id)
@@ -46,6 +47,24 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
         },
         "status": "PASS",
     }
+    if fault_type == "node_stop":
+        container_name = target.get("container_name")
+        if not container_name:
+            raise FaultError("node_stop requires target container_name in state")
+        result = run_docker(["stop", "-t", "5", str(container_name)], timeout=30, check=False)
+        if result.returncode != 0:
+            raise FaultError(f"node_stop failed for owned container {container_name}: {result.stderr.strip()}")
+        record["observed_impact"] = {
+            "status": "PASS",
+            "action": "container_stop",
+            "container_name": container_name,
+            "stderr": result.stderr.strip(),
+        }
+    else:
+        record["observed_impact"] = {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Sandbox proxy lifecycle records non-destructive network fault without host mutation.",
+        }
     _write_json(fault_state, record)
     report = {
         "schema_version": "v1",

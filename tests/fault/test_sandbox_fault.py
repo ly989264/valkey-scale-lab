@@ -59,3 +59,39 @@ def test_fault_requires_host_network_guard(tmp_path: Path) -> None:
     spec.write_text(json.dumps({"fault_id": "bad", "type": "network_delay"}), encoding="utf-8")
     with pytest.raises(FaultError, match="forbid host network"):
         apply_fault(state_path=state, target_logical_id="shard-0000-primary", fault_json=spec, out_path=tmp_path / "out.json")
+
+
+def test_node_stop_stops_owned_container(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = _state(tmp_path / "state.json")
+    spec = tmp_path / "fault.json"
+    spec.write_text(
+        json.dumps(
+            {
+                "fault_id": "fault-primary-stop",
+                "type": "node_stop",
+                "scope": "owned_container_or_process",
+                "forbid_host_network_mutation": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    calls: list[list[str]] = []
+
+    class Result:
+        returncode = 0
+        stderr = ""
+        stdout = ""
+
+    def fake_run_docker(args: list[str], **kwargs: object) -> Result:
+        calls.append(args)
+        return Result()
+
+    monkeypatch.setattr("valkey_scale_lab.fault.sandbox.run_docker", fake_run_docker)
+    report = apply_fault(
+        state_path=state,
+        target_logical_id="shard-0000-primary",
+        fault_json=spec,
+        out_path=tmp_path / "fault_apply.json",
+    )
+    assert report["status"] == "PASS"
+    assert calls == [["stop", "-t", "5", "owned"]]

@@ -60,6 +60,26 @@ def test_cleanup_report_shape_without_owned_resources(tmp_path: Path, monkeypatc
     assert report["resources_remaining"] == []
 
 
+def test_cleanup_removes_fault_state_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = {
+        "schema_version": "v1",
+        "cluster_id": "test",
+        "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+        "runtime": {"run_id": "test-run"},
+        "nodes": [],
+    }
+    state_path = tmp_path / "state.json"
+    state_path.write_text(docker_runtime.json.dumps(state), encoding="utf-8")
+    fault_state = tmp_path / "fault_state_fault-primary-stop.json"
+    fault_state.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
+    report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
+    assert report["status"] == "PASS"
+    assert not fault_state.exists()
+    assert any(action["type"] == "fault_state" for action in report["cleanup_actions"])
+
+
 def test_management_ops_report_taxonomy(tmp_path: Path) -> None:
     operations = [
         {"operation": "meet", "status": "PASS", "duration_seconds": 0.1},

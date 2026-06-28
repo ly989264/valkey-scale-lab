@@ -1,0 +1,87 @@
+{
+  "cluster_id": "P08_FAILOVER_SPLIT_BRAIN-failover_setup-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "cf28ba42534b5d83c545192142b46b67481b232c26cc5e36895202bf30e04440",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p08-failover-split-brain-failover-setup-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-primary",
+      "pid": 5135,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "3a5248ef4b1419bc100a34020346b13ac6f866d197ead709d09d444896c6f5ba",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p08-failover-split-brain-failover-setup-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-primary",
+      "pid": 5215,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "83d4ca3000e8b1c0d995f7fb015e6b46f523121055f8b59169f12af8a845fb9d",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p08-failover-split-brain-failover-setup-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-primary",
+      "pid": 5293,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "c9145be7c95d9f2fca45734a563d81228b8fdf85f673145f778feffb8d2378e6",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p08-failover-split-brain-failover-setup-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 5370,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "5c94ff1414b3848d3fcfcfdf48f8f4a1a4b06a3c5fef8eb95fd8c9a2a5da29da",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p08-failover-split-brain-failover-setup-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 5446,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "106d200950e8306cbbc58079a53c73298c4e3d27a1f44d190576adbd6d09b431",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p08-failover-split-brain-failover-setup-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 5521,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+  "runtime": {
+    "network_name": "vslab-p08-failover-split-brain-failover_setup",
+    "project": "valkey-scale-lab",
+    "run_id": "P08_FAILOVER_SPLIT_BRAIN-failover_setup-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "failover_setup",
+  "schema_version": "v1"
+}
