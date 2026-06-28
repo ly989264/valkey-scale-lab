@@ -1,0 +1,40 @@
+schema_version: v1
+profile_name: scale_100
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: docker
+  valkey_image: valkey/valkey:9.1.0
+  sandbox_mode: container_namespace
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller, worker]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b, az-c]
+cluster:
+  shards: 50
+  replicas_per_shard: 1
+  port_base: 7500
+  cluster_bus_port_base: 17500
+  node_memory_limit_mb: 64
+workload:
+  enabled: true
+  read_ratio: 0.8
+  write_ratio: 0.2
+  uniform_qps: 1000
+  hotspot_qps: 200
+  hotspot_key_fraction: 0.01
+  pipeline: 8
+  timing: all_run
+faults: []

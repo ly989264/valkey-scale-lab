@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cluster Plan",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "created_at",
+    "producer",
+    "status",
+    "node_count",
+    "shard_count",
+    "replicas_per_shard",
+    "hosts",
+    "azs",
+    "nodes",
+    "constraints"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^v1$"
+    },
+    "artifact_type": {
+      "type": "string",
+      "const": "cluster_plan"
+    },
+    "phase_id": {
+      "type": "string",
+      "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "producer": {
+      "type": "object",
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "PARTIAL",
+        "MISSING",
+        "SKIPPED_WITH_REASON",
+        "NO_BASELINE_YET"
+      ]
+    },
+    "node_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "shard_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "replicas_per_shard": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "hosts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "azs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "logical_id",
+          "host_id",
+          "az_id",
+          "role",
+          "shard_id",
+          "client_port"
+        ],
+        "properties": {
+          "logical_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "host_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "az_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "replica"
+            ]
+          },
+          "shard_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "client_port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "cluster_bus_port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "container_name": {
+            "type": "string"
+          },
+          "data_dir": {
+            "type": "string"
+          },
+          "log_dir": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "required": [
+        "primary_replica_distinct_az",
+        "default_node_cap"
+      ],
+      "properties": {
+        "primary_replica_distinct_az": {
+          "type": "boolean"
+        },
+        "default_node_cap": {
+          "type": "integer",
+          "maximum": 100
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "opt_in_1000": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

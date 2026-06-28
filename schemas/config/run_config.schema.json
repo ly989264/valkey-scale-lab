@@ -1,0 +1,192 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Run Config",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "profile_name",
+    "safety",
+    "runtime",
+    "hosts",
+    "network",
+    "cluster"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^v1$"
+    },
+    "profile_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "default_max_nodes",
+        "allow_1000_nodes",
+        "require_sandbox_network",
+        "forbid_host_network_mutation",
+        "cleanup_on_error"
+      ],
+      "properties": {
+        "default_max_nodes": {
+          "type": "integer",
+          "maximum": 100
+        },
+        "allow_1000_nodes": {
+          "type": "boolean"
+        },
+        "require_1000_env": {
+          "type": "string"
+        },
+        "require_sandbox_network": {
+          "type": "boolean"
+        },
+        "forbid_host_network_mutation": {
+          "type": "boolean"
+        },
+        "cleanup_on_error": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "runtime": {
+      "type": "object",
+      "required": [
+        "provider",
+        "valkey_image",
+        "sandbox_mode"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "docker"
+          ]
+        },
+        "valkey_image": {
+          "type": "string"
+        },
+        "sandbox_mode": {
+          "type": "string",
+          "enum": [
+            "container_namespace",
+            "sandbox_proxy"
+          ]
+        },
+        "dry_run": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "hosts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "host_id",
+          "ip",
+          "docker_endpoint"
+        ],
+        "properties": {
+          "host_id": {
+            "type": "string"
+          },
+          "os": {
+            "type": "string"
+          },
+          "arch": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "docker_endpoint": {
+            "type": "string"
+          },
+          "memory_gb": {},
+          "disk_gb": {},
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "network": {
+      "type": "object",
+      "required": [
+        "virtual_az_mode",
+        "azs"
+      ],
+      "properties": {
+        "virtual_az_mode": {
+          "type": "string",
+          "enum": [
+            "single",
+            "multi"
+          ]
+        },
+        "azs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "cluster": {
+      "type": "object",
+      "required": [
+        "shards",
+        "replicas_per_shard",
+        "port_base",
+        "cluster_bus_port_base"
+      ],
+      "properties": {
+        "shards": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "replicas_per_shard": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "port_base": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "cluster_bus_port_base": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "node_memory_limit_mb": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "workload": {
+      "type": "object"
+    },
+    "faults": {
+      "type": "array"
+    },
+    "scale_profile": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}

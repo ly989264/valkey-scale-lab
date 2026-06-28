@@ -1,0 +1,1333 @@
+{
+  "version": "v1",
+  "project": "valkey-scale-lab",
+  "default_max_nodes": 100,
+  "valkey_version_required_prefix": "9.1.",
+  "automatic_stop_after": "P13_SCALE_LADDER_50_100",
+  "phases": [
+    {
+      "id": "P00_REPO_CONTRACT",
+      "title": "Repository contract and immutable harness bootstrap",
+      "automatic": true,
+      "fake_only_allowed": true,
+      "real_valkey_required": false,
+      "max_nodes": 0,
+      "objectives": [
+        "Create package skeleton",
+        "Preserve harness controls",
+        "Establish CI and artifact conventions"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P00_REPO_CONTRACT",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "schema_template_validation",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/gate_result.schema.json --instance templates/artifacts/gate_result.example.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cli_help",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli --help",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P00_REPO_CONTRACT/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P00_REPO_CONTRACT/env_info.json",
+          "schema": "schemas/artifact/env_info.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P00_REPO_CONTRACT/AUDIT.md",
+        "decision_json_path": "audit/P00_REPO_CONTRACT/audit_decision.json"
+      }
+    },
+    {
+      "id": "P01_CONFIG_SCHEMA",
+      "title": "Configuration schema and validation",
+      "automatic": true,
+      "fake_only_allowed": true,
+      "real_valkey_required": false,
+      "max_nodes": 0,
+      "objectives": [
+        "Implement typed configuration model",
+        "Reject unsafe defaults",
+        "Emit normalized config artifacts"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P01_CONFIG_SCHEMA",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "config_unit_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/config",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "validate_single_mac_config",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli config validate --config templates/configs/single_mac_6node.yaml --out artifacts/phases/P01_CONFIG_SCHEMA/config_validation_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "validate_multi_az_config",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli config validate --config templates/configs/local_az_3x2.yaml --out artifacts/phases/P01_CONFIG_SCHEMA/config_validation_multi_az_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "emit_config_schema_report",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli config emit-schema --out artifacts/phases/P01_CONFIG_SCHEMA/config_schema_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P01_CONFIG_SCHEMA/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_report.json",
+          "schema": "schemas/artifact/config_validation_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_multi_az_report.json",
+          "schema": "schemas/artifact/config_validation_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P01_CONFIG_SCHEMA/config_schema_report.json",
+          "schema": "schemas/artifact/config_schema_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P01_CONFIG_SCHEMA/AUDIT.md",
+        "decision_json_path": "audit/P01_CONFIG_SCHEMA/audit_decision.json"
+      }
+    },
+    {
+      "id": "P02_PLANNER",
+      "title": "Cluster planner and AZ-aware placement",
+      "automatic": true,
+      "fake_only_allowed": true,
+      "real_valkey_required": false,
+      "max_nodes": 0,
+      "objectives": [
+        "Produce deterministic cluster plans",
+        "Enforce primary/replica AZ separation",
+        "Support 1000-node dry-run planning"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P02_PLANNER",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "planner_unit_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/planner",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "planner_realistic_az_plan",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli plan --config templates/configs/local_az_3x2.yaml --out artifacts/phases/P02_PLANNER/cluster_plan.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "planner_constraints",
+          "kind": "schema",
+          "command": "python3 scripts/assert_plan_constraints.py --plan artifacts/phases/P02_PLANNER/cluster_plan.json --max-nodes 100",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "planner_1000_dryrun",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli plan --config templates/configs/scale_1000_dryrun_optin.yaml --dry-run --out artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json",
+          "timeout_seconds": 180,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "planner_1000_constraints",
+          "kind": "schema",
+          "command": "python3 scripts/assert_plan_constraints.py --plan artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json --max-nodes 100 --allow-opt-in-1000 --require-dry-run",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P02_PLANNER/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P02_PLANNER/cluster_plan.json",
+          "schema": "schemas/artifact/cluster_plan.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json",
+          "schema": "schemas/artifact/cluster_plan.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P02_PLANNER/AUDIT.md",
+        "decision_json_path": "audit/P02_PLANNER/audit_decision.json"
+      }
+    },
+    {
+      "id": "P03_LOCAL_DOCKER_VALKEY",
+      "title": "Local Docker runtime and real Valkey small cluster",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Local Docker runtime and real Valkey small cluster",
+        "Produce real Valkey evidence"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P03_LOCAL_DOCKER_VALKEY",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_and_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P03_LOCAL_DOCKER_VALKEY --config templates/configs/single_mac_6node.yaml --scenario cluster_smoke --out artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P03_LOCAL_DOCKER_VALKEY/AUDIT.md",
+        "decision_json_path": "audit/P03_LOCAL_DOCKER_VALKEY/audit_decision.json"
+      }
+    },
+    {
+      "id": "P04_CLUSTER_MANAGEMENT_OPS",
+      "title": "Management operation matrix",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Management operation matrix",
+        "Produce real Valkey evidence"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P04_CLUSTER_MANAGEMENT_OPS",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_and_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P04_CLUSTER_MANAGEMENT_OPS --config templates/configs/single_mac_6node.yaml --scenario management_ops --out artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+          "schema": "schemas/artifact/management_ops_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P04_CLUSTER_MANAGEMENT_OPS/AUDIT.md",
+        "decision_json_path": "audit/P04_CLUSTER_MANAGEMENT_OPS/audit_decision.json"
+      }
+    },
+    {
+      "id": "P05_WORKLOAD_ENGINE",
+      "title": "Workload model and data-path proof",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Workload model and data-path proof",
+        "Produce real Valkey evidence"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P05_WORKLOAD_ENGINE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_and_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P05_WORKLOAD_ENGINE --config templates/configs/single_mac_6node.yaml --scenario workload_smoke --out artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P05_WORKLOAD_ENGINE/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+          "schema": "schemas/artifact/workload_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P05_WORKLOAD_ENGINE/AUDIT.md",
+        "decision_json_path": "audit/P05_WORKLOAD_ENGINE/audit_decision.json"
+      }
+    },
+    {
+      "id": "P06_OBSERVABILITY_METRICS",
+      "title": "Metrics, logs, events, and schema-first artifacts",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Metrics, logs, events, and schema-first artifacts",
+        "Produce real Valkey evidence"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P06_OBSERVABILITY_METRICS",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_and_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P06_OBSERVABILITY_METRICS --config templates/configs/single_mac_6node.yaml --scenario observability_smoke --out artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl",
+          "schema": "schemas/artifact/event.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P06_OBSERVABILITY_METRICS/AUDIT.md",
+        "decision_json_path": "audit/P06_OBSERVABILITY_METRICS/audit_decision.json"
+      }
+    },
+    {
+      "id": "P07_FAULT_INJECTION_SANDBOX",
+      "title": "Sandboxed fault engine",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Inject scoped node/AZ/network faults",
+        "Prove host network is untouched",
+        "Produce fault report"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P07_FAULT_INJECTION_SANDBOX",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "fault_unit_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/fault tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "fault_sandbox_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/fault_safety_gate.py --phase P07_FAULT_INJECTION_SANDBOX --config templates/configs/local_az_3x2.yaml --out artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json --fault-report artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+          "schema": "schemas/artifact/fault_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P07_FAULT_INJECTION_SANDBOX/AUDIT.md",
+        "decision_json_path": "audit/P07_FAULT_INJECTION_SANDBOX/audit_decision.json"
+      }
+    },
+    {
+      "id": "P08_FAILOVER_SPLIT_BRAIN",
+      "title": "Failover, partition, and split-brain analysis",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Measure failover effectiveness",
+        "Capture split-brain indicators",
+        "Produce failover report"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P08_FAILOVER_SPLIT_BRAIN",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "failover_unit_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/fault tests/failover tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "primary_stop_failover_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/fault_failover_gate.py --phase P08_FAILOVER_SPLIT_BRAIN --config templates/configs/single_mac_6node.yaml --out artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json --failover-report artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+          "timeout_seconds": 1200,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+          "schema": "schemas/artifact/failover_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P08_FAILOVER_SPLIT_BRAIN/AUDIT.md",
+        "decision_json_path": "audit/P08_FAILOVER_SPLIT_BRAIN/audit_decision.json"
+      }
+    },
+    {
+      "id": "P09_ANALYSIS_REPORTING",
+      "title": "Quantitative analysis and presentation layer",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Analyze real artifacts",
+        "Generate reports from artifacts only",
+        "Preserve missing metric semantics"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P09_ANALYSIS_REPORTING",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "analysis_unit_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/analysis tests/report",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "reporting_source_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P09_ANALYSIS_REPORTING --config templates/configs/single_mac_6node.yaml --scenario reporting_source_smoke --out artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "real_artifact_analysis",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli analyze --input artifacts/phases/P08_FAILOVER_SPLIT_BRAIN --out artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "render_report",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli report --analysis artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json --out-dir artifacts/phases/P09_ANALYSIS_REPORTING/report --index-out artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P09_ANALYSIS_REPORTING/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+          "schema": "schemas/artifact/analysis_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+          "schema": "schemas/artifact/report_index.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P09_ANALYSIS_REPORTING/AUDIT.md",
+        "decision_json_path": "audit/P09_ANALYSIS_REPORTING/audit_decision.json"
+      }
+    },
+    {
+      "id": "P10_MULTI_HOST_ORCHESTRATION",
+      "title": "Multi-Mac/Linux orchestration",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Implement host inventory and remote abstraction",
+        "Run real local-orchestrated scenario through orchestration layer"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P10_MULTI_HOST_ORCHESTRATION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "orchestrator_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/orchestrator tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "orchestrated_localhost_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P10_MULTI_HOST_ORCHESTRATION --config templates/configs/single_mac_6node.yaml --scenario orchestrated_localhost --out artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P10_MULTI_HOST_ORCHESTRATION/AUDIT.md",
+        "decision_json_path": "audit/P10_MULTI_HOST_ORCHESTRATION/audit_decision.json"
+      }
+    },
+    {
+      "id": "P11_STABILITY_SOAK",
+      "title": "Stability and soak profile",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Run bounded soak",
+        "Summarize stability metrics",
+        "Support baseline comparison"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P11_STABILITY_SOAK",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "stability_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/stability tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "stability_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P11_STABILITY_SOAK --config templates/configs/single_mac_6node.yaml --scenario stability_soak_smoke --out artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 1200,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P11_STABILITY_SOAK/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "schema": "schemas/artifact/stability_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P11_STABILITY_SOAK/AUDIT.md",
+        "decision_json_path": "audit/P11_STABILITY_SOAK/audit_decision.json"
+      }
+    },
+    {
+      "id": "P12_SCALE_LADDER_10_30",
+      "title": "Real scale ladder: 10 and 30 nodes",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 30,
+      "objectives": [
+        "Run real 10-node rung",
+        "Run real 30-node rung",
+        "Compare scale metrics"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P12_SCALE_LADDER_10_30",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scale_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/scale tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "resource_preflight_10",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_10.yaml --out artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_10.json",
+          "timeout_seconds": 180,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scale_10_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P12_SCALE_LADDER_10_30 --config templates/configs/scale_10.yaml --scenario scale_10 --out artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_10.json --min-nodes 10 --require-data-path",
+          "timeout_seconds": 1800,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "resource_preflight_30",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_30.yaml --out artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+          "timeout_seconds": 180,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scale_30_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P12_SCALE_LADDER_10_30 --config templates/configs/scale_30.yaml --scenario scale_30 --out artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json --min-nodes 30 --require-data-path",
+          "timeout_seconds": 2400,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_10.json",
+          "schema": "schemas/artifact/resource_preflight.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+          "schema": "schemas/artifact/resource_preflight.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_10.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json",
+          "schema": "schemas/artifact/scale_ladder_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P12_SCALE_LADDER_10_30/AUDIT.md",
+        "decision_json_path": "audit/P12_SCALE_LADDER_10_30/audit_decision.json"
+      }
+    },
+    {
+      "id": "P13_SCALE_LADDER_50_100",
+      "title": "Real scale ladder: 50 and 100 nodes",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 100,
+      "objectives": [
+        "Run real 50-node rung",
+        "Run real 100-node rung",
+        "Complete default ceiling"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P13_SCALE_LADDER_50_100",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scale_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/scale tests/integration",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "resource_preflight_50",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_50.yaml --out artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+          "timeout_seconds": 180,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scale_50_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P13_SCALE_LADDER_50_100 --config templates/configs/scale_50.yaml --scenario scale_50 --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json --min-nodes 50 --require-data-path",
+          "timeout_seconds": 3600,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "resource_preflight_100",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_100.yaml --out artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+          "timeout_seconds": 180,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scale_100_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P13_SCALE_LADDER_50_100 --config templates/configs/scale_100.yaml --scenario scale_100 --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json --min-nodes 100 --require-data-path",
+          "timeout_seconds": 5400,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+          "schema": "schemas/artifact/resource_preflight.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+          "schema": "schemas/artifact/resource_preflight.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+          "schema": "schemas/artifact/scale_ladder_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P13_SCALE_LADDER_50_100/AUDIT.md",
+        "decision_json_path": "audit/P13_SCALE_LADDER_50_100/audit_decision.json"
+      }
+    },
+    {
+      "id": "P14_SCALE_1000_OPTIN_DRYRUN",
+      "title": "Optional 1000-node dry-run and resource check",
+      "automatic": false,
+      "fake_only_allowed": false,
+      "real_valkey_required": false,
+      "max_nodes": 1000,
+      "objectives": [
+        "Plan 1000 nodes only in opt-in dry-run",
+        "Estimate resources",
+        "Refuse default execution"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P14_SCALE_1000_OPTIN_DRYRUN",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "require_1000_opt_in",
+          "kind": "safety",
+          "command": "test \"${VSLAB_ALLOW_1000_DRYRUN:-}\" = \"I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE\"",
+          "timeout_seconds": 30,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "resource_preflight_1000_dryrun",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_1000_dryrun_optin.yaml --dry-run --out artifacts/phases/P14_SCALE_1000_OPTIN_DRYRUN/resource_preflight_1000.json",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "planner_1000_dryrun",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli plan --config templates/configs/scale_1000_dryrun_optin.yaml --dry-run --out artifacts/phases/P14_SCALE_1000_OPTIN_DRYRUN/scale_1000_dryrun_plan.json",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "planner_1000_constraints",
+          "kind": "schema",
+          "command": "python3 scripts/assert_plan_constraints.py --plan artifacts/phases/P14_SCALE_1000_OPTIN_DRYRUN/scale_1000_dryrun_plan.json --max-nodes 100 --allow-opt-in-1000 --require-dry-run",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P14_SCALE_1000_OPTIN_DRYRUN/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P14_SCALE_1000_OPTIN_DRYRUN/resource_preflight_1000.json",
+          "schema": "schemas/artifact/resource_preflight.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P14_SCALE_1000_OPTIN_DRYRUN/scale_1000_dryrun_plan.json",
+          "schema": "schemas/artifact/cluster_plan.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P14_SCALE_1000_OPTIN_DRYRUN/AUDIT.md",
+        "decision_json_path": "audit/P14_SCALE_1000_OPTIN_DRYRUN/audit_decision.json"
+      }
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "config_validation_report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "created_at",
+    "producer",
+    "status",
+    "config_path",
+    "valid",
+    "errors",
+    "normalized_config_path"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^v1$"
+    },
+    "artifact_type": {
+      "type": "string",
+      "const": "config_validation_report"
+    },
+    "phase_id": {
+      "type": "string",
+      "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "producer": {
+      "type": "object"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "PARTIAL",
+        "MISSING",
+        "SKIPPED_WITH_REASON",
+        "NO_BASELINE_YET"
+      ]
+    },
+    "config_path": {
+      "type": "string"
+    },
+    "valid": {
+      "type": "boolean"
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "normalized_config_path": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}
