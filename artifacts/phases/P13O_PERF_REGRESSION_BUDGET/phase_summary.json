@@ -1,0 +1,73 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_optimization_phase_summary",
+  "phase_id": "P13O-05_PERF_REGRESSION_BUDGET",
+  "artifact_phase_id": "P13O_PERF_REGRESSION_BUDGET",
+  "run_id": "phase-P13O-05_PERF_REGRESSION_BUDGET",
+  "created_at": "2026-06-29T12:41:35.576125Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P13 startup optimization comparison records soft budgets and optional strict performance regression checks.",
+  "required_artifacts": [
+    "artifacts/phases/P13O_PERF_REGRESSION_BUDGET/p13_startup_optimization_comparison.json",
+    "artifacts/phases/P13O_PERF_REGRESSION_BUDGET/phase_summary.json"
+  ],
+  "real_valkey_evidence": {
+    "scale_50": {
+      "status": "PASS",
+      "nodes_observed": 50,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "valkey_versions": [
+        "9.1.0"
+      ]
+    },
+    "scale_100": {
+      "status": "PASS",
+      "nodes_observed": 100,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 50,
+        "replica": 50,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "valkey_versions": [
+        "9.1.0"
+      ]
+    }
+  },
+  "timing_accounting": {
+    "scale_50_real_gate_duration_seconds": 81.083596,
+    "scale_100_real_gate_duration_seconds": 156.088284,
+    "scale_50_primary_cluster_create_seconds": 24.283034,
+    "scale_100_primary_cluster_create_seconds": 59.437484,
+    "scale_50_replica_replicate_seconds": 0.115045,
+    "scale_100_replica_replicate_seconds": 0.367947,
+    "scale_50_wrapper_probe_seconds": 0.020673,
+    "scale_100_wrapper_probe_seconds": 0.03388,
+    "scale_50_cleanup_seconds": 6.483668,
+    "scale_100_cleanup_seconds": 7.374156,
+    "scale_50_unattributed_seconds": 0.000451,
+    "scale_100_unattributed_seconds": 0.000602,
+    "overall_budget_status": "PASS",
+    "budget_mode": "warning",
+    "largest_remaining_bottleneck": {
+      "scenario": "scale_100",
+      "metric": "primary_cluster_create_duration_seconds",
+      "duration_seconds": 59.437484
+    }
+  },
+  "startup_optimization_comparison_path": "artifacts/phases/P13O_PERF_REGRESSION_BUDGET/p13_startup_optimization_comparison.json",
+  "errors": []
+}

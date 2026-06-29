@@ -24,6 +24,7 @@ P13O_CLUSTER_CREATE_PHASE = "P13O-01_CLUSTER_CREATE_AB"
 P13O_REPLICA_REPLICATE_PHASE = "P13O-02_REPLICA_REPLICATE_BREAKDOWN"
 P13O_CLEANUP_PHASE = "P13O-03_CLEANUP_OPTIMIZATION"
 P13O_FAST_TEST_SPLIT_PHASE = "P13O-04_FAST_TEST_SPLIT"
+P13O_PERF_BUDGET_PHASE = "P13O-05_PERF_REGRESSION_BUDGET"
 DEFAULT_CLUSTER_CREATE_STRATEGY = "valkey_cli_cluster_create_primaries"
 MANUAL_CLUSTER_CREATE_STRATEGY = "manual_tree_meet_parallel_slots"
 REPLICA_REPLICATE_ARTIFACT_PHASE = "P13O_REPLICA_REPLICATE_BREAKDOWN"
@@ -32,6 +33,15 @@ REPLICA_REPLICATE_SUPPORTED_PARALLELISM = [8, 16, 32]
 CLEANUP_ARTIFACT_PHASE = "P13O_CLEANUP_OPTIMIZATION"
 FAST_TEST_SPLIT_ARTIFACT_PHASE = "P13O_FAST_TEST_SPLIT"
 FAST_TEST_MAX_SECONDS = 30.0
+PERF_BUDGET_ARTIFACT_PHASE = "P13O_PERF_REGRESSION_BUDGET"
+STRICT_PERF_BUDGET_ENV = "VSLAB_STRICT_PERF_BUDGET"
+PERF_BUDGET_THRESHOLDS = {
+    "scale_50_real_gate": 150.0,
+    "scale_100_real_gate": 180.0,
+    "wrapper_probe": 2.0,
+    "cleanup": 30.0,
+    "unattributed_seconds": 10.0,
+}
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
@@ -1234,6 +1244,444 @@ def validate_fast_test_split_artifacts(phase: dict[str, Any], *, write_summary_a
     return 0
 
 
+def strict_perf_budget_enabled(env: dict[str, str] | None = None) -> bool:
+    source = os.environ if env is None else env
+    return source.get(STRICT_PERF_BUDGET_ENV) == "1"
+
+
+def perf_budget_result(
+    *,
+    name: str,
+    metric: str,
+    scenario: str,
+    observed_seconds: Any,
+    budget_seconds: float,
+    strict_enabled: bool,
+) -> dict[str, Any]:
+    result = {
+        "name": name,
+        "metric": metric,
+        "scenario": scenario,
+        "observed_seconds": observed_seconds,
+        "budget_seconds": float(budget_seconds),
+        "strict_enabled": strict_enabled,
+    }
+    if not numeric(observed_seconds):
+        result.update(
+            {
+                "status": "FAIL",
+                "result": "MISSING",
+                "message": f"{name} is missing and cannot be evaluated against the budget",
+            }
+        )
+        return result
+    observed = float(observed_seconds)
+    if observed <= float(budget_seconds):
+        result.update(
+            {
+                "status": "PASS",
+                "result": "WITHIN_BUDGET",
+                "headroom_seconds": round(float(budget_seconds) - observed, 6),
+            }
+        )
+        return result
+    result.update(
+        {
+            "status": "FAIL" if strict_enabled else "WARN",
+            "result": "OVER_BUDGET",
+            "over_by_seconds": round(observed - float(budget_seconds), 6),
+            "message": "strict budget mode failed this metric" if strict_enabled else "soft budget warning only",
+        }
+    )
+    return result
+
+
+def budget_overall_status(results: list[dict[str, Any]]) -> str:
+    statuses = [item.get("status") for item in results]
+    if any(status == "FAIL" for status in statuses):
+        return "FAIL"
+    if any(status == "WARN" for status in statuses):
+        return "WARN"
+    return "PASS"
+
+
+def numeric_metric(value: Any, reason: str) -> Any:
+    if numeric(value):
+        return round(float(value), 6)
+    return {"status": "MISSING", "reason": reason}
+
+
+def perf_scenario_observation(scenario: str, expected_nodes: int) -> tuple[dict[str, Any], dict[str, Any], list[str]]:
+    errors: list[str] = []
+    timing, timing_errors = validate_timing_artifact(scenario, expected_nodes)
+    errors.extend(timing_errors)
+    evidence, evidence_errors = validate_real_evidence(scenario, expected_nodes)
+    errors.extend(evidence_errors)
+
+    timing_path = ROOT / "artifacts" / "phases" / BASE_PHASE / f"p13_timing_breakdown_{scenario}.json"
+    evidence_path = ROOT / "artifacts" / "phases" / BASE_PHASE / f"valkey_e2e_evidence_{scenario.removeprefix('scale_')}.json"
+    cleanup_path = ROOT / "artifacts" / "phases" / BASE_PHASE / f"cleanup_report_{scenario}.json"
+    cleanup_report: dict[str, Any] = {}
+    if cleanup_path.exists():
+        cleanup_report = load_json(cleanup_path)
+        if cleanup_report.get("status") != "PASS":
+            errors.append(f"{scenario}: cleanup report status is {cleanup_report.get('status')}")
+        if cleanup_report.get("resources_remaining"):
+            errors.append(f"{scenario}: cleanup report has resources_remaining")
+    else:
+        errors.append(f"{scenario}: missing cleanup report {rel(cleanup_path)}")
+
+    summary = timing.get("summary", {}) if timing else {}
+    primary_entry = timing_entry(timing, "primary_cluster_create") if timing else None
+    replica_entry = timing_entry(timing, "replica_replicate") if timing else None
+    metrics = {
+        "scale_real_gate_duration_seconds": numeric_metric(
+            summary.get("total_gate_seconds"),
+            "p13 timing summary total_gate_seconds missing",
+        ),
+        "primary_cluster_create_duration_seconds": numeric_metric(
+            primary_entry.get("duration_seconds") if isinstance(primary_entry, dict) else None,
+            "primary_cluster_create timing entry missing",
+        ),
+        "replica_replicate_duration_seconds": numeric_metric(
+            replica_entry.get("duration_seconds") if isinstance(replica_entry, dict) else None,
+            "replica_replicate timing entry missing",
+        ),
+        "wrapper_probe_duration_seconds": numeric_metric(
+            summary.get("wrapper_probe_duration_seconds"),
+            "wrapper_probe_duration_seconds missing",
+        ),
+        "cleanup_duration_seconds": numeric_metric(
+            summary.get("cleanup_command_wall_seconds"),
+            "cleanup_command_wall_seconds missing",
+        ),
+        "unattributed_seconds": numeric_metric(
+            summary.get("unattributed_seconds"),
+            "unattributed_seconds missing",
+        ),
+    }
+    for field, value in metrics.items():
+        if not numeric(value):
+            errors.append(f"{scenario}: metric {field} is missing")
+
+    observation = {
+        "scenario": scenario,
+        "node_count": expected_nodes,
+        "status": "PASS" if not errors else "FAIL",
+        "real_valkey": evidence.get("real_valkey", "MISSING"),
+        "evidence_path": rel(evidence_path),
+        "timing_path": rel(timing_path),
+        "cleanup_report_path": rel(cleanup_path),
+        "metrics": metrics,
+        "role_counts": evidence.get("role_counts", "MISSING"),
+        "data_path_result": evidence.get("data_path_result", "MISSING"),
+        "nodes_observed": evidence.get("nodes_observed", "MISSING"),
+        "valkey_versions": evidence.get("valkey_versions", "MISSING"),
+        "cleanup_status": cleanup_report.get("status", "MISSING"),
+        "timing_status": timing.get("status", "MISSING"),
+    }
+    return observation, evidence, errors
+
+
+def perf_budget_results_for_observations(
+    observations: list[dict[str, Any]],
+    *,
+    strict_enabled: bool,
+) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for observation in observations:
+        scenario = str(observation.get("scenario"))
+        metrics = observation.get("metrics", {})
+        gate_budget = PERF_BUDGET_THRESHOLDS[f"{scenario}_real_gate"]
+        budget_specs = [
+            (
+                f"{scenario}_real_gate",
+                "scale_real_gate_duration_seconds",
+                metrics.get("scale_real_gate_duration_seconds"),
+                gate_budget,
+            ),
+            (
+                f"{scenario}_wrapper_probe",
+                "wrapper_probe_duration_seconds",
+                metrics.get("wrapper_probe_duration_seconds"),
+                PERF_BUDGET_THRESHOLDS["wrapper_probe"],
+            ),
+            (
+                f"{scenario}_cleanup",
+                "cleanup_duration_seconds",
+                metrics.get("cleanup_duration_seconds"),
+                PERF_BUDGET_THRESHOLDS["cleanup"],
+            ),
+            (
+                f"{scenario}_unattributed_seconds",
+                "unattributed_seconds",
+                metrics.get("unattributed_seconds"),
+                PERF_BUDGET_THRESHOLDS["unattributed_seconds"],
+            ),
+        ]
+        for name, metric, observed, budget in budget_specs:
+            results.append(
+                perf_budget_result(
+                    name=name,
+                    metric=metric,
+                    scenario=scenario,
+                    observed_seconds=observed,
+                    budget_seconds=float(budget),
+                    strict_enabled=strict_enabled,
+                )
+            )
+    return results
+
+
+def largest_bottleneck(observations: list[dict[str, Any]]) -> dict[str, Any]:
+    candidates: list[dict[str, Any]] = []
+    for observation in observations:
+        scenario = str(observation.get("scenario"))
+        for metric in [
+            "primary_cluster_create_duration_seconds",
+            "replica_replicate_duration_seconds",
+            "wrapper_probe_duration_seconds",
+            "cleanup_duration_seconds",
+            "unattributed_seconds",
+        ]:
+            value = observation.get("metrics", {}).get(metric)
+            if numeric(value):
+                candidates.append({"scenario": scenario, "metric": metric, "duration_seconds": round(float(value), 6)})
+    if not candidates:
+        return {"status": "MISSING", "reason": "no numeric bottleneck candidates"}
+    return max(candidates, key=lambda item: float(item["duration_seconds"]))
+
+
+def write_startup_optimization_comparison(errors: list[str]) -> tuple[Path, dict[str, Any], dict[str, dict[str, Any]]]:
+    out = ROOT / "artifacts" / "phases" / PERF_BUDGET_ARTIFACT_PHASE / "p13_startup_optimization_comparison.json"
+    observations: list[dict[str, Any]] = []
+    evidence: dict[str, dict[str, Any]] = {}
+    for scenario, expected_nodes in {"scale_50": 50, "scale_100": 100}.items():
+        observation, observed_evidence, obs_errors = perf_scenario_observation(scenario, expected_nodes)
+        observations.append(observation)
+        evidence[scenario] = observed_evidence
+        errors.extend(obs_errors)
+
+    strict_enabled = strict_perf_budget_enabled()
+    budget_results = perf_budget_results_for_observations(observations, strict_enabled=strict_enabled)
+    for result in budget_results:
+        if result.get("status") == "FAIL":
+            errors.append(f"{result.get('name')}: {result.get('message', 'budget failure')}")
+    overall = budget_overall_status(budget_results)
+    observations_by_scenario = {item.get("scenario"): item for item in observations}
+
+    def scenario_metric(scenario: str, metric: str) -> Any:
+        return observations_by_scenario.get(scenario, {}).get("metrics", {}).get(metric, "MISSING")
+
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": "p13_startup_optimization_comparison",
+        "phase_id": P13O_PERF_BUDGET_PHASE,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "budget_mode": "strict" if strict_enabled else "warning",
+        "strict_env_var": STRICT_PERF_BUDGET_ENV,
+        "summary": {
+            "scale_50_real_gate_duration_seconds": scenario_metric("scale_50", "scale_real_gate_duration_seconds"),
+            "scale_100_real_gate_duration_seconds": scenario_metric("scale_100", "scale_real_gate_duration_seconds"),
+            "scale_50_primary_cluster_create_seconds": scenario_metric("scale_50", "primary_cluster_create_duration_seconds"),
+            "scale_100_primary_cluster_create_seconds": scenario_metric("scale_100", "primary_cluster_create_duration_seconds"),
+            "scale_50_replica_replicate_seconds": scenario_metric("scale_50", "replica_replicate_duration_seconds"),
+            "scale_100_replica_replicate_seconds": scenario_metric("scale_100", "replica_replicate_duration_seconds"),
+            "scale_50_wrapper_probe_seconds": scenario_metric("scale_50", "wrapper_probe_duration_seconds"),
+            "scale_100_wrapper_probe_seconds": scenario_metric("scale_100", "wrapper_probe_duration_seconds"),
+            "scale_50_cleanup_seconds": scenario_metric("scale_50", "cleanup_duration_seconds"),
+            "scale_100_cleanup_seconds": scenario_metric("scale_100", "cleanup_duration_seconds"),
+            "scale_50_unattributed_seconds": scenario_metric("scale_50", "unattributed_seconds"),
+            "scale_100_unattributed_seconds": scenario_metric("scale_100", "unattributed_seconds"),
+            "overall_budget_status": overall,
+            "largest_remaining_bottleneck": largest_bottleneck(observations),
+        },
+        "scenario_observations": observations,
+        "budget_results": {
+            "overall_status": overall,
+            "strict_enabled": strict_enabled,
+            "thresholds_seconds": PERF_BUDGET_THRESHOLDS,
+            "results": budget_results,
+        },
+        "real_valkey_evidence": {
+            scenario: {
+                "status": artifact.get("status", "MISSING"),
+                "real_valkey": artifact.get("real_valkey", "MISSING"),
+                "nodes_observed": artifact.get("nodes_observed", "MISSING"),
+                "data_path_result": artifact.get("data_path_result", "MISSING"),
+                "role_counts": artifact.get("role_counts", "MISSING"),
+                "valkey_versions": artifact.get("valkey_versions", "MISSING"),
+            }
+            for scenario, artifact in evidence.items()
+        },
+        "safety_constraints": {
+            "real_valkey_evidence_replaced": False,
+            "fake_only_gate_used": False,
+            "host_network_mutation": False,
+            "p14_executed": False,
+            "default_max_nodes": 100,
+        },
+        "source_artifacts": [
+            "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+        ],
+        "errors": errors,
+    }
+    write_json(out, artifact)
+    return out, artifact, evidence
+
+
+def write_perf_budget_phase_summary(
+    phase: dict[str, Any],
+    comparison: dict[str, Any],
+    evidence: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> Path:
+    phase_id = str(phase["id"])
+    artifact_id = artifact_phase_id(phase)
+    out = ROOT / "artifacts" / "phases" / artifact_id / "phase_summary.json"
+    real_evidence = {
+        scenario: {
+            "status": artifact.get("status", "MISSING"),
+            "nodes_observed": artifact.get("nodes_observed", "MISSING"),
+            "data_path_result": artifact.get("data_path_result", "MISSING"),
+            "role_counts": artifact.get("role_counts", "MISSING"),
+            "valkey_versions": artifact.get("valkey_versions", "MISSING"),
+        }
+        for scenario, artifact in evidence.items()
+    }
+    summary = comparison.get("summary", {})
+    phase_summary = {
+        "schema_version": "v1",
+        "artifact_type": "p13_optimization_phase_summary",
+        "phase_id": phase_id,
+        "artifact_phase_id": artifact_id,
+        "run_id": f"phase-{phase_id}",
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "summary": "P13 startup optimization comparison records soft budgets and optional strict performance regression checks.",
+        "required_artifacts": [item["path"] for item in phase.get("required_artifacts", [])],
+        "real_valkey_evidence": real_evidence,
+        "timing_accounting": {
+            "scale_50_real_gate_duration_seconds": summary.get("scale_50_real_gate_duration_seconds", "MISSING"),
+            "scale_100_real_gate_duration_seconds": summary.get("scale_100_real_gate_duration_seconds", "MISSING"),
+            "scale_50_primary_cluster_create_seconds": summary.get("scale_50_primary_cluster_create_seconds", "MISSING"),
+            "scale_100_primary_cluster_create_seconds": summary.get("scale_100_primary_cluster_create_seconds", "MISSING"),
+            "scale_50_replica_replicate_seconds": summary.get("scale_50_replica_replicate_seconds", "MISSING"),
+            "scale_100_replica_replicate_seconds": summary.get("scale_100_replica_replicate_seconds", "MISSING"),
+            "scale_50_wrapper_probe_seconds": summary.get("scale_50_wrapper_probe_seconds", "MISSING"),
+            "scale_100_wrapper_probe_seconds": summary.get("scale_100_wrapper_probe_seconds", "MISSING"),
+            "scale_50_cleanup_seconds": summary.get("scale_50_cleanup_seconds", "MISSING"),
+            "scale_100_cleanup_seconds": summary.get("scale_100_cleanup_seconds", "MISSING"),
+            "scale_50_unattributed_seconds": summary.get("scale_50_unattributed_seconds", "MISSING"),
+            "scale_100_unattributed_seconds": summary.get("scale_100_unattributed_seconds", "MISSING"),
+            "overall_budget_status": summary.get("overall_budget_status", "MISSING"),
+            "budget_mode": comparison.get("budget_mode", "MISSING"),
+            "largest_remaining_bottleneck": summary.get("largest_remaining_bottleneck", "MISSING"),
+        },
+        "startup_optimization_comparison_path": rel(
+            ROOT / "artifacts" / "phases" / artifact_id / "p13_startup_optimization_comparison.json"
+        ),
+        "errors": errors,
+    }
+    write_json(out, phase_summary)
+    return out
+
+
+def validate_perf_budget_artifacts(phase: dict[str, Any], *, write_summary_artifact: bool = True) -> int:
+    all_errors: list[str] = []
+    comparison_path = ROOT / "artifacts" / "phases" / PERF_BUDGET_ARTIFACT_PHASE / "p13_startup_optimization_comparison.json"
+    if write_summary_artifact:
+        comparison_path, comparison, evidence = write_startup_optimization_comparison(all_errors)
+    elif comparison_path.exists():
+        comparison = load_json(comparison_path)
+        evidence = {}
+    else:
+        comparison = {}
+        evidence = {}
+        all_errors.append(f"missing startup optimization comparison artifact: {rel(comparison_path)}")
+
+    if comparison_path.exists():
+        all_errors.extend(validate_schema(comparison_path, ROOT / "schemas" / "artifact" / "p13_startup_optimization_comparison.schema.json"))
+        if comparison.get("status") != "PASS":
+            all_errors.append(f"startup optimization comparison status is {comparison.get('status')}")
+        summary = comparison.get("summary", {})
+        required_summary = [
+            "scale_50_real_gate_duration_seconds",
+            "scale_100_real_gate_duration_seconds",
+            "scale_50_primary_cluster_create_seconds",
+            "scale_100_primary_cluster_create_seconds",
+            "scale_50_replica_replicate_seconds",
+            "scale_100_replica_replicate_seconds",
+            "scale_50_wrapper_probe_seconds",
+            "scale_100_wrapper_probe_seconds",
+            "scale_50_cleanup_seconds",
+            "scale_100_cleanup_seconds",
+            "scale_50_unattributed_seconds",
+            "scale_100_unattributed_seconds",
+        ]
+        for field in required_summary:
+            if not numeric(summary.get(field)):
+                all_errors.append(f"summary.{field} must be numeric")
+        budget_results = comparison.get("budget_results", {})
+        if budget_results.get("strict_enabled") != strict_perf_budget_enabled():
+            all_errors.append("budget strict_enabled does not match current environment")
+        if budget_results.get("overall_status") == "FAIL":
+            all_errors.append("performance budget result is FAIL")
+        result_names = {item.get("name") for item in budget_results.get("results", [])}
+        for name in [
+            "scale_50_real_gate",
+            "scale_100_real_gate",
+            "scale_50_wrapper_probe",
+            "scale_100_wrapper_probe",
+            "scale_50_cleanup",
+            "scale_100_cleanup",
+            "scale_50_unattributed_seconds",
+            "scale_100_unattributed_seconds",
+        ]:
+            if name not in result_names:
+                all_errors.append(f"missing budget result {name}")
+        if comparison.get("safety_constraints", {}).get("real_valkey_evidence_replaced") is not False:
+            all_errors.append("real Valkey evidence must not be replaced")
+        observations = {item.get("scenario"): item for item in comparison.get("scenario_observations", [])}
+        for scenario in ["scale_50", "scale_100"]:
+            observation = observations.get(scenario)
+            if not observation:
+                all_errors.append(f"missing scenario observation {scenario}")
+            elif observation.get("status") != "PASS":
+                all_errors.append(f"scenario observation {scenario} status is {observation.get('status')}")
+
+    if not evidence and comparison.get("scenario_observations"):
+        for observation in comparison.get("scenario_observations", []):
+            evidence_path = ROOT / str(observation.get("evidence_path", ""))
+            expected_nodes = int(observation.get("node_count", 0) or 0)
+            observed, errors = validate_real_evidence_path(evidence_path, str(observation.get("scenario")), expected_nodes)
+            evidence[str(observation.get("scenario"))] = observed
+            all_errors.extend(errors)
+
+    summary_path = ROOT / "artifacts" / "phases" / PERF_BUDGET_ARTIFACT_PHASE / "phase_summary.json"
+    if write_summary_artifact:
+        summary_path = write_perf_budget_phase_summary(phase, comparison, evidence, all_errors)
+    elif not summary_path.exists():
+        all_errors.append(f"missing phase summary artifact: {rel(summary_path)}")
+    if summary_path.exists():
+        all_errors.extend(validate_schema(summary_path, ROOT / "schemas" / "artifact" / "p13_optimization_phase_summary.schema.json"))
+
+    if all_errors:
+        for err in all_errors:
+            print(f"FAIL: {err}", file=sys.stderr)
+        return 1
+    print(f"PASS p13o artifacts phase={phase['id']} summary={rel(summary_path)}")
+    return 0
+
+
 def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool = True) -> int:
     manifest = load_manifest()
     phase = phase_by_id(manifest, args.phase)
@@ -1245,6 +1693,8 @@ def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool
         return validate_cleanup_artifacts(phase, write_summary_artifact=write_summary_artifact)
     if args.phase == P13O_FAST_TEST_SPLIT_PHASE:
         return validate_fast_test_split_artifacts(phase, write_summary_artifact=write_summary_artifact)
+    if args.phase == P13O_PERF_BUDGET_PHASE:
+        return validate_perf_budget_artifacts(phase, write_summary_artifact=write_summary_artifact)
 
     all_errors: list[str] = []
     timings: dict[str, dict[str, Any]] = {}
