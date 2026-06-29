@@ -501,7 +501,7 @@ def _process_runtime_state(
             "network_name": network_name,
             "run_id": run_id,
             "project": PROJECT,
-            "cluster_startup_strategy": "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+            "cluster_startup_strategy": _process_cluster_startup_strategy(nodes),
             "container_strategy": "one_owned_docker_nodehost_per_virtual_az",
             "nodehost_count": len(nodehosts),
             "logical_node_count": len(nodes),
@@ -1028,6 +1028,9 @@ def _representative_nodes(nodes: list[dict[str, Any]], *, primaries_only: bool =
 
 
 def _configure_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    if len(nodes) > 30:
+        return _configure_large_process_cluster(nodes)
+
     operations: list[dict[str, Any]] = []
     snapshots: list[dict[str, Any]] = []
     timeout = _scale_timeout(nodes, floor=300.0, per_node=8.0)
@@ -1120,6 +1123,68 @@ def _configure_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[s
 
     final_started = time.monotonic()
     _wait_process_snapshot_clean(nodes, expected_nodes=len(nodes), expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout)
+    snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
+    operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
+    return operations, snapshots
+
+
+def _process_cluster_startup_strategy(nodes: list[dict[str, Any]]) -> str:
+    if len(nodes) > 30:
+        return "all_processes_ready_then_valkey_cli_cluster_create_replicas_two_stage_probe"
+    return "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe"
+
+
+def _configure_large_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    operations: list[dict[str, Any]] = []
+    snapshots: list[dict[str, Any]] = []
+    timeout = _scale_timeout(nodes, floor=300.0, per_node=8.0)
+    primaries = [node for node in nodes if node["role"] == "primary"]
+    replicas = [node for node in nodes if node["role"] == "replica"]
+
+    create_started = time.monotonic()
+    create_output = _create_large_cluster(primaries, replicas, timeout=timeout)
+    _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False)
+    _wait_process_slots_assigned(nodes, timeout=timeout, final_check=False)
+    _wait_process_cluster_ok(nodes, timeout=timeout, final_check=False)
+    _wait_process_role_counts(
+        nodes,
+        expected_primaries=len(primaries),
+        expected_replicas=len(replicas),
+        timeout=timeout,
+        final_check=False,
+    )
+    snapshots.append(
+        _process_cluster_summary(
+            "after_cluster_create",
+            _representative_nodes(nodes),
+            total_node_count=len(nodes),
+            sample_scope="representative_by_az",
+        )
+    )
+    operations.append(
+        _operation(
+            "cluster_create",
+            "PASS",
+            create_started,
+            snapshots[-1]
+            | {
+                "strategy": "valkey_cli_cluster_create_primaries_then_parallel_process_replicas",
+                "primary_count": len(primaries),
+                "replica_count": len(replicas),
+                "cluster_create_address_count": len(primaries),
+                "output_tail": create_output[-1000:],
+            },
+        )
+    )
+
+    final_started = time.monotonic()
+    _wait_process_snapshot_clean(
+        nodes,
+        expected_nodes=len(nodes),
+        expected_primaries=len(primaries),
+        expected_replicas=len(replicas),
+        timeout=timeout,
+    )
     snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
     operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
     return operations, snapshots
@@ -1473,19 +1538,20 @@ def _create_large_cluster(primaries: list[dict[str, Any]], replicas: list[dict[s
     if not primaries:
         raise DockerRuntimeError("large cluster create requires at least one primary")
     nodes = [*primaries, *replicas]
-    output = [_create_cluster_with_replica_candidates(primaries, replicas, timeout=timeout)]
-    _wait_cluster_known(nodes, expected=len(nodes), timeout=min(360.0, timeout))
+    output = [_create_primary_cluster(primaries, timeout=timeout)]
+    _wait_cluster_known(primaries, expected=len(primaries), timeout=min(360.0, timeout))
+    output.append(_assign_probe_slot_to_first_primary(primaries, timeout=timeout))
     if replicas:
+        meet_commands = _tree_fanout_meet_nodes(primaries[0], replicas, timeout=timeout)
+        _wait_cluster_known(nodes, expected=len(nodes), timeout=min(360.0, timeout))
+        output.append(f"replica meet commands: {meet_commands}")
         output.append(_configure_large_cluster_replicas(primaries, replicas, timeout=timeout))
     return "\n".join(part for part in output if part)
 
 
-def _create_cluster_with_replica_candidates(primaries: list[dict[str, Any]], replicas: list[dict[str, Any]], timeout: float) -> str:
-    if replicas and len(replicas) % len(primaries) != 0:
-        raise DockerRuntimeError("large cluster create requires an even replica count per primary")
-    replicas_per_primary = len(replicas) // len(primaries)
-    nodes = [*primaries, *replicas]
-    addresses = [f"{node['container_ip']}:6379" for node in nodes]
+def _create_primary_cluster(primaries: list[dict[str, Any]], timeout: float) -> str:
+    create_primaries = _cluster_create_primary_order(primaries)
+    addresses = [_cluster_create_address(node) for node in create_primaries]
     args = [
         "exec",
         primaries[0]["container_name"],
@@ -1494,16 +1560,51 @@ def _create_cluster_with_replica_candidates(primaries: list[dict[str, Any]], rep
         "create",
         *addresses,
     ]
-    if replicas:
-        args.extend(["--cluster-replicas", str(replicas_per_primary)])
     args.append("--cluster-yes")
     try:
-        return run_docker(args, timeout=min(300, int(timeout))).stdout.strip()
+        return run_docker(args, timeout=max(1, min(900, int(timeout)))).stdout.strip()
     except DockerRuntimeError as exc:
         if "timed out" not in str(exc):
             raise
-        _wait_cluster_known(nodes, expected=len(nodes), timeout=min(360.0, timeout))
+        _wait_cluster_known(primaries, expected=len(primaries), timeout=min(360.0, timeout))
         return "cluster create client timed out after membership became visible"
+
+
+def _cluster_create_address(node: dict[str, Any]) -> str:
+    return f"{_cluster_meet_address(node)}:{_cluster_meet_port(node)}"
+
+
+def _assign_probe_slot_to_first_primary(primaries: list[dict[str, Any]], *, timeout: float) -> str:
+    probe_slot = 8014
+    target_id = _node_command(primaries[0], "CLUSTER", "MYID", timeout=30)
+
+    def assign(node: dict[str, Any]) -> str:
+        return _node_command(node, "CLUSTER", "SETSLOT", probe_slot, "NODE", target_id, timeout=30)
+
+    _bounded_parallel(
+        primaries,
+        assign,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=timeout,
+        label="parallel CLUSTER SETSLOT probe slot",
+    )
+    return f"probe slot {probe_slot} assigned to {primaries[0]['logical_id']}"
+
+
+def _cluster_create_primary_order(primaries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if len(primaries) <= 1:
+        return list(primaries)
+    probe_index = _probe_slot_primary_index(len(primaries))
+    ordered = list(primaries)
+    first = ordered.pop(0)
+    ordered.insert(probe_index, first)
+    return ordered
+
+
+def _probe_slot_primary_index(primary_count: int) -> int:
+    probe_slot = 8014
+    ranges = _sequential_slot_ranges(primary_count)
+    return next((idx for idx, (lo, hi) in enumerate(ranges) if lo <= probe_slot <= hi), 0)
 
 
 def _configure_large_cluster_replicas(primaries: list[dict[str, Any]], replicas: list[dict[str, Any]], timeout: float) -> str:
@@ -1748,6 +1849,12 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
 
 
 def _slot_ranges(primary_count: int) -> list[tuple[int, int]]:
+    ranges = _sequential_slot_ranges(primary_count)
+    probe_index = _probe_slot_primary_index(primary_count)
+    return ranges[probe_index:] + ranges[:probe_index]
+
+
+def _sequential_slot_ranges(primary_count: int) -> list[tuple[int, int]]:
     if primary_count <= 0:
         raise DockerRuntimeError("cluster needs at least one primary")
     ranges: list[tuple[int, int]] = []
@@ -1759,9 +1866,7 @@ def _slot_ranges(primary_count: int) -> list[tuple[int, int]]:
         end = start + width - 1
         ranges.append((start, end))
         start = end + 1
-    probe_slot = 8014
-    probe_index = next((idx for idx, (lo, hi) in enumerate(ranges) if lo <= probe_slot <= hi), 0)
-    return ranges[probe_index:] + ranges[:probe_index]
+    return ranges
 
 
 def _wait_for_nodes(nodes: list[dict[str, Any]], timeout: float = 60.0) -> None:

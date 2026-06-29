@@ -128,6 +128,56 @@ def test_process_runtime_state_records_required_node_fields() -> None:
     assert state["cluster_snapshots"] == [{"label": "final"}]
 
 
+def test_process_runtime_state_records_large_cluster_create_strategy() -> None:
+    nodes = [
+        {
+            "logical_id": f"shard-{idx:04d}-primary",
+            "nodehost_id": "nodehost-az-a",
+            "host_id": "local",
+            "client_port": 7400 + idx,
+            "cluster_bus_port": 17400 + idx,
+            "az_id": "az-a",
+            "role": "primary",
+            "shard_id": f"shard-{idx:04d}",
+            "pid": 1000 + idx,
+            "data_dir": "/tmp/vslab/node",
+            "log_file": "/tmp/vslab/node/valkey.log",
+            "config_file": "/tmp/vslab/node/valkey.conf",
+            "config_artifact_file": "artifacts/node.conf",
+            "nodehost_container_id": "cid",
+            "nodehost_container_name": "nodehost",
+            "nodehost_container_ip": "172.18.0.2",
+        }
+        for idx in range(31)
+    ]
+    state = docker_runtime._process_runtime_state(
+        "P13_SCALE_LADDER_50_100",
+        "scale_50",
+        "run",
+        "network",
+        {"hosts": [{"host_id": "local"}]},
+        [
+            {
+                "nodehost_id": "nodehost-az-a",
+                "az_id": "az-a",
+                "host_id": "local",
+                "container_id": "cid",
+                "container_name": "nodehost",
+                "container_ip": "172.18.0.2",
+                "ports": [],
+                "logical_node_count": 31,
+            }
+        ],
+        nodes,
+        [],
+    )
+
+    assert (
+        state["runtime"]["cluster_startup_strategy"]
+        == "all_processes_ready_then_valkey_cli_cluster_create_replicas_two_stage_probe"
+    )
+
+
 def test_slot_ranges_cover_all_slots_for_scale_rungs() -> None:
     ranges = docker_runtime._slot_ranges(15)
     assert ranges[0][0] <= 8014 <= ranges[0][1]
@@ -135,6 +185,18 @@ def test_slot_ranges_cover_all_slots_for_scale_rungs() -> None:
     assert sum((end - start + 1) for start, end in ranges) == 16384
     assert sorted(ranges)[0][0] == 0
     assert sorted(ranges)[-1][1] == 16383
+
+
+def test_cluster_create_primary_order_keeps_probe_slot_on_first_primary() -> None:
+    primaries = [{"logical_id": f"p{idx}"} for idx in range(25)]
+
+    ordered = docker_runtime._cluster_create_primary_order(primaries)
+    sequential_ranges = docker_runtime._sequential_slot_ranges(len(primaries))
+    probe_index = docker_runtime._probe_slot_primary_index(len(primaries))
+
+    assert ordered[probe_index]["logical_id"] == "p0"
+    assert sequential_ranges[probe_index][0] <= 8014 <= sequential_ranges[probe_index][1]
+    assert {node["logical_id"] for node in ordered} == {node["logical_id"] for node in primaries}
 
 
 def test_scale_timeout_grows_with_node_count() -> None:
@@ -315,6 +377,68 @@ def test_process_wait_predicate_uses_representatives_then_full_check(monkeypatch
     assert calls == [["p0", "p1"], ["p0", "p1", "r0", "r1"]]
 
 
+def test_large_process_cluster_uses_cluster_create(monkeypatch: pytest.MonkeyPatch) -> None:
+    create_calls: list[tuple[list[str], list[str]]] = []
+    waits: list[str] = []
+
+    nodes = [
+        {
+            "logical_id": f"shard-{idx:04d}-primary",
+            "role": "primary",
+            "shard_id": f"shard-{idx:04d}",
+            "az_id": "az-a" if idx % 2 == 0 else "az-b",
+        }
+        for idx in range(20)
+    ]
+    nodes.extend(
+        {
+            "logical_id": f"shard-{idx:04d}-replica-00",
+            "role": "replica",
+            "shard_id": f"shard-{idx:04d}",
+            "az_id": "az-b" if idx % 2 == 0 else "az-a",
+        }
+        for idx in range(20)
+    )
+
+    def fake_create(primaries: list[dict], replicas: list[dict], timeout: float) -> str:
+        create_calls.append(
+            (
+                [node["logical_id"] for node in primaries],
+                [node["logical_id"] for node in replicas],
+            )
+        )
+        return "cluster create OK"
+
+    def fake_summary(label: str, sampled: list[dict], **kwargs) -> dict:
+        return {
+            "label": label,
+            "node_count": kwargs.get("total_node_count", len(sampled)),
+            "known_nodes": len(nodes),
+            "primary_count": 20,
+            "replica_count": 20,
+            "slots_assigned": 16384,
+            "slots_ok": 16384,
+            "slots_fail": 0,
+        }
+
+    monkeypatch.setattr(docker_runtime, "_create_large_cluster", fake_create)
+    monkeypatch.setattr(docker_runtime, "_wait_process_known", lambda *args, **kwargs: waits.append("known"))
+    monkeypatch.setattr(docker_runtime, "_wait_process_slots_assigned", lambda *args, **kwargs: waits.append("slots"))
+    monkeypatch.setattr(docker_runtime, "_wait_process_cluster_ok", lambda *args, **kwargs: waits.append("ok"))
+    monkeypatch.setattr(docker_runtime, "_wait_process_role_counts", lambda *args, **kwargs: waits.append("roles"))
+    monkeypatch.setattr(docker_runtime, "_wait_process_snapshot_clean", lambda *args, **kwargs: waits.append("clean"))
+    monkeypatch.setattr(docker_runtime, "_process_cluster_summary", fake_summary)
+
+    operations, snapshots = docker_runtime._configure_process_cluster(nodes)
+
+    assert len(create_calls) == 1
+    assert len(create_calls[0][0]) == 20
+    assert len(create_calls[0][1]) == 20
+    assert [op["operation"] for op in operations] == ["cluster_create", "final_cluster_check"]
+    assert [snapshot["label"] for snapshot in snapshots] == ["after_cluster_create", "final"]
+    assert "slots" in waits
+
+
 def test_large_cluster_uses_replicated_cluster_create(monkeypatch: pytest.MonkeyPatch) -> None:
     create_calls: list[tuple[list[str], list[str]]] = []
 
@@ -371,8 +495,9 @@ def test_large_cluster_uses_replicated_cluster_create(monkeypatch: pytest.Monkey
     assert [op["operation"] for op in operations] == ["cluster_create"]
 
 
-def test_large_cluster_create_retargets_replica_candidates(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_large_cluster_create_retargets_replicas_after_primary_create(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[list[str]] = []
+    meet_calls: list[tuple[list[str], list[str]]] = []
     ensured: list[tuple[str, str]] = []
 
     def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
@@ -401,15 +526,106 @@ def test_large_cluster_create_retargets_replica_candidates(monkeypatch: pytest.M
     monkeypatch.setattr(docker_runtime, "_wait_cluster_slots_assigned", lambda *args, **kwargs: None)
     monkeypatch.setattr(docker_runtime, "_wait_cluster_ok", lambda *args, **kwargs: None)
     monkeypatch.setattr(docker_runtime, "_wait_cluster_role_counts", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_tree_fanout_meet_nodes",
+        lambda seed, nodes, **kwargs: meet_calls.append(([seed["logical_id"]], [node["logical_id"] for node in nodes])) or len(nodes),
+    )
     monkeypatch.setattr(docker_runtime, "_ensure_replica_of", fake_ensure)
 
     docker_runtime._create_large_cluster(primaries, replicas, timeout=30)
 
     assert calls[0][:6] == ["exec", "p0", "valkey-cli", "--cluster", "create", "172.18.0.2:6379"]
-    assert "172.18.0.4:6379" in calls[0]
-    assert "--cluster-replicas" in calls[0]
-    assert calls[0][calls[0].index("--cluster-replicas") + 1] == "1"
+    assert "172.18.0.4:6379" not in calls[0]
+    assert "--cluster-replicas" not in calls[0]
+    assert meet_calls == [(["shard-0000-primary"], ["shard-0000-replica-00", "shard-0001-replica-00"])]
     assert ensured == [("r0", "id-p0"), ("r1", "id-p1")]
+
+
+def test_primary_cluster_create_uses_process_node_addresses(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        calls.append(args)
+        return docker_runtime.DockerResult("OK", "", 0)
+
+    primaries = [
+        {
+            "logical_id": "shard-0000-primary",
+            "container_name": "nodehost-a",
+            "nodehost_container_ip": "172.18.0.2",
+            "client_port": 7400,
+            "shard_id": "shard-0000",
+        },
+        {
+            "logical_id": "shard-0001-primary",
+            "container_name": "nodehost-b",
+            "nodehost_container_ip": "172.18.0.3",
+            "client_port": 7401,
+            "shard_id": "shard-0001",
+        },
+    ]
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    docker_runtime._create_primary_cluster(primaries, timeout=30)
+
+    assert calls[0][:5] == ["exec", "nodehost-a", "valkey-cli", "--cluster", "create"]
+    assert "172.18.0.2:7400" in calls[0]
+    assert "172.18.0.3:7401" in calls[0]
+    assert "172.18.0.2:6379" not in calls[0]
+
+
+def test_primary_cluster_create_orders_process_addresses_for_probe_slot(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        calls.append(args)
+        return docker_runtime.DockerResult("OK", "", 0)
+
+    primaries = [
+        {
+            "logical_id": f"shard-{idx:04d}-primary",
+            "container_name": f"nodehost-{idx % 2}",
+            "nodehost_container_ip": f"172.18.0.{2 + idx % 2}",
+            "client_port": 7400 + idx,
+            "shard_id": f"shard-{idx:04d}",
+        }
+        for idx in range(25)
+    ]
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    docker_runtime._create_primary_cluster(primaries, timeout=30)
+
+    address_start = calls[0].index("create") + 1
+    probe_index = docker_runtime._probe_slot_primary_index(len(primaries))
+    assert calls[0][address_start + probe_index] == "172.18.0.2:7400"
+
+
+def test_assign_probe_slot_to_first_primary_sets_slot_on_all_primaries(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, tuple[object, ...]]] = []
+    primaries = [{"logical_id": f"p{idx}"} for idx in range(3)]
+
+    def fake_node_command(node: dict, *args: object, timeout: float = 5.0) -> str:
+        calls.append((node["logical_id"], args))
+        if args == ("CLUSTER", "MYID"):
+            return "id-p0"
+        return "OK"
+
+    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
+
+    result = docker_runtime._assign_probe_slot_to_first_primary(primaries, timeout=30)
+
+    assert result == "probe slot 8014 assigned to p0"
+    assert ("p0", ("CLUSTER", "MYID")) in calls
+    assert {
+        (logical_id, args)
+        for logical_id, args in calls
+        if args[:2] == ("CLUSTER", "SETSLOT")
+    } == {
+        ("p0", ("CLUSTER", "SETSLOT", 8014, "NODE", "id-p0")),
+        ("p1", ("CLUSTER", "SETSLOT", 8014, "NODE", "id-p0")),
+        ("p2", ("CLUSTER", "SETSLOT", 8014, "NODE", "id-p0")),
+    }
 
 
 def test_port_collision_check_rejects_bound_port(monkeypatch: pytest.MonkeyPatch) -> None:
