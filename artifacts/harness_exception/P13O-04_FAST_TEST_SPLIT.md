@@ -19,6 +19,7 @@ P13O-04 changes protected harness files only to preserve and strengthen requirem
 - change only the P13 `scale_tests` command to exclude `slow` and `perf` by default;
 - keep slow/perf tests explicitly runnable through a P13O gate;
 - add a machine-readable P13O-04 artifact and validation path.
+- refresh the harness lock entry for `codex/phase_manifest.json` to the documented fast-lane command hash.
 
 ## Before / After
 

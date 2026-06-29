@@ -13,7 +13,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4"
+      "sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8"
     },
     {
       "path": "scripts/assert_cleanup.py",
@@ -49,7 +49,7 @@
     },
     {
       "path": "scripts/valkey_e2e_gate.py",
-      "sha256": "4b769be94cf809c621644ba90806faa3c207a196d96b1149cd9ef829515524a9"
+      "sha256": "aadd52ea269b76ca07ff86956960a440fddc5f53957d578190412bb8cbc329d3"
     },
     {
       "path": "scripts/valkey_probe_lib.py",

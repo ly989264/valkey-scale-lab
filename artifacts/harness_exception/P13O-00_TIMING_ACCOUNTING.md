@@ -11,6 +11,7 @@ The patch strengthens the wrapper output only:
 - add explicit gate accounting fields for setup command wall time, log writes, state loading, cleanup command wall time, artifact writes, total wall time, and unattributed time;
 - keep `runtime_final_full_probe` separate from `runtime_diagnostic_full_probe`;
 - validate the strengthened artifact in the new P13O post-loop gate.
+- refresh the harness lock entry for `scripts/valkey_e2e_gate.py` to the documented strengthened wrapper hash.
 
 ## Before Behavior
 
