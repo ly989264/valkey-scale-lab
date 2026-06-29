@@ -107,6 +107,11 @@ def emit_schema_report(out_path: str | Path) -> dict[str, Any]:
                 "status": "PASS",
             },
             {
+                "name": "two_virtual_azs",
+                "description": "Multi-AZ profiles use exactly two virtual AZs so each shard's primary and replica live in opposite AZ containers.",
+                "status": "PASS",
+            },
+            {
                 "name": "scale_1000_opt_in",
                 "description": "1000-node configs require allow_1000_nodes, opt_in_1000, dry_run_only, and runtime.dry_run.",
                 "status": "PASS",
@@ -227,8 +232,8 @@ def _validate_network(network: dict[str, Any]) -> list[dict[str, Any]]:
     mode = network.get("virtual_az_mode")
     if mode == "single" and len(azs) != 1:
         errors.append(_err("SINGLE_AZ_COUNT", "single AZ mode requires exactly one AZ"))
-    if mode == "multi" and len(azs) < 2:
-        errors.append(_err("MULTI_AZ_COUNT", "multi AZ mode requires at least two AZs"))
+    if mode == "multi" and len(azs) != 2:
+        errors.append(_err("MULTI_AZ_COUNT", "multi AZ mode requires exactly two virtual AZs"))
     if len(set(azs)) != len(azs):
         errors.append(_err("DUPLICATE_AZ", "network.azs must be unique"))
     return errors

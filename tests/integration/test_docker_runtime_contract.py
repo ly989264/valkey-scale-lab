@@ -53,9 +53,11 @@ def test_p13_node_specs_preserve_replica_topology() -> None:
 
 
 def test_p13_defaults_to_docker_process_runtime() -> None:
+    assert docker_runtime._uses_docker_process_runtime("P12_SCALE_LADDER_10_30", "scale_10") is True
+    assert docker_runtime._uses_docker_process_runtime("P12_SCALE_LADDER_10_30", "scale_30") is True
     assert docker_runtime._uses_docker_process_runtime("P13_SCALE_LADDER_50_100", "scale_50") is True
     assert docker_runtime._uses_docker_process_runtime("P13_SCALE_LADDER_50_100", "scale_100") is True
-    assert docker_runtime._uses_docker_process_runtime("P12_SCALE_LADDER_10_30", "scale_30") is False
+    assert docker_runtime._uses_docker_process_runtime("P11_STABILITY_SOAK", "stability_soak_smoke") is False
 
 
 def test_process_nodehosts_group_logical_nodes_by_az() -> None:
@@ -64,7 +66,7 @@ def test_process_nodehosts_group_logical_nodes_by_az() -> None:
 
     nodehosts = docker_runtime._process_nodehosts(config, nodes, "P13_SCALE_LADDER_50_100", "scale_50", "run")
 
-    assert [nodehost["nodehost_id"] for nodehost in nodehosts] == ["nodehost-az-a", "nodehost-az-b", "nodehost-az-c"]
+    assert [nodehost["nodehost_id"] for nodehost in nodehosts] == ["nodehost-az-a", "nodehost-az-b"]
     assert sum(nodehost["logical_node_count"] for nodehost in nodehosts) == 50
     assert all(node["runtime_type"] == "docker_process" for node in nodes)
     assert all(node["nodehost_id"].startswith("nodehost-az-") for node in nodes)
@@ -246,6 +248,30 @@ def test_incremental_meet_waits_for_each_new_node(monkeypatch: pytest.MonkeyPatc
 
     assert meets == ["shard-0001-primary", "shard-0002-primary"]
     assert waits == [2, 3, 3]
+
+
+def test_bulk_process_meet_sends_seed_meets_without_per_node_wait(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str]] = []
+
+    def fake_cli(seed: dict, *args, timeout: int = 60, check: bool = True) -> str:
+        calls.append((seed["logical_id"], " ".join(str(arg) for arg in args)))
+        return "OK"
+
+    monkeypatch.setattr(docker_runtime, "run_node_cli", fake_cli)
+
+    docker_runtime._bulk_meet_process_nodes(
+        {"logical_id": "seed"},
+        [
+            {"logical_id": "p1", "nodehost_container_ip": "172.18.0.3", "client_port": 7401},
+            {"logical_id": "p2", "nodehost_container_ip": "172.18.0.4", "client_port": 7402},
+        ],
+        timeout=30.0,
+    )
+
+    assert calls == [
+        ("seed", "CLUSTER MEET 172.18.0.3 7401"),
+        ("seed", "CLUSTER MEET 172.18.0.4 7402"),
+    ]
 
 
 def test_large_cluster_uses_replicated_cluster_create(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -23,7 +23,7 @@ hosts:
     labels: [controller, worker]
 network:
   virtual_az_mode: multi
-  azs: [az-a, az-b, az-c]
+  azs: [az-a, az-b]
 cluster:
   shards: 500
   replicas_per_shard: 1

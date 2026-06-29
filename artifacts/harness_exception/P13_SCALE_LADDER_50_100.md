@@ -42,3 +42,34 @@ membership. The artifact view also fails the rung instead of reporting only the 
 For the process runtime, a run is only credible when the evidence shows the expected Valkey
 process count, primary/replica role counts, clean cluster snapshots, data-path PASS, and cleanup
 PASS.
+
+---
+
+# P13 Harness Exception Addendum: Two-Virtual-AZ Scale Templates
+
+## Defect
+
+The locked P13 scale templates, `templates/configs/scale_50.yaml` and
+`templates/configs/scale_100.yaml`, declared three virtual AZs. The updated operating
+requirement permits only two virtual AZs in multi-AZ mode, with each shard primary and replica
+in different AZs.
+
+## Patch
+
+The P13 scale templates now declare only `az-a` and `az-b`. Runtime scale scenarios continue to
+use Docker-contained process execution, but now create exactly one owned nodehost container per
+virtual AZ. All Valkey processes are started before cluster membership, slot assignment, and
+replica binding.
+
+## Before/After Behavior
+
+Before: P13 scale rungs grouped logical nodes across three AZ nodehost containers.
+
+After: P13 scale rungs group logical nodes across two AZ nodehost containers. Primary placement
+alternates by shard, and each replica is assigned to the opposite AZ.
+
+## Gate Impact
+
+`scripts/codex_gate.py precheck` reports lock mismatches for the changed templates. The lock file
+is intentionally not edited; this addendum records why the protected template change strengthens
+the requested safety/placement constraint.

@@ -263,7 +263,12 @@ def _runtime_state(
 
 
 def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
-    return phase == "P13_SCALE_LADDER_50_100" and scenario in {"scale_50", "scale_100"}
+    return (phase, scenario) in {
+        ("P12_SCALE_LADDER_10_30", "scale_10"),
+        ("P12_SCALE_LADDER_10_30", "scale_30"),
+        ("P13_SCALE_LADDER_50_100", "scale_50"),
+        ("P13_SCALE_LADDER_50_100", "scale_100"),
+    }
 
 
 def _create_process_scenario(
@@ -463,6 +468,8 @@ def _process_runtime_state(
             "network_name": network_name,
             "run_id": run_id,
             "project": PROJECT,
+            "cluster_startup_strategy": "aws_inspired_bulk_meet_after_all_processes_start",
+            "container_strategy": "one_owned_docker_nodehost_per_virtual_az",
             "nodehost_count": len(nodehosts),
             "logical_node_count": len(nodes),
         },
@@ -809,12 +816,21 @@ def _configure_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[s
     first = primaries[0]
 
     meet_started = time.monotonic()
-    for expected, primary in enumerate(primaries[1:], start=2):
-        run_node_cli(first, "CLUSTER", "MEET", primary["nodehost_container_ip"], primary["client_port"], timeout=30)
-        _wait_process_integrated(first, expected=expected, timeout=90.0)
+    _bulk_meet_process_nodes(first, primaries[1:], timeout=timeout)
     _wait_process_known(primaries, expected=len(primaries), timeout=timeout)
     snapshots.append(_process_cluster_summary("after_meet_primaries", nodes))
-    operations.append(_operation("meet_primaries", "PASS", meet_started, snapshots[-1]))
+    operations.append(
+        _operation(
+            "bulk_meet_primaries",
+            "PASS",
+            meet_started,
+            snapshots[-1]
+            | {
+                "strategy": "single_seed_cluster_meet_after_all_processes_start",
+                "meet_commands": max(len(primaries) - 1, 0),
+            },
+        )
+    )
 
     slots_started = time.monotonic()
     for primary, (start, end) in zip(primaries, _slot_ranges(len(primaries))):
@@ -824,14 +840,26 @@ def _configure_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[s
     snapshots.append(_process_cluster_summary("after_add_slots", nodes))
     operations.append(_operation("add_slots", "PASS", slots_started, snapshots[-1]))
 
-    replica_started = time.monotonic()
+    replica_meet_started = time.monotonic()
     primary_ids = {node["shard_id"]: run_node_cli(node, "CLUSTER", "MYID", timeout=30) for node in primaries}
-    primary_by_shard = {node["shard_id"]: node for node in primaries}
-    for expected, replica in enumerate(replicas, start=len(primaries) + 1):
-        primary = primary_by_shard[replica["shard_id"]]
-        run_node_cli(first, "CLUSTER", "MEET", replica["nodehost_container_ip"], replica["client_port"], timeout=30)
-        _wait_process_integrated(first, expected=expected, timeout=90.0)
-        run_node_cli(replica, "CLUSTER", "MEET", primary["nodehost_container_ip"], primary["client_port"], timeout=30, check=False)
+    _bulk_meet_process_nodes(first, replicas, timeout=timeout)
+    _wait_process_known(nodes, expected=len(nodes), timeout=timeout)
+    snapshots.append(_process_cluster_summary("after_meet_replicas", nodes))
+    operations.append(
+        _operation(
+            "bulk_meet_replicas",
+            "PASS",
+            replica_meet_started,
+            snapshots[-1]
+            | {
+                "strategy": "single_seed_cluster_meet_before_replication",
+                "meet_commands": len(replicas),
+            },
+        )
+    )
+
+    replica_started = time.monotonic()
+    for replica in replicas:
         _wait_process_knows_node_id(replica, primary_ids[replica["shard_id"]], timeout=90.0)
         _replicate_process_node(replica, primary_ids[replica["shard_id"]], timeout=90.0)
         _wait_process_replica_of(replica, primary_ids[replica["shard_id"]], timeout=90.0)
@@ -846,6 +874,14 @@ def _configure_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[s
     snapshots.append(_process_cluster_summary("final", nodes))
     operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
     return operations, snapshots
+
+
+def _bulk_meet_process_nodes(seed: dict[str, Any], nodes: list[dict[str, Any]], *, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    for node in nodes:
+        run_node_cli(seed, "CLUSTER", "MEET", node["nodehost_container_ip"], node["client_port"], timeout=30)
+        if time.monotonic() >= deadline:
+            raise DockerRuntimeError("bulk CLUSTER MEET command budget expired")
 
 
 def _add_slots_node(node: dict[str, Any], start: int, end: int) -> None:

@@ -11,7 +11,10 @@ from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 def test_multi_az_plan_places_replicas_apart(tmp_path: Path) -> None:
     plan = create_plan_file("templates/configs/local_az_3x2.yaml", tmp_path / "cluster_plan.json")
     assert plan["node_count"] == 6
+    assert plan["azs"] == ["az-a", "az-b"]
     assert plan["constraints"]["primary_replica_distinct_az"] is True
+    assert plan["constraints"]["two_virtual_azs"] is True
+    assert plan["constraints"]["primary_replica_opposite_az_pair"] is True
     by_shard: dict[str, list[dict]] = defaultdict(list)
     for node in plan["nodes"]:
         by_shard[node["shard_id"]].append(node)
@@ -26,6 +29,9 @@ def test_plan_has_unique_names_dirs_and_ports(tmp_path: Path) -> None:
     for key in ["logical_id", "container_name", "data_dir", "log_dir"]:
         values = [node[key] for node in plan["nodes"]]
         assert len(values) == len(set(values))
+    assert [nodehost["az_id"] for nodehost in plan["nodehosts"]] == ["az-a", "az-b"]
+    assert {node["nodehost_id"] for node in plan["nodes"]} == {"nodehost-az-a", "nodehost-az-b"}
+    assert all(node["nodehost_container_name"] for node in plan["nodes"])
     ports_by_host: dict[str, list[int]] = defaultdict(list)
     for node in plan["nodes"]:
         ports_by_host[node["host_id"]].extend([node["client_port"], node["cluster_bus_port"]])
@@ -44,8 +50,11 @@ def test_az_balancing_is_deterministic(tmp_path: Path) -> None:
 def test_1000_node_plan_is_opt_in_dry_run(tmp_path: Path) -> None:
     plan = create_plan_file("templates/configs/scale_1000_dryrun_optin.yaml", tmp_path / "scale_1000.json", dry_run=True)
     assert plan["node_count"] == 1000
+    assert plan["azs"] == ["az-a", "az-b"]
+    assert len(plan["nodehosts"]) == 2
     assert plan["constraints"]["opt_in_1000"] is True
     assert plan["constraints"]["dry_run"] is True
+    assert plan["constraints"]["two_virtual_azs"] is True
     assert all(node["dry_run"] is True for node in plan["nodes"])
 
 

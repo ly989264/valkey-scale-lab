@@ -91,6 +91,9 @@ def build_cluster_plan(config: dict[str, Any], config_path: Path | None = None, 
     constraints = {
         "primary_replica_distinct_az": _primary_replica_distinct_az(planned_nodes)
         or _explicit_non_ha_single_az(config),
+        "two_virtual_azs": network.get("virtual_az_mode") != "multi" or len(azs) == 2,
+        "primary_replica_opposite_az_pair": _primary_replica_opposite_az_pair(planned_nodes, azs)
+        or _explicit_non_ha_single_az(config),
         "default_node_cap": int(safety["default_max_nodes"]),
         "dry_run": dry_run,
         "opt_in_1000": opt_in_1000,
@@ -110,6 +113,8 @@ def build_cluster_plan(config: dict[str, Any], config_path: Path | None = None, 
     if not all(
         [
             constraints["primary_replica_distinct_az"],
+            constraints["two_virtual_azs"],
+            constraints["primary_replica_opposite_az_pair"],
             constraints["port_collision_checked"],
             constraints["az_balanced"],
             constraints["host_capacity_checked"],
@@ -135,6 +140,9 @@ def build_cluster_plan(config: dict[str, Any], config_path: Path | None = None, 
             "provider": runtime["provider"],
             "sandbox_mode": runtime["sandbox_mode"],
             "network_mode": "container_namespace",
+            "container_strategy": "virtual_az_nodehost_with_valkey_processes"
+            if network.get("virtual_az_mode") == "multi"
+            else "single_az_nodehost_with_valkey_processes",
             "valkey_image": runtime["valkey_image"],
             "dry_run": dry_run,
         },
@@ -142,6 +150,7 @@ def build_cluster_plan(config: dict[str, Any], config_path: Path | None = None, 
             "run_root": f"artifacts/runtime/{RUN_ID}",
             "state_dir": f"artifacts/runtime/{RUN_ID}/state",
         },
+        "nodehosts": _nodehost_summaries(planned_nodes, RUN_ID),
         "nodes": planned_nodes,
         "constraints": constraints,
     }
@@ -199,12 +208,18 @@ def _node(
     suffix = "primary" if role == "primary" else f"replica-{replica_index:02d}"
     logical_id = f"{shard_id}-{suffix}"
     run_root = f"artifacts/runtime/{RUN_ID}"
+    nodehost_id = f"nodehost-{az_id}"
+    safe_run = RUN_ID.lower().replace("_", "-")
     return {
         "logical_id": logical_id,
         "host_id": host_id,
         "az_id": az_id,
         "role": role,
         "shard_id": shard_id,
+        "runtime_type": "docker_process",
+        "nodehost_id": nodehost_id,
+        "nodehost_container_name": f"vslab-{safe_run}-{nodehost_id}",
+        "process_name": logical_id,
         "client_port": int(cluster["port_base"]) + ordinal,
         "cluster_bus_port": int(cluster["cluster_bus_port_base"]) + ordinal,
         "container_name": f"vslab-{RUN_ID.lower().replace('_', '-')}-{logical_id}",
@@ -229,6 +244,21 @@ def _replica_az(azs: list[str], primary_az: str, shard_index: int, replica_index
 def _primary_replica_distinct_az(nodes: list[dict[str, Any]]) -> bool:
     primaries = {node["shard_id"]: node["az_id"] for node in nodes if node["role"] == "primary"}
     return all(node["az_id"] != primaries[node["shard_id"]] for node in nodes if node["role"] == "replica")
+
+
+def _primary_replica_opposite_az_pair(nodes: list[dict[str, Any]], azs: list[str]) -> bool:
+    if len(azs) != 2:
+        return False
+    by_shard: dict[str, list[dict[str, Any]]] = {}
+    for node in nodes:
+        by_shard.setdefault(node["shard_id"], []).append(node)
+    expected_pair = set(azs)
+    for shard_nodes in by_shard.values():
+        if len([node for node in shard_nodes if node["role"] == "replica"]) != 1:
+            continue
+        if {node["az_id"] for node in shard_nodes} != expected_pair:
+            return False
+    return True
 
 
 def _ports_unique_per_host(nodes: list[dict[str, Any]]) -> bool:
@@ -297,3 +327,28 @@ def _check_host_capacity(config: dict[str, Any], nodes: list[dict[str, Any]]) ->
             }
         )
     return {"ok": ok, "hosts": host_results}
+
+
+def _nodehost_summaries(nodes: list[dict[str, Any]], run_id: str) -> list[dict[str, Any]]:
+    safe_run = run_id.lower().replace("_", "-")
+    az_order = []
+    for node in nodes:
+        if node["az_id"] not in az_order:
+            az_order.append(node["az_id"])
+    summaries = []
+    for ordinal, az_id in enumerate(az_order):
+        hosted = [node for node in nodes if node["az_id"] == az_id]
+        nodehost_id = f"nodehost-{az_id}"
+        summaries.append(
+            {
+                "nodehost_id": nodehost_id,
+                "az_id": az_id,
+                "host_id": hosted[0]["host_id"] if hosted else "MISSING",
+                "ordinal": ordinal,
+                "container_name": f"vslab-{safe_run}-{nodehost_id}",
+                "logical_node_count": len(hosted),
+                "client_ports": sorted(int(node["client_port"]) for node in hosted),
+                "cluster_bus_ports": sorted(int(node["cluster_bus_port"]) for node in hosted),
+            }
+        )
+    return summaries

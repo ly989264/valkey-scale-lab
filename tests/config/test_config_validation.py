@@ -97,7 +97,7 @@ hosts:
     labels: [controller]
 network:
   virtual_az_mode: multi
-  azs: [az-a, az-b, az-c]
+  azs: [az-a, az-b]
 cluster:
   shards: 500
   replicas_per_shard: 1
@@ -124,6 +124,15 @@ def test_1000_dry_run_template_validates(tmp_path: Path) -> None:
     assert report["total_nodes"] == 1000
 
 
+def test_rejects_three_virtual_az_multi_mode(tmp_path: Path) -> None:
+    config = tmp_path / "three_az.yaml"
+    text = Path("templates/configs/local_az_3x2.yaml").read_text(encoding="utf-8")
+    config.write_text(text.replace("azs: [az-a, az-b]", "azs: [az-a, az-b, az-c]"), encoding="utf-8")
+    report = validate_config_file(config, tmp_path / "report.json")
+    assert report["valid"] is False
+    assert "MULTI_AZ_COUNT" in {error["code"] for error in report["errors"]}
+
+
 def test_rejects_bad_workload_ratio(tmp_path: Path) -> None:
     config = tmp_path / "bad_ratio.yaml"
     text = Path("templates/configs/local_az_3x2.yaml").read_text(encoding="utf-8")
@@ -139,3 +148,4 @@ def test_emit_schema_report(tmp_path: Path) -> None:
     assert report["status"] == "PASS"
     assert report["defaults"]["default_max_nodes"] == 100
     assert any(item["name"] == "scale_1000_opt_in" for item in report["constraints"])
+    assert any(item["name"] == "two_virtual_azs" for item in report["constraints"])
