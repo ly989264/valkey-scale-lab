@@ -22,6 +22,9 @@ RUN_DATE = "20260628"
 CLUSTER_MEET_FANOUT = 4
 CLUSTER_ORCHESTRATION_PARALLELISM = 8
 CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS = 2.0
+REPLICA_REPLICATE_PARALLELISM_DEFAULT = CLUSTER_ORCHESTRATION_PARALLELISM
+REPLICA_REPLICATE_PARALLELISM_CHOICES = (8, 16, 32)
+REPLICA_REPLICATE_SLOWEST_COUNT = 5
 CLUSTER_CREATE_STRATEGY_DEFAULT = "valkey_cli_cluster_create_primaries"
 CLUSTER_CREATE_STRATEGY_MANUAL = "manual_tree_meet_parallel_slots"
 CLUSTER_CREATE_STRATEGIES = {
@@ -272,6 +275,7 @@ def _runtime_state(
             "hosts": [host.get("host_id") for host in config.get("hosts", [])],
             "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
             "cluster_startup_parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+            "replica_replicate_parallelism": _replica_replicate_parallelism(),
             "cluster_meet_fanout": CLUSTER_MEET_FANOUT,
         },
         "nodes": [
@@ -554,6 +558,7 @@ def _process_runtime_state(
             "nodehost_count": len(nodehosts),
             "logical_node_count": len(nodes),
             "cluster_startup_parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+            "replica_replicate_parallelism": _replica_replicate_parallelism(),
             "cluster_meet_fanout": CLUSTER_MEET_FANOUT,
         },
         "nodehosts": [
@@ -1312,6 +1317,27 @@ def _cluster_create_strategy() -> str:
     return strategy
 
 
+def _replica_replicate_parallelism() -> int:
+    raw = os.environ.get("VSLAB_REPLICA_REPLICATE_PARALLELISM", "").strip()
+    if not raw:
+        return REPLICA_REPLICATE_PARALLELISM_DEFAULT
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        allowed = ", ".join(str(item) for item in REPLICA_REPLICATE_PARALLELISM_CHOICES)
+        raise DockerRuntimeError(f"unsupported replica replicate parallelism {raw!r}; allowed={allowed}") from exc
+    if value not in REPLICA_REPLICATE_PARALLELISM_CHOICES:
+        allowed = ", ".join(str(item) for item in REPLICA_REPLICATE_PARALLELISM_CHOICES)
+        raise DockerRuntimeError(f"unsupported replica replicate parallelism {value}; allowed={allowed}")
+    return value
+
+
+def _replica_replicate_parallelism_source() -> str:
+    if os.environ.get("VSLAB_REPLICA_REPLICATE_PARALLELISM"):
+        return "env:VSLAB_REPLICA_REPLICATE_PARALLELISM"
+    return "default"
+
+
 def _configure_large_process_cluster(
     nodes: list[dict[str, Any]],
     timings: dict[str, dict[str, Any]] | None = None,
@@ -1395,14 +1421,19 @@ def _add_slots_node(node: dict[str, Any], start: int, end: int) -> None:
         _node_command(node, "CLUSTER", "ADDSLOTS", *batch, timeout=60)
 
 
-def _cluster_node_ids_by_shard(nodes: list[dict[str, Any]], *, timeout: float) -> dict[str, str]:
+def _cluster_node_ids_by_shard(
+    nodes: list[dict[str, Any]],
+    *,
+    timeout: float,
+    parallelism: int = CLUSTER_ORCHESTRATION_PARALLELISM,
+) -> dict[str, str]:
     def node_id(node: dict[str, Any]) -> tuple[str, str]:
         return str(node["shard_id"]), _node_command(node, "CLUSTER", "MYID", timeout=30)
 
     pairs = _bounded_parallel(
         nodes,
         node_id,
-        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        parallelism=parallelism,
         timeout=timeout,
         label="parallel CLUSTER MYID",
     )
@@ -1846,14 +1877,21 @@ def _create_large_cluster(
         )
         timings and timings.get("replica_meet", {}).setdefault("details", {}).update({"meet_commands": meet_commands})
 
-        output.append(
-            _run_timed_step(
-                timings,
-                "replica_replicate",
-                lambda: _configure_large_cluster_replicas(primaries, replicas, timeout=timeout),
-                {"replica_count": len(replicas), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
-            )
-        )
+        replica_parallelism = _replica_replicate_parallelism()
+        replica_details: dict[str, Any] = {
+            "replica_count": len(replicas),
+            "parallelism": replica_parallelism,
+            "parallelism_source": _replica_replicate_parallelism_source(),
+            "supported_parallelism": list(REPLICA_REPLICATE_PARALLELISM_CHOICES),
+            "bounded_parallelism": True,
+        }
+
+        def configure_replicas() -> str:
+            text, details = _configure_large_cluster_replicas_with_diagnostics(primaries, replicas, timeout=timeout)
+            replica_details.update(details)
+            return text
+
+        output.append(_run_timed_step(timings, "replica_replicate", configure_replicas, replica_details))
     return "\n".join(part for part in output if part)
 
 
@@ -1979,22 +2017,140 @@ def _probe_slot_primary_index(primary_count: int) -> int:
 
 
 def _configure_large_cluster_replicas(primaries: list[dict[str, Any]], replicas: list[dict[str, Any]], timeout: float) -> str:
-    primary_ids = _cluster_node_ids_by_shard(primaries, timeout=min(timeout, 120.0))
-    deadline = time.monotonic() + timeout
-    def configure(item: tuple[int, dict[str, Any]]) -> tuple[int, str]:
-        idx, replica = item
-        master_id = primary_ids[replica["shard_id"]]
-        _ensure_replica_of(replica, master_id, timeout=max(10.0, min(120.0, deadline - time.monotonic())))
-        return idx, f"replica {replica['logical_id']} configured for primary {replica['shard_id']}"
+    output, _details = _configure_large_cluster_replicas_with_diagnostics(primaries, replicas, timeout=timeout)
+    return output
 
-    outputs = _bounded_parallel(
-        list(enumerate(replicas)),
-        configure,
-        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=timeout,
-        label="parallel large cluster replica configuration",
+
+def _configure_large_cluster_replicas_with_diagnostics(
+    primaries: list[dict[str, Any]],
+    replicas: list[dict[str, Any]],
+    timeout: float,
+) -> tuple[str, dict[str, Any]]:
+    if not replicas:
+        return "", {
+            "replica_primary_id_lookup_seconds": 0.0,
+            "replica_knows_master_wait_seconds": 0.0,
+            "replica_replicate_command_seconds": 0.0,
+            "replica_replicaof_wait_seconds": 0.0,
+            "replica_replicate_total_seconds": 0.0,
+            "slowest_replicas": [],
+            "replica_diagnostics": [],
+        }
+
+    parallelism = _replica_replicate_parallelism()
+    deadline = time.monotonic() + timeout
+    total_started = time.monotonic()
+    diagnostics: dict[str, dict[str, Any]] = {
+        replica["logical_id"]: {
+            "logical_id": replica["logical_id"],
+            "shard_id": replica["shard_id"],
+            "status": "PASS",
+        }
+        for replica in replicas
+    }
+
+    lookup_started = time.monotonic()
+    primary_ids = _cluster_node_ids_by_shard(
+        primaries,
+        timeout=max(10.0, min(120.0, _time_left(deadline, floor=10.0))),
+        parallelism=parallelism,
     )
-    return "\n".join(text for _, text in sorted(outputs, key=lambda item: item[0]))
+    replica_primary_id_lookup_seconds = round(max(time.monotonic() - lookup_started, 0.0), 6)
+
+    replica_by_id = {replica["logical_id"]: replica for replica in replicas}
+
+    def master_id_for(replica: dict[str, Any]) -> str:
+        return primary_ids[replica["shard_id"]]
+
+    for replica in replicas:
+        diagnostics[replica["logical_id"]]["master_id"] = master_id_for(replica)
+
+    def run_replica_stage(
+        *,
+        field: str,
+        label: str,
+        worker: Callable[[dict[str, Any], str, float], str | None],
+    ) -> float:
+        stage_started = time.monotonic()
+
+        def run(replica: dict[str, Any]) -> str:
+            logical_id = replica["logical_id"]
+            started = time.monotonic()
+            result = worker(replica, master_id_for(replica), max(10.0, min(120.0, _time_left(deadline, floor=10.0))))
+            diagnostics[logical_id][field] = round(max(time.monotonic() - started, 0.0), 6)
+            if result:
+                diagnostics[logical_id][f"{field}_result"] = result
+            return logical_id
+
+        _bounded_parallel(
+            replicas,
+            run,
+            parallelism=parallelism,
+            timeout=max(10.0, _time_left(deadline, floor=10.0)),
+            label=label,
+        )
+        return round(max(time.monotonic() - stage_started, 0.0), 6)
+
+    replica_knows_master_wait_seconds = run_replica_stage(
+        field="replica_knows_master_wait_seconds",
+        label="bounded replica master visibility wait",
+        worker=lambda replica, master_id, local_timeout: (
+            _wait_process_knows_node_id(replica, master_id, timeout=local_timeout) or "master_visible"
+        ),
+    )
+
+    def replicate_command(replica: dict[str, Any], master_id: str, local_timeout: float) -> str:
+        if _process_node_is_replica_of(replica, master_id):
+            return "already_replica"
+        _replicate_process_node(replica, master_id, timeout=local_timeout)
+        return "replicate_command_sent"
+
+    replica_replicate_command_seconds = run_replica_stage(
+        field="replica_replicate_command_seconds",
+        label="bounded CLUSTER REPLICATE commands",
+        worker=replicate_command,
+    )
+    replica_replicaof_wait_seconds = run_replica_stage(
+        field="replica_replicaof_wait_seconds",
+        label="bounded replica-of convergence wait",
+        worker=lambda replica, master_id, local_timeout: (
+            _wait_process_replica_of(replica, master_id, timeout=local_timeout) or "replicaof_confirmed"
+        ),
+    )
+
+    outputs: list[tuple[int, str]] = []
+    for idx, replica in enumerate(replicas):
+        diagnostic = diagnostics[replica["logical_id"]]
+        diagnostic["replica_replicate_total_seconds"] = round(
+            float(diagnostic.get("replica_knows_master_wait_seconds", 0.0))
+            + float(diagnostic.get("replica_replicate_command_seconds", 0.0))
+            + float(diagnostic.get("replica_replicaof_wait_seconds", 0.0)),
+            6,
+        )
+        outputs.append((idx, f"replica {replica['logical_id']} configured for primary {replica['shard_id']}"))
+
+    ordered_diagnostics = [diagnostics[replica["logical_id"]] for replica in replicas]
+    slowest = sorted(
+        ordered_diagnostics,
+        key=lambda item: float(item.get("replica_replicate_total_seconds", 0.0)),
+        reverse=True,
+    )[:REPLICA_REPLICATE_SLOWEST_COUNT]
+    details = {
+        "replica_primary_id_lookup_seconds": replica_primary_id_lookup_seconds,
+        "replica_knows_master_wait_seconds": replica_knows_master_wait_seconds,
+        "replica_replicate_command_seconds": replica_replicate_command_seconds,
+        "replica_replicaof_wait_seconds": replica_replicaof_wait_seconds,
+        "replica_replicate_total_seconds": round(max(time.monotonic() - total_started, 0.0), 6),
+        "parallelism": parallelism,
+        "parallelism_source": _replica_replicate_parallelism_source(),
+        "supported_parallelism": list(REPLICA_REPLICATE_PARALLELISM_CHOICES),
+        "bounded_parallelism": True,
+        "slowest_replicas": slowest,
+        "replica_diagnostics": ordered_diagnostics,
+        "slowest_count": REPLICA_REPLICATE_SLOWEST_COUNT,
+        "breakdown_semantics": "wall-clock stage durations from bounded parallel replica configuration plus per-replica timings",
+    }
+    return "\n".join(text for _, text in sorted(outputs, key=lambda item: item[0])), details
 
 
 def _meet_new_node(first: dict[str, Any], node: dict[str, Any]) -> None:

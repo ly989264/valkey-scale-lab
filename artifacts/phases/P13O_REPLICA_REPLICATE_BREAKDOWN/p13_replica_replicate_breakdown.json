@@ -1,0 +1,326 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_replica_replicate_breakdown",
+  "phase_id": "P13O-02_REPLICA_REPLICATE_BREAKDOWN",
+  "created_at": "2026-06-29T11:51:04.627252Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "default_parallelism": 8,
+  "supported_parallelism": [
+    8,
+    16,
+    32
+  ],
+  "safety_constraints": {
+    "bounded_parallelism": true,
+    "host_network_mutation": false,
+    "p14_executed": false,
+    "default_max_nodes": 100
+  },
+  "observations": [
+    {
+      "name": "default_scale_50",
+      "scenario": "scale_50",
+      "node_count": 50,
+      "status": "PASS",
+      "parallelism": 8,
+      "parallelism_source": "default",
+      "bounded_parallelism": true,
+      "real_valkey": true,
+      "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+      "timing": {
+        "replica_primary_id_lookup_seconds": 0.010979,
+        "replica_knows_master_wait_seconds": 0.008147,
+        "replica_replicate_command_seconds": 0.083993,
+        "replica_replicaof_wait_seconds": 0.012844,
+        "replica_replicate_total_seconds": 0.116077
+      },
+      "slowest_replicas": [
+        {
+          "logical_id": "shard-0008-replica-00",
+          "master_id": "23091b5d3c0ab068a7dd45477217692ff377e344",
+          "replica_knows_master_wait_seconds": 0.002449,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.0046,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.055648,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.062697,
+          "shard_id": "shard-0008",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0012-replica-00",
+          "master_id": "019aa051bb183111da09949eafd546318bc12e2d",
+          "replica_knows_master_wait_seconds": 0.002481,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.001673,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.050394,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.054548,
+          "shard_id": "shard-0012",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0010-replica-00",
+          "master_id": "edc8c63f91bed41be39a6571901e7a7afa7391ef",
+          "replica_knows_master_wait_seconds": 0.002075,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.001616,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.048598,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.052289,
+          "shard_id": "shard-0010",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0009-replica-00",
+          "master_id": "3303847d158436b622b1e386f0e116cd4be30470",
+          "replica_knows_master_wait_seconds": 0.002391,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.001881,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.035912,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.040184,
+          "shard_id": "shard-0009",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0014-replica-00",
+          "master_id": "4019c9c90ddd06908e00eafcccd285998ed8f7fb",
+          "replica_knows_master_wait_seconds": 0.002314,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.001272,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.03199,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.035576,
+          "shard_id": "shard-0014",
+          "status": "PASS"
+        }
+      ],
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "data_path_result": "PASS",
+      "nodes_observed": 50,
+      "timing_details": {
+        "replica_count": 25,
+        "slowest_count": 5,
+        "breakdown_semantics": "wall-clock stage durations from bounded parallel replica configuration plus per-replica timings"
+      }
+    },
+    {
+      "name": "default_scale_100",
+      "scenario": "scale_100",
+      "node_count": 100,
+      "status": "PASS",
+      "parallelism": 8,
+      "parallelism_source": "default",
+      "bounded_parallelism": true,
+      "real_valkey": true,
+      "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+      "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+      "timing": {
+        "replica_primary_id_lookup_seconds": 0.014852,
+        "replica_knows_master_wait_seconds": 0.015885,
+        "replica_replicate_command_seconds": 0.222525,
+        "replica_replicaof_wait_seconds": 0.020195,
+        "replica_replicate_total_seconds": 0.273616
+      },
+      "slowest_replicas": [
+        {
+          "logical_id": "shard-0008-replica-00",
+          "master_id": "52e4636f7acaf624c9e4be9f831bb6f9a6ca7740",
+          "replica_knows_master_wait_seconds": 0.001787,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.00439,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.057254,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.063431,
+          "shard_id": "shard-0008",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0023-replica-00",
+          "master_id": "0eedd6319145ed4b7b05bff551a09a9b2cb4d2e7",
+          "replica_knows_master_wait_seconds": 0.002248,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.001524,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.05435,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.058122,
+          "shard_id": "shard-0023",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0012-replica-00",
+          "master_id": "7ba2b2ff4a2eb6954d73e45c56ecab3df4c71977",
+          "replica_knows_master_wait_seconds": 0.0019,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.001579,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.052884,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.056363,
+          "shard_id": "shard-0012",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0017-replica-00",
+          "master_id": "cba84c79c3e824d3243509f59f1559aeba6cb9c3",
+          "replica_knows_master_wait_seconds": 0.002307,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.001355,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.051875,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.055537,
+          "shard_id": "shard-0017",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0014-replica-00",
+          "master_id": "575a394d44936cd8bb696695dbc33701a68373b5",
+          "replica_knows_master_wait_seconds": 0.00215,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.00131,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.0515,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.05496,
+          "shard_id": "shard-0014",
+          "status": "PASS"
+        }
+      ],
+      "role_counts": {
+        "primary": 50,
+        "replica": 50,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "data_path_result": "PASS",
+      "nodes_observed": 100,
+      "timing_details": {
+        "replica_count": 50,
+        "slowest_count": 5,
+        "breakdown_semantics": "wall-clock stage durations from bounded parallel replica configuration plus per-replica timings"
+      }
+    },
+    {
+      "name": "parallelism_16_scale_50",
+      "scenario": "scale_50",
+      "node_count": 50,
+      "status": "PASS",
+      "parallelism": 16,
+      "parallelism_source": "env:VSLAB_REPLICA_REPLICATE_PARALLELISM",
+      "bounded_parallelism": true,
+      "real_valkey": true,
+      "evidence_path": "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/valkey_e2e_evidence_parallelism_16_scale_50.json",
+      "timing_path": "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/p13_timing_breakdown_scale_50.json",
+      "timing": {
+        "replica_primary_id_lookup_seconds": 0.010619,
+        "replica_knows_master_wait_seconds": 0.006717,
+        "replica_replicate_command_seconds": 0.062447,
+        "replica_replicaof_wait_seconds": 0.012005,
+        "replica_replicate_total_seconds": 0.091919
+      },
+      "slowest_replicas": [
+        {
+          "logical_id": "shard-0017-replica-00",
+          "master_id": "867894705847041aae2baa2c1eee88b8e7395526",
+          "replica_knows_master_wait_seconds": 0.002731,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.002201,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.044733,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.049665,
+          "shard_id": "shard-0017",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0016-replica-00",
+          "master_id": "96cf6630042ce4c2908bcae3038c6c41512e571a",
+          "replica_knows_master_wait_seconds": 0.003094,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.002374,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.040523,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.045991,
+          "shard_id": "shard-0016",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0014-replica-00",
+          "master_id": "c65086c643aea9a0a4de2cbb2e0059d9d6b34ec9",
+          "replica_knows_master_wait_seconds": 0.00382,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.008002,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.031269,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.043091,
+          "shard_id": "shard-0014",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0010-replica-00",
+          "master_id": "287e53430e61f38f7f741b54641b6f39f18774b8",
+          "replica_knows_master_wait_seconds": 0.002785,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.008885,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.031285,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.042955,
+          "shard_id": "shard-0010",
+          "status": "PASS"
+        },
+        {
+          "logical_id": "shard-0020-replica-00",
+          "master_id": "ec3c705d3765d34344bde8e5712d71223e1c6980",
+          "replica_knows_master_wait_seconds": 0.002748,
+          "replica_knows_master_wait_seconds_result": "master_visible",
+          "replica_replicaof_wait_seconds": 0.00218,
+          "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+          "replica_replicate_command_seconds": 0.037974,
+          "replica_replicate_command_seconds_result": "replicate_command_sent",
+          "replica_replicate_total_seconds": 0.042902,
+          "shard_id": "shard-0020",
+          "status": "PASS"
+        }
+      ],
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "data_path_result": "PASS",
+      "nodes_observed": 50,
+      "timing_details": {
+        "replica_count": 25,
+        "slowest_count": 5,
+        "breakdown_semantics": "wall-clock stage durations from bounded parallel replica configuration plus per-replica timings"
+      }
+    }
+  ],
+  "errors": []
+}

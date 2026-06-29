@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "P13 Replica Replicate Breakdown",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "created_at",
+    "producer",
+    "status",
+    "default_parallelism",
+    "supported_parallelism",
+    "safety_constraints",
+    "observations"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "p13_replica_replicate_breakdown"},
+    "phase_id": {"type": "string", "const": "P13O-02_REPLICA_REPLICATE_BREAKDOWN"},
+    "created_at": {"type": "string", "minLength": 1},
+    "producer": {"type": "object"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL"]},
+    "default_parallelism": {"type": "integer", "enum": [8, 16, 32]},
+    "supported_parallelism": {
+      "type": "array",
+      "items": {"type": "integer", "enum": [8, 16, 32]},
+      "minItems": 3
+    },
+    "safety_constraints": {
+      "type": "object",
+      "required": [
+        "bounded_parallelism",
+        "host_network_mutation",
+        "p14_executed",
+        "default_max_nodes"
+      ],
+      "properties": {
+        "bounded_parallelism": {"type": "boolean", "const": true},
+        "host_network_mutation": {"type": "boolean", "const": false},
+        "p14_executed": {"type": "boolean", "const": false},
+        "default_max_nodes": {"type": "integer", "maximum": 100}
+      },
+      "additionalProperties": true
+    },
+    "observations": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "scenario",
+          "node_count",
+          "status",
+          "parallelism",
+          "bounded_parallelism",
+          "real_valkey",
+          "evidence_path",
+          "timing_path",
+          "timing",
+          "slowest_replicas",
+          "role_counts",
+          "data_path_result",
+          "nodes_observed"
+        ],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "scenario": {"type": "string", "minLength": 1},
+          "node_count": {"type": "integer", "minimum": 1, "maximum": 100},
+          "status": {"type": "string", "enum": ["PASS", "FAIL", "SKIPPED_WITH_REASON"]},
+          "parallelism": {"type": "integer", "enum": [8, 16, 32]},
+          "bounded_parallelism": {"type": "boolean", "const": true},
+          "real_valkey": {"type": ["boolean", "string"]},
+          "evidence_path": {"type": "string", "minLength": 1},
+          "timing_path": {"type": "string", "minLength": 1},
+          "timing": {
+            "type": "object",
+            "required": [
+              "replica_primary_id_lookup_seconds",
+              "replica_knows_master_wait_seconds",
+              "replica_replicate_command_seconds",
+              "replica_replicaof_wait_seconds",
+              "replica_replicate_total_seconds"
+            ],
+            "properties": {
+              "replica_primary_id_lookup_seconds": {"type": "number", "minimum": 0},
+              "replica_knows_master_wait_seconds": {"type": "number", "minimum": 0},
+              "replica_replicate_command_seconds": {"type": "number", "minimum": 0},
+              "replica_replicaof_wait_seconds": {"type": "number", "minimum": 0},
+              "replica_replicate_total_seconds": {"type": "number", "minimum": 0}
+            },
+            "additionalProperties": true
+          },
+          "slowest_replicas": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": {"type": "object"}
+          },
+          "role_counts": {"type": ["object", "string"]},
+          "data_path_result": {"type": ["string", "object"]},
+          "nodes_observed": {"type": ["integer", "string"]}
+        },
+        "additionalProperties": true
+      }
+    },
+    "errors": {"type": "array"}
+  },
+  "additionalProperties": true
+}

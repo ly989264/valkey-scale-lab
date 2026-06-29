@@ -1,0 +1,919 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN",
+  "cleanup_actions": [
+    {
+      "action": "terminate",
+      "id": "shard-0000-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 178,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0001-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 177,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0002-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 177,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0003-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 178,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0004-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 176,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0005-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 180,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0006-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 180,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0007-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 182,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0008-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 254,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0009-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 253,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0010-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 247,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0011-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 255,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0012-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 263,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0013-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 257,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0014-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 257,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0015-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 259,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0016-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 333,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0017-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 332,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0018-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 331,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0019-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 318,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0020-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 337,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0021-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 341,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0022-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 335,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0023-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 333,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0024-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 416,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0000-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 409,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0001-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 413,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0002-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 413,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0003-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 415,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0004-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 412,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0005-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 412,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0006-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 408,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0007-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 492,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0008-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 487,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0009-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 490,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0010-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 493,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0011-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 493,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0012-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 490,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0013-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 491,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0014-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 492,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0015-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 560,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0016-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 562,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0017-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 562,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0018-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 569,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0019-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 569,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0020-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 585,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0021-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 589,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0022-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 577,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0023-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 624,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0024-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 629,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0000-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 178,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0001-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 177,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0002-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 177,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0003-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 178,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0004-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 176,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0005-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 180,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0006-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 180,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0007-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 182,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0008-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 254,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0009-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 253,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0010-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 247,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0011-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 255,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0012-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 263,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0013-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 257,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0014-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 257,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0015-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 259,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0016-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 333,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0017-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 332,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0018-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 331,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0019-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 318,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0020-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 337,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0021-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 341,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0022-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 335,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0023-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 333,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0024-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 416,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0000-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 409,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0001-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 413,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0002-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 413,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0003-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 415,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0004-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 412,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0005-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 412,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0006-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 408,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0007-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 492,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0008-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 487,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0009-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 490,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0010-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 493,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0011-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 493,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0012-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 490,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0013-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 491,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0014-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 492,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0015-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 560,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0016-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 562,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0017-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 562,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0018-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 569,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0019-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 569,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0020-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 585,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0021-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 589,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0022-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 577,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0023-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 624,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0024-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 629,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p13-scale-ladder-50-100-scale-50-20260628-nodehost-az-a",
+      "id": "nodehost-az-a",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH: unknown",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p13-scale-ladder-50-100-scale-50-20260628-nodehost-az-b",
+      "id": "nodehost-az-b",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH: unknown",
+      "type": "nodehost"
+    },
+    {
+      "action": "stop",
+      "id": "853a55c6d5ce",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "853a55c6d5ce",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "461ba99b3429",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "461ba99b3429",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "636e2195d9a1",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P13_SCALE_LADDER_50_100",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P13_SCALE_LADDER_50_100-scale_50-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

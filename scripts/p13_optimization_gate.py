@@ -20,8 +20,12 @@ STATE = ROOT / "codex" / "status" / "p13_optimization_state.json"
 BASE_STATE = ROOT / "codex" / "status" / "phase_state.json"
 BASE_PHASE = "P13_SCALE_LADDER_50_100"
 P13O_CLUSTER_CREATE_PHASE = "P13O-01_CLUSTER_CREATE_AB"
+P13O_REPLICA_REPLICATE_PHASE = "P13O-02_REPLICA_REPLICATE_BREAKDOWN"
 DEFAULT_CLUSTER_CREATE_STRATEGY = "valkey_cli_cluster_create_primaries"
 MANUAL_CLUSTER_CREATE_STRATEGY = "manual_tree_meet_parallel_slots"
+REPLICA_REPLICATE_ARTIFACT_PHASE = "P13O_REPLICA_REPLICATE_BREAKDOWN"
+REPLICA_REPLICATE_DEFAULT_PARALLELISM = 8
+REPLICA_REPLICATE_SUPPORTED_PARALLELISM = [8, 16, 32]
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
@@ -570,11 +574,223 @@ def write_cluster_create_phase_summary(
     return out
 
 
+def replica_replicate_timing_observation(
+    *,
+    name: str,
+    scenario: str,
+    timing_path: Path,
+    evidence_path: Path,
+    expected_nodes: int,
+    expected_parallelism: int,
+) -> tuple[dict[str, Any], dict[str, Any], list[str]]:
+    errors: list[str] = []
+    timing_artifact: dict[str, Any] = {}
+    if timing_path.exists():
+        timing_artifact = load_json(timing_path)
+    else:
+        errors.append(f"{name}: missing timing artifact {rel(timing_path)}")
+
+    evidence, evidence_errors = validate_real_evidence_path(evidence_path, name, expected_nodes)
+    errors.extend(evidence_errors)
+
+    entry = timing_entry(timing_artifact, "replica_replicate") if timing_artifact else None
+    details = entry.get("details", {}) if isinstance(entry, dict) else {}
+    timing = {
+        "replica_primary_id_lookup_seconds": timing_field(
+            details.get("replica_primary_id_lookup_seconds"),
+            "not recorded in replica_replicate details",
+        ),
+        "replica_knows_master_wait_seconds": timing_field(
+            details.get("replica_knows_master_wait_seconds"),
+            "not recorded in replica_replicate details",
+        ),
+        "replica_replicate_command_seconds": timing_field(
+            details.get("replica_replicate_command_seconds"),
+            "not recorded in replica_replicate details",
+        ),
+        "replica_replicaof_wait_seconds": timing_field(
+            details.get("replica_replicaof_wait_seconds"),
+            "not recorded in replica_replicate details",
+        ),
+        "replica_replicate_total_seconds": timing_field(
+            details.get("replica_replicate_total_seconds")
+            if numeric(details.get("replica_replicate_total_seconds"))
+            else (entry.get("duration_seconds") if isinstance(entry, dict) else None),
+            "replica_replicate total timing missing",
+        ),
+    }
+    for field, value in timing.items():
+        if not numeric(value):
+            errors.append(f"{name}: {field} is not numeric")
+    if details.get("parallelism") != expected_parallelism:
+        errors.append(f"{name}: expected parallelism {expected_parallelism}, got {details.get('parallelism')}")
+    if details.get("bounded_parallelism") is not True:
+        errors.append(f"{name}: bounded_parallelism must be true")
+    supported = details.get("supported_parallelism", [])
+    if sorted(supported) != REPLICA_REPLICATE_SUPPORTED_PARALLELISM:
+        errors.append(f"{name}: supported_parallelism must be {REPLICA_REPLICATE_SUPPORTED_PARALLELISM}, got {supported}")
+    slowest = details.get("slowest_replicas", [])
+    if not isinstance(slowest, list) or not slowest:
+        errors.append(f"{name}: slowest_replicas must be a non-empty list")
+        slowest = []
+    for idx, replica in enumerate(slowest):
+        if not isinstance(replica, dict):
+            errors.append(f"{name}: slowest_replicas[{idx}] must be object")
+            continue
+        for field in [
+            "logical_id",
+            "replica_knows_master_wait_seconds",
+            "replica_replicate_command_seconds",
+            "replica_replicaof_wait_seconds",
+            "replica_replicate_total_seconds",
+        ]:
+            if field not in replica:
+                errors.append(f"{name}: slowest_replicas[{idx}] missing {field}")
+    observation = {
+        "name": name,
+        "scenario": scenario,
+        "node_count": expected_nodes,
+        "status": "PASS" if not errors else "FAIL",
+        "parallelism": details.get("parallelism", expected_parallelism),
+        "parallelism_source": details.get("parallelism_source", "MISSING"),
+        "bounded_parallelism": details.get("bounded_parallelism", "MISSING"),
+        "real_valkey": evidence.get("real_valkey", "MISSING"),
+        "evidence_path": rel(evidence_path),
+        "timing_path": rel(timing_path),
+        "timing": timing,
+        "slowest_replicas": slowest,
+        "role_counts": evidence.get("role_counts", "MISSING"),
+        "data_path_result": evidence.get("data_path_result", "MISSING"),
+        "nodes_observed": evidence.get("nodes_observed", "MISSING"),
+        "timing_details": {
+            "replica_count": details.get("replica_count", "MISSING"),
+            "slowest_count": details.get("slowest_count", "MISSING"),
+            "breakdown_semantics": details.get("breakdown_semantics", "MISSING"),
+        },
+    }
+    return observation, evidence, errors
+
+
+def write_replica_replicate_breakdown(errors: list[str]) -> tuple[Path, dict[str, Any], dict[str, dict[str, Any]]]:
+    out = ROOT / "artifacts" / "phases" / REPLICA_REPLICATE_ARTIFACT_PHASE / "p13_replica_replicate_breakdown.json"
+    observations: list[dict[str, Any]] = []
+    evidence: dict[str, dict[str, Any]] = {}
+    defaults = [
+        (
+            "default_scale_50",
+            "scale_50",
+            ROOT / "artifacts" / "phases" / BASE_PHASE / "p13_timing_breakdown_scale_50.json",
+            ROOT / "artifacts" / "phases" / BASE_PHASE / "valkey_e2e_evidence_50.json",
+            50,
+            REPLICA_REPLICATE_DEFAULT_PARALLELISM,
+        ),
+        (
+            "default_scale_100",
+            "scale_100",
+            ROOT / "artifacts" / "phases" / BASE_PHASE / "p13_timing_breakdown_scale_100.json",
+            ROOT / "artifacts" / "phases" / BASE_PHASE / "valkey_e2e_evidence_100.json",
+            100,
+            REPLICA_REPLICATE_DEFAULT_PARALLELISM,
+        ),
+        (
+            "parallelism_16_scale_50",
+            "scale_50",
+            ROOT / "artifacts" / "phases" / REPLICA_REPLICATE_ARTIFACT_PHASE / "p13_timing_breakdown_scale_50.json",
+            ROOT / "artifacts" / "phases" / REPLICA_REPLICATE_ARTIFACT_PHASE / "valkey_e2e_evidence_parallelism_16_scale_50.json",
+            50,
+            16,
+        ),
+    ]
+    for name, scenario, timing_path, evidence_path, expected_nodes, parallelism in defaults:
+        observation, observed_evidence, obs_errors = replica_replicate_timing_observation(
+            name=name,
+            scenario=scenario,
+            timing_path=timing_path,
+            evidence_path=evidence_path,
+            expected_nodes=expected_nodes,
+            expected_parallelism=parallelism,
+        )
+        observations.append(observation)
+        evidence[name] = observed_evidence
+        errors.extend(obs_errors)
+
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": "p13_replica_replicate_breakdown",
+        "phase_id": P13O_REPLICA_REPLICATE_PHASE,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "default_parallelism": REPLICA_REPLICATE_DEFAULT_PARALLELISM,
+        "supported_parallelism": REPLICA_REPLICATE_SUPPORTED_PARALLELISM,
+        "safety_constraints": {
+            "bounded_parallelism": True,
+            "host_network_mutation": False,
+            "p14_executed": False,
+            "default_max_nodes": 100,
+        },
+        "observations": observations,
+        "errors": errors,
+    }
+    write_json(out, artifact)
+    return out, artifact, evidence
+
+
+def write_replica_replicate_phase_summary(
+    phase: dict[str, Any],
+    breakdown: dict[str, Any],
+    evidence: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> Path:
+    phase_id = str(phase["id"])
+    artifact_id = artifact_phase_id(phase)
+    out = ROOT / "artifacts" / "phases" / artifact_id / "phase_summary.json"
+    real_evidence = {
+        name: {
+            "status": artifact.get("status", "MISSING"),
+            "nodes_observed": artifact.get("nodes_observed", "MISSING"),
+            "data_path_result": artifact.get("data_path_result", "MISSING"),
+            "role_counts": artifact.get("role_counts", "MISSING"),
+        }
+        for name, artifact in evidence.items()
+    }
+    timing_accounting = {
+        observation["name"]: {
+            "scenario": observation.get("scenario"),
+            "parallelism": observation.get("parallelism"),
+            **observation.get("timing", {}),
+        }
+        for observation in breakdown.get("observations", [])
+    }
+    summary = {
+        "schema_version": "v1",
+        "artifact_type": "p13_optimization_phase_summary",
+        "phase_id": phase_id,
+        "artifact_phase_id": artifact_id,
+        "run_id": f"phase-{phase_id}",
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "summary": "P13 replica replication now records bounded staged timing and slowest per-replica diagnostics.",
+        "required_artifacts": [item["path"] for item in phase.get("required_artifacts", [])],
+        "real_valkey_evidence": real_evidence,
+        "timing_accounting": timing_accounting,
+        "replica_replicate_breakdown_path": rel(
+            ROOT / "artifacts" / "phases" / artifact_id / "p13_replica_replicate_breakdown.json"
+        ),
+        "errors": errors,
+    }
+    write_json(out, summary)
+    return out
+
+
 def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool = True) -> int:
     manifest = load_manifest()
     phase = phase_by_id(manifest, args.phase)
     if args.phase == P13O_CLUSTER_CREATE_PHASE:
         return validate_cluster_create_artifacts(phase, write_summary_artifact=write_summary_artifact)
+    if args.phase == P13O_REPLICA_REPLICATE_PHASE:
+        return validate_replica_replicate_artifacts(phase, write_summary_artifact=write_summary_artifact)
 
     all_errors: list[str] = []
     timings: dict[str, dict[str, Any]] = {}
@@ -642,6 +858,59 @@ def validate_cluster_create_artifacts(phase: dict[str, Any], *, write_summary_ar
     summary_path = ROOT / "artifacts" / "phases" / "P13O_CLUSTER_CREATE_AB" / "phase_summary.json"
     if write_summary_artifact:
         summary_path = write_cluster_create_phase_summary(phase, comparison, evidence, all_errors)
+    elif not summary_path.exists():
+        all_errors.append(f"missing phase summary artifact: {rel(summary_path)}")
+    if summary_path.exists():
+        all_errors.extend(validate_schema(summary_path, ROOT / "schemas" / "artifact" / "p13_optimization_phase_summary.schema.json"))
+
+    if all_errors:
+        for err in all_errors:
+            print(f"FAIL: {err}", file=sys.stderr)
+        return 1
+    print(f"PASS p13o artifacts phase={phase['id']} summary={rel(summary_path)}")
+    return 0
+
+
+def validate_replica_replicate_artifacts(phase: dict[str, Any], *, write_summary_artifact: bool = True) -> int:
+    all_errors: list[str] = []
+    breakdown_path = ROOT / "artifacts" / "phases" / REPLICA_REPLICATE_ARTIFACT_PHASE / "p13_replica_replicate_breakdown.json"
+    if write_summary_artifact:
+        breakdown_path, breakdown, evidence = write_replica_replicate_breakdown(all_errors)
+    elif breakdown_path.exists():
+        breakdown = load_json(breakdown_path)
+        evidence = {}
+    else:
+        breakdown = {}
+        evidence = {}
+        all_errors.append(f"missing replica replicate breakdown artifact: {rel(breakdown_path)}")
+
+    if breakdown_path.exists():
+        all_errors.extend(validate_schema(breakdown_path, ROOT / "schemas" / "artifact" / "p13_replica_replicate_breakdown.schema.json"))
+        if breakdown.get("default_parallelism") != REPLICA_REPLICATE_DEFAULT_PARALLELISM:
+            all_errors.append(f"default replica parallelism must be {REPLICA_REPLICATE_DEFAULT_PARALLELISM}")
+        if sorted(breakdown.get("supported_parallelism", [])) != REPLICA_REPLICATE_SUPPORTED_PARALLELISM:
+            all_errors.append("supported replica parallelism must remain [8, 16, 32]")
+        if breakdown.get("safety_constraints", {}).get("bounded_parallelism") is not True:
+            all_errors.append("replica replicate must use bounded parallelism")
+        observations = {item.get("name"): item for item in breakdown.get("observations", [])}
+        for name in ["default_scale_50", "default_scale_100", "parallelism_16_scale_50"]:
+            observation = observations.get(name)
+            if not observation:
+                all_errors.append(f"missing observation {name}")
+            elif observation.get("status") != "PASS":
+                all_errors.append(f"observation {name} status is {observation.get('status')}")
+
+    if not evidence and breakdown.get("observations"):
+        for observation in breakdown.get("observations", []):
+            evidence_path = ROOT / str(observation.get("evidence_path", ""))
+            expected_nodes = int(observation.get("node_count", 0) or 0)
+            observed, errors = validate_real_evidence_path(evidence_path, str(observation.get("name")), expected_nodes)
+            evidence[str(observation.get("name"))] = observed
+            all_errors.extend(errors)
+
+    summary_path = ROOT / "artifacts" / "phases" / REPLICA_REPLICATE_ARTIFACT_PHASE / "phase_summary.json"
+    if write_summary_artifact:
+        summary_path = write_replica_replicate_phase_summary(phase, breakdown, evidence, all_errors)
     elif not summary_path.exists():
         all_errors.append(f"missing phase summary artifact: {rel(summary_path)}")
     if summary_path.exists():

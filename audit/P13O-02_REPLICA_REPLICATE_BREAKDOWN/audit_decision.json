@@ -1,0 +1,22 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P13O-02_REPLICA_REPLICATE_BREAKDOWN",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-29T11:53:59Z",
+  "gate_result_path": "artifacts/gates/P13O-02_REPLICA_REPLICATE_BREAKDOWN/gate_result.json",
+  "gate_result_sha256": "015eaf23df5c42cca4ae070381ab1852b01468e9ae6760c11796141592d5d71a",
+  "artifact_paths": [
+    "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/p13_replica_replicate_breakdown.json",
+    "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/phase_summary.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+    "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/valkey_e2e_evidence_parallelism_16_scale_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+    "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/cleanup_report.json"
+  ],
+  "risks": [],
+  "rationale": "All P13O-02 manifest gates passed with matching commands and verified log SHA256 values. Required artifacts validate, real Valkey 9.1.0 evidence proves 50/100 default and parallelism=16 scale-50 runs, cleanup reports are PASS with no resources remaining, bounded parallelism is explicit, and no forbidden safety behavior was found."
+}

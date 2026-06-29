@@ -4,7 +4,7 @@
   "phase_id": "P13_SCALE_LADDER_50_100",
   "run_id": "phase-P13_SCALE_LADDER_50_100-scale_50",
   "scenario": "scale_50",
-  "created_at": "2026-06-29T11:19:33.762756Z",
+  "created_at": "2026-06-29T11:46:44.242392Z",
   "producer": {
     "name": "scripts/valkey_e2e_gate.py",
     "version": "v1"
@@ -18,7 +18,7 @@
         "nodehost_count": 2,
         "parallelism": 8
       },
-      "duration_seconds": 0.378645,
+      "duration_seconds": 0.352587,
       "name": "nodehost_start",
       "status": "PASS"
     },
@@ -28,7 +28,7 @@
         "node_count": 50,
         "parallelism": 8
       },
-      "duration_seconds": 0.756428,
+      "duration_seconds": 0.633707,
       "name": "process_config_prepare",
       "status": "PASS"
     },
@@ -38,7 +38,7 @@
         "node_count": 50,
         "parallelism": 8
       },
-      "duration_seconds": 0.919932,
+      "duration_seconds": 0.894266,
       "name": "process_start",
       "status": "PASS"
     },
@@ -47,24 +47,24 @@
       "details": {
         "node_count": 50
       },
-      "duration_seconds": 0.033989,
+      "duration_seconds": 0.036528,
       "name": "process_ready_wait",
       "status": "PASS"
     },
     {
       "count": 1,
       "details": {
-        "cluster_create_command_seconds": 25.2987,
+        "cluster_create_command_seconds": 45.566274,
         "parallelism": 8,
-        "primary_convergence_seconds": 0.002479,
+        "primary_convergence_seconds": 0.002326,
         "primary_count": 25,
         "primary_meet_seconds": 0.0,
-        "probe_slot_assignment_seconds": 0.010489,
+        "probe_slot_assignment_seconds": 0.00996,
         "slot_assignment_scope": "inside_valkey_cli_cluster_create",
         "slot_assignment_seconds": 0.0,
         "strategy": "valkey_cli_cluster_create_primaries"
       },
-      "duration_seconds": 25.311716,
+      "duration_seconds": 45.5786,
       "name": "primary_cluster_create",
       "status": "PASS"
     },
@@ -76,28 +76,436 @@
         "parallelism": 8,
         "replica_count": 25
       },
-      "duration_seconds": 4.051768,
+      "duration_seconds": 6.087406,
       "name": "replica_meet",
       "status": "PASS"
     },
     {
       "count": 1,
       "details": {
+        "bounded_parallelism": true,
+        "breakdown_semantics": "wall-clock stage durations from bounded parallel replica configuration plus per-replica timings",
         "parallelism": 8,
-        "replica_count": 25
+        "parallelism_source": "default",
+        "replica_count": 25,
+        "replica_diagnostics": [
+          {
+            "logical_id": "shard-0000-replica-00",
+            "master_id": "96b01bbba0f07b74b4b9b0bfd663411fadb1fa3d",
+            "replica_knows_master_wait_seconds": 0.001597,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00885,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.007814,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.018261,
+            "shard_id": "shard-0000",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0001-replica-00",
+            "master_id": "48f9fd94a1d6fe474aaa0851b58079aa886a27c0",
+            "replica_knows_master_wait_seconds": 0.001629,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.009403,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.00382,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.014852,
+            "shard_id": "shard-0001",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0002-replica-00",
+            "master_id": "35586150c4b5392482ea1ad0433cae2589da1848",
+            "replica_knows_master_wait_seconds": 0.001685,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.004507,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.008,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.014192,
+            "shard_id": "shard-0002",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0003-replica-00",
+            "master_id": "036065689596c57821fd665b2676deaf38edc75c",
+            "replica_knows_master_wait_seconds": 0.002492,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.009143,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.007856,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.019491,
+            "shard_id": "shard-0003",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0004-replica-00",
+            "master_id": "9dc2d383c44aa344bee6fc014804c9d8cdf85231",
+            "replica_knows_master_wait_seconds": 0.002487,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.009689,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.007311,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.019487,
+            "shard_id": "shard-0004",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0005-replica-00",
+            "master_id": "11b152d4bebc4a1d0b777a09aa9f0b6a3a3dcd85",
+            "replica_knows_master_wait_seconds": 0.00198,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00842,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.024526,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.034926,
+            "shard_id": "shard-0005",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0006-replica-00",
+            "master_id": "00f637c922320b5b46c98724d0f9e9f36250bc1c",
+            "replica_knows_master_wait_seconds": 0.001956,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.008522,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.019992,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.03047,
+            "shard_id": "shard-0006",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0007-replica-00",
+            "master_id": "e1712999819e9eabcd4206437367980a6e887be1",
+            "replica_knows_master_wait_seconds": 0.00222,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.008351,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.022623,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.033194,
+            "shard_id": "shard-0007",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0008-replica-00",
+            "master_id": "23091b5d3c0ab068a7dd45477217692ff377e344",
+            "replica_knows_master_wait_seconds": 0.002449,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.0046,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.055648,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.062697,
+            "shard_id": "shard-0008",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0009-replica-00",
+            "master_id": "3303847d158436b622b1e386f0e116cd4be30470",
+            "replica_knows_master_wait_seconds": 0.002391,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001881,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.035912,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.040184,
+            "shard_id": "shard-0009",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0010-replica-00",
+            "master_id": "edc8c63f91bed41be39a6571901e7a7afa7391ef",
+            "replica_knows_master_wait_seconds": 0.002075,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001616,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.048598,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.052289,
+            "shard_id": "shard-0010",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0011-replica-00",
+            "master_id": "b87c806ae6067d30f38fe294dde4135aae0dd2c7",
+            "replica_knows_master_wait_seconds": 0.002747,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001304,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.009985,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.014036,
+            "shard_id": "shard-0011",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0012-replica-00",
+            "master_id": "019aa051bb183111da09949eafd546318bc12e2d",
+            "replica_knows_master_wait_seconds": 0.002481,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001673,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.050394,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.054548,
+            "shard_id": "shard-0012",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0013-replica-00",
+            "master_id": "2b3cc3ba3621b1f99a068c737a885747376e447e",
+            "replica_knows_master_wait_seconds": 0.002009,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001219,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.026339,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.029567,
+            "shard_id": "shard-0013",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0014-replica-00",
+            "master_id": "4019c9c90ddd06908e00eafcccd285998ed8f7fb",
+            "replica_knows_master_wait_seconds": 0.002314,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001272,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.03199,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.035576,
+            "shard_id": "shard-0014",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0015-replica-00",
+            "master_id": "f8c4633596b0da250e41c8be0c22d523931df521",
+            "replica_knows_master_wait_seconds": 0.001869,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001306,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.029455,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.03263,
+            "shard_id": "shard-0015",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0016-replica-00",
+            "master_id": "99f94bb7f1516bae222f5f8273a709a1ed114550",
+            "replica_knows_master_wait_seconds": 0.002292,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00155,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.027505,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.031347,
+            "shard_id": "shard-0016",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0017-replica-00",
+            "master_id": "486dbb928f6b0e8bd08e93ef95c7707105069197",
+            "replica_knows_master_wait_seconds": 0.002255,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001671,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.02435,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.028276,
+            "shard_id": "shard-0017",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0018-replica-00",
+            "master_id": "3e8560c10694d4c0e4f009498caeb2a5ec1e038e",
+            "replica_knows_master_wait_seconds": 0.002281,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001701,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.008083,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.012065,
+            "shard_id": "shard-0018",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0019-replica-00",
+            "master_id": "8ae940c174ce41e1349ef1add141eb789b824dd3",
+            "replica_knows_master_wait_seconds": 0.001827,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001587,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.017178,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.020592,
+            "shard_id": "shard-0019",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0020-replica-00",
+            "master_id": "30af8ab87d0429913716aab7a3368603f42bc98d",
+            "replica_knows_master_wait_seconds": 0.001767,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00158,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.025384,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.028731,
+            "shard_id": "shard-0020",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0021-replica-00",
+            "master_id": "1ed4472a8b8922f0c1e77a957a8268d9b4d5704c",
+            "replica_knows_master_wait_seconds": 0.001974,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001209,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.03087,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.034053,
+            "shard_id": "shard-0021",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0022-replica-00",
+            "master_id": "b828c08fb6dfd14dd1e40d5e52cabe2df117f834",
+            "replica_knows_master_wait_seconds": 0.001866,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00124,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.030731,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.033837,
+            "shard_id": "shard-0022",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0023-replica-00",
+            "master_id": "6b1784c2a9f4aa58409a8f4a0c84b1c6bfbd6f21",
+            "replica_knows_master_wait_seconds": 0.001889,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.000995,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.022443,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.025327,
+            "shard_id": "shard-0023",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0024-replica-00",
+            "master_id": "1b6377ee3794a162eb32874affa433297e7a2154",
+            "replica_knows_master_wait_seconds": 0.001539,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.000903,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.025024,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.027466,
+            "shard_id": "shard-0024",
+            "status": "PASS"
+          }
+        ],
+        "replica_knows_master_wait_seconds": 0.008147,
+        "replica_primary_id_lookup_seconds": 0.010979,
+        "replica_replicaof_wait_seconds": 0.012844,
+        "replica_replicate_command_seconds": 0.083993,
+        "replica_replicate_total_seconds": 0.116077,
+        "slowest_count": 5,
+        "slowest_replicas": [
+          {
+            "logical_id": "shard-0008-replica-00",
+            "master_id": "23091b5d3c0ab068a7dd45477217692ff377e344",
+            "replica_knows_master_wait_seconds": 0.002449,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.0046,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.055648,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.062697,
+            "shard_id": "shard-0008",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0012-replica-00",
+            "master_id": "019aa051bb183111da09949eafd546318bc12e2d",
+            "replica_knows_master_wait_seconds": 0.002481,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001673,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.050394,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.054548,
+            "shard_id": "shard-0012",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0010-replica-00",
+            "master_id": "edc8c63f91bed41be39a6571901e7a7afa7391ef",
+            "replica_knows_master_wait_seconds": 0.002075,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001616,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.048598,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.052289,
+            "shard_id": "shard-0010",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0009-replica-00",
+            "master_id": "3303847d158436b622b1e386f0e116cd4be30470",
+            "replica_knows_master_wait_seconds": 0.002391,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001881,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.035912,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.040184,
+            "shard_id": "shard-0009",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0014-replica-00",
+            "master_id": "4019c9c90ddd06908e00eafcccd285998ed8f7fb",
+            "replica_knows_master_wait_seconds": 0.002314,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001272,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.03199,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.035576,
+            "shard_id": "shard-0014",
+            "status": "PASS"
+          }
+        ],
+        "supported_parallelism": [
+          8,
+          16,
+          32
+        ]
       },
-      "duration_seconds": 8.071099,
+      "duration_seconds": 0.116107,
       "name": "replica_replicate",
       "status": "PASS"
     },
     {
-      "count": 23,
+      "count": 5,
       "details": {
         "predicate": "cluster clean snapshot did not converge",
         "sample_count": 2,
         "sample_scope": "representative"
       },
-      "duration_seconds": 0.14291,
+      "duration_seconds": 0.008819,
       "name": "runtime_representative_probe",
       "status": "PASS"
     },
@@ -108,39 +516,39 @@
         "sample_count": 50,
         "sample_scope": "all_nodes"
       },
-      "duration_seconds": 0.043531,
+      "duration_seconds": 0.021717,
       "name": "runtime_final_full_probe",
       "status": "PASS"
     },
     {
-      "count": 14,
+      "count": 13,
       "details": {
         "mode": "diagnostic",
         "predicate": "cluster clean snapshot did not converge",
         "sample_count": 50,
         "sample_scope": "all_nodes"
       },
-      "duration_seconds": 0.569537,
+      "duration_seconds": 0.430224,
       "name": "runtime_diagnostic_full_probe",
       "status": "FAIL"
     },
     {
       "name": "wrapper_wait_cluster_ok",
       "status": "PASS",
-      "duration_seconds": 0.017483,
+      "duration_seconds": 0.019614,
       "count": 1,
       "details": {
         "min_nodes": 50,
         "endpoint_count": 50,
-        "representative_probe_duration_seconds": 0.005423,
-        "final_full_probe_duration_seconds": 0.011434,
+        "representative_probe_duration_seconds": 0.006682,
+        "final_full_probe_duration_seconds": 0.012265,
         "diagnostic_full_probe_duration_seconds": "MISSING"
       }
     },
     {
       "name": "wrapper_data_path_probe",
       "status": "PASS",
-      "duration_seconds": 0.0012,
+      "duration_seconds": 0.001114,
       "count": 1,
       "details": {
         "required": true
@@ -149,18 +557,18 @@
     {
       "name": "cleanup",
       "status": "PASS",
-      "duration_seconds": 16.541836,
+      "duration_seconds": 16.185565,
       "count": 1,
       "details": {
         "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
         "exit_code": 0,
-        "cleanup_command_wall_seconds": 16.541613
+        "cleanup_command_wall_seconds": 16.185376
       }
     },
     {
       "name": "setup_command_wall",
       "status": "PASS",
-      "duration_seconds": 84.827709,
+      "duration_seconds": 78.571746,
       "count": 1,
       "details": {
         "command": [
@@ -186,7 +594,7 @@
     {
       "name": "setup_stdout_write",
       "status": "PASS",
-      "duration_seconds": 0.00027,
+      "duration_seconds": 0.000277,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_setup.stdout.log"
@@ -195,7 +603,7 @@
     {
       "name": "setup_stderr_write",
       "status": "PASS",
-      "duration_seconds": 6.6e-05,
+      "duration_seconds": 7.4e-05,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_setup.stderr.log"
@@ -204,7 +612,7 @@
     {
       "name": "state_load",
       "status": "PASS",
-      "duration_seconds": 0.00058,
+      "duration_seconds": 0.00075,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_50.json"
@@ -213,7 +621,7 @@
     {
       "name": "cleanup_command_wall",
       "status": "PASS",
-      "duration_seconds": 16.541613,
+      "duration_seconds": 16.185376,
       "count": 1,
       "details": {
         "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
@@ -223,7 +631,7 @@
     {
       "name": "cleanup_stdout_write",
       "status": "PASS",
-      "duration_seconds": 0.000119,
+      "duration_seconds": 0.000101,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_cleanup.stdout.log"
@@ -232,7 +640,7 @@
     {
       "name": "cleanup_stderr_write",
       "status": "PASS",
-      "duration_seconds": 3.8e-05,
+      "duration_seconds": 3.9e-05,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_cleanup.stderr.log"
@@ -241,7 +649,7 @@
     {
       "name": "artifact_write",
       "status": "PASS",
-      "duration_seconds": 0.000336,
+      "duration_seconds": 0.000582,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
@@ -250,8 +658,8 @@
     }
   ],
   "wrapper_probe_details": {
-    "representative_probe_duration_seconds": 0.005423,
-    "final_full_probe_duration_seconds": 0.011434,
+    "representative_probe_duration_seconds": 0.006682,
+    "final_full_probe_duration_seconds": 0.012265,
     "diagnostic_full_probe_duration_seconds": "MISSING",
     "wait_cluster_ok_probe_counts": {
       "representative_probe": 1,
@@ -260,24 +668,24 @@
     }
   },
   "summary": {
-    "cluster_create_duration_seconds": 37.434583,
-    "replica_config_duration_seconds": 8.071099,
-    "wrapper_probe_duration_seconds": 0.018683,
-    "final_full_probe_duration_seconds": 0.011434,
+    "cluster_create_duration_seconds": 51.782113,
+    "replica_config_duration_seconds": 0.116107,
+    "wrapper_probe_duration_seconds": 0.020728,
+    "final_full_probe_duration_seconds": 0.012265,
     "diagnostic_full_probe_duration_seconds": "MISSING",
-    "total_gate_seconds": 101.389869,
-    "setup_command_wall_seconds": 84.827709,
-    "setup_stdout_write_seconds": 0.00027,
-    "setup_stderr_write_seconds": 6.6e-05,
-    "state_load_seconds": 0.00058,
-    "wrapper_wait_cluster_ok_seconds": 0.017483,
-    "wrapper_data_path_probe_seconds": 0.0012,
-    "cleanup_command_wall_seconds": 16.541613,
-    "cleanup_stdout_write_seconds": 0.000119,
-    "cleanup_stderr_write_seconds": 3.8e-05,
-    "artifact_write_seconds": 0.000336,
-    "accounted_seconds": 101.389414,
-    "unattributed_seconds": 0.000455,
+    "total_gate_seconds": 94.780106,
+    "setup_command_wall_seconds": 78.571746,
+    "setup_stdout_write_seconds": 0.000277,
+    "setup_stderr_write_seconds": 7.4e-05,
+    "state_load_seconds": 0.00075,
+    "wrapper_wait_cluster_ok_seconds": 0.019614,
+    "wrapper_data_path_probe_seconds": 0.001114,
+    "cleanup_command_wall_seconds": 16.185376,
+    "cleanup_stdout_write_seconds": 0.000101,
+    "cleanup_stderr_write_seconds": 3.9e-05,
+    "artifact_write_seconds": 0.000582,
+    "accounted_seconds": 94.779673,
+    "unattributed_seconds": 0.000433,
     "unattributed_status": "PASS",
     "unattributed_explanation": {
       "status": "PASS",
@@ -285,19 +693,19 @@
     }
   },
   "accounting": {
-    "total_gate_seconds": 101.389869,
-    "setup_command_wall_seconds": 84.827709,
-    "setup_stdout_write_seconds": 0.00027,
-    "setup_stderr_write_seconds": 6.6e-05,
-    "state_load_seconds": 0.00058,
-    "wrapper_wait_cluster_ok_seconds": 0.017483,
-    "wrapper_data_path_probe_seconds": 0.0012,
-    "cleanup_command_wall_seconds": 16.541613,
-    "cleanup_stdout_write_seconds": 0.000119,
-    "cleanup_stderr_write_seconds": 3.8e-05,
-    "artifact_write_seconds": 0.000336,
-    "accounted_seconds": 101.389414,
-    "unattributed_seconds": 0.000455,
+    "total_gate_seconds": 94.780106,
+    "setup_command_wall_seconds": 78.571746,
+    "setup_stdout_write_seconds": 0.000277,
+    "setup_stderr_write_seconds": 7.4e-05,
+    "state_load_seconds": 0.00075,
+    "wrapper_wait_cluster_ok_seconds": 0.019614,
+    "wrapper_data_path_probe_seconds": 0.001114,
+    "cleanup_command_wall_seconds": 16.185376,
+    "cleanup_stdout_write_seconds": 0.000101,
+    "cleanup_stderr_write_seconds": 3.9e-05,
+    "artifact_write_seconds": 0.000582,
+    "accounted_seconds": 94.779673,
+    "unattributed_seconds": 0.000433,
     "unattributed_status": "PASS",
     "unattributed_explanation": {
       "status": "PASS",

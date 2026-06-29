@@ -1,0 +1,87 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_optimization_phase_summary",
+  "phase_id": "P13O-02_REPLICA_REPLICATE_BREAKDOWN",
+  "artifact_phase_id": "P13O_REPLICA_REPLICATE_BREAKDOWN",
+  "run_id": "phase-P13O-02_REPLICA_REPLICATE_BREAKDOWN",
+  "created_at": "2026-06-29T11:51:04.627721Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P13 replica replication now records bounded staged timing and slowest per-replica diagnostics.",
+  "required_artifacts": [
+    "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/p13_replica_replicate_breakdown.json",
+    "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/phase_summary.json"
+  ],
+  "real_valkey_evidence": {
+    "default_scale_50": {
+      "status": "PASS",
+      "nodes_observed": 50,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      }
+    },
+    "default_scale_100": {
+      "status": "PASS",
+      "nodes_observed": 100,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 50,
+        "replica": 50,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      }
+    },
+    "parallelism_16_scale_50": {
+      "status": "PASS",
+      "nodes_observed": 50,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      }
+    }
+  },
+  "timing_accounting": {
+    "default_scale_50": {
+      "scenario": "scale_50",
+      "parallelism": 8,
+      "replica_primary_id_lookup_seconds": 0.010979,
+      "replica_knows_master_wait_seconds": 0.008147,
+      "replica_replicate_command_seconds": 0.083993,
+      "replica_replicaof_wait_seconds": 0.012844,
+      "replica_replicate_total_seconds": 0.116077
+    },
+    "default_scale_100": {
+      "scenario": "scale_100",
+      "parallelism": 8,
+      "replica_primary_id_lookup_seconds": 0.014852,
+      "replica_knows_master_wait_seconds": 0.015885,
+      "replica_replicate_command_seconds": 0.222525,
+      "replica_replicaof_wait_seconds": 0.020195,
+      "replica_replicate_total_seconds": 0.273616
+    },
+    "parallelism_16_scale_50": {
+      "scenario": "scale_50",
+      "parallelism": 16,
+      "replica_primary_id_lookup_seconds": 0.010619,
+      "replica_knows_master_wait_seconds": 0.006717,
+      "replica_replicate_command_seconds": 0.062447,
+      "replica_replicaof_wait_seconds": 0.012005,
+      "replica_replicate_total_seconds": 0.091919
+    }
+  },
+  "replica_replicate_breakdown_path": "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/p13_replica_replicate_breakdown.json",
+  "errors": []
+}
