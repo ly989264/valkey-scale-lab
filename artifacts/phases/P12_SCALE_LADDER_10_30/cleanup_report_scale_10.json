@@ -3,148 +3,224 @@
   "artifacts_dir": "artifacts/phases/P12_SCALE_LADDER_10_30",
   "cleanup_actions": [
     {
+      "action": "terminate",
+      "id": "shard-0000-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 63,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0001-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 65,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0002-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 60,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0003-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 66,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0004-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 64,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0000-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 64,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0001-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 66,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0002-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 68,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0003-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 122,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0004-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 121,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0000-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 63,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0001-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 65,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0002-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 60,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0003-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 66,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0004-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 64,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0000-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 64,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0001-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 66,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0002-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 68,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0003-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 122,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0004-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 121,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-a",
+      "id": "nodehost-az-a",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH: unknown",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-b",
+      "id": "nodehost-az-b",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH: unknown",
+      "type": "nodehost"
+    },
+    {
       "action": "stop",
-      "id": "5bdca8918088",
+      "id": "19387f87d81a",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "5bdca8918088",
+      "id": "19387f87d81a",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "949b284f8ca8",
+      "id": "639d8e1dd7ac",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "949b284f8ca8",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "stop",
-      "id": "c6b283b63f12",
+      "id": "639d8e1dd7ac",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "c6b283b63f12",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "stop",
-      "id": "fd134ca37898",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "remove",
-      "id": "fd134ca37898",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "stop",
-      "id": "a41d656a683c",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "remove",
-      "id": "a41d656a683c",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "stop",
-      "id": "b5e579d9be63",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "remove",
-      "id": "b5e579d9be63",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "stop",
-      "id": "7c2cbd88a6c6",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "remove",
-      "id": "7c2cbd88a6c6",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "stop",
-      "id": "0c28a167c451",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "remove",
-      "id": "0c28a167c451",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "stop",
-      "id": "74110a1c4df7",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "remove",
-      "id": "74110a1c4df7",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "stop",
-      "id": "a66c5ba43c45",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "remove",
-      "id": "a66c5ba43c45",
-      "status": "PASS",
-      "stderr": "",
-      "type": "container"
-    },
-    {
-      "action": "remove",
-      "id": "95becdf82dc2",
+      "id": "0e80ad188b82",
       "status": "PASS",
       "stderr": "",
       "type": "network"

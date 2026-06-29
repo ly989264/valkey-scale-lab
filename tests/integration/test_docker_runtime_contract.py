@@ -119,6 +119,9 @@ def test_process_runtime_state_records_required_node_fields() -> None:
     )
 
     assert state["runtime"]["type"] == "docker_process"
+    assert state["runtime"]["cluster_startup_strategy"] == "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe"
+    assert state["runtime"]["cluster_meet_fanout"] == 4
+    assert state["runtime"]["cluster_startup_parallelism"] == 8
     recorded = state["nodes"][0]
     for key in ["logical_id", "nodehost_id", "pid", "client_port", "cluster_bus_port", "role", "shard_id", "data_dir", "log_file", "config_file"]:
         assert key in recorded
@@ -272,6 +275,44 @@ def test_bulk_process_meet_sends_seed_meets_without_per_node_wait(monkeypatch: p
         ("seed", "CLUSTER MEET 172.18.0.3 7401"),
         ("seed", "CLUSTER MEET 172.18.0.4 7402"),
     ]
+
+
+def test_tree_fanout_levels_spread_meet_sources() -> None:
+    nodes = [{"logical_id": f"p{idx}"} for idx in range(10)]
+
+    levels = docker_runtime._tree_fanout_levels(nodes[0], nodes[1:], fanout=4)
+
+    assert [[(src["logical_id"], dst["logical_id"]) for src, dst in level] for level in levels] == [
+        [("p0", "p1"), ("p0", "p2"), ("p0", "p3"), ("p0", "p4")],
+        [("p1", "p5"), ("p1", "p6"), ("p1", "p7"), ("p1", "p8"), ("p2", "p9")],
+    ]
+
+
+def test_process_wait_predicate_uses_representatives_then_full_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+    nodes = [
+        {"logical_id": "p0", "role": "primary", "az_id": "az-a"},
+        {"logical_id": "p1", "role": "primary", "az_id": "az-b"},
+        {"logical_id": "r0", "role": "replica", "az_id": "az-b"},
+        {"logical_id": "r1", "role": "replica", "az_id": "az-a"},
+    ]
+
+    def fake_snapshots(sampled: list[dict], *, timeout: float = 60.0) -> list[dict]:
+        calls.append([node["logical_id"] for node in sampled])
+        return [
+            {
+                "logical_id": node["logical_id"],
+                "probe_status": "PASS",
+                "known_nodes": 4,
+            }
+            for node in sampled
+        ]
+
+    monkeypatch.setattr(docker_runtime, "_process_node_snapshots_parallel", fake_snapshots)
+
+    docker_runtime._wait_process_known(nodes, expected=4, timeout=1)
+
+    assert calls == [["p0", "p1"], ["p0", "p1", "r0", "r1"]]
 
 
 def test_large_cluster_uses_replicated_cluster_create(monkeypatch: pytest.MonkeyPatch) -> None:

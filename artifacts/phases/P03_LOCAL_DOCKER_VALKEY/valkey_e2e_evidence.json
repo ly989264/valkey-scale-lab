@@ -3,7 +3,7 @@
   "artifact_type": "valkey_e2e_evidence",
   "phase_id": "P03_LOCAL_DOCKER_VALKEY",
   "run_id": "phase-P03_LOCAL_DOCKER_VALKEY-cluster_smoke",
-  "created_at": "2026-06-29T02:25:59.128969Z",
+  "created_at": "2026-06-29T07:14:35.315421Z",
   "producer": {
     "name": "scripts/valkey_e2e_gate.py",
     "version": "v1"
@@ -19,11 +19,11 @@
     "9.1.0"
   ],
   "scenario": "cluster_smoke",
-  "started_at": "2026-06-29T02:25:32.040830Z",
-  "finished_at": "2026-06-29T02:25:59.128997Z",
+  "started_at": "2026-06-29T07:14:29.517615Z",
+  "finished_at": "2026-06-29T07:14:35.315459Z",
   "setup": {
     "command": [
-      "/opt/anaconda3/bin/python3",
+      "/private/tmp/vslab-python-shim/python3",
       "-m",
       "valkey_scale_lab.cli",
       "gate",
@@ -53,10 +53,34 @@
       "version": "9.1.0",
       "cluster_state": "ok",
       "cluster_known_nodes": 6,
-      "myself_node_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+      "myself_node_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
       "cluster_nodes": {
-        "af8670471f85da4fb2001b16a6e1d9b21fbcbb90": {
-          "node_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+        "1993841e706e9046704cab59f3c1a5dc16997f69": {
+          "node_id": "1993841e706e9046704cab59f3c1a5dc16997f69",
+          "addr": "172.18.0.5:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
+          "link_state": "connected",
+          "slots": []
+        },
+        "f6a29a2eff305692c928b91904353197e4334816": {
+          "node_id": "f6a29a2eff305692c928b91904353197e4334816",
+          "addr": "172.18.0.3:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "10922-16383"
+          ]
+        },
+        "47a2db24f634f9842553e531cc8f4018fbc6bf5e": {
+          "node_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
           "addr": "172.18.0.2:6379@16379",
           "flags": [
             "master",
@@ -69,43 +93,8 @@
             "5461-10921"
           ]
         },
-        "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839": {
-          "node_id": "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839",
-          "addr": "172.18.0.7:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
-          "link_state": "connected",
-          "slots": []
-        },
-        "dcbbdcb182deb318612dfd99d28257999a5d0e3a": {
-          "node_id": "dcbbdcb182deb318612dfd99d28257999a5d0e3a",
-          "addr": "172.18.0.6:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
-          "link_state": "connected",
-          "slots": []
-        },
-        "1df72f50740ec6ea5f67f204f1933906ba62ad20": {
-          "node_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
-          "addr": "172.18.0.3:6379@16379",
-          "flags": [
-            "master"
-          ],
-          "role": "primary",
-          "master_id": null,
-          "link_state": "connected",
-          "slots": [
-            "10922-16383"
-          ]
-        },
-        "d52ee552ab1e828a50ebe5662b94daa4d1a25eab": {
-          "node_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
+        "6bb7a9630598612b5326f77a3e05bf992ec4a3c6": {
+          "node_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
           "addr": "172.18.0.4:6379@16379",
           "flags": [
             "master"
@@ -117,14 +106,25 @@
             "0-5460"
           ]
         },
-        "35ebec4e554964e69e7d237c91389d40e736e6ae": {
-          "node_id": "35ebec4e554964e69e7d237c91389d40e736e6ae",
-          "addr": "172.18.0.5:6379@16379",
+        "4b9066a022bdc1921a3166bfc93919d3981f0172": {
+          "node_id": "4b9066a022bdc1921a3166bfc93919d3981f0172",
+          "addr": "172.18.0.6:6379@16379",
           "flags": [
             "slave"
           ],
           "role": "replica",
-          "master_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+          "master_id": "f6a29a2eff305692c928b91904353197e4334816",
+          "link_state": "connected",
+          "slots": []
+        },
+        "a3edf3413fa5a5a95e53b0031a7bdb9963481a00": {
+          "node_id": "a3edf3413fa5a5a95e53b0031a7bdb9963481a00",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
           "link_state": "connected",
           "slots": []
         }
@@ -139,32 +139,10 @@
       "version": "9.1.0",
       "cluster_state": "ok",
       "cluster_known_nodes": 6,
-      "myself_node_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
+      "myself_node_id": "f6a29a2eff305692c928b91904353197e4334816",
       "cluster_nodes": {
-        "dcbbdcb182deb318612dfd99d28257999a5d0e3a": {
-          "node_id": "dcbbdcb182deb318612dfd99d28257999a5d0e3a",
-          "addr": "172.18.0.6:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
-          "link_state": "connected",
-          "slots": []
-        },
-        "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839": {
-          "node_id": "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839",
-          "addr": "172.18.0.7:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
-          "link_state": "connected",
-          "slots": []
-        },
-        "d52ee552ab1e828a50ebe5662b94daa4d1a25eab": {
-          "node_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
+        "6bb7a9630598612b5326f77a3e05bf992ec4a3c6": {
+          "node_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
           "addr": "172.18.0.4:6379@16379",
           "flags": [
             "master"
@@ -176,8 +154,30 @@
             "0-5460"
           ]
         },
-        "1df72f50740ec6ea5f67f204f1933906ba62ad20": {
-          "node_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
+        "4b9066a022bdc1921a3166bfc93919d3981f0172": {
+          "node_id": "4b9066a022bdc1921a3166bfc93919d3981f0172",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "f6a29a2eff305692c928b91904353197e4334816",
+          "link_state": "connected",
+          "slots": []
+        },
+        "a3edf3413fa5a5a95e53b0031a7bdb9963481a00": {
+          "node_id": "a3edf3413fa5a5a95e53b0031a7bdb9963481a00",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
+          "link_state": "connected",
+          "slots": []
+        },
+        "f6a29a2eff305692c928b91904353197e4334816": {
+          "node_id": "f6a29a2eff305692c928b91904353197e4334816",
           "addr": "172.18.0.3:6379@16379",
           "flags": [
             "master",
@@ -190,8 +190,8 @@
             "10922-16383"
           ]
         },
-        "af8670471f85da4fb2001b16a6e1d9b21fbcbb90": {
-          "node_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+        "47a2db24f634f9842553e531cc8f4018fbc6bf5e": {
+          "node_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
           "addr": "172.18.0.2:6379@16379",
           "flags": [
             "master"
@@ -203,14 +203,14 @@
             "5461-10921"
           ]
         },
-        "35ebec4e554964e69e7d237c91389d40e736e6ae": {
-          "node_id": "35ebec4e554964e69e7d237c91389d40e736e6ae",
+        "1993841e706e9046704cab59f3c1a5dc16997f69": {
+          "node_id": "1993841e706e9046704cab59f3c1a5dc16997f69",
           "addr": "172.18.0.5:6379@16379",
           "flags": [
             "slave"
           ],
           "role": "replica",
-          "master_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+          "master_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
           "link_state": "connected",
           "slots": []
         }
@@ -225,32 +225,56 @@
       "version": "9.1.0",
       "cluster_state": "ok",
       "cluster_known_nodes": 6,
-      "myself_node_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
+      "myself_node_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
       "cluster_nodes": {
-        "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839": {
-          "node_id": "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839",
+        "4b9066a022bdc1921a3166bfc93919d3981f0172": {
+          "node_id": "4b9066a022bdc1921a3166bfc93919d3981f0172",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "f6a29a2eff305692c928b91904353197e4334816",
+          "link_state": "connected",
+          "slots": []
+        },
+        "a3edf3413fa5a5a95e53b0031a7bdb9963481a00": {
+          "node_id": "a3edf3413fa5a5a95e53b0031a7bdb9963481a00",
           "addr": "172.18.0.7:6379@16379",
           "flags": [
             "slave"
           ],
           "role": "replica",
-          "master_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
+          "master_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
           "link_state": "connected",
           "slots": []
         },
-        "35ebec4e554964e69e7d237c91389d40e736e6ae": {
-          "node_id": "35ebec4e554964e69e7d237c91389d40e736e6ae",
+        "47a2db24f634f9842553e531cc8f4018fbc6bf5e": {
+          "node_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
+          "addr": "172.18.0.2:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "5461-10921"
+          ]
+        },
+        "1993841e706e9046704cab59f3c1a5dc16997f69": {
+          "node_id": "1993841e706e9046704cab59f3c1a5dc16997f69",
           "addr": "172.18.0.5:6379@16379",
           "flags": [
             "slave"
           ],
           "role": "replica",
-          "master_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+          "master_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
           "link_state": "connected",
           "slots": []
         },
-        "d52ee552ab1e828a50ebe5662b94daa4d1a25eab": {
-          "node_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
+        "6bb7a9630598612b5326f77a3e05bf992ec4a3c6": {
+          "node_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
           "addr": "172.18.0.4:6379@16379",
           "flags": [
             "master",
@@ -263,19 +287,8 @@
             "0-5460"
           ]
         },
-        "dcbbdcb182deb318612dfd99d28257999a5d0e3a": {
-          "node_id": "dcbbdcb182deb318612dfd99d28257999a5d0e3a",
-          "addr": "172.18.0.6:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
-          "link_state": "connected",
-          "slots": []
-        },
-        "1df72f50740ec6ea5f67f204f1933906ba62ad20": {
-          "node_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
+        "f6a29a2eff305692c928b91904353197e4334816": {
+          "node_id": "f6a29a2eff305692c928b91904353197e4334816",
           "addr": "172.18.0.3:6379@16379",
           "flags": [
             "master"
@@ -285,19 +298,6 @@
           "link_state": "connected",
           "slots": [
             "10922-16383"
-          ]
-        },
-        "af8670471f85da4fb2001b16a6e1d9b21fbcbb90": {
-          "node_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
-          "addr": "172.18.0.2:6379@16379",
-          "flags": [
-            "master"
-          ],
-          "role": "primary",
-          "master_id": null,
-          "link_state": "connected",
-          "slots": [
-            "5461-10921"
           ]
         }
       }
@@ -311,57 +311,10 @@
       "version": "9.1.0",
       "cluster_state": "ok",
       "cluster_known_nodes": 6,
-      "myself_node_id": "35ebec4e554964e69e7d237c91389d40e736e6ae",
+      "myself_node_id": "1993841e706e9046704cab59f3c1a5dc16997f69",
       "cluster_nodes": {
-        "dcbbdcb182deb318612dfd99d28257999a5d0e3a": {
-          "node_id": "dcbbdcb182deb318612dfd99d28257999a5d0e3a",
-          "addr": "172.18.0.6:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
-          "link_state": "connected",
-          "slots": []
-        },
-        "d52ee552ab1e828a50ebe5662b94daa4d1a25eab": {
-          "node_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
-          "addr": "172.18.0.4:6379@16379",
-          "flags": [
-            "master"
-          ],
-          "role": "primary",
-          "master_id": null,
-          "link_state": "connected",
-          "slots": [
-            "0-5460"
-          ]
-        },
-        "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839": {
-          "node_id": "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839",
-          "addr": "172.18.0.7:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
-          "link_state": "connected",
-          "slots": []
-        },
-        "35ebec4e554964e69e7d237c91389d40e736e6ae": {
-          "node_id": "35ebec4e554964e69e7d237c91389d40e736e6ae",
-          "addr": "172.18.0.5:6379@16379",
-          "flags": [
-            "myself",
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
-          "link_state": "connected",
-          "slots": []
-        },
-        "1df72f50740ec6ea5f67f204f1933906ba62ad20": {
-          "node_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
+        "f6a29a2eff305692c928b91904353197e4334816": {
+          "node_id": "f6a29a2eff305692c928b91904353197e4334816",
           "addr": "172.18.0.3:6379@16379",
           "flags": [
             "master"
@@ -373,8 +326,33 @@
             "10922-16383"
           ]
         },
-        "af8670471f85da4fb2001b16a6e1d9b21fbcbb90": {
-          "node_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+        "6bb7a9630598612b5326f77a3e05bf992ec4a3c6": {
+          "node_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
+          "addr": "172.18.0.4:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "0-5460"
+          ]
+        },
+        "1993841e706e9046704cab59f3c1a5dc16997f69": {
+          "node_id": "1993841e706e9046704cab59f3c1a5dc16997f69",
+          "addr": "172.18.0.5:6379@16379",
+          "flags": [
+            "myself",
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
+          "link_state": "connected",
+          "slots": []
+        },
+        "47a2db24f634f9842553e531cc8f4018fbc6bf5e": {
+          "node_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
           "addr": "172.18.0.2:6379@16379",
           "flags": [
             "master"
@@ -385,6 +363,28 @@
           "slots": [
             "5461-10921"
           ]
+        },
+        "a3edf3413fa5a5a95e53b0031a7bdb9963481a00": {
+          "node_id": "a3edf3413fa5a5a95e53b0031a7bdb9963481a00",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
+          "link_state": "connected",
+          "slots": []
+        },
+        "4b9066a022bdc1921a3166bfc93919d3981f0172": {
+          "node_id": "4b9066a022bdc1921a3166bfc93919d3981f0172",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "f6a29a2eff305692c928b91904353197e4334816",
+          "link_state": "connected",
+          "slots": []
         }
       }
     },
@@ -397,10 +397,33 @@
       "version": "9.1.0",
       "cluster_state": "ok",
       "cluster_known_nodes": 6,
-      "myself_node_id": "dcbbdcb182deb318612dfd99d28257999a5d0e3a",
+      "myself_node_id": "4b9066a022bdc1921a3166bfc93919d3981f0172",
       "cluster_nodes": {
-        "af8670471f85da4fb2001b16a6e1d9b21fbcbb90": {
-          "node_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+        "4b9066a022bdc1921a3166bfc93919d3981f0172": {
+          "node_id": "4b9066a022bdc1921a3166bfc93919d3981f0172",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "myself",
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "f6a29a2eff305692c928b91904353197e4334816",
+          "link_state": "connected",
+          "slots": []
+        },
+        "a3edf3413fa5a5a95e53b0031a7bdb9963481a00": {
+          "node_id": "a3edf3413fa5a5a95e53b0031a7bdb9963481a00",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
+          "link_state": "connected",
+          "slots": []
+        },
+        "47a2db24f634f9842553e531cc8f4018fbc6bf5e": {
+          "node_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
           "addr": "172.18.0.2:6379@16379",
           "flags": [
             "master"
@@ -412,44 +435,8 @@
             "5461-10921"
           ]
         },
-        "dcbbdcb182deb318612dfd99d28257999a5d0e3a": {
-          "node_id": "dcbbdcb182deb318612dfd99d28257999a5d0e3a",
-          "addr": "172.18.0.6:6379@16379",
-          "flags": [
-            "myself",
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
-          "link_state": "connected",
-          "slots": []
-        },
-        "1df72f50740ec6ea5f67f204f1933906ba62ad20": {
-          "node_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
-          "addr": "172.18.0.3:6379@16379",
-          "flags": [
-            "master"
-          ],
-          "role": "primary",
-          "master_id": null,
-          "link_state": "connected",
-          "slots": [
-            "10922-16383"
-          ]
-        },
-        "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839": {
-          "node_id": "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839",
-          "addr": "172.18.0.7:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
-          "link_state": "connected",
-          "slots": []
-        },
-        "d52ee552ab1e828a50ebe5662b94daa4d1a25eab": {
-          "node_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
+        "6bb7a9630598612b5326f77a3e05bf992ec4a3c6": {
+          "node_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
           "addr": "172.18.0.4:6379@16379",
           "flags": [
             "master"
@@ -461,14 +448,27 @@
             "0-5460"
           ]
         },
-        "35ebec4e554964e69e7d237c91389d40e736e6ae": {
-          "node_id": "35ebec4e554964e69e7d237c91389d40e736e6ae",
+        "f6a29a2eff305692c928b91904353197e4334816": {
+          "node_id": "f6a29a2eff305692c928b91904353197e4334816",
+          "addr": "172.18.0.3:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "10922-16383"
+          ]
+        },
+        "1993841e706e9046704cab59f3c1a5dc16997f69": {
+          "node_id": "1993841e706e9046704cab59f3c1a5dc16997f69",
           "addr": "172.18.0.5:6379@16379",
           "flags": [
             "slave"
           ],
           "role": "replica",
-          "master_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+          "master_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
           "link_state": "connected",
           "slots": []
         }
@@ -483,10 +483,22 @@
       "version": "9.1.0",
       "cluster_state": "ok",
       "cluster_known_nodes": 6,
-      "myself_node_id": "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839",
+      "myself_node_id": "a3edf3413fa5a5a95e53b0031a7bdb9963481a00",
       "cluster_nodes": {
-        "d52ee552ab1e828a50ebe5662b94daa4d1a25eab": {
-          "node_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
+        "a3edf3413fa5a5a95e53b0031a7bdb9963481a00": {
+          "node_id": "a3edf3413fa5a5a95e53b0031a7bdb9963481a00",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "myself",
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
+          "link_state": "connected",
+          "slots": []
+        },
+        "6bb7a9630598612b5326f77a3e05bf992ec4a3c6": {
+          "node_id": "6bb7a9630598612b5326f77a3e05bf992ec4a3c6",
           "addr": "172.18.0.4:6379@16379",
           "flags": [
             "master"
@@ -498,42 +510,8 @@
             "0-5460"
           ]
         },
-        "35ebec4e554964e69e7d237c91389d40e736e6ae": {
-          "node_id": "35ebec4e554964e69e7d237c91389d40e736e6ae",
-          "addr": "172.18.0.5:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
-          "link_state": "connected",
-          "slots": []
-        },
-        "dcbbdcb182deb318612dfd99d28257999a5d0e3a": {
-          "node_id": "dcbbdcb182deb318612dfd99d28257999a5d0e3a",
-          "addr": "172.18.0.6:6379@16379",
-          "flags": [
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
-          "link_state": "connected",
-          "slots": []
-        },
-        "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839": {
-          "node_id": "930d1c7a8f2b4d51d3d8c197a9445e090fbd8839",
-          "addr": "172.18.0.7:6379@16379",
-          "flags": [
-            "myself",
-            "slave"
-          ],
-          "role": "replica",
-          "master_id": "d52ee552ab1e828a50ebe5662b94daa4d1a25eab",
-          "link_state": "connected",
-          "slots": []
-        },
-        "af8670471f85da4fb2001b16a6e1d9b21fbcbb90": {
-          "node_id": "af8670471f85da4fb2001b16a6e1d9b21fbcbb90",
+        "47a2db24f634f9842553e531cc8f4018fbc6bf5e": {
+          "node_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
           "addr": "172.18.0.2:6379@16379",
           "flags": [
             "master"
@@ -545,8 +523,19 @@
             "5461-10921"
           ]
         },
-        "1df72f50740ec6ea5f67f204f1933906ba62ad20": {
-          "node_id": "1df72f50740ec6ea5f67f204f1933906ba62ad20",
+        "4b9066a022bdc1921a3166bfc93919d3981f0172": {
+          "node_id": "4b9066a022bdc1921a3166bfc93919d3981f0172",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "f6a29a2eff305692c928b91904353197e4334816",
+          "link_state": "connected",
+          "slots": []
+        },
+        "f6a29a2eff305692c928b91904353197e4334816": {
+          "node_id": "f6a29a2eff305692c928b91904353197e4334816",
           "addr": "172.18.0.3:6379@16379",
           "flags": [
             "master"
@@ -557,11 +546,25 @@
           "slots": [
             "10922-16383"
           ]
+        },
+        "1993841e706e9046704cab59f3c1a5dc16997f69": {
+          "node_id": "1993841e706e9046704cab59f3c1a5dc16997f69",
+          "addr": "172.18.0.5:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "47a2db24f634f9842553e531cc8f4018fbc6bf5e",
+          "link_state": "connected",
+          "slots": []
         }
       }
     }
   ],
   "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
     "hosts": [
       "local"
     ],
@@ -576,7 +579,7 @@
     {
       "logical_id": "shard-0000-primary",
       "nodehost_id": "MISSING",
-      "pid": 19117,
+      "pid": 60842,
       "client_port": 7000,
       "cluster_bus_port": "MISSING",
       "role": "primary",
@@ -588,7 +591,7 @@
     {
       "logical_id": "shard-0001-primary",
       "nodehost_id": "MISSING",
-      "pid": 19196,
+      "pid": 60917,
       "client_port": 7001,
       "cluster_bus_port": "MISSING",
       "role": "primary",
@@ -600,7 +603,7 @@
     {
       "logical_id": "shard-0002-primary",
       "nodehost_id": "MISSING",
-      "pid": 19276,
+      "pid": 60994,
       "client_port": 7002,
       "cluster_bus_port": "MISSING",
       "role": "primary",
@@ -612,7 +615,7 @@
     {
       "logical_id": "shard-0000-replica-00",
       "nodehost_id": "MISSING",
-      "pid": 19353,
+      "pid": 61070,
       "client_port": 7003,
       "cluster_bus_port": "MISSING",
       "role": "replica",
@@ -624,7 +627,7 @@
     {
       "logical_id": "shard-0001-replica-00",
       "nodehost_id": "MISSING",
-      "pid": 19430,
+      "pid": 61145,
       "client_port": 7004,
       "cluster_bus_port": "MISSING",
       "role": "replica",
@@ -636,7 +639,7 @@
     {
       "logical_id": "shard-0002-replica-00",
       "nodehost_id": "MISSING",
-      "pid": 19508,
+      "pid": 61222,
       "client_port": 7005,
       "cluster_bus_port": "MISSING",
       "role": "replica",

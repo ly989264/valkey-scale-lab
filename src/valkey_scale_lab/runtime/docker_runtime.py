@@ -4,9 +4,10 @@ import json
 import socket
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Iterable, TypeVar
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.simple_yaml import parse_config_file
@@ -17,6 +18,11 @@ from valkey_scale_lab.orchestrator.local import write_phase_summary as write_p10
 PROJECT = "valkey-scale-lab"
 LABEL_PREFIX = "org.valkey-scale-lab"
 RUN_DATE = "20260628"
+CLUSTER_MEET_FANOUT = 4
+CLUSTER_ORCHESTRATION_PARALLELISM = 8
+CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS = 2.0
+
+T = TypeVar("T")
 
 
 class DockerRuntimeError(RuntimeError):
@@ -242,6 +248,9 @@ def _runtime_state(
             "run_id": run_id,
             "project": PROJECT,
             "hosts": [host.get("host_id") for host in config.get("hosts", [])],
+            "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+            "cluster_startup_parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+            "cluster_meet_fanout": CLUSTER_MEET_FANOUT,
         },
         "nodes": [
             {
@@ -300,15 +309,39 @@ def _create_process_scenario(
     nodehosts = _process_nodehosts(config, nodes, phase, scenario, run_id)
     snapshots: list[dict[str, Any]] = []
     try:
-        for nodehost in nodehosts:
+        def start_nodehost(nodehost: dict[str, Any]) -> None:
             container_id = _start_nodehost(nodehost, network_name, config["runtime"]["valkey_image"], phase, scenario, run_id)
             nodehost["container_id"] = container_id
             nodehost["container_ip"] = _container_ip(container_id, network_name)
+
+        _bounded_parallel(
+            nodehosts,
+            start_nodehost,
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
+            label="nodehost container startup",
+        )
         nodehost_by_id = {nodehost["nodehost_id"]: nodehost for nodehost in nodehosts}
-        for node in nodes:
+
+        def prepare_node(node: dict[str, Any]) -> None:
             nodehost = nodehost_by_id[node["nodehost_id"]]
             _prepare_process_node(node, nodehost, artifacts, run_id)
-            _start_process_node(node)
+
+        _bounded_parallel(
+            nodes,
+            prepare_node,
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
+            label="Valkey process config preparation",
+        )
+
+        _bounded_parallel(
+            nodes,
+            _start_process_node,
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
+            label="Valkey process startup",
+        )
         _wait_process_nodes_ready(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0))
         state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
         _write_state(state_out, state)
@@ -468,10 +501,12 @@ def _process_runtime_state(
             "network_name": network_name,
             "run_id": run_id,
             "project": PROJECT,
-            "cluster_startup_strategy": "aws_inspired_bulk_meet_after_all_processes_start",
+            "cluster_startup_strategy": "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
             "container_strategy": "one_owned_docker_nodehost_per_virtual_az",
             "nodehost_count": len(nodehosts),
             "logical_node_count": len(nodes),
+            "cluster_startup_parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+            "cluster_meet_fanout": CLUSTER_MEET_FANOUT,
         },
         "nodehosts": [
             {
@@ -759,29 +794,89 @@ def _configure_cluster(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     node_timeout = _scale_timeout(nodes, floor=60.0, per_node=2.0)
     converge_timeout = _scale_timeout(nodes, floor=90.0, per_node=5.0)
     _wait_for_nodes(nodes, timeout=node_timeout)
-    first = nodes[0]
-    meet_started = time.monotonic()
-    for node in nodes[1:]:
-        run_container_cli(first["container_name"], "CLUSTER", "MEET", node["container_ip"], "6379", timeout=30)
-    _wait_cluster_known(nodes, expected=len(nodes), timeout=converge_timeout)
-    operations.append(_operation("meet", "PASS", meet_started, {"nodes_joined": len(nodes) - 1, "cluster_known_nodes": len(nodes)}))
-
     primaries = [node for node in nodes if node["role"] == "primary"]
     replicas = [node for node in nodes if node["role"] == "replica"]
+    first = primaries[0]
+
+    meet_started = time.monotonic()
+    primary_meet_commands = _tree_fanout_meet_nodes(first, primaries[1:], timeout=converge_timeout)
+    _wait_cluster_known(primaries, expected=len(primaries), timeout=converge_timeout, final_check=False)
+    operations.append(
+        _operation(
+            "tree_fanout_meet_primaries",
+            "PASS",
+            meet_started,
+            {
+                "nodes_joined": len(primaries) - 1,
+                "cluster_known_nodes": len(primaries),
+                "fanout": CLUSTER_MEET_FANOUT,
+                "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+                "meet_commands": primary_meet_commands,
+            },
+        )
+    )
+
     slot_ranges = _slot_ranges(len(primaries))
     slots_started = time.monotonic()
-    for primary, (start, end) in zip(primaries, slot_ranges):
-        _add_slots(primary["container_name"], start, end)
-    _wait_cluster_slots_assigned(nodes, timeout=converge_timeout)
-    operations.append(_operation("add_slots", "PASS", slots_started, {"slots_assigned": 16384, "primary_count": len(primaries)}))
+    primary_slot_ranges = list(zip(primaries, slot_ranges))
+    _bounded_parallel(
+        primary_slot_ranges,
+        lambda item: _add_slots_node(item[0], item[1][0], item[1][1]),
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=converge_timeout,
+        label="parallel CLUSTER ADDSLOTS",
+    )
+    _wait_cluster_slots_assigned(primaries, timeout=converge_timeout, final_check=False)
+    _wait_cluster_ok(primaries, timeout=converge_timeout, final_check=False)
+    operations.append(
+        _operation(
+            "parallel_add_slots",
+            "PASS",
+            slots_started,
+            {
+                "slots_assigned": 16384,
+                "primary_count": len(primaries),
+                "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+            },
+        )
+    )
+
+    replica_meet_started = time.monotonic()
+    primary_ids = _cluster_node_ids_by_shard(primaries, timeout=min(converge_timeout, 120.0))
+    replica_meet_commands = _tree_fanout_meet_nodes(first, replicas, timeout=converge_timeout)
+    _wait_cluster_known(nodes, expected=len(nodes), timeout=converge_timeout, final_check=False)
+    operations.append(
+        _operation(
+            "tree_fanout_meet_replicas",
+            "PASS",
+            replica_meet_started,
+            {
+                "nodes_joined": len(replicas),
+                "cluster_known_nodes": len(nodes),
+                "fanout": CLUSTER_MEET_FANOUT,
+                "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+                "meet_commands": replica_meet_commands,
+            },
+        )
+    )
 
     replicate_started = time.monotonic()
-    primary_ids = {node["shard_id"]: run_container_cli(node["container_name"], "CLUSTER", "MYID") for node in primaries}
-    for replica in replicas:
-        master_id = primary_ids[replica["shard_id"]]
-        run_container_cli(replica["container_name"], "CLUSTER", "REPLICATE", master_id, timeout=30)
-    _wait_cluster_ok(nodes, timeout=converge_timeout)
-    operations.append(_operation("add_replica", "PASS", replicate_started, {"replica_count": len(replicas), "cluster_state": "ok"}))
+    _replicate_nodes_parallel(replicas, primary_ids, timeout=converge_timeout)
+    _wait_cluster_known(nodes, expected=len(nodes), timeout=converge_timeout, final_check=False)
+    _wait_cluster_ok(nodes, timeout=converge_timeout, final_check=False)
+    _wait_cluster_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=converge_timeout, final_check=False)
+    operations.append(
+        _operation(
+            "parallel_add_replicas",
+            "PASS",
+            replicate_started,
+            {
+                "replica_count": len(replicas),
+                "cluster_state": "ok",
+                "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+            },
+        )
+    )
     return operations
 
 
@@ -807,6 +902,131 @@ def run_node_cluster_cli(node: dict[str, Any], *args: Any, timeout: int = 60, ch
     return run_container_cluster_cli(node["container_name"], *args, timeout=timeout, check=check)
 
 
+def _node_host_command(node: dict[str, Any], *args: Any, timeout: float = 2.0) -> Any:
+    return _host_command(str(node.get("host", "127.0.0.1")), int(node["client_port"]), *args, timeout=timeout)
+
+
+def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str:
+    if "client_port" in node:
+        try:
+            return str(_node_host_command(node, *args, timeout=timeout)).strip()
+        except Exception:
+            if not node.get("container_ip") and not node.get("nodehost_container_ip"):
+                return run_node_cli(node, *args, timeout=max(1, int(timeout)))
+            raise
+    return run_node_cli(node, *args, timeout=max(1, int(timeout)))
+
+
+def _bounded_parallel(
+    items: Iterable[T],
+    worker: Callable[[T], Any],
+    *,
+    parallelism: int = CLUSTER_ORCHESTRATION_PARALLELISM,
+    timeout: float,
+    label: str,
+) -> list[Any]:
+    work = list(items)
+    if not work:
+        return []
+    max_workers = max(1, min(int(parallelism), len(work)))
+    try:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(worker, item) for item in work]
+            return [future.result() for future in as_completed(futures, timeout=max(1.0, timeout))]
+    except FutureTimeoutError as exc:
+        raise DockerRuntimeError(f"{label} exceeded {timeout:.1f}s with parallelism={max_workers}") from exc
+
+
+def _time_left(deadline: float, *, floor: float = 1.0) -> float:
+    return max(floor, deadline - time.monotonic())
+
+
+def _cluster_meet_address(node: dict[str, Any]) -> str:
+    if node.get("nodehost_container_ip"):
+        return str(node["nodehost_container_ip"])
+    return str(node["container_ip"])
+
+
+def _cluster_meet_port(node: dict[str, Any]) -> int:
+    if node.get("nodehost_container_ip"):
+        return int(node["client_port"])
+    return 6379
+
+
+def _meet_node_pair(source: dict[str, Any], target: dict[str, Any]) -> None:
+    _node_command(
+        source,
+        "CLUSTER",
+        "MEET",
+        _cluster_meet_address(target),
+        _cluster_meet_port(target),
+        timeout=30,
+    )
+
+
+def _tree_fanout_levels(seed: dict[str, Any], nodes: list[dict[str, Any]], *, fanout: int = CLUSTER_MEET_FANOUT) -> list[list[tuple[dict[str, Any], dict[str, Any]]]]:
+    remaining = [node for node in nodes if node["logical_id"] != seed["logical_id"]]
+    parents = [seed]
+    levels: list[list[tuple[dict[str, Any], dict[str, Any]]]] = []
+    while remaining:
+        level: list[tuple[dict[str, Any], dict[str, Any]]] = []
+        next_parents: list[dict[str, Any]] = []
+        for parent in parents:
+            for _ in range(fanout):
+                if not remaining:
+                    break
+                child = remaining.pop(0)
+                level.append((parent, child))
+                next_parents.append(child)
+        levels.append(level)
+        parents = next_parents
+    return levels
+
+
+def _tree_fanout_meet_nodes(
+    seed: dict[str, Any],
+    nodes: list[dict[str, Any]],
+    *,
+    timeout: float,
+    fanout: int = CLUSTER_MEET_FANOUT,
+    parallelism: int = CLUSTER_ORCHESTRATION_PARALLELISM,
+) -> int:
+    deadline = time.monotonic() + timeout
+    command_count = 0
+    for level in _tree_fanout_levels(seed, nodes, fanout=fanout):
+        _bounded_parallel(
+            level,
+            lambda edge: _meet_node_pair(edge[0], edge[1]),
+            parallelism=parallelism,
+            timeout=_time_left(deadline, floor=5.0),
+            label="tree fanout CLUSTER MEET",
+        )
+        command_count += len(level)
+    return command_count
+
+
+def _representative_nodes(nodes: list[dict[str, Any]], *, primaries_only: bool = False, max_per_az: int = 1) -> list[dict[str, Any]]:
+    candidates = [node for node in nodes if not primaries_only or node.get("role") == "primary"]
+    if not candidates:
+        return []
+    representatives: list[dict[str, Any]] = [candidates[0]]
+    per_az: dict[str, int] = {}
+    for node in candidates:
+        az = str(node.get("az_id", "MISSING"))
+        if per_az.get(az, 0) >= max_per_az:
+            continue
+        representatives.append(node)
+        per_az[az] = per_az.get(az, 0) + 1
+    deduped: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for node in representatives:
+        logical_id = str(node["logical_id"])
+        if logical_id not in seen:
+            deduped.append(node)
+            seen.add(logical_id)
+    return deduped
+
+
 def _configure_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     operations: list[dict[str, Any]] = []
     snapshots: list[dict[str, Any]] = []
@@ -816,62 +1036,91 @@ def _configure_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[s
     first = primaries[0]
 
     meet_started = time.monotonic()
-    _bulk_meet_process_nodes(first, primaries[1:], timeout=timeout)
-    _wait_process_known(primaries, expected=len(primaries), timeout=timeout)
-    snapshots.append(_process_cluster_summary("after_meet_primaries", nodes))
+    primary_meet_commands = _tree_fanout_meet_nodes(first, primaries[1:], timeout=timeout)
+    _wait_process_known(primaries, expected=len(primaries), timeout=timeout, final_check=False)
+    snapshots.append(_process_cluster_summary("after_meet_primaries", _representative_nodes(primaries), total_node_count=len(nodes), sample_scope="representative_primaries"))
     operations.append(
         _operation(
-            "bulk_meet_primaries",
+            "tree_fanout_meet_primaries",
             "PASS",
             meet_started,
             snapshots[-1]
             | {
-                "strategy": "single_seed_cluster_meet_after_all_processes_start",
-                "meet_commands": max(len(primaries) - 1, 0),
+                "strategy": "tree_fanout_cluster_meet_after_all_processes_start",
+                "fanout": CLUSTER_MEET_FANOUT,
+                "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+                "meet_commands": primary_meet_commands,
             },
         )
     )
 
     slots_started = time.monotonic()
-    for primary, (start, end) in zip(primaries, _slot_ranges(len(primaries))):
-        _add_slots_node(primary, start, end)
-    _wait_process_slots_assigned(primaries, timeout=timeout)
-    _wait_process_cluster_ok(primaries, timeout=timeout)
-    snapshots.append(_process_cluster_summary("after_add_slots", nodes))
-    operations.append(_operation("add_slots", "PASS", slots_started, snapshots[-1]))
-
-    replica_meet_started = time.monotonic()
-    primary_ids = {node["shard_id"]: run_node_cli(node, "CLUSTER", "MYID", timeout=30) for node in primaries}
-    _bulk_meet_process_nodes(first, replicas, timeout=timeout)
-    _wait_process_known(nodes, expected=len(nodes), timeout=timeout)
-    snapshots.append(_process_cluster_summary("after_meet_replicas", nodes))
+    primary_slot_ranges = list(zip(primaries, _slot_ranges(len(primaries))))
+    _bounded_parallel(
+        primary_slot_ranges,
+        lambda item: _add_slots_node(item[0], item[1][0], item[1][1]),
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=timeout,
+        label="parallel CLUSTER ADDSLOTS",
+    )
+    _wait_process_slots_assigned(primaries, timeout=timeout, final_check=False)
+    _wait_process_cluster_ok(primaries, timeout=timeout, final_check=False)
+    snapshots.append(_process_cluster_summary("after_add_slots", _representative_nodes(primaries), total_node_count=len(nodes), sample_scope="representative_primaries"))
     operations.append(
         _operation(
-            "bulk_meet_replicas",
+            "parallel_add_slots",
+            "PASS",
+            slots_started,
+            snapshots[-1]
+            | {
+                "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+                "primary_count": len(primaries),
+            },
+        )
+    )
+
+    replica_meet_started = time.monotonic()
+    primary_ids = _cluster_node_ids_by_shard(primaries, timeout=min(timeout, 120.0))
+    replica_meet_commands = _tree_fanout_meet_nodes(first, replicas, timeout=timeout)
+    _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False)
+    snapshots.append(_process_cluster_summary("after_meet_replicas", _representative_nodes(nodes), total_node_count=len(nodes), sample_scope="representative_by_az"))
+    operations.append(
+        _operation(
+            "tree_fanout_meet_replicas",
             "PASS",
             replica_meet_started,
             snapshots[-1]
             | {
-                "strategy": "single_seed_cluster_meet_before_replication",
-                "meet_commands": len(replicas),
+                "strategy": "tree_fanout_cluster_meet_before_parallel_replication",
+                "fanout": CLUSTER_MEET_FANOUT,
+                "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+                "meet_commands": replica_meet_commands,
             },
         )
     )
 
     replica_started = time.monotonic()
-    for replica in replicas:
-        _wait_process_knows_node_id(replica, primary_ids[replica["shard_id"]], timeout=90.0)
-        _replicate_process_node(replica, primary_ids[replica["shard_id"]], timeout=90.0)
-        _wait_process_replica_of(replica, primary_ids[replica["shard_id"]], timeout=90.0)
-    _wait_process_known(nodes, expected=len(nodes), timeout=timeout)
-    _wait_process_cluster_ok(nodes, timeout=timeout)
-    _wait_process_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout)
-    snapshots.append(_process_cluster_summary("after_add_replicas", nodes))
-    operations.append(_operation("add_replicas", "PASS", replica_started, snapshots[-1]))
+    _replicate_process_nodes_parallel(replicas, primary_ids, timeout=timeout)
+    _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False)
+    _wait_process_cluster_ok(nodes, timeout=timeout, final_check=False)
+    _wait_process_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, final_check=False)
+    snapshots.append(_process_cluster_summary("after_add_replicas", _representative_nodes(nodes), total_node_count=len(nodes), sample_scope="representative_by_az"))
+    operations.append(
+        _operation(
+            "parallel_add_replicas",
+            "PASS",
+            replica_started,
+            snapshots[-1]
+            | {
+                "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+                "replica_count": len(replicas),
+            },
+        )
+    )
 
     final_started = time.monotonic()
     _wait_process_snapshot_clean(nodes, expected_nodes=len(nodes), expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout)
-    snapshots.append(_process_cluster_summary("final", nodes))
+    snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
     operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
     return operations, snapshots
 
@@ -879,7 +1128,7 @@ def _configure_process_cluster(nodes: list[dict[str, Any]]) -> tuple[list[dict[s
 def _bulk_meet_process_nodes(seed: dict[str, Any], nodes: list[dict[str, Any]], *, timeout: float) -> None:
     deadline = time.monotonic() + timeout
     for node in nodes:
-        run_node_cli(seed, "CLUSTER", "MEET", node["nodehost_container_ip"], node["client_port"], timeout=30)
+        _meet_node_pair(seed, node)
         if time.monotonic() >= deadline:
             raise DockerRuntimeError("bulk CLUSTER MEET command budget expired")
 
@@ -889,46 +1138,86 @@ def _add_slots_node(node: dict[str, Any], start: int, end: int) -> None:
     for slot in range(start, end + 1):
         batch.append(slot)
         if len(batch) == 500:
-            run_node_cli(node, "CLUSTER", "ADDSLOTS", *batch, timeout=60)
+            _node_command(node, "CLUSTER", "ADDSLOTS", *batch, timeout=60)
             batch = []
     if batch:
-        run_node_cli(node, "CLUSTER", "ADDSLOTS", *batch, timeout=60)
+        _node_command(node, "CLUSTER", "ADDSLOTS", *batch, timeout=60)
+
+
+def _cluster_node_ids_by_shard(nodes: list[dict[str, Any]], *, timeout: float) -> dict[str, str]:
+    def node_id(node: dict[str, Any]) -> tuple[str, str]:
+        return str(node["shard_id"]), _node_command(node, "CLUSTER", "MYID", timeout=30)
+
+    pairs = _bounded_parallel(
+        nodes,
+        node_id,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=timeout,
+        label="parallel CLUSTER MYID",
+    )
+    return {shard_id: node_id_value for shard_id, node_id_value in pairs}
+
+
+def _replicate_process_nodes_parallel(replicas: list[dict[str, Any]], primary_ids: dict[str, str], *, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+
+    def replicate(replica: dict[str, Any]) -> None:
+        master_id = primary_ids[replica["shard_id"]]
+        local_timeout = max(10.0, min(120.0, _time_left(deadline, floor=10.0)))
+        _wait_process_knows_node_id(replica, master_id, timeout=local_timeout)
+        _replicate_process_node(replica, master_id, timeout=local_timeout)
+        _wait_process_replica_of(replica, master_id, timeout=local_timeout)
+
+    _bounded_parallel(
+        replicas,
+        replicate,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=timeout,
+        label="parallel CLUSTER REPLICATE",
+    )
+
+
+def _replicate_nodes_parallel(replicas: list[dict[str, Any]], primary_ids: dict[str, str], *, timeout: float) -> None:
+    _replicate_process_nodes_parallel(replicas, primary_ids, timeout=timeout)
 
 
 def _wait_process_nodes_ready(nodes: list[dict[str, Any]], timeout: float) -> None:
     deadline = time.monotonic() + timeout
+    last_ready = 0
     while time.monotonic() < deadline:
         ready = 0
         for node in nodes:
             try:
-                if run_node_cli(node, "PING", timeout=5) == "PONG":
+                if _node_command(node, "PING", timeout=2.0) == "PONG":
                     ready += 1
             except Exception:
                 pass
         if ready == len(nodes):
             return
+        last_ready = ready
         time.sleep(1)
-    raise DockerRuntimeError(f"process runtime nodes ready timeout reached {ready}/{len(nodes)}")
+    raise DockerRuntimeError(f"process runtime nodes ready timeout reached {last_ready}/{len(nodes)}")
 
 
-def _wait_process_known(nodes: list[dict[str, Any]], expected: int, timeout: float) -> None:
-    _wait_process_predicate(nodes, timeout, f"cluster_known_nodes did not converge to {expected}", lambda snap: snap["known_nodes"] == expected)
+def _wait_process_known(nodes: list[dict[str, Any]], expected: int, timeout: float, *, final_check: bool = True) -> None:
+    _wait_process_predicate(nodes, timeout, f"cluster_known_nodes did not converge to {expected}", lambda snap: snap["known_nodes"] == expected, final_check=final_check)
 
 
-def _wait_process_cluster_ok(nodes: list[dict[str, Any]], timeout: float) -> None:
-    _wait_process_predicate(nodes, timeout, "cluster_state did not reach ok", lambda snap: snap["cluster_state"] == "ok")
+def _wait_process_cluster_ok(nodes: list[dict[str, Any]], timeout: float, *, final_check: bool = True) -> None:
+    _wait_process_predicate(nodes, timeout, "cluster_state did not reach ok", lambda snap: snap["cluster_state"] == "ok", final_check=final_check)
 
 
-def _wait_process_slots_assigned(nodes: list[dict[str, Any]], timeout: float) -> None:
-    _wait_process_predicate(nodes, timeout, "cluster slots were not fully assigned", lambda snap: snap["slots_assigned"] == 16384 and snap["slots_ok"] == 16384 and snap["slots_fail"] == 0)
+def _wait_process_slots_assigned(nodes: list[dict[str, Any]], timeout: float, *, final_check: bool = True) -> None:
+    _wait_process_predicate(nodes, timeout, "cluster slots were not fully assigned", lambda snap: snap["slots_assigned"] == 16384 and snap["slots_ok"] == 16384 and snap["slots_fail"] == 0, final_check=final_check)
 
 
-def _wait_process_role_counts(nodes: list[dict[str, Any]], *, expected_primaries: int, expected_replicas: int, timeout: float) -> None:
+def _wait_process_role_counts(nodes: list[dict[str, Any]], *, expected_primaries: int, expected_replicas: int, timeout: float, final_check: bool = True) -> None:
     _wait_process_predicate(
         nodes,
         timeout,
         f"cluster role counts did not converge to {expected_primaries} primaries and {expected_replicas} replicas",
         lambda snap: snap["primary_count"] == expected_primaries and snap["replica_count"] == expected_replicas,
+        final_check=final_check,
     )
 
 
@@ -954,19 +1243,34 @@ def _wait_process_snapshot_clean(
             and snap["slots_fail"] == 0
         )
 
-    _wait_process_predicate(nodes, timeout, "cluster clean snapshot did not converge", clean)
+    _wait_process_predicate(nodes, timeout, "cluster clean snapshot did not converge", clean, final_check=True)
 
 
-def _wait_process_predicate(nodes: list[dict[str, Any]], timeout: float, message: str, predicate: Any) -> None:
+def _wait_process_predicate(nodes: list[dict[str, Any]], timeout: float, message: str, predicate: Any, *, final_check: bool = True) -> None:
     deadline = time.monotonic() + timeout
+    representatives = _representative_nodes(nodes)
     last: dict[str, Any] | None = None
     while time.monotonic() < deadline:
-        snapshots = [_process_node_snapshot(node) for node in nodes]
+        snapshots = _process_node_snapshots_parallel(representatives, timeout=max(1.0, min(15.0, _time_left(deadline))))
+        failing = [snap for snap in snapshots if snap.get("probe_status") != "PASS" or not predicate(snap)]
+        if not failing:
+            if not final_check:
+                return
+            final_snapshots = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
+            final_failing = [snap for snap in final_snapshots if snap.get("probe_status") != "PASS" or not predicate(snap)]
+            if not final_failing:
+                return
+            last = final_failing[0]
+            break
+        last = failing[0]
+        time.sleep(1)
+    while time.monotonic() < deadline:
+        snapshots = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
         failing = [snap for snap in snapshots if snap.get("probe_status") != "PASS" or not predicate(snap)]
         if not failing:
             return
         last = failing[0]
-        time.sleep(1)
+        time.sleep(CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS)
     raise DockerRuntimeError(f"{message}; last_snapshot={last}")
 
 
@@ -986,14 +1290,11 @@ def _replicate_process_node(node: dict[str, Any], master_id: str, timeout: float
     deadline = time.monotonic() + timeout
     last_error = ""
     while time.monotonic() < deadline:
-        result = run_docker(
-            ["exec", node["nodehost_container_name"], "valkey-cli", "-p", str(node["client_port"]), "CLUSTER", "REPLICATE", master_id],
-            timeout=30,
-            check=False,
-        )
-        if result.returncode == 0:
+        try:
+            _node_command(node, "CLUSTER", "REPLICATE", master_id, timeout=30)
             return
-        last_error = result.stderr.strip() or result.stdout.strip()
+        except Exception as exc:  # noqa: BLE001
+            last_error = repr(exc)
         time.sleep(2)
     raise DockerRuntimeError(f"CLUSTER REPLICATE did not succeed for {node['logical_id']}: {last_error}")
 
@@ -1003,7 +1304,7 @@ def _wait_process_knows_node_id(node: dict[str, Any], node_id: str, timeout: flo
     last_snapshot: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         try:
-            text = run_node_cli(node, "CLUSTER", "NODES", timeout=5)
+            text = _node_command(node, "CLUSTER", "NODES", timeout=5)
             if any(line.startswith(node_id + " ") for line in text.splitlines()):
                 return
             last_snapshot = _process_node_snapshot(node)
@@ -1023,7 +1324,7 @@ def _wait_process_replica_of(node: dict[str, Any], master_id: str, timeout: floa
 
 
 def _process_node_is_replica_of(node: dict[str, Any], master_id: str) -> bool:
-    text = run_node_cli(node, "CLUSTER", "NODES", timeout=5)
+    text = _node_command(node, "CLUSTER", "NODES", timeout=5)
     for line in text.splitlines():
         parts = line.split()
         if len(parts) < 8 or "myself" not in parts[2].split(","):
@@ -1035,8 +1336,8 @@ def _process_node_is_replica_of(node: dict[str, Any], master_id: str) -> bool:
 
 def _process_node_snapshot(node: dict[str, Any]) -> dict[str, Any]:
     try:
-        info = _parse_info(run_node_cli(node, "CLUSTER", "INFO", timeout=5))
-        nodes_text = run_node_cli(node, "CLUSTER", "NODES", timeout=5)
+        info = _parse_info(_node_command(node, "CLUSTER", "INFO", timeout=5))
+        nodes_text = _node_command(node, "CLUSTER", "NODES", timeout=5)
         counts = _cluster_node_text_counts(nodes_text)
         return {
             "logical_id": node["logical_id"],
@@ -1070,6 +1371,16 @@ def _process_node_snapshot(node: dict[str, Any]) -> dict[str, Any]:
         }
 
 
+def _process_node_snapshots_parallel(nodes: list[dict[str, Any]], *, timeout: float = 60.0) -> list[dict[str, Any]]:
+    return _bounded_parallel(
+        nodes,
+        _process_node_snapshot,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=timeout,
+        label="parallel cluster snapshot probes",
+    )
+
+
 def _cluster_node_text_counts(text: str) -> dict[str, int]:
     counts = {"primary_count": 0, "replica_count": 0, "handshake_count": 0, "fail_count": 0, "pfail_count": 0}
     for line in text.splitlines():
@@ -1092,11 +1403,18 @@ def _cluster_node_text_counts(text: str) -> dict[str, int]:
     return counts
 
 
-def _process_cluster_summary(label: str, nodes: list[dict[str, Any]]) -> dict[str, Any]:
-    samples = [_process_node_snapshot(node) for node in nodes]
+def _process_cluster_summary(
+    label: str,
+    nodes: list[dict[str, Any]],
+    *,
+    total_node_count: int | None = None,
+    sample_scope: str = "all_nodes",
+) -> dict[str, Any]:
+    samples = _process_node_snapshots_parallel(nodes)
     return {
         "label": label,
-        "node_count": len(nodes),
+        "node_count": total_node_count or len(nodes),
+        "sample_scope": sample_scope,
         "sample_count": len(samples),
         "known_nodes": min((sample["known_nodes"] for sample in samples), default=0),
         "known_nodes_max": max((sample["known_nodes"] for sample in samples), default=0),
@@ -1189,7 +1507,7 @@ def _create_cluster_with_replica_candidates(primaries: list[dict[str, Any]], rep
 
 
 def _configure_large_cluster_replicas(primaries: list[dict[str, Any]], replicas: list[dict[str, Any]], timeout: float) -> str:
-    primary_ids = {node["shard_id"]: run_container_cli(node["container_name"], "CLUSTER", "MYID") for node in primaries}
+    primary_ids = _cluster_node_ids_by_shard(primaries, timeout=min(timeout, 120.0))
     deadline = time.monotonic() + timeout
     outputs: list[str] = []
     for replica in replicas:
@@ -1200,7 +1518,7 @@ def _configure_large_cluster_replicas(primaries: list[dict[str, Any]], replicas:
 
 
 def _meet_new_node(first: dict[str, Any], node: dict[str, Any]) -> None:
-    run_container_cli(first["container_name"], "CLUSTER", "MEET", node["container_ip"], "6379", timeout=30)
+    _meet_node_pair(first, node)
 
 
 def _incremental_meet(
@@ -1224,12 +1542,11 @@ def _incremental_meet(
 
 
 def _meet_pair(first: dict[str, Any], node: dict[str, Any]) -> None:
-    run_container_cli(first["container_name"], "CLUSTER", "MEET", node["container_ip"], "6379", timeout=30)
-    run_docker(
-        ["exec", node["container_name"], "valkey-cli", "-p", "6379", "CLUSTER", "MEET", first["container_ip"], "6379"],
-        timeout=30,
-        check=False,
-    )
+    _meet_node_pair(first, node)
+    try:
+        _meet_node_pair(node, first)
+    except Exception:
+        pass
 
 
 def _wait_cluster_known_at_least(node: dict[str, Any], expected: int, timeout: float) -> None:
@@ -1257,7 +1574,7 @@ def _wait_cluster_integrated_at_least(node: dict[str, Any], expected: int, timeo
 
 
 def _cluster_integrated_nodes(node: dict[str, Any]) -> int:
-    text = run_container_cli(node["container_name"], "CLUSTER", "NODES", timeout=5)
+    text = _node_command(node, "CLUSTER", "NODES", timeout=5)
     count = 0
     for line in text.splitlines():
         parts = line.split()
@@ -1376,13 +1693,10 @@ def _ensure_replica_of(replica: dict[str, Any], master_id: str, timeout: float) 
     while time.monotonic() < deadline:
         if _is_replica_of(replica, master_id):
             return
-        result = run_docker(
-            ["exec", replica["container_name"], "valkey-cli", "-p", "6379", "CLUSTER", "REPLICATE", master_id],
-            timeout=30,
-            check=False,
-        )
-        if result.returncode != 0:
-            last_error = result.stderr.strip() or result.stdout.strip()
+        try:
+            _node_command(replica, "CLUSTER", "REPLICATE", master_id, timeout=30)
+        except Exception as exc:  # noqa: BLE001
+            last_error = repr(exc)
         time.sleep(2)
     raise DockerRuntimeError(f"{replica['logical_id']} did not become replica of {master_id}: {last_error}")
 
@@ -1400,7 +1714,7 @@ def _wait_replica_of(replica: dict[str, Any], master_id: str, timeout: float) ->
 
 
 def _is_replica_of(replica: dict[str, Any], master_id: str) -> bool:
-    text = run_container_cli(replica["container_name"], "CLUSTER", "NODES", timeout=5)
+    text = _node_command(replica, "CLUSTER", "NODES", timeout=5)
     for line in text.splitlines():
         parts = line.split()
         if len(parts) < 8 or "myself" not in parts[2].split(","):
@@ -1452,34 +1766,30 @@ def _slot_ranges(primary_count: int) -> list[tuple[int, int]]:
 
 def _wait_for_nodes(nodes: list[dict[str, Any]], timeout: float = 60.0) -> None:
     deadline = time.monotonic() + timeout
+    last_ready = 0
     while time.monotonic() < deadline:
         ready = 0
         for node in nodes:
             try:
-                if run_container_cli(node["container_name"], "PING", timeout=5) == "PONG":
+                if _node_command(node, "PING", timeout=2.0) == "PONG":
                     ready += 1
             except Exception:
                 pass
         if ready == len(nodes):
             return
+        last_ready = ready
         time.sleep(1)
-    raise DockerRuntimeError("Valkey containers did not become ready")
+    raise DockerRuntimeError(f"Valkey containers did not become ready {last_ready}/{len(nodes)}")
 
 
-def _wait_cluster_known(nodes: list[dict[str, Any]], expected: int, timeout: float) -> None:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        known = []
-        for node in nodes:
-            try:
-                info = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=5)
-                known.append(_info_value(info, "cluster_known_nodes") == str(expected))
-            except Exception:
-                known.append(False)
-        if all(known):
-            return
-        time.sleep(1)
-    raise DockerRuntimeError("cluster meet did not converge to expected node count")
+def _wait_cluster_known(nodes: list[dict[str, Any]], expected: int, timeout: float, *, final_check: bool = True) -> None:
+    _wait_cluster_predicate(
+        nodes,
+        timeout,
+        "cluster meet did not converge to expected node count",
+        lambda node: _cluster_known_nodes(node) == expected,
+        final_check=final_check,
+    )
 
 
 def _wait_cluster_known_any(nodes: list[dict[str, Any]], expected: int, timeout: float) -> None:
@@ -1495,20 +1805,14 @@ def _wait_cluster_known_any(nodes: list[dict[str, Any]], expected: int, timeout:
     raise DockerRuntimeError("cluster meet did not become visible from any node")
 
 
-def _wait_cluster_slots_assigned(nodes: list[dict[str, Any]], timeout: float) -> None:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        assigned = []
-        for node in nodes:
-            try:
-                info = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=5)
-                assigned.append(_info_value(info, "cluster_slots_assigned") == "16384")
-            except Exception:
-                assigned.append(False)
-        if all(assigned):
-            return
-        time.sleep(1)
-    raise DockerRuntimeError("cluster slots were not fully assigned")
+def _wait_cluster_slots_assigned(nodes: list[dict[str, Any]], timeout: float, *, final_check: bool = True) -> None:
+    _wait_cluster_predicate(
+        nodes,
+        timeout,
+        "cluster slots were not fully assigned",
+        lambda node: _cluster_info_value(node, "cluster_slots_assigned") == "16384",
+        final_check=final_check,
+    )
 
 
 def _wait_cluster_slots_assigned_any(nodes: list[dict[str, Any]], timeout: float) -> None:
@@ -1516,8 +1820,7 @@ def _wait_cluster_slots_assigned_any(nodes: list[dict[str, Any]], timeout: float
     while time.monotonic() < deadline:
         for node in nodes:
             try:
-                info = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=5)
-                if _info_value(info, "cluster_slots_assigned") == "16384":
+                if _cluster_info_value(node, "cluster_slots_assigned") == "16384":
                     return
             except Exception:
                 pass
@@ -1525,20 +1828,14 @@ def _wait_cluster_slots_assigned_any(nodes: list[dict[str, Any]], timeout: float
     raise DockerRuntimeError("cluster slots were not visible as fully assigned from any node")
 
 
-def _wait_cluster_ok(nodes: list[dict[str, Any]], timeout: float) -> None:
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        states = []
-        for node in nodes:
-            try:
-                info = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=5)
-                states.append(_info_value(info, "cluster_state") == "ok")
-            except Exception:
-                states.append(False)
-        if all(states):
-            return
-        time.sleep(1)
-    raise DockerRuntimeError("cluster did not reach ok state")
+def _wait_cluster_ok(nodes: list[dict[str, Any]], timeout: float, *, final_check: bool = True) -> None:
+    _wait_cluster_predicate(
+        nodes,
+        timeout,
+        "cluster did not reach ok state",
+        lambda node: _cluster_info_value(node, "cluster_state") == "ok",
+        final_check=final_check,
+    )
 
 
 def _wait_cluster_ok_any(nodes: list[dict[str, Any]], timeout: float) -> None:
@@ -1546,8 +1843,7 @@ def _wait_cluster_ok_any(nodes: list[dict[str, Any]], timeout: float) -> None:
     while time.monotonic() < deadline:
         for node in nodes:
             try:
-                info = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=5)
-                if _info_value(info, "cluster_state") == "ok":
+                if _cluster_info_value(node, "cluster_state") == "ok":
                     return
             except Exception:
                 pass
@@ -1561,31 +1857,86 @@ def _wait_cluster_role_counts(
     expected_primaries: int,
     expected_replicas: int,
     timeout: float,
+    final_check: bool = True,
 ) -> None:
     deadline = time.monotonic() + timeout
     expected_total = expected_primaries + expected_replicas
-    while time.monotonic() < deadline:
-        checks = []
-        for node in nodes:
-            try:
-                counts = _cluster_role_counts(node)
-                checks.append(
-                    counts.get("primary", 0) == expected_primaries
-                    and counts.get("replica", 0) == expected_replicas
-                    and counts.get("total", 0) == expected_total
-                )
-            except Exception:
-                checks.append(False)
-        if checks and all(checks):
-            return
-        time.sleep(1)
+    def has_expected_roles(node: dict[str, Any]) -> bool:
+        counts = _cluster_role_counts(node)
+        return (
+            counts.get("primary", 0) == expected_primaries
+            and counts.get("replica", 0) == expected_replicas
+            and counts.get("total", 0) == expected_total
+        )
+
+    try:
+        _wait_cluster_predicate(
+            nodes,
+            timeout,
+            f"cluster role counts did not converge to {expected_primaries} primaries and {expected_replicas} replicas",
+            has_expected_roles,
+            final_check=final_check,
+        )
+        return
+    except DockerRuntimeError:
+        if time.monotonic() >= deadline:
+            raise
     raise DockerRuntimeError(
         f"cluster role counts did not converge to {expected_primaries} primaries and {expected_replicas} replicas"
     )
 
 
+def _wait_cluster_predicate(nodes: list[dict[str, Any]], timeout: float, message: str, predicate: Callable[[dict[str, Any]], bool], *, final_check: bool = True) -> None:
+    deadline = time.monotonic() + timeout
+    representatives = _representative_nodes(nodes)
+    last_error = "MISSING"
+    while time.monotonic() < deadline:
+        try:
+            fast = _bounded_parallel(
+                representatives,
+                predicate,
+                parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+                timeout=max(1.0, min(15.0, _time_left(deadline))),
+                label=f"{message} representative probes",
+            )
+            if fast and all(bool(item) for item in fast):
+                if not final_check:
+                    return
+                final = _bounded_parallel(
+                    nodes,
+                    predicate,
+                    parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+                    timeout=max(1.0, min(60.0, _time_left(deadline))),
+                    label=f"{message} final probes",
+                )
+                if final and all(bool(item) for item in final):
+                    return
+                last_error = f"final probes failed {sum(1 for item in final if item)}/{len(final)}"
+                break
+            last_error = f"representative probes failed {sum(1 for item in fast if item)}/{len(fast)}"
+        except Exception as exc:  # noqa: BLE001
+            last_error = repr(exc)
+        time.sleep(1)
+    while time.monotonic() < deadline:
+        try:
+            diagnostic = _bounded_parallel(
+                nodes,
+                predicate,
+                parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+                timeout=max(1.0, min(60.0, _time_left(deadline))),
+                label=f"{message} diagnostic probes",
+            )
+            if diagnostic and all(bool(item) for item in diagnostic):
+                return
+            last_error = f"diagnostic probes failed {sum(1 for item in diagnostic if item)}/{len(diagnostic)}"
+        except Exception as exc:  # noqa: BLE001
+            last_error = repr(exc)
+        time.sleep(CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS)
+    raise DockerRuntimeError(f"{message}; last_error={last_error}")
+
+
 def _cluster_role_counts(node: dict[str, Any]) -> dict[str, int]:
-    text = run_container_cli(node["container_name"], "CLUSTER", "NODES", timeout=5)
+    text = _node_command(node, "CLUSTER", "NODES", timeout=5)
     counts = {"primary": 0, "replica": 0, "total": 0}
     for line in text.splitlines():
         parts = line.split()
@@ -1605,12 +1956,16 @@ def _cluster_role_counts(node: dict[str, Any]) -> dict[str, int]:
 
 
 def _cluster_known_nodes(node: dict[str, Any]) -> int:
-    info = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=5)
-    value = _info_value(info, "cluster_known_nodes")
+    value = _cluster_info_value(node, "cluster_known_nodes")
     try:
         return int(value)
-    except ValueError:
+    except (TypeError, ValueError):
         return 0
+
+
+def _cluster_info_value(node: dict[str, Any], key: str) -> str | None:
+    info = _node_command(node, "CLUSTER", "INFO", timeout=5)
+    return _info_value(info, key)
 
 
 def _run_management_ops(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1620,7 +1975,7 @@ def _run_management_ops(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     operations.append(_operation("convergence_check", "PASS", check_started, {"cluster_state": "ok"}))
 
     nodes_started = time.monotonic()
-    cluster_nodes = run_container_cli(nodes[0]["container_name"], "CLUSTER", "NODES", timeout=30)
+    cluster_nodes = _node_command(nodes[0], "CLUSTER", "NODES", timeout=30)
     operations.append(
         _operation(
             "cluster_nodes",
@@ -1631,7 +1986,7 @@ def _run_management_ops(nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     )
 
     info_started = time.monotonic()
-    cluster_info = run_container_cli(nodes[0]["container_name"], "CLUSTER", "INFO", timeout=30)
+    cluster_info = _node_command(nodes[0], "CLUSTER", "INFO", timeout=30)
     operations.append(
         _operation(
             "cluster_info",
@@ -1819,9 +2174,9 @@ def write_observability_artifacts(
     ]
 
     for node in nodes:
-        info = _parse_info(run_container_cli(node["container_name"], "INFO", "default", timeout=10))
-        cluster_info_raw = run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=10)
-        cluster_nodes_raw = run_container_cli(node["container_name"], "CLUSTER", "NODES", timeout=10)
+        info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
+        cluster_info_raw = _node_command(node, "CLUSTER", "INFO", timeout=10)
+        cluster_nodes_raw = _node_command(node, "CLUSTER", "NODES", timeout=10)
         cluster_info = _parse_info(cluster_info_raw)
         docker_stats = _docker_stats(node["container_name"])
         logs = run_docker(["logs", "--tail", "50", node["container_name"]], timeout=30, check=False)
@@ -1912,8 +2267,8 @@ def write_stability_artifacts(
                 errors.append({"interval": interval, "operation": "workload", "key": key, "error": repr(exc)})
 
         for node in nodes:
-            info = _parse_info(run_container_cli(node["container_name"], "INFO", "default", timeout=10))
-            cluster_info = _parse_info(run_container_cli(node["container_name"], "CLUSTER", "INFO", timeout=10))
+            info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
+            cluster_info = _parse_info(_node_command(node, "CLUSTER", "INFO", timeout=10))
             used_memory = _int_or_missing(info.get("used_memory"))
             if isinstance(used_memory, int):
                 memory_by_node[node["logical_id"]].append(used_memory)
@@ -2087,9 +2442,9 @@ def write_scale_ladder_artifacts(
     sample_errors: list[dict[str, Any]] = []
     for node in nodes:
         try:
-            info = _parse_info(run_node_cli(node, "INFO", "server", timeout=10))
-            default_info = _parse_info(run_node_cli(node, "INFO", "default", timeout=10))
-            cluster_info = _parse_info(run_node_cli(node, "CLUSTER", "INFO", timeout=10))
+            info = _parse_info(_node_command(node, "INFO", "server", timeout=10))
+            default_info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
+            cluster_info = _parse_info(_node_command(node, "CLUSTER", "INFO", timeout=10))
             version = info.get("valkey_version") or info.get("redis_version")
             if version:
                 versions.add(version)

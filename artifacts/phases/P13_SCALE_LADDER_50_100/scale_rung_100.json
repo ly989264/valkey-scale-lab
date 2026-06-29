@@ -1,9 +1,8 @@
 {
   "artifact_type": "scale_rung_summary",
   "az_distribution": {
-    "az-a": 33,
-    "az-b": 34,
-    "az-c": 33
+    "az-a": 50,
+    "az-b": 50
   },
   "client_port_range": {
     "max": 7599,
@@ -330,9 +329,9 @@
     "slots_assigned": 16384
   },
   "metrics": {
-    "avg_used_memory": 3536815.6,
-    "total_commands_processed": 25178,
-    "total_used_memory": 353681560
+    "avg_used_memory": 3530665.44,
+    "total_commands_processed": 38128,
+    "total_used_memory": 353066544
   },
   "node_count": 100,
   "phase_id": "P13_SCALE_LADDER_50_100",

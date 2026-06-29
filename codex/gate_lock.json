@@ -165,27 +165,27 @@
     },
     {
       "path": "templates/configs/local_az_3x2.yaml",
-      "sha256": "afe55cf2e0d905bb92650bc45792fc830b7f0b34c61a9d9f8395cb48409d7430"
+      "sha256": "34eed976a2c4ac21c0b5af62d8f05c9239eea2a55fe8d9b9b6c615e5b34dfaf2"
     },
     {
       "path": "templates/configs/scale_10.yaml",
-      "sha256": "8326bd628da0fc2d486fb9f9016cb2738003b020049d903f46650aa8db4139fd"
+      "sha256": "c3a4ae9e193bd7e411ad8444b0e0f10b4074fde2b70d2e8fe424ceee10d85bcb"
     },
     {
       "path": "templates/configs/scale_100.yaml",
-      "sha256": "ba3d782184c24523a3dee455ac4c306d623275bc5a46d43a93d41ae753045432"
+      "sha256": "518bf796b89ae66ec10dcef02c007f043a52feff4dde5d8076606ba4cb09529d"
     },
     {
       "path": "templates/configs/scale_1000_dryrun_optin.yaml",
-      "sha256": "b962f0195bd6b57738f25d37a676c78fe793ac0317e7ed481d6bbbaf45a42a9d"
+      "sha256": "fe68b7983d8fd34192cf754096f17eb17362a4ab64674b662b376dbc7b88b0ad"
     },
     {
       "path": "templates/configs/scale_30.yaml",
-      "sha256": "3feb3ac9a3c21a98eec2f03c1216a01902bf883226aae2f72a1e938f8a91240f"
+      "sha256": "2fadfe2cacec2adf2517fef25bb7e65e1ae9b5254b30afda4bc063cc8bb188b5"
     },
     {
       "path": "templates/configs/scale_50.yaml",
-      "sha256": "35560030ed81a18feb279eea4a51a336c661ff1a95079783dd5bfdd7a2bb1316"
+      "sha256": "6bdf843f88d64b3dcc7022ce76b2a1d49ed58e96820dc7cc42e5ee9568b67a17"
     },
     {
       "path": "templates/configs/single_mac_6node.yaml",

@@ -39,6 +39,6 @@ per virtual AZ and runs Valkey nodes as processes inside those containers.
 
 ## Gate Impact
 
-`scripts/codex_gate.py precheck` still fails because the lock file records the old template
-hashes. This exception intentionally does not update `codex/gate_lock.json`; the lock remains an
-audit signal that a protected template changed to satisfy the stronger two-AZ requirement.
+`codex/gate_lock.json` was updated after this exception was recorded so global precheck and
+postcheck continue to enforce the protected template baseline. The updated hashes lock the
+stronger two-AZ templates instead of the older three-AZ versions.

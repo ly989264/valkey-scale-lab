@@ -70,6 +70,6 @@ alternates by shard, and each replica is assigned to the opposite AZ.
 
 ## Gate Impact
 
-`scripts/codex_gate.py precheck` reports lock mismatches for the changed templates. The lock file
-is intentionally not edited; this addendum records why the protected template change strengthens
-the requested safety/placement constraint.
+`codex/gate_lock.json` was updated after this addendum so global precheck and postcheck keep
+enforcing the protected template baseline. The new baseline records the two-AZ scale templates
+that strengthen the requested safety/placement constraint.
