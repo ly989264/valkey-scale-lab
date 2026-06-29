@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import time
@@ -22,12 +23,15 @@ BASE_PHASE = "P13_SCALE_LADDER_50_100"
 P13O_CLUSTER_CREATE_PHASE = "P13O-01_CLUSTER_CREATE_AB"
 P13O_REPLICA_REPLICATE_PHASE = "P13O-02_REPLICA_REPLICATE_BREAKDOWN"
 P13O_CLEANUP_PHASE = "P13O-03_CLEANUP_OPTIMIZATION"
+P13O_FAST_TEST_SPLIT_PHASE = "P13O-04_FAST_TEST_SPLIT"
 DEFAULT_CLUSTER_CREATE_STRATEGY = "valkey_cli_cluster_create_primaries"
 MANUAL_CLUSTER_CREATE_STRATEGY = "manual_tree_meet_parallel_slots"
 REPLICA_REPLICATE_ARTIFACT_PHASE = "P13O_REPLICA_REPLICATE_BREAKDOWN"
 REPLICA_REPLICATE_DEFAULT_PARALLELISM = 8
 REPLICA_REPLICATE_SUPPORTED_PARALLELISM = [8, 16, 32]
 CLEANUP_ARTIFACT_PHASE = "P13O_CLEANUP_OPTIMIZATION"
+FAST_TEST_SPLIT_ARTIFACT_PHASE = "P13O_FAST_TEST_SPLIT"
+FAST_TEST_MAX_SECONDS = 30.0
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
@@ -935,6 +939,301 @@ def write_cleanup_phase_summary(
     return out
 
 
+def gate_by_name(phase: dict[str, Any], name: str) -> dict[str, Any]:
+    for gate in phase.get("gates", []):
+        if gate.get("name") == name:
+            return gate
+    raise KeyError(name)
+
+
+def load_base_manifest() -> dict[str, Any]:
+    return load_json(ROOT / "codex" / "phase_manifest.json")
+
+
+def pytest_measurement_from_stdout(gate_name: str) -> dict[str, Any]:
+    stdout_path = ROOT / "artifacts" / "gates" / P13O_FAST_TEST_SPLIT_PHASE / "stdout" / f"{gate_name}.log"
+    measurement: dict[str, Any] = {
+        "gate_name": gate_name,
+        "status": "MISSING",
+        "stdout_path": rel(stdout_path),
+        "duration_seconds": {"status": "MISSING", "reason": "pytest stdout not found"},
+        "passed_count": {"status": "MISSING", "reason": "pytest stdout not found"},
+        "deselected_count": {"status": "MISSING", "reason": "pytest stdout not found"},
+    }
+    if not stdout_path.exists():
+        return measurement
+    text = stdout_path.read_text(encoding="utf-8", errors="replace")
+    measurement["stdout_tail"] = "\n".join(text.splitlines()[-8:])
+    match = re.search(
+        r"(?P<passed>\d+) passed(?:, (?P<deselected>\d+) deselected)?(?:, [^\\n]+)? in (?P<duration>[0-9.]+)s",
+        text,
+    )
+    if not match:
+        measurement["status"] = "FAIL" if "failed" in text else "MISSING"
+        measurement["duration_seconds"] = {"status": "MISSING", "reason": "pytest duration summary not found"}
+        measurement["passed_count"] = {"status": "MISSING", "reason": "pytest pass count not found"}
+        return measurement
+    measurement["status"] = "PASS"
+    measurement["duration_seconds"] = round(float(match.group("duration")), 6)
+    measurement["passed_count"] = int(match.group("passed"))
+    measurement["deselected_count"] = int(match.group("deselected") or 0)
+    return measurement
+
+
+def collect_slow_perf_tests() -> tuple[list[str], list[str]]:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{ROOT / 'src'}{os.pathsep}{ROOT}{os.pathsep}" + env.get("PYTHONPATH", "")
+    if (Path("/opt/anaconda3/bin") / "python3").exists():
+        env["PATH"] = f"/opt/anaconda3/bin{os.pathsep}" + env.get("PATH", "")
+    command = "python3 -m pytest --collect-only -q tests/unit tests/scale tests/integration -m 'slow or perf'"
+    try:
+        proc = subprocess.run(
+            command,
+            cwd=ROOT,
+            shell=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=120,
+            env=env,
+        )
+    except subprocess.TimeoutExpired:
+        return [], ["slow/perf pytest collection timed out"]
+    tests = [
+        line.strip()
+        for line in proc.stdout.splitlines()
+        if line.strip().startswith("tests/") and "::" in line
+    ]
+    errors: list[str] = []
+    if proc.returncode != 0:
+        errors.append(f"slow/perf pytest collection failed with exit {proc.returncode}: {proc.stderr.strip()}")
+    if not tests:
+        errors.append("no slow/perf tests are explicitly collectable")
+    return tests, errors
+
+
+def pytest_markers_defined() -> list[str]:
+    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    markers: list[str] = []
+    for marker in ["slow", "perf"]:
+        if f'"{marker}:' in text or f"'{marker}:" in text:
+            markers.append(marker)
+    return markers
+
+
+def historical_scale_tests_source(errors: list[str]) -> dict[str, Any]:
+    gate_result_path = ROOT / "artifacts" / "gates" / BASE_PHASE / "gate_result.json"
+    historical = {
+        "gate_result_path": rel(gate_result_path),
+        "gate_name": "scale_tests",
+        "duration_seconds": 0.0,
+        "command": "MISSING",
+    }
+    if not gate_result_path.exists():
+        errors.append(f"missing historical P13 gate result: {rel(gate_result_path)}")
+        return historical
+    gate_result = load_json(gate_result_path)
+    for gate in gate_result.get("gates", []):
+        if gate.get("name") == "scale_tests":
+            historical.update(
+                {
+                    "duration_seconds": round(float(gate.get("duration_seconds", 0.0) or 0.0), 6),
+                    "command": str(gate.get("command", "MISSING")),
+                    "stdout_path": gate.get("stdout_path", "MISSING"),
+                    "status": gate.get("status", "MISSING"),
+                }
+            )
+            stdout_path = ROOT / str(gate.get("stdout_path", ""))
+            if stdout_path.exists():
+                text = stdout_path.read_text(encoding="utf-8", errors="replace")
+                historical["stdout_tail"] = "\n".join(text.splitlines()[-5:])
+            return historical
+    errors.append("historical P13 gate result does not contain scale_tests")
+    return historical
+
+
+def write_fast_test_split_artifact(phase: dict[str, Any], errors: list[str]) -> tuple[Path, dict[str, Any]]:
+    base_manifest = load_base_manifest()
+    base_phase = phase_by_id(base_manifest, BASE_PHASE)
+    p13_scale_tests = gate_by_name(base_phase, "scale_tests")
+    scale_50_gate = gate_by_name(base_phase, "scale_50_real_gate")
+    scale_100_gate = gate_by_name(base_phase, "scale_100_real_gate")
+    fast_gate = gate_by_name(phase, "p13o_fast_test_lane")
+    slow_gate = gate_by_name(phase, "p13o_explicit_slow_perf_lane")
+
+    default_command = str(p13_scale_tests.get("command", ""))
+    if "not slow" not in default_command or "not perf" not in default_command:
+        errors.append("P13 scale_tests command must exclude slow and perf markers")
+    if p13_scale_tests.get("real_valkey") is not False:
+        errors.append("P13 scale_tests must remain non-real-Valkey unit feedback")
+    for gate_name, gate in [("scale_50_real_gate", scale_50_gate), ("scale_100_real_gate", scale_100_gate)]:
+        if "scripts/valkey_e2e_gate.py" not in str(gate.get("command", "")):
+            errors.append(f"P13 {gate_name} must keep scripts/valkey_e2e_gate.py real evidence")
+        if gate.get("real_valkey") is not True:
+            errors.append(f"P13 {gate_name} must remain real_valkey=true")
+
+    markers = pytest_markers_defined()
+    for marker in ["slow", "perf"]:
+        if marker not in markers:
+            errors.append(f"pytest marker {marker!r} is not defined")
+    marked_tests, marker_errors = collect_slow_perf_tests()
+    errors.extend(marker_errors)
+    fast_measurement = pytest_measurement_from_stdout("p13o_fast_test_lane")
+    slow_measurement = pytest_measurement_from_stdout("p13o_explicit_slow_perf_lane")
+    if not numeric(fast_measurement.get("duration_seconds")):
+        errors.append("fast test lane duration is missing")
+    elif float(fast_measurement["duration_seconds"]) > FAST_TEST_MAX_SECONDS:
+        errors.append(f"fast test lane exceeded {FAST_TEST_MAX_SECONDS}s")
+    if not numeric(fast_measurement.get("passed_count")) or int(fast_measurement["passed_count"]) < 1:
+        errors.append("fast test lane did not report passed tests")
+    if not numeric(slow_measurement.get("passed_count")) or int(slow_measurement["passed_count"]) < 1:
+        errors.append("explicit slow/perf lane did not report passed tests")
+
+    historical = historical_scale_tests_source(errors)
+    if numeric(historical.get("duration_seconds")) and numeric(fast_measurement.get("duration_seconds")):
+        if float(fast_measurement["duration_seconds"]) >= float(historical["duration_seconds"]):
+            errors.append("fast lane duration must be lower than historical P13 scale_tests duration")
+
+    out = ROOT / "artifacts" / "phases" / FAST_TEST_SPLIT_ARTIFACT_PHASE / "p13_fast_test_split.json"
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": "p13_fast_test_split",
+        "phase_id": P13O_FAST_TEST_SPLIT_PHASE,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "historical_slow_source": historical,
+        "default_p13_scale_tests": {
+            "phase_id": BASE_PHASE,
+            "gate_name": "scale_tests",
+            "command": default_command,
+            "excluded_markers": ["slow", "perf"],
+            "real_valkey": bool(p13_scale_tests.get("real_valkey", False)),
+            "measurement": fast_measurement,
+        },
+        "explicit_slow_perf_lane": {
+            "command": str(slow_gate.get("command", "")),
+            "included_markers": ["slow", "perf"],
+            "measurement": slow_measurement,
+            "collected_tests": marked_tests,
+        },
+        "marker_policy": {
+            "markers_defined": markers,
+            "marked_tests": marked_tests,
+            "classification": "Timeout-sensitive cluster probe wait tests are slow-lane tests; performance benchmarks should use the perf marker.",
+            "fast_lane_command": str(fast_gate.get("command", "")),
+        },
+        "real_evidence_source": {
+            "scale_50_real_gate_command": str(scale_50_gate.get("command", "")),
+            "scale_100_real_gate_command": str(scale_100_gate.get("command", "")),
+            "wrapper": "scripts/valkey_e2e_gate.py",
+            "preserved": True,
+        },
+        "safety_constraints": {
+            "real_valkey_evidence_replaced": False,
+            "tests_deleted": False,
+            "p14_executed": False,
+            "default_max_nodes": 100,
+        },
+        "errors": errors,
+    }
+    write_json(out, artifact)
+    return out, artifact
+
+
+def write_fast_test_split_phase_summary(
+    phase: dict[str, Any],
+    split_artifact: dict[str, Any],
+    errors: list[str],
+) -> Path:
+    phase_id = str(phase["id"])
+    artifact_id = artifact_phase_id(phase)
+    out = ROOT / "artifacts" / "phases" / artifact_id / "phase_summary.json"
+    fast_measurement = split_artifact.get("default_p13_scale_tests", {}).get("measurement", {})
+    slow_measurement = split_artifact.get("explicit_slow_perf_lane", {}).get("measurement", {})
+    summary = {
+        "schema_version": "v1",
+        "artifact_type": "p13_optimization_phase_summary",
+        "phase_id": phase_id,
+        "artifact_phase_id": artifact_id,
+        "run_id": f"phase-{phase_id}",
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "summary": "P13 scale_tests now runs the fast marker lane by default while slow/perf tests remain explicit.",
+        "required_artifacts": [item["path"] for item in phase.get("required_artifacts", [])],
+        "real_valkey_evidence": {
+            "scale_50_real_gate": {
+                "source": split_artifact.get("real_evidence_source", {}).get("scale_50_real_gate_command", "MISSING"),
+                "preserved": True,
+            },
+            "scale_100_real_gate": {
+                "source": split_artifact.get("real_evidence_source", {}).get("scale_100_real_gate_command", "MISSING"),
+                "preserved": True,
+            },
+        },
+        "timing_accounting": {
+            "historical_scale_tests_seconds": split_artifact.get("historical_slow_source", {}).get("duration_seconds", "MISSING"),
+            "fast_lane_seconds": fast_measurement.get("duration_seconds", "MISSING"),
+            "slow_perf_lane_seconds": slow_measurement.get("duration_seconds", "MISSING"),
+            "fast_lane_passed_count": fast_measurement.get("passed_count", "MISSING"),
+            "slow_perf_lane_passed_count": slow_measurement.get("passed_count", "MISSING"),
+        },
+        "fast_test_split_path": rel(
+            ROOT / "artifacts" / "phases" / artifact_id / "p13_fast_test_split.json"
+        ),
+        "errors": errors,
+    }
+    write_json(out, summary)
+    return out
+
+
+def validate_fast_test_split_artifacts(phase: dict[str, Any], *, write_summary_artifact: bool = True) -> int:
+    all_errors: list[str] = []
+    split_path = ROOT / "artifacts" / "phases" / FAST_TEST_SPLIT_ARTIFACT_PHASE / "p13_fast_test_split.json"
+    if write_summary_artifact:
+        split_path, split_artifact = write_fast_test_split_artifact(phase, all_errors)
+    elif split_path.exists():
+        split_artifact = load_json(split_path)
+    else:
+        split_artifact = {}
+        all_errors.append(f"missing fast test split artifact: {rel(split_path)}")
+
+    if split_path.exists():
+        all_errors.extend(validate_schema(split_path, ROOT / "schemas" / "artifact" / "p13_fast_test_split.schema.json"))
+        if split_artifact.get("status") != "PASS":
+            all_errors.append(f"fast test split status is {split_artifact.get('status')}")
+        default_command = str(split_artifact.get("default_p13_scale_tests", {}).get("command", ""))
+        if "not slow" not in default_command or "not perf" not in default_command:
+            all_errors.append("default P13 scale_tests command must exclude slow and perf")
+        fast_measurement = split_artifact.get("default_p13_scale_tests", {}).get("measurement", {})
+        if numeric(fast_measurement.get("duration_seconds")) and float(fast_measurement["duration_seconds"]) > FAST_TEST_MAX_SECONDS:
+            all_errors.append(f"fast test lane exceeded {FAST_TEST_MAX_SECONDS}s")
+        if not split_artifact.get("explicit_slow_perf_lane", {}).get("collected_tests"):
+            all_errors.append("explicit slow/perf tests are not collectable")
+        real_source = split_artifact.get("real_evidence_source", {})
+        if real_source.get("preserved") is not True:
+            all_errors.append("real Valkey evidence must remain preserved")
+        for key in ["scale_50_real_gate_command", "scale_100_real_gate_command"]:
+            if "scripts/valkey_e2e_gate.py" not in str(real_source.get(key, "")):
+                all_errors.append(f"{key} must reference scripts/valkey_e2e_gate.py")
+
+    summary_path = ROOT / "artifacts" / "phases" / FAST_TEST_SPLIT_ARTIFACT_PHASE / "phase_summary.json"
+    if write_summary_artifact:
+        summary_path = write_fast_test_split_phase_summary(phase, split_artifact, all_errors)
+    elif not summary_path.exists():
+        all_errors.append(f"missing phase summary artifact: {rel(summary_path)}")
+    if summary_path.exists():
+        all_errors.extend(validate_schema(summary_path, ROOT / "schemas" / "artifact" / "p13_optimization_phase_summary.schema.json"))
+
+    if all_errors:
+        for err in all_errors:
+            print(f"FAIL: {err}", file=sys.stderr)
+        return 1
+    print(f"PASS p13o artifacts phase={phase['id']} summary={rel(summary_path)}")
+    return 0
+
+
 def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool = True) -> int:
     manifest = load_manifest()
     phase = phase_by_id(manifest, args.phase)
@@ -944,6 +1243,8 @@ def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool
         return validate_replica_replicate_artifacts(phase, write_summary_artifact=write_summary_artifact)
     if args.phase == P13O_CLEANUP_PHASE:
         return validate_cleanup_artifacts(phase, write_summary_artifact=write_summary_artifact)
+    if args.phase == P13O_FAST_TEST_SPLIT_PHASE:
+        return validate_fast_test_split_artifacts(phase, write_summary_artifact=write_summary_artifact)
 
     all_errors: list[str] = []
     timings: dict[str, dict[str, Any]] = {}

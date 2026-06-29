@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -37,6 +39,7 @@ def test_probe_endpoint_uses_single_pipelined_connection(monkeypatch) -> None:
     assert calls == [[("PING",), ("INFO", "server"), ("CLUSTER", "INFO"), ("CLUSTER", "NODES")]]
 
 
+@pytest.mark.slow
 def test_wait_for_cluster_ok_rejects_fragmented_membership(monkeypatch) -> None:
     probe = {
         "status": "PASS",
@@ -54,6 +57,7 @@ def test_wait_for_cluster_ok_rejects_fragmented_membership(monkeypatch) -> None:
     assert len(observed) == 100
 
 
+@pytest.mark.slow
 def test_wait_for_cluster_ok_accepts_full_membership(monkeypatch) -> None:
     probes = [
         {
@@ -76,6 +80,7 @@ def test_wait_for_cluster_ok_accepts_full_membership(monkeypatch) -> None:
     assert timing["final_full_probe"]["count"] == 1
 
 
+@pytest.mark.slow
 def test_wait_for_cluster_ok_rejects_master_only_when_replicas_expected(monkeypatch) -> None:
     probe = {
         "status": "PASS",

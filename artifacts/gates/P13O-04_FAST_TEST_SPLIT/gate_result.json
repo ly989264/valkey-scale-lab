@@ -1,0 +1,61 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_optimization_gate_result",
+  "phase_id": "P13O-04_FAST_TEST_SPLIT",
+  "created_at": "2026-06-29T12:21:35.998162Z",
+  "runner": "scripts/p13_optimization_gate.py",
+  "manifest_sha256": "481ec15d7c1fc8f0155d43bbfde966f57005c56fe5f56fba757eb47fafc5e0c0",
+  "status": "PASS",
+  "environment": {
+    "python_version": "3.13.7",
+    "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+    "cwd": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab"
+  },
+  "gates": [
+    {
+      "name": "p13o_fast_test_lane",
+      "kind": "unit",
+      "command": "python3 -m pytest -q tests/unit tests/scale tests/integration -m 'not slow and not perf' --durations=20",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-29T12:21:35.573889Z",
+      "finished_at": "2026-06-29T12:21:35.713735Z",
+      "duration_seconds": 0.139523,
+      "stdout_path": "artifacts/gates/P13O-04_FAST_TEST_SPLIT/stdout/p13o_fast_test_lane.log",
+      "stderr_path": "artifacts/gates/P13O-04_FAST_TEST_SPLIT/stderr/p13o_fast_test_lane.log",
+      "stdout_sha256": "2931cfc5980e86eae591522c24d2df48c56d6ca0a5df54e7fd9ca5598d781211",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "p13o_explicit_slow_perf_lane",
+      "kind": "unit",
+      "command": "python3 -m pytest -q tests/unit tests/scale tests/integration -m 'slow or perf' --durations=20",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-29T12:21:35.714036Z",
+      "finished_at": "2026-06-29T12:21:35.852580Z",
+      "duration_seconds": 0.13827,
+      "stdout_path": "artifacts/gates/P13O-04_FAST_TEST_SPLIT/stdout/p13o_explicit_slow_perf_lane.log",
+      "stderr_path": "artifacts/gates/P13O-04_FAST_TEST_SPLIT/stderr/p13o_explicit_slow_perf_lane.log",
+      "stdout_sha256": "205aa8d9646095b69993527a5dc218ef620e1b761f6db72999f15335e1064ba9",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "p13o_fast_test_split_artifact_check",
+      "kind": "artifact",
+      "command": "python3 scripts/p13_optimization_gate.py validate-artifacts --phase P13O-04_FAST_TEST_SPLIT",
+      "required": true,
+      "status": "PASS",
+      "exit_code": 0,
+      "started_at": "2026-06-29T12:21:35.852847Z",
+      "finished_at": "2026-06-29T12:21:35.997982Z",
+      "duration_seconds": 0.144939,
+      "stdout_path": "artifacts/gates/P13O-04_FAST_TEST_SPLIT/stdout/p13o_fast_test_split_artifact_check.log",
+      "stderr_path": "artifacts/gates/P13O-04_FAST_TEST_SPLIT/stderr/p13o_fast_test_split_artifact_check.log",
+      "stdout_sha256": "2d88506f22a82851a33a3a462b58624ff69c54cdad1057b98cd310bb904f67fd",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

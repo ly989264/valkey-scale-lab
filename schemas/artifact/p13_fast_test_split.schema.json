@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "P13 Fast Test Split",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "created_at",
+    "producer",
+    "status",
+    "historical_slow_source",
+    "default_p13_scale_tests",
+    "explicit_slow_perf_lane",
+    "marker_policy",
+    "real_evidence_source",
+    "safety_constraints",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "p13_fast_test_split"},
+    "phase_id": {"type": "string", "const": "P13O-04_FAST_TEST_SPLIT"},
+    "created_at": {"type": "string", "minLength": 1},
+    "producer": {"type": "object"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL"]},
+    "historical_slow_source": {
+      "type": "object",
+      "required": ["gate_result_path", "gate_name", "duration_seconds", "command"],
+      "properties": {
+        "gate_result_path": {"type": "string", "minLength": 1},
+        "gate_name": {"type": "string", "const": "scale_tests"},
+        "duration_seconds": {"type": "number", "minimum": 0},
+        "command": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "default_p13_scale_tests": {
+      "type": "object",
+      "required": ["phase_id", "gate_name", "command", "excluded_markers", "real_valkey", "measurement"],
+      "properties": {
+        "phase_id": {"type": "string", "const": "P13_SCALE_LADDER_50_100"},
+        "gate_name": {"type": "string", "const": "scale_tests"},
+        "command": {"type": "string", "minLength": 1},
+        "excluded_markers": {
+          "type": "array",
+          "contains": {"type": "string", "const": "slow"}
+        },
+        "real_valkey": {"type": "boolean", "const": false},
+        "measurement": {
+          "type": "object",
+          "required": ["gate_name", "status", "duration_seconds", "passed_count"],
+          "properties": {
+            "gate_name": {"type": "string", "const": "p13o_fast_test_lane"},
+            "status": {"type": "string", "enum": ["PASS", "FAIL", "MISSING"]},
+            "duration_seconds": {"type": ["number", "object"]},
+            "passed_count": {"type": ["integer", "object"]}
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "explicit_slow_perf_lane": {
+      "type": "object",
+      "required": ["command", "included_markers", "measurement", "collected_tests"],
+      "properties": {
+        "command": {"type": "string", "minLength": 1},
+        "included_markers": {
+          "type": "array",
+          "contains": {"type": "string", "const": "slow"}
+        },
+        "measurement": {"type": "object"},
+        "collected_tests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      },
+      "additionalProperties": true
+    },
+    "marker_policy": {
+      "type": "object",
+      "required": ["markers_defined", "marked_tests"],
+      "properties": {
+        "markers_defined": {
+          "type": "array",
+          "contains": {"type": "string", "const": "slow"}
+        },
+        "marked_tests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      },
+      "additionalProperties": true
+    },
+    "real_evidence_source": {
+      "type": "object",
+      "required": ["scale_50_real_gate_command", "scale_100_real_gate_command", "wrapper", "preserved"],
+      "properties": {
+        "scale_50_real_gate_command": {"type": "string", "pattern": "scripts/valkey_e2e_gate\\.py"},
+        "scale_100_real_gate_command": {"type": "string", "pattern": "scripts/valkey_e2e_gate\\.py"},
+        "wrapper": {"type": "string", "const": "scripts/valkey_e2e_gate.py"},
+        "preserved": {"type": "boolean", "const": true}
+      },
+      "additionalProperties": true
+    },
+    "safety_constraints": {
+      "type": "object",
+      "required": ["real_valkey_evidence_replaced", "tests_deleted", "p14_executed", "default_max_nodes"],
+      "properties": {
+        "real_valkey_evidence_replaced": {"type": "boolean", "const": false},
+        "tests_deleted": {"type": "boolean", "const": false},
+        "p14_executed": {"type": "boolean", "const": false},
+        "default_max_nodes": {"type": "integer", "maximum": 100}
+      },
+      "additionalProperties": true
+    },
+    "errors": {"type": "array"}
+  },
+  "additionalProperties": true
+}

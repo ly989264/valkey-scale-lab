@@ -1157,7 +1157,7 @@
         {
           "name": "scale_tests",
           "kind": "unit",
-          "command": "python3 -m pytest -q tests/unit tests/scale tests/integration",
+          "command": "python3 -m pytest -q tests/unit tests/scale tests/integration -m 'not slow and not perf'",
           "timeout_seconds": 600,
           "required": true,
           "real_valkey": false

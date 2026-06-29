@@ -1,0 +1,37 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_optimization_phase_summary",
+  "phase_id": "P13O-04_FAST_TEST_SPLIT",
+  "artifact_phase_id": "P13O_FAST_TEST_SPLIT",
+  "run_id": "phase-P13O-04_FAST_TEST_SPLIT",
+  "created_at": "2026-06-29T12:22:42.830676Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P13 scale_tests now runs the fast marker lane by default while slow/perf tests remain explicit.",
+  "required_artifacts": [
+    "artifacts/phases/P13O_FAST_TEST_SPLIT/p13_fast_test_split.json",
+    "artifacts/phases/P13O_FAST_TEST_SPLIT/phase_summary.json"
+  ],
+  "real_valkey_evidence": {
+    "scale_50_real_gate": {
+      "source": "python3 scripts/valkey_e2e_gate.py --phase P13_SCALE_LADDER_50_100 --config templates/configs/scale_50.yaml --scenario scale_50 --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json --min-nodes 50 --require-data-path",
+      "preserved": true
+    },
+    "scale_100_real_gate": {
+      "source": "python3 scripts/valkey_e2e_gate.py --phase P13_SCALE_LADDER_50_100 --config templates/configs/scale_100.yaml --scenario scale_100 --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json --min-nodes 100 --require-data-path",
+      "preserved": true
+    }
+  },
+  "timing_accounting": {
+    "historical_scale_tests_seconds": 90.232059,
+    "fast_lane_seconds": 0.03,
+    "slow_perf_lane_seconds": 0.04,
+    "fast_lane_passed_count": 57,
+    "slow_perf_lane_passed_count": 3
+  },
+  "fast_test_split_path": "artifacts/phases/P13O_FAST_TEST_SPLIT/p13_fast_test_split.json",
+  "errors": []
+}

@@ -396,7 +396,54 @@
       "title": "P13 fast and slow test split",
       "automatic": true,
       "real_valkey_required": false,
-      "max_nodes": 0
+      "max_nodes": 0,
+      "objectives": [
+        "Identify the historical slow P13 scale_tests source",
+        "Exclude slow and perf tests from the default P13 scale_tests gate",
+        "Keep slow and perf tests explicitly runnable while preserving real Valkey wrapper evidence"
+      ],
+      "gates": [
+        {
+          "name": "p13o_fast_test_lane",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/scale tests/integration -m 'not slow and not perf' --durations=20",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "p13o_explicit_slow_perf_lane",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/scale tests/integration -m 'slow or perf' --durations=20",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "p13o_fast_test_split_artifact_check",
+          "kind": "artifact",
+          "command": "python3 scripts/p13_optimization_gate.py validate-artifacts --phase P13O-04_FAST_TEST_SPLIT",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P13O_FAST_TEST_SPLIT/p13_fast_test_split.json",
+          "schema": "schemas/artifact/p13_fast_test_split.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P13O_FAST_TEST_SPLIT/phase_summary.json",
+          "schema": "schemas/artifact/p13_optimization_phase_summary.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P13O-04_FAST_TEST_SPLIT/AUDIT.md",
+        "decision_json_path": "audit/P13O-04_FAST_TEST_SPLIT/audit_decision.json"
+      }
     },
     {
       "id": "P13O-05_PERF_REGRESSION_BUDGET",
