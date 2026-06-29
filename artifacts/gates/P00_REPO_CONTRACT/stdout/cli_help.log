@@ -11,7 +11,8 @@ positional arguments:
     fault     Apply and clear sandboxed faults.
     analyze   Analyze machine-readable artifacts.
     report    Render reports from artifacts.
+    resource  Resource checks for scale rungs.
 
-optional arguments:
+options:
   -h, --help  show this help message and exit
   --version   show program's version number and exit

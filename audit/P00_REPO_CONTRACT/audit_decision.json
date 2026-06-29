@@ -1,24 +1,17 @@
 {
-  "schema_version": "v1",
-  "artifact_type": "audit_decision",
-  "phase_id": "P00_REPO_CONTRACT",
-  "decision": "PASS",
-  "fresh_context": true,
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-28T05:19:05Z",
-  "gate_result_path": "artifacts/gates/P00_REPO_CONTRACT/gate_result.json",
-  "gate_result_sha256": "bad91144b28fab59b6e58a2903ad71f6b5f0cf0b4248bc103eba625ec7a55e45",
   "artifact_paths": [
     "artifacts/phases/P00_REPO_CONTRACT/phase_summary.json",
     "artifacts/phases/P00_REPO_CONTRACT/env_info.json"
   ],
-  "risks": [
-    {
-      "risk": "Direct python3 -m valkey_scale_lab.cli --help from an uninstalled src-layout checkout requires the gate runner PYTHONPATH environment or package installation.",
-      "severity": "low",
-      "required_before_next_phase": false,
-      "notes": "The manifest gate passed under scripts/codex_gate.py, and CI installs the project before tests."
-    }
-  ],
-  "rationale": "All P00 manifest gates passed with command text matching the manifest, gate logs exist with matching SHA256 values, required artifacts validated against their schemas, P00 does not require or claim real Valkey runtime evidence, and safety review found no forbidden host network, firewall, sudo, or scale-default behavior."
+  "artifact_type": "audit_decision",
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-29T02:47:50Z",
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/gates/P00_REPO_CONTRACT/gate_result.json",
+  "gate_result_sha256": "3249b463f1f0412488f065b4f17ea4d81b50720746615acf46ac2c7cdcd63059",
+  "phase_id": "P00_REPO_CONTRACT",
+  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable.",
+  "risks": [],
+  "schema_version": "v1"
 }

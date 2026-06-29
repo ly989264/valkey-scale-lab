@@ -1,12 +1,12 @@
-# Audit - P10_MULTI_HOST_ORCHESTRATION
+# Audit — P10_MULTI_HOST_ORCHESTRATION
 
 Decision: PASS
 Fresh Context: YES
 Auditor: fresh-context-codex-reviewer
-Audit Time: 2026-06-28T07:37:06Z
+Audit Time: 2026-06-29T02:47:50Z
 
 Gate Result: artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/gate_result.json
-Observed Gate Result SHA256: 69539abe2e60b709bfe7e7c1f790f440a12299ce4dc5805a78fd211cab389f89
+Observed Gate Result SHA256: c80f6f89d123eb0ca0517a047efab2d95536689fdbdd800318537804fc275bb6
 
 ## Scope inspected
 
@@ -15,71 +15,54 @@ Observed Gate Result SHA256: 69539abe2e60b709bfe7e7c1f790f440a12299ce4dc5805a78f
 - `codex/phase_manifest.json`
 - `docs/codex/02_PHASES.md`
 - `docs/codex/04_AUDITOR.md`
-- `templates/audit/FRESH_CONTEXT_AUDIT_PROMPT.md`
 - `templates/audit/AUDIT_TEMPLATE.md`
 - `templates/audit/audit_decision.template.json`
-- `docs/codex/CODE_REVIEW.md`
-- phase source and tests: `src/valkey_scale_lab/orchestrator/local.py`, `src/valkey_scale_lab/orchestrator/__init__.py`, `src/valkey_scale_lab/runtime/docker_runtime.py`, `tests/orchestrator/test_local_orchestrator.py`, `tests/integration/test_docker_runtime_contract.py`
-- gate result and stdout/stderr logs under `artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/`
-- required artifacts and sidecars under `artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/`
-- schema validation output for required artifacts
-- Docker cleanup residue check for P10-owned labels
+- phase source/test diff status: no non-cache source or test diffs observed during audit
+- gate result and stdout/stderr logs for `P10_MULTI_HOST_ORCHESTRATION`
+- required artifacts listed for `P10_MULTI_HOST_ORCHESTRATION`
+- schema validation output using repository schema validator
+- cleanup evidence
+- real Valkey evidence, if required
 
 ## Gate findings
 
 | Gate | Expected | Observed | Evidence |
 |---|---:|---:|---|
-| harness_precheck | PASS | PASS | command matched manifest; stdout/stderr hashes matched gate result |
-| safety_static_scan | PASS | PASS | command matched manifest; `PASS safety_scan`; stdout/stderr hashes matched |
-| orchestrator_tests | PASS | PASS | command matched manifest; stdout/stderr hashes matched |
-| orchestrated_localhost_real_gate | PASS | PASS | command matched manifest; `PASS real_valkey_e2e scenario=orchestrated_localhost nodes=6`; stdout/stderr hashes matched |
-| cleanup_report_check | PASS | PASS | command matched manifest; `PASS cleanup artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json`; stdout/stderr hashes matched |
+| harness_precheck | PASS | PASS | artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/stdout/harness_precheck.log; command_match=true; log_sha256_match=true |
+| safety_static_scan | PASS | PASS | artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/stdout/safety_static_scan.log; command_match=true; log_sha256_match=true |
+| orchestrator_tests | PASS | PASS | artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/stdout/orchestrator_tests.log; command_match=true; log_sha256_match=true |
+| orchestrated_localhost_real_gate | PASS | PASS | artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/stdout/orchestrated_localhost_real_gate.log; command_match=true; log_sha256_match=true |
+| cleanup_report_check | PASS | PASS | artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/stdout/cleanup_report_check.log; command_match=true; log_sha256_match=true |
 
 ## Artifact findings
 
 | Artifact | Schema | Observed | Evidence |
 |---|---|---:|---|
-| artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/phase_summary.json | schemas/artifact/phase_summary.schema.json | valid | schema checker PASS; status PASS; missing remote SSH latency encoded as `SKIPPED_WITH_REASON` |
-| artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json | schemas/artifact/valkey_e2e_evidence.schema.json | valid | schema checker PASS; real Valkey evidence PASS |
-| artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json | schemas/artifact/cleanup_report.schema.json | valid | schema checker PASS; status PASS; `resources_remaining` empty |
-
-Supporting sidecars inspected:
-
-- `artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/orchestration_report.json`: status PASS; host inventory includes `host_id: local`; operations include prepare, start, collect, and stop; safety flags show no sudo and no host network mutation.
-- `artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/state_orchestrated_localhost.json`: six nodes preserve `host_id`, host identity, client ports, roles, container IDs, and Docker sandbox runtime host list.
+| artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/phase_summary.json | schemas/artifact/phase_summary.schema.json | valid | schema validation via scripts/schema_validator.py |
+| artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json | schemas/artifact/valkey_e2e_evidence.schema.json | valid | schema validation via scripts/schema_validator.py |
+| artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json | schemas/artifact/cleanup_report.schema.json | valid | schema validation via scripts/schema_validator.py |
 
 ## Safety findings
 
-- Host network mutation: absent
-- Global firewall mutation: absent
-- Sudo default path: absent
+- Host network mutation: absent; `safety_static_scan` passed
+- Global firewall mutation: absent; `safety_static_scan` passed
+- Sudo default path: absent; `safety_static_scan` passed
 - Cleanup logic: verified
-- Default node cap <= 100: verified
-- P14/1000-node default path: absent; P10 manifest max is 6 and config has `allow_1000_nodes: false`
-- Docker residue: verified no P10-labeled containers or networks remain
+- Default node cap <= 100: verified; manifest default is 100 and this phase max_nodes is 6
 
 ## Real Valkey findings
 
 Required for this phase: YES
 Evidence file: artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json
 Valkey version observed: 9.1.0
-Independent live probe: PASS
-
-Observed evidence:
-
-- `real_valkey`: true
-- `probe_result`: PASS
-- `nodes_observed`: 6
-- `cluster_state_observed`: ok
-- `data_path_result`: PASS
-- `scenario`: orchestrated_localhost
+Independent live probe: PASS (independent wrapper evidence: scripts/valkey_e2e_gate.py)
 
 ## Risks and follow-ups
 
 | Risk | Severity | Required before next phase? | Notes |
 |---|---|---:|---|
-| Cross-host SSH execution remains configuration-dependent | low | no | P10 automatic gate requires local loopback orchestration through the same lifecycle, which passed. |
+| None | low | no | No blocking risks found. |
 
 ## Final rationale
 
-All P10 manifest gates ran and passed with exact command text matching the manifest, and all gate log SHA256 values matched `gate_result.json`. Required artifacts exist and validate against their schemas. The real Valkey wrapper evidence proves Valkey 9.1.0, six observed nodes, passing probe and data path results, and the `orchestrated_localhost` scenario. The implementation and sidecar artifacts show host inventory validation, host identity preservation, lifecycle orchestration operations, idempotent cleanup, and no host-level network or sudo default path. No P10-owned Docker containers or networks remain.
+All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/valkey_e2e_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 6.

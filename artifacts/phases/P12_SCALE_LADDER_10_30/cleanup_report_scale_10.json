@@ -1,114 +1,163 @@
 {
   "artifact_type": "cleanup_report",
-  "artifacts_dir": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION",
+  "artifacts_dir": "artifacts/phases/P12_SCALE_LADDER_10_30",
   "cleanup_actions": [
     {
       "action": "stop",
-      "id": "1e63a9395771",
+      "id": "5bdca8918088",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "1e63a9395771",
+      "id": "5bdca8918088",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "9117376e772b",
+      "id": "949b284f8ca8",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "9117376e772b",
+      "id": "949b284f8ca8",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "b016127b25a0",
+      "id": "c6b283b63f12",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "b016127b25a0",
+      "id": "c6b283b63f12",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "a467389c5172",
+      "id": "fd134ca37898",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "a467389c5172",
+      "id": "fd134ca37898",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "80b370a9ef72",
+      "id": "a41d656a683c",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "80b370a9ef72",
+      "id": "a41d656a683c",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "ba0cd3c13fd5",
+      "id": "b5e579d9be63",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "ba0cd3c13fd5",
+      "id": "b5e579d9be63",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "7c2cbd88a6c6",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "452f3239859c",
+      "id": "7c2cbd88a6c6",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "0c28a167c451",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "0c28a167c451",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "74110a1c4df7",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "74110a1c4df7",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "a66c5ba43c45",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "a66c5ba43c45",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "95becdf82dc2",
       "status": "PASS",
       "stderr": "",
       "type": "network"
-    },
-    {
-      "action": "stop_collect",
-      "id": "all-hosts",
-      "idempotent": true,
-      "status": "PASS",
-      "type": "orchestrator"
     }
   ],
   "created_at": "2026-06-28T00:00:00Z",
-  "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+  "phase_id": "P12_SCALE_LADDER_10_30",
   "producer": {
     "name": "valkey-scale-lab",
     "version": "0.0.0"
   },
   "resources_remaining": [],
-  "run_id": "P10_MULTI_HOST_ORCHESTRATION-orchestrated_localhost-20260628",
+  "run_id": "P12_SCALE_LADDER_10_30-scale_10-20260628",
   "schema_version": "v1",
   "status": "PASS"
 }

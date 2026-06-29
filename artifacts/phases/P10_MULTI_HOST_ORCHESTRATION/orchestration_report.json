@@ -26,8 +26,8 @@
     },
     {
       "details": {
-        "container_id": "19d05f3b32fbce56bfa59d68267cc85c379541e170db58bf65759f7d6bbfd8e9",
-        "duration_seconds": 0.122772,
+        "container_id": "ba0cd3c13fd51c6e7a74d3e304a727fd0460ae1ad3654286fa850320667d4093",
+        "duration_seconds": 0.137011,
         "logical_id": "shard-0000-primary"
       },
       "finished_at": "2026-06-28T00:00:00Z",
@@ -38,8 +38,8 @@
     },
     {
       "details": {
-        "container_id": "cdb5ded9491fd1421b053352c9d8c7232b7b97e14a9f257d35b1f0d4eec3539f",
-        "duration_seconds": 0.113828,
+        "container_id": "80b370a9ef7281f4bd0bdcedc8f13bb9b33863bc569d00f4432b764e461b23bc",
+        "duration_seconds": 0.132629,
         "logical_id": "shard-0001-primary"
       },
       "finished_at": "2026-06-28T00:00:00Z",
@@ -50,8 +50,8 @@
     },
     {
       "details": {
-        "container_id": "dc57478b92ac17982c9ad667565c0292c7bbb8788206731d64a9099f5d9d3aa8",
-        "duration_seconds": 0.110305,
+        "container_id": "a467389c5172e927ebcc484bcd83c24bb44059ecbb1aa9979a5a42e01bd55abd",
+        "duration_seconds": 0.132021,
         "logical_id": "shard-0002-primary"
       },
       "finished_at": "2026-06-28T00:00:00Z",
@@ -62,8 +62,8 @@
     },
     {
       "details": {
-        "container_id": "ea04197bff435e560e96e4f563995b245a8992ce25b1d844814d14ceb6c4f2ae",
-        "duration_seconds": 0.099051,
+        "container_id": "b016127b25a01675bb86c357b05134acc7ef6b7dfa62f90b57037a6856fbcb13",
+        "duration_seconds": 0.133914,
         "logical_id": "shard-0000-replica-00"
       },
       "finished_at": "2026-06-28T00:00:00Z",
@@ -74,8 +74,8 @@
     },
     {
       "details": {
-        "container_id": "a915ce6bf417135cc09586296b5957f992b1ff460100f122f46255b5743e5b24",
-        "duration_seconds": 0.108206,
+        "container_id": "9117376e772b3ce0984da5a996938613eae09b355d5f9e7f7d2474de62ea15b0",
+        "duration_seconds": 0.11724,
         "logical_id": "shard-0001-replica-00"
       },
       "finished_at": "2026-06-28T00:00:00Z",
@@ -86,8 +86,8 @@
     },
     {
       "details": {
-        "container_id": "2e3d5118349f11d604d2f7844871f3bc96e3613c4ec0dcfc09063b4de38e6615",
-        "duration_seconds": 0.09885,
+        "container_id": "1e63a93957717ccdb554956f9e2bf68e82a838e0e2794019c1bb57926f7b8150",
+        "duration_seconds": 0.138642,
         "logical_id": "shard-0002-replica-00"
       },
       "finished_at": "2026-06-28T00:00:00Z",

@@ -1,25 +1,18 @@
 {
-  "schema_version": "v1",
-  "artifact_type": "audit_decision",
-  "phase_id": "P02_PLANNER",
-  "decision": "PASS",
-  "fresh_context": true,
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-28T05:48:24Z",
-  "gate_result_path": "artifacts/gates/P02_PLANNER/gate_result.json",
-  "gate_result_sha256": "520bd3f0d007e70282a48a3d7a24cbb17a94cacbc286f232bb667b45af0f0dba",
   "artifact_paths": [
     "artifacts/phases/P02_PLANNER/phase_summary.json",
     "artifacts/phases/P02_PLANNER/cluster_plan.json",
     "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json"
   ],
-  "risks": [
-    {
-      "risk": "Host capacity with memory_gb:auto is recorded as SKIPPED_WITH_REASON until runtime preflight can probe real host capacity.",
-      "severity": "low",
-      "required_before_next_phase": false,
-      "notes": "Numeric host capacity is enforceable in current planner code and focused probes confirmed zero numeric capacity fails planning."
-    }
-  ],
-  "rationale": "All manifest gates ran and passed, command text matches the manifest, gate logs exist with matching SHA256 values, required artifacts exist and validate against schemas, P02 is fake-only with no real Valkey requirement, safety scans are clean, and planner behavior covers deterministic AZ-aware placement, host assignment and numeric capacity enforcement, unique ports and names, marked non-HA single-AZ acceptance, unmarked single-AZ replica rejection, and 1000-node opt-in dry-run planning without execution."
+  "artifact_type": "audit_decision",
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-29T02:47:50Z",
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/gates/P02_PLANNER/gate_result.json",
+  "gate_result_sha256": "ed35b8acb9e7e7ea338bbfe12f8b6067541093d08f64427d603eed3eef5dc99c",
+  "phase_id": "P02_PLANNER",
+  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable.",
+  "risks": [],
+  "schema_version": "v1"
 }

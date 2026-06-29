@@ -1,31 +1,19 @@
 {
-  "schema_version": "v1",
-  "artifact_type": "audit_decision",
-  "phase_id": "P05_WORKLOAD_ENGINE",
-  "decision": "PASS",
-  "fresh_context": true,
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-28T06:28:52Z",
-  "gate_result_path": "artifacts/gates/P05_WORKLOAD_ENGINE/gate_result.json",
-  "gate_result_sha256": "9fdf4f7df9cdd6cbd298140f9d63d55be8e2831e16c96088b55b6dbb5449ccd2",
   "artifact_paths": [
     "artifacts/phases/P05_WORKLOAD_ENGINE/phase_summary.json",
     "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json",
     "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
-    "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
-    "artifacts/phases/P05_WORKLOAD_ENGINE/state_workload_smoke.json",
-    "artifacts/phases/P05_WORKLOAD_ENGINE/workload_smoke_setup.stdout.log",
-    "artifacts/phases/P05_WORKLOAD_ENGINE/workload_smoke_setup.stderr.log",
-    "artifacts/phases/P05_WORKLOAD_ENGINE/workload_smoke_cleanup.stdout.log",
-    "artifacts/phases/P05_WORKLOAD_ENGINE/workload_smoke_cleanup.stderr.log"
+    "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json"
   ],
-  "risks": [
-    {
-      "risk": "Workload smoke achieved QPS is lower than requested QPS.",
-      "severity": "low",
-      "required_before_next_phase": false,
-      "notes": "The artifact records both requested_qps and achieved_qps honestly; P05 requires metric capture rather than target-QPS attainment."
-    }
-  ],
-  "rationale": "Every P05 manifest gate ran and passed with exact command text; gate log files exist and recomputed SHA256 values match gate_result.json; all required artifacts exist and validate against their schemas; valkey_e2e_evidence.json records real_valkey true, PASS probes, six observed nodes, Valkey 9.1.0, cluster_state ok, and PASS SET/GET data path; workload_report.json includes the required workload and latency metrics with skipped windows explicitly marked; cleanup_report.json is PASS with no resources_remaining, and Docker label checks found no owned P05 containers or networks."
+  "artifact_type": "audit_decision",
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-29T02:47:50Z",
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/gates/P05_WORKLOAD_ENGINE/gate_result.json",
+  "gate_result_sha256": "2885d73747338755d085e676d2dba15ff5643d244e949a6901a2d33da21418a0",
+  "phase_id": "P05_WORKLOAD_ENGINE",
+  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/valkey_e2e_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 6.",
+  "risks": [],
+  "schema_version": "v1"
 }

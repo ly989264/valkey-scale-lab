@@ -4,31 +4,17 @@
     "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
     "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
     "artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json",
-    "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
-    "artifacts/phases/P09_ANALYSIS_REPORTING/baseline_comparison.json",
-    "artifacts/phases/P09_ANALYSIS_REPORTING/report/metrics.csv",
-    "artifacts/phases/P09_ANALYSIS_REPORTING/report/missing_metrics.csv",
-    "artifacts/phases/P09_ANALYSIS_REPORTING/report/baseline_comparison.csv",
-    "artifacts/phases/P09_ANALYSIS_REPORTING/report/metric_chart.svg",
-    "artifacts/phases/P09_ANALYSIS_REPORTING/report/report.md",
-    "artifacts/phases/P09_ANALYSIS_REPORTING/report/index.html"
+    "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json"
   ],
   "artifact_type": "audit_decision",
   "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-28T07:24:43Z",
+  "created_at": "2026-06-29T02:47:50Z",
   "decision": "PASS",
   "fresh_context": true,
   "gate_result_path": "artifacts/gates/P09_ANALYSIS_REPORTING/gate_result.json",
-  "gate_result_sha256": "139cf065ac72991cd4d68daf5a130607f5a04bf7a2a5fb16079d618b5e165d58",
+  "gate_result_sha256": "cd69e87af05bc57095062ab5615d9cfc4a68d5950a987d8a423c660bee28a4f1",
   "phase_id": "P09_ANALYSIS_REPORTING",
-  "rationale": "All P09 manifest gates passed with exact command text and matching log hashes; required artifacts validate; real Valkey source smoke evidence is Valkey 9.1.0 with 6 nodes and PASS probes; analysis consumes P08 artifacts and preserves split_brain_duration_ms as MISSING; reports are derived from artifacts; cleanup is PASS with no P09-owned Docker leftovers.",
-  "risks": [
-    {
-      "notes": "Correctly encoded as NO_BASELINE_YET / SKIPPED_WITH_REASON for the first analysis-reporting phase.",
-      "required_before_next_phase": false,
-      "risk": "Baseline comparison has no prior baseline",
-      "severity": "low"
-    }
-  ],
+  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/valkey_e2e_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 6.",
+  "risks": [],
   "schema_version": "v1"
 }

@@ -2,7 +2,7 @@
   "artifact_type": "stability_report",
   "baseline_comparison_path": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
   "created_at": "2026-06-28T00:00:00Z",
-  "duration_seconds": 4.785493,
+  "duration_seconds": 3.987332,
   "metrics_timeseries_path": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
   "phase_id": "P11_STABILITY_SOAK",
   "producer": {
@@ -37,7 +37,7 @@
         },
         {
           "baseline_value": null,
-          "current_value": 25136,
+          "current_value": 42216,
           "delta": null,
           "metric": "max_memory_growth_bytes",
           "status": "NO_BASELINE_YET"
@@ -58,7 +58,7 @@
       "items": []
     },
     "leaks": {
-      "max_growth_bytes": 25136,
+      "max_growth_bytes": 42216,
       "nodes": [
         {
           "first_used_memory": 3043048,
@@ -68,37 +68,37 @@
           "status": "PASS"
         },
         {
-          "first_used_memory": 2921232,
-          "growth_bytes": 24688,
-          "last_used_memory": 2945920,
+          "first_used_memory": 2921872,
+          "growth_bytes": 42216,
+          "last_used_memory": 2964088,
           "logical_id": "shard-0000-replica-00",
           "status": "PASS"
         },
         {
-          "first_used_memory": 3068272,
-          "growth_bytes": 25136,
-          "last_used_memory": 3093408,
+          "first_used_memory": 3018512,
+          "growth_bytes": 24688,
+          "last_used_memory": 3043200,
           "logical_id": "shard-0001-primary",
           "status": "PASS"
         },
         {
           "first_used_memory": 2921744,
-          "growth_bytes": 24688,
-          "last_used_memory": 2946432,
+          "growth_bytes": 42216,
+          "last_used_memory": 2963960,
           "logical_id": "shard-0001-replica-00",
           "status": "PASS"
         },
         {
-          "first_used_memory": 3018320,
-          "growth_bytes": 24688,
-          "last_used_memory": 3043008,
+          "first_used_memory": 3068464,
+          "growth_bytes": 25072,
+          "last_used_memory": 3093536,
           "logical_id": "shard-0002-primary",
           "status": "PASS"
         },
         {
-          "first_used_memory": 2922064,
-          "growth_bytes": 24688,
-          "last_used_memory": 2946752,
+          "first_used_memory": 2921552,
+          "growth_bytes": 24712,
+          "last_used_memory": 2946264,
           "logical_id": "shard-0002-replica-00",
           "status": "PASS"
         }
@@ -157,11 +157,11 @@
       "completed_operations": 36,
       "error_count": 0,
       "latency_ms": {
-        "max": 78.899625,
-        "min": 50.2895,
-        "p50": 64.807437,
-        "p95": 72.695823,
-        "p99": 77.050852,
+        "max": 65.608625,
+        "min": 42.409625,
+        "p50": 54.157084,
+        "p95": 63.453125,
+        "p99": 65.063894,
         "sample_count": 36,
         "unit": "ms"
       }

@@ -9,6 +9,38 @@
     "max": 7329,
     "min": 7300
   },
+  "cluster_known_nodes_observed": [
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30
+  ],
   "cluster_states": [
     "ok"
   ],
@@ -21,6 +53,8 @@
   },
   "management": {
     "cluster_known_nodes_expected": 30,
+    "cluster_known_nodes_max": 30,
+    "cluster_known_nodes_min": 30,
     "slot_ranges": [
       {
         "end": 8735,
@@ -86,9 +120,9 @@
     "slots_assigned": 16384
   },
   "metrics": {
-    "avg_used_memory": 3132800.0,
-    "total_commands_processed": 537,
-    "total_used_memory": 93984000
+    "avg_used_memory": 3121577.6,
+    "total_commands_processed": 506,
+    "total_used_memory": 93647328
   },
   "node_count": 30,
   "phase_id": "P12_SCALE_LADDER_10_30",

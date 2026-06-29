@@ -7,7 +7,7 @@
         "cluster_known_nodes": 6,
         "nodes_joined": 5
       },
-      "duration_seconds": 2.130454,
+      "duration_seconds": 3.294039,
       "finished_at": "2026-06-28T00:00:00Z",
       "operation": "meet",
       "started_at": "2026-06-28T00:00:00Z",
@@ -18,7 +18,7 @@
         "primary_count": 3,
         "slots_assigned": 16384
       },
-      "duration_seconds": 5.402461,
+      "duration_seconds": 4.856831,
       "finished_at": "2026-06-28T00:00:00Z",
       "operation": "add_slots",
       "started_at": "2026-06-28T00:00:00Z",
@@ -29,7 +29,7 @@
         "cluster_state": "ok",
         "replica_count": 3
       },
-      "duration_seconds": 2.180246,
+      "duration_seconds": 2.041548,
       "finished_at": "2026-06-28T00:00:00Z",
       "operation": "add_replica",
       "started_at": "2026-06-28T00:00:00Z",
@@ -39,7 +39,7 @@
       "details": {
         "cluster_state": "ok"
       },
-      "duration_seconds": 0.365994,
+      "duration_seconds": 0.372283,
       "finished_at": "2026-06-28T00:00:00Z",
       "operation": "convergence_check",
       "started_at": "2026-06-28T00:00:00Z",
@@ -49,7 +49,7 @@
       "details": {
         "line_count": 6
       },
-      "duration_seconds": 0.057098,
+      "duration_seconds": 0.059916,
       "finished_at": "2026-06-28T00:00:00Z",
       "operation": "cluster_nodes",
       "started_at": "2026-06-28T00:00:00Z",
@@ -60,7 +60,7 @@
         "cluster_known_nodes": "6",
         "cluster_state": "ok"
       },
-      "duration_seconds": 0.063141,
+      "duration_seconds": 0.056938,
       "finished_at": "2026-06-28T00:00:00Z",
       "operation": "cluster_info",
       "started_at": "2026-06-28T00:00:00Z",

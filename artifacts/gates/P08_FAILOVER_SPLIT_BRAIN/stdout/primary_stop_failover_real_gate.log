@@ -1,1 +1,1 @@
-PASS fault_failover_gate promoted=e9ab2ea9eefb4276749c1f44ed32fc65dc3fe622 out=artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json
+PASS fault_failover_gate promoted=c3eed7ec1313bb3cccb1fe4469fd2db427c638f1 out=artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json

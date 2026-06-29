@@ -140,7 +140,11 @@
   "source_artifacts": [
     {
       "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
-      "sha256": "6b13f0e39a6d486b0e6c6b2dfd02c62cf3c272027194da624ba3c1fb0c07c966"
+      "sha256": "7b575fd7a5fb1542541975f0649e6ac0803800dc30135bb63cb0ba8a27a5d6f7"
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report_failover_setup.json",
+      "sha256": "7b575fd7a5fb1542541975f0649e6ac0803800dc30135bb63cb0ba8a27a5d6f7"
     },
     {
       "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
@@ -164,11 +168,11 @@
     },
     {
       "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/state_failover.json",
-      "sha256": "7812527cf5644344209a213e2fb067349b9cbf223cc70e00b123103d193b2af3"
+      "sha256": "11d3ac4931bebdc0afc3ff541693b3f91e5676117dc051a45966a469066e3ba8"
     },
     {
       "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
-      "sha256": "ee839b8aaa22ab8e1c69482499bbf2e49fb6b8a57b7557b0ed801c5fb86df558"
+      "sha256": "27338a03eb687bb4aef85b5c8a673bece51b87a00051f91c1215fd2ea4adf7d8"
     }
   ],
   "status": "PASS"

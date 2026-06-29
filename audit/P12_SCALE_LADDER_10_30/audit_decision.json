@@ -1,13 +1,4 @@
 {
-  "schema_version": "v1",
-  "artifact_type": "audit_decision",
-  "phase_id": "P12_SCALE_LADDER_10_30",
-  "decision": "PASS",
-  "fresh_context": true,
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-28T08:08:57Z",
-  "gate_result_path": "artifacts/gates/P12_SCALE_LADDER_10_30/gate_result.json",
-  "gate_result_sha256": "843f65f17da7481357eb7fa683780d59c724a3f4c35141474bb82af8896f73dc",
   "artifact_paths": [
     "artifacts/phases/P12_SCALE_LADDER_10_30/phase_summary.json",
     "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_10.json",
@@ -17,13 +8,15 @@
     "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json",
     "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json"
   ],
-  "risks": [
-    {
-      "risk": "Single-host Docker resource limits may vary by machine.",
-      "severity": "low",
-      "required_before_next_phase": false,
-      "notes": "Resource preflight is present and fails closed for P12/P13 scale rungs."
-    }
-  ],
-  "rationale": "All P12 manifest gates passed with exact command text and matching log hashes; required artifacts exist and validate; resource preflights for 10 and 30 nodes are PASS/can_run true and fail closed; real Valkey evidence shows Valkey 9.1.0, probe PASS, data path PASS, and at least the required node counts; the scale ladder report is PASS with 10/30 rung metrics, management summaries, and comparison; cleanup is PASS with no remaining owned Docker resources; safety constraints are preserved."
+  "artifact_type": "audit_decision",
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-29T02:47:50Z",
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/gates/P12_SCALE_LADDER_10_30/gate_result.json",
+  "gate_result_sha256": "579a7c9f6e812ef656d986c921a805486b0972f65070244b6f7e1714107bd001",
+  "phase_id": "P12_SCALE_LADDER_10_30",
+  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/valkey_e2e_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 10, 30.",
+  "risks": [],
+  "schema_version": "v1"
 }

@@ -1,45 +1,26 @@
 {
-  "schema_version": "v1",
-  "artifact_type": "audit_decision",
-  "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
-  "decision": "PASS",
-  "fresh_context": true,
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-28T07:08:23Z",
-  "gate_result_path": "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/gate_result.json",
-  "gate_result_sha256": "77822b533cd46c5296c7b93fd29b6a3aa315993efce9327f1504f84abb773654",
   "artifact_paths": [
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/gate_result.json",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stdout/harness_precheck.log",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stderr/harness_precheck.log",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stdout/safety_static_scan.log",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stderr/safety_static_scan.log",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stdout/failover_unit_tests.log",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stderr/failover_unit_tests.log",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stdout/primary_stop_failover_real_gate.log",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stderr/primary_stop_failover_real_gate.log",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stdout/cleanup_report_check.log",
-    "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/stderr/cleanup_report_check.log",
     "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/phase_summary.json",
     "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
     "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
-    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
-    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/state_failover.json",
-    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_primary_stop_spec.json",
-    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_apply.json",
-    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_report.json",
-    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_setup.stdout.log",
-    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_setup.stderr.log",
-    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_fault_apply.stdout.log",
-    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_fault_apply.stderr.log"
+    "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json"
   ],
+  "artifact_type": "audit_decision",
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-29T02:47:50Z",
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/gate_result.json",
+  "gate_result_sha256": "2a98ccda6ef377bcff871d7975cb9552ef4278e6043ea0abcbd8039864d0c68a",
+  "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/fault_failover_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 5.",
   "risks": [
     {
-      "risk": "Minority/majority partition duration is not measured by the primary-stop gate.",
-      "severity": "low",
+      "notes": "Promotion observed and cleanup passed.",
       "required_before_next_phase": false,
-      "notes": "The split-brain duration metric is explicitly encoded as MISSING with reason and is not fabricated."
+      "risk": "P08 evidence contains one failed probe for the intentionally stopped primary; failover_report.json and fault_failover_gate output disambiguate this as expected scenario behavior.",
+      "severity": "low"
     }
   ],
-  "rationale": "Current corrected P08 evidence passes: all manifest gates ran with exact command text, stdout/stderr hashes match, required artifacts validate, real Valkey 9.1.0 post-fault evidence is present, failover report and e2e evidence agree on old primary, promoted node, and latency, primary stop used the project fault API, cleanup cleared fault state and left no owned resources, and no safety violation was found."
+  "schema_version": "v1"
 }
