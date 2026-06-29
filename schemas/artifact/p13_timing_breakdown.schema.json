@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "P13 Timing Breakdown",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "scenario",
+    "created_at",
+    "producer",
+    "status",
+    "node_count",
+    "timings",
+    "summary",
+    "accounting"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "p13_timing_breakdown"},
+    "phase_id": {"type": "string", "const": "P13_SCALE_LADDER_50_100"},
+    "run_id": {"type": "string", "minLength": 1},
+    "scenario": {"type": "string", "enum": ["scale_50", "scale_100"]},
+    "created_at": {"type": "string", "minLength": 1},
+    "producer": {"type": "object"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL"]},
+    "node_count": {"type": "integer", "minimum": 0},
+    "timings": {"type": "array"},
+    "summary": {
+      "type": "object",
+      "required": [
+        "total_gate_seconds",
+        "setup_command_wall_seconds",
+        "setup_stdout_write_seconds",
+        "setup_stderr_write_seconds",
+        "state_load_seconds",
+        "artifact_write_seconds",
+        "cleanup_command_wall_seconds",
+        "unattributed_seconds",
+        "cluster_create_duration_seconds",
+        "replica_config_duration_seconds",
+        "wrapper_probe_duration_seconds",
+        "final_full_probe_duration_seconds"
+      ]
+    },
+    "accounting": {
+      "type": "object",
+      "required": [
+        "total_gate_seconds",
+        "setup_command_wall_seconds",
+        "setup_stdout_write_seconds",
+        "setup_stderr_write_seconds",
+        "state_load_seconds",
+        "artifact_write_seconds",
+        "cleanup_command_wall_seconds",
+        "unattributed_seconds",
+        "unattributed_status"
+      ],
+      "properties": {
+        "unattributed_status": {"type": "string", "enum": ["PASS", "FAIL", "SKIPPED_WITH_REASON"]}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

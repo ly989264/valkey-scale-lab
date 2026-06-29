@@ -1,0 +1,21 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P13O-00_TIMING_ACCOUNTING",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-29T10:10:16Z",
+  "gate_result_path": "artifacts/gates/P13O-00_TIMING_ACCOUNTING/gate_result.json",
+  "gate_result_sha256": "308fb4291637c367d353f2390655607efb7b042b26e793131d835f06dd11d3ce",
+  "artifact_paths": [
+    "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+    "artifacts/phases/P13O_TIMING_ACCOUNTING/phase_summary.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json"
+  ],
+  "risks": [],
+  "rationale": "All seven P13O manifest gates ran and passed; command text and stdout/stderr SHA256 values match the P13O manifest and gate result. Required timing and phase-summary artifacts validate, real Valkey 9.1.0 evidence covers 50 and 100 nodes with data-path PASS, full role/membership counts, and cleanup PASS, timing accounting includes the required total/setup/log/state/artifact/cleanup/unattributed fields, runtime_final_full_probe is PASS in PASS artifacts, the tightened postcheck path validates artifacts read-only, safety constraints are preserved, and P14 was not run."
+}

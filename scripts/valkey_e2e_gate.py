@@ -25,9 +25,31 @@ P13_TIMING_NAMES = [
     "replica_replicate",
     "runtime_representative_probe",
     "runtime_final_full_probe",
+    "runtime_diagnostic_full_probe",
     "wrapper_wait_cluster_ok",
     "wrapper_data_path_probe",
     "cleanup",
+    "setup_command_wall",
+    "setup_stdout_write",
+    "setup_stderr_write",
+    "state_load",
+    "cleanup_command_wall",
+    "cleanup_stdout_write",
+    "cleanup_stderr_write",
+    "artifact_write",
+]
+
+P13_ACCOUNTING_NAMES = [
+    "setup_command_wall",
+    "setup_stdout_write",
+    "setup_stderr_write",
+    "state_load",
+    "wrapper_wait_cluster_ok",
+    "wrapper_data_path_probe",
+    "cleanup_command_wall",
+    "cleanup_stdout_write",
+    "cleanup_stderr_write",
+    "artifact_write",
 ]
 
 
@@ -46,6 +68,19 @@ def run_cmd(cmd: list[str], timeout: int, env: dict[str, str] | None = None) -> 
 def write_json(path: Path, obj: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+
+
+def write_text_timed(
+    path: Path,
+    text: str,
+    timings: dict[str, dict[str, Any]],
+    name: str,
+    *,
+    details: dict[str, Any] | None = None,
+) -> None:
+    started = time.monotonic()
+    path.write_text(text, encoding="utf-8", errors="replace")
+    record_timing(timings, name, started, details=details or {"path": str(path)})
 
 
 def role_counts_from_probes(probes: list[dict[str, Any]]) -> dict[str, int]:
@@ -146,6 +181,40 @@ def sum_timing_durations(timings: dict[str, dict[str, Any]], names: list[str]) -
     return round(sum(float(value) for value in values), 6)
 
 
+def accounting_summary(timings: dict[str, dict[str, Any]], total_gate_seconds: float) -> dict[str, Any]:
+    accounted = 0.0
+    missing: list[str] = []
+    summary: dict[str, Any] = {"total_gate_seconds": round(total_gate_seconds, 6)}
+    for name in P13_ACCOUNTING_NAMES:
+        key = f"{name}_seconds"
+        value = timing_duration(timings, name)
+        summary[key] = value
+        if isinstance(value, (int, float)):
+            accounted += float(value)
+        else:
+            missing.append(name)
+    unattributed = round(max(float(total_gate_seconds) - accounted, 0.0), 6)
+    summary["accounted_seconds"] = round(accounted, 6)
+    summary["unattributed_seconds"] = unattributed
+    summary["unattributed_status"] = "PASS" if unattributed <= 10.0 and not missing else "FAIL"
+    if missing:
+        summary["unattributed_explanation"] = {
+            "status": "MISSING",
+            "reason": f"missing accounting entries: {', '.join(missing)}",
+        }
+    elif unattributed > 10.0:
+        summary["unattributed_explanation"] = {
+            "status": "FAIL",
+            "reason": "unattributed wall time exceeded 10 seconds",
+        }
+    else:
+        summary["unattributed_explanation"] = {
+            "status": "PASS",
+            "reason": "accounted wrapper timings explain gate wall time within 10 seconds",
+        }
+    return summary
+
+
 def write_p13_timing_breakdown(
     path: Path,
     *,
@@ -155,11 +224,16 @@ def write_p13_timing_breakdown(
     node_count: int,
     runtime_entries: list[dict[str, Any]],
     wrapper_timings: dict[str, dict[str, Any]],
+    accounting_timings: dict[str, dict[str, Any]],
     wait_timing: dict[str, Any],
     status: str,
+    gate_started_monotonic: float,
 ) -> dict[str, Any]:
-    timings = merge_timing_entries(runtime_entries, list(wrapper_timings.values()))
+    timings = merge_timing_entries(runtime_entries, list(wrapper_timings.values()), list(accounting_timings.values()))
     final_full_probe_duration = timing_duration(wait_timing, "final_full_probe")
+    diagnostic_full_probe_duration = timing_duration(wait_timing, "diagnostic_full_probe")
+    total_gate_seconds = round(max(time.monotonic() - gate_started_monotonic, 0.0), 6)
+    accounting = accounting_summary(timings, total_gate_seconds)
     artifact = {
         "schema_version": "v1",
         "artifact_type": "p13_timing_breakdown",
@@ -174,7 +248,7 @@ def write_p13_timing_breakdown(
         "wrapper_probe_details": {
             "representative_probe_duration_seconds": timing_duration(wait_timing, "representative_probe"),
             "final_full_probe_duration_seconds": final_full_probe_duration,
-            "diagnostic_full_probe_duration_seconds": timing_duration(wait_timing, "diagnostic_full_probe"),
+            "diagnostic_full_probe_duration_seconds": diagnostic_full_probe_duration,
             "wait_cluster_ok_probe_counts": {
                 name: wait_timing.get(name, {}).get("count", 0)
                 for name in ["representative_probe", "final_full_probe", "diagnostic_full_probe"]
@@ -191,8 +265,24 @@ def write_p13_timing_breakdown(
                 ["wrapper_wait_cluster_ok", "wrapper_data_path_probe"],
             ),
             "final_full_probe_duration_seconds": final_full_probe_duration,
+            "diagnostic_full_probe_duration_seconds": diagnostic_full_probe_duration,
         },
+        "accounting": accounting,
     }
+    artifact["summary"].update(accounting)
+    artifact_write_started = time.monotonic()
+    write_json(path, artifact)
+    record_timing(
+        accounting_timings,
+        "artifact_write",
+        artifact_write_started,
+        details={"path": str(path), "artifact": "p13_timing_breakdown"},
+    )
+    timings = merge_timing_entries(runtime_entries, list(wrapper_timings.values()), list(accounting_timings.values()))
+    accounting = accounting_summary(timings, round(max(time.monotonic() - gate_started_monotonic, 0.0), 6))
+    artifact["timings"] = timing_entries(timings, P13_TIMING_NAMES)
+    artifact["accounting"] = accounting
+    artifact["summary"].update(accounting)
     write_json(path, artifact)
     return artifact
 
@@ -266,6 +356,7 @@ def main() -> int:
     parser.add_argument("--probe-timeout", type=float, default=2.0)
     parser.add_argument("--wait-cluster-timeout", type=float, default=90.0)
     args = parser.parse_args()
+    gate_started_monotonic = time.monotonic()
 
     out = Path(args.out)
     artifact_dir = out.parent
@@ -293,18 +384,36 @@ def main() -> int:
     cluster_state = "unknown"
     state: dict[str, Any] = {}
     wrapper_timings: dict[str, dict[str, Any]] = {}
+    accounting_timings: dict[str, dict[str, Any]] = {}
     wait_timing: dict[str, Any] = {}
     timing_breakdown_artifact: dict[str, Any] | None = None
     timing_breakdown_path: Path | None = None
 
     try:
+        setup_command_started = time.monotonic()
         proc = run_cmd(setup_cmd, timeout=args.setup_timeout)
-        setup_stdout.write_text(proc.stdout, encoding="utf-8", errors="replace")
-        setup_stderr.write_text(proc.stderr, encoding="utf-8", errors="replace")
+        record_timing(
+            accounting_timings,
+            "setup_command_wall",
+            setup_command_started,
+            status="PASS" if proc.returncode == 0 else "FAIL",
+            details={"command": setup_cmd, "exit_code": proc.returncode},
+        )
+        write_text_timed(setup_stdout, proc.stdout, accounting_timings, "setup_stdout_write")
+        write_text_timed(setup_stderr, proc.stderr, accounting_timings, "setup_stderr_write")
         if state_path.exists():
             try:
+                state_load_started = time.monotonic()
                 state = load_state(state_path)
+                record_timing(accounting_timings, "state_load", state_load_started, details={"path": str(state_path)})
             except Exception as exc:  # noqa: BLE001
+                record_timing(
+                    accounting_timings,
+                    "state_load",
+                    state_load_started,
+                    status="FAIL",
+                    details={"path": str(state_path), "error": repr(exc)},
+                )
                 errors.append(f"setup wrote unreadable state file: {exc!r}")
         if proc.returncode != 0:
             errors.append(f"setup command failed exit={proc.returncode}")
@@ -386,11 +495,29 @@ def main() -> int:
     finally:
         cleanup_started = time.monotonic()
         if state_path.exists():
+            cleanup_command_started = time.monotonic()
             cleanup_status, cleanup_path, cleanup_stdout, cleanup_stderr, cleanup_exit = cleanup(
                 args.phase, state_path, artifact_dir, args.cleanup_timeout
             )
-            (artifact_dir / f"{args.scenario}_cleanup.stdout.log").write_text(cleanup_stdout, encoding="utf-8", errors="replace")
-            (artifact_dir / f"{args.scenario}_cleanup.stderr.log").write_text(cleanup_stderr, encoding="utf-8", errors="replace")
+            record_timing(
+                accounting_timings,
+                "cleanup_command_wall",
+                cleanup_command_started,
+                status=cleanup_status,
+                details={"cleanup_path": str(cleanup_path), "exit_code": cleanup_exit},
+            )
+            write_text_timed(
+                artifact_dir / f"{args.scenario}_cleanup.stdout.log",
+                cleanup_stdout,
+                accounting_timings,
+                "cleanup_stdout_write",
+            )
+            write_text_timed(
+                artifact_dir / f"{args.scenario}_cleanup.stderr.log",
+                cleanup_stderr,
+                accounting_timings,
+                "cleanup_stderr_write",
+            )
             if cleanup_status != "PASS":
                 errors.append(f"cleanup failed exit={cleanup_exit}")
         else:
@@ -407,12 +534,24 @@ def main() -> int:
                 "cleanup_actions": [],
             })
             cleanup_exit = 1
+            skipped_started = time.monotonic()
+            record_timing(
+                accounting_timings,
+                "cleanup_command_wall",
+                skipped_started,
+                status="FAIL",
+                details={"cleanup_path": str(cleanup_path), "exit_code": cleanup_exit, "reason": "missing state file"},
+            )
         record_timing(
             wrapper_timings,
             "cleanup",
             cleanup_started,
             status=cleanup_status,
-            details={"cleanup_path": str(cleanup_path), "exit_code": cleanup_exit},
+            details={
+                "cleanup_path": str(cleanup_path),
+                "exit_code": cleanup_exit,
+                "cleanup_command_wall_seconds": timing_duration(accounting_timings, "cleanup_command_wall"),
+            },
         )
 
     status = "PASS" if not errors else "FAIL"
@@ -426,8 +565,10 @@ def main() -> int:
             node_count=len(state.get("nodes", [])),
             runtime_entries=list(state.get("runtime", {}).get("timings", [])),
             wrapper_timings=wrapper_timings,
+            accounting_timings=accounting_timings,
             wait_timing=wait_timing,
             status=status,
+            gate_started_monotonic=gate_started_monotonic,
         )
     evidence = {
         "schema_version": "v1",

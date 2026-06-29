@@ -31,6 +31,7 @@ P13_TIMING_NAMES = [
     "replica_replicate",
     "runtime_representative_probe",
     "runtime_final_full_probe",
+    "runtime_diagnostic_full_probe",
     "wrapper_wait_cluster_ok",
     "wrapper_data_path_probe",
     "cleanup",
@@ -1087,6 +1088,7 @@ def _write_runtime_timing_breakdown(
             "replica_config_duration_seconds": _timing_duration(timings, "replica_replicate"),
             "wrapper_probe_duration_seconds": "MISSING",
             "final_full_probe_duration_seconds": _timing_duration(timings, "runtime_final_full_probe"),
+            "diagnostic_full_probe_duration_seconds": _timing_duration(timings, "runtime_diagnostic_full_probe"),
         },
     }
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1569,7 +1571,7 @@ def _wait_process_predicate(
         snapshots = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
         _record_timing(
             timings,
-            "runtime_final_full_probe",
+            "runtime_diagnostic_full_probe",
             diagnostic_started,
             status="FAIL",
             details={"sample_scope": "all_nodes", "sample_count": len(nodes), "predicate": message, "mode": "diagnostic"},

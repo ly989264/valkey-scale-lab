@@ -12,9 +12,10 @@
   "schema_version": "v1",
   "status": "PASS",
   "summary": {
-    "cluster_create_duration_seconds": 60.62541,
-    "final_full_probe_duration_seconds": 0.420164,
-    "replica_config_duration_seconds": 8.077488,
+    "cluster_create_duration_seconds": 48.471637,
+    "diagnostic_full_probe_duration_seconds": 0.353802,
+    "final_full_probe_duration_seconds": 0.036797,
+    "replica_config_duration_seconds": 8.078247,
     "wrapper_probe_duration_seconds": "MISSING"
   },
   "timings": [
@@ -24,7 +25,7 @@
         "nodehost_count": 2,
         "parallelism": 8
       },
-      "duration_seconds": 0.366916,
+      "duration_seconds": 0.35502,
       "name": "nodehost_start",
       "status": "PASS"
     },
@@ -34,7 +35,7 @@
         "node_count": 50,
         "parallelism": 8
       },
-      "duration_seconds": 0.71006,
+      "duration_seconds": 0.699537,
       "name": "process_config_prepare",
       "status": "PASS"
     },
@@ -44,7 +45,7 @@
         "node_count": 50,
         "parallelism": 8
       },
-      "duration_seconds": 0.906733,
+      "duration_seconds": 0.924569,
       "name": "process_start",
       "status": "PASS"
     },
@@ -53,7 +54,7 @@
       "details": {
         "node_count": 50
       },
-      "duration_seconds": 0.041648,
+      "duration_seconds": 0.039412,
       "name": "process_ready_wait",
       "status": "PASS"
     },
@@ -63,7 +64,7 @@
         "parallelism": 8,
         "primary_count": 25
       },
-      "duration_seconds": 42.434936,
+      "duration_seconds": 34.304943,
       "name": "primary_cluster_create",
       "status": "PASS"
     },
@@ -75,7 +76,7 @@
         "parallelism": 8,
         "replica_count": 25
       },
-      "duration_seconds": 10.112986,
+      "duration_seconds": 6.088447,
       "name": "replica_meet",
       "status": "PASS"
     },
@@ -85,7 +86,7 @@
         "parallelism": 8,
         "replica_count": 25
       },
-      "duration_seconds": 8.077488,
+      "duration_seconds": 8.078247,
       "name": "replica_replicate",
       "status": "PASS"
     },
@@ -96,20 +97,31 @@
         "sample_count": 2,
         "sample_scope": "representative"
       },
-      "duration_seconds": 0.02204,
+      "duration_seconds": 0.020878,
       "name": "runtime_representative_probe",
       "status": "PASS"
     },
     {
-      "count": 11,
+      "count": 1,
+      "details": {
+        "predicate": "cluster clean snapshot did not converge",
+        "sample_count": 50,
+        "sample_scope": "all_nodes"
+      },
+      "duration_seconds": 0.036797,
+      "name": "runtime_final_full_probe",
+      "status": "PASS"
+    },
+    {
+      "count": 9,
       "details": {
         "mode": "diagnostic",
         "predicate": "cluster clean snapshot did not converge",
         "sample_count": 50,
         "sample_scope": "all_nodes"
       },
-      "duration_seconds": 0.420164,
-      "name": "runtime_final_full_probe",
+      "duration_seconds": 0.353802,
+      "name": "runtime_diagnostic_full_probe",
       "status": "FAIL"
     },
     {

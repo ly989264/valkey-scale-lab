@@ -1,0 +1,63 @@
+# P13 Optimization Loop
+
+This document defines the post-P13 optimization loop. It is separate from the automatic P00-P13 build loop and must not advance `P14_SCALE_1000_OPTIN_DRYRUN`.
+
+## Scope
+
+The loop optimizes and explains P13 50/100-node real scale startup. It does not replace real Valkey evidence, topology evidence, data-path proof, role-count validation, full membership validation, or cleanup proof.
+
+## Execution Rules
+
+Only the next incomplete P13O phase may run. Each phase must:
+
+1. read `codex/p13_optimization_manifest.json` and `codex/status/p13_optimization_state.json`;
+2. implement only that phase;
+3. run focused fast tests;
+4. run the required P13 50/100 real Valkey gates when the phase requires real evidence;
+5. write machine-readable artifacts;
+6. write an audit under `audit/<PHASE_ID>/`;
+7. pass `python3 scripts/p13_optimization_gate.py postcheck --phase <PHASE_ID>`;
+8. run `python3 scripts/p13_optimization_gate.py mark-complete --phase <PHASE_ID>`;
+9. commit and push before any later P13O phase starts.
+
+If a protected harness file must be changed, write `artifacts/harness_exception/<PHASE_ID>.md` first and keep the patch limited to preserving or strengthening the harness requirement.
+
+## Phases
+
+### P13O-00_TIMING_ACCOUNTING
+
+Strengthen P13 timing semantics without changing cluster startup. The P13 50/100 timing artifacts must include total gate wall time, setup command wall time, setup log write time, state load time, artifact write time, cleanup command wall time, unattributed seconds, and a split between final and diagnostic full probes.
+
+Required artifacts:
+
+- `artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json`
+- `artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json`
+- `artifacts/phases/P13O_TIMING_ACCOUNTING/phase_summary.json`
+
+Pass criteria:
+
+- P13 `scale_50` and `scale_100` real gates pass;
+- `unattributed_seconds <= 10`, unless explicitly explained in the artifact;
+- the timing artifact explains the real gate wall time;
+- `runtime_final_full_probe` is not marked FAIL when the final proof passes;
+- cluster startup algorithm is unchanged.
+
+### P13O-01_CLUSTER_CREATE_AB
+
+Compare safe cluster-create strategies while preserving topology evidence. The current `valkey_cli_cluster_create_primaries` strategy remains the default unless a new strategy is strictly proven safe.
+
+### P13O-02_REPLICA_REPLICATE_BREAKDOWN
+
+Break down replica replication timing, add bounded parallelism configuration, and emit slowest replica diagnostics while preserving role counts, full membership, data-path proof, and cleanup proof.
+
+### P13O-03_CLEANUP_OPTIMIZATION
+
+Reduce cleanup wall time while preserving cleanup evidence for owned containers, owned networks, and observable Valkey processes.
+
+### P13O-04_FAST_TEST_SPLIT
+
+Separate slow/perf tests from default P13 fast tests. Real Docker/Valkey proof continues to come from the wrapper gates.
+
+### P13O-05_PERF_REGRESSION_BUDGET
+
+Emit startup optimization comparisons and soft performance budgets, with optional strict failure through `VSLAB_STRICT_PERF_BUDGET=1`.

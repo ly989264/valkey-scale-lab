@@ -60,6 +60,19 @@ def test_p13_defaults_to_docker_process_runtime() -> None:
     assert docker_runtime._uses_docker_process_runtime("P11_STABILITY_SOAK", "stability_soak_smoke") is False
 
 
+def test_p13_runtime_timing_names_split_diagnostic_probe() -> None:
+    assert "runtime_final_full_probe" in docker_runtime.P13_TIMING_NAMES
+    assert "runtime_diagnostic_full_probe" in docker_runtime.P13_TIMING_NAMES
+    timings: dict[str, dict] = {}
+    started = docker_runtime.time.monotonic()
+    docker_runtime._record_timing(timings, "runtime_final_full_probe", started, status="PASS")
+    docker_runtime._record_timing(timings, "runtime_diagnostic_full_probe", started, status="FAIL")
+
+    entries = {entry["name"]: entry for entry in docker_runtime._timing_entries(timings, docker_runtime.P13_TIMING_NAMES)}
+    assert entries["runtime_final_full_probe"]["status"] == "PASS"
+    assert entries["runtime_diagnostic_full_probe"]["status"] == "FAIL"
+
+
 def test_process_nodehosts_group_logical_nodes_by_az() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_50.yaml"))
     nodes = docker_runtime._node_specs(config, "P13_SCALE_LADDER_50_100", "scale_50", "run")

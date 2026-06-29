@@ -4,7 +4,7 @@
   "phase_id": "P13_SCALE_LADDER_50_100",
   "run_id": "phase-P13_SCALE_LADDER_50_100-scale_50",
   "scenario": "scale_50",
-  "created_at": "2026-06-29T09:13:18.759312Z",
+  "created_at": "2026-06-29T09:53:04.028948Z",
   "producer": {
     "name": "scripts/valkey_e2e_gate.py",
     "version": "v1"
@@ -18,7 +18,7 @@
         "nodehost_count": 2,
         "parallelism": 8
       },
-      "duration_seconds": 0.366916,
+      "duration_seconds": 0.35502,
       "name": "nodehost_start",
       "status": "PASS"
     },
@@ -28,7 +28,7 @@
         "node_count": 50,
         "parallelism": 8
       },
-      "duration_seconds": 0.71006,
+      "duration_seconds": 0.699537,
       "name": "process_config_prepare",
       "status": "PASS"
     },
@@ -38,7 +38,7 @@
         "node_count": 50,
         "parallelism": 8
       },
-      "duration_seconds": 0.906733,
+      "duration_seconds": 0.924569,
       "name": "process_start",
       "status": "PASS"
     },
@@ -47,7 +47,7 @@
       "details": {
         "node_count": 50
       },
-      "duration_seconds": 0.041648,
+      "duration_seconds": 0.039412,
       "name": "process_ready_wait",
       "status": "PASS"
     },
@@ -57,7 +57,7 @@
         "parallelism": 8,
         "primary_count": 25
       },
-      "duration_seconds": 42.434936,
+      "duration_seconds": 34.304943,
       "name": "primary_cluster_create",
       "status": "PASS"
     },
@@ -69,7 +69,7 @@
         "parallelism": 8,
         "replica_count": 25
       },
-      "duration_seconds": 10.112986,
+      "duration_seconds": 6.088447,
       "name": "replica_meet",
       "status": "PASS"
     },
@@ -79,7 +79,7 @@
         "parallelism": 8,
         "replica_count": 25
       },
-      "duration_seconds": 8.077488,
+      "duration_seconds": 8.078247,
       "name": "replica_replicate",
       "status": "PASS"
     },
@@ -90,39 +90,50 @@
         "sample_count": 2,
         "sample_scope": "representative"
       },
-      "duration_seconds": 0.02204,
+      "duration_seconds": 0.020878,
       "name": "runtime_representative_probe",
       "status": "PASS"
     },
     {
-      "count": 11,
+      "count": 1,
+      "details": {
+        "predicate": "cluster clean snapshot did not converge",
+        "sample_count": 50,
+        "sample_scope": "all_nodes"
+      },
+      "duration_seconds": 0.036797,
+      "name": "runtime_final_full_probe",
+      "status": "PASS"
+    },
+    {
+      "count": 9,
       "details": {
         "mode": "diagnostic",
         "predicate": "cluster clean snapshot did not converge",
         "sample_count": 50,
         "sample_scope": "all_nodes"
       },
-      "duration_seconds": 0.420164,
-      "name": "runtime_final_full_probe",
+      "duration_seconds": 0.353802,
+      "name": "runtime_diagnostic_full_probe",
       "status": "FAIL"
     },
     {
       "name": "wrapper_wait_cluster_ok",
       "status": "PASS",
-      "duration_seconds": 0.018845,
+      "duration_seconds": 0.016998,
       "count": 1,
       "details": {
         "min_nodes": 50,
         "endpoint_count": 50,
-        "representative_probe_duration_seconds": 0.005415,
-        "final_full_probe_duration_seconds": 0.012699,
+        "representative_probe_duration_seconds": 0.004812,
+        "final_full_probe_duration_seconds": 0.011531,
         "diagnostic_full_probe_duration_seconds": "MISSING"
       }
     },
     {
       "name": "wrapper_data_path_probe",
       "status": "PASS",
-      "duration_seconds": 0.001095,
+      "duration_seconds": 0.001079,
       "count": 1,
       "details": {
         "required": true
@@ -131,17 +142,109 @@
     {
       "name": "cleanup",
       "status": "PASS",
-      "duration_seconds": 16.164686,
+      "duration_seconds": 16.45503,
+      "count": 1,
+      "details": {
+        "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+        "exit_code": 0,
+        "cleanup_command_wall_seconds": 16.454777
+      }
+    },
+    {
+      "name": "setup_command_wall",
+      "status": "PASS",
+      "duration_seconds": 67.263355,
+      "count": 1,
+      "details": {
+        "command": [
+          "/opt/anaconda3/bin/python3",
+          "-m",
+          "valkey_scale_lab.cli",
+          "gate",
+          "scenario",
+          "--phase",
+          "P13_SCALE_LADDER_50_100",
+          "--scenario",
+          "scale_50",
+          "--config",
+          "templates/configs/scale_50.yaml",
+          "--artifacts-dir",
+          "artifacts/phases/P13_SCALE_LADDER_50_100",
+          "--state-out",
+          "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_50.json"
+        ],
+        "exit_code": 0
+      }
+    },
+    {
+      "name": "setup_stdout_write",
+      "status": "PASS",
+      "duration_seconds": 0.000227,
+      "count": 1,
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_setup.stdout.log"
+      }
+    },
+    {
+      "name": "setup_stderr_write",
+      "status": "PASS",
+      "duration_seconds": 4.8e-05,
+      "count": 1,
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_setup.stderr.log"
+      }
+    },
+    {
+      "name": "state_load",
+      "status": "PASS",
+      "duration_seconds": 0.000557,
+      "count": 1,
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_50.json"
+      }
+    },
+    {
+      "name": "cleanup_command_wall",
+      "status": "PASS",
+      "duration_seconds": 16.454777,
       "count": 1,
       "details": {
         "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
         "exit_code": 0
       }
+    },
+    {
+      "name": "cleanup_stdout_write",
+      "status": "PASS",
+      "duration_seconds": 0.000149,
+      "count": 1,
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_cleanup.stdout.log"
+      }
+    },
+    {
+      "name": "cleanup_stderr_write",
+      "status": "PASS",
+      "duration_seconds": 3.8e-05,
+      "count": 1,
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_cleanup.stderr.log"
+      }
+    },
+    {
+      "name": "artifact_write",
+      "status": "PASS",
+      "duration_seconds": 0.000404,
+      "count": 1,
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+        "artifact": "p13_timing_breakdown"
+      }
     }
   ],
   "wrapper_probe_details": {
-    "representative_probe_duration_seconds": 0.005415,
-    "final_full_probe_duration_seconds": 0.012699,
+    "representative_probe_duration_seconds": 0.004812,
+    "final_full_probe_duration_seconds": 0.011531,
     "diagnostic_full_probe_duration_seconds": "MISSING",
     "wait_cluster_ok_probe_counts": {
       "representative_probe": 1,
@@ -150,9 +253,48 @@
     }
   },
   "summary": {
-    "cluster_create_duration_seconds": 60.62541,
-    "replica_config_duration_seconds": 8.077488,
-    "wrapper_probe_duration_seconds": 0.01994,
-    "final_full_probe_duration_seconds": 0.012699
+    "cluster_create_duration_seconds": 48.471637,
+    "replica_config_duration_seconds": 8.078247,
+    "wrapper_probe_duration_seconds": 0.018077,
+    "final_full_probe_duration_seconds": 0.011531,
+    "diagnostic_full_probe_duration_seconds": "MISSING",
+    "total_gate_seconds": 83.738078,
+    "setup_command_wall_seconds": 67.263355,
+    "setup_stdout_write_seconds": 0.000227,
+    "setup_stderr_write_seconds": 4.8e-05,
+    "state_load_seconds": 0.000557,
+    "wrapper_wait_cluster_ok_seconds": 0.016998,
+    "wrapper_data_path_probe_seconds": 0.001079,
+    "cleanup_command_wall_seconds": 16.454777,
+    "cleanup_stdout_write_seconds": 0.000149,
+    "cleanup_stderr_write_seconds": 3.8e-05,
+    "artifact_write_seconds": 0.000404,
+    "accounted_seconds": 83.737632,
+    "unattributed_seconds": 0.000446,
+    "unattributed_status": "PASS",
+    "unattributed_explanation": {
+      "status": "PASS",
+      "reason": "accounted wrapper timings explain gate wall time within 10 seconds"
+    }
+  },
+  "accounting": {
+    "total_gate_seconds": 83.738078,
+    "setup_command_wall_seconds": 67.263355,
+    "setup_stdout_write_seconds": 0.000227,
+    "setup_stderr_write_seconds": 4.8e-05,
+    "state_load_seconds": 0.000557,
+    "wrapper_wait_cluster_ok_seconds": 0.016998,
+    "wrapper_data_path_probe_seconds": 0.001079,
+    "cleanup_command_wall_seconds": 16.454777,
+    "cleanup_stdout_write_seconds": 0.000149,
+    "cleanup_stderr_write_seconds": 3.8e-05,
+    "artifact_write_seconds": 0.000404,
+    "accounted_seconds": 83.737632,
+    "unattributed_seconds": 0.000446,
+    "unattributed_status": "PASS",
+    "unattributed_explanation": {
+      "status": "PASS",
+      "reason": "accounted wrapper timings explain gate wall time within 10 seconds"
+    }
   }
 }
