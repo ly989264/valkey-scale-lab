@@ -21,11 +21,13 @@ BASE_STATE = ROOT / "codex" / "status" / "phase_state.json"
 BASE_PHASE = "P13_SCALE_LADDER_50_100"
 P13O_CLUSTER_CREATE_PHASE = "P13O-01_CLUSTER_CREATE_AB"
 P13O_REPLICA_REPLICATE_PHASE = "P13O-02_REPLICA_REPLICATE_BREAKDOWN"
+P13O_CLEANUP_PHASE = "P13O-03_CLEANUP_OPTIMIZATION"
 DEFAULT_CLUSTER_CREATE_STRATEGY = "valkey_cli_cluster_create_primaries"
 MANUAL_CLUSTER_CREATE_STRATEGY = "manual_tree_meet_parallel_slots"
 REPLICA_REPLICATE_ARTIFACT_PHASE = "P13O_REPLICA_REPLICATE_BREAKDOWN"
 REPLICA_REPLICATE_DEFAULT_PARALLELISM = 8
 REPLICA_REPLICATE_SUPPORTED_PARALLELISM = [8, 16, 32]
+CLEANUP_ARTIFACT_PHASE = "P13O_CLEANUP_OPTIMIZATION"
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
@@ -784,6 +786,155 @@ def write_replica_replicate_phase_summary(
     return out
 
 
+def cleanup_action_counts(actions: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for action in actions:
+        key = f"{action.get('type', 'unknown')}:{action.get('action', 'unknown')}:{action.get('status', 'unknown')}"
+        counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def cleanup_observation(
+    *,
+    scenario: str,
+    expected_nodes: int,
+    cleanup_path: Path,
+    evidence_path: Path,
+) -> tuple[dict[str, Any], dict[str, Any], list[str]]:
+    errors: list[str] = []
+    evidence, evidence_errors = validate_real_evidence_path(evidence_path, scenario, expected_nodes)
+    errors.extend(evidence_errors)
+    cleanup_report: dict[str, Any] = {}
+    if cleanup_path.exists():
+        cleanup_report = load_json(cleanup_path)
+    else:
+        errors.append(f"{scenario}: missing cleanup report {rel(cleanup_path)}")
+    if cleanup_report.get("status") != "PASS":
+        errors.append(f"{scenario}: cleanup status is {cleanup_report.get('status')}")
+    resources_remaining = cleanup_report.get("resources_remaining", [])
+    if resources_remaining:
+        errors.append(f"{scenario}: resources_remaining must be empty")
+    actions = cleanup_report.get("cleanup_actions", [])
+    if not isinstance(actions, list):
+        errors.append(f"{scenario}: cleanup_actions must be a list")
+        actions = []
+    if any(action.get("status") == "FAIL" for action in actions):
+        errors.append(f"{scenario}: cleanup action failure must not be ignored")
+    timing = cleanup_report.get("cleanup_timing", {})
+    required = [
+        "cleanup_terminate_processes_seconds",
+        "cleanup_verify_process_exit_seconds",
+        "cleanup_verify_nodehost_empty_seconds",
+        "cleanup_remove_containers_seconds",
+        "cleanup_remove_networks_seconds",
+        "cleanup_residual_scan_seconds",
+    ]
+    for field in required:
+        if not numeric(timing.get(field)):
+            errors.append(f"{scenario}: cleanup_timing.{field} must be numeric")
+    if timing.get("bounded_parallelism") is not True:
+        errors.append(f"{scenario}: cleanup_timing.bounded_parallelism must be true")
+    observation = {
+        "scenario": scenario,
+        "node_count": expected_nodes,
+        "status": "PASS" if not errors else "FAIL",
+        "real_valkey": evidence.get("real_valkey", "MISSING"),
+        "evidence_path": rel(evidence_path),
+        "cleanup_report_path": rel(cleanup_path),
+        "cleanup_timing": {
+            field: round(float(timing[field]), 6) if numeric(timing.get(field)) else {"status": "MISSING", "reason": f"{field} not recorded"}
+            for field in required
+        } | {
+            "bounded_parallelism": timing.get("bounded_parallelism", "MISSING"),
+            "parallelism": timing.get("parallelism", "MISSING"),
+        },
+        "resources_remaining_count": len(resources_remaining) if isinstance(resources_remaining, list) else "MISSING",
+        "cleanup_action_counts": cleanup_action_counts(actions),
+        "cleanup_status": cleanup_report.get("status", "MISSING"),
+        "data_path_result": evidence.get("data_path_result", "MISSING"),
+        "role_counts": evidence.get("role_counts", "MISSING"),
+        "nodes_observed": evidence.get("nodes_observed", "MISSING"),
+    }
+    return observation, evidence, errors
+
+
+def write_cleanup_optimization(errors: list[str]) -> tuple[Path, dict[str, Any], dict[str, dict[str, Any]]]:
+    out = ROOT / "artifacts" / "phases" / CLEANUP_ARTIFACT_PHASE / "p13_cleanup_optimization.json"
+    observations: list[dict[str, Any]] = []
+    evidence: dict[str, dict[str, Any]] = {}
+    for scenario, expected_nodes in {"scale_50": 50, "scale_100": 100}.items():
+        observation, observed_evidence, obs_errors = cleanup_observation(
+            scenario=scenario,
+            expected_nodes=expected_nodes,
+            cleanup_path=ROOT / "artifacts" / "phases" / BASE_PHASE / f"cleanup_report_{scenario}.json",
+            evidence_path=ROOT / "artifacts" / "phases" / BASE_PHASE / f"valkey_e2e_evidence_{scenario.removeprefix('scale_')}.json",
+        )
+        observations.append(observation)
+        evidence[scenario] = observed_evidence
+        errors.extend(obs_errors)
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": "p13_cleanup_optimization",
+        "phase_id": P13O_CLEANUP_PHASE,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "safety_constraints": {
+            "bounded_parallelism": True,
+            "cleanup_failure_ignored": False,
+            "host_network_mutation": False,
+            "p14_executed": False,
+            "default_max_nodes": 100,
+        },
+        "observations": observations,
+        "errors": errors,
+    }
+    write_json(out, artifact)
+    return out, artifact, evidence
+
+
+def write_cleanup_phase_summary(
+    phase: dict[str, Any],
+    cleanup_artifact: dict[str, Any],
+    evidence: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> Path:
+    phase_id = str(phase["id"])
+    artifact_id = artifact_phase_id(phase)
+    out = ROOT / "artifacts" / "phases" / artifact_id / "phase_summary.json"
+    real_evidence = {
+        name: {
+            "status": artifact.get("status", "MISSING"),
+            "nodes_observed": artifact.get("nodes_observed", "MISSING"),
+            "data_path_result": artifact.get("data_path_result", "MISSING"),
+            "role_counts": artifact.get("role_counts", "MISSING"),
+        }
+        for name, artifact in evidence.items()
+    }
+    timing_accounting = {
+        observation["scenario"]: observation.get("cleanup_timing", {})
+        for observation in cleanup_artifact.get("observations", [])
+    }
+    summary = {
+        "schema_version": "v1",
+        "artifact_type": "p13_optimization_phase_summary",
+        "phase_id": phase_id,
+        "artifact_phase_id": artifact_id,
+        "run_id": f"phase-{phase_id}",
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "summary": "P13 cleanup now records cleanup timing and uses bounded parallel cleanup while preserving cleanup evidence.",
+        "required_artifacts": [item["path"] for item in phase.get("required_artifacts", [])],
+        "real_valkey_evidence": real_evidence,
+        "timing_accounting": timing_accounting,
+        "cleanup_optimization_path": rel(ROOT / "artifacts" / "phases" / artifact_id / "p13_cleanup_optimization.json"),
+        "errors": errors,
+    }
+    write_json(out, summary)
+    return out
+
+
 def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool = True) -> int:
     manifest = load_manifest()
     phase = phase_by_id(manifest, args.phase)
@@ -791,6 +942,8 @@ def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool
         return validate_cluster_create_artifacts(phase, write_summary_artifact=write_summary_artifact)
     if args.phase == P13O_REPLICA_REPLICATE_PHASE:
         return validate_replica_replicate_artifacts(phase, write_summary_artifact=write_summary_artifact)
+    if args.phase == P13O_CLEANUP_PHASE:
+        return validate_cleanup_artifacts(phase, write_summary_artifact=write_summary_artifact)
 
     all_errors: list[str] = []
     timings: dict[str, dict[str, Any]] = {}
@@ -911,6 +1064,55 @@ def validate_replica_replicate_artifacts(phase: dict[str, Any], *, write_summary
     summary_path = ROOT / "artifacts" / "phases" / REPLICA_REPLICATE_ARTIFACT_PHASE / "phase_summary.json"
     if write_summary_artifact:
         summary_path = write_replica_replicate_phase_summary(phase, breakdown, evidence, all_errors)
+    elif not summary_path.exists():
+        all_errors.append(f"missing phase summary artifact: {rel(summary_path)}")
+    if summary_path.exists():
+        all_errors.extend(validate_schema(summary_path, ROOT / "schemas" / "artifact" / "p13_optimization_phase_summary.schema.json"))
+
+    if all_errors:
+        for err in all_errors:
+            print(f"FAIL: {err}", file=sys.stderr)
+        return 1
+    print(f"PASS p13o artifacts phase={phase['id']} summary={rel(summary_path)}")
+    return 0
+
+
+def validate_cleanup_artifacts(phase: dict[str, Any], *, write_summary_artifact: bool = True) -> int:
+    all_errors: list[str] = []
+    cleanup_path = ROOT / "artifacts" / "phases" / CLEANUP_ARTIFACT_PHASE / "p13_cleanup_optimization.json"
+    if write_summary_artifact:
+        cleanup_path, cleanup_artifact, evidence = write_cleanup_optimization(all_errors)
+    elif cleanup_path.exists():
+        cleanup_artifact = load_json(cleanup_path)
+        evidence = {}
+    else:
+        cleanup_artifact = {}
+        evidence = {}
+        all_errors.append(f"missing cleanup optimization artifact: {rel(cleanup_path)}")
+
+    if cleanup_path.exists():
+        all_errors.extend(validate_schema(cleanup_path, ROOT / "schemas" / "artifact" / "p13_cleanup_optimization.schema.json"))
+        if cleanup_artifact.get("safety_constraints", {}).get("cleanup_failure_ignored") is not False:
+            all_errors.append("cleanup failures must not be ignored")
+        observations = {item.get("scenario"): item for item in cleanup_artifact.get("observations", [])}
+        for scenario in ["scale_50", "scale_100"]:
+            observation = observations.get(scenario)
+            if not observation:
+                all_errors.append(f"missing cleanup observation {scenario}")
+            elif observation.get("status") != "PASS":
+                all_errors.append(f"cleanup observation {scenario} status is {observation.get('status')}")
+
+    if not evidence and cleanup_artifact.get("observations"):
+        for observation in cleanup_artifact.get("observations", []):
+            evidence_path = ROOT / str(observation.get("evidence_path", ""))
+            expected_nodes = int(observation.get("node_count", 0) or 0)
+            observed, errors = validate_real_evidence_path(evidence_path, str(observation.get("scenario")), expected_nodes)
+            evidence[str(observation.get("scenario"))] = observed
+            all_errors.extend(errors)
+
+    summary_path = ROOT / "artifacts" / "phases" / CLEANUP_ARTIFACT_PHASE / "phase_summary.json"
+    if write_summary_artifact:
+        summary_path = write_cleanup_phase_summary(phase, cleanup_artifact, evidence, all_errors)
     elif not summary_path.exists():
         all_errors.append(f"missing phase summary artifact: {rel(summary_path)}")
     if summary_path.exists():

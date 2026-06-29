@@ -877,11 +877,12 @@ def test_cleanup_report_shape_without_owned_resources(tmp_path: Path, monkeypatc
     }
     state_path = tmp_path / "state.json"
     state_path.write_text(docker_runtime.json.dumps(state), encoding="utf-8")
-    monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, phase, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
     monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
     report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
     assert report["status"] == "PASS"
     assert report["resources_remaining"] == []
+    assert report["cleanup_timing"]["cleanup_residual_scan_seconds"] >= 0.0
     assert (tmp_path / "cleanup_report_cluster_smoke.json").exists()
 
 
@@ -897,12 +898,78 @@ def test_cleanup_removes_fault_state_files(tmp_path: Path, monkeypatch: pytest.M
     state_path.write_text(docker_runtime.json.dumps(state), encoding="utf-8")
     fault_state = tmp_path / "fault_state_fault-primary-stop.json"
     fault_state.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, phase, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
     monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
     report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
     assert report["status"] == "PASS"
     assert not fault_state.exists()
     assert any(action["type"] == "fault_state" for action in report["cleanup_actions"])
+
+
+def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    labels: list[str] = []
+    state = {
+        "schema_version": "v1",
+        "cluster_id": "test",
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "scenario": "scale_50",
+        "runtime": {"type": "docker_process", "run_id": "test-run"},
+        "nodehosts": [
+            {"nodehost_id": "nodehost-az-a", "container_name": "nodehost-a"},
+            {"nodehost_id": "nodehost-az-b", "container_name": "nodehost-b"},
+        ],
+        "nodes": [
+            {"logical_id": "n0", "nodehost_id": "nodehost-az-a", "nodehost_container_name": "nodehost-a", "pid": 101},
+            {"logical_id": "n1", "nodehost_id": "nodehost-az-b", "nodehost_container_name": "nodehost-b", "pid": 102},
+        ],
+    }
+
+    def fake_parallel(items, worker, *, parallelism, timeout, label):
+        work = list(items)
+        labels.append(label)
+        assert parallelism == docker_runtime.CLUSTER_ORCHESTRATION_PARALLELISM
+        return [worker(item) for item in work]
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        if args[:2] == ["exec", "nodehost-a"] or args[:2] == ["exec", "nodehost-b"]:
+            if args[2:4] == ["kill", "-TERM"]:
+                return docker_runtime.DockerResult("", "", 0)
+            if args[2:4] == ["kill", "-0"]:
+                return docker_runtime.DockerResult("", "gone", 1)
+            if args[2:4] == ["pgrep", "-x"]:
+                return docker_runtime.DockerResult("", "", 1)
+        return docker_runtime.DockerResult("", "", 0)
+
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_cleanup_resources_by_label",
+        lambda *, phase, run_id: (
+            [{"type": "container", "id": "nodehost-a", "action": "remove", "status": "PASS"}],
+            {"cleanup_remove_containers_seconds": 0.01, "cleanup_remove_networks_seconds": 0.02},
+        ),
+    )
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
+
+    report = docker_runtime._cleanup_process_scenario(state=state, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
+
+    assert report["status"] == "PASS"
+    assert labels == [
+        "Valkey process termination",
+        "Valkey process exit verification",
+        "nodehost Valkey residual check",
+    ]
+    for field in [
+        "cleanup_terminate_processes_seconds",
+        "cleanup_verify_process_exit_seconds",
+        "cleanup_verify_nodehost_empty_seconds",
+        "cleanup_remove_containers_seconds",
+        "cleanup_remove_networks_seconds",
+        "cleanup_residual_scan_seconds",
+    ]:
+        assert report["cleanup_timing"][field] >= 0.0
+    assert report["cleanup_timing"]["bounded_parallelism"] is True
 
 
 def test_p10_cleanup_appends_orchestrator_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -924,7 +991,7 @@ def test_p10_cleanup_appends_orchestrator_stop(tmp_path: Path, monkeypatch: pyte
         "operations": [{"operation": "prepare", "status": "PASS"}],
     }
     (tmp_path / "orchestration_report.json").write_text(docker_runtime.json.dumps(orch_report), encoding="utf-8")
-    monkeypatch.setattr(docker_runtime, "cleanup_by_label", lambda *, phase, run_id: [])
+    monkeypatch.setattr(docker_runtime, "_cleanup_resources_by_label", lambda *, phase, run_id: ([], {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}))
     monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
 
     report = docker_runtime.cleanup_scenario(state_path=state_path, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")

@@ -1,0 +1,95 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_cleanup_optimization",
+  "phase_id": "P13O-03_CLEANUP_OPTIMIZATION",
+  "created_at": "2026-06-29T12:05:49.392290Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "safety_constraints": {
+    "bounded_parallelism": true,
+    "cleanup_failure_ignored": false,
+    "host_network_mutation": false,
+    "p14_executed": false,
+    "default_max_nodes": 100
+  },
+  "observations": [
+    {
+      "scenario": "scale_50",
+      "node_count": 50,
+      "status": "PASS",
+      "real_valkey": true,
+      "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "cleanup_report_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+      "cleanup_timing": {
+        "cleanup_terminate_processes_seconds": 0.345573,
+        "cleanup_verify_process_exit_seconds": 0.377699,
+        "cleanup_verify_nodehost_empty_seconds": 0.042255,
+        "cleanup_remove_containers_seconds": 5.336729,
+        "cleanup_remove_networks_seconds": 0.092663,
+        "cleanup_residual_scan_seconds": 0.038424,
+        "bounded_parallelism": true,
+        "parallelism": 8
+      },
+      "resources_remaining_count": 0,
+      "cleanup_action_counts": {
+        "container:remove:PASS": 2,
+        "container:stop:PASS": 2,
+        "network:remove:PASS": 1,
+        "nodehost:verify_no_valkey_processes:PASS": 2,
+        "valkey_process:terminate:SKIPPED_WITH_REASON": 50,
+        "valkey_process:verify_exit:PASS": 50
+      },
+      "cleanup_status": "PASS",
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "nodes_observed": 50
+    },
+    {
+      "scenario": "scale_100",
+      "node_count": 100,
+      "status": "PASS",
+      "real_valkey": true,
+      "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+      "cleanup_report_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+      "cleanup_timing": {
+        "cleanup_terminate_processes_seconds": 0.691456,
+        "cleanup_verify_process_exit_seconds": 0.699232,
+        "cleanup_verify_nodehost_empty_seconds": 0.052832,
+        "cleanup_remove_containers_seconds": 5.557138,
+        "cleanup_remove_networks_seconds": 0.091789,
+        "cleanup_residual_scan_seconds": 0.038974,
+        "bounded_parallelism": true,
+        "parallelism": 8
+      },
+      "resources_remaining_count": 0,
+      "cleanup_action_counts": {
+        "container:remove:PASS": 2,
+        "container:stop:PASS": 2,
+        "network:remove:PASS": 1,
+        "nodehost:verify_no_valkey_processes:PASS": 2,
+        "valkey_process:terminate:SKIPPED_WITH_REASON": 100,
+        "valkey_process:verify_exit:PASS": 100
+      },
+      "cleanup_status": "PASS",
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 50,
+        "replica": 50,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "nodes_observed": 100
+    }
+  ],
+  "errors": []
+}

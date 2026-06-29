@@ -1,0 +1,68 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_optimization_phase_summary",
+  "phase_id": "P13O-03_CLEANUP_OPTIMIZATION",
+  "artifact_phase_id": "P13O_CLEANUP_OPTIMIZATION",
+  "run_id": "phase-P13O-03_CLEANUP_OPTIMIZATION",
+  "created_at": "2026-06-29T12:05:49.393027Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P13 cleanup now records cleanup timing and uses bounded parallel cleanup while preserving cleanup evidence.",
+  "required_artifacts": [
+    "artifacts/phases/P13O_CLEANUP_OPTIMIZATION/p13_cleanup_optimization.json",
+    "artifacts/phases/P13O_CLEANUP_OPTIMIZATION/phase_summary.json"
+  ],
+  "real_valkey_evidence": {
+    "scale_50": {
+      "status": "PASS",
+      "nodes_observed": 50,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      }
+    },
+    "scale_100": {
+      "status": "PASS",
+      "nodes_observed": 100,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 50,
+        "replica": 50,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      }
+    }
+  },
+  "timing_accounting": {
+    "scale_50": {
+      "cleanup_terminate_processes_seconds": 0.345573,
+      "cleanup_verify_process_exit_seconds": 0.377699,
+      "cleanup_verify_nodehost_empty_seconds": 0.042255,
+      "cleanup_remove_containers_seconds": 5.336729,
+      "cleanup_remove_networks_seconds": 0.092663,
+      "cleanup_residual_scan_seconds": 0.038424,
+      "bounded_parallelism": true,
+      "parallelism": 8
+    },
+    "scale_100": {
+      "cleanup_terminate_processes_seconds": 0.691456,
+      "cleanup_verify_process_exit_seconds": 0.699232,
+      "cleanup_verify_nodehost_empty_seconds": 0.052832,
+      "cleanup_remove_containers_seconds": 5.557138,
+      "cleanup_remove_networks_seconds": 0.091789,
+      "cleanup_residual_scan_seconds": 0.038974,
+      "bounded_parallelism": true,
+      "parallelism": 8
+    }
+  },
+  "cleanup_optimization_path": "artifacts/phases/P13O_CLEANUP_OPTIMIZATION/p13_cleanup_optimization.json",
+  "errors": []
+}

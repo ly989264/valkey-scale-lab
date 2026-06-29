@@ -217,9 +217,14 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
     run_id = state.get("runtime", {}).get("run_id", _run_id(str(phase), str(state.get("scenario", "cluster_smoke"))))
     if state.get("runtime", {}).get("type") == "docker_process":
         return _cleanup_process_scenario(state=state, artifacts_dir=Path(artifacts_dir), out_path=Path(out_path))
-    actions = cleanup_by_label(phase=phase, run_id=run_id)
+    actions, cleanup_timing = _cleanup_resources_by_label(phase=phase, run_id=run_id)
     actions.extend(_cleanup_fault_state_files(Path(artifacts_dir)))
+    residual_started = time.monotonic()
     resources_remaining = owned_resources(phase=phase, run_id=run_id)
+    cleanup_timing["cleanup_residual_scan_seconds"] = round(max(time.monotonic() - residual_started, 0.0), 6)
+    cleanup_timing.setdefault("cleanup_terminate_processes_seconds", 0.0)
+    cleanup_timing.setdefault("cleanup_verify_process_exit_seconds", 0.0)
+    cleanup_timing.setdefault("cleanup_verify_nodehost_empty_seconds", 0.0)
     if phase == "P10_MULTI_HOST_ORCHESTRATION":
         actions.append(
             {
@@ -241,6 +246,7 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
         "status": "PASS" if not resources_remaining else "FAIL",
         "resources_remaining": resources_remaining,
         "cleanup_actions": actions,
+        "cleanup_timing": cleanup_timing,
         "artifacts_dir": str(artifacts_dir),
     }
     out = Path(out_path)
@@ -639,73 +645,176 @@ def _cleanup_fault_state_files(artifacts_dir: Path) -> list[dict[str, Any]]:
 
 
 def cleanup_by_label(*, phase: str, run_id: str) -> list[dict[str, Any]]:
+    actions, _timings = _cleanup_resources_by_label(phase=phase, run_id=run_id)
+    return actions
+
+
+def _cleanup_resources_by_label(*, phase: str, run_id: str) -> tuple[list[dict[str, Any]], dict[str, float]]:
     actions: list[dict[str, Any]] = []
+    timings = {
+        "cleanup_remove_containers_seconds": 0.0,
+        "cleanup_remove_networks_seconds": 0.0,
+    }
     label_args = ["--filter", f"label={LABEL_PREFIX}.project={PROJECT}", "--filter", f"label={LABEL_PREFIX}.phase={phase}", "--filter", f"label={LABEL_PREFIX}.run_id={run_id}"]
     containers = _docker_ids(["ps", "-a", "-q", *label_args])
-    for cid in containers:
+    container_started = time.monotonic()
+
+    def remove_container(item: tuple[int, str]) -> tuple[int, list[dict[str, Any]]]:
+        idx, cid = item
         stop = run_docker(["stop", "-t", "5", cid], timeout=30, check=False)
-        actions.append({"type": "container", "id": cid, "action": "stop", "status": "PASS" if stop.returncode == 0 else "SKIPPED_WITH_REASON", "stderr": stop.stderr.strip()})
         rm = run_docker(["rm", "-f", cid], timeout=30, check=False)
-        actions.append({"type": "container", "id": cid, "action": "remove", "status": "PASS" if rm.returncode == 0 else "FAIL", "stderr": rm.stderr.strip()})
+        return idx, [
+            {
+                "type": "container",
+                "id": cid,
+                "action": "stop",
+                "status": "PASS" if stop.returncode == 0 else "SKIPPED_WITH_REASON",
+                "stderr": stop.stderr.strip(),
+            },
+            {
+                "type": "container",
+                "id": cid,
+                "action": "remove",
+                "status": "PASS" if rm.returncode == 0 else "FAIL",
+                "stderr": rm.stderr.strip(),
+            },
+        ]
+
+    container_results = _bounded_parallel(
+        list(enumerate(containers)),
+        remove_container,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=max(30.0, len(containers) * 10.0),
+        label="owned container cleanup",
+    ) if containers else []
+    for _idx, container_actions in sorted(container_results, key=lambda item: item[0]):
+        actions.extend(container_actions)
+    timings["cleanup_remove_containers_seconds"] = round(max(time.monotonic() - container_started, 0.0), 6)
+
     networks = _docker_ids(["network", "ls", "-q", *label_args])
-    for nid in networks:
+    network_started = time.monotonic()
+
+    def remove_network(item: tuple[int, str]) -> tuple[int, dict[str, Any]]:
+        idx, nid = item
         rm = run_docker(["network", "rm", nid], timeout=30, check=False)
-        actions.append({"type": "network", "id": nid, "action": "remove", "status": "PASS" if rm.returncode == 0 else "FAIL", "stderr": rm.stderr.strip()})
-    return actions
+        return idx, {"type": "network", "id": nid, "action": "remove", "status": "PASS" if rm.returncode == 0 else "FAIL", "stderr": rm.stderr.strip()}
+
+    network_results = _bounded_parallel(
+        list(enumerate(networks)),
+        remove_network,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=max(30.0, len(networks) * 10.0),
+        label="owned network cleanup",
+    ) if networks else []
+    actions.extend(action for _idx, action in sorted(network_results, key=lambda item: item[0]))
+    timings["cleanup_remove_networks_seconds"] = round(max(time.monotonic() - network_started, 0.0), 6)
+    return actions, timings
 
 
 def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out_path: Path) -> dict[str, Any]:
     phase = str(state.get("phase_id", "P13_SCALE_LADDER_50_100"))
     run_id = str(state.get("runtime", {}).get("run_id", _run_id(phase, str(state.get("scenario", "scale_50")))))
     actions: list[dict[str, Any]] = []
+    cleanup_timing = {
+        "cleanup_terminate_processes_seconds": 0.0,
+        "cleanup_verify_process_exit_seconds": 0.0,
+        "cleanup_verify_nodehost_empty_seconds": 0.0,
+        "cleanup_remove_containers_seconds": 0.0,
+        "cleanup_remove_networks_seconds": 0.0,
+        "cleanup_residual_scan_seconds": 0.0,
+        "bounded_parallelism": True,
+        "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+    }
     nodehosts = {nodehost["nodehost_id"]: nodehost for nodehost in state.get("nodehosts", [])}
     nodes = list(state.get("nodes", []))
-    for node in nodes:
+
+    terminate_started = time.monotonic()
+
+    def terminate_node(item: tuple[int, dict[str, Any]]) -> tuple[int, dict[str, Any]]:
+        idx, node = item
         container = str(node.get("nodehost_container_name") or node.get("container_name"))
         pid = str(node.get("pid"))
         kill = run_docker(["exec", container, "kill", "-TERM", pid], timeout=10, check=False)
-        actions.append(
-            {
-                "type": "valkey_process",
-                "id": node.get("logical_id", pid),
-                "nodehost_id": node.get("nodehost_id", "MISSING"),
-                "pid": node.get("pid", "MISSING"),
-                "action": "terminate",
-                "status": "PASS" if kill.returncode == 0 else "SKIPPED_WITH_REASON",
-                "stderr": kill.stderr.strip(),
-            }
-        )
-    for node in nodes:
+        return idx, {
+            "type": "valkey_process",
+            "id": node.get("logical_id", pid),
+            "nodehost_id": node.get("nodehost_id", "MISSING"),
+            "pid": node.get("pid", "MISSING"),
+            "action": "terminate",
+            "status": "PASS" if kill.returncode == 0 else "SKIPPED_WITH_REASON",
+            "stderr": kill.stderr.strip(),
+        }
+
+    terminate_results = _bounded_parallel(
+        list(enumerate(nodes)),
+        terminate_node,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=max(30.0, len(nodes) * 2.0),
+        label="Valkey process termination",
+    ) if nodes else []
+    actions.extend(action for _idx, action in sorted(terminate_results, key=lambda item: item[0]))
+    cleanup_timing["cleanup_terminate_processes_seconds"] = round(max(time.monotonic() - terminate_started, 0.0), 6)
+
+    verify_started = time.monotonic()
+
+    def verify_node_exit(item: tuple[int, dict[str, Any]]) -> tuple[int, dict[str, Any]]:
+        idx, node = item
         container = str(node.get("nodehost_container_name") or node.get("container_name"))
         pid = str(node.get("pid"))
         gone = _wait_container_pid_gone(container, pid, timeout=15.0)
-        actions.append(
-            {
-                "type": "valkey_process",
-                "id": node.get("logical_id", pid),
-                "nodehost_id": node.get("nodehost_id", "MISSING"),
-                "pid": node.get("pid", "MISSING"),
-                "action": "verify_exit",
-                "status": "PASS" if gone else "FAIL",
-            }
-        )
-    for nodehost in nodehosts.values():
+        return idx, {
+            "type": "valkey_process",
+            "id": node.get("logical_id", pid),
+            "nodehost_id": node.get("nodehost_id", "MISSING"),
+            "pid": node.get("pid", "MISSING"),
+            "action": "verify_exit",
+            "status": "PASS" if gone else "FAIL",
+        }
+
+    verify_results = _bounded_parallel(
+        list(enumerate(nodes)),
+        verify_node_exit,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=max(30.0, len(nodes) * 3.0),
+        label="Valkey process exit verification",
+    ) if nodes else []
+    actions.extend(action for _idx, action in sorted(verify_results, key=lambda item: item[0]))
+    cleanup_timing["cleanup_verify_process_exit_seconds"] = round(max(time.monotonic() - verify_started, 0.0), 6)
+
+    nodehost_started = time.monotonic()
+    nodehost_items = list(enumerate(nodehosts.values()))
+
+    def verify_nodehost_empty(item: tuple[int, dict[str, Any]]) -> tuple[int, dict[str, Any]]:
+        idx, nodehost = item
         container = str(nodehost["container_name"])
         pgrep = run_docker(["exec", container, "pgrep", "-x", "valkey-server"], timeout=10, check=False)
-        actions.append(
-            {
-                "type": "nodehost",
-                "id": nodehost["nodehost_id"],
-                "container_name": container,
-                "action": "verify_no_valkey_processes",
-                "status": "PASS" if pgrep.returncode != 0 else "FAIL",
-                "stdout": pgrep.stdout.strip(),
-                "stderr": pgrep.stderr.strip(),
-            }
-        )
-    actions.extend(cleanup_by_label(phase=phase, run_id=run_id))
+        return idx, {
+            "type": "nodehost",
+            "id": nodehost["nodehost_id"],
+            "container_name": container,
+            "action": "verify_no_valkey_processes",
+            "status": "PASS" if pgrep.returncode != 0 else "FAIL",
+            "stdout": pgrep.stdout.strip(),
+            "stderr": pgrep.stderr.strip(),
+        }
+
+    nodehost_results = _bounded_parallel(
+        nodehost_items,
+        verify_nodehost_empty,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=max(30.0, len(nodehost_items) * 10.0),
+        label="nodehost Valkey residual check",
+    ) if nodehost_items else []
+    actions.extend(action for _idx, action in sorted(nodehost_results, key=lambda item: item[0]))
+    cleanup_timing["cleanup_verify_nodehost_empty_seconds"] = round(max(time.monotonic() - nodehost_started, 0.0), 6)
+
+    resource_actions, resource_timing = _cleanup_resources_by_label(phase=phase, run_id=run_id)
+    cleanup_timing.update(resource_timing)
+    actions.extend(resource_actions)
     actions.extend(_cleanup_fault_state_files(artifacts_dir))
+    residual_started = time.monotonic()
     resources_remaining = owned_resources(phase=phase, run_id=run_id)
+    cleanup_timing["cleanup_residual_scan_seconds"] = round(max(time.monotonic() - residual_started, 0.0), 6)
     report = {
         "schema_version": "v1",
         "artifact_type": "cleanup_report",
@@ -716,6 +825,7 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
         "status": "PASS" if not resources_remaining and all(action.get("status") != "FAIL" for action in actions) else "FAIL",
         "resources_remaining": resources_remaining,
         "cleanup_actions": actions,
+        "cleanup_timing": cleanup_timing,
         "artifacts_dir": str(artifacts_dir),
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
