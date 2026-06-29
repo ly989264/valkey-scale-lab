@@ -1,0 +1,133 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_cluster_create_strategy_comparison",
+  "phase_id": "P13O-01_CLUSTER_CREATE_AB",
+  "created_at": "2026-06-29T11:30:09.344231Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "default_strategy": "valkey_cli_cluster_create_primaries",
+  "selected_default_safe": true,
+  "safety_constraints": {
+    "nodes_conf_fast_bootstrap_used": false,
+    "host_network_mutation": false,
+    "p14_executed": false,
+    "default_max_nodes": 100
+  },
+  "strategies": [
+    {
+      "strategy": "valkey_cli_cluster_create_primaries",
+      "status": "PASS",
+      "default": true,
+      "experimental": false,
+      "selection": "safe_default",
+      "observations": [
+        {
+          "scenario": "scale_50",
+          "node_count": 50,
+          "status": "PASS",
+          "real_valkey": true,
+          "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+          "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+          "timing": {
+            "primary_meet_seconds": 0.0,
+            "slot_assignment_seconds": 0.0,
+            "cluster_create_command_seconds": 25.2987,
+            "primary_convergence_seconds": 0.002479,
+            "primary_cluster_create_total_seconds": 25.311716
+          },
+          "role_counts": {
+            "primary": 25,
+            "replica": 25,
+            "handshake": 0,
+            "fail": 0,
+            "pfail": 0
+          },
+          "data_path_result": "PASS",
+          "nodes_observed": 50,
+          "timing_details": {
+            "slot_assignment_scope": "inside_valkey_cli_cluster_create",
+            "probe_slot_assignment_seconds": 0.010489,
+            "meet_commands": "MISSING"
+          }
+        },
+        {
+          "scenario": "scale_100",
+          "node_count": 100,
+          "status": "PASS",
+          "real_valkey": true,
+          "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+          "timing": {
+            "primary_meet_seconds": 0.0,
+            "slot_assignment_seconds": 0.0,
+            "cluster_create_command_seconds": 75.730117,
+            "primary_convergence_seconds": 0.001947,
+            "primary_cluster_create_total_seconds": 75.746212
+          },
+          "role_counts": {
+            "primary": 50,
+            "replica": 50,
+            "handshake": 0,
+            "fail": 0,
+            "pfail": 0
+          },
+          "data_path_result": "PASS",
+          "nodes_observed": 100,
+          "timing_details": {
+            "slot_assignment_scope": "inside_valkey_cli_cluster_create",
+            "probe_slot_assignment_seconds": 0.014112,
+            "meet_commands": "MISSING"
+          }
+        }
+      ]
+    },
+    {
+      "strategy": "manual_tree_meet_parallel_slots",
+      "status": "PASS",
+      "default": false,
+      "experimental": false,
+      "selection": "supported_opt_in",
+      "observations": [
+        {
+          "scenario": "scale_50",
+          "node_count": 50,
+          "status": "PASS",
+          "real_valkey": true,
+          "evidence_path": "artifacts/phases/P13O_CLUSTER_CREATE_AB/valkey_e2e_evidence_manual_scale_50.json",
+          "timing_path": "artifacts/phases/P13O_CLUSTER_CREATE_AB/p13_timing_breakdown_scale_50.json",
+          "timing": {
+            "primary_meet_seconds": 0.005216,
+            "slot_assignment_seconds": 44.367462,
+            "cluster_create_command_seconds": 0.0,
+            "primary_convergence_seconds": 1.00936,
+            "primary_cluster_create_total_seconds": 45.382083
+          },
+          "role_counts": {
+            "primary": 25,
+            "replica": 25,
+            "handshake": 0,
+            "fail": 0,
+            "pfail": 0
+          },
+          "data_path_result": "PASS",
+          "nodes_observed": 50,
+          "timing_details": {
+            "slot_assignment_scope": "parallel_cluster_addslots",
+            "probe_slot_assignment_seconds": "MISSING",
+            "meet_commands": 24
+          }
+        }
+      ],
+      "skipped_observations": [
+        {
+          "scenario": "scale_100",
+          "status": "SKIPPED_WITH_REASON",
+          "reason": "P13O-01 proves manual strategy with a real 50-node gate while preserving required default 50/100 gates."
+        }
+      ]
+    }
+  ]
+}

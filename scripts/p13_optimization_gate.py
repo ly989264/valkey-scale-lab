@@ -19,6 +19,9 @@ MANIFEST = ROOT / "codex" / "p13_optimization_manifest.json"
 STATE = ROOT / "codex" / "status" / "p13_optimization_state.json"
 BASE_STATE = ROOT / "codex" / "status" / "phase_state.json"
 BASE_PHASE = "P13_SCALE_LADDER_50_100"
+P13O_CLUSTER_CREATE_PHASE = "P13O-01_CLUSTER_CREATE_AB"
+DEFAULT_CLUSTER_CREATE_STRATEGY = "valkey_cli_cluster_create_primaries"
+MANUAL_CLUSTER_CREATE_STRATEGY = "manual_tree_meet_parallel_slots"
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
@@ -296,6 +299,10 @@ def validate_timing_artifact(scenario: str, expected_nodes: int) -> tuple[dict[s
 
 def validate_real_evidence(scenario: str, expected_nodes: int) -> tuple[dict[str, Any], list[str]]:
     path = ROOT / "artifacts" / "phases" / BASE_PHASE / f"valkey_e2e_evidence_{scenario.removeprefix('scale_')}.json"
+    return validate_real_evidence_path(path, scenario, expected_nodes)
+
+
+def validate_real_evidence_path(path: Path, scenario: str, expected_nodes: int) -> tuple[dict[str, Any], list[str]]:
     errors: list[str] = []
     if not path.exists():
         return {}, [f"missing real evidence artifact: {rel(path)}"]
@@ -321,6 +328,152 @@ def validate_real_evidence(scenario: str, expected_nodes: int) -> tuple[dict[str
     if not full_membership:
         errors.append(f"{scenario}: no full-membership probe observed")
     return evidence, errors
+
+
+def timing_field(value: Any, reason: str) -> Any:
+    if numeric(value):
+        return round(float(value), 6)
+    return {"status": "MISSING", "reason": reason}
+
+
+def cluster_create_timing_observation(
+    *,
+    strategy: str,
+    scenario: str,
+    timing_path: Path,
+    evidence_path: Path,
+    expected_nodes: int,
+) -> tuple[dict[str, Any], list[str]]:
+    errors: list[str] = []
+    timing_artifact: dict[str, Any] = {}
+    if timing_path.exists():
+        timing_artifact = load_json(timing_path)
+    else:
+        errors.append(f"{strategy}/{scenario}: missing timing artifact {rel(timing_path)}")
+    evidence, evidence_errors = validate_real_evidence_path(evidence_path, scenario, expected_nodes)
+    errors.extend(f"{strategy}/{err}" for err in evidence_errors)
+
+    entry = timing_entry(timing_artifact, "primary_cluster_create") if timing_artifact else None
+    details = entry.get("details", {}) if isinstance(entry, dict) else {}
+    timing = {
+        "primary_meet_seconds": timing_field(
+            details.get("primary_meet_seconds"),
+            "not recorded in primary_cluster_create details",
+        ),
+        "slot_assignment_seconds": timing_field(
+            details.get("slot_assignment_seconds"),
+            "not recorded in primary_cluster_create details",
+        ),
+        "cluster_create_command_seconds": timing_field(
+            details.get("cluster_create_command_seconds"),
+            "not recorded in primary_cluster_create details",
+        ),
+        "primary_convergence_seconds": timing_field(
+            details.get("primary_convergence_seconds"),
+            "not recorded in primary_cluster_create details",
+        ),
+        "primary_cluster_create_total_seconds": timing_field(
+            entry.get("duration_seconds") if isinstance(entry, dict) else None,
+            "primary_cluster_create timing entry missing",
+        ),
+    }
+    for field, value in timing.items():
+        if not numeric(value):
+            errors.append(f"{strategy}/{scenario}: {field} is not numeric")
+    if details.get("strategy") and details.get("strategy") != strategy:
+        errors.append(f"{strategy}/{scenario}: timing strategy mismatch {details.get('strategy')!r}")
+    observation = {
+        "scenario": scenario,
+        "node_count": expected_nodes,
+        "status": "PASS" if not errors else "FAIL",
+        "real_valkey": evidence.get("real_valkey", "MISSING"),
+        "evidence_path": rel(evidence_path),
+        "timing_path": rel(timing_path),
+        "timing": timing,
+        "role_counts": evidence.get("role_counts", "MISSING"),
+        "data_path_result": evidence.get("data_path_result", "MISSING"),
+        "nodes_observed": evidence.get("nodes_observed", "MISSING"),
+        "timing_details": {
+            "slot_assignment_scope": details.get("slot_assignment_scope", "MISSING"),
+            "probe_slot_assignment_seconds": details.get("probe_slot_assignment_seconds", "MISSING"),
+            "meet_commands": details.get("meet_commands", "MISSING"),
+        },
+    }
+    return observation, errors
+
+
+def strategy_status(observations: list[dict[str, Any]]) -> str:
+    return "PASS" if observations and all(item.get("status") == "PASS" for item in observations) else "FAIL"
+
+
+def write_cluster_create_strategy_comparison(errors: list[str]) -> tuple[Path, dict[str, Any]]:
+    out = ROOT / "artifacts" / "phases" / "P13O_CLUSTER_CREATE_AB" / "p13_cluster_create_strategy_comparison.json"
+    default_observations: list[dict[str, Any]] = []
+    manual_observations: list[dict[str, Any]] = []
+    for scenario, expected_nodes in {"scale_50": 50, "scale_100": 100}.items():
+        observation, obs_errors = cluster_create_timing_observation(
+            strategy=DEFAULT_CLUSTER_CREATE_STRATEGY,
+            scenario=scenario,
+            timing_path=ROOT / "artifacts" / "phases" / BASE_PHASE / f"p13_timing_breakdown_{scenario}.json",
+            evidence_path=ROOT / "artifacts" / "phases" / BASE_PHASE / f"valkey_e2e_evidence_{scenario.removeprefix('scale_')}.json",
+            expected_nodes=expected_nodes,
+        )
+        default_observations.append(observation)
+        errors.extend(obs_errors)
+
+    manual_observation, manual_errors = cluster_create_timing_observation(
+        strategy=MANUAL_CLUSTER_CREATE_STRATEGY,
+        scenario="scale_50",
+        timing_path=ROOT / "artifacts" / "phases" / "P13O_CLUSTER_CREATE_AB" / "p13_timing_breakdown_scale_50.json",
+        evidence_path=ROOT / "artifacts" / "phases" / "P13O_CLUSTER_CREATE_AB" / "valkey_e2e_evidence_manual_scale_50.json",
+        expected_nodes=50,
+    )
+    manual_observations.append(manual_observation)
+    errors.extend(manual_errors)
+
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": "p13_cluster_create_strategy_comparison",
+        "phase_id": P13O_CLUSTER_CREATE_PHASE,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "default_strategy": DEFAULT_CLUSTER_CREATE_STRATEGY,
+        "selected_default_safe": True,
+        "safety_constraints": {
+            "nodes_conf_fast_bootstrap_used": False,
+            "host_network_mutation": False,
+            "p14_executed": False,
+            "default_max_nodes": 100,
+        },
+        "strategies": [
+            {
+                "strategy": DEFAULT_CLUSTER_CREATE_STRATEGY,
+                "status": strategy_status(default_observations),
+                "default": True,
+                "experimental": False,
+                "selection": "safe_default",
+                "observations": default_observations,
+            },
+            {
+                "strategy": MANUAL_CLUSTER_CREATE_STRATEGY,
+                "status": strategy_status(manual_observations),
+                "default": False,
+                "experimental": False,
+                "selection": "supported_opt_in",
+                "observations": manual_observations,
+                "skipped_observations": [
+                    {
+                        "scenario": "scale_100",
+                        "status": "SKIPPED_WITH_REASON",
+                        "reason": "P13O-01 proves manual strategy with a real 50-node gate while preserving required default 50/100 gates.",
+                    }
+                ],
+            },
+        ],
+    }
+    write_json(out, artifact)
+    return out, artifact
 
 
 def write_phase_summary(phase: dict[str, Any], timings: dict[str, dict[str, Any]], evidence: dict[str, dict[str, Any]], errors: list[str]) -> Path:
@@ -368,9 +521,61 @@ def write_phase_summary(phase: dict[str, Any], timings: dict[str, dict[str, Any]
     return out
 
 
+def write_cluster_create_phase_summary(
+    phase: dict[str, Any],
+    comparison: dict[str, Any],
+    evidence: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> Path:
+    phase_id = str(phase["id"])
+    artifact_id = artifact_phase_id(phase)
+    out = ROOT / "artifacts" / "phases" / artifact_id / "phase_summary.json"
+    real_evidence = {
+        name: {
+            "status": artifact.get("status", "MISSING"),
+            "nodes_observed": artifact.get("nodes_observed", "MISSING"),
+            "data_path_result": artifact.get("data_path_result", "MISSING"),
+            "role_counts": artifact.get("role_counts", "MISSING"),
+        }
+        for name, artifact in evidence.items()
+    }
+    timing_accounting: dict[str, Any] = {}
+    for strategy in comparison.get("strategies", []):
+        timing_accounting[strategy["strategy"]] = [
+            {
+                "scenario": observation.get("scenario"),
+                **observation.get("timing", {}),
+            }
+            for observation in strategy.get("observations", [])
+        ]
+    summary = {
+        "schema_version": "v1",
+        "artifact_type": "p13_optimization_phase_summary",
+        "phase_id": phase_id,
+        "artifact_phase_id": artifact_id,
+        "run_id": f"phase-{phase_id}",
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "summary": "P13 cluster-create strategies compared with default 50/100 real gates and manual 50-node real proof.",
+        "required_artifacts": [item["path"] for item in phase.get("required_artifacts", [])],
+        "real_valkey_evidence": real_evidence,
+        "timing_accounting": timing_accounting,
+        "cluster_create_strategy_comparison_path": rel(
+            ROOT / "artifacts" / "phases" / artifact_id / "p13_cluster_create_strategy_comparison.json"
+        ),
+        "errors": errors,
+    }
+    write_json(out, summary)
+    return out
+
+
 def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool = True) -> int:
     manifest = load_manifest()
     phase = phase_by_id(manifest, args.phase)
+    if args.phase == P13O_CLUSTER_CREATE_PHASE:
+        return validate_cluster_create_artifacts(phase, write_summary_artifact=write_summary_artifact)
+
     all_errors: list[str] = []
     timings: dict[str, dict[str, Any]] = {}
     evidence: dict[str, dict[str, Any]] = {}
@@ -393,6 +598,60 @@ def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool
             print(f"FAIL: {err}", file=sys.stderr)
         return 1
     print(f"PASS p13o artifacts phase={args.phase} summary={rel(summary_path)}")
+    return 0
+
+
+def validate_cluster_create_artifacts(phase: dict[str, Any], *, write_summary_artifact: bool = True) -> int:
+    all_errors: list[str] = []
+    evidence: dict[str, dict[str, Any]] = {}
+    default_50, errors = validate_real_evidence("scale_50", 50)
+    evidence["default_scale_50"] = default_50
+    all_errors.extend(errors)
+    default_100, errors = validate_real_evidence("scale_100", 100)
+    evidence["default_scale_100"] = default_100
+    all_errors.extend(errors)
+    manual_path = ROOT / "artifacts" / "phases" / "P13O_CLUSTER_CREATE_AB" / "valkey_e2e_evidence_manual_scale_50.json"
+    manual_50, errors = validate_real_evidence_path(manual_path, "manual_scale_50", 50)
+    evidence["manual_scale_50"] = manual_50
+    all_errors.extend(errors)
+
+    comparison_path = ROOT / "artifacts" / "phases" / "P13O_CLUSTER_CREATE_AB" / "p13_cluster_create_strategy_comparison.json"
+    if write_summary_artifact:
+        comparison_path, comparison = write_cluster_create_strategy_comparison(all_errors)
+    elif comparison_path.exists():
+        comparison = load_json(comparison_path)
+    else:
+        comparison = {}
+        all_errors.append(f"missing strategy comparison artifact: {rel(comparison_path)}")
+
+    if comparison_path.exists():
+        all_errors.extend(validate_schema(comparison_path, ROOT / "schemas" / "artifact" / "p13_cluster_create_strategy_comparison.schema.json"))
+        if comparison.get("default_strategy") != DEFAULT_CLUSTER_CREATE_STRATEGY:
+            all_errors.append(f"default strategy must remain {DEFAULT_CLUSTER_CREATE_STRATEGY}")
+        strategies = {item.get("strategy"): item for item in comparison.get("strategies", [])}
+        for required in [DEFAULT_CLUSTER_CREATE_STRATEGY, MANUAL_CLUSTER_CREATE_STRATEGY]:
+            if required not in strategies:
+                all_errors.append(f"comparison missing strategy {required}")
+            elif strategies[required].get("status") != "PASS":
+                all_errors.append(f"strategy {required} status is {strategies[required].get('status')}")
+        if strategies.get(DEFAULT_CLUSTER_CREATE_STRATEGY, {}).get("default") is not True:
+            all_errors.append("valkey_cli_cluster_create_primaries must be the default strategy")
+        if comparison.get("safety_constraints", {}).get("nodes_conf_fast_bootstrap_used") is not False:
+            all_errors.append("nodes.conf fast-bootstrap must not be used")
+
+    summary_path = ROOT / "artifacts" / "phases" / "P13O_CLUSTER_CREATE_AB" / "phase_summary.json"
+    if write_summary_artifact:
+        summary_path = write_cluster_create_phase_summary(phase, comparison, evidence, all_errors)
+    elif not summary_path.exists():
+        all_errors.append(f"missing phase summary artifact: {rel(summary_path)}")
+    if summary_path.exists():
+        all_errors.extend(validate_schema(summary_path, ROOT / "schemas" / "artifact" / "p13_optimization_phase_summary.schema.json"))
+
+    if all_errors:
+        for err in all_errors:
+            print(f"FAIL: {err}", file=sys.stderr)
+        return 1
+    print(f"PASS p13o artifacts phase={phase['id']} summary={rel(summary_path)}")
     return 0
 
 

@@ -6,7 +6,7 @@
       "action": "terminate",
       "id": "shard-0000-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 180,
+      "pid": 183,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -15,7 +15,7 @@
       "action": "terminate",
       "id": "shard-0001-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 181,
+      "pid": 180,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -24,7 +24,7 @@
       "action": "terminate",
       "id": "shard-0002-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 182,
+      "pid": 186,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -33,7 +33,7 @@
       "action": "terminate",
       "id": "shard-0003-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 180,
+      "pid": 178,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -42,7 +42,7 @@
       "action": "terminate",
       "id": "shard-0004-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 183,
+      "pid": 182,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -51,7 +51,7 @@
       "action": "terminate",
       "id": "shard-0005-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 183,
+      "pid": 177,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -60,7 +60,7 @@
       "action": "terminate",
       "id": "shard-0006-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 191,
+      "pid": 184,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -69,7 +69,7 @@
       "action": "terminate",
       "id": "shard-0007-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 185,
+      "pid": 176,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -78,7 +78,7 @@
       "action": "terminate",
       "id": "shard-0008-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 263,
+      "pid": 265,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -87,7 +87,7 @@
       "action": "terminate",
       "id": "shard-0009-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 262,
+      "pid": 252,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -96,7 +96,7 @@
       "action": "terminate",
       "id": "shard-0010-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 262,
+      "pid": 261,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -105,7 +105,7 @@
       "action": "terminate",
       "id": "shard-0011-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 260,
+      "pid": 254,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -114,7 +114,7 @@
       "action": "terminate",
       "id": "shard-0012-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 257,
+      "pid": 267,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -123,7 +123,7 @@
       "action": "terminate",
       "id": "shard-0013-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 261,
+      "pid": 256,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -132,7 +132,7 @@
       "action": "terminate",
       "id": "shard-0014-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 261,
+      "pid": 264,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -141,7 +141,7 @@
       "action": "terminate",
       "id": "shard-0015-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 264,
+      "pid": 258,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -159,7 +159,7 @@
       "action": "terminate",
       "id": "shard-0017-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 335,
+      "pid": 332,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -168,7 +168,7 @@
       "action": "terminate",
       "id": "shard-0018-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 335,
+      "pid": 346,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -177,7 +177,7 @@
       "action": "terminate",
       "id": "shard-0019-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 340,
+      "pid": 333,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -186,7 +186,7 @@
       "action": "terminate",
       "id": "shard-0020-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 340,
+      "pid": 337,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -195,7 +195,7 @@
       "action": "terminate",
       "id": "shard-0021-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 337,
+      "pid": 335,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -204,7 +204,7 @@
       "action": "terminate",
       "id": "shard-0022-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 342,
+      "pid": 348,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -213,7 +213,7 @@
       "action": "terminate",
       "id": "shard-0023-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 341,
+      "pid": 337,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -231,7 +231,7 @@
       "action": "terminate",
       "id": "shard-0000-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 413,
+      "pid": 410,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -258,7 +258,7 @@
       "action": "terminate",
       "id": "shard-0003-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 427,
+      "pid": 419,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -267,7 +267,7 @@
       "action": "terminate",
       "id": "shard-0004-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 417,
+      "pid": 414,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -276,7 +276,7 @@
       "action": "terminate",
       "id": "shard-0005-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 419,
+      "pid": 427,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -285,7 +285,7 @@
       "action": "terminate",
       "id": "shard-0006-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 425,
+      "pid": 415,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -303,7 +303,7 @@
       "action": "terminate",
       "id": "shard-0008-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 491,
+      "pid": 490,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -312,7 +312,7 @@
       "action": "terminate",
       "id": "shard-0009-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 499,
+      "pid": 494,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -321,7 +321,7 @@
       "action": "terminate",
       "id": "shard-0010-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 492,
+      "pid": 491,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -330,7 +330,7 @@
       "action": "terminate",
       "id": "shard-0011-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 498,
+      "pid": 500,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -339,7 +339,7 @@
       "action": "terminate",
       "id": "shard-0012-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 496,
+      "pid": 507,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -348,7 +348,7 @@
       "action": "terminate",
       "id": "shard-0013-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 501,
+      "pid": 499,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -357,7 +357,7 @@
       "action": "terminate",
       "id": "shard-0014-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 495,
+      "pid": 493,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -375,7 +375,7 @@
       "action": "terminate",
       "id": "shard-0016-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 569,
+      "pid": 571,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -384,7 +384,7 @@
       "action": "terminate",
       "id": "shard-0017-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 583,
+      "pid": 584,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -393,7 +393,7 @@
       "action": "terminate",
       "id": "shard-0018-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 573,
+      "pid": 570,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -402,7 +402,7 @@
       "action": "terminate",
       "id": "shard-0019-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 576,
+      "pid": 574,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -411,7 +411,7 @@
       "action": "terminate",
       "id": "shard-0020-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 561,
+      "pid": 567,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -420,7 +420,7 @@
       "action": "terminate",
       "id": "shard-0021-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 585,
+      "pid": 582,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -429,7 +429,7 @@
       "action": "terminate",
       "id": "shard-0022-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 572,
+      "pid": 579,
       "status": "SKIPPED_WITH_REASON",
       "stderr": "",
       "type": "valkey_process"
@@ -456,7 +456,7 @@
       "action": "verify_exit",
       "id": "shard-0000-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 180,
+      "pid": 183,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -464,7 +464,7 @@
       "action": "verify_exit",
       "id": "shard-0001-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 181,
+      "pid": 180,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -472,7 +472,7 @@
       "action": "verify_exit",
       "id": "shard-0002-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 182,
+      "pid": 186,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -480,7 +480,7 @@
       "action": "verify_exit",
       "id": "shard-0003-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 180,
+      "pid": 178,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -488,7 +488,7 @@
       "action": "verify_exit",
       "id": "shard-0004-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 183,
+      "pid": 182,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -496,7 +496,7 @@
       "action": "verify_exit",
       "id": "shard-0005-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 183,
+      "pid": 177,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -504,7 +504,7 @@
       "action": "verify_exit",
       "id": "shard-0006-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 191,
+      "pid": 184,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -512,7 +512,7 @@
       "action": "verify_exit",
       "id": "shard-0007-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 185,
+      "pid": 176,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -520,7 +520,7 @@
       "action": "verify_exit",
       "id": "shard-0008-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 263,
+      "pid": 265,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -528,7 +528,7 @@
       "action": "verify_exit",
       "id": "shard-0009-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 262,
+      "pid": 252,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -536,7 +536,7 @@
       "action": "verify_exit",
       "id": "shard-0010-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 262,
+      "pid": 261,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -544,7 +544,7 @@
       "action": "verify_exit",
       "id": "shard-0011-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 260,
+      "pid": 254,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -552,7 +552,7 @@
       "action": "verify_exit",
       "id": "shard-0012-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 257,
+      "pid": 267,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -560,7 +560,7 @@
       "action": "verify_exit",
       "id": "shard-0013-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 261,
+      "pid": 256,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -568,7 +568,7 @@
       "action": "verify_exit",
       "id": "shard-0014-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 261,
+      "pid": 264,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -576,7 +576,7 @@
       "action": "verify_exit",
       "id": "shard-0015-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 264,
+      "pid": 258,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -592,7 +592,7 @@
       "action": "verify_exit",
       "id": "shard-0017-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 335,
+      "pid": 332,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -600,7 +600,7 @@
       "action": "verify_exit",
       "id": "shard-0018-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 335,
+      "pid": 346,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -608,7 +608,7 @@
       "action": "verify_exit",
       "id": "shard-0019-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 340,
+      "pid": 333,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -616,7 +616,7 @@
       "action": "verify_exit",
       "id": "shard-0020-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 340,
+      "pid": 337,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -624,7 +624,7 @@
       "action": "verify_exit",
       "id": "shard-0021-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 337,
+      "pid": 335,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -632,7 +632,7 @@
       "action": "verify_exit",
       "id": "shard-0022-primary",
       "nodehost_id": "nodehost-az-a",
-      "pid": 342,
+      "pid": 348,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -640,7 +640,7 @@
       "action": "verify_exit",
       "id": "shard-0023-primary",
       "nodehost_id": "nodehost-az-b",
-      "pid": 341,
+      "pid": 337,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -656,7 +656,7 @@
       "action": "verify_exit",
       "id": "shard-0000-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 413,
+      "pid": 410,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -680,7 +680,7 @@
       "action": "verify_exit",
       "id": "shard-0003-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 427,
+      "pid": 419,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -688,7 +688,7 @@
       "action": "verify_exit",
       "id": "shard-0004-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 417,
+      "pid": 414,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -696,7 +696,7 @@
       "action": "verify_exit",
       "id": "shard-0005-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 419,
+      "pid": 427,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -704,7 +704,7 @@
       "action": "verify_exit",
       "id": "shard-0006-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 425,
+      "pid": 415,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -720,7 +720,7 @@
       "action": "verify_exit",
       "id": "shard-0008-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 491,
+      "pid": 490,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -728,7 +728,7 @@
       "action": "verify_exit",
       "id": "shard-0009-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 499,
+      "pid": 494,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -736,7 +736,7 @@
       "action": "verify_exit",
       "id": "shard-0010-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 492,
+      "pid": 491,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -744,7 +744,7 @@
       "action": "verify_exit",
       "id": "shard-0011-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 498,
+      "pid": 500,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -752,7 +752,7 @@
       "action": "verify_exit",
       "id": "shard-0012-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 496,
+      "pid": 507,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -760,7 +760,7 @@
       "action": "verify_exit",
       "id": "shard-0013-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 501,
+      "pid": 499,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -768,7 +768,7 @@
       "action": "verify_exit",
       "id": "shard-0014-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 495,
+      "pid": 493,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -784,7 +784,7 @@
       "action": "verify_exit",
       "id": "shard-0016-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 569,
+      "pid": 571,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -792,7 +792,7 @@
       "action": "verify_exit",
       "id": "shard-0017-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 583,
+      "pid": 584,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -800,7 +800,7 @@
       "action": "verify_exit",
       "id": "shard-0018-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 573,
+      "pid": 570,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -808,7 +808,7 @@
       "action": "verify_exit",
       "id": "shard-0019-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 576,
+      "pid": 574,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -816,7 +816,7 @@
       "action": "verify_exit",
       "id": "shard-0020-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 561,
+      "pid": 567,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -824,7 +824,7 @@
       "action": "verify_exit",
       "id": "shard-0021-replica-00",
       "nodehost_id": "nodehost-az-a",
-      "pid": 585,
+      "pid": 582,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -832,7 +832,7 @@
       "action": "verify_exit",
       "id": "shard-0022-replica-00",
       "nodehost_id": "nodehost-az-b",
-      "pid": 572,
+      "pid": 579,
       "status": "PASS",
       "type": "valkey_process"
     },
@@ -872,35 +872,35 @@
     },
     {
       "action": "stop",
-      "id": "1de8f8535bd0",
+      "id": "3f5bdfdfa9b2",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "1de8f8535bd0",
+      "id": "3f5bdfdfa9b2",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "c8a1a440376e",
+      "id": "4fb03a851679",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "c8a1a440376e",
+      "id": "4fb03a851679",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "f75287e44548",
+      "id": "26f226707a98",
       "status": "PASS",
       "stderr": "",
       "type": "network"

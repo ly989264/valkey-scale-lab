@@ -104,12 +104,101 @@
       "automatic": true,
       "real_valkey_required": true,
       "max_nodes": 100,
+      "objectives": [
+        "Compare default valkey-cli primary cluster create against manual tree-meet/parallel-slot strategy",
+        "Keep valkey_cli_cluster_create_primaries as the safe deterministic default",
+        "Preserve P13 full membership, role-count, data-path, cleanup, and topology evidence"
+      ],
+      "gates": [
+        {
+          "name": "p13o_cluster_create_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/integration/test_docker_runtime_contract.py::test_cluster_create_strategy_defaults_to_valkey_cli tests/integration/test_docker_runtime_contract.py::test_cluster_create_strategy_accepts_manual_opt_in tests/integration/test_docker_runtime_contract.py::test_cluster_create_strategy_rejects_unknown tests/integration/test_docker_runtime_contract.py::test_default_primary_create_records_strategy_subtimings tests/integration/test_docker_runtime_contract.py::test_manual_primary_create_uses_tree_meet_and_parallel_slots",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "resource_preflight_50",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_50.yaml --out artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scale_50_default_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P13_SCALE_LADDER_50_100 --config templates/configs/scale_50.yaml --scenario scale_50 --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json --min-nodes 50 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "resource_preflight_100",
+          "kind": "cli",
+          "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_100.yaml --out artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scale_100_default_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P13_SCALE_LADDER_50_100 --config templates/configs/scale_100.yaml --scenario scale_100 --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json --min-nodes 100 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "scale_50_manual_strategy_real_gate",
+          "kind": "real_valkey_e2e",
+          "command": "VSLAB_CLUSTER_CREATE_STRATEGY=manual_tree_meet_parallel_slots python3 scripts/valkey_e2e_gate.py --phase P13_SCALE_LADDER_50_100 --config templates/configs/scale_50.yaml --scenario scale_50 --out artifacts/phases/P13O_CLUSTER_CREATE_AB/valkey_e2e_evidence_manual_scale_50.json --min-nodes 50 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "default_cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "manual_cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P13O_CLUSTER_CREATE_AB/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "p13o_cluster_create_artifact_check",
+          "kind": "artifact",
+          "command": "python3 scripts/p13_optimization_gate.py validate-artifacts --phase P13O-01_CLUSTER_CREATE_AB",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
       "required_artifacts": [
         {
           "path": "artifacts/phases/P13O_CLUSTER_CREATE_AB/p13_cluster_create_strategy_comparison.json",
+          "schema": "schemas/artifact/p13_cluster_create_strategy_comparison.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P13O_CLUSTER_CREATE_AB/phase_summary.json",
+          "schema": "schemas/artifact/p13_optimization_phase_summary.schema.json",
           "required": true
         }
-      ]
+      ],
+      "audit": {
+        "md_path": "audit/P13O-01_CLUSTER_CREATE_AB/AUDIT.md",
+        "decision_json_path": "audit/P13O-01_CLUSTER_CREATE_AB/audit_decision.json"
+      }
     },
     {
       "id": "P13O-02_REPLICA_REPLICATE_BREAKDOWN",

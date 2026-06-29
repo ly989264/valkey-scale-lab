@@ -4,7 +4,7 @@
   "phase_id": "P13_SCALE_LADDER_50_100",
   "run_id": "phase-P13_SCALE_LADDER_50_100-scale_50",
   "scenario": "scale_50",
-  "created_at": "2026-06-29T09:53:04.028948Z",
+  "created_at": "2026-06-29T11:19:33.762756Z",
   "producer": {
     "name": "scripts/valkey_e2e_gate.py",
     "version": "v1"
@@ -18,7 +18,7 @@
         "nodehost_count": 2,
         "parallelism": 8
       },
-      "duration_seconds": 0.35502,
+      "duration_seconds": 0.378645,
       "name": "nodehost_start",
       "status": "PASS"
     },
@@ -28,7 +28,7 @@
         "node_count": 50,
         "parallelism": 8
       },
-      "duration_seconds": 0.699537,
+      "duration_seconds": 0.756428,
       "name": "process_config_prepare",
       "status": "PASS"
     },
@@ -38,7 +38,7 @@
         "node_count": 50,
         "parallelism": 8
       },
-      "duration_seconds": 0.924569,
+      "duration_seconds": 0.919932,
       "name": "process_start",
       "status": "PASS"
     },
@@ -47,17 +47,24 @@
       "details": {
         "node_count": 50
       },
-      "duration_seconds": 0.039412,
+      "duration_seconds": 0.033989,
       "name": "process_ready_wait",
       "status": "PASS"
     },
     {
       "count": 1,
       "details": {
+        "cluster_create_command_seconds": 25.2987,
         "parallelism": 8,
-        "primary_count": 25
+        "primary_convergence_seconds": 0.002479,
+        "primary_count": 25,
+        "primary_meet_seconds": 0.0,
+        "probe_slot_assignment_seconds": 0.010489,
+        "slot_assignment_scope": "inside_valkey_cli_cluster_create",
+        "slot_assignment_seconds": 0.0,
+        "strategy": "valkey_cli_cluster_create_primaries"
       },
-      "duration_seconds": 34.304943,
+      "duration_seconds": 25.311716,
       "name": "primary_cluster_create",
       "status": "PASS"
     },
@@ -69,7 +76,7 @@
         "parallelism": 8,
         "replica_count": 25
       },
-      "duration_seconds": 6.088447,
+      "duration_seconds": 4.051768,
       "name": "replica_meet",
       "status": "PASS"
     },
@@ -79,18 +86,18 @@
         "parallelism": 8,
         "replica_count": 25
       },
-      "duration_seconds": 8.078247,
+      "duration_seconds": 8.071099,
       "name": "replica_replicate",
       "status": "PASS"
     },
     {
-      "count": 5,
+      "count": 23,
       "details": {
         "predicate": "cluster clean snapshot did not converge",
         "sample_count": 2,
         "sample_scope": "representative"
       },
-      "duration_seconds": 0.020878,
+      "duration_seconds": 0.14291,
       "name": "runtime_representative_probe",
       "status": "PASS"
     },
@@ -101,39 +108,39 @@
         "sample_count": 50,
         "sample_scope": "all_nodes"
       },
-      "duration_seconds": 0.036797,
+      "duration_seconds": 0.043531,
       "name": "runtime_final_full_probe",
       "status": "PASS"
     },
     {
-      "count": 9,
+      "count": 14,
       "details": {
         "mode": "diagnostic",
         "predicate": "cluster clean snapshot did not converge",
         "sample_count": 50,
         "sample_scope": "all_nodes"
       },
-      "duration_seconds": 0.353802,
+      "duration_seconds": 0.569537,
       "name": "runtime_diagnostic_full_probe",
       "status": "FAIL"
     },
     {
       "name": "wrapper_wait_cluster_ok",
       "status": "PASS",
-      "duration_seconds": 0.016998,
+      "duration_seconds": 0.017483,
       "count": 1,
       "details": {
         "min_nodes": 50,
         "endpoint_count": 50,
-        "representative_probe_duration_seconds": 0.004812,
-        "final_full_probe_duration_seconds": 0.011531,
+        "representative_probe_duration_seconds": 0.005423,
+        "final_full_probe_duration_seconds": 0.011434,
         "diagnostic_full_probe_duration_seconds": "MISSING"
       }
     },
     {
       "name": "wrapper_data_path_probe",
       "status": "PASS",
-      "duration_seconds": 0.001079,
+      "duration_seconds": 0.0012,
       "count": 1,
       "details": {
         "required": true
@@ -142,18 +149,18 @@
     {
       "name": "cleanup",
       "status": "PASS",
-      "duration_seconds": 16.45503,
+      "duration_seconds": 16.541836,
       "count": 1,
       "details": {
         "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
         "exit_code": 0,
-        "cleanup_command_wall_seconds": 16.454777
+        "cleanup_command_wall_seconds": 16.541613
       }
     },
     {
       "name": "setup_command_wall",
       "status": "PASS",
-      "duration_seconds": 67.263355,
+      "duration_seconds": 84.827709,
       "count": 1,
       "details": {
         "command": [
@@ -179,7 +186,7 @@
     {
       "name": "setup_stdout_write",
       "status": "PASS",
-      "duration_seconds": 0.000227,
+      "duration_seconds": 0.00027,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_setup.stdout.log"
@@ -188,7 +195,7 @@
     {
       "name": "setup_stderr_write",
       "status": "PASS",
-      "duration_seconds": 4.8e-05,
+      "duration_seconds": 6.6e-05,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_setup.stderr.log"
@@ -197,7 +204,7 @@
     {
       "name": "state_load",
       "status": "PASS",
-      "duration_seconds": 0.000557,
+      "duration_seconds": 0.00058,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_50.json"
@@ -206,7 +213,7 @@
     {
       "name": "cleanup_command_wall",
       "status": "PASS",
-      "duration_seconds": 16.454777,
+      "duration_seconds": 16.541613,
       "count": 1,
       "details": {
         "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
@@ -216,7 +223,7 @@
     {
       "name": "cleanup_stdout_write",
       "status": "PASS",
-      "duration_seconds": 0.000149,
+      "duration_seconds": 0.000119,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_50_cleanup.stdout.log"
@@ -234,7 +241,7 @@
     {
       "name": "artifact_write",
       "status": "PASS",
-      "duration_seconds": 0.000404,
+      "duration_seconds": 0.000336,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
@@ -243,8 +250,8 @@
     }
   ],
   "wrapper_probe_details": {
-    "representative_probe_duration_seconds": 0.004812,
-    "final_full_probe_duration_seconds": 0.011531,
+    "representative_probe_duration_seconds": 0.005423,
+    "final_full_probe_duration_seconds": 0.011434,
     "diagnostic_full_probe_duration_seconds": "MISSING",
     "wait_cluster_ok_probe_counts": {
       "representative_probe": 1,
@@ -253,24 +260,24 @@
     }
   },
   "summary": {
-    "cluster_create_duration_seconds": 48.471637,
-    "replica_config_duration_seconds": 8.078247,
-    "wrapper_probe_duration_seconds": 0.018077,
-    "final_full_probe_duration_seconds": 0.011531,
+    "cluster_create_duration_seconds": 37.434583,
+    "replica_config_duration_seconds": 8.071099,
+    "wrapper_probe_duration_seconds": 0.018683,
+    "final_full_probe_duration_seconds": 0.011434,
     "diagnostic_full_probe_duration_seconds": "MISSING",
-    "total_gate_seconds": 83.738078,
-    "setup_command_wall_seconds": 67.263355,
-    "setup_stdout_write_seconds": 0.000227,
-    "setup_stderr_write_seconds": 4.8e-05,
-    "state_load_seconds": 0.000557,
-    "wrapper_wait_cluster_ok_seconds": 0.016998,
-    "wrapper_data_path_probe_seconds": 0.001079,
-    "cleanup_command_wall_seconds": 16.454777,
-    "cleanup_stdout_write_seconds": 0.000149,
+    "total_gate_seconds": 101.389869,
+    "setup_command_wall_seconds": 84.827709,
+    "setup_stdout_write_seconds": 0.00027,
+    "setup_stderr_write_seconds": 6.6e-05,
+    "state_load_seconds": 0.00058,
+    "wrapper_wait_cluster_ok_seconds": 0.017483,
+    "wrapper_data_path_probe_seconds": 0.0012,
+    "cleanup_command_wall_seconds": 16.541613,
+    "cleanup_stdout_write_seconds": 0.000119,
     "cleanup_stderr_write_seconds": 3.8e-05,
-    "artifact_write_seconds": 0.000404,
-    "accounted_seconds": 83.737632,
-    "unattributed_seconds": 0.000446,
+    "artifact_write_seconds": 0.000336,
+    "accounted_seconds": 101.389414,
+    "unattributed_seconds": 0.000455,
     "unattributed_status": "PASS",
     "unattributed_explanation": {
       "status": "PASS",
@@ -278,19 +285,19 @@
     }
   },
   "accounting": {
-    "total_gate_seconds": 83.738078,
-    "setup_command_wall_seconds": 67.263355,
-    "setup_stdout_write_seconds": 0.000227,
-    "setup_stderr_write_seconds": 4.8e-05,
-    "state_load_seconds": 0.000557,
-    "wrapper_wait_cluster_ok_seconds": 0.016998,
-    "wrapper_data_path_probe_seconds": 0.001079,
-    "cleanup_command_wall_seconds": 16.454777,
-    "cleanup_stdout_write_seconds": 0.000149,
+    "total_gate_seconds": 101.389869,
+    "setup_command_wall_seconds": 84.827709,
+    "setup_stdout_write_seconds": 0.00027,
+    "setup_stderr_write_seconds": 6.6e-05,
+    "state_load_seconds": 0.00058,
+    "wrapper_wait_cluster_ok_seconds": 0.017483,
+    "wrapper_data_path_probe_seconds": 0.0012,
+    "cleanup_command_wall_seconds": 16.541613,
+    "cleanup_stdout_write_seconds": 0.000119,
     "cleanup_stderr_write_seconds": 3.8e-05,
-    "artifact_write_seconds": 0.000404,
-    "accounted_seconds": 83.737632,
-    "unattributed_seconds": 0.000446,
+    "artifact_write_seconds": 0.000336,
+    "accounted_seconds": 101.389414,
+    "unattributed_seconds": 0.000455,
     "unattributed_status": "PASS",
     "unattributed_explanation": {
       "status": "PASS",

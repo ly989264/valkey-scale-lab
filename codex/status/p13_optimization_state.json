@@ -1,9 +1,10 @@
 {
   "schema_version": "v1",
   "completed_phases": [
-    "P13O-00_TIMING_ACCOUNTING"
+    "P13O-00_TIMING_ACCOUNTING",
+    "P13O-01_CLUSTER_CREATE_AB"
   ],
-  "last_completed_phase": "P13O-00_TIMING_ACCOUNTING",
-  "next_phase": "P13O-01_CLUSTER_CREATE_AB",
-  "last_updated": "2026-06-29T10:03:59.508011Z"
+  "last_completed_phase": "P13O-01_CLUSTER_CREATE_AB",
+  "next_phase": "P13O-02_REPLICA_REPLICATE_BREAKDOWN",
+  "last_updated": "2026-06-29T11:33:18.335256Z"
 }

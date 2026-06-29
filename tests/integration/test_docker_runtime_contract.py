@@ -73,6 +73,22 @@ def test_p13_runtime_timing_names_split_diagnostic_probe() -> None:
     assert entries["runtime_diagnostic_full_probe"]["status"] == "FAIL"
 
 
+def test_cluster_create_strategy_defaults_to_valkey_cli(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("VSLAB_CLUSTER_CREATE_STRATEGY", raising=False)
+    assert docker_runtime._cluster_create_strategy() == docker_runtime.CLUSTER_CREATE_STRATEGY_DEFAULT
+
+
+def test_cluster_create_strategy_accepts_manual_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VSLAB_CLUSTER_CREATE_STRATEGY", docker_runtime.CLUSTER_CREATE_STRATEGY_MANUAL)
+    assert docker_runtime._cluster_create_strategy() == docker_runtime.CLUSTER_CREATE_STRATEGY_MANUAL
+
+
+def test_cluster_create_strategy_rejects_unknown(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("VSLAB_CLUSTER_CREATE_STRATEGY", "nodes_conf_fast_bootstrap")
+    with pytest.raises(DockerRuntimeError, match="unsupported cluster create strategy"):
+        docker_runtime._cluster_create_strategy()
+
+
 def test_process_nodehosts_group_logical_nodes_by_az() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_50.yaml"))
     nodes = docker_runtime._node_specs(config, "P13_SCALE_LADDER_50_100", "scale_50", "run")
@@ -684,6 +700,59 @@ def test_assign_probe_slot_to_first_primary_sets_slot_on_all_primaries(monkeypat
         ("p1", ("CLUSTER", "SETSLOT", 8014, "NODE", "id-p0")),
         ("p2", ("CLUSTER", "SETSLOT", 8014, "NODE", "id-p0")),
     }
+
+
+def test_default_primary_create_records_strategy_subtimings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("VSLAB_CLUSTER_CREATE_STRATEGY", raising=False)
+    monkeypatch.setattr(docker_runtime, "_create_primary_cluster", lambda primaries, timeout: "cluster create OK")
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_known", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_assign_probe_slot_to_first_primary", lambda primaries, timeout: "probe slot assigned")
+
+    output, details = docker_runtime._create_primary_cluster_valkey_cli([{"logical_id": "p0"}, {"logical_id": "p1"}], timeout=30)
+
+    assert "cluster create OK" in output
+    assert details["primary_meet_seconds"] == 0.0
+    assert details["slot_assignment_seconds"] == 0.0
+    assert details["slot_assignment_scope"] == "inside_valkey_cli_cluster_create"
+    assert details["cluster_create_command_seconds"] >= 0.0
+    assert details["primary_convergence_seconds"] >= 0.0
+    assert details["probe_slot_assignment_seconds"] >= 0.0
+
+
+def test_manual_primary_create_uses_tree_meet_and_parallel_slots(monkeypatch: pytest.MonkeyPatch) -> None:
+    primaries = [{"logical_id": f"p{idx}"} for idx in range(3)]
+    slot_calls: list[tuple[str, int, int]] = []
+    parallel_labels: list[str] = []
+
+    monkeypatch.setattr(docker_runtime, "_tree_fanout_meet_nodes", lambda seed, nodes, timeout: 2)
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_known", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_slots_assigned", lambda *args, **kwargs: None)
+    monkeypatch.setattr(docker_runtime, "_wait_cluster_ok", lambda *args, **kwargs: None)
+
+    def fake_add_slots(node: dict, start: int, end: int) -> None:
+        slot_calls.append((node["logical_id"], start, end))
+
+    def fake_parallel(items, worker, *, parallelism, timeout, label):
+        parallel_labels.append(label)
+        work = list(items)
+        for item in work:
+            worker(item)
+        return []
+
+    monkeypatch.setattr(docker_runtime, "_add_slots_node", fake_add_slots)
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
+
+    output, details = docker_runtime._create_primary_cluster_manual_tree_meet_parallel_slots(primaries, timeout=30)
+
+    assert "manual tree meet" in output
+    assert details["meet_commands"] == 2
+    assert details["cluster_create_command_seconds"] == 0.0
+    assert details["primary_meet_seconds"] >= 0.0
+    assert details["slot_assignment_seconds"] >= 0.0
+    assert details["primary_convergence_seconds"] >= 0.0
+    assert details["slot_assignment_scope"] == "parallel_cluster_addslots"
+    assert parallel_labels == ["parallel primary CLUSTER ADDSLOTS"]
+    assert len(slot_calls) == 3
 
 
 def test_port_collision_check_rejects_bound_port(monkeypatch: pytest.MonkeyPatch) -> None:

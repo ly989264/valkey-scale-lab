@@ -1,0 +1,88 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_optimization_phase_summary",
+  "phase_id": "P13O-01_CLUSTER_CREATE_AB",
+  "artifact_phase_id": "P13O_CLUSTER_CREATE_AB",
+  "run_id": "phase-P13O-01_CLUSTER_CREATE_AB",
+  "created_at": "2026-06-29T11:30:09.344789Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P13 cluster-create strategies compared with default 50/100 real gates and manual 50-node real proof.",
+  "required_artifacts": [
+    "artifacts/phases/P13O_CLUSTER_CREATE_AB/p13_cluster_create_strategy_comparison.json",
+    "artifacts/phases/P13O_CLUSTER_CREATE_AB/phase_summary.json"
+  ],
+  "real_valkey_evidence": {
+    "default_scale_50": {
+      "status": "PASS",
+      "nodes_observed": 50,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      }
+    },
+    "default_scale_100": {
+      "status": "PASS",
+      "nodes_observed": 100,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 50,
+        "replica": 50,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      }
+    },
+    "manual_scale_50": {
+      "status": "PASS",
+      "nodes_observed": 50,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      }
+    }
+  },
+  "timing_accounting": {
+    "valkey_cli_cluster_create_primaries": [
+      {
+        "scenario": "scale_50",
+        "primary_meet_seconds": 0.0,
+        "slot_assignment_seconds": 0.0,
+        "cluster_create_command_seconds": 25.2987,
+        "primary_convergence_seconds": 0.002479,
+        "primary_cluster_create_total_seconds": 25.311716
+      },
+      {
+        "scenario": "scale_100",
+        "primary_meet_seconds": 0.0,
+        "slot_assignment_seconds": 0.0,
+        "cluster_create_command_seconds": 75.730117,
+        "primary_convergence_seconds": 0.001947,
+        "primary_cluster_create_total_seconds": 75.746212
+      }
+    ],
+    "manual_tree_meet_parallel_slots": [
+      {
+        "scenario": "scale_50",
+        "primary_meet_seconds": 0.005216,
+        "slot_assignment_seconds": 44.367462,
+        "cluster_create_command_seconds": 0.0,
+        "primary_convergence_seconds": 1.00936,
+        "primary_cluster_create_total_seconds": 45.382083
+      }
+    ]
+  },
+  "cluster_create_strategy_comparison_path": "artifacts/phases/P13O_CLUSTER_CREATE_AB/p13_cluster_create_strategy_comparison.json",
+  "errors": []
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P13O-01_CLUSTER_CREATE_AB",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-29T11:31:36Z",
+  "gate_result_path": "artifacts/gates/P13O-01_CLUSTER_CREATE_AB/gate_result.json",
+  "gate_result_sha256": "23771065c4d093e8c2c2c1653821e6d76acc9ebc0062f0824b2ff9a609218c6a",
+  "artifact_paths": [
+    "artifacts/phases/P13O_CLUSTER_CREATE_AB/p13_cluster_create_strategy_comparison.json",
+    "artifacts/phases/P13O_CLUSTER_CREATE_AB/phase_summary.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+    "artifacts/phases/P13O_CLUSTER_CREATE_AB/valkey_e2e_evidence_manual_scale_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+    "artifacts/phases/P13O_CLUSTER_CREATE_AB/cleanup_report.json"
+  ],
+  "risks": [
+    {
+      "risk": "Manual strategy has 50-node proof only",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "Allowed by P13O-01 manifest; default 50/100 gates remain on valkey_cli_cluster_create_primaries and manual 100 is SKIPPED_WITH_REASON."
+    }
+  ],
+  "rationale": "All P13O-01 manifest gates passed with matching commands and log SHA256 values; required artifacts validated; real Valkey 9.1.0 evidence covers default 50/100 and manual 50; cleanup reports PASS with no remaining resources; default strategy and safety constraints remain intact."
+}
