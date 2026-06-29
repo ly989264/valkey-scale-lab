@@ -61,6 +61,40 @@ def test_fault_requires_host_network_guard(tmp_path: Path) -> None:
         apply_fault(state_path=state, target_logical_id="shard-0000-primary", fault_json=spec, out_path=tmp_path / "out.json")
 
 
+def test_fault_rejects_unknown_target(tmp_path: Path) -> None:
+    state = _state(tmp_path / "state.json")
+    spec = tmp_path / "fault.json"
+    spec.write_text(
+        json.dumps(
+            {
+                "fault_id": "missing-target",
+                "type": "network_delay",
+                "forbid_host_network_mutation": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(FaultError, match="target logical id not found"):
+        apply_fault(state_path=state, target_logical_id="shard-9999-primary", fault_json=spec, out_path=tmp_path / "out.json")
+
+
+def test_fault_rejects_unsupported_fault_type(tmp_path: Path) -> None:
+    state = _state(tmp_path / "state.json")
+    spec = tmp_path / "fault.json"
+    spec.write_text(
+        json.dumps(
+            {
+                "fault_id": "unsafe-route",
+                "type": "host_route_change",
+                "forbid_host_network_mutation": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(FaultError, match="unsupported fault type"):
+        apply_fault(state_path=state, target_logical_id="shard-0000-primary", fault_json=spec, out_path=tmp_path / "out.json")
+
+
 def test_node_stop_stops_owned_container(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state = _state(tmp_path / "state.json")
     spec = tmp_path / "fault.json"

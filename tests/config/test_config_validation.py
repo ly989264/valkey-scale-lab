@@ -142,6 +142,39 @@ def test_rejects_bad_workload_ratio(tmp_path: Path) -> None:
     assert "WORKLOAD_RATIO_SUM" in {error["code"] for error in report["errors"]}
 
 
+def test_rejects_host_network_mutation_and_unsafe_sandbox_mode(tmp_path: Path) -> None:
+    config = tmp_path / "unsafe_network.yaml"
+    text = Path("templates/configs/local_az_3x2.yaml").read_text(encoding="utf-8")
+    text = text.replace("forbid_host_network_mutation: true", "forbid_host_network_mutation: false")
+    text = text.replace("sandbox_mode: container_namespace", "sandbox_mode: host_network")
+    config.write_text(text, encoding="utf-8")
+    report = validate_config_file(config, tmp_path / "report.json")
+    assert report["valid"] is False
+    assert {"HOST_NETWORK_FORBIDDEN", "SANDBOX_MODE"} <= {error["code"] for error in report["errors"]}
+
+
+def test_rejects_port_base_collision(tmp_path: Path) -> None:
+    config = tmp_path / "port_collision.yaml"
+    text = Path("templates/configs/local_az_3x2.yaml").read_text(encoding="utf-8")
+    text = text.replace("cluster_bus_port_base: 17100", "cluster_bus_port_base: 7100")
+    config.write_text(text, encoding="utf-8")
+    report = validate_config_file(config, tmp_path / "report.json")
+    assert report["valid"] is False
+    assert "PORT_BASE_COLLISION" in {error["code"] for error in report["errors"]}
+
+
+def test_rejects_invalid_fault_definition(tmp_path: Path) -> None:
+    config = tmp_path / "bad_fault.yaml"
+    text = Path("templates/configs/local_az_3x2.yaml").read_text(encoding="utf-8")
+    text = text.replace("type: network_delay", "type: host_route_change")
+    text = text.replace("target_scope: virtual_az", "target_scope: host")
+    text = text.replace("duration_seconds: 10", "duration_seconds: 0")
+    config.write_text(text, encoding="utf-8")
+    report = validate_config_file(config, tmp_path / "report.json")
+    assert report["valid"] is False
+    assert {"FAULT_TYPE", "FAULT_TARGET_SCOPE", "FAULT_DURATION"} <= {error["code"] for error in report["errors"]}
+
+
 def test_emit_schema_report(tmp_path: Path) -> None:
     out = tmp_path / "schema_report.json"
     report = emit_schema_report(out)

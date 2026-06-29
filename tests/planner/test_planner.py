@@ -47,6 +47,22 @@ def test_az_balancing_is_deterministic(tmp_path: Path) -> None:
     assert plan["nodes"] == plan2["nodes"]
 
 
+def test_multi_replica_plan_keeps_replicas_away_from_primary_az(tmp_path: Path) -> None:
+    config = tmp_path / "multi_replica.yaml"
+    text = Path("templates/configs/local_az_3x2.yaml").read_text(encoding="utf-8")
+    config.write_text(text.replace("replicas_per_shard: 1", "replicas_per_shard: 2"), encoding="utf-8")
+    plan = create_plan_file(config, tmp_path / "cluster_plan.json")
+    assert plan["node_count"] == 9
+    by_shard: dict[str, list[dict]] = defaultdict(list)
+    for node in plan["nodes"]:
+        by_shard[node["shard_id"]].append(node)
+    for nodes in by_shard.values():
+        primary = [node for node in nodes if node["role"] == "primary"][0]
+        replicas = [node for node in nodes if node["role"] == "replica"]
+        assert len(replicas) == 2
+        assert all(replica["az_id"] != primary["az_id"] for replica in replicas)
+
+
 def test_1000_node_plan_is_opt_in_dry_run(tmp_path: Path) -> None:
     plan = create_plan_file("templates/configs/scale_1000_dryrun_optin.yaml", tmp_path / "scale_1000.json", dry_run=True)
     assert plan["node_count"] == 1000
