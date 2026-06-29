@@ -19,7 +19,8 @@ def test_github_coverage_gate_runs_harness_and_domain_tests() -> None:
     required_commands = [
         "python3 scripts/codex_gate.py precheck --all",
         "python3 scripts/safety_scan.py",
-        "python3 -m pytest -q tests/unit tests/ci",
+        "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py",
+        "python3 -m pytest -q tests/unit tests/ci/test_github_coverage_gates.py",
         "python3 -m pytest -q tests/config tests/planner",
         "python3 -m pytest -q tests/integration tests/fault tests/failover tests/orchestrator",
         "python3 -m pytest -q tests/analysis tests/report tests/stability tests/scale",
