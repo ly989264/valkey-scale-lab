@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "P13 Process Bootstrap Batching",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "created_at",
+    "producer",
+    "status",
+    "summary",
+    "scenario_observations",
+    "real_valkey_evidence",
+    "safety_constraints",
+    "source_artifacts",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "p13_process_bootstrap_batching"},
+    "phase_id": {"type": "string", "const": "P13O-06_PROCESS_RUNTIME_BOOTSTRAP_BATCHING"},
+    "created_at": {"type": "string", "minLength": 1},
+    "producer": {"type": "object"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL"]},
+    "summary": {
+      "type": "object",
+      "required": [
+        "scale_50_config_local_generate_seconds",
+        "scale_50_config_remote_install_seconds",
+        "scale_50_process_start_command_seconds",
+        "scale_50_pidfile_collect_seconds",
+        "scale_100_config_local_generate_seconds",
+        "scale_100_config_remote_install_seconds",
+        "scale_100_process_start_command_seconds",
+        "scale_100_pidfile_collect_seconds",
+        "scale_50_nodehost_bulk_install_used",
+        "scale_100_nodehost_bulk_install_used"
+      ],
+      "additionalProperties": true
+    },
+    "scenario_observations": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario",
+          "node_count",
+          "status",
+          "real_valkey",
+          "evidence_path",
+          "timing_path",
+          "cleanup_report_path",
+          "metrics",
+          "nodehost_bulk_install_used",
+          "docker_exec_count_before_after",
+          "docker_cp_count_before_after",
+          "per_logical_node_evidence"
+        ],
+        "properties": {
+          "scenario": {"type": "string", "enum": ["scale_50", "scale_100"]},
+          "node_count": {"type": "integer", "minimum": 1, "maximum": 100},
+          "status": {"type": "string", "enum": ["PASS", "FAIL"]},
+          "real_valkey": {"type": ["boolean", "string"]},
+          "evidence_path": {"type": "string", "minLength": 1},
+          "timing_path": {"type": "string", "minLength": 1},
+          "cleanup_report_path": {"type": "string", "minLength": 1},
+          "metrics": {
+            "type": "object",
+            "required": [
+              "config_local_generate_seconds",
+              "config_remote_install_seconds",
+              "process_start_command_seconds",
+              "pidfile_collect_seconds"
+            ],
+            "properties": {
+              "config_local_generate_seconds": {"type": "number", "minimum": 0},
+              "config_remote_install_seconds": {"type": "number", "minimum": 0},
+              "process_start_command_seconds": {"type": "number", "minimum": 0},
+              "pidfile_collect_seconds": {"type": "number", "minimum": 0}
+            },
+            "additionalProperties": true
+          },
+          "nodehost_bulk_install_used": {"type": "boolean", "const": true},
+          "docker_exec_count_before_after": {
+            "type": "object",
+            "required": ["before", "after", "reduction"],
+            "properties": {
+              "before": {"type": "integer", "minimum": 1},
+              "after": {"type": "integer", "minimum": 1},
+              "reduction": {"type": "integer", "minimum": 1}
+            },
+            "additionalProperties": true
+          },
+          "docker_cp_count_before_after": {
+            "type": "object",
+            "required": ["before", "after", "reduction"],
+            "properties": {
+              "before": {"type": "integer", "minimum": 1},
+              "after": {"type": "integer", "minimum": 1},
+              "reduction": {"type": "integer", "minimum": 1}
+            },
+            "additionalProperties": true
+          },
+          "per_logical_node_evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["logical_id", "config_file", "data_dir", "log_file", "pid_file", "pid"],
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "real_valkey_evidence": {"type": "object"},
+    "safety_constraints": {
+      "type": "object",
+      "required": [
+        "real_valkey_evidence_replaced",
+        "final_full_node_proof_preserved",
+        "nodes_conf_fast_bootstrap_used",
+        "host_network_mutation",
+        "p14_executed",
+        "default_max_nodes"
+      ],
+      "properties": {
+        "real_valkey_evidence_replaced": {"type": "boolean", "const": false},
+        "final_full_node_proof_preserved": {"type": "boolean", "const": true},
+        "nodes_conf_fast_bootstrap_used": {"type": "boolean", "const": false},
+        "host_network_mutation": {"type": "boolean", "const": false},
+        "p14_executed": {"type": "boolean", "const": false},
+        "default_max_nodes": {"type": "integer", "maximum": 100}
+      },
+      "additionalProperties": true
+    },
+    "source_artifacts": {"type": "array"},
+    "errors": {"type": "array"}
+  },
+  "additionalProperties": true
+}

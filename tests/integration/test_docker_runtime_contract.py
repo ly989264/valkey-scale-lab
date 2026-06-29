@@ -119,6 +119,100 @@ def test_process_nodehosts_group_logical_nodes_by_az() -> None:
     assert all(node["cluster_bus_port"] >= 17400 for node in nodes)
 
 
+def _assert_process_bootstrap_uses_nodehost_bundle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    config_path: str,
+    phase: str,
+    scenario: str,
+    expected_nodes: int,
+) -> None:
+    config = docker_runtime.normalize_config(docker_runtime.parse_config_file(config_path))
+    run_id = f"{phase}-{scenario}-20260628"
+    nodes = docker_runtime._node_specs(config, phase, scenario, run_id)
+    nodehosts = docker_runtime._process_nodehosts(config, nodes, phase, scenario, run_id)
+    for index, nodehost in enumerate(nodehosts):
+        nodehost["container_id"] = f"cid-{index}"
+        nodehost["container_ip"] = f"172.18.0.{index + 2}"
+    nodehost_by_id = {nodehost["nodehost_id"]: nodehost for nodehost in nodehosts}
+    calls: list[list[str]] = []
+
+    def fake_parallel(items, worker, *, parallelism, timeout, label):
+        work = list(items)
+        return [worker(item) for item in work]
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        calls.append(args)
+        if args[0] == "cp":
+            assert "nodehost_bundles" in args[1]
+            assert not args[1].endswith(".conf")
+            return docker_runtime.DockerResult("", "", 0)
+        if args[:1] == ["exec"]:
+            assert args[2] == "sh"
+            script = args[3]
+            if script.endswith("/collect_pidfiles.sh"):
+                nodehost = next(item for item in nodehosts if item["container_name"] == args[1])
+                hosted = [node for node in nodes if node["nodehost_id"] == nodehost["nodehost_id"]]
+                stdout = "\n".join(f"{node['logical_id']}\t{4000 + idx}" for idx, node in enumerate(hosted))
+                return docker_runtime.DockerResult(stdout + "\n", "", 0)
+            assert script.endswith("/install.sh") or script.endswith("/start_all.sh")
+            return docker_runtime.DockerResult("", "", 0)
+        raise AssertionError(f"unexpected docker command: {args}")
+
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    config_details = docker_runtime._prepare_process_nodehost_bundles(
+        nodes=nodes,
+        nodehosts=nodehosts,
+        nodehost_by_id=nodehost_by_id,
+        artifacts=tmp_path,
+        run_id=run_id,
+    )
+    start_details = docker_runtime._start_process_nodes_batched(nodes=nodes, nodehosts=nodehosts)
+    summary = docker_runtime._process_bootstrap_batching_details(
+        nodes=nodes,
+        nodehosts=nodehosts,
+        config_prepare_details=config_details,
+        process_start_details=start_details,
+    )
+
+    assert len(nodes) == expected_nodes
+    assert len([call for call in calls if call[0] == "cp"]) == len(nodehosts)
+    assert len([call for call in calls if call[:1] == ["exec"] and call[3].endswith("/install.sh")]) == len(nodehosts)
+    assert len([call for call in calls if call[:1] == ["exec"] and call[3].endswith("/start_all.sh")]) == len(nodehosts)
+    assert len([call for call in calls if call[:1] == ["exec"] and call[3].endswith("/collect_pidfiles.sh")]) == len(nodehosts)
+    assert not any(call[:3] == ["exec", call[1], "valkey-server"] for call in calls)
+    assert not any(call[:3] == ["exec", call[1], "cat"] for call in calls)
+    assert summary["nodehost_bulk_install_used"] is True
+    assert summary["nodehost_bulk_start_used"] is True
+    assert summary["docker_exec_count_before_after"]["after"] < summary["docker_exec_count_before_after"]["before"]
+    assert summary["docker_cp_count_before_after"]["after"] < summary["docker_cp_count_before_after"]["before"]
+    assert all("pid" in node for node in nodes)
+
+
+def test_process_bootstrap_uses_nodehost_bundle_for_scale_10(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _assert_process_bootstrap_uses_nodehost_bundle(
+        tmp_path,
+        monkeypatch,
+        "templates/configs/scale_10.yaml",
+        "P12_SCALE_LADDER_10_30",
+        "scale_10",
+        10,
+    )
+
+
+def test_process_bootstrap_uses_nodehost_bundle_for_scale_30(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _assert_process_bootstrap_uses_nodehost_bundle(
+        tmp_path,
+        monkeypatch,
+        "templates/configs/scale_30.yaml",
+        "P12_SCALE_LADDER_10_30",
+        "scale_30",
+        30,
+    )
+
+
 def test_process_runtime_state_records_required_node_fields() -> None:
     nodes = [
         {
@@ -131,6 +225,7 @@ def test_process_runtime_state_records_required_node_fields() -> None:
             "role": "primary",
             "shard_id": "shard-0000",
             "pid": 123,
+            "pid_file": "/tmp/vslab/node/valkey.pid",
             "data_dir": "/tmp/vslab/node",
             "log_file": "/tmp/vslab/node/valkey.log",
             "config_file": "/tmp/vslab/node/valkey.conf",
@@ -169,7 +264,7 @@ def test_process_runtime_state_records_required_node_fields() -> None:
     assert state["runtime"]["cluster_meet_fanout"] == 4
     assert state["runtime"]["cluster_startup_parallelism"] == 8
     recorded = state["nodes"][0]
-    for key in ["logical_id", "nodehost_id", "pid", "client_port", "cluster_bus_port", "role", "shard_id", "data_dir", "log_file", "config_file"]:
+    for key in ["logical_id", "nodehost_id", "pid", "pid_file", "client_port", "cluster_bus_port", "role", "shard_id", "data_dir", "log_file", "config_file"]:
         assert key in recorded
     assert state["cluster_snapshots"] == [{"label": "final"}]
 
@@ -186,6 +281,7 @@ def test_process_runtime_state_records_large_cluster_create_strategy() -> None:
             "role": "primary",
             "shard_id": f"shard-{idx:04d}",
             "pid": 1000 + idx,
+            "pid_file": "/tmp/vslab/node/valkey.pid",
             "data_dir": "/tmp/vslab/node",
             "log_file": "/tmp/vslab/node/valkey.log",
             "config_file": "/tmp/vslab/node/valkey.conf",

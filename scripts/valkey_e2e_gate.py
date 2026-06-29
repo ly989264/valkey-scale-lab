@@ -292,6 +292,7 @@ def node_processes_from_state(state: dict[str, Any]) -> list[dict[str, Any]]:
         "logical_id",
         "nodehost_id",
         "pid",
+        "pid_file",
         "client_port",
         "cluster_bus_port",
         "role",

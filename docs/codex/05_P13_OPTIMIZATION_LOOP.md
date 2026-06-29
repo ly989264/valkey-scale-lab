@@ -61,3 +61,21 @@ Separate slow/perf tests from default P13 fast tests. Real Docker/Valkey proof c
 ### P13O-05_PERF_REGRESSION_BUDGET
 
 Emit startup optimization comparisons and soft performance budgets, with optional strict failure through `VSLAB_STRICT_PERF_BUDGET=1`.
+
+### P13O-06_PROCESS_RUNTIME_BOOTSTRAP_BATCHING
+
+Batch process runtime bootstrap by nodehost while preserving P13 real evidence. Configs are generated locally per logical node, installed remotely once per nodehost as a bundle, data directories are created by the nodehost install script, Valkey processes may be started by a nodehost `start_all.sh`, and pidfiles are collected in bulk.
+
+Required artifact:
+
+- `artifacts/phases/P13O_PROCESS_BOOTSTRAP_BATCHING/p13_process_bootstrap_batching.json`
+
+Pass criteria:
+
+- P13 `scale_50` and `scale_100` real gates still pass with `--require-data-path`;
+- role counts remain 25/25 and 50/50;
+- final full-node proof remains present;
+- cleanup reports for both rungs have `resources_remaining=[]`;
+- artifact records config local generation, remote install, process start command, pidfile collection, docker exec before/after, and docker cp before/after;
+- unit tests cover bundle generation and path safety;
+- integration tests cover 10/30-node bootstrap without per-node docker cp/mkdir/start regression.

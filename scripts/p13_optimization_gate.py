@@ -25,6 +25,7 @@ P13O_REPLICA_REPLICATE_PHASE = "P13O-02_REPLICA_REPLICATE_BREAKDOWN"
 P13O_CLEANUP_PHASE = "P13O-03_CLEANUP_OPTIMIZATION"
 P13O_FAST_TEST_SPLIT_PHASE = "P13O-04_FAST_TEST_SPLIT"
 P13O_PERF_BUDGET_PHASE = "P13O-05_PERF_REGRESSION_BUDGET"
+P13O_PROCESS_BOOTSTRAP_PHASE = "P13O-06_PROCESS_RUNTIME_BOOTSTRAP_BATCHING"
 DEFAULT_CLUSTER_CREATE_STRATEGY = "valkey_cli_cluster_create_primaries"
 MANUAL_CLUSTER_CREATE_STRATEGY = "manual_tree_meet_parallel_slots"
 REPLICA_REPLICATE_ARTIFACT_PHASE = "P13O_REPLICA_REPLICATE_BREAKDOWN"
@@ -34,6 +35,7 @@ CLEANUP_ARTIFACT_PHASE = "P13O_CLEANUP_OPTIMIZATION"
 FAST_TEST_SPLIT_ARTIFACT_PHASE = "P13O_FAST_TEST_SPLIT"
 FAST_TEST_MAX_SECONDS = 30.0
 PERF_BUDGET_ARTIFACT_PHASE = "P13O_PERF_REGRESSION_BUDGET"
+PROCESS_BOOTSTRAP_ARTIFACT_PHASE = "P13O_PROCESS_BOOTSTRAP_BATCHING"
 STRICT_PERF_BUDGET_ENV = "VSLAB_STRICT_PERF_BUDGET"
 PERF_BUDGET_THRESHOLDS = {
     "scale_50_real_gate": 150.0,
@@ -1682,6 +1684,354 @@ def validate_perf_budget_artifacts(phase: dict[str, Any], *, write_summary_artif
     return 0
 
 
+def bootstrap_metric(value: Any, reason: str) -> Any:
+    if numeric(value):
+        return round(float(value), 6)
+    return {"status": "MISSING", "reason": reason}
+
+
+def count_reduction(value: Any, field: str, errors: list[str], scenario: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        errors.append(f"{scenario}: {field} must be an object")
+        return {"before": 0, "after": 0, "reduction": 0, "status": "MISSING"}
+    before = value.get("before")
+    after = value.get("after")
+    if not isinstance(before, int) or isinstance(before, bool):
+        errors.append(f"{scenario}: {field}.before must be integer")
+        before = 0
+    if not isinstance(after, int) or isinstance(after, bool):
+        errors.append(f"{scenario}: {field}.after must be integer")
+        after = 0
+    reduction = int(before) - int(after)
+    if reduction <= 0:
+        errors.append(f"{scenario}: {field} must reduce command count, got before={before} after={after}")
+    copied = dict(value)
+    copied["before"] = int(before)
+    copied["after"] = int(after)
+    copied["reduction"] = reduction
+    return copied
+
+
+def bootstrap_details_from_timing(timing: dict[str, Any], scenario: str, errors: list[str]) -> dict[str, Any]:
+    config_entry = timing_entry(timing, "process_config_prepare")
+    start_entry = timing_entry(timing, "process_start")
+    if not isinstance(config_entry, dict):
+        errors.append(f"{scenario}: process_config_prepare timing entry is missing")
+        config_entry = {}
+    if not isinstance(start_entry, dict):
+        errors.append(f"{scenario}: process_start timing entry is missing")
+        start_entry = {}
+    config_details = config_entry.get("details", {}) if isinstance(config_entry.get("details", {}), dict) else {}
+    start_details = start_entry.get("details", {}) if isinstance(start_entry.get("details", {}), dict) else {}
+    bootstrap = start_details.get("process_bootstrap_batching") or config_details.get("process_bootstrap_batching")
+    if not isinstance(bootstrap, dict):
+        errors.append(f"{scenario}: process_bootstrap_batching details are missing")
+        bootstrap = {}
+    return bootstrap
+
+
+def full_node_proof_preserved(timing: dict[str, Any], evidence: dict[str, Any], expected_nodes: int) -> bool:
+    final_entry = timing_entry(timing, "runtime_final_full_probe")
+    if not isinstance(final_entry, dict) or final_entry.get("status") == "FAIL":
+        return False
+    for probe in evidence.get("probes", []):
+        if probe.get("status") != "PASS":
+            continue
+        if int(probe.get("cluster_known_nodes", 0) or 0) >= expected_nodes:
+            return True
+    return False
+
+
+def per_node_bootstrap_evidence(
+    bootstrap: dict[str, Any],
+    evidence: dict[str, Any],
+    expected_nodes: int,
+    scenario: str,
+    errors: list[str],
+) -> list[dict[str, Any]]:
+    nodes = bootstrap.get("per_logical_node_evidence")
+    if not isinstance(nodes, list) or not nodes:
+        nodes = evidence.get("node_processes", [])
+    if not isinstance(nodes, list):
+        errors.append(f"{scenario}: per logical node evidence must be a list")
+        return []
+    if len(nodes) != expected_nodes:
+        errors.append(f"{scenario}: per logical node evidence expected {expected_nodes}, got {len(nodes)}")
+    required = ["logical_id", "config_file", "data_dir", "log_file", "pid_file", "pid"]
+    normalized: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for idx, item in enumerate(nodes):
+        if not isinstance(item, dict):
+            errors.append(f"{scenario}: per logical node evidence item {idx} is not an object")
+            continue
+        logical_id = str(item.get("logical_id", "MISSING"))
+        if logical_id in seen:
+            errors.append(f"{scenario}: duplicate logical node evidence for {logical_id}")
+        seen.add(logical_id)
+        for field in required:
+            value = item.get(field)
+            if value in (None, "", "MISSING"):
+                errors.append(f"{scenario}: node {logical_id} missing {field}")
+        normalized.append({field: item.get(field, "MISSING") for field in required})
+    return normalized
+
+
+def process_bootstrap_observation(scenario: str, expected_nodes: int) -> tuple[dict[str, Any], dict[str, Any], list[str]]:
+    errors: list[str] = []
+    timing, timing_errors = validate_timing_artifact(scenario, expected_nodes)
+    errors.extend(timing_errors)
+    evidence, evidence_errors = validate_real_evidence(scenario, expected_nodes)
+    errors.extend(evidence_errors)
+    bootstrap = bootstrap_details_from_timing(timing, scenario, errors) if timing else {}
+    cleanup_path = ROOT / "artifacts" / "phases" / BASE_PHASE / f"cleanup_report_{scenario}.json"
+    cleanup_report: dict[str, Any] = {}
+    if cleanup_path.exists():
+        cleanup_report = load_json(cleanup_path)
+        if cleanup_report.get("status") != "PASS":
+            errors.append(f"{scenario}: cleanup report status is {cleanup_report.get('status')}")
+        if cleanup_report.get("resources_remaining") != []:
+            errors.append(f"{scenario}: cleanup report resources_remaining must be []")
+    else:
+        errors.append(f"{scenario}: missing cleanup report {rel(cleanup_path)}")
+
+    metrics = {
+        "config_local_generate_seconds": bootstrap_metric(
+            bootstrap.get("config_local_generate_seconds"),
+            "process_bootstrap_batching.config_local_generate_seconds missing",
+        ),
+        "config_remote_install_seconds": bootstrap_metric(
+            bootstrap.get("config_remote_install_seconds"),
+            "process_bootstrap_batching.config_remote_install_seconds missing",
+        ),
+        "process_start_command_seconds": bootstrap_metric(
+            bootstrap.get("process_start_command_seconds"),
+            "process_bootstrap_batching.process_start_command_seconds missing",
+        ),
+        "pidfile_collect_seconds": bootstrap_metric(
+            bootstrap.get("pidfile_collect_seconds"),
+            "process_bootstrap_batching.pidfile_collect_seconds missing",
+        ),
+    }
+    for field, value in metrics.items():
+        if not numeric(value):
+            errors.append(f"{scenario}: metric {field} is missing")
+
+    if bootstrap.get("nodehost_bulk_install_used") is not True:
+        errors.append(f"{scenario}: nodehost_bulk_install_used must be true")
+    if bootstrap.get("nodehost_bulk_start_used") is not True:
+        errors.append(f"{scenario}: nodehost_bulk_start_used must be true")
+    docker_exec_counts = count_reduction(bootstrap.get("docker_exec_count_before_after"), "docker_exec_count_before_after", errors, scenario)
+    docker_cp_counts = count_reduction(bootstrap.get("docker_cp_count_before_after"), "docker_cp_count_before_after", errors, scenario)
+    final_proof = full_node_proof_preserved(timing, evidence, expected_nodes)
+    if not final_proof:
+        errors.append(f"{scenario}: final full-node proof is not preserved")
+    per_node_evidence = per_node_bootstrap_evidence(bootstrap, evidence, expected_nodes, scenario, errors)
+
+    observation = {
+        "scenario": scenario,
+        "node_count": expected_nodes,
+        "status": "PASS" if not errors else "FAIL",
+        "real_valkey": evidence.get("real_valkey", "MISSING"),
+        "evidence_path": rel(ROOT / "artifacts" / "phases" / BASE_PHASE / f"valkey_e2e_evidence_{scenario.removeprefix('scale_')}.json"),
+        "timing_path": rel(ROOT / "artifacts" / "phases" / BASE_PHASE / f"p13_timing_breakdown_{scenario}.json"),
+        "cleanup_report_path": rel(cleanup_path),
+        "metrics": metrics,
+        "nodehost_bulk_install_used": bootstrap.get("nodehost_bulk_install_used", "MISSING"),
+        "nodehost_bulk_start_used": bootstrap.get("nodehost_bulk_start_used", "MISSING"),
+        "docker_exec_count_before_after": docker_exec_counts,
+        "docker_cp_count_before_after": docker_cp_counts,
+        "per_logical_node_evidence": per_node_evidence,
+        "role_counts": evidence.get("role_counts", "MISSING"),
+        "data_path_result": evidence.get("data_path_result", "MISSING"),
+        "nodes_observed": evidence.get("nodes_observed", "MISSING"),
+        "final_full_node_proof_preserved": final_proof,
+        "cleanup_status": cleanup_report.get("status", "MISSING"),
+        "resources_remaining": cleanup_report.get("resources_remaining", "MISSING"),
+    }
+    return observation, evidence, errors
+
+
+def write_process_bootstrap_batching(errors: list[str]) -> tuple[Path, dict[str, Any], dict[str, dict[str, Any]]]:
+    out = ROOT / "artifacts" / "phases" / PROCESS_BOOTSTRAP_ARTIFACT_PHASE / "p13_process_bootstrap_batching.json"
+    observations: list[dict[str, Any]] = []
+    evidence: dict[str, dict[str, Any]] = {}
+    for scenario, expected_nodes in {"scale_50": 50, "scale_100": 100}.items():
+        observation, observed_evidence, obs_errors = process_bootstrap_observation(scenario, expected_nodes)
+        observations.append(observation)
+        evidence[scenario] = observed_evidence
+        errors.extend(obs_errors)
+    by_scenario = {item.get("scenario"): item for item in observations}
+
+    def metric(scenario: str, name: str) -> Any:
+        return by_scenario.get(scenario, {}).get("metrics", {}).get(name, "MISSING")
+
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": "p13_process_bootstrap_batching",
+        "phase_id": P13O_PROCESS_BOOTSTRAP_PHASE,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "summary": {
+            "scale_50_config_local_generate_seconds": metric("scale_50", "config_local_generate_seconds"),
+            "scale_50_config_remote_install_seconds": metric("scale_50", "config_remote_install_seconds"),
+            "scale_50_process_start_command_seconds": metric("scale_50", "process_start_command_seconds"),
+            "scale_50_pidfile_collect_seconds": metric("scale_50", "pidfile_collect_seconds"),
+            "scale_100_config_local_generate_seconds": metric("scale_100", "config_local_generate_seconds"),
+            "scale_100_config_remote_install_seconds": metric("scale_100", "config_remote_install_seconds"),
+            "scale_100_process_start_command_seconds": metric("scale_100", "process_start_command_seconds"),
+            "scale_100_pidfile_collect_seconds": metric("scale_100", "pidfile_collect_seconds"),
+            "scale_50_nodehost_bulk_install_used": by_scenario.get("scale_50", {}).get("nodehost_bulk_install_used", "MISSING"),
+            "scale_100_nodehost_bulk_install_used": by_scenario.get("scale_100", {}).get("nodehost_bulk_install_used", "MISSING"),
+            "scale_50_docker_exec_count_before_after": by_scenario.get("scale_50", {}).get("docker_exec_count_before_after", "MISSING"),
+            "scale_100_docker_exec_count_before_after": by_scenario.get("scale_100", {}).get("docker_exec_count_before_after", "MISSING"),
+            "scale_50_docker_cp_count_before_after": by_scenario.get("scale_50", {}).get("docker_cp_count_before_after", "MISSING"),
+            "scale_100_docker_cp_count_before_after": by_scenario.get("scale_100", {}).get("docker_cp_count_before_after", "MISSING"),
+        },
+        "scenario_observations": observations,
+        "real_valkey_evidence": {
+            scenario: {
+                "status": artifact.get("status", "MISSING"),
+                "real_valkey": artifact.get("real_valkey", "MISSING"),
+                "nodes_observed": artifact.get("nodes_observed", "MISSING"),
+                "data_path_result": artifact.get("data_path_result", "MISSING"),
+                "role_counts": artifact.get("role_counts", "MISSING"),
+                "valkey_versions": artifact.get("valkey_versions", "MISSING"),
+            }
+            for scenario, artifact in evidence.items()
+        },
+        "safety_constraints": {
+            "real_valkey_evidence_replaced": False,
+            "final_full_node_proof_preserved": all(item.get("final_full_node_proof_preserved") is True for item in observations),
+            "nodes_conf_fast_bootstrap_used": False,
+            "host_network_mutation": False,
+            "p14_executed": False,
+            "default_max_nodes": 100,
+        },
+        "source_artifacts": [
+            "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+            "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+        ],
+        "errors": errors,
+    }
+    write_json(out, artifact)
+    return out, artifact, evidence
+
+
+def write_process_bootstrap_phase_summary(
+    phase: dict[str, Any],
+    batching: dict[str, Any],
+    evidence: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> Path:
+    phase_id = str(phase["id"])
+    artifact_id = artifact_phase_id(phase)
+    out = ROOT / "artifacts" / "phases" / artifact_id / "phase_summary.json"
+    real_evidence = {
+        scenario: {
+            "status": artifact.get("status", "MISSING"),
+            "nodes_observed": artifact.get("nodes_observed", "MISSING"),
+            "data_path_result": artifact.get("data_path_result", "MISSING"),
+            "role_counts": artifact.get("role_counts", "MISSING"),
+            "valkey_versions": artifact.get("valkey_versions", "MISSING"),
+        }
+        for scenario, artifact in evidence.items()
+    }
+    summary = {
+        "schema_version": "v1",
+        "artifact_type": "p13_optimization_phase_summary",
+        "phase_id": phase_id,
+        "artifact_phase_id": artifact_id,
+        "run_id": f"phase-{phase_id}",
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors else "FAIL",
+        "summary": "P13 process runtime bootstrap now batches config install, directory creation, process start, and pidfile collection by nodehost.",
+        "required_artifacts": [item["path"] for item in phase.get("required_artifacts", [])],
+        "real_valkey_evidence": real_evidence,
+        "timing_accounting": batching.get("summary", {}),
+        "process_bootstrap_batching_path": rel(
+            ROOT / "artifacts" / "phases" / artifact_id / "p13_process_bootstrap_batching.json"
+        ),
+        "errors": errors,
+    }
+    write_json(out, summary)
+    return out
+
+
+def validate_process_bootstrap_artifacts(phase: dict[str, Any], *, write_summary_artifact: bool = True) -> int:
+    all_errors: list[str] = []
+    batching_path = ROOT / "artifacts" / "phases" / PROCESS_BOOTSTRAP_ARTIFACT_PHASE / "p13_process_bootstrap_batching.json"
+    if write_summary_artifact:
+        batching_path, batching, evidence = write_process_bootstrap_batching(all_errors)
+    elif batching_path.exists():
+        batching = load_json(batching_path)
+        evidence = {}
+    else:
+        batching = {}
+        evidence = {}
+        all_errors.append(f"missing process bootstrap batching artifact: {rel(batching_path)}")
+
+    if batching_path.exists():
+        all_errors.extend(validate_schema(batching_path, ROOT / "schemas" / "artifact" / "p13_process_bootstrap_batching.schema.json"))
+        if batching.get("status") != "PASS":
+            all_errors.append(f"process bootstrap batching status is {batching.get('status')}")
+        if batching.get("safety_constraints", {}).get("final_full_node_proof_preserved") is not True:
+            all_errors.append("final full-node proof must be preserved")
+        if batching.get("safety_constraints", {}).get("nodes_conf_fast_bootstrap_used") is not False:
+            all_errors.append("nodes.conf fast bootstrap must not be used")
+        observations = {item.get("scenario"): item for item in batching.get("scenario_observations", [])}
+        for scenario, expected_nodes in {"scale_50": 50, "scale_100": 100}.items():
+            observation = observations.get(scenario)
+            if not observation:
+                all_errors.append(f"missing process bootstrap observation {scenario}")
+                continue
+            if observation.get("status") != "PASS":
+                all_errors.append(f"process bootstrap observation {scenario} status is {observation.get('status')}")
+            if observation.get("node_count") != expected_nodes:
+                all_errors.append(f"{scenario}: node_count expected {expected_nodes}, got {observation.get('node_count')}")
+            if observation.get("nodehost_bulk_install_used") is not True:
+                all_errors.append(f"{scenario}: nodehost_bulk_install_used must be true")
+            for field in ["config_local_generate_seconds", "config_remote_install_seconds", "process_start_command_seconds", "pidfile_collect_seconds"]:
+                if not numeric(observation.get("metrics", {}).get(field)):
+                    all_errors.append(f"{scenario}: metrics.{field} must be numeric")
+            for field in ["docker_exec_count_before_after", "docker_cp_count_before_after"]:
+                counts = observation.get(field, {})
+                if not isinstance(counts, dict) or not isinstance(counts.get("before"), int) or not isinstance(counts.get("after"), int):
+                    all_errors.append(f"{scenario}: {field} must contain integer before/after")
+                elif counts["after"] >= counts["before"]:
+                    all_errors.append(f"{scenario}: {field} after must be lower than before")
+            if len(observation.get("per_logical_node_evidence", [])) != expected_nodes:
+                all_errors.append(f"{scenario}: per logical node evidence expected {expected_nodes}")
+
+    if not evidence and batching.get("scenario_observations"):
+        for observation in batching.get("scenario_observations", []):
+            evidence_path = ROOT / str(observation.get("evidence_path", ""))
+            expected_nodes = int(observation.get("node_count", 0) or 0)
+            observed, errors = validate_real_evidence_path(evidence_path, str(observation.get("scenario")), expected_nodes)
+            evidence[str(observation.get("scenario"))] = observed
+            all_errors.extend(errors)
+
+    summary_path = ROOT / "artifacts" / "phases" / PROCESS_BOOTSTRAP_ARTIFACT_PHASE / "phase_summary.json"
+    if write_summary_artifact:
+        summary_path = write_process_bootstrap_phase_summary(phase, batching, evidence, all_errors)
+    elif not summary_path.exists():
+        all_errors.append(f"missing phase summary artifact: {rel(summary_path)}")
+    if summary_path.exists():
+        all_errors.extend(validate_schema(summary_path, ROOT / "schemas" / "artifact" / "p13_optimization_phase_summary.schema.json"))
+
+    if all_errors:
+        for err in all_errors:
+            print(f"FAIL: {err}", file=sys.stderr)
+        return 1
+    print(f"PASS p13o artifacts phase={phase['id']} summary={rel(summary_path)}")
+    return 0
+
+
 def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool = True) -> int:
     manifest = load_manifest()
     phase = phase_by_id(manifest, args.phase)
@@ -1695,6 +2045,8 @@ def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool
         return validate_fast_test_split_artifacts(phase, write_summary_artifact=write_summary_artifact)
     if args.phase == P13O_PERF_BUDGET_PHASE:
         return validate_perf_budget_artifacts(phase, write_summary_artifact=write_summary_artifact)
+    if args.phase == P13O_PROCESS_BOOTSTRAP_PHASE:
+        return validate_process_bootstrap_artifacts(phase, write_summary_artifact=write_summary_artifact)
 
     all_errors: list[str] = []
     timings: dict[str, dict[str, Any]] = {}

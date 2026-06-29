@@ -1,0 +1,22 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P13O-06_PROCESS_RUNTIME_BOOTSTRAP_BATCHING",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-29T15:08:37Z",
+  "gate_result_path": "artifacts/gates/P13O-06_PROCESS_RUNTIME_BOOTSTRAP_BATCHING/gate_result.json",
+  "gate_result_sha256": "103255dd8b4a7d2d49a59fbcda712c5b5398a16bb30e96394a8b1a772b65087a",
+  "artifact_paths": [
+    "artifacts/phases/P13O_PROCESS_BOOTSTRAP_BATCHING/p13_process_bootstrap_batching.json",
+    "artifacts/phases/P13O_PROCESS_BOOTSTRAP_BATCHING/phase_summary.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+    "artifacts/harness_exception/P13O-06_PROCESS_RUNTIME_BOOTSTRAP_BATCHING.md"
+  ],
+  "risks": [],
+  "rationale": "All manifest gates passed with matching commands and log hashes. Required artifacts exist and schema-validate. Real Valkey 9.1.0 scale_50 and scale_100 evidence preserves require-data-path, role counts 25/25 and 50/50, final full-node proof, and cleanup resources_remaining=[]. Runtime batching is nodehost-scoped while preserving per-logical-node config/data/log/pid evidence. The protected harness extension is documented in artifacts/harness_exception/P13O-06_PROCESS_RUNTIME_BOOTSTRAP_BATCHING.md, with no P14 default run, no nodes.conf fast bootstrap construction, and no weakened cluster orchestration proof."
+}

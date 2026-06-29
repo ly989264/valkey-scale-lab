@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import shutil
 import socket
 import subprocess
 import time
@@ -31,6 +33,8 @@ CLUSTER_CREATE_STRATEGIES = {
     CLUSTER_CREATE_STRATEGY_DEFAULT,
     CLUSTER_CREATE_STRATEGY_MANUAL,
 }
+PROCESS_BUNDLE_ROOT = "/tmp"
+PROCESS_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 P13_TIMING_NAMES = [
     "nodehost_start",
     "process_config_prepare",
@@ -361,35 +365,42 @@ def _create_process_scenario(
         )
         nodehost_by_id = {nodehost["nodehost_id"]: nodehost for nodehost in nodehosts}
 
-        def prepare_node(node: dict[str, Any]) -> None:
-            nodehost = nodehost_by_id[node["nodehost_id"]]
-            _prepare_process_node(node, nodehost, artifacts, run_id)
-
+        config_prepare_details: dict[str, Any] = {}
         _run_timed_step(
             timings,
             "process_config_prepare",
-            lambda: _bounded_parallel(
-                nodes,
-                prepare_node,
-                parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-                timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
-                label="Valkey process config preparation",
+            lambda: config_prepare_details.update(
+                _prepare_process_nodehost_bundles(
+                    nodes=nodes,
+                    nodehosts=nodehosts,
+                    nodehost_by_id=nodehost_by_id,
+                    artifacts=artifacts,
+                    run_id=run_id,
+                )
             ),
-            {"node_count": len(nodes), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
+            config_prepare_details,
         )
 
+        process_start_details: dict[str, Any] = {}
         _run_timed_step(
             timings,
             "process_start",
-            lambda: _bounded_parallel(
-                nodes,
-                _start_process_node,
-                parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-                timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
-                label="Valkey process startup",
+            lambda: process_start_details.update(
+                _start_process_nodes_batched(
+                    nodes=nodes,
+                    nodehosts=nodehosts,
+                )
             ),
-            {"node_count": len(nodes), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
+            process_start_details,
         )
+        bootstrap_batching = _process_bootstrap_batching_details(
+            nodes=nodes,
+            nodehosts=nodehosts,
+            config_prepare_details=config_prepare_details,
+            process_start_details=process_start_details,
+        )
+        for timing_name in ["process_config_prepare", "process_start"]:
+            timings.setdefault(timing_name, {}).setdefault("details", {})["process_bootstrap_batching"] = bootstrap_batching
         _run_timed_step(
             timings,
             "process_ready_wait",
@@ -397,11 +408,13 @@ def _create_process_scenario(
             {"node_count": len(nodes)},
         )
         state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
+        state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
         _write_state(state_out, state)
         operations, snapshots = _configure_process_cluster(nodes, timings=timings)
         snapshots_path = artifacts / f"cluster_snapshots_{scenario}.json"
         snapshots_path.write_text(json.dumps(snapshots, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
+        state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
         state["runtime"]["cluster_snapshot_path"] = snapshots_path.as_posix()
         state["runtime"]["operations"] = operations
         timing_path = artifacts / f"runtime_timing_breakdown_{scenario}.json"
@@ -479,14 +492,29 @@ def _start_nodehost(
     return run_docker(args, timeout=180).stdout.strip()
 
 
-def _prepare_process_node(node: dict[str, Any], nodehost: dict[str, Any], artifacts: Path, run_id: str) -> None:
-    data_dir = f"/tmp/valkey-scale-lab/{run_id}/{node['logical_id']}"
-    config_file = f"{data_dir}/valkey.conf"
+def _safe_process_token(value: Any, field: str) -> str:
+    token = str(value)
+    if not token or not PROCESS_TOKEN_RE.fullmatch(token) or token in {".", ".."}:
+        raise DockerRuntimeError(f"unsafe process runtime {field}: {token!r}")
+    return token
+
+
+def _process_data_dir(run_id: str, logical_id: str) -> str:
+    safe_run = _safe_process_token(run_id, "run_id")
+    safe_node = _safe_process_token(logical_id, "logical_id")
+    return f"/tmp/valkey-scale-lab/{safe_run}/{safe_node}"
+
+
+def _process_bundle_name(run_id: str, nodehost_id: str) -> str:
+    safe_run = _safe_process_token(run_id, "run_id")
+    safe_nodehost = _safe_process_token(nodehost_id, "nodehost_id")
+    return f"vslab-bundle-{safe_run}-{safe_nodehost}"
+
+
+def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any]) -> str:
+    data_dir = _process_data_dir(str(node["run_id"]), str(node["logical_id"]))
     log_file = f"{data_dir}/valkey.log"
-    local_config_dir = artifacts / "node_configs"
-    local_config_dir.mkdir(parents=True, exist_ok=True)
-    local_config = local_config_dir / f"{node['logical_id']}.conf"
-    config_text = "\n".join(
+    return "\n".join(
         [
             f"port {node['client_port']}",
             "bind 0.0.0.0",
@@ -506,7 +534,23 @@ def _prepare_process_node(node: dict[str, Any], nodehost: dict[str, Any], artifa
             "",
         ]
     )
-    local_config.write_text(config_text, encoding="utf-8")
+
+
+def _prepare_process_node(node: dict[str, Any], nodehost: dict[str, Any], artifacts: Path, run_id: str) -> None:
+    _prepare_process_node_metadata(node, nodehost, artifacts, run_id)
+
+
+def _prepare_process_node_metadata(node: dict[str, Any], nodehost: dict[str, Any], artifacts: Path, run_id: str) -> None:
+    logical_id = _safe_process_token(node["logical_id"], "logical_id")
+    node["run_id"] = _safe_process_token(run_id, "run_id")
+    data_dir = _process_data_dir(run_id, logical_id)
+    config_file = f"{data_dir}/valkey.conf"
+    log_file = f"{data_dir}/valkey.log"
+    pid_file = f"{data_dir}/valkey.pid"
+    local_config_dir = artifacts / "node_configs"
+    local_config_dir.mkdir(parents=True, exist_ok=True)
+    local_config = local_config_dir / f"{logical_id}.conf"
+    local_config.write_text(_process_config_text(node, nodehost), encoding="utf-8")
     node.update(
         {
             "nodehost_container_id": nodehost["container_id"],
@@ -517,24 +561,291 @@ def _prepare_process_node(node: dict[str, Any], nodehost: dict[str, Any], artifa
             "container_ip": nodehost["container_ip"],
             "data_dir": data_dir,
             "log_file": log_file,
+            "pid_file": pid_file,
             "config_file": config_file,
             "config_artifact_file": local_config.as_posix(),
         }
     )
-    run_docker(["exec", nodehost["container_name"], "mkdir", "-p", data_dir], timeout=30)
-    run_docker(["cp", local_config.as_posix(), f"{nodehost['container_name']}:{config_file}"], timeout=30)
 
 
-def _start_process_node(node: dict[str, Any]) -> None:
-    run_docker(["exec", node["nodehost_container_name"], "valkey-server", node["config_file"]], timeout=30)
-    deadline = time.monotonic() + 15
-    while time.monotonic() < deadline:
-        result = run_docker(["exec", node["nodehost_container_name"], "cat", f"{node['data_dir']}/valkey.pid"], timeout=5, check=False)
-        if result.returncode == 0 and result.stdout.strip():
-            node["pid"] = int(result.stdout.strip())
-            return
-        time.sleep(0.5)
-    raise DockerRuntimeError(f"{node['logical_id']} did not write pid file")
+def _nodes_by_nodehost(nodes: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for node in nodes:
+        grouped.setdefault(str(node["nodehost_id"]), []).append(node)
+    return {nodehost_id: sorted(items, key=lambda item: int(item.get("ordinal", 0))) for nodehost_id, items in sorted(grouped.items())}
+
+
+def _write_nodehost_bundle(nodehost: dict[str, Any], hosted_nodes: list[dict[str, Any]], artifacts: Path, run_id: str) -> dict[str, Any]:
+    bundle_name = _process_bundle_name(run_id, str(nodehost["nodehost_id"]))
+    local_bundle = artifacts / "nodehost_bundles" / bundle_name
+    if local_bundle.exists():
+        shutil.rmtree(local_bundle)
+    config_dir = local_bundle / "node_configs"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    node_records: list[dict[str, Any]] = []
+    for node in hosted_nodes:
+        logical_id = _safe_process_token(node["logical_id"], "logical_id")
+        source_config = Path(str(node["config_artifact_file"]))
+        bundled_config = config_dir / f"{logical_id}.conf"
+        bundled_config.write_text(source_config.read_text(encoding="utf-8"), encoding="utf-8")
+        node_records.append(
+            {
+                "logical_id": logical_id,
+                "data_dir": node["data_dir"],
+                "config_file": node["config_file"],
+                "log_file": node["log_file"],
+                "pid_file": node["pid_file"],
+                "config_artifact_file": node["config_artifact_file"],
+            }
+        )
+
+    remote_bundle_dir = f"{PROCESS_BUNDLE_ROOT}/{bundle_name}"
+    install_lines = ["#!/bin/sh", "set -eu", f'BUNDLE_DIR="{remote_bundle_dir}"']
+    start_lines = ["#!/bin/sh", "set -eu"]
+    collect_lines = ["#!/bin/sh", "set -eu"]
+    for record in node_records:
+        logical_id = record["logical_id"]
+        data_dir = record["data_dir"]
+        config_file = record["config_file"]
+        pid_file = record["pid_file"]
+        install_lines.extend(
+            [
+                f'mkdir -p "{data_dir}"',
+                f'cp "$BUNDLE_DIR/node_configs/{logical_id}.conf" "{config_file}"',
+            ]
+        )
+        start_lines.append(f'valkey-server "{config_file}"')
+        collect_lines.extend(
+            [
+                "attempts=0",
+                f'while [ ! -s "{pid_file}" ] && [ "$attempts" -lt 30 ]; do',
+                "  attempts=$((attempts + 1))",
+                "  sleep 1",
+                "done",
+                f'if [ ! -s "{pid_file}" ]; then',
+                f'  echo "{logical_id}\\tMISSING" >&2',
+                "  exit 1",
+                "fi",
+                f'pid_value=$(cat "{pid_file}")',
+                f'printf "%s\\t%s\\n" "{logical_id}" "$pid_value"',
+            ]
+        )
+    manifest = {
+        "schema_version": "v1",
+        "bundle_name": bundle_name,
+        "nodehost_id": nodehost["nodehost_id"],
+        "run_id": run_id,
+        "node_count": len(hosted_nodes),
+        "nodes": node_records,
+    }
+    (local_bundle / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    for script_name, lines in {
+        "install.sh": install_lines,
+        "start_all.sh": start_lines,
+        "collect_pidfiles.sh": collect_lines,
+    }.items():
+        script_path = local_bundle / script_name
+        script_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        script_path.chmod(0o755)
+    nodehost.update(
+        {
+            "bundle_name": bundle_name,
+            "bundle_artifact_dir": local_bundle.as_posix(),
+            "remote_bundle_dir": remote_bundle_dir,
+        }
+    )
+    return {
+        "nodehost_id": nodehost["nodehost_id"],
+        "node_count": len(hosted_nodes),
+        "bundle_artifact_dir": local_bundle.as_posix(),
+        "remote_bundle_dir": remote_bundle_dir,
+    }
+
+
+def _install_nodehost_bundle(nodehost: dict[str, Any]) -> None:
+    container = str(nodehost["container_name"])
+    remote_bundle_parent = PROCESS_BUNDLE_ROOT
+    run_docker(["cp", str(nodehost["bundle_artifact_dir"]), f"{container}:{remote_bundle_parent}/"], timeout=120)
+    run_docker(["exec", container, "sh", f"{nodehost['remote_bundle_dir']}/install.sh"], timeout=120)
+
+
+def _prepare_process_nodehost_bundles(
+    *,
+    nodes: list[dict[str, Any]],
+    nodehosts: list[dict[str, Any]],
+    nodehost_by_id: dict[str, dict[str, Any]],
+    artifacts: Path,
+    run_id: str,
+) -> dict[str, Any]:
+    local_started = time.monotonic()
+    hosted = _nodes_by_nodehost(nodes)
+    bundle_records: list[dict[str, Any]] = []
+    for node in nodes:
+        nodehost = nodehost_by_id[str(node["nodehost_id"])]
+        _prepare_process_node_metadata(node, nodehost, artifacts, run_id)
+    for nodehost in nodehosts:
+        bundle_records.append(_write_nodehost_bundle(nodehost, hosted.get(str(nodehost["nodehost_id"]), []), artifacts, run_id))
+    local_seconds = round(max(time.monotonic() - local_started, 0.0), 6)
+
+    remote_started = time.monotonic()
+    _bounded_parallel(
+        nodehosts,
+        _install_nodehost_bundle,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
+        label="nodehost config bundle install",
+    )
+    remote_seconds = round(max(time.monotonic() - remote_started, 0.0), 6)
+    return {
+        "node_count": len(nodes),
+        "nodehost_count": len(nodehosts),
+        "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+        "config_local_generate_seconds": local_seconds,
+        "config_remote_install_seconds": remote_seconds,
+        "nodehost_bulk_install_used": True,
+        "bundle_records": bundle_records,
+        "docker_exec_count_before_after": {
+            "stage": "config_remote_install",
+            "before": len(nodes),
+            "after": len(nodehosts),
+            "before_basis": "legacy per-node mkdir",
+            "after_basis": "one install.sh exec per nodehost",
+        },
+        "docker_cp_count_before_after": {
+            "stage": "config_remote_install",
+            "before": len(nodes),
+            "after": len(nodehosts),
+            "before_basis": "legacy per-node config docker cp",
+            "after_basis": "one config bundle docker cp per nodehost",
+        },
+    }
+
+
+def _start_process_nodes_batched(*, nodes: list[dict[str, Any]], nodehosts: list[dict[str, Any]]) -> dict[str, Any]:
+    start_started = time.monotonic()
+
+    def start_nodehost(nodehost: dict[str, Any]) -> None:
+        run_docker(
+            ["exec", str(nodehost["container_name"]), "sh", f"{nodehost['remote_bundle_dir']}/start_all.sh"],
+            timeout=max(30, int(nodehost.get("logical_node_count", 1)) * 3),
+        )
+
+    _bounded_parallel(
+        nodehosts,
+        start_nodehost,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
+        label="nodehost bulk Valkey process startup",
+    )
+    start_seconds = round(max(time.monotonic() - start_started, 0.0), 6)
+
+    collect_started = time.monotonic()
+    pid_by_logical_id: dict[str, int] = {}
+
+    def collect_nodehost(nodehost: dict[str, Any]) -> dict[str, int]:
+        result = run_docker(
+            ["exec", str(nodehost["container_name"]), "sh", f"{nodehost['remote_bundle_dir']}/collect_pidfiles.sh"],
+            timeout=max(45, int(nodehost.get("logical_node_count", 1)) * 3),
+        )
+        collected: dict[str, int] = {}
+        for line in result.stdout.splitlines():
+            parts = line.strip().split()
+            if len(parts) != 2:
+                continue
+            logical_id = _safe_process_token(parts[0], "logical_id")
+            try:
+                collected[logical_id] = int(parts[1])
+            except ValueError as exc:
+                raise DockerRuntimeError(f"invalid pidfile value for {logical_id}: {parts[1]!r}") from exc
+        return collected
+
+    collected_by_nodehost = _bounded_parallel(
+        nodehosts,
+        collect_nodehost,
+        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+        timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
+        label="nodehost pidfile collection",
+    )
+    for collected in collected_by_nodehost:
+        pid_by_logical_id.update(collected)
+    for node in nodes:
+        logical_id = str(node["logical_id"])
+        if logical_id not in pid_by_logical_id:
+            raise DockerRuntimeError(f"{logical_id} did not write pid file")
+        node["pid"] = pid_by_logical_id[logical_id]
+    collect_seconds = round(max(time.monotonic() - collect_started, 0.0), 6)
+    return {
+        "node_count": len(nodes),
+        "nodehost_count": len(nodehosts),
+        "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+        "process_start_command_seconds": start_seconds,
+        "pidfile_collect_seconds": collect_seconds,
+        "nodehost_bulk_start_used": True,
+        "docker_exec_count_before_after": {
+            "stage": "process_start_and_pidfile_collect",
+            "before": len(nodes) * 2,
+            "after": len(nodehosts) * 2,
+            "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+            "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+        },
+    }
+
+
+def _process_bootstrap_batching_details(
+    *,
+    nodes: list[dict[str, Any]],
+    nodehosts: list[dict[str, Any]],
+    config_prepare_details: dict[str, Any],
+    process_start_details: dict[str, Any],
+) -> dict[str, Any]:
+    config_exec = config_prepare_details.get("docker_exec_count_before_after", {})
+    start_exec = process_start_details.get("docker_exec_count_before_after", {})
+    config_cp = config_prepare_details.get("docker_cp_count_before_after", {})
+    exec_before = int(config_exec.get("before", 0) or 0) + int(start_exec.get("before", 0) or 0)
+    exec_after = int(config_exec.get("after", 0) or 0) + int(start_exec.get("after", 0) or 0)
+    cp_before = int(config_cp.get("before", 0) or 0)
+    cp_after = int(config_cp.get("after", 0) or 0)
+    return {
+        "node_count": len(nodes),
+        "nodehost_count": len(nodehosts),
+        "config_local_generate_seconds": config_prepare_details.get("config_local_generate_seconds", "MISSING"),
+        "config_remote_install_seconds": config_prepare_details.get("config_remote_install_seconds", "MISSING"),
+        "nodehost_bulk_install_used": config_prepare_details.get("nodehost_bulk_install_used", False),
+        "process_start_command_seconds": process_start_details.get("process_start_command_seconds", "MISSING"),
+        "pidfile_collect_seconds": process_start_details.get("pidfile_collect_seconds", "MISSING"),
+        "nodehost_bulk_start_used": process_start_details.get("nodehost_bulk_start_used", False),
+        "docker_exec_count_before_after": {
+            "before": exec_before,
+            "after": exec_after,
+            "reduction": exec_before - exec_after,
+            "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+            "stages": {
+                "config_remote_install": config_exec,
+                "process_start_and_pidfile_collect": start_exec,
+            },
+        },
+        "docker_cp_count_before_after": {
+            "before": cp_before,
+            "after": cp_after,
+            "reduction": cp_before - cp_after,
+            "basis": "deterministic setup command plan for config transfer",
+            "stages": {
+                "config_remote_install": config_cp,
+            },
+        },
+        "per_logical_node_evidence": [
+            {
+                "logical_id": node.get("logical_id", "MISSING"),
+                "config_file": node.get("config_file", "MISSING"),
+                "config_artifact_file": node.get("config_artifact_file", "MISSING"),
+                "data_dir": node.get("data_dir", "MISSING"),
+                "log_file": node.get("log_file", "MISSING"),
+                "pid_file": node.get("pid_file", "MISSING"),
+                "pid": node.get("pid", "MISSING"),
+            }
+            for node in nodes
+        ],
+    }
 
 
 def _process_runtime_state(
@@ -592,6 +903,7 @@ def _process_runtime_state(
                 "role": node["role"],
                 "shard_id": node["shard_id"],
                 "pid": node["pid"],
+                "pid_file": node["pid_file"],
                 "data_dir": node["data_dir"],
                 "log_file": node["log_file"],
                 "config_file": node["config_file"],

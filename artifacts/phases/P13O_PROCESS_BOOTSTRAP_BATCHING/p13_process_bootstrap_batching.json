@@ -1,0 +1,1486 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_process_bootstrap_batching",
+  "phase_id": "P13O-06_PROCESS_RUNTIME_BOOTSTRAP_BATCHING",
+  "created_at": "2026-06-29T15:04:30.922016Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": {
+    "scale_50_config_local_generate_seconds": 0.013445,
+    "scale_50_config_remote_install_seconds": 0.126797,
+    "scale_50_process_start_command_seconds": 0.249862,
+    "scale_50_pidfile_collect_seconds": 0.076236,
+    "scale_100_config_local_generate_seconds": 0.033004,
+    "scale_100_config_remote_install_seconds": 0.147218,
+    "scale_100_process_start_command_seconds": 0.338232,
+    "scale_100_pidfile_collect_seconds": 0.080519,
+    "scale_50_nodehost_bulk_install_used": true,
+    "scale_100_nodehost_bulk_install_used": true,
+    "scale_50_docker_exec_count_before_after": {
+      "after": 6,
+      "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+      "before": 150,
+      "reduction": 144,
+      "stages": {
+        "config_remote_install": {
+          "after": 2,
+          "after_basis": "one install.sh exec per nodehost",
+          "before": 50,
+          "before_basis": "legacy per-node mkdir",
+          "stage": "config_remote_install"
+        },
+        "process_start_and_pidfile_collect": {
+          "after": 4,
+          "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+          "before": 100,
+          "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+          "stage": "process_start_and_pidfile_collect"
+        }
+      }
+    },
+    "scale_100_docker_exec_count_before_after": {
+      "after": 6,
+      "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+      "before": 300,
+      "reduction": 294,
+      "stages": {
+        "config_remote_install": {
+          "after": 2,
+          "after_basis": "one install.sh exec per nodehost",
+          "before": 100,
+          "before_basis": "legacy per-node mkdir",
+          "stage": "config_remote_install"
+        },
+        "process_start_and_pidfile_collect": {
+          "after": 4,
+          "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+          "before": 200,
+          "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+          "stage": "process_start_and_pidfile_collect"
+        }
+      }
+    },
+    "scale_50_docker_cp_count_before_after": {
+      "after": 2,
+      "basis": "deterministic setup command plan for config transfer",
+      "before": 50,
+      "reduction": 48,
+      "stages": {
+        "config_remote_install": {
+          "after": 2,
+          "after_basis": "one config bundle docker cp per nodehost",
+          "before": 50,
+          "before_basis": "legacy per-node config docker cp",
+          "stage": "config_remote_install"
+        }
+      }
+    },
+    "scale_100_docker_cp_count_before_after": {
+      "after": 2,
+      "basis": "deterministic setup command plan for config transfer",
+      "before": 100,
+      "reduction": 98,
+      "stages": {
+        "config_remote_install": {
+          "after": 2,
+          "after_basis": "one config bundle docker cp per nodehost",
+          "before": 100,
+          "before_basis": "legacy per-node config docker cp",
+          "stage": "config_remote_install"
+        }
+      }
+    }
+  },
+  "scenario_observations": [
+    {
+      "scenario": "scale_50",
+      "node_count": 50,
+      "status": "PASS",
+      "real_valkey": true,
+      "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+      "cleanup_report_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+      "metrics": {
+        "config_local_generate_seconds": 0.013445,
+        "config_remote_install_seconds": 0.126797,
+        "process_start_command_seconds": 0.249862,
+        "pidfile_collect_seconds": 0.076236
+      },
+      "nodehost_bulk_install_used": true,
+      "nodehost_bulk_start_used": true,
+      "docker_exec_count_before_after": {
+        "after": 6,
+        "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+        "before": 150,
+        "reduction": 144,
+        "stages": {
+          "config_remote_install": {
+            "after": 2,
+            "after_basis": "one install.sh exec per nodehost",
+            "before": 50,
+            "before_basis": "legacy per-node mkdir",
+            "stage": "config_remote_install"
+          },
+          "process_start_and_pidfile_collect": {
+            "after": 4,
+            "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+            "before": 100,
+            "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+            "stage": "process_start_and_pidfile_collect"
+          }
+        }
+      },
+      "docker_cp_count_before_after": {
+        "after": 2,
+        "basis": "deterministic setup command plan for config transfer",
+        "before": 50,
+        "reduction": 48,
+        "stages": {
+          "config_remote_install": {
+            "after": 2,
+            "after_basis": "one config bundle docker cp per nodehost",
+            "before": 50,
+            "before_basis": "legacy per-node config docker cp",
+            "stage": "config_remote_install"
+          }
+        }
+      },
+      "per_logical_node_evidence": [
+        {
+          "logical_id": "shard-0000-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0000-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0000-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0000-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0000-primary/valkey.pid",
+          "pid": 72
+        },
+        {
+          "logical_id": "shard-0001-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0001-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0001-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0001-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0001-primary/valkey.pid",
+          "pid": 72
+        },
+        {
+          "logical_id": "shard-0002-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0002-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0002-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0002-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0002-primary/valkey.pid",
+          "pid": 81
+        },
+        {
+          "logical_id": "shard-0003-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0003-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0003-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0003-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0003-primary/valkey.pid",
+          "pid": 81
+        },
+        {
+          "logical_id": "shard-0004-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0004-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0004-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0004-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0004-primary/valkey.pid",
+          "pid": 90
+        },
+        {
+          "logical_id": "shard-0005-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0005-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0005-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0005-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0005-primary/valkey.pid",
+          "pid": 90
+        },
+        {
+          "logical_id": "shard-0006-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0006-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0006-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0006-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0006-primary/valkey.pid",
+          "pid": 99
+        },
+        {
+          "logical_id": "shard-0007-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0007-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0007-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0007-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0007-primary/valkey.pid",
+          "pid": 99
+        },
+        {
+          "logical_id": "shard-0008-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0008-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0008-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0008-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0008-primary/valkey.pid",
+          "pid": 108
+        },
+        {
+          "logical_id": "shard-0009-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0009-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0009-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0009-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0009-primary/valkey.pid",
+          "pid": 108
+        },
+        {
+          "logical_id": "shard-0010-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0010-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0010-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0010-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0010-primary/valkey.pid",
+          "pid": 117
+        },
+        {
+          "logical_id": "shard-0011-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0011-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0011-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0011-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0011-primary/valkey.pid",
+          "pid": 117
+        },
+        {
+          "logical_id": "shard-0012-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0012-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0012-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0012-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0012-primary/valkey.pid",
+          "pid": 126
+        },
+        {
+          "logical_id": "shard-0013-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0013-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0013-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0013-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0013-primary/valkey.pid",
+          "pid": 124
+        },
+        {
+          "logical_id": "shard-0014-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0014-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0014-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0014-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0014-primary/valkey.pid",
+          "pid": 135
+        },
+        {
+          "logical_id": "shard-0015-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0015-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0015-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0015-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0015-primary/valkey.pid",
+          "pid": 135
+        },
+        {
+          "logical_id": "shard-0016-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0016-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0016-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0016-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0016-primary/valkey.pid",
+          "pid": 144
+        },
+        {
+          "logical_id": "shard-0017-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0017-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0017-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0017-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0017-primary/valkey.pid",
+          "pid": 144
+        },
+        {
+          "logical_id": "shard-0018-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0018-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0018-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0018-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0018-primary/valkey.pid",
+          "pid": 153
+        },
+        {
+          "logical_id": "shard-0019-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0019-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0019-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0019-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0019-primary/valkey.pid",
+          "pid": 153
+        },
+        {
+          "logical_id": "shard-0020-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0020-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0020-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0020-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0020-primary/valkey.pid",
+          "pid": 162
+        },
+        {
+          "logical_id": "shard-0021-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0021-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0021-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0021-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0021-primary/valkey.pid",
+          "pid": 162
+        },
+        {
+          "logical_id": "shard-0022-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0022-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0022-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0022-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0022-primary/valkey.pid",
+          "pid": 171
+        },
+        {
+          "logical_id": "shard-0023-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0023-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0023-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0023-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0023-primary/valkey.pid",
+          "pid": 171
+        },
+        {
+          "logical_id": "shard-0024-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0024-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0024-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0024-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0024-primary/valkey.pid",
+          "pid": 180
+        },
+        {
+          "logical_id": "shard-0000-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0000-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0000-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0000-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0000-replica-00/valkey.pid",
+          "pid": 180
+        },
+        {
+          "logical_id": "shard-0001-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0001-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0001-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0001-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0001-replica-00/valkey.pid",
+          "pid": 189
+        },
+        {
+          "logical_id": "shard-0002-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0002-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0002-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0002-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0002-replica-00/valkey.pid",
+          "pid": 189
+        },
+        {
+          "logical_id": "shard-0003-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0003-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0003-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0003-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0003-replica-00/valkey.pid",
+          "pid": 198
+        },
+        {
+          "logical_id": "shard-0004-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0004-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0004-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0004-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0004-replica-00/valkey.pid",
+          "pid": 198
+        },
+        {
+          "logical_id": "shard-0005-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0005-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0005-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0005-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0005-replica-00/valkey.pid",
+          "pid": 207
+        },
+        {
+          "logical_id": "shard-0006-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0006-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0006-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0006-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0006-replica-00/valkey.pid",
+          "pid": 207
+        },
+        {
+          "logical_id": "shard-0007-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0007-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0007-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0007-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0007-replica-00/valkey.pid",
+          "pid": 216
+        },
+        {
+          "logical_id": "shard-0008-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0008-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0008-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0008-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0008-replica-00/valkey.pid",
+          "pid": 216
+        },
+        {
+          "logical_id": "shard-0009-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0009-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0009-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0009-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0009-replica-00/valkey.pid",
+          "pid": 225
+        },
+        {
+          "logical_id": "shard-0010-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0010-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0010-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0010-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0010-replica-00/valkey.pid",
+          "pid": 225
+        },
+        {
+          "logical_id": "shard-0011-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0011-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0011-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0011-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0011-replica-00/valkey.pid",
+          "pid": 234
+        },
+        {
+          "logical_id": "shard-0012-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0012-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0012-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0012-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0012-replica-00/valkey.pid",
+          "pid": 234
+        },
+        {
+          "logical_id": "shard-0013-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0013-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0013-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0013-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0013-replica-00/valkey.pid",
+          "pid": 243
+        },
+        {
+          "logical_id": "shard-0014-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0014-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0014-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0014-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0014-replica-00/valkey.pid",
+          "pid": 243
+        },
+        {
+          "logical_id": "shard-0015-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0015-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0015-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0015-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0015-replica-00/valkey.pid",
+          "pid": 252
+        },
+        {
+          "logical_id": "shard-0016-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0016-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0016-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0016-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0016-replica-00/valkey.pid",
+          "pid": 252
+        },
+        {
+          "logical_id": "shard-0017-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0017-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0017-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0017-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0017-replica-00/valkey.pid",
+          "pid": 261
+        },
+        {
+          "logical_id": "shard-0018-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0018-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0018-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0018-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0018-replica-00/valkey.pid",
+          "pid": 261
+        },
+        {
+          "logical_id": "shard-0019-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0019-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0019-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0019-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0019-replica-00/valkey.pid",
+          "pid": 270
+        },
+        {
+          "logical_id": "shard-0020-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0020-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0020-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0020-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0020-replica-00/valkey.pid",
+          "pid": 270
+        },
+        {
+          "logical_id": "shard-0021-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0021-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0021-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0021-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0021-replica-00/valkey.pid",
+          "pid": 279
+        },
+        {
+          "logical_id": "shard-0022-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0022-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0022-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0022-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0022-replica-00/valkey.pid",
+          "pid": 279
+        },
+        {
+          "logical_id": "shard-0023-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0023-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0023-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0023-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0023-replica-00/valkey.pid",
+          "pid": 288
+        },
+        {
+          "logical_id": "shard-0024-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0024-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0024-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0024-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_50-20260628/shard-0024-replica-00/valkey.pid",
+          "pid": 288
+        }
+      ],
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "data_path_result": "PASS",
+      "nodes_observed": 50,
+      "final_full_node_proof_preserved": true,
+      "cleanup_status": "PASS",
+      "resources_remaining": []
+    },
+    {
+      "scenario": "scale_100",
+      "node_count": 100,
+      "status": "PASS",
+      "real_valkey": true,
+      "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+      "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+      "cleanup_report_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+      "metrics": {
+        "config_local_generate_seconds": 0.033004,
+        "config_remote_install_seconds": 0.147218,
+        "process_start_command_seconds": 0.338232,
+        "pidfile_collect_seconds": 0.080519
+      },
+      "nodehost_bulk_install_used": true,
+      "nodehost_bulk_start_used": true,
+      "docker_exec_count_before_after": {
+        "after": 6,
+        "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+        "before": 300,
+        "reduction": 294,
+        "stages": {
+          "config_remote_install": {
+            "after": 2,
+            "after_basis": "one install.sh exec per nodehost",
+            "before": 100,
+            "before_basis": "legacy per-node mkdir",
+            "stage": "config_remote_install"
+          },
+          "process_start_and_pidfile_collect": {
+            "after": 4,
+            "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+            "before": 200,
+            "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+            "stage": "process_start_and_pidfile_collect"
+          }
+        }
+      },
+      "docker_cp_count_before_after": {
+        "after": 2,
+        "basis": "deterministic setup command plan for config transfer",
+        "before": 100,
+        "reduction": 98,
+        "stages": {
+          "config_remote_install": {
+            "after": 2,
+            "after_basis": "one config bundle docker cp per nodehost",
+            "before": 100,
+            "before_basis": "legacy per-node config docker cp",
+            "stage": "config_remote_install"
+          }
+        }
+      },
+      "per_logical_node_evidence": [
+        {
+          "logical_id": "shard-0000-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0000-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0000-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0000-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0000-primary/valkey.pid",
+          "pid": 122
+        },
+        {
+          "logical_id": "shard-0001-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-primary/valkey.pid",
+          "pid": 122
+        },
+        {
+          "logical_id": "shard-0002-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary/valkey.pid",
+          "pid": 131
+        },
+        {
+          "logical_id": "shard-0003-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary/valkey.pid",
+          "pid": 131
+        },
+        {
+          "logical_id": "shard-0004-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary/valkey.pid",
+          "pid": 140
+        },
+        {
+          "logical_id": "shard-0005-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary/valkey.pid",
+          "pid": 140
+        },
+        {
+          "logical_id": "shard-0006-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0006-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0006-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0006-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0006-primary/valkey.pid",
+          "pid": 149
+        },
+        {
+          "logical_id": "shard-0007-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary/valkey.pid",
+          "pid": 149
+        },
+        {
+          "logical_id": "shard-0008-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary/valkey.pid",
+          "pid": 152
+        },
+        {
+          "logical_id": "shard-0009-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary/valkey.pid",
+          "pid": 152
+        },
+        {
+          "logical_id": "shard-0010-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0010-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0010-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0010-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0010-primary/valkey.pid",
+          "pid": 167
+        },
+        {
+          "logical_id": "shard-0011-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary/valkey.pid",
+          "pid": 167
+        },
+        {
+          "logical_id": "shard-0012-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary/valkey.pid",
+          "pid": 176
+        },
+        {
+          "logical_id": "shard-0013-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0013-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0013-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0013-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0013-primary/valkey.pid",
+          "pid": 176
+        },
+        {
+          "logical_id": "shard-0014-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0014-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0014-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0014-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0014-primary/valkey.pid",
+          "pid": 185
+        },
+        {
+          "logical_id": "shard-0015-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0015-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0015-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0015-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0015-primary/valkey.pid",
+          "pid": 185
+        },
+        {
+          "logical_id": "shard-0016-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary/valkey.pid",
+          "pid": 194
+        },
+        {
+          "logical_id": "shard-0017-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0017-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0017-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0017-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0017-primary/valkey.pid",
+          "pid": 194
+        },
+        {
+          "logical_id": "shard-0018-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0018-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0018-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0018-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0018-primary/valkey.pid",
+          "pid": 203
+        },
+        {
+          "logical_id": "shard-0019-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary/valkey.pid",
+          "pid": 203
+        },
+        {
+          "logical_id": "shard-0020-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary/valkey.pid",
+          "pid": 212
+        },
+        {
+          "logical_id": "shard-0021-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary/valkey.pid",
+          "pid": 212
+        },
+        {
+          "logical_id": "shard-0022-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0022-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0022-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0022-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0022-primary/valkey.pid",
+          "pid": 221
+        },
+        {
+          "logical_id": "shard-0023-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0023-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0023-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0023-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0023-primary/valkey.pid",
+          "pid": 221
+        },
+        {
+          "logical_id": "shard-0024-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary/valkey.pid",
+          "pid": 230
+        },
+        {
+          "logical_id": "shard-0025-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary/valkey.pid",
+          "pid": 230
+        },
+        {
+          "logical_id": "shard-0026-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-primary/valkey.pid",
+          "pid": 233
+        },
+        {
+          "logical_id": "shard-0027-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary/valkey.pid",
+          "pid": 233
+        },
+        {
+          "logical_id": "shard-0028-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0028-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0028-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0028-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0028-primary/valkey.pid",
+          "pid": 248
+        },
+        {
+          "logical_id": "shard-0029-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-primary/valkey.pid",
+          "pid": 248
+        },
+        {
+          "logical_id": "shard-0030-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary/valkey.pid",
+          "pid": 257
+        },
+        {
+          "logical_id": "shard-0031-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-primary/valkey.pid",
+          "pid": 257
+        },
+        {
+          "logical_id": "shard-0032-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0032-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0032-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0032-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0032-primary/valkey.pid",
+          "pid": 266
+        },
+        {
+          "logical_id": "shard-0033-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-primary/valkey.pid",
+          "pid": 266
+        },
+        {
+          "logical_id": "shard-0034-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary/valkey.pid",
+          "pid": 275
+        },
+        {
+          "logical_id": "shard-0035-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0035-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0035-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0035-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0035-primary/valkey.pid",
+          "pid": 275
+        },
+        {
+          "logical_id": "shard-0036-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-primary/valkey.pid",
+          "pid": 284
+        },
+        {
+          "logical_id": "shard-0037-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary/valkey.pid",
+          "pid": 284
+        },
+        {
+          "logical_id": "shard-0038-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary/valkey.pid",
+          "pid": 293
+        },
+        {
+          "logical_id": "shard-0039-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary/valkey.pid",
+          "pid": 293
+        },
+        {
+          "logical_id": "shard-0040-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary/valkey.pid",
+          "pid": 302
+        },
+        {
+          "logical_id": "shard-0041-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary/valkey.pid",
+          "pid": 302
+        },
+        {
+          "logical_id": "shard-0042-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0042-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0042-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0042-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0042-primary/valkey.pid",
+          "pid": 305
+        },
+        {
+          "logical_id": "shard-0043-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0043-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0043-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0043-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0043-primary/valkey.pid",
+          "pid": 305
+        },
+        {
+          "logical_id": "shard-0044-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary/valkey.pid",
+          "pid": 320
+        },
+        {
+          "logical_id": "shard-0045-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-primary/valkey.pid",
+          "pid": 320
+        },
+        {
+          "logical_id": "shard-0046-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0046-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0046-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0046-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0046-primary/valkey.pid",
+          "pid": 329
+        },
+        {
+          "logical_id": "shard-0047-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-primary/valkey.pid",
+          "pid": 329
+        },
+        {
+          "logical_id": "shard-0048-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0048-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0048-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0048-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0048-primary/valkey.pid",
+          "pid": 338
+        },
+        {
+          "logical_id": "shard-0049-primary",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary/valkey.pid",
+          "pid": 338
+        },
+        {
+          "logical_id": "shard-0000-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0000-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0000-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0000-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0000-replica-00/valkey.pid",
+          "pid": 347
+        },
+        {
+          "logical_id": "shard-0001-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00/valkey.pid",
+          "pid": 347
+        },
+        {
+          "logical_id": "shard-0002-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-replica-00/valkey.pid",
+          "pid": 356
+        },
+        {
+          "logical_id": "shard-0003-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-replica-00/valkey.pid",
+          "pid": 356
+        },
+        {
+          "logical_id": "shard-0004-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-replica-00/valkey.pid",
+          "pid": 365
+        },
+        {
+          "logical_id": "shard-0005-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00/valkey.pid",
+          "pid": 365
+        },
+        {
+          "logical_id": "shard-0006-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0006-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0006-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0006-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0006-replica-00/valkey.pid",
+          "pid": 374
+        },
+        {
+          "logical_id": "shard-0007-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00/valkey.pid",
+          "pid": 374
+        },
+        {
+          "logical_id": "shard-0008-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-replica-00/valkey.pid",
+          "pid": 383
+        },
+        {
+          "logical_id": "shard-0009-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-replica-00/valkey.pid",
+          "pid": 383
+        },
+        {
+          "logical_id": "shard-0010-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0010-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0010-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0010-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0010-replica-00/valkey.pid",
+          "pid": 392
+        },
+        {
+          "logical_id": "shard-0011-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-replica-00/valkey.pid",
+          "pid": 392
+        },
+        {
+          "logical_id": "shard-0012-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00/valkey.pid",
+          "pid": 395
+        },
+        {
+          "logical_id": "shard-0013-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0013-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0013-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0013-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0013-replica-00/valkey.pid",
+          "pid": 401
+        },
+        {
+          "logical_id": "shard-0014-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0014-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0014-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0014-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0014-replica-00/valkey.pid",
+          "pid": 410
+        },
+        {
+          "logical_id": "shard-0015-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0015-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0015-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0015-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0015-replica-00/valkey.pid",
+          "pid": 410
+        },
+        {
+          "logical_id": "shard-0016-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-replica-00/valkey.pid",
+          "pid": 419
+        },
+        {
+          "logical_id": "shard-0017-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0017-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0017-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0017-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0017-replica-00/valkey.pid",
+          "pid": 419
+        },
+        {
+          "logical_id": "shard-0018-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0018-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0018-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0018-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0018-replica-00/valkey.pid",
+          "pid": 428
+        },
+        {
+          "logical_id": "shard-0019-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-replica-00/valkey.pid",
+          "pid": 428
+        },
+        {
+          "logical_id": "shard-0020-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-replica-00/valkey.pid",
+          "pid": 437
+        },
+        {
+          "logical_id": "shard-0021-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-replica-00/valkey.pid",
+          "pid": 437
+        },
+        {
+          "logical_id": "shard-0022-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0022-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0022-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0022-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0022-replica-00/valkey.pid",
+          "pid": 446
+        },
+        {
+          "logical_id": "shard-0023-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0023-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0023-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0023-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0023-replica-00/valkey.pid",
+          "pid": 446
+        },
+        {
+          "logical_id": "shard-0024-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00/valkey.pid",
+          "pid": 449
+        },
+        {
+          "logical_id": "shard-0025-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00/valkey.pid",
+          "pid": 449
+        },
+        {
+          "logical_id": "shard-0026-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00/valkey.pid",
+          "pid": 464
+        },
+        {
+          "logical_id": "shard-0027-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-replica-00/valkey.pid",
+          "pid": 464
+        },
+        {
+          "logical_id": "shard-0028-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0028-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0028-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0028-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0028-replica-00/valkey.pid",
+          "pid": 473
+        },
+        {
+          "logical_id": "shard-0029-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00/valkey.pid",
+          "pid": 473
+        },
+        {
+          "logical_id": "shard-0030-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-replica-00/valkey.pid",
+          "pid": 482
+        },
+        {
+          "logical_id": "shard-0031-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00/valkey.pid",
+          "pid": 482
+        },
+        {
+          "logical_id": "shard-0032-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0032-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0032-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0032-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0032-replica-00/valkey.pid",
+          "pid": 485
+        },
+        {
+          "logical_id": "shard-0033-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00/valkey.pid",
+          "pid": 491
+        },
+        {
+          "logical_id": "shard-0034-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00/valkey.pid",
+          "pid": 494
+        },
+        {
+          "logical_id": "shard-0035-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0035-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0035-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0035-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0035-replica-00/valkey.pid",
+          "pid": 500
+        },
+        {
+          "logical_id": "shard-0036-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00/valkey.pid",
+          "pid": 503
+        },
+        {
+          "logical_id": "shard-0037-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00/valkey.pid",
+          "pid": 503
+        },
+        {
+          "logical_id": "shard-0038-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00/valkey.pid",
+          "pid": 512
+        },
+        {
+          "logical_id": "shard-0039-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00/valkey.pid",
+          "pid": 506
+        },
+        {
+          "logical_id": "shard-0040-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00/valkey.pid",
+          "pid": 521
+        },
+        {
+          "logical_id": "shard-0041-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00/valkey.pid",
+          "pid": 515
+        },
+        {
+          "logical_id": "shard-0042-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0042-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0042-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0042-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0042-replica-00/valkey.pid",
+          "pid": 536
+        },
+        {
+          "logical_id": "shard-0043-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0043-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0043-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0043-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0043-replica-00/valkey.pid",
+          "pid": 536
+        },
+        {
+          "logical_id": "shard-0044-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00/valkey.pid",
+          "pid": 545
+        },
+        {
+          "logical_id": "shard-0045-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00/valkey.pid",
+          "pid": 545
+        },
+        {
+          "logical_id": "shard-0046-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0046-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0046-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0046-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0046-replica-00/valkey.pid",
+          "pid": 554
+        },
+        {
+          "logical_id": "shard-0047-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00/valkey.pid",
+          "pid": 554
+        },
+        {
+          "logical_id": "shard-0048-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0048-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0048-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0048-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0048-replica-00/valkey.pid",
+          "pid": 563
+        },
+        {
+          "logical_id": "shard-0049-replica-00",
+          "config_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-replica-00/valkey.log",
+          "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-replica-00/valkey.pid",
+          "pid": 563
+        }
+      ],
+      "role_counts": {
+        "primary": 50,
+        "replica": 50,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "data_path_result": "PASS",
+      "nodes_observed": 100,
+      "final_full_node_proof_preserved": true,
+      "cleanup_status": "PASS",
+      "resources_remaining": []
+    }
+  ],
+  "real_valkey_evidence": {
+    "scale_50": {
+      "status": "PASS",
+      "real_valkey": true,
+      "nodes_observed": 50,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "valkey_versions": [
+        "9.1.0"
+      ]
+    },
+    "scale_100": {
+      "status": "PASS",
+      "real_valkey": true,
+      "nodes_observed": 100,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 50,
+        "replica": 50,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "valkey_versions": [
+        "9.1.0"
+      ]
+    }
+  },
+  "safety_constraints": {
+    "real_valkey_evidence_replaced": false,
+    "final_full_node_proof_preserved": true,
+    "nodes_conf_fast_bootstrap_used": false,
+    "host_network_mutation": false,
+    "p14_executed": false,
+    "default_max_nodes": 100
+  },
+  "source_artifacts": [
+    "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json"
+  ],
+  "errors": []
+}
