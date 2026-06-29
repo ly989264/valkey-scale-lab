@@ -4,9 +4,10 @@ Decision: PASS
 Fresh Context: YES
 Auditor: fresh-context-codex-reviewer
 Audit Time: 2026-06-29T02:47:50Z
+Audit Refresh Time: 2026-06-29T09:15:46Z
 
 Gate Result: artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json
-Observed Gate Result SHA256: 51e7ef7278e54cbe0f286004ddb62feb0a1fb2d2f68ccf79261d7e55fe8dc38f
+Observed Gate Result SHA256: 40052a30bb3f64f04f73106cf56ca74e7fb6c001570500911d631156f439fca8
 
 ## Scope inspected
 
@@ -23,6 +24,9 @@ Observed Gate Result SHA256: 51e7ef7278e54cbe0f286004ddb62feb0a1fb2d2f68ccf79261
 - schema validation output using repository schema validator
 - cleanup evidence
 - real Valkey evidence, if required
+- P13 timing breakdown artifacts:
+  artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json and
+  artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json
 
 ## Gate findings
 
@@ -49,6 +53,11 @@ Observed Gate Result SHA256: 51e7ef7278e54cbe0f286004ddb62feb0a1fb2d2f68ccf79261
 | artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json | schemas/artifact/scale_ladder_report.schema.json | valid | schema validation via scripts/schema_validator.py |
 | artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json | schemas/artifact/cleanup_report.schema.json | valid | schema validation via scripts/schema_validator.py |
 
+Additional timing artifacts inspected:
+
+- artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json
+- artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json
+
 ## Safety findings
 
 - Host network mutation: absent; `safety_static_scan` passed
@@ -72,4 +81,4 @@ Independent live probe: PASS (independent wrapper evidence: scripts/valkey_e2e_g
 
 ## Final rationale
 
-All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/valkey_e2e_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 50, 100.
+All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/valkey_e2e_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, observed node counts 50 and 100, clean primary/replica role counts, data-path PASS, and P13 timing breakdown artifacts for the optimized startup/probe path.

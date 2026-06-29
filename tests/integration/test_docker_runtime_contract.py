@@ -499,6 +499,7 @@ def test_large_cluster_create_retargets_replicas_after_primary_create(monkeypatc
     calls: list[list[str]] = []
     meet_calls: list[tuple[list[str], list[str]]] = []
     ensured: list[tuple[str, str]] = []
+    parallel_labels: list[str] = []
 
     def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
         calls.append(args)
@@ -533,13 +534,57 @@ def test_large_cluster_create_retargets_replicas_after_primary_create(monkeypatc
     )
     monkeypatch.setattr(docker_runtime, "_ensure_replica_of", fake_ensure)
 
+    original_parallel = docker_runtime._bounded_parallel
+
+    def capture_parallel(items, worker, *, parallelism, timeout, label):
+        parallel_labels.append(label)
+        return original_parallel(items, worker, parallelism=parallelism, timeout=timeout, label=label)
+
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", capture_parallel)
+
     docker_runtime._create_large_cluster(primaries, replicas, timeout=30)
 
     assert calls[0][:6] == ["exec", "p0", "valkey-cli", "--cluster", "create", "172.18.0.2:6379"]
     assert "172.18.0.4:6379" not in calls[0]
     assert "--cluster-replicas" not in calls[0]
     assert meet_calls == [(["shard-0000-primary"], ["shard-0000-replica-00", "shard-0001-replica-00"])]
-    assert ensured == [("r0", "id-p0"), ("r1", "id-p1")]
+    assert set(ensured) == {("r0", "id-p0"), ("r1", "id-p1")}
+    assert "parallel large cluster replica configuration" in parallel_labels
+
+
+def test_large_cluster_replica_configuration_output_is_deterministic(monkeypatch: pytest.MonkeyPatch) -> None:
+    parallel_calls: list[dict[str, object]] = []
+    primaries = [
+        {"logical_id": "shard-0000-primary", "container_name": "p0", "shard_id": "shard-0000"},
+        {"logical_id": "shard-0001-primary", "container_name": "p1", "shard_id": "shard-0001"},
+    ]
+    replicas = [
+        {"logical_id": "shard-0001-replica-00", "container_name": "r1", "shard_id": "shard-0001"},
+        {"logical_id": "shard-0000-replica-00", "container_name": "r0", "shard_id": "shard-0000"},
+    ]
+
+    monkeypatch.setattr(docker_runtime, "_cluster_node_ids_by_shard", lambda nodes, *, timeout: {"shard-0000": "id-p0", "shard-0001": "id-p1"})
+    monkeypatch.setattr(docker_runtime, "_ensure_replica_of", lambda replica, master_id, timeout: None)
+
+    def fake_parallel(items, worker, *, parallelism, timeout, label):
+        parallel_calls.append({"parallelism": parallelism, "label": label, "item_count": len(list(items))})
+        return [worker(item) for item in reversed(list(enumerate(replicas)))]
+
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
+
+    output = docker_runtime._configure_large_cluster_replicas(primaries, replicas, timeout=30)
+
+    assert parallel_calls == [
+        {
+            "parallelism": docker_runtime.CLUSTER_ORCHESTRATION_PARALLELISM,
+            "label": "parallel large cluster replica configuration",
+            "item_count": 2,
+        }
+    ]
+    assert output.splitlines() == [
+        "replica shard-0001-replica-00 configured for primary shard-0001",
+        "replica shard-0000-replica-00 configured for primary shard-0000",
+    ]
 
 
 def test_primary_cluster_create_uses_process_node_addresses(monkeypatch: pytest.MonkeyPatch) -> None:

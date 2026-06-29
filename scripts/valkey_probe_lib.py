@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import socket
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,18 @@ class RespConnection:
                 _ = self._read_response(fp)
             sock.sendall(encode_command(*args))
             return self._read_response(fp)
+
+    def execute_pipeline(self, commands: list[tuple[Any, ...]]) -> list[Any]:
+        if not commands:
+            return []
+        with socket.create_connection((self.host, self.port), timeout=self.timeout) as sock:
+            sock.settimeout(self.timeout)
+            fp = sock.makefile("rb")
+            if self.password:
+                sock.sendall(encode_command("AUTH", self.password))
+                _ = self._read_response(fp)
+            sock.sendall(b"".join(encode_command(*command) for command in commands))
+            return [self._read_response(fp) for _ in commands]
 
     def _read_line(self, fp) -> bytes:
         line = fp.readline()
@@ -151,10 +164,14 @@ def probe_endpoint(endpoint: Endpoint, timeout: float = 2.0) -> dict[str, Any]:
     }
     try:
         conn = RespConnection(endpoint.host, endpoint.port, endpoint.password, timeout=timeout)
-        pong = conn.execute("PING")
-        info_raw = conn.execute("INFO", "server")
-        cluster_info_raw = conn.execute("CLUSTER", "INFO")
-        cluster_nodes_raw = conn.execute("CLUSTER", "NODES")
+        pong, info_raw, cluster_info_raw, cluster_nodes_raw = conn.execute_pipeline(
+            [
+                ("PING",),
+                ("INFO", "server"),
+                ("CLUSTER", "INFO"),
+                ("CLUSTER", "NODES"),
+            ]
+        )
         info = parse_info(str(info_raw))
         cinfo = parse_cluster_info(str(cluster_info_raw))
         cnodes = parse_cluster_nodes(str(cluster_nodes_raw))
@@ -229,21 +246,133 @@ def endpoints_from_state(state: dict[str, Any]) -> list[Endpoint]:
     return [Endpoint.from_node(n) for n in state.get("nodes", [])]
 
 
-def wait_for_cluster_ok(endpoints: list[Endpoint], min_nodes: int, timeout_seconds: float = 60.0, interval: float = 1.0) -> tuple[bool, list[dict[str, Any]]]:
+def wait_for_cluster_ok(
+    endpoints: list[Endpoint],
+    min_nodes: int,
+    timeout_seconds: float = 60.0,
+    interval: float = 1.0,
+    timing: dict[str, Any] | None = None,
+) -> tuple[bool, list[dict[str, Any]]]:
     deadline = time.monotonic() + timeout_seconds
     last: list[dict[str, Any]] = []
-    expected_role_counts = _expected_role_counts(endpoints)
+    expected_role_counts = _expected_role_counts(endpoints, min_nodes)
+    representatives = _representative_endpoints(endpoints)
     while time.monotonic() < deadline:
-        probes = [probe_endpoint(ep) for ep in endpoints]
+        rep_started = time.monotonic()
+        probes = _probe_endpoints_concurrent(representatives)
+        _record_wait_timing(
+            timing,
+            "representative_probe",
+            rep_started,
+            {"endpoint_count": len(representatives), "sample_scope": "representative"},
+        )
         last = probes
-        ok = [p for p in probes if _probe_has_full_membership(p, min_nodes, expected_role_counts)]
-        if len(ok) >= min_nodes:
-            return True, probes
+        if _all_probes_have_full_membership(probes, min_nodes, expected_role_counts):
+            full_started = time.monotonic()
+            full_probes = _probe_endpoints_concurrent(endpoints)
+            _record_wait_timing(
+                timing,
+                "final_full_probe",
+                full_started,
+                {"endpoint_count": len(endpoints), "sample_scope": "all_nodes"},
+            )
+            last = full_probes
+            if _enough_probes_have_full_membership(full_probes, min_nodes, expected_role_counts):
+                return True, full_probes
+            _record_wait_timing(
+                timing,
+                "diagnostic_full_probe",
+                full_started,
+                {"endpoint_count": len(endpoints), "sample_scope": "all_nodes", "reason": "final_full_probe_failed"},
+                duration_override=0.0,
+            )
+            return False, full_probes
         time.sleep(interval)
-    return False, last
+    diagnostic_started = time.monotonic()
+    diagnostic = _probe_endpoints_concurrent(endpoints)
+    _record_wait_timing(
+        timing,
+        "diagnostic_full_probe",
+        diagnostic_started,
+        {"endpoint_count": len(endpoints), "sample_scope": "all_nodes", "reason": "representative_timeout"},
+    )
+    return False, diagnostic or last
 
 
-def _expected_role_counts(endpoints: list[Endpoint]) -> dict[str, int]:
+def _probe_endpoints_concurrent(endpoints: list[Endpoint]) -> list[dict[str, Any]]:
+    if not endpoints:
+        return []
+    max_workers = max(1, min(16, len(endpoints)))
+    results: list[dict[str, Any] | None] = [None] * len(endpoints)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(probe_endpoint, endpoint): (idx, endpoint) for idx, endpoint in enumerate(endpoints)}
+        for future in as_completed(futures):
+            idx, endpoint = futures[future]
+            try:
+                results[idx] = future.result()
+            except Exception as exc:  # noqa: BLE001 - diagnostics must retain endpoint failures
+                results[idx] = _failed_probe(endpoint, exc)
+    return [item for item in results if item is not None]
+
+
+def _failed_probe(endpoint: Any, exc: Exception) -> dict[str, Any]:
+    return {
+        "logical_id": str(getattr(endpoint, "logical_id", repr(endpoint))),
+        "host": str(getattr(endpoint, "host", "MISSING")),
+        "port": int(getattr(endpoint, "port", 0) or 0),
+        "status": "FAIL",
+        "error": repr(exc),
+    }
+
+
+def _representative_endpoints(endpoints: list[Endpoint]) -> list[Endpoint]:
+    if len(endpoints) <= 8:
+        return list(endpoints)
+    representatives: list[Endpoint] = [endpoints[0]]
+    first_id = str(getattr(endpoints[0], "logical_id", id(endpoints[0])))
+    seen: set[str] = {first_id}
+    per_key: set[tuple[str, str]] = set()
+    for endpoint in endpoints:
+        key = (str(getattr(endpoint, "az_id", None) or "MISSING"), str(getattr(endpoint, "role", None) or "MISSING"))
+        if key in per_key:
+            continue
+        per_key.add(key)
+        logical_id = str(getattr(endpoint, "logical_id", id(endpoint)))
+        if logical_id not in seen:
+            representatives.append(endpoint)
+            seen.add(logical_id)
+    return representatives
+
+
+def _record_wait_timing(
+    timing: dict[str, Any] | None,
+    name: str,
+    started: float,
+    details: dict[str, Any],
+    *,
+    duration_override: float | None = None,
+) -> None:
+    if timing is None:
+        return
+    duration = duration_override if duration_override is not None else max(time.monotonic() - started, 0.0)
+    entry = timing.setdefault(
+        name,
+        {
+            "name": name,
+            "status": "PASS",
+            "duration_seconds": 0.0,
+            "count": 0,
+            "details": {},
+        },
+    )
+    entry["duration_seconds"] = round(float(entry.get("duration_seconds", 0.0)) + duration, 6)
+    entry["count"] = int(entry.get("count", 0)) + 1
+    entry["details"].update(details)
+
+
+def _expected_role_counts(endpoints: list[Endpoint], min_nodes: int) -> dict[str, int]:
+    if min_nodes < len(endpoints):
+        return {}
     counts: dict[str, int] = {}
     for endpoint in endpoints:
         role = getattr(endpoint, "role", None)
@@ -251,6 +380,23 @@ def _expected_role_counts(endpoints: list[Endpoint]) -> dict[str, int]:
             return {}
         counts[role] = counts.get(role, 0) + 1
     return counts
+
+
+def _all_probes_have_full_membership(
+    probes: list[dict[str, Any]],
+    min_nodes: int,
+    expected_role_counts: dict[str, int] | None = None,
+) -> bool:
+    return bool(probes) and all(_probe_has_full_membership(probe, min_nodes, expected_role_counts) for probe in probes)
+
+
+def _enough_probes_have_full_membership(
+    probes: list[dict[str, Any]],
+    min_nodes: int,
+    expected_role_counts: dict[str, int] | None = None,
+) -> bool:
+    ok = [probe for probe in probes if _probe_has_full_membership(probe, min_nodes, expected_role_counts)]
+    return len(ok) >= min_nodes
 
 
 def _probe_has_full_membership(probe: dict[str, Any], min_nodes: int, expected_role_counts: dict[str, int] | None = None) -> bool:
@@ -266,15 +412,24 @@ def _probe_has_full_membership(probe: dict[str, Any], min_nodes: int, expected_r
     if known_nodes < min_nodes or len(cluster_nodes) < min_nodes:
         return False
     observed_role_counts: dict[str, int] = {}
+    healthy_nodes = 0
+    strict = bool(expected_role_counts)
     for node in cluster_nodes.values():
         flags = set(node.get("flags") or [])
         if flags.intersection({"fail", "handshake", "noaddr"}):
-            return False
+            if strict:
+                return False
+            continue
         if node.get("link_state") != "connected":
-            return False
+            if strict:
+                return False
+            continue
+        healthy_nodes += 1
         role = str(node.get("role"))
         if role in {"primary", "replica"}:
             observed_role_counts[role] = observed_role_counts.get(role, 0) + 1
+    if healthy_nodes < min_nodes:
+        return False
     if expected_role_counts:
         for role, expected in expected_role_counts.items():
             if observed_role_counts.get(role, 0) != expected:

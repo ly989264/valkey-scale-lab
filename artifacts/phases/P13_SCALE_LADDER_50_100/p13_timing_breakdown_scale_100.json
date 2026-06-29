@@ -1,0 +1,158 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_timing_breakdown",
+  "phase_id": "P13_SCALE_LADDER_50_100",
+  "run_id": "phase-P13_SCALE_LADDER_50_100-scale_100",
+  "scenario": "scale_100",
+  "created_at": "2026-06-29T09:15:02.345509Z",
+  "producer": {
+    "name": "scripts/valkey_e2e_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "node_count": 100,
+  "timings": [
+    {
+      "count": 1,
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      },
+      "duration_seconds": 0.449147,
+      "name": "nodehost_start",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "node_count": 100,
+        "parallelism": 8
+      },
+      "duration_seconds": 1.174828,
+      "name": "process_config_prepare",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "node_count": 100,
+        "parallelism": 8
+      },
+      "duration_seconds": 1.521886,
+      "name": "process_start",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "node_count": 100
+      },
+      "duration_seconds": 0.070938,
+      "name": "process_ready_wait",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "parallelism": 8,
+        "primary_count": 50
+      },
+      "duration_seconds": 33.420065,
+      "name": "primary_cluster_create",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "fanout": 4,
+        "meet_commands": 50,
+        "parallelism": 8,
+        "replica_count": 50
+      },
+      "duration_seconds": 1.051192,
+      "name": "replica_meet",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "parallelism": 8,
+        "replica_count": 50
+      },
+      "duration_seconds": 14.197066,
+      "name": "replica_replicate",
+      "status": "PASS"
+    },
+    {
+      "count": 5,
+      "details": {
+        "predicate": "cluster clean snapshot did not converge",
+        "sample_count": 2,
+        "sample_scope": "representative"
+      },
+      "duration_seconds": 0.019115,
+      "name": "runtime_representative_probe",
+      "status": "PASS"
+    },
+    {
+      "count": 16,
+      "details": {
+        "mode": "diagnostic",
+        "predicate": "cluster clean snapshot did not converge",
+        "sample_count": 100,
+        "sample_scope": "all_nodes"
+      },
+      "duration_seconds": 1.030675,
+      "name": "runtime_final_full_probe",
+      "status": "FAIL"
+    },
+    {
+      "name": "wrapper_wait_cluster_ok",
+      "status": "PASS",
+      "duration_seconds": 0.031289,
+      "count": 1,
+      "details": {
+        "min_nodes": 100,
+        "endpoint_count": 100,
+        "representative_probe_duration_seconds": 0.004994,
+        "final_full_probe_duration_seconds": 0.024267,
+        "diagnostic_full_probe_duration_seconds": "MISSING"
+      }
+    },
+    {
+      "name": "wrapper_data_path_probe",
+      "status": "PASS",
+      "duration_seconds": 0.00189,
+      "count": 1,
+      "details": {
+        "required": true
+      }
+    },
+    {
+      "name": "cleanup",
+      "status": "PASS",
+      "duration_seconds": 21.74373,
+      "count": 1,
+      "details": {
+        "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+        "exit_code": 0
+      }
+    }
+  ],
+  "wrapper_probe_details": {
+    "representative_probe_duration_seconds": 0.004994,
+    "final_full_probe_duration_seconds": 0.024267,
+    "diagnostic_full_probe_duration_seconds": "MISSING",
+    "wait_cluster_ok_probe_counts": {
+      "representative_probe": 1,
+      "final_full_probe": 1,
+      "diagnostic_full_probe": 0
+    }
+  },
+  "summary": {
+    "cluster_create_duration_seconds": 48.668323,
+    "replica_config_duration_seconds": 14.197066,
+    "wrapper_probe_duration_seconds": 0.033179,
+    "final_full_probe_duration_seconds": 0.024267
+  }
+}

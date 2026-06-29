@@ -15,6 +15,21 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from valkey_probe_lib import endpoints_from_state, execute_cluster_command, load_state, probe_endpoint, wait_for_cluster_ok  # noqa: E402
 
+P13_TIMING_NAMES = [
+    "nodehost_start",
+    "process_config_prepare",
+    "process_start",
+    "process_ready_wait",
+    "primary_cluster_create",
+    "replica_meet",
+    "replica_replicate",
+    "runtime_representative_probe",
+    "runtime_final_full_probe",
+    "wrapper_wait_cluster_ok",
+    "wrapper_data_path_probe",
+    "cleanup",
+]
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -54,6 +69,132 @@ def role_counts_from_probes(probes: list[dict[str, Any]]) -> dict[str, int]:
                 counts[role] += 1
         return counts
     return {"primary": 0, "replica": 0, "handshake": 0, "fail": 0, "pfail": 0}
+
+
+def record_timing(
+    timings: dict[str, dict[str, Any]],
+    name: str,
+    started: float,
+    *,
+    status: str = "PASS",
+    details: dict[str, Any] | None = None,
+) -> None:
+    duration = max(time.monotonic() - started, 0.0)
+    entry = timings.setdefault(
+        name,
+        {
+            "name": name,
+            "status": "PASS",
+            "duration_seconds": 0.0,
+            "count": 0,
+            "details": {},
+        },
+    )
+    entry["duration_seconds"] = round(float(entry.get("duration_seconds", 0.0)) + duration, 6)
+    entry["count"] = int(entry.get("count", 0)) + 1
+    if status == "FAIL":
+        entry["status"] = "FAIL"
+    if status == "SKIPPED_WITH_REASON" and entry.get("status") != "FAIL":
+        entry["status"] = "SKIPPED_WITH_REASON"
+    if details:
+        entry.setdefault("details", {}).update(details)
+
+
+def merge_timing_entries(*entry_groups: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    merged: dict[str, dict[str, Any]] = {}
+    for entries in entry_groups:
+        for entry in entries:
+            name = str(entry.get("name", "MISSING"))
+            if not name or name == "MISSING":
+                continue
+            if entry.get("status") == "MISSING" and name in merged:
+                continue
+            merged[name] = dict(entry)
+    return merged
+
+
+def timing_entries(timings: dict[str, dict[str, Any]], required_names: list[str] | None = None) -> list[dict[str, Any]]:
+    names = required_names or sorted(timings)
+    entries: list[dict[str, Any]] = []
+    for name in names:
+        if name in timings:
+            entries.append(timings[name])
+        else:
+            entries.append(
+                {
+                    "name": name,
+                    "status": "MISSING",
+                    "duration_seconds": None,
+                    "count": 0,
+                    "details": {"reason": "not recorded in this artifact producer"},
+                }
+            )
+    return entries
+
+
+def timing_duration(timings: dict[str, dict[str, Any]], name: str) -> float | str:
+    value = timings.get(name, {}).get("duration_seconds")
+    if isinstance(value, (int, float)):
+        return round(float(value), 6)
+    return "MISSING"
+
+
+def sum_timing_durations(timings: dict[str, dict[str, Any]], names: list[str]) -> float | str:
+    values = [timing_duration(timings, name) for name in names]
+    if not all(isinstance(value, (int, float)) for value in values):
+        return "MISSING"
+    return round(sum(float(value) for value in values), 6)
+
+
+def write_p13_timing_breakdown(
+    path: Path,
+    *,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    node_count: int,
+    runtime_entries: list[dict[str, Any]],
+    wrapper_timings: dict[str, dict[str, Any]],
+    wait_timing: dict[str, Any],
+    status: str,
+) -> dict[str, Any]:
+    timings = merge_timing_entries(runtime_entries, list(wrapper_timings.values()))
+    final_full_probe_duration = timing_duration(wait_timing, "final_full_probe")
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": "p13_timing_breakdown",
+        "phase_id": phase,
+        "run_id": run_id,
+        "scenario": scenario,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/valkey_e2e_gate.py", "version": "v1"},
+        "status": status,
+        "node_count": node_count,
+        "timings": timing_entries(timings, P13_TIMING_NAMES),
+        "wrapper_probe_details": {
+            "representative_probe_duration_seconds": timing_duration(wait_timing, "representative_probe"),
+            "final_full_probe_duration_seconds": final_full_probe_duration,
+            "diagnostic_full_probe_duration_seconds": timing_duration(wait_timing, "diagnostic_full_probe"),
+            "wait_cluster_ok_probe_counts": {
+                name: wait_timing.get(name, {}).get("count", 0)
+                for name in ["representative_probe", "final_full_probe", "diagnostic_full_probe"]
+            },
+        },
+        "summary": {
+            "cluster_create_duration_seconds": sum_timing_durations(
+                timings,
+                ["primary_cluster_create", "replica_meet", "replica_replicate"],
+            ),
+            "replica_config_duration_seconds": timing_duration(timings, "replica_replicate"),
+            "wrapper_probe_duration_seconds": sum_timing_durations(
+                timings,
+                ["wrapper_wait_cluster_ok", "wrapper_data_path_probe"],
+            ),
+            "final_full_probe_duration_seconds": final_full_probe_duration,
+        },
+    }
+    write_json(path, artifact)
+    return artifact
 
 
 def node_processes_from_state(state: dict[str, Any]) -> list[dict[str, Any]]:
@@ -151,6 +292,10 @@ def main() -> int:
     valkey_versions: list[str] = []
     cluster_state = "unknown"
     state: dict[str, Any] = {}
+    wrapper_timings: dict[str, dict[str, Any]] = {}
+    wait_timing: dict[str, Any] = {}
+    timing_breakdown_artifact: dict[str, Any] | None = None
+    timing_breakdown_path: Path | None = None
 
     try:
         proc = run_cmd(setup_cmd, timeout=args.setup_timeout)
@@ -171,7 +316,26 @@ def main() -> int:
             if runtime.get("sandbox_network") is not True:
                 errors.append("state.runtime.sandbox_network must be true")
             endpoints = endpoints_from_state(state)
-            ok, probes = wait_for_cluster_ok(endpoints, min_nodes=args.min_nodes, timeout_seconds=args.wait_cluster_timeout)
+            wait_started = time.monotonic()
+            ok, probes = wait_for_cluster_ok(
+                endpoints,
+                min_nodes=args.min_nodes,
+                timeout_seconds=args.wait_cluster_timeout,
+                timing=wait_timing,
+            )
+            record_timing(
+                wrapper_timings,
+                "wrapper_wait_cluster_ok",
+                wait_started,
+                status="PASS" if ok else "FAIL",
+                details={
+                    "min_nodes": args.min_nodes,
+                    "endpoint_count": len(endpoints),
+                    "representative_probe_duration_seconds": timing_duration(wait_timing, "representative_probe"),
+                    "final_full_probe_duration_seconds": timing_duration(wait_timing, "final_full_probe"),
+                    "diagnostic_full_probe_duration_seconds": timing_duration(wait_timing, "diagnostic_full_probe"),
+                },
+            )
             if not ok:
                 errors.append("cluster did not reach observable OK state with required node count")
             for p in probes:
@@ -186,20 +350,41 @@ def main() -> int:
             if args.require_data_path:
                 key = f"{{vslab-probe}}:{args.phase}:{int(time.time())}"
                 value = f"value-{args.scenario}"
+                data_path_started = time.monotonic()
+                data_path_status = "FAIL"
                 try:
                     set_res = execute_cluster_command(endpoints, "SET", key, value, timeout=args.probe_timeout)
                     get_res = execute_cluster_command(endpoints, "GET", key, timeout=args.probe_timeout)
                     if str(set_res).upper() == "OK" and get_res == value:
                         data_path_result = "PASS"
+                        data_path_status = "PASS"
                     else:
                         data_path_result = "FAIL"
                         errors.append(f"SET/GET mismatch set={set_res!r} get={get_res!r}")
                 except Exception as exc:  # noqa: BLE001
                     data_path_result = "FAIL"
                     errors.append(f"data path probe failed: {exc!r}")
+                finally:
+                    record_timing(
+                        wrapper_timings,
+                        "wrapper_data_path_probe",
+                        data_path_started,
+                        status=data_path_status,
+                        details={"required": True},
+                    )
+            else:
+                skipped_started = time.monotonic()
+                record_timing(
+                    wrapper_timings,
+                    "wrapper_data_path_probe",
+                    skipped_started,
+                    status="SKIPPED_WITH_REASON",
+                    details={"required": False, "reason": "data path proof not requested"},
+                )
     except Exception as exc:  # noqa: BLE001
         errors.append(f"setup/probe exception: {exc!r}")
     finally:
+        cleanup_started = time.monotonic()
         if state_path.exists():
             cleanup_status, cleanup_path, cleanup_stdout, cleanup_stderr, cleanup_exit = cleanup(
                 args.phase, state_path, artifact_dir, args.cleanup_timeout
@@ -221,8 +406,29 @@ def main() -> int:
                 "resources_remaining": [{"type": "unknown", "reason": "no state file, cleanup could not run"}],
                 "cleanup_actions": [],
             })
+            cleanup_exit = 1
+        record_timing(
+            wrapper_timings,
+            "cleanup",
+            cleanup_started,
+            status=cleanup_status,
+            details={"cleanup_path": str(cleanup_path), "exit_code": cleanup_exit},
+        )
 
     status = "PASS" if not errors else "FAIL"
+    if args.phase == "P13_SCALE_LADDER_50_100":
+        timing_breakdown_path = artifact_dir / f"p13_timing_breakdown_{args.scenario}.json"
+        timing_breakdown_artifact = write_p13_timing_breakdown(
+            timing_breakdown_path,
+            phase=args.phase,
+            scenario=args.scenario,
+            run_id=f"phase-{args.phase}-{args.scenario}",
+            node_count=len(state.get("nodes", [])),
+            runtime_entries=list(state.get("runtime", {}).get("timings", [])),
+            wrapper_timings=wrapper_timings,
+            wait_timing=wait_timing,
+            status=status,
+        )
     evidence = {
         "schema_version": "v1",
         "artifact_type": "valkey_e2e_evidence",
@@ -253,6 +459,11 @@ def main() -> int:
         "node_processes": node_processes_from_state(state),
         "role_counts": role_counts_from_probes(probes),
         "cluster_snapshots": state.get("cluster_snapshots", []),
+        "timing_breakdown_path": str(timing_breakdown_path) if timing_breakdown_path is not None else "SKIPPED_WITH_REASON",
+        "timing_breakdown": timing_breakdown_artifact.get("summary") if timing_breakdown_artifact else {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "P13 timing breakdown is only emitted for P13 scale gates",
+        },
         "cleanup": {
             "status": cleanup_status,
             "path": str(cleanup_path),

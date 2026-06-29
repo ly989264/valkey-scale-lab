@@ -329,9 +329,9 @@
     "slots_assigned": 16384
   },
   "metrics": {
-    "avg_used_memory": 3564718.16,
-    "total_commands_processed": 5074,
-    "total_used_memory": 356471816
+    "avg_used_memory": 3564530.56,
+    "total_commands_processed": 6829,
+    "total_used_memory": 356453056
   },
   "node_count": 100,
   "phase_id": "P13_SCALE_LADDER_50_100",
