@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "stage_id": "L05_REPORTING_V2_FOR_AUDIT_RESULTS",
-  "status": "IN_PROGRESS",
-  "phase": "COMMIT",
+  "status": "PASS",
+  "phase": "PASS",
   "started_at": "2026-06-30T07:59:59Z",
-  "updated_at": "2026-06-30T08:26:59Z",
+  "updated_at": "2026-06-30T08:29:19Z",
   "branch": "codex/valkey-scale-lab-loop",
   "base_head": "bbc94d239ab349cda30588778bf92d08fb0e5458",
-  "current_head": "bbc94d239ab349cda30588778bf92d08fb0e5458",
+  "current_head": "204117e9cd733dd98efa3c784b7714ac59053c72",
   "constraints": [
     "Render audit/metric/coverage/scale/timing artifacts into HTML/CSV/SVG views.",
     "Views must be generated from JSON artifacts, not hardcoded values.",

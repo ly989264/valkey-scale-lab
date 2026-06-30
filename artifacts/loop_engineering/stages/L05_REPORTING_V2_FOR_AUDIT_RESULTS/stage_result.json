@@ -2,8 +2,8 @@
   "schema_version": "v1",
   "stage_id": "L05_REPORTING_V2_FOR_AUDIT_RESULTS",
   "status": "PASS",
-  "completed_at": "2026-06-30T08:26:59Z",
-  "commit_sha": "bbc94d239ab349cda30588778bf92d08fb0e5458",
+  "completed_at": "2026-06-30T08:29:19Z",
+  "commit_sha": "204117e9cd733dd98efa3c784b7714ac59053c72",
   "pushed": true,
   "previous_harness_passed": true,
   "current_harness_passed": true,
@@ -83,7 +83,7 @@
     }
   ],
   "risks_remaining": [
-    "stage_result.json uses current pushed base SHA until the L05 evidence commit is created; bookkeeping commit will update it to the L05 evidence commit SHA.",
-    "L05 is static report rendering only. It consumes committed source artifacts but does not rerun P14, real Valkey wrappers, or fault wrappers."
+    "L05 is static report rendering only. It consumes committed source artifacts but does not rerun P14, real Valkey wrappers, or fault wrappers.",
+    "Rendered report files are committed views with source_of_truth=false in report_index.json; machine-readable JSON artifacts remain the source of truth."
   ]
 }
