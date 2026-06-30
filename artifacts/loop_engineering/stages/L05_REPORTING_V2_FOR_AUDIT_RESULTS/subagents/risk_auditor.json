@@ -1,0 +1,325 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L05_REPORTING_V2_FOR_AUDIT_RESULTS",
+  "agent_role": "risk_auditor",
+  "created_at": "2026-06-30T08:04:30Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety and artifact discipline rules.",
+      "key_findings": [
+        "Machine-readable artifacts are the product; charts, HTML, and markdown are only views.",
+        "Missing metrics must be encoded as MISSING or SKIPPED_WITH_REASON and values must not be invented.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic and must not be run without explicit opt-in."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Phase-loop entrypoint and P14 opt-in boundary.",
+      "key_findings": [
+        "Automatic loop ends at P13; P14 requires VSLAB_ALLOW_1000_DRYRUN.",
+        "Report layer may read artifacts but must not become source of truth."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Loop harness policy and anti-regression criteria.",
+      "key_findings": [
+        "All analysis and reports must read machine-readable artifacts, not rendered markdown.",
+        "1000+ must remain dry-run/resource/planner by default.",
+        "Historical artifact rewrites without rerun evidence or recorded reason are blocking."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L05 stage requirements.",
+      "key_findings": [
+        "L05 must render audit results, metric catalog, coverage matrix, scale ladder, and P13 timing into readable views.",
+        "Required outputs include index.html, coverage_matrix.csv, coverage_heatmap.svg, scale_ladder.svg, p13_timing_waterfall.svg, missing_metrics.csv, and provenance_graph.json.",
+        "All visualizations must be generated from JSON, JSONL, or CSV artifacts and must not hardcode values."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/read_context.md",
+      "purpose": "Stage handoff context.",
+      "key_findings": [
+        "L05 constraints explicitly forbid P14, valkey_e2e_gate.py, fault_safety_gate.py, and fault_failover_gate.py.",
+        "Existing report tests cover P09 package rendering, not loop-engineering report artifacts.",
+        "The handoff already flags brittle SVG/CSV golden tests and absent render_audit_report.py as risks."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/previous_harness_result.json",
+      "purpose": "Baseline harness result for the stage.",
+      "key_findings": [
+        "Previous harness status is PASS with 182 tests passing and schema checks passing for audit, provenance, metric catalog, coverage matrix, and P13/P14 scale audit artifacts.",
+        "The command list does not include L05 rendered report generation yet."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/stage_state.json",
+      "purpose": "Current L05 state.",
+      "key_findings": [
+        "Stage is IN_PROGRESS in DESIGN phase with no blockers.",
+        "Recorded constraints require source-driven views, explicit missing metrics, no P14 or real/fault wrappers, and preservation of L00-L04 behavior."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "purpose": "Coverage source artifact for L05 CSV and heatmap views.",
+      "key_findings": [
+        "Coverage matrix is PASS with 60 entries across fake, small-real, 30, 50, 100, and 1000-dry-run layers.",
+        "1000-dry-run entries have real_valkey_coverage false and dry_run_only true.",
+        "43 cells are MISSING or SKIPPED_WITH_REASON and must remain visible in rendered outputs."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/metric_catalog.json",
+      "purpose": "Metric catalog source artifact for missing metric reporting.",
+      "key_findings": [
+        "Metric catalog is PASS with 226 metrics, 2 missing, 20 skipped, and 2 no-baseline entries.",
+        "Missing and skipped metrics carry explicit missing_semantics reasons.",
+        "The 1000 planned node metric is dry_run_only and real_valkey_coverage false."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "purpose": "Existing provenance graph and source-of-truth boundary.",
+      "key_findings": [
+        "Graph status is PASS with 95 nodes and 70 edges.",
+        "Existing legacy P09 rendered view nodes are marked source_of_truth false, but have no direct source edges or view_over metadata.",
+        "L05 should not copy that weak pattern; new rendered outputs need explicit provenance links to source artifacts."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+      "purpose": "P13 timing/evidence and P14 boundary source artifact.",
+      "key_findings": [
+        "P13 50 and 100 rungs are PASS with real_valkey true, nodes observed 50/100, cluster_state_observed ok, data_path_result PASS, and Valkey version 9.1.0.",
+        "P14 boundary is SKIPPED_WITH_REASON, dry_run_only true, real_valkey_coverage false, and default_gate_result_present false.",
+        "Historical P13 manifest and command drift findings are recorded as non-blocking."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+      "purpose": "Scale ladder source artifact for L05 visualization.",
+      "key_findings": [
+        "Scale ladder report is PASS and records 50/100 real evidence paths and observed node counts.",
+        "Rung metrics include memory and command counters that should be read from JSON, not hardcoded."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+      "purpose": "P13 50-node timing source artifact.",
+      "key_findings": [
+        "Timing status is PASS with measured setup, cluster create, replica config, probe, cleanup, accounting, and artifact write fields.",
+        "Optional diagnostic full probe remains encoded as MISSING rather than fabricated."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+      "purpose": "P13 100-node timing source artifact.",
+      "key_findings": [
+        "Required timing fields are present according to the P13/P14 audit.",
+        "L05 waterfall values should be derived from these fields and keep MISSING diagnostics explicit."
+      ]
+    },
+    {
+      "path": "tests/report/test_report_rendering.py",
+      "purpose": "Existing report test coverage.",
+      "key_findings": [
+        "Existing tests exercise the P09 package renderer only.",
+        "They do not validate loop-engineering report outputs, coverage heatmap, scale ladder SVG, or P13 timing waterfall."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/report/render.py",
+      "purpose": "Existing renderer pattern.",
+      "key_findings": [
+        "Renderer reads analysis_summary.json and writes HTML, markdown, CSV, SVG, and report index artifacts.",
+        "It preserves MISSING rows for P09, but is hardwired to P09 labels and does not satisfy L05 output requirements directly."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L05-RISK-0001",
+      "severity": "high",
+      "description": "Rendered report views could become accidental source-of-truth if L05 does not emit a source-driven report index and provenance links for every HTML, CSV, and SVG output.",
+      "evidence": [
+        "AGENTS.md states machine-readable artifacts are the product and rendered reports are only views.",
+        "provenance_graph.json marks legacy P09 rendered view nodes source_of_truth=false but shows source_count 0 for those view nodes.",
+        "L05 required rendered outputs are not present yet under artifacts/loop_engineering/reports."
+      ]
+    },
+    {
+      "id": "L05-RISK-0002",
+      "severity": "high",
+      "description": "Hardcoded report numbers would mask artifact drift across audit_report.json, metric_catalog.json, coverage_matrix.json, scale_ladder_report.json, and P13 timing breakdowns.",
+      "evidence": [
+        "L05 manifest explicitly says all visualizations must be generated from JSON/JSONL/CSV artifacts and cannot hardcode values.",
+        "coverage_matrix.json currently has 60 entries, 17 covered entries, 12 real coverage entries, 10 dry-run entries, and 43 missing/skipped cells that should be read dynamically.",
+        "scale_ladder_report.json and timing breakdown artifacts contain measured 50/100 values that should drive scale_ladder.svg and p13_timing_waterfall.svg."
+      ]
+    },
+    {
+      "id": "L05-RISK-0003",
+      "severity": "high",
+      "description": "Missing metrics could be fabricated or visually hidden if CSV/SVG/HTML rendering filters to only measured rows.",
+      "evidence": [
+        "metric_catalog.json summary records 2 missing metrics, 20 skipped metrics, and 2 no-baseline entries.",
+        "coverage_matrix.json has many SKIPPED_WITH_REASON cells, including most 1000-dry-run surfaces.",
+        "p13_timing_breakdown_scale_50.json keeps diagnostic_full_probe_duration_seconds as MISSING."
+      ]
+    },
+    {
+      "id": "L05-RISK-0004",
+      "severity": "medium",
+      "description": "SVG and golden tests can become brittle if they compare full serialized SVG strings, timestamps, exact ordering from dictionaries, or formatting-only details instead of semantic content.",
+      "evidence": [
+        "read_context.md flags SVG/CSV golden tests as a known risk.",
+        "Existing tests/report/test_report_rendering.py validates limited P09 output fragments rather than a semantic loop-report renderer contract.",
+        "L05 needs coverage_heatmap.svg, scale_ladder.svg, and p13_timing_waterfall.svg, each with data-dependent visual geometry."
+      ]
+    },
+    {
+      "id": "L05-RISK-0005",
+      "severity": "high",
+      "description": "P14 or real-wrapper leakage would violate the stage boundary if rendering invokes P14, valkey_e2e_gate.py, fault_safety_gate.py, or fault_failover_gate.py instead of reading committed artifacts.",
+      "evidence": [
+        "read_context.md explicitly forbids P14 and the real/fault wrappers for L05.",
+        "p13_p14_scale_audit.json records P14 as SKIPPED_WITH_REASON, dry_run_only true, real_valkey_coverage false, and default_gate_result_present false.",
+        "coverage_matrix.json keeps 1000-dry-run coverage dry_run_only and real_valkey_coverage false."
+      ]
+    },
+    {
+      "id": "L05-RISK-0006",
+      "severity": "high",
+      "description": "Historical artifact rewrites could make L05 reports look cleaner while invalidating L01-L04 provenance and anti-regression guarantees.",
+      "evidence": [
+        "03_HARNESS_POLICY.md blocks historical artifact edits that make results appear passing without rerun evidence or recorded reason.",
+        "p13_p14_scale_audit.json records historical P13 manifest and command drift as explicit non-blocking findings.",
+        "L05 should write new report artifacts only and must not rewrite artifacts/phases or artifacts/gates as a rendering convenience."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "loop_report_renderer_source_contract",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Each L05 output is regenerated from declared JSON/CSV inputs, and changing a source fixture changes the corresponding rendered value without editing renderer constants."
+    },
+    {
+      "name": "loop_report_missing_metric_visibility",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "MISSING, SKIPPED_WITH_REASON, and NO_BASELINE style entries are present in missing_metrics.csv and visible in index.html and coverage_heatmap.svg with their reasons."
+    },
+    {
+      "name": "loop_report_provenance_links",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Rendered HTML/CSV/SVG outputs are source_of_truth false and have explicit source artifact links and sha256s in a report index or updated provenance graph."
+    },
+    {
+      "name": "loop_report_p14_boundary",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The renderer never imports or executes real/fault gate wrappers, never requires VSLAB_ALLOW_1000_DRYRUN, and renders 1000 only as dry-run/planner coverage."
+    },
+    {
+      "name": "loop_report_semantic_svg_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "SVG tests parse XML and assert semantic labels, row counts, statuses, dimensions, and source-derived values instead of full byte-for-byte strings."
+    },
+    {
+      "name": "loop_report_historical_artifact_guard",
+      "type": "ci",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "CI or loop validation confirms L05 did not modify artifacts/phases, artifacts/gates, codex gate controls, schemas, or scripts except for intentional renderer/harness additions."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Add a loop-engineering report renderer that reads only committed machine-readable artifacts and writes the L05 required views.",
+      "files": [
+        "scripts/render_loop_engineering_report.py",
+        "artifacts/loop_engineering/reports/index.html",
+        "artifacts/loop_engineering/reports/coverage_matrix.csv",
+        "artifacts/loop_engineering/reports/coverage_heatmap.svg",
+        "artifacts/loop_engineering/reports/scale_ladder.svg",
+        "artifacts/loop_engineering/reports/p13_timing_waterfall.svg",
+        "artifacts/loop_engineering/reports/missing_metrics.csv"
+      ],
+      "rationale": "Keeps rendered views reproducible and scoped to L05 without touching historical phase/gate evidence."
+    },
+    {
+      "step": "Emit source metadata for every rendered output.",
+      "files": [
+        "artifacts/loop_engineering/reports/provenance_graph.json",
+        "artifacts/loop_engineering/reports/index.html"
+      ],
+      "rationale": "Prevents rendered views from becoming source-of-truth and lets audits trace output values back to source artifact hashes."
+    },
+    {
+      "step": "Add tests that use small fixtures for coverage matrix, metric catalog, scale ladder, P13 timing, P14 boundary, and missing semantics.",
+      "files": [
+        "tests/report/test_loop_engineering_report_rendering.py",
+        "tests/ci/test_loop_engineering_pack.py"
+      ],
+      "rationale": "Validates behavior without running P14 or real/fault wrappers."
+    },
+    {
+      "step": "Run baseline, renderer, schema checks, report tests, CI tests, and anti-regression checks.",
+      "files": [
+        "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/commands.jsonl",
+        "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/stage_result.json"
+      ],
+      "rationale": "Documents the exact commands used and preserves loop-stage auditability."
+    }
+  ],
+  "acceptance_criteria": [
+    "All required L05 outputs exist under artifacts/loop_engineering/reports.",
+    "coverage_matrix.csv row counts and statuses match coverage_matrix.json entries, including 1000-dry-run SKIPPED_WITH_REASON cells.",
+    "missing_metrics.csv includes metric_catalog missing/skipped/no-baseline entries with explicit reasons and never substitutes numeric values for missing data.",
+    "coverage_heatmap.svg, scale_ladder.svg, and p13_timing_waterfall.svg are generated from source artifacts and expose MISSING/SKIPPED status text where applicable.",
+    "index.html identifies source artifacts and makes clear that rendered views are non-authoritative.",
+    "provenance output or report index records source artifact paths and sha256s for every rendered output.",
+    "No command invokes P14, scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py.",
+    "No historical artifacts under artifacts/phases or artifacts/gates are rewritten by L05 rendering.",
+    "Tests validate semantic SVG/CSV/HTML content rather than brittle complete rendered strings."
+  ],
+  "risks": [
+    "Rendered HTML/CSV/SVG may be treated as authoritative if source links and source_of_truth=false metadata are not explicit.",
+    "Hardcoded summary counts can silently diverge from audit, coverage, metric, scale, and timing JSON inputs.",
+    "Filtering out missing/skipped rows can fabricate coverage by omission.",
+    "Full-string golden SVG tests can fail on harmless formatting changes or pass while missing semantic source checks.",
+    "P14 may leak into reports as real 1000-node evidence if dry_run_only and real_valkey_coverage flags are ignored.",
+    "Historical phase/gate artifacts could be rewritten to make reports easier to render, invalidating prior audit evidence."
+  ],
+  "forbidden_shortcuts": [
+    "Do not parse rendered markdown, HTML, or SVG as source data.",
+    "Do not hardcode node counts, timing values, coverage counts, metric values, or P13/P14 statuses that already exist in JSON artifacts.",
+    "Do not replace null, absent, MISSING, SKIPPED_WITH_REASON, or NO_BASELINE values with zeros or estimated values.",
+    "Do not run P14 or set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not execute scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py for L05.",
+    "Do not rewrite artifacts/phases or artifacts/gates to make report generation simpler.",
+    "Do not weaken schemas, gate locks, phase manifests, or CI controls to pass L05."
+  ],
+  "commands_to_run": [
+    "python3 scripts/codex_gate.py precheck --all",
+    "python3 scripts/safety_scan.py",
+    "python3 -m compileall -q src scripts tests",
+    "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+    "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+    "python3 scripts/audit_p13_p14_scale.py --out artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+    "python3 scripts/render_loop_engineering_report.py --reports-dir artifacts/loop_engineering/reports",
+    "python3 -m pytest -q tests/report tests/ci/test_loop_engineering_pack.py",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L05_REPORTING_V2_FOR_AUDIT_RESULTS"
+  ],
+  "verdict": "APPROVED",
+  "notes": "No blocker was found for L05 design. Approval is conditional on keeping L05 as a pure artifact-rendering stage: source-driven views only, explicit missing semantics, no P14 or real/fault wrappers, no historical evidence rewrites, and semantic renderer tests before completion."
+}

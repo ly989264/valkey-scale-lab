@@ -1,0 +1,89 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L05_REPORTING_V2_FOR_AUDIT_RESULTS",
+  "status": "PASS",
+  "completed_at": "2026-06-30T08:26:59Z",
+  "commit_sha": "bbc94d239ab349cda30588778bf92d08fb0e5458",
+  "pushed": true,
+  "previous_harness_passed": true,
+  "current_harness_passed": true,
+  "subagent_verdicts": {
+    "requirements_analyst": "APPROVED",
+    "harness_architect": "APPROVED",
+    "risk_auditor": "APPROVED",
+    "implementation_worker": "APPROVED",
+    "review_agent": "APPROVED",
+    "validation_agent": "APPROVED",
+    "anti_regression_guardian": "APPROVED"
+  },
+  "commands_log": "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/commands.jsonl",
+  "artifacts": [
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/read_context.md",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/stage_state.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/commands.jsonl",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/previous_harness_result.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/subagents/requirements_analyst.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/subagents/harness_architect.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/subagents/risk_auditor.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/stage_design.md",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/current_harness_plan.json",
+    "schemas/artifact/loop_report_index.schema.json",
+    "scripts/render_audit_report.py",
+    "tests/report/test_loop_report_rendering.py",
+    "tests/visualization/test_loop_report_visualizations.py",
+    "tests/ci/test_loop_report_gate.py",
+    ".github/workflows/github-coverage-gates.yml",
+    "artifacts/loop_engineering/reports/index.html",
+    "artifacts/loop_engineering/reports/coverage_matrix.csv",
+    "artifacts/loop_engineering/reports/coverage_heatmap.svg",
+    "artifacts/loop_engineering/reports/scale_ladder.svg",
+    "artifacts/loop_engineering/reports/p13_timing_waterfall.svg",
+    "artifacts/loop_engineering/reports/missing_metrics.csv",
+    "artifacts/loop_engineering/reports/report_index.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/subagents/implementation_worker.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/subagents/review_agent.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/subagents/validation_agent.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/subagents/anti_regression_guardian.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/anti_regression_check.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/anti_regression_report.md",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/validation_result.json",
+    "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/stage_result.json"
+  ],
+  "metrics_added": [
+    "loop_report_index:8 source artifacts tracked",
+    "coverage_matrix.csv:60 coverage cells rendered",
+    "missing_metrics.csv:24 missing/skipped/no-baseline rows rendered"
+  ],
+  "visualizations_added": [
+    "artifacts/loop_engineering/reports/index.html",
+    "artifacts/loop_engineering/reports/coverage_heatmap.svg",
+    "artifacts/loop_engineering/reports/scale_ladder.svg",
+    "artifacts/loop_engineering/reports/p13_timing_waterfall.svg"
+  ],
+  "real_valkey_gates": [],
+  "fake_gates": [
+    "loop_report_static_renderer",
+    "loop_report_index_schema_validation",
+    "loop_report_rendering_tests",
+    "loop_report_visualization_tests",
+    "loop_report_ci_guard",
+    "loop_engineering_anti_regression"
+  ],
+  "known_missing_metrics": [
+    {
+      "metric": "p14.real_valkey_coverage",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P14 remains non-automatic opt-in dry-run/resource/planner only; L05 renders this boundary without running P14.",
+      "value": false
+    },
+    {
+      "metric": "diagnostic_full_probe_duration_seconds",
+      "status": "MISSING",
+      "reason": "P13 timing artifacts explicitly record the optional diagnostic full probe duration as MISSING; L05 renders that marker and does not invent a value."
+    }
+  ],
+  "risks_remaining": [
+    "stage_result.json uses current pushed base SHA until the L05 evidence commit is created; bookkeeping commit will update it to the L05 evidence commit SHA.",
+    "L05 is static report rendering only. It consumes committed source artifacts but does not rerun P14, real Valkey wrappers, or fault wrappers."
+  ]
+}

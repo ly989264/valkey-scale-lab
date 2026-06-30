@@ -1,0 +1,72 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L05_REPORTING_V2_FOR_AUDIT_RESULTS",
+  "new_tests": [
+    {
+      "path": "tests/report/test_loop_report_rendering.py",
+      "purpose": "Validate L05 report renderer outputs, source index hashes, coverage CSV, missing metric visibility, and source-of-truth rejection for rendered metric sources."
+    },
+    {
+      "path": "tests/visualization/test_loop_report_visualizations.py",
+      "purpose": "Parse generated SVG views and assert semantic coverage heatmap, scale ladder, P13 timing waterfall, P14 dry-run, and missing diagnostic markers."
+    },
+    {
+      "path": "tests/ci/test_loop_report_gate.py",
+      "purpose": "Validate CLI/schema generation and ensure CI includes L05 static report commands without P14 opt-in or real/fault wrapper execution."
+    }
+  ],
+  "new_schemas": [
+    "schemas/artifact/loop_report_index.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "command": "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports",
+      "acceptance": "Generates all L05 report views and report_index.json from committed JSON artifacts."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/loop_report_index.schema.json --instance artifacts/loop_engineering/reports/report_index.json",
+      "acceptance": "Validates the generated L05 report index artifact."
+    }
+  ],
+  "new_artifact_checks": [
+    "index.html links to source artifacts and generated report views.",
+    "coverage_matrix.csv contains one row per coverage_matrix.json entry with stable layer/surface ordering.",
+    "coverage_heatmap.svg contains a semantic cell per coverage matrix entry with status, layer, surface, real coverage, and dry-run attributes.",
+    "scale_ladder.svg renders P13 50/100 real rungs and P14 only as opt-in dry-run/skipped.",
+    "p13_timing_waterfall.svg renders P13 timing components from timing JSON and marks missing diagnostics explicitly.",
+    "missing_metrics.csv preserves MISSING, SKIPPED_WITH_REASON, and NO_BASELINE_YET rows with nonempty reasons.",
+    "report_index.json records hashes for sources and rendered views, and marks rendered views source_of_truth=false."
+  ],
+  "expected_initial_failures": [
+    {
+      "command": "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports",
+      "reason": "L05 renderer does not exist before implementation."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/loop_report_index.schema.json --instance artifacts/loop_engineering/reports/report_index.json",
+      "reason": "L05 report index schema and generated artifact do not exist before implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/report/test_loop_report_rendering.py",
+      "reason": "Focused L05 report tests do not exist before harness creation and fail before renderer implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/visualization/test_loop_report_visualizations.py",
+      "reason": "Focused L05 visualization tests do not exist before harness creation and fail before renderer implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/ci/test_loop_report_gate.py",
+      "reason": "L05 CI gate test does not exist before harness creation and fails before renderer implementation."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS.",
+    "Renderer, schema, report tests, visualization tests, CI guard, and generated report views exist.",
+    "Generated report_index.json validates against schema and records source and rendered hashes.",
+    "All rendered values come from machine-readable artifacts, not hardcoded report constants.",
+    "Missing and skipped metrics remain visible with reasons.",
+    "P14 remains dry-run/resource/planner only and is never shown as real coverage.",
+    "No L05 command invokes P14, VSLAB_ALLOW_1000_DRYRUN, scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py.",
+    "No historical phase/gate artifact is modified."
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema_version": "v1",
+  "status": "PASS",
+  "stage_id": "L05_REPORTING_V2_FOR_AUDIT_RESULTS",
+  "base_ref": "bbc94d239ab349cda30588778bf92d08fb0e5458",
+  "head_ref": "WORKTREE",
+  "checked_at": "2026-06-30T08:26:59Z",
+  "verdict": "APPROVED",
+  "blockers": [],
+  "non_blocking_observations": [],
+  "checks": {
+    "deleted_tests_or_harness_files": false,
+    "existing_assertions_removed": false,
+    "real_valkey_requirements_lowered": false,
+    "schemas_weakened_for_existing_contracts": false,
+    "historical_gate_or_phase_results_modified": false,
+    "p14_or_forbidden_wrappers_executed": false,
+    "dry_run_1000_counted_as_real": false,
+    "rendered_reports_used_as_source_metric_evidence": false,
+    "missing_or_skipped_metrics_fabricated": false
+  },
+  "changed_files_reviewed": [
+    ".github/workflows/github-coverage-gates.yml",
+    "scripts/render_audit_report.py",
+    "schemas/artifact/loop_report_index.schema.json",
+    "tests/report/test_loop_report_rendering.py",
+    "tests/visualization/test_loop_report_visualizations.py",
+    "tests/ci/test_loop_report_gate.py",
+    "artifacts/loop_engineering/reports/index.html",
+    "artifacts/loop_engineering/reports/coverage_matrix.csv",
+    "artifacts/loop_engineering/reports/coverage_heatmap.svg",
+    "artifacts/loop_engineering/reports/scale_ladder.svg",
+    "artifacts/loop_engineering/reports/p13_timing_waterfall.svg",
+    "artifacts/loop_engineering/reports/missing_metrics.csv",
+    "artifacts/loop_engineering/reports/report_index.json"
+  ],
+  "evidence": {
+    "historical_artifact_rewrites": 0,
+    "workflow_forbidden_wrapper_commands": 0,
+    "commands_log_forbidden_wrapper_execution": 0,
+    "rendered_view_measured_source_guard": "MEASURED and PASS rejected",
+    "p14_real_coverage_violations": 0
+  }
+}

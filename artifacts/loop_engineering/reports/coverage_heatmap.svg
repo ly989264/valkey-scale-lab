@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1094" height="372" viewBox="0 0 1094 372">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16" y="30" font-size="18" font-weight="700">Coverage Matrix</text>
+<text x="16" y="54" font-size="12">Cells are rendered from coverage_matrix.json</text>
+<text x="155" y="74" font-size="10">cluster_build</text>
+<text x="247" y="74" font-size="10">management</text>
+<text x="339" y="74" font-size="10">workload</text>
+<text x="431" y="74" font-size="10">observability</text>
+<text x="523" y="74" font-size="10">fault</text>
+<text x="615" y="74" font-size="10">failover</text>
+<text x="707" y="74" font-size="10">stability</text>
+<text x="799" y="74" font-size="10">cleanup</text>
+<text x="891" y="74" font-size="10">scale</text>
+<text x="983" y="74" font-size="10">report_visualization</text>
+<text x="16" y="104" font-size="12">fake</text>
+<rect class="coverage-cell" x="150" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="cluster_build" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="156" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="242" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="management" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="248" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="334" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="workload" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="340" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="426" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="observability" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="432" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="518" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="fault" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="524" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="610" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="failover" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="616" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="702" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="stability" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="708" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="794" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="cleanup" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="800" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="886" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="scale" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="892" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="978" y="82" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="fake" data-surface="report_visualization" data-status="SKIPPED_WITH_REASON" data-evidence-class="fake" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="984" y="101" font-size="10" fill="#ffffff">SKIPPED_</text>
+<text x="16" y="138" font-size="12">small-real</text>
+<rect class="coverage-cell" x="150" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="cluster_build" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="156" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="242" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="management" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="248" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="334" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="workload" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="340" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="426" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="observability" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="432" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="518" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="fault" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="524" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="610" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="failover" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="616" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="702" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="stability" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="708" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="794" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="cleanup" data-status="COVERED" data-evidence-class="source_artifact" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="800" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="886" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="scale" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="892" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="978" y="116" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="small-real" data-surface="report_visualization" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="984" y="135" font-size="10" fill="#ffffff">COVERED</text>
+<text x="16" y="172" font-size="12">30</text>
+<rect class="coverage-cell" x="150" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="cluster_build" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="156" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="242" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="management" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="248" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="334" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="workload" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="340" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="426" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="observability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="432" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="518" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="fault" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="524" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="610" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="failover" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="616" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="702" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="stability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="708" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="794" y="150" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="30" data-surface="cleanup" data-status="COVERED" data-evidence-class="source_artifact" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="800" y="169" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="886" y="150" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="30" data-surface="scale" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="892" y="169" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="978" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="report_visualization" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="984" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<text x="16" y="206" font-size="12">50</text>
+<rect class="coverage-cell" x="150" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="cluster_build" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="156" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="242" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="management" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="248" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="334" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="workload" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="340" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="426" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="observability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="432" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="518" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="fault" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="524" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="610" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="failover" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="616" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="702" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="stability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="708" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="794" y="184" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="50" data-surface="cleanup" data-status="COVERED" data-evidence-class="source_artifact" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="800" y="203" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="886" y="184" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="50" data-surface="scale" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="892" y="203" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="978" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="report_visualization" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="984" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<text x="16" y="240" font-size="12">100</text>
+<rect class="coverage-cell" x="150" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="cluster_build" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="156" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="242" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="management" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="248" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="334" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="workload" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="340" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="426" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="observability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="432" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="518" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="fault" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="524" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="610" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="failover" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="616" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="702" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="stability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="708" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="794" y="218" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="100" data-surface="cleanup" data-status="COVERED" data-evidence-class="source_artifact" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="800" y="237" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="886" y="218" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="100" data-surface="scale" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="892" y="237" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="978" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="report_visualization" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<text x="984" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<text x="16" y="274" font-size="12">1000-dry-run</text>
+<rect class="coverage-cell" x="150" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="cluster_build" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="156" y="271" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="242" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="management" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="248" y="271" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="334" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="workload" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="340" y="271" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="426" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="observability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="432" y="271" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="518" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="fault" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="524" y="271" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="610" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="failover" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="616" y="271" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="702" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="stability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="708" y="271" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="794" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="cleanup" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="800" y="271" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="886" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="scale" data-status="COVERED" data-evidence-class="dry_run_planner" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="892" y="271" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="978" y="252" width="86" height="28" rx="3" fill="#7f56d9" data-layer="1000-dry-run" data-surface="report_visualization" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="true"/>
+<text x="984" y="271" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect x="16" y="320" width="14" height="14" fill="#2f6f4e"/>
+<text x="36" y="332" font-size="12">COVERED</text>
+<rect x="196" y="320" width="14" height="14" fill="#b54708"/>
+<text x="216" y="332" font-size="12">MISSING</text>
+<rect x="376" y="320" width="14" height="14" fill="#5f6b7a"/>
+<text x="396" y="332" font-size="12">SKIPPED_WITH_REASON</text>
+<rect x="556" y="320" width="14" height="14" fill="#7f56d9"/>
+<text x="576" y="332" font-size="12">dry-run</text>
+</svg>

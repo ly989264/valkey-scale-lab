@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="260" viewBox="0 0 720 260">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="20" y="30" font-size="18" font-weight="700">Scale Ladder</text>
+<text x="20" y="54" font-size="12">P13 real rungs and P14 opt-in boundary from JSON artifacts</text>
+<text x="20" y="110" font-size="13">50 nodes</text>
+<rect class="scale-rung" x="120" y="92" width="21" height="24" fill="#2f6f4e" data-node-count="50" data-status="PASS" data-real-valkey="true"/>
+<text x="151" y="110" font-size="12">PASS real Valkey</text>
+<text x="20" y="158" font-size="13">100 nodes</text>
+<rect class="scale-rung" x="120" y="140" width="42" height="24" fill="#2f6f4e" data-node-count="100" data-status="PASS" data-real-valkey="true"/>
+<text x="172" y="158" font-size="12">PASS real Valkey</text>
+<text x="20" y="214" font-size="13">1000 planned nodes</text>
+<rect class="scale-rung" x="120" y="196" width="420" height="24" fill="#7f56d9" data-node-count="1000" data-status="SKIPPED_WITH_REASON" data-real-valkey="false" data-dry-run-only="true"/>
+<text x="550" y="214" font-size="12">P14 opt-in dry-run only</text>
+</svg>

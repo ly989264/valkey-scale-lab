@@ -1,0 +1,94 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L05_REPORTING_V2_FOR_AUDIT_RESULTS",
+  "status": "PASS",
+  "completed_at": "2026-06-30T08:02:09Z",
+  "commands_log": "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/commands.jsonl",
+  "commands": [
+    {
+      "name": "precheck_all",
+      "command": "python3 scripts/codex_gate.py precheck --all",
+      "status": "PASS",
+      "stdout_tail": "PASS precheck"
+    },
+    {
+      "name": "safety_scan",
+      "command": "python3 scripts/safety_scan.py",
+      "status": "PASS",
+      "stdout_tail": "PASS safety_scan"
+    },
+    {
+      "name": "compileall",
+      "command": "python3 -m compileall -q src scripts tests",
+      "status": "PASS",
+      "stdout_tail": ""
+    },
+    {
+      "name": "combined_pytest",
+      "command": "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py tests/unit tests/ci/test_github_coverage_gates.py tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator tests/analysis tests/report tests/stability tests/scale tests/loop_engineering tests/ci/test_loop_engineering_pack.py tests/audit tests/ci/test_committed_artifact_audit_gate.py tests/provenance tests/ci/test_provenance_graph_gate.py tests/metrics tests/coverage tests/ci/test_metric_coverage_gate.py tests/ci/test_p13_p14_scale_audit_gate.py",
+      "status": "PASS",
+      "stdout_tail": "182 passed in 3.24s"
+    },
+    {
+      "name": "committed_artifact_audit",
+      "command": "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+      "status": "PASS",
+      "stdout_tail": "PASS audit_report artifacts/loop_engineering/reports/audit_report.json"
+    },
+    {
+      "name": "provenance_graph",
+      "command": "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+      "status": "PASS",
+      "stdout_tail": "PASS provenance_graph artifacts/loop_engineering/reports/provenance_graph.json"
+    },
+    {
+      "name": "metric_coverage_builder",
+      "command": "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+      "status": "PASS",
+      "stdout_tail": "PASS metric_coverage artifacts/loop_engineering/reports/metric_catalog.json artifacts/loop_engineering/reports/coverage_matrix.json"
+    },
+    {
+      "name": "p13_p14_scale_audit",
+      "command": "python3 scripts/audit_p13_p14_scale.py --out artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+      "status": "PASS",
+      "stdout_tail": "PASS p13_p14_scale_audit artifacts/loop_engineering/reports/p13_p14_scale_audit.json"
+    },
+    {
+      "name": "audit_report_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json",
+      "status": "PASS",
+      "stdout_tail": "PASS schema=schemas/artifact/audit_report.schema.json instance=artifacts/loop_engineering/reports/audit_report.json"
+    },
+    {
+      "name": "provenance_graph_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json",
+      "status": "PASS",
+      "stdout_tail": "PASS schema=schemas/artifact/provenance_graph.schema.json instance=artifacts/loop_engineering/reports/provenance_graph.json"
+    },
+    {
+      "name": "metric_catalog_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_catalog.schema.json --instance artifacts/loop_engineering/reports/metric_catalog.json",
+      "status": "PASS",
+      "stdout_tail": "PASS schema=schemas/artifact/metric_catalog.schema.json instance=artifacts/loop_engineering/reports/metric_catalog.json"
+    },
+    {
+      "name": "coverage_matrix_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json",
+      "status": "PASS",
+      "stdout_tail": "PASS schema=schemas/artifact/coverage_matrix.schema.json instance=artifacts/loop_engineering/reports/coverage_matrix.json"
+    },
+    {
+      "name": "p13_p14_scale_audit_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/p13_p14_scale_audit.schema.json --instance artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+      "status": "PASS",
+      "stdout_tail": "PASS schema=schemas/artifact/p13_p14_scale_audit.schema.json instance=artifacts/loop_engineering/reports/p13_p14_scale_audit.json"
+    },
+    {
+      "name": "loop_engineering_stage_validate",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L05_REPORTING_V2_FOR_AUDIT_RESULTS",
+      "status": "PASS",
+      "stdout_tail": "PASS loop_engineering root=artifacts/loop_engineering"
+    }
+  ],
+  "all_required_baseline_commands_passed": true
+}

@@ -1,0 +1,78 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L05_REPORTING_V2_FOR_AUDIT_RESULTS",
+  "status": "PASS",
+  "completed_at": "2026-06-30T08:26:59Z",
+  "commands_log": "artifacts/loop_engineering/stages/L05_REPORTING_V2_FOR_AUDIT_RESULTS/commands.jsonl",
+  "commands": [
+    {
+      "name": "precheck_all",
+      "command": "python3 scripts/codex_gate.py precheck --all",
+      "status": "PASS",
+      "stdout_tail": "PASS precheck"
+    },
+    {
+      "name": "safety_scan",
+      "command": "python3 scripts/safety_scan.py",
+      "status": "PASS",
+      "stdout_tail": "PASS safety_scan"
+    },
+    {
+      "name": "compileall",
+      "command": "python3 -m compileall -q src scripts tests",
+      "status": "PASS",
+      "stdout_tail": ""
+    },
+    {
+      "name": "combined_pytest",
+      "command": "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py tests/unit tests/ci/test_github_coverage_gates.py tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator tests/analysis tests/report tests/visualization tests/stability tests/scale tests/loop_engineering tests/ci/test_loop_engineering_pack.py tests/audit tests/ci/test_committed_artifact_audit_gate.py tests/provenance tests/ci/test_provenance_graph_gate.py tests/metrics tests/coverage tests/ci/test_metric_coverage_gate.py tests/ci/test_p13_p14_scale_audit_gate.py tests/ci/test_loop_report_gate.py",
+      "status": "PASS",
+      "stdout_tail": "191 passed in 3.63s"
+    },
+    {
+      "name": "loop_report_render",
+      "command": "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports",
+      "status": "PASS",
+      "stdout_tail": "PASS loop_report 6 reports"
+    },
+    {
+      "name": "loop_report_index_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/loop_report_index.schema.json --instance artifacts/loop_engineering/reports/report_index.json",
+      "status": "PASS",
+      "stdout_tail": "PASS schema=schemas/artifact/loop_report_index.schema.json instance=artifacts/loop_engineering/reports/report_index.json"
+    },
+    {
+      "name": "loop_engineering_stage_validate",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L05_REPORTING_V2_FOR_AUDIT_RESULTS",
+      "status": "PASS",
+      "stdout_tail": "PASS loop_engineering root=artifacts/loop_engineering"
+    },
+    {
+      "name": "implementation_worker_recheck",
+      "command": "high-reasoning implementation_worker review",
+      "status": "PASS",
+      "stdout_tail": "APPROVED"
+    },
+    {
+      "name": "review_agent_recheck",
+      "command": "high-reasoning review_agent review",
+      "status": "PASS",
+      "stdout_tail": "APPROVED"
+    },
+    {
+      "name": "validation_agent_recheck",
+      "command": "high-reasoning validation_agent static validation",
+      "status": "PASS",
+      "stdout_tail": "APPROVED"
+    },
+    {
+      "name": "anti_regression_guardian_recheck",
+      "command": "high-reasoning anti_regression_guardian diff review",
+      "status": "PASS",
+      "stdout_tail": "APPROVED"
+    }
+  ],
+  "current_harness_passed": true,
+  "previous_harness_passed": true,
+  "notes": "Final L05 validation passed. P14 and real/fault wrapper gates were not run. Rendered views are generated from source artifacts and marked source_of_truth=false."
+}

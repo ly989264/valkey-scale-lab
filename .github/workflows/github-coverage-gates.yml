@@ -69,3 +69,9 @@ jobs:
         run: python3 scripts/validate_json_schema.py --schema schemas/artifact/p13_p14_scale_audit.schema.json --instance artifacts/loop_engineering/reports/p13_p14_scale_audit.json
       - name: P13/P14 scale audit tests
         run: python3 -m pytest -q tests/scale/test_p13_p14_scale_audit.py tests/ci/test_p13_p14_scale_audit_gate.py
+      - name: Loop report render
+        run: python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports
+      - name: Loop report index schema
+        run: python3 scripts/validate_json_schema.py --schema schemas/artifact/loop_report_index.schema.json --instance artifacts/loop_engineering/reports/report_index.json
+      - name: Loop report tests
+        run: python3 -m pytest -q tests/report tests/visualization tests/ci/test_loop_report_gate.py
