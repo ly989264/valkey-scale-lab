@@ -39,3 +39,7 @@ jobs:
         run: python3 -m pytest -q tests/integration tests/fault tests/failover tests/orchestrator
       - name: Analysis, report, stability, and scale tests
         run: python3 -m pytest -q tests/analysis tests/report tests/stability tests/scale
+      - name: Loop-engineering validator
+        run: python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering
+      - name: Loop-engineering tests
+        run: python3 -m pytest -q tests/loop_engineering tests/ci/test_loop_engineering_pack.py

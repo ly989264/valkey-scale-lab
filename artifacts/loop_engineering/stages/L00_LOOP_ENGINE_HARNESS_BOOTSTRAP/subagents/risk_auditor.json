@@ -1,0 +1,333 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
+  "agent_role": "risk_auditor",
+  "created_at": "2026-06-30T03:13:59Z",
+  "context_files_read": [
+    {
+      "path": "README.md",
+      "purpose": "Confirm repository-level bootstrap and phase ceiling.",
+      "key_findings": [
+        "The automatic phase loop stops after P13_SCALE_LADDER_50_100.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is explicitly not automatic."
+      ]
+    },
+    {
+      "path": "AGENTS.md",
+      "purpose": "Read controlling repository instructions and safety boundaries.",
+      "key_findings": [
+        "Default development phases are capped at 100 nodes.",
+        "Host network, firewall, routing, interface, and unrelated process mutation is forbidden.",
+        "Fake-only gates must never be presented as real Valkey evidence.",
+        "Harness controls must not be weakened, bypassed, deleted, or hidden through lock-file edits."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm original phase loop and P14 opt-in requirements.",
+      "key_findings": [
+        "P14 may only run when explicitly opted in and VSLAB_ALLOW_1000_DRYRUN equals I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE.",
+        "Gate results must be produced by scripts/codex_gate.py run, not manually marked PASS."
+      ]
+    },
+    {
+      "path": "codex/phase_manifest.json",
+      "purpose": "Check fake/real phase boundaries, maximum node limits, and P14 status.",
+      "key_findings": [
+        "default_max_nodes is 100.",
+        "P00-P02 allow fake-only bootstrapping; P03-P13 require real Valkey evidence where capability gates apply.",
+        "P14 is automatic false, real_valkey_required false, max_nodes 1000, and guarded by an explicit opt-in shell test.",
+        "P12 and P13 require real scale evidence at 10/30/50/100 nodes with data-path checks."
+      ]
+    },
+    {
+      "path": ".github/workflows/codex-gates.yml",
+      "purpose": "Review CI coverage that must not be weakened.",
+      "key_findings": [
+        "CI compiles harness scripts, runs codex precheck --all, runs safety_scan.py, and runs unit tests."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "Review broader CI validation surface.",
+      "key_findings": [
+        "CI runs compileall, precheck, safety scan, postcheck compatibility, unit/CLI, config/planner, integration/fault/failover/orchestrator, and analysis/report/stability/scale tests on Python 3.9 and 3.11."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/00_OPERATING_CONTRACT.md",
+      "purpose": "Read loop-engineering safety contract.",
+      "key_findings": [
+        "Every stage must pass previous harness before current harness work.",
+        "Harness changes require an explicit change request and review approval if they touch existing controls.",
+        "Agent outputs must be persisted as JSON artifacts."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/01_STAGE_LOOP_PROTOCOL.md",
+      "purpose": "Read stage execution sequence and artifact requirements.",
+      "key_findings": [
+        "L00 must persist read context, previous harness results, subagent outputs, validation, anti-regression review, and stage result.",
+        "Current-stage harness must be developed before implementation."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Read required subagent JSON schema.",
+      "key_findings": [
+        "risk_auditor must identify drift, forgery, skip, resource exhaustion, dry-run confusion, and harness weakening risks.",
+        "Valid verdict values are APPROVED, CHANGES_REQUESTED, and BLOCKED."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Read previous harness, artifact-first, real Valkey, and anti-regression requirements.",
+      "key_findings": [
+        "Real Valkey evidence must include real_valkey true, 9.1.x version, required observed node count, data-path proof, cleanup PASS, and schema validation PASS.",
+        "1000+ is not an automatic real gate and must remain dry-run/resource/planner unless separately opted in.",
+        "Anti-regression checks must inspect tests, scripts, schemas, workflows, codex, artifacts/gates, and artifacts/phases."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "Read L00 stage scope and acceptance criteria.",
+      "key_findings": [
+        "L00 must add or strengthen schemas/loop_engineering/*.schema.json, scripts/loop_engineering_validate.py, tests/loop_engineering/test_loop_state_contract.py, and tests/ci/test_loop_engineering_pack.py.",
+        "L00 must validate stage_result.json, subagent JSON, and commands.jsonl.",
+        "L00 must provide a runnable anti-regression guardian entry point."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+      "purpose": "Read validation commands and resource-sensitive gate boundaries.",
+      "key_findings": [
+        "L00 validation includes scripts/loop_engineering_validate.py --root artifacts/loop_engineering and pytest for tests/loop_engineering plus tests/ci/test_loop_engineering_pack.py.",
+        "Resource preflight failure must not be converted into PASS.",
+        "1000+ dry-run artifacts must not count as real Valkey coverage."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/06_STATE_AND_ARTIFACT_CONTRACT.md",
+      "purpose": "Read expected loop artifact layout and JSON/JSONL contracts.",
+      "key_findings": [
+        "commands.jsonl requires one JSON object per command with timestamps, cwd, command array, exit_code, stdout/stderr tails, and status.",
+        "stage_result.json must capture subagent verdicts, command log path, real/fake gates, artifacts, and remaining risks."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/stage_state.json",
+      "purpose": "Inspect current L00 state.",
+      "key_findings": [
+        "Stage is IN_PROGRESS in PREVIOUS_HARNESS phase.",
+        "Files touched so far are loop-engineering startup/read-context/state artifacts.",
+        "No blockers are recorded."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/previous_harness_result.json",
+      "purpose": "Inspect previous harness outcome and environment notes.",
+      "key_findings": [
+        "Previous harness is recorded as PASS after rerunning pytest commands in a temporary venv.",
+        "The first pytest command failed because the system python3 lacked pytest; this must remain visible in command provenance."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/read_context.md",
+      "purpose": "Inspect current stage read context and already-observed risks.",
+      "key_findings": [
+        "Existing read context notes absent global_loop_state.json and absent L00 validation resources.",
+        "Existing read context notes untracked artifacts/.DS_Store and codex/.DS_Store."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/commands.jsonl",
+      "purpose": "Inspect command-log provenance.",
+      "key_findings": [
+        "The log records an initial pytest FAIL followed by venv creation, dependency installation, editable install, and rerun PASS entries.",
+        "Each observed command line is JSONL with command arrays and status fields."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "RISK-L00-001",
+      "severity": "high",
+      "description": "Fake and real evidence boundaries can be blurred if future loop audits treat phase summaries, reports, or dry-run outputs as proof of real Valkey execution.",
+      "evidence": [
+        "AGENTS.md requires real Valkey e2e proof from P03 onward and forbids fake-only gates being presented as real evidence.",
+        "codex/loop_engineering/03_HARNESS_POLICY.md requires real_valkey true, Valkey 9.1.x version, observed node count, data-path proof, cleanup PASS, and schema validation PASS.",
+        "codex/phase_manifest.json marks P03-P13 real_valkey_required true except fake-only P00-P02 and opt-in dry-run P14."
+      ]
+    },
+    {
+      "id": "RISK-L00-002",
+      "severity": "high",
+      "description": "P14 could be accidentally pulled into automatic validation or counted as real 1000-node evidence unless L00 locks automatic=false, opt-in env, dry-run, and max-node invariants into validation.",
+      "evidence": [
+        "README.md and CODEX_START_HERE.md both state P14 is not automatic.",
+        "codex/phase_manifest.json has P14 automatic false and a require_1000_opt_in gate.",
+        "codex/loop_engineering/05_VALIDATION_COMMANDS.md states 1000+ dry-run artifacts must not be counted as real Valkey coverage."
+      ]
+    },
+    {
+      "id": "RISK-L00-003",
+      "severity": "high",
+      "description": "L00 is explicitly about harness bootstrap, so the highest regression risk is weakening existing harness controls while adding new validator scripts, tests, schemas, or CI coverage.",
+      "evidence": [
+        "AGENTS.md identifies codex/phase_manifest.json, scripts/*.py, schemas/**/*.json, templates/**/*, docs/codex/**/*, and .github/workflows/codex-gates.yml as protected harness controls.",
+        "codex/loop_engineering/00_OPERATING_CONTRACT.md allows harness changes only with a change request and stronger or equivalent coverage.",
+        "codex/loop_engineering/03_HARNESS_POLICY.md defaults anti-regression blocking on required-to-optional, real_valkey_required false, min-node lowering, schema enum loosening, and hand-written PASS changes."
+      ]
+    },
+    {
+      "id": "RISK-L00-004",
+      "severity": "medium",
+      "description": "Command-log provenance can become misleading if previous_harness_result.json summarizes PASS while commands.jsonl contains an earlier FAIL without an explicit recovery chain.",
+      "evidence": [
+        "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/commands.jsonl records an initial pytest FAIL due to missing pytest.",
+        "The same log records venv setup and rerun PASS entries.",
+        "previous_harness_result.json explains the temporary venv recovery in environment_notes."
+      ]
+    },
+    {
+      "id": "RISK-L00-005",
+      "severity": "medium",
+      "description": "Untracked .DS_Store files under controlled artifact/codex paths can pollute commits or validation walks if not explicitly excluded or blocked.",
+      "evidence": [
+        "git status --short reports untracked artifacts/.DS_Store and codex/.DS_Store.",
+        "find artifacts codex -name .DS_Store -print reports artifacts/.DS_Store and codex/.DS_Store.",
+        "The user explicitly called out working tree .DS_Store files as a risk focus."
+      ]
+    },
+    {
+      "id": "RISK-L00-006",
+      "severity": "high",
+      "description": "L00 completion is blocked until the validation resources named by the stage manifest exist and can validate loop state, subagent JSON, stage results, commands.jsonl, and anti-regression entry points.",
+      "evidence": [
+        "codex/loop_engineering/04_STAGE_MANIFEST.md requires schemas/loop_engineering/*.schema.json, scripts/loop_engineering_validate.py, tests/loop_engineering/test_loop_state_contract.py, and tests/ci/test_loop_engineering_pack.py.",
+        "rg over schemas, scripts, and tests found no existing matches for those L00 validation-resource paths.",
+        "codex/loop_engineering/05_VALIDATION_COMMANDS.md says L00 must first implement scripts/loop_engineering_validate.py if it does not yet exist."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "loop_subagent_output_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Validate every artifacts/loop_engineering/stages/*/subagents/*.json file for schema_version v1, known agent_role, required arrays, finding severities, harness types, and verdict enum."
+    },
+    {
+      "name": "loop_command_log_schema_and_provenance",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Validate commands.jsonl as strict JSONL with command arrays, timestamps, cwd, integer exit_code, status matching exit_code, stdout/stderr tails, and explicit recovery notes when a summary PASS includes earlier FAIL entries."
+    },
+    {
+      "name": "loop_stage_state_and_result_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Validate stage_state.json and stage_result.json against loop contracts, including subagent verdicts, commands_log, previous/current harness booleans, real_valkey_gates, fake_gates, risks_remaining, commit_sha, and pushed."
+    },
+    {
+      "name": "phase_manifest_safety_invariants",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Assert default_max_nodes remains 100, automatic_stop_after remains P13_SCALE_LADDER_50_100, P14 remains automatic false and real_valkey_required false, and no automatic phase exceeds max_nodes 100."
+    },
+    {
+      "name": "real_vs_dryrun_evidence_guard",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Reject real coverage claims unless the source artifact is schema-valid real Valkey evidence with real_valkey true, Valkey 9.1.x version, required node count, data-path proof, cleanup PASS, and non-dry-run provenance."
+    },
+    {
+      "name": "anti_regression_guardian_entrypoint",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Provide a runnable anti-regression check that scans protected diff paths and blocks required-to-optional downgrades, real_valkey_required false changes, min-node reductions, schema loosening, hand-written PASS artifacts, and P14 automatic opt-in bypass."
+    },
+    {
+      "name": "loop_engineering_ci_pack",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "CI coverage must assert the L00 validator, schemas, loop tests, and anti-regression entry point exist and can be executed without relying on chat-only state."
+    },
+    {
+      "name": "ds_store_artifact_guard",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Validation or anti-regression must fail if .DS_Store files are staged or included under codex, artifacts, schemas, scripts, tests, templates, docs, or workflow paths."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define loop-engineering schemas before relying on generated agent or stage artifacts.",
+      "files": [
+        "schemas/loop_engineering/*.schema.json"
+      ],
+      "rationale": "Schema-first validation prevents chat-only or manually shaped artifacts from being treated as accepted evidence."
+    },
+    {
+      "step": "Implement the loop validator as a read-only artifact checker with explicit exit codes.",
+      "files": [
+        "scripts/loop_engineering_validate.py"
+      ],
+      "rationale": "L00 needs a deterministic validation entry point for state files, subagent outputs, stage results, command logs, and blocker conditions."
+    },
+    {
+      "step": "Add tests for state contracts, command provenance, real/dry-run boundaries, P14 invariants, and .DS_Store guarding.",
+      "files": [
+        "tests/loop_engineering/test_loop_state_contract.py",
+        "tests/ci/test_loop_engineering_pack.py"
+      ],
+      "rationale": "These tests are the minimum protection against fake evidence promotion, opt-in bypass, and untracked local metadata leaking into committed artifacts."
+    },
+    {
+      "step": "Wire anti-regression checks without weakening existing protected harness files.",
+      "files": [
+        "scripts/loop_engineering_validate.py",
+        "tests/loop_engineering/test_loop_state_contract.py"
+      ],
+      "rationale": "The stage requires a guardian entry point, but it must strengthen the existing safety model rather than replacing codex_gate.py, safety_scan.py, or CI gates."
+    }
+  ],
+  "acceptance_criteria": [
+    "L00 must not be considered complete until scripts/loop_engineering_validate.py exists and passes against artifacts/loop_engineering.",
+    "L00 must not be considered complete until tests/loop_engineering/test_loop_state_contract.py and tests/ci/test_loop_engineering_pack.py pass.",
+    "Subagent JSON must validate with schema_version v1 and stage_id L00_LOOP_ENGINE_HARNESS_BOOTSTRAP.",
+    "commands.jsonl validation must preserve failed command entries and require explicit recovery evidence before a summarized PASS is accepted.",
+    "Any .DS_Store file staged or committed under controlled paths must block completion.",
+    "P14 must remain non-automatic, opt-in only, dry-run/resource/planner scoped, and excluded from real Valkey coverage.",
+    "Real Valkey coverage must require wrapper-produced evidence, live endpoint/version/data-path proof, required node count, cleanup PASS, and schema validation PASS.",
+    "No existing harness, workflow, schema, gate, or manifest requirement may be downgraded to make L00 pass."
+  ],
+  "risks": [
+    "Block completion if any L00 validation-resource file is absent or only stubbed.",
+    "Block completion if P14 automatic changes to true, opt-in env checks are removed, or dry-run artifacts are counted as real evidence.",
+    "Block completion if fake tests, generated reports, or manually edited phase summaries are accepted as real Valkey proof.",
+    "Block completion if command logs are summarized without retaining command arrays, exit codes, stdout/stderr tails, and recovery chains.",
+    "Block completion if .DS_Store files are staged, committed, or included in artifact validation inputs.",
+    "Block completion if anti-regression checks modify protected harness controls without a documented harness_change_request and stronger equivalent coverage."
+  ],
+  "forbidden_shortcuts": [
+    "Do not manually write PASS into gate, stage, or validation result files to satisfy L00.",
+    "Do not skip failed baseline commands or omit failed command entries from commands.jsonl.",
+    "Do not relax schemas, CI jobs, phase_manifest gates, min-node requirements, or real_valkey_required flags.",
+    "Do not run P14 automatically or set VSLAB_ALLOW_1000_DRYRUN inside L00 without explicit user opt-in.",
+    "Do not count P14 dry-run plans, resource estimates, or reports as real Valkey evidence.",
+    "Do not delete or ignore .DS_Store files by broad artifact exclusion if the files are staged; block and require cleanup outside this risk-auditor output.",
+    "Do not use report HTML, Markdown, or charts as source-of-truth for evidence."
+  ],
+  "commands_to_run": [
+    "python3 scripts/codex_gate.py precheck --all",
+    "python3 scripts/safety_scan.py",
+    "python3 -m compileall -q src scripts tests",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+    "python3 -m pytest -q tests/loop_engineering tests/ci/test_loop_engineering_pack.py",
+    "git diff -- tests scripts schemas .github codex artifacts/gates artifacts/phases artifacts/loop_engineering",
+    "git status --short"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Approved to proceed to L00 harness design and implementation only under the blocker conditions above. The current missing L00 validation resources are expected pre-implementation gaps, not acceptable completion state. The existing .DS_Store files and the initial pytest failure in commands.jsonl must remain visible to validation and anti-regression checks rather than being hidden by summary artifacts."
+}

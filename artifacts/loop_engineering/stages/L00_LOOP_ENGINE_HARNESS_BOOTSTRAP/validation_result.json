@@ -1,0 +1,77 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
+  "status": "PASS",
+  "completed_at": "2026-06-30T03:43:33Z",
+  "commands_log": "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/commands.jsonl",
+  "commands": [
+    {
+      "name": "codex_precheck_all",
+      "command": "python3 scripts/codex_gate.py precheck --all",
+      "status": "PASS"
+    },
+    {
+      "name": "safety_scan",
+      "command": "python3 scripts/safety_scan.py",
+      "status": "PASS"
+    },
+    {
+      "name": "compileall",
+      "command": "python3 -m compileall -q src scripts tests",
+      "status": "PASS"
+    },
+    {
+      "name": "postcheck_compatibility",
+      "command": "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py",
+      "status": "PASS"
+    },
+    {
+      "name": "unit_and_github_coverage",
+      "command": "python3 -m pytest -q tests/unit tests/ci/test_github_coverage_gates.py",
+      "status": "PASS"
+    },
+    {
+      "name": "config_and_planner",
+      "command": "python3 -m pytest -q tests/config tests/planner",
+      "status": "PASS"
+    },
+    {
+      "name": "runtime_fault_failover_orchestrator",
+      "command": "python3 -m pytest -q tests/integration tests/fault tests/failover tests/orchestrator",
+      "status": "PASS"
+    },
+    {
+      "name": "analysis_report_stability_scale",
+      "command": "python3 -m pytest -q tests/analysis tests/report tests/stability tests/scale",
+      "status": "PASS"
+    },
+    {
+      "name": "loop_validator_root",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+      "status": "PASS"
+    },
+    {
+      "name": "loop_validator_stage",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
+      "status": "PASS"
+    },
+    {
+      "name": "loop_engineering_tests",
+      "command": "python3 -m pytest -q tests/loop_engineering tests/ci/test_loop_engineering_pack.py",
+      "status": "PASS"
+    },
+    {
+      "name": "ci_tests",
+      "command": "python3 -m pytest -q tests/ci",
+      "status": "PASS"
+    },
+    {
+      "name": "anti_regression",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --anti-regression --base-ref 0e8cab5cbaceeae7ceac804b89e053bc2ba83ff6 --head-ref HEAD --report artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/anti_regression_check.json",
+      "status": "PASS"
+    }
+  ],
+  "current_harness_passed": true,
+  "previous_harness_passed": true,
+  "notes": "Final validation used /private/tmp/valkey-scale-lab-l00-venv for pytest because the system Python lacked pytest. Required compileall rewrote tracked bytecode; generated scripts/__pycache__ changes were restored and final anti-regression verified they are absent."
+}

@@ -1,0 +1,68 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
+  "new_tests": [
+    {
+      "path": "tests/loop_engineering/test_loop_state_contract.py",
+      "purpose": "Validate loop-engineering schemas, command JSONL behavior, stage result invariants, subagent consistency, and anti-regression detection."
+    },
+    {
+      "path": "tests/ci/test_loop_engineering_pack.py",
+      "purpose": "Protect the committed L00 validation pack and ensure CI runs loop-engineering validation without adding P14 or real Valkey gates."
+    }
+  ],
+  "new_schemas": [
+    "schemas/loop_engineering/command_log_entry.schema.json",
+    "schemas/loop_engineering/subagent_response.schema.json",
+    "schemas/loop_engineering/stage_state.schema.json",
+    "schemas/loop_engineering/previous_harness_result.schema.json",
+    "schemas/loop_engineering/current_harness_plan.schema.json",
+    "schemas/loop_engineering/validation_result.schema.json",
+    "schemas/loop_engineering/stage_result.schema.json",
+    "schemas/loop_engineering/global_loop_state.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+      "acceptance": "Validates the current loop artifact tree and returns 0 with a PASS summary."
+    },
+    {
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
+      "acceptance": "Validates only the L00 stage tree."
+    },
+    {
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --anti-regression --base-ref 0e8cab5cbaceeae7ceac804b89e053bc2ba83ff6 --head-ref HEAD --report artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/anti_regression_check.json",
+      "acceptance": "Produces a read-only anti-regression report and blocks obvious harness weakening."
+    }
+  ],
+  "new_artifact_checks": [
+    "stage_state.json schema validation",
+    "previous_harness_result.json schema validation",
+    "current_harness_plan.json schema validation",
+    "validation_result.json schema validation",
+    "stage_result.json schema and PASS invariant validation",
+    "commands.jsonl schema and exit-code/status validation",
+    "subagents/*.json schema plus filename/stage/role consistency",
+    "global_loop_state.json schema validation when present",
+    "controlled-path .DS_Store staged/tracked guard"
+  ],
+  "expected_initial_failures": [
+    {
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+      "reason": "scripts/loop_engineering_validate.py does not exist before L00 implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/loop_engineering tests/ci/test_loop_engineering_pack.py",
+      "reason": "tests/loop_engineering and tests/ci/test_loop_engineering_pack.py do not exist before L00 implementation."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS.",
+    "L00 validator schemas and script exist.",
+    "Loop validator accepts the completed L00 artifact tree and rejects malformed examples in tests.",
+    "Loop test pack passes under pytest.",
+    "Workflow coverage includes loop validator and loop test commands.",
+    "Anti-regression mode is runnable and produces an L00 report.",
+    "No P14 automatic execution or real 1000-node evidence is introduced."
+  ]
+}

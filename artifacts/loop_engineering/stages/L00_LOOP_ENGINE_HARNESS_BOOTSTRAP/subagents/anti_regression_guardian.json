@@ -1,0 +1,133 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
+  "agent_role": "anti_regression_guardian",
+  "created_at": "2026-06-30T03:35:38Z",
+  "context_files_read": [
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm repository phase-loop and P14 opt-in constraints before anti-regression review.",
+      "key_findings": [
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic and requires VSLAB_ALLOW_1000_DRYRUN.",
+        "Gate PASS results must be produced by scripts/codex_gate.py run, not manually written."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Confirm required subagent JSON shape and allowed verdict values.",
+      "key_findings": [
+        "anti_regression_guardian must output a JSON file under artifacts/loop_engineering/stages/<stage>/subagents/.",
+        "APPROVED and BLOCKED are valid verdict values."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Identify anti-regression blocker classes.",
+      "key_findings": [
+        "Default blockers include required-to-optional downgrades, real_valkey_required false downgrades, hand-written gate PASS, lowered min-nodes, schema enum/required weakening, skip without reason, and historical artifact PASS edits without rerun evidence.",
+        "Anti-regression scope covers tests, scripts, schemas, .github, codex, artifacts/gates, and artifacts/phases."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "Confirm L00 expected harness additions and acceptance criteria.",
+      "key_findings": [
+        "L00 must add loop-engineering schemas, validator, tests, and CI coverage.",
+        "L00 must provide a runnable anti-regression entrypoint and keep P14 opt-in boundaries intact."
+      ]
+    },
+    {
+      "path": "scripts/loop_engineering_validate.py",
+      "purpose": "Inspect updated anti-regression implementation.",
+      "key_findings": [
+        "detect_anti_regression_findings now blocks controlled-path .pyc and .pyo changes with a generated-bytecode finding.",
+        "The existing checks still cover real_valkey_required downgrades, required-to-optional downgrades, P14 opt-in guard removal, schema required/enum removals, skip/xfail without reason, gate PASS edits, min-nodes changes, and controlled .DS_Store."
+      ]
+    },
+    {
+      "path": "tests/loop_engineering/test_loop_state_contract.py",
+      "purpose": "Verify test coverage for the strengthened bytecode guard.",
+      "key_findings": [
+        "test_anti_regression_detects_controlled_bytecode covers scripts/__pycache__/codex_gate.cpython-313.pyc.",
+        "Manifest downgrade and controlled .DS_Store anti-regression tests remain present."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "Inspect tracked workflow diff.",
+      "key_findings": [
+        "The workflow diff only adds loop-engineering validator and loop-engineering pytest commands.",
+        "No P14 opt-in bypass or real Valkey gate was added to this workflow diff."
+      ]
+    },
+    {
+      "path": "git status --short",
+      "purpose": "Inspect current working tree state.",
+      "key_findings": [
+        "No scripts/__pycache__ files are modified or staged.",
+        "No .DS_Store files are shown as staged or untracked.",
+        "The L00 source, schema, test, and artifact additions remain untracked except for the modified workflow."
+      ]
+    },
+    {
+      "path": "git diff --stat -- scripts/__pycache__",
+      "purpose": "Confirm main agent restored tracked bytecode diffs.",
+      "key_findings": [
+        "Command produced no output, confirming no current scripts/__pycache__ diff."
+      ]
+    },
+    {
+      "path": "git diff -- tests scripts schemas .github codex artifacts/gates artifacts/phases artifacts/loop_engineering",
+      "purpose": "Inspect controlled-path tracked diff requested by the role prompt.",
+      "key_findings": [
+        "The tracked diff contains only the additive .github/workflows/github-coverage-gates.yml loop-engineering commands.",
+        "No tracked codex/phase_manifest.json, schema, artifacts/gates, artifacts/phases, min-nodes, required flag, or real_valkey_required diff is present.",
+        "No manual gate PASS edit is present in the tracked diff."
+      ]
+    },
+    {
+      "path": "PYTHONDONTWRITEBYTECODE=1 PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --anti-regression --base-ref 0e8cab5cbaceeae7ceac804b89e053bc2ba83ff6 --head-ref HEAD",
+      "purpose": "Run the requested anti-regression command without writing bytecode.",
+      "key_findings": [
+        "Command exited 0.",
+        "Output was PASS anti-regression."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [],
+  "implementation_plan": [],
+  "acceptance_criteria": [
+    "No controlled-path scripts/__pycache__ .pyc/.pyo diff is present.",
+    "No required-to-optional downgrade is present in tracked source/config diffs.",
+    "No real_valkey_required true-to-false downgrade is present in tracked source/config diffs.",
+    "No P14 opt-in bypass or automatic real 1000-node gate is introduced.",
+    "No manual artifacts/gates PASS edit is present in tracked diffs.",
+    "No min-nodes lowering is present in tracked source/config diffs.",
+    "No schema required/enum relaxation is present in tracked diffs.",
+    "No staged or tracked .DS_Store exists under controlled paths.",
+    "The anti-regression validator blocks controlled-path generated Python bytecode changes."
+  ],
+  "risks": [
+    "Untracked L00 additions are not shown by plain git diff until staged, so this review also inspected their contents directly.",
+    "The anti-regression command was run with --head-ref HEAD as requested; uncommitted untracked files are validated by direct inspection and by the loop root validator rather than by base-to-HEAD diff inclusion."
+  ],
+  "forbidden_shortcuts": [
+    "Do not stage or commit scripts/__pycache__ bytecode changes.",
+    "Do not manually edit artifacts/gates/*/gate_result.json to PASS.",
+    "Do not weaken real_valkey_required, required gate/artifact flags, schema required fields, or schema enums.",
+    "Do not make P14 automatic or bypass VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not stage .DS_Store files under controlled paths."
+  ],
+  "commands_to_run": [
+    "git status --short",
+    "git diff --stat -- scripts/__pycache__",
+    "git diff -- tests scripts schemas .github codex artifacts/gates artifacts/phases artifacts/loop_engineering",
+    "PYTHONDONTWRITEBYTECODE=1 PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --anti-regression --base-ref 0e8cab5cbaceeae7ceac804b89e053bc2ba83ff6 --head-ref HEAD",
+    "rg -n \"pyc|pyo|bytecode|DS_Store|CONTROLLED_PATH_PREFIXES|detect_anti_regression_findings|run_anti_regression\" scripts/loop_engineering_validate.py tests/loop_engineering tests/ci/test_loop_engineering_pack.py",
+    "git diff --cached --name-status -- tests scripts schemas .github codex artifacts/gates artifacts/phases artifacts/loop_engineering",
+    "git status --short -- '*.DS_Store' 'scripts/__pycache__/*.pyc' 'scripts/__pycache__/*.pyo'"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Rerun review found the previous bytecode blocker resolved. scripts/__pycache__ has no diff, the validator now rejects controlled-path .pyc/.pyo changes, the requested anti-regression command passes, and the remaining tracked controlled-path diff is an additive CI workflow change for L00 loop validation."
+}

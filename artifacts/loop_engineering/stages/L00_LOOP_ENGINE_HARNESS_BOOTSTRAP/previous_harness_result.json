@@ -1,0 +1,55 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
+  "status": "PASS",
+  "completed_at": "2026-06-30T03:10:52Z",
+  "environment_notes": [
+    "The system python3 initially lacked pytest, causing the first pytest baseline command to fail before test collection.",
+    "A temporary venv was created at /private/tmp/valkey-scale-lab-l00-venv and populated with requirements-dev.txt plus an editable project install.",
+    "The pytest baseline commands were rerun with python3 resolved from the temporary venv via PATH prefix."
+  ],
+  "commands_log": "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/commands.jsonl",
+  "commands": [
+    {
+      "name": "codex_precheck_all",
+      "command": "python3 scripts/codex_gate.py precheck --all",
+      "status": "PASS"
+    },
+    {
+      "name": "safety_scan",
+      "command": "python3 scripts/safety_scan.py",
+      "status": "PASS"
+    },
+    {
+      "name": "compileall",
+      "command": "python3 -m compileall -q src scripts tests",
+      "status": "PASS"
+    },
+    {
+      "name": "postcheck_compatibility",
+      "command": "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py",
+      "status": "PASS"
+    },
+    {
+      "name": "unit_and_github_coverage",
+      "command": "python3 -m pytest -q tests/unit tests/ci/test_github_coverage_gates.py",
+      "status": "PASS"
+    },
+    {
+      "name": "config_and_planner",
+      "command": "python3 -m pytest -q tests/config tests/planner",
+      "status": "PASS"
+    },
+    {
+      "name": "runtime_fault_failover_orchestrator",
+      "command": "python3 -m pytest -q tests/integration tests/fault tests/failover tests/orchestrator",
+      "status": "PASS"
+    },
+    {
+      "name": "analysis_report_stability_scale",
+      "command": "python3 -m pytest -q tests/analysis tests/report tests/stability tests/scale",
+      "status": "PASS"
+    }
+  ],
+  "all_required_baseline_commands_passed": true
+}

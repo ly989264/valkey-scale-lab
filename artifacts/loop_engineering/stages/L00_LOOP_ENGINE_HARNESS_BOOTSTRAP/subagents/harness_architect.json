@@ -1,0 +1,392 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
+  "agent_role": "harness_architect",
+  "created_at": "2026-06-30T03:13:56Z",
+  "context_files_read": [
+    {
+      "path": "README.md",
+      "purpose": "Repository bootstrap overview",
+      "key_findings": [
+        "The original automatic phase loop stops after P13_SCALE_LADDER_50_100.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic."
+      ]
+    },
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety and harness contract",
+      "key_findings": [
+        "Default development phases are capped at 100 Valkey nodes.",
+        "Harness controls, schemas, scripts, docs, templates, and workflows must not be weakened.",
+        "Machine-readable artifacts are the source of truth."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Original phase loop entrypoint",
+      "key_findings": [
+        "Gate results must be produced by scripts/codex_gate.py rather than manually marked PASS.",
+        "P14 requires explicit opt-in environment state and must remain outside automatic execution."
+      ]
+    },
+    {
+      "path": "codex/phase_manifest.json",
+      "purpose": "Original phase and gate manifest",
+      "key_findings": [
+        "default_max_nodes is 100.",
+        "P00 through P13 are automatic; P14 is opt-in only.",
+        "Real Valkey evidence must use 9.1.x version data where required."
+      ]
+    },
+    {
+      "path": ".github/workflows/codex-gates.yml",
+      "purpose": "Existing CI harness coverage",
+      "key_findings": [
+        "Runs codex precheck, safety scan, and unit tests.",
+        "Does not yet run loop-engineering validator or loop-engineering tests."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "Existing broader CI coverage gate",
+      "key_findings": [
+        "Runs previous harness baseline suites on Python 3.9 and 3.11.",
+        "Does not yet include L00 loop-engineering validation commands."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/00_OPERATING_CONTRACT.md",
+      "purpose": "Loop operating contract",
+      "key_findings": [
+        "Each stage must pass previous harness first, then design current harness, implement, validate, review, anti-regression check, commit, and push.",
+        "Subagent outputs must be JSON and persisted under artifacts/loop_engineering."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/01_STAGE_LOOP_PROTOCOL.md",
+      "purpose": "Stage execution protocol",
+      "key_findings": [
+        "L00 must persist state, previous harness result, stage design, current harness plan, command log, subagent outputs, validation result, anti-regression report, and stage result.",
+        "Current stage harness must be developed before implementation work is considered complete."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent output contract",
+      "key_findings": [
+        "Subagent JSON requires schema_version, stage_id, agent_role, created_at, context_files_read, findings, proposed_harness, implementation_plan, acceptance_criteria, risks, forbidden_shortcuts, commands_to_run, verdict, and notes.",
+        "harness_architect must design tests, schemas, CLI gates, artifact validators, and real/fake boundaries without implementing functionality."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Previous harness and anti-regression policy",
+      "key_findings": [
+        "Previous harness baseline includes codex precheck, safety scan, compileall, and representative pytest suites.",
+        "Anti-regression must inspect tests, scripts, schemas, workflows, codex, artifacts/gates, and artifacts/phases for weakened harness behavior."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L00 stage definition",
+      "key_findings": [
+        "L00 must establish loop state schemas, subagent output schema, command log format, anti-regression entrypoint, and stage result validation.",
+        "Required harness files are schemas/loop_engineering/*.schema.json, scripts/loop_engineering_validate.py, tests/loop_engineering/test_loop_state_contract.py, and tests/ci/test_loop_engineering_pack.py."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+      "purpose": "Validation command contract",
+      "key_findings": [
+        "L00 must make python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering pass.",
+        "L00 must add pytest coverage for tests/loop_engineering and tests/ci/test_loop_engineering_pack.py."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/06_STATE_AND_ARTIFACT_CONTRACT.md",
+      "purpose": "Loop artifact layout and JSON contracts",
+      "key_findings": [
+        "commands.jsonl must be line-delimited JSON with command arrays, exit_code, output tails, and status.",
+        "stage_state.json and stage_result.json structures are explicitly specified.",
+        "global_loop_state.json is expected after stages are completed."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/templates/subagent_response.example.json",
+      "purpose": "Example subagent artifact",
+      "key_findings": [
+        "Provides the minimal JSON shape to encode as schemas/loop_engineering/subagent_response.schema.json."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/templates/stage_state.example.json",
+      "purpose": "Example stage state artifact",
+      "key_findings": [
+        "Provides the baseline stage_state.json shape and phase enum candidates."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/templates/stage_result.example.json",
+      "purpose": "Example stage result artifact",
+      "key_findings": [
+        "Provides the baseline stage_result.json shape but does not by itself enforce required subagent verdicts or pushed PASS invariants."
+      ]
+    },
+    {
+      "path": "scripts/schema_validator.py",
+      "purpose": "Existing dependency-free JSON schema validator",
+      "key_findings": [
+        "Supports the schema subset used in this repo, including required, properties, enum, const, pattern, minItems, and additionalProperties.",
+        "L00 validator should reuse this rather than adding external dependencies."
+      ]
+    },
+    {
+      "path": "scripts/validate_json_schema.py",
+      "purpose": "Existing schema validation CLI pattern",
+      "key_findings": [
+        "Already validates JSON and JSONL instances against schemas.",
+        "L00 should follow its explicit PASS/FAIL exit-code style."
+      ]
+    },
+    {
+      "path": "tests/ci/test_postcheck_compatibility.py",
+      "purpose": "Existing committed artifact compatibility gate pattern",
+      "key_findings": [
+        "Shows how CI tests load harness scripts directly and aggregate artifact validation failures.",
+        "L00 CI pack test should use the same fail-with-aggregated-findings style."
+      ]
+    },
+    {
+      "path": "tests/ci/test_github_coverage_gates.py",
+      "purpose": "Existing workflow coverage guard pattern",
+      "key_findings": [
+        "Asserts required commands are present in workflow text.",
+        "L00 should add analogous assertions for loop-engineering validation while preserving non-opt-in real-gate boundaries."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/read_context.md",
+      "purpose": "Current L00 read context artifact",
+      "key_findings": [
+        "Records that schemas/loop_engineering, loop_engineering_validate.py, tests/loop_engineering, and test_loop_engineering_pack.py are currently absent.",
+        "Records that no global_loop_state.json or prior stage_result.json exists yet."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/previous_harness_result.json",
+      "purpose": "Previous harness result for L00",
+      "key_findings": [
+        "Previous harness is recorded as PASS.",
+        "The first pytest command failed only because the system python lacked pytest; reruns passed in a temporary venv."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L00-HA-001",
+      "severity": "high",
+      "description": "The required L00 loop-engineering harness surface is absent: no schemas/loop_engineering directory, no scripts/loop_engineering_validate.py, and no tests/loop_engineering directory currently exist.",
+      "evidence": [
+        "find schemas/loop_engineering returned no such file or directory.",
+        "find tests/loop_engineering returned no such file or directory.",
+        "find scripts -name '*loop*' returned no loop validator script."
+      ]
+    },
+    {
+      "id": "L00-HA-002",
+      "severity": "high",
+      "description": "Subagent outputs, stage_state.json, commands.jsonl, and stage_result.json are documented but not enforced by committed schemas or an artifact validator.",
+      "evidence": [
+        "codex/loop_engineering/02_AGENT_PROTOCOL.md defines the subagent JSON shape.",
+        "codex/loop_engineering/06_STATE_AND_ARTIFACT_CONTRACT.md defines state, command log, and stage result JSON structures.",
+        "No committed schemas exist under schemas/loop_engineering."
+      ]
+    },
+    {
+      "id": "L00-HA-003",
+      "severity": "medium",
+      "description": "The existing CI workflows do not yet protect the loop-engineering pack, so future changes could omit command-log or subagent validation without CI failure.",
+      "evidence": [
+        ".github/workflows/codex-gates.yml runs precheck, safety scan, and tests/unit only.",
+        ".github/workflows/github-coverage-gates.yml runs the previous harness baseline but does not call scripts/loop_engineering_validate.py or tests/loop_engineering."
+      ]
+    },
+    {
+      "id": "L00-HA-004",
+      "severity": "medium",
+      "description": "The anti-regression guardian policy exists only as documentation; L00 needs a runnable entrypoint that checks protected diffs for harness weakening patterns.",
+      "evidence": [
+        "codex/loop_engineering/03_HARNESS_POLICY.md lists anti-regression BLOCKED conditions.",
+        "No script currently exposes an anti-regression mode for loop-engineering stages."
+      ]
+    },
+    {
+      "id": "L00-HA-005",
+      "severity": "low",
+      "description": "The previous harness result includes a local environment setup note that should remain recorded but should not change L00 design requirements.",
+      "evidence": [
+        "previous_harness_result.json records the initial missing-pytest failure and successful reruns in /private/tmp/valkey-scale-lab-l00-venv."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "loop_engineering_stage_state_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add schemas/loop_engineering/stage_state.schema.json requiring schema_version v1, stage_id pattern ^L[0-9]{2}_[A-Z0-9_]+$, status enum NOT_STARTED|IN_PROGRESS|PASS|BLOCKED, phase enum from 06_STATE_AND_ARTIFACT_CONTRACT.md, timestamps, branch, base_head, current_head, constraints, blockers, and files_touched."
+    },
+    {
+      "name": "loop_engineering_subagent_response_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add schemas/loop_engineering/subagent_response.schema.json matching codex/loop_engineering/02_AGENT_PROTOCOL.md, including role enum for all seven required agents, verdict enum APPROVED|CHANGES_REQUESTED|BLOCKED, finding severity enum low|medium|high, proposed_harness type enum unit|integration|cli|schema|artifact|real_valkey|ci, and required context_files_read entries."
+    },
+    {
+      "name": "loop_engineering_command_log_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add schemas/loop_engineering/command_log_entry.schema.json for commands.jsonl lines requiring started_at, finished_at, cwd, command as a non-empty string array, integer exit_code, stdout_tail, stderr_tail, and status enum PASS|FAIL|SKIPPED_WITH_REASON; allow optional environment metadata without permitting command as a shell string."
+    },
+    {
+      "name": "loop_engineering_stage_result_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add schemas/loop_engineering/stage_result.schema.json requiring the full 06_STATE_AND_ARTIFACT_CONTRACT.md shape, including previous_harness_passed, current_harness_passed, all seven subagent_verdicts, commands_log, artifacts, metrics_added, visualizations_added, real_valkey_gates, fake_gates, known_missing_metrics, and risks_remaining."
+    },
+    {
+      "name": "loop_engineering_global_state_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add schemas/loop_engineering/global_loop_state.schema.json requiring project valkey-scale-lab, branch, last_updated_at, current_stage, stages with status enum PASS|IN_PROGRESS|BLOCKED|NOT_STARTED, pushed boolean, result_path, blockers, and latest_report_index."
+    },
+    {
+      "name": "loop_engineering_validator_cli",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add scripts/loop_engineering_validate.py with a dependency-free CLI that reuses scripts/schema_validator.py, validates all discovered stage_state.json, subagents/*.json, commands.jsonl, stage_result.json, optional global_loop_state.json, and exits non-zero with aggregated findings on any schema or cross-file invariant failure."
+    },
+    {
+      "name": "command_log_cross_field_validation",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The validator must reject empty commands.jsonl, invalid JSON lines, command fields that are strings instead of arrays, PASS entries with non-zero exit_code, FAIL entries with exit_code 0 unless an explicit skipped reason is used, and missing stdout_tail or stderr_tail fields."
+    },
+    {
+      "name": "subagent_artifact_validation",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The validator must reject subagent files whose filename role does not match agent_role, whose stage_id does not match the parent stage directory, whose verdict is outside the protocol enum, or whose required context_files_read and acceptance_criteria are empty for design/review roles."
+    },
+    {
+      "name": "stage_result_artifact_validation",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The validator must reject PASS stage_result.json if previous_harness_passed or current_harness_passed is false, pushed is false, commit_sha is empty, commands_log does not exist, any required subagent verdict is missing or not APPROVED, or a referenced artifact path is missing."
+    },
+    {
+      "name": "anti_regression_entrypoint",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Expose an anti-regression mode through scripts/loop_engineering_validate.py, for example --anti-regression --base-ref <sha> --head-ref HEAD, that inspects protected paths and blocks deleted tests, required-to-optional changes, real_valkey_required false downgrades, lowered node minima, schema enum/required weakening, xfail/skip additions without reason, and manual edits to historical gate PASS results."
+    },
+    {
+      "name": "loop_state_contract_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add tests/loop_engineering/test_loop_state_contract.py covering schema acceptance for the provided templates, negative cases for malformed command logs/subagent outputs/stage results, and validator behavior on a temporary loop root with both passing and failing stage directories."
+    },
+    {
+      "name": "loop_engineering_ci_pack_tests",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add tests/ci/test_loop_engineering_pack.py asserting the validator script exists, all loop-engineering schemas exist, the validator can run against the committed artifacts/loop_engineering root, workflows include the loop validator and loop-engineering pytest command, and no workflow introduces P14 or real Valkey gates into L00 CI."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Create loop-engineering schema pack",
+      "files": [
+        "schemas/loop_engineering/stage_state.schema.json",
+        "schemas/loop_engineering/subagent_response.schema.json",
+        "schemas/loop_engineering/command_log_entry.schema.json",
+        "schemas/loop_engineering/stage_result.schema.json",
+        "schemas/loop_engineering/global_loop_state.schema.json"
+      ],
+      "rationale": "Schemas are the first L00 harness layer and make the documented loop state machine machine-checkable."
+    },
+    {
+      "step": "Implement dependency-free loop validator",
+      "files": [
+        "scripts/loop_engineering_validate.py"
+      ],
+      "rationale": "A single validator CLI should validate schemas, JSONL command logs, subagent files, stage results, and anti-regression checks without adding new dependencies."
+    },
+    {
+      "step": "Add loop state contract tests",
+      "files": [
+        "tests/loop_engineering/test_loop_state_contract.py"
+      ],
+      "rationale": "Unit tests should prove the schemas and validator reject malformed artifacts, not merely accept happy-path examples."
+    },
+    {
+      "step": "Add CI pack guard",
+      "files": [
+        "tests/ci/test_loop_engineering_pack.py",
+        ".github/workflows/github-coverage-gates.yml"
+      ],
+      "rationale": "CI must run the loop validator and loop tests so the loop-engineering harness remains protected after L00."
+    },
+    {
+      "step": "Wire L00 artifact validation into stage completion",
+      "files": [
+        "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/current_harness_plan.json",
+        "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/validation_result.json",
+        "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/stage_result.json"
+      ],
+      "rationale": "The stage cannot be considered complete until its own state, command log, subagent outputs, validation result, and stage result validate through the new L00 harness."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness baseline remains PASS and is not weakened.",
+    "schemas/loop_engineering contains committed schemas for stage_state, subagent_response, command_log_entry, stage_result, and global_loop_state.",
+    "scripts/loop_engineering_validate.py --root artifacts/loop_engineering validates the current loop root and returns non-zero with clear findings on malformed JSON, schema violations, or cross-file invariant failures.",
+    "Command-log validation rejects empty JSONL, invalid JSONL, command strings, status/exit_code mismatches, and missing output tails.",
+    "Subagent validation rejects missing required fields, invalid roles, filename/agent_role mismatch, parent stage/stage_id mismatch, and invalid verdicts.",
+    "Stage-result validation rejects PASS without previous/current harness PASS, pushed true, non-empty commit_sha, existing commands_log, and APPROVED verdicts for all required subagents.",
+    "An anti-regression mode is runnable and blocks obvious harness weakening in protected paths without modifying the worktree.",
+    "tests/loop_engineering/test_loop_state_contract.py and tests/ci/test_loop_engineering_pack.py pass.",
+    "At least one existing workflow runs scripts/loop_engineering_validate.py and the loop-engineering pytest pack while keeping P14 and real Valkey gates out of automatic L00 CI.",
+    "No real Valkey gate is added for L00; L00 is a fake/artifact/schema/CI harness bootstrap stage only."
+  ],
+  "risks": [
+    "If the schemas only mirror templates loosely, malformed subagent or command artifacts could still pass and undermine later stage auditability.",
+    "If the validator treats missing global_loop_state.json as fatal during L00 bootstrap, it will block the first stage before global state legitimately exists.",
+    "If anti-regression scanning is too broad or content-naive, it may block harmless additions; if too narrow, it may miss required-to-optional or real-to-fake downgrades.",
+    "If CI workflow assertions are added without updating workflows, the new CI pack should fail as expected until the workflow is strengthened.",
+    "If command-log validation requires environment-specific absolute paths, it may become brittle across Mac, Linux, and CI."
+  ],
+  "forbidden_shortcuts": [
+    "Do not mark stage_result.json PASS by hand before validator, tests, review, validation, anti-regression, commit, and push requirements are satisfied.",
+    "Do not weaken codex/phase_manifest.json, codex/gate_lock.json, existing scripts, existing schemas, templates, docs/codex, or existing workflows to make L00 pass.",
+    "Do not make commands.jsonl accept shell-string commands; command arrays are required for reproducible audit.",
+    "Do not allow subagent verdicts outside APPROVED, CHANGES_REQUESTED, or BLOCKED.",
+    "Do not count P14 dry-run artifacts or planner outputs as real Valkey evidence.",
+    "Do not add automatic real Valkey or 1000-node gates to L00 CI.",
+    "Do not rely on markdown reports as the source of truth for L00 validation.",
+    "Do not hide validation failures by recording SKIPPED_WITH_REASON without a concrete reason field."
+  ],
+  "commands_to_run": [
+    "python3 scripts/codex_gate.py precheck --all",
+    "python3 scripts/safety_scan.py",
+    "python3 -m compileall -q src scripts tests",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --anti-regression --base-ref 0e8cab5cbaceeae7ceac804b89e053bc2ba83ff6 --head-ref HEAD",
+    "python3 -m pytest -q tests/loop_engineering tests/ci/test_loop_engineering_pack.py",
+    "python3 -m pytest -q tests/ci",
+    "git diff -- tests scripts schemas .github codex artifacts/gates artifacts/phases artifacts/loop_engineering"
+  ],
+  "verdict": "APPROVED",
+  "notes": "L00 should be schema-first and artifact-first. The current-stage harness should intentionally fail before implementation because the required schema directory, validator script, loop-engineering tests, and CI pack test do not exist yet. No code outside this JSON artifact was implemented by this harness_architect output."
+}
