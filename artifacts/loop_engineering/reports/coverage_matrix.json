@@ -1,0 +1,1107 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "coverage_matrix",
+  "created_at": "2026-06-30T07:07:32.741194Z",
+  "producer": {
+    "name": "scripts/build_metric_coverage_matrix.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": {
+    "entry_count": 60,
+    "covered_entry_count": 17,
+    "real_coverage_entry_count": 12,
+    "dry_run_entry_count": 10,
+    "blocking_findings_count": 0
+  },
+  "layers": [
+    "fake",
+    "small-real",
+    "30",
+    "50",
+    "100",
+    "1000-dry-run"
+  ],
+  "surfaces": [
+    "cluster_build",
+    "management",
+    "workload",
+    "observability",
+    "fault",
+    "failover",
+    "stability",
+    "cleanup",
+    "scale",
+    "report_visualization"
+  ],
+  "entries": [
+    {
+      "layer": "fake",
+      "surface": "cluster_build",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.cluster_build.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "fake",
+      "surface": "management",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.management.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "fake",
+      "surface": "workload",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.workload.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "fake",
+      "surface": "observability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.observability.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "fake",
+      "surface": "fault",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.fault.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "fake",
+      "surface": "failover",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.failover.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "fake",
+      "surface": "stability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.stability.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "fake",
+      "surface": "cleanup",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.cleanup.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "fake",
+      "surface": "scale",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.scale.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "fake",
+      "surface": "report_visualization",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "fake",
+      "metric_count": 1,
+      "metric_names": [
+        "fake.report_visualization.coverage_placeholder"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json"
+      ],
+      "node_count_scope": "fake",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "All metrics in this cell are explicitly skipped with reason."
+    },
+    {
+      "layer": "small-real",
+      "surface": "cluster_build",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 6,
+      "metric_names": [
+        "cluster_build.real_evidence.cluster_state_observed",
+        "cluster_build.real_evidence.data_path_result",
+        "cluster_build.real_evidence.nodes_observed"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json",
+        "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "small-real",
+      "surface": "management",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 13,
+      "metric_names": [
+        "management.operation.add_replica.duration_seconds",
+        "management.operation.add_slots.duration_seconds",
+        "management.operation.cluster_info.duration_seconds",
+        "management.operation.cluster_nodes.duration_seconds",
+        "management.operation.convergence_check.duration_seconds",
+        "management.operation.meet.duration_seconds",
+        "management.operation.rebalance.duration_seconds",
+        "management.operation.remove_node.duration_seconds",
+        "management.operation.reshard.duration_seconds",
+        "management.operation.rolling_restart.duration_seconds",
+        "management.real_evidence.cluster_state_observed",
+        "management.real_evidence.data_path_result",
+        "management.real_evidence.nodes_observed"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+        "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "small-real",
+      "surface": "workload",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 14,
+      "metric_names": [
+        "workload.achieved_qps",
+        "workload.errors.total",
+        "workload.latency.p50",
+        "workload.latency.p95",
+        "workload.latency.p99",
+        "workload.operations.completed_total",
+        "workload.real_evidence.cluster_state_observed",
+        "workload.real_evidence.data_path_result",
+        "workload.real_evidence.nodes_observed",
+        "workload.requested_qps",
+        "workload.timing_window.after_recovery.duration_seconds",
+        "workload.timing_window.all_run.duration_seconds",
+        "workload.timing_window.before_fault.duration_seconds",
+        "workload.timing_window.during_fault.duration_seconds"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json",
+        "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "small-real",
+      "surface": "observability",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 20,
+      "metric_names": [
+        "observability.cluster.cluster_known_nodes",
+        "observability.cluster.cluster_nodes_line_count",
+        "observability.cluster.cluster_slots_assigned",
+        "observability.cluster.cluster_state",
+        "observability.docker.block_io",
+        "observability.docker.cpu_percent",
+        "observability.docker.memory_percent",
+        "observability.docker.memory_usage",
+        "observability.docker.net_io",
+        "observability.docker.pids",
+        "observability.docker.status",
+        "observability.logs.path",
+        "observability.logs.status",
+        "observability.real_evidence.cluster_state_observed",
+        "observability.real_evidence.data_path_result",
+        "observability.real_evidence.nodes_observed",
+        "observability.valkey.connected_clients",
+        "observability.valkey.total_commands_processed",
+        "observability.valkey.uptime_in_seconds",
+        "observability.valkey.used_memory"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl",
+        "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "small-real",
+      "surface": "fault",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 8,
+      "metric_names": [
+        "fault.network_delay.observed_impact",
+        "fault.real_evidence.cluster_state_observed",
+        "fault.real_evidence.data_path_result",
+        "fault.real_evidence.nodes_observed",
+        "fault.safety.fault_state_cleared",
+        "fault.safety.global_firewall_mutated",
+        "fault.safety.host_network_mutated",
+        "fault.safety.sandbox_only"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+        "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "small-real",
+      "surface": "failover",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 5,
+      "metric_names": [
+        "failover.failover_latency_ms",
+        "failover.real_evidence.cluster_state_observed",
+        "failover.real_evidence.data_path_result",
+        "failover.real_evidence.nodes_observed",
+        "failover.split_brain_duration_ms"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+        "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "small-real",
+      "surface": "stability",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 9,
+      "metric_names": [
+        "stability.baseline.error_count",
+        "stability.baseline.max_memory_growth_bytes",
+        "stability.duration_seconds",
+        "stability.leaks.max_growth_bytes",
+        "stability.metrics.sample_count",
+        "stability.nodes_observed",
+        "stability.real_evidence.cluster_state_observed",
+        "stability.real_evidence.data_path_result",
+        "stability.real_evidence.nodes_observed"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+        "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "small-real",
+      "surface": "cleanup",
+      "status": "COVERED",
+      "evidence_class": "source_artifact",
+      "metric_count": 46,
+      "metric_names": [
+        "cleanup.action_count",
+        "cleanup.resources_remaining"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+        "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report_cluster_smoke.json",
+        "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+        "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report_management_ops.json",
+        "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+        "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report_workload_smoke.json",
+        "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+        "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report_observability_smoke.json",
+        "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+        "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report_fault_sandbox_setup.json",
+        "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+        "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report_failover_setup.json",
+        "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
+        "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report_reporting_source_smoke.json",
+        "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
+        "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report_orchestrated_localhost.json",
+        "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+        "artifacts/phases/P11_STABILITY_SOAK/cleanup_report_stability_soak_smoke.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_10.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/cleanup_report.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/cleanup_report.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "small-real",
+      "surface": "scale",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 10,
+      "metric_names": [
+        "scale.management.cluster_known_nodes_max",
+        "scale.metrics.avg_used_memory",
+        "scale.metrics.total_commands_processed",
+        "scale.metrics.total_used_memory",
+        "scale.node_count",
+        "scale.primary_count",
+        "scale.real_evidence.cluster_state_observed",
+        "scale.real_evidence.data_path_result",
+        "scale.real_evidence.nodes_observed",
+        "scale.replica_count"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/scale_rung_10.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_10.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "small-real",
+      "surface": "report_visualization",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 8,
+      "metric_names": [
+        "report_visualization.analysis.cleanup_resources_remaining",
+        "report_visualization.analysis.failover_latency_ms",
+        "report_visualization.analysis.nodes_observed_after_fault",
+        "report_visualization.analysis.split_brain_duration_ms",
+        "report_visualization.real_evidence.cluster_state_observed",
+        "report_visualization.real_evidence.data_path_result",
+        "report_visualization.real_evidence.nodes_observed",
+        "report_visualization.rendered_view_count"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+        "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+        "artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json"
+      ],
+      "node_count_scope": "small-real",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "30",
+      "surface": "cluster_build",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "30",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for cluster_build in 30 layer."
+    },
+    {
+      "layer": "30",
+      "surface": "management",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "30",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for management in 30 layer."
+    },
+    {
+      "layer": "30",
+      "surface": "workload",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "30",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for workload in 30 layer."
+    },
+    {
+      "layer": "30",
+      "surface": "observability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "30",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for observability in 30 layer."
+    },
+    {
+      "layer": "30",
+      "surface": "fault",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "30",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for fault in 30 layer."
+    },
+    {
+      "layer": "30",
+      "surface": "failover",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "30",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for failover in 30 layer."
+    },
+    {
+      "layer": "30",
+      "surface": "stability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "30",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for stability in 30 layer."
+    },
+    {
+      "layer": "30",
+      "surface": "cleanup",
+      "status": "COVERED",
+      "evidence_class": "source_artifact",
+      "metric_count": 2,
+      "metric_names": [
+        "cleanup.action_count",
+        "cleanup.resources_remaining"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json"
+      ],
+      "node_count_scope": "30",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "30",
+      "surface": "scale",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 10,
+      "metric_names": [
+        "scale.management.cluster_known_nodes_max",
+        "scale.metrics.avg_used_memory",
+        "scale.metrics.total_commands_processed",
+        "scale.metrics.total_used_memory",
+        "scale.node_count",
+        "scale.primary_count",
+        "scale.real_evidence.cluster_state_observed",
+        "scale.real_evidence.data_path_result",
+        "scale.real_evidence.nodes_observed",
+        "scale.replica_count"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/scale_rung_30.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json"
+      ],
+      "node_count_scope": "30",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "30",
+      "surface": "report_visualization",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "30",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for report_visualization in 30 layer."
+    },
+    {
+      "layer": "50",
+      "surface": "cluster_build",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "50",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for cluster_build in 50 layer."
+    },
+    {
+      "layer": "50",
+      "surface": "management",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "50",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for management in 50 layer."
+    },
+    {
+      "layer": "50",
+      "surface": "workload",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "50",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for workload in 50 layer."
+    },
+    {
+      "layer": "50",
+      "surface": "observability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "50",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for observability in 50 layer."
+    },
+    {
+      "layer": "50",
+      "surface": "fault",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "50",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for fault in 50 layer."
+    },
+    {
+      "layer": "50",
+      "surface": "failover",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "50",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for failover in 50 layer."
+    },
+    {
+      "layer": "50",
+      "surface": "stability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "50",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for stability in 50 layer."
+    },
+    {
+      "layer": "50",
+      "surface": "cleanup",
+      "status": "COVERED",
+      "evidence_class": "source_artifact",
+      "metric_count": 6,
+      "metric_names": [
+        "cleanup.action_count",
+        "cleanup.resources_remaining"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/cleanup_report_scale_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/cleanup_report_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json"
+      ],
+      "node_count_scope": "50",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "50",
+      "surface": "scale",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 38,
+      "metric_names": [
+        "scale.management.cluster_known_nodes_max",
+        "scale.metrics.avg_used_memory",
+        "scale.metrics.total_commands_processed",
+        "scale.metrics.total_used_memory",
+        "scale.node_count",
+        "scale.primary_count",
+        "scale.real_evidence.cluster_state_observed",
+        "scale.real_evidence.data_path_result",
+        "scale.real_evidence.nodes_observed",
+        "scale.replica_count",
+        "scale.timing.nodehost_start.duration_seconds",
+        "scale.timing.primary_cluster_create.duration_seconds",
+        "scale.timing.process_config_prepare.duration_seconds",
+        "scale.timing.process_ready_wait.duration_seconds",
+        "scale.timing.process_start.duration_seconds",
+        "scale.timing.replica_meet.duration_seconds",
+        "scale.timing.replica_replicate.duration_seconds",
+        "scale.timing.runtime_representative_probe.duration_seconds"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/scale_rung_50.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/valkey_e2e_evidence_manual_scale_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/scale_rung_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/valkey_e2e_evidence_parallelism_16_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json"
+      ],
+      "node_count_scope": "50",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "50",
+      "surface": "report_visualization",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "50",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for report_visualization in 50 layer."
+    },
+    {
+      "layer": "100",
+      "surface": "cluster_build",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "100",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for cluster_build in 100 layer."
+    },
+    {
+      "layer": "100",
+      "surface": "management",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "100",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for management in 100 layer."
+    },
+    {
+      "layer": "100",
+      "surface": "workload",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "100",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for workload in 100 layer."
+    },
+    {
+      "layer": "100",
+      "surface": "observability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "100",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for observability in 100 layer."
+    },
+    {
+      "layer": "100",
+      "surface": "fault",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "100",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for fault in 100 layer."
+    },
+    {
+      "layer": "100",
+      "surface": "failover",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "100",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for failover in 100 layer."
+    },
+    {
+      "layer": "100",
+      "surface": "stability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "100",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for stability in 100 layer."
+    },
+    {
+      "layer": "100",
+      "surface": "cleanup",
+      "status": "COVERED",
+      "evidence_class": "source_artifact",
+      "metric_count": 2,
+      "metric_names": [
+        "cleanup.action_count",
+        "cleanup.resources_remaining"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json"
+      ],
+      "node_count_scope": "100",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "100",
+      "surface": "scale",
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 18,
+      "metric_names": [
+        "scale.management.cluster_known_nodes_max",
+        "scale.metrics.avg_used_memory",
+        "scale.metrics.total_commands_processed",
+        "scale.metrics.total_used_memory",
+        "scale.node_count",
+        "scale.primary_count",
+        "scale.real_evidence.cluster_state_observed",
+        "scale.real_evidence.data_path_result",
+        "scale.real_evidence.nodes_observed",
+        "scale.replica_count",
+        "scale.timing.nodehost_start.duration_seconds",
+        "scale.timing.primary_cluster_create.duration_seconds",
+        "scale.timing.process_config_prepare.duration_seconds",
+        "scale.timing.process_ready_wait.duration_seconds",
+        "scale.timing.process_start.duration_seconds",
+        "scale.timing.replica_meet.duration_seconds",
+        "scale.timing.replica_replicate.duration_seconds",
+        "scale.timing.runtime_representative_probe.duration_seconds"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json"
+      ],
+      "node_count_scope": "100",
+      "real_valkey_coverage": true,
+      "dry_run_only": false,
+      "reason": ""
+    },
+    {
+      "layer": "100",
+      "surface": "report_visualization",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "100",
+      "real_valkey_coverage": false,
+      "dry_run_only": false,
+      "reason": "No committed metric artifacts for report_visualization in 100 layer."
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "cluster_build",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": "No committed metric artifacts for cluster_build in 1000-dry-run layer."
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "management",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": "No committed metric artifacts for management in 1000-dry-run layer."
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "workload",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": "No committed metric artifacts for workload in 1000-dry-run layer."
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "observability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": "No committed metric artifacts for observability in 1000-dry-run layer."
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "fault",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": "No committed metric artifacts for fault in 1000-dry-run layer."
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "failover",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": "No committed metric artifacts for failover in 1000-dry-run layer."
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "stability",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": "No committed metric artifacts for stability in 1000-dry-run layer."
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "cleanup",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": "No committed metric artifacts for cleanup in 1000-dry-run layer."
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "scale",
+      "status": "COVERED",
+      "evidence_class": "dry_run_planner",
+      "metric_count": 1,
+      "metric_names": [
+        "scale.dryrun_1000.planned_node_count"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json"
+      ],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": ""
+    },
+    {
+      "layer": "1000-dry-run",
+      "surface": "report_visualization",
+      "status": "SKIPPED_WITH_REASON",
+      "evidence_class": "none",
+      "metric_count": 0,
+      "metric_names": [],
+      "source_artifacts": [],
+      "node_count_scope": "1000",
+      "real_valkey_coverage": false,
+      "dry_run_only": true,
+      "reason": "No committed metric artifacts for report_visualization in 1000-dry-run layer."
+    }
+  ],
+  "p14_boundary": {
+    "phase_id": "P14_SCALE_1000_OPTIN_DRYRUN",
+    "status": "SKIPPED_WITH_REASON",
+    "real_valkey_coverage": false,
+    "dry_run_only": true,
+    "dry_run_artifact_count": 0,
+    "reason": "P14 is opt-in dry-run only and was not executed by L03."
+  },
+  "findings": []
+}

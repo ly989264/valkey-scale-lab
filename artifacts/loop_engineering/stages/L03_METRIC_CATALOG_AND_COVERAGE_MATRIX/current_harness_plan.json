@@ -1,0 +1,80 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L03_METRIC_CATALOG_AND_COVERAGE_MATRIX",
+  "new_tests": [
+    {
+      "path": "tests/metrics/test_metric_catalog.py",
+      "purpose": "Fixture and current-repository tests for metric catalog schema, required metric fields, missing/skipped semantics, source artifacts, and report-view exclusion."
+    },
+    {
+      "path": "tests/coverage/test_coverage_matrix.py",
+      "purpose": "Fixture and current-repository tests for required coverage layers/surfaces, real evidence cross-checks, and 1000 dry-run boundary."
+    },
+    {
+      "path": "tests/ci/test_metric_coverage_gate.py",
+      "purpose": "CI guard that runs the builder, validates both schemas, checks workflow coverage, and forbids P14 or real/fault wrappers in static L03 workflow commands."
+    }
+  ],
+  "new_schemas": [
+    "schemas/artifact/metric_catalog.schema.json",
+    "schemas/artifact/coverage_matrix.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "command": "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+      "acceptance": "Generates schema-valid metric_catalog.json and coverage_matrix.json, exiting 0 when there are no blocking findings."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_catalog.schema.json --instance artifacts/loop_engineering/reports/metric_catalog.json",
+      "acceptance": "Validates the generated metric catalog."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json",
+      "acceptance": "Validates the generated coverage matrix."
+    }
+  ],
+  "new_artifact_checks": [
+    "Metric catalog includes name, unit, source_artifact, source_sha256, scenario, node_count_scope, evidence_layer, source pointer, and missing semantics for every metric.",
+    "Coverage matrix includes fake, small-real, 30, 50, 100, and 1000-dry-run layers.",
+    "Coverage matrix includes cluster_build, management, workload, observability, fault, failover, stability, cleanup, scale, and report_visualization surfaces.",
+    "Real coverage entries point to valkey_e2e_evidence artifacts with real_valkey=true, status PASS, Valkey 9.1.x, and matching nodes_observed.",
+    "1000 dry-run planner entries never count as real coverage.",
+    "Missing and skipped values preserve MISSING, SKIPPED_WITH_REASON, or NO_BASELINE_YET plus reason.",
+    "Rendered report views are cataloged only as views, not source metric measurements."
+  ],
+  "expected_initial_failures": [
+    {
+      "command": "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+      "reason": "L03 metric coverage builder does not exist before implementation."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_catalog.schema.json --instance artifacts/loop_engineering/reports/metric_catalog.json",
+      "reason": "metric_catalog schema and artifact do not exist before implementation."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json",
+      "reason": "coverage_matrix schema and artifact do not exist before implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/metrics tests/coverage",
+      "reason": "tests/metrics and tests/coverage do not exist before implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/ci/test_metric_coverage_gate.py",
+      "reason": "L03 CI metric coverage gate test does not exist before implementation."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS.",
+    "Metric catalog schema, coverage matrix schema, builder, tests, CI guard, and generated artifacts exist.",
+    "Generated metric_catalog.json and coverage_matrix.json validate against their schemas.",
+    "Builder reads machine-readable JSON/JSONL artifacts and loop reports, not rendered report views as source truth.",
+    "The catalog covers cluster build, management, workload, observability, fault, failover, stability, cleanup, scale, and report/visualization surfaces.",
+    "Coverage matrix has fake, small-real, 30, 50, 100, and 1000-dry-run layers.",
+    "30/50/100 real coverage entries are backed by committed real Valkey evidence with matching observed nodes.",
+    "1000 dry-run coverage is dry-run-only and contributes zero real coverage.",
+    "Missing/skipped/no-baseline metrics preserve explicit status and reason.",
+    "No historical phase/gate artifact is modified to manufacture coverage.",
+    "No P14, real Valkey wrapper, or fault wrapper command is run."
+  ]
+}

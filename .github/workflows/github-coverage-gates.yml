@@ -55,3 +55,11 @@ jobs:
         run: python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json
       - name: Provenance graph tests
         run: python3 -m pytest -q tests/provenance tests/ci/test_provenance_graph_gate.py
+      - name: Metric coverage matrix
+        run: python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports
+      - name: Metric catalog schema
+        run: python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_catalog.schema.json --instance artifacts/loop_engineering/reports/metric_catalog.json
+      - name: Coverage matrix schema
+        run: python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json
+      - name: Metric coverage tests
+        run: python3 -m pytest -q tests/metrics tests/coverage tests/ci/test_metric_coverage_gate.py

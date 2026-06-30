@@ -1,0 +1,349 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L03_METRIC_CATALOG_AND_COVERAGE_MATRIX",
+  "agent_role": "implementation_worker",
+  "created_at": "2026-06-30T07:08:19Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety, phase-loop, real-evidence, and artifact-first instructions.",
+      "key_findings": [
+        "Machine-readable artifacts are the product; rendered reports are only views.",
+        "Missing metrics must be explicit as MISSING or SKIPPED_WITH_REASON and never invented.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic and must not run without explicit opt-in.",
+        "Historical harness controls and artifacts must not be weakened or edited to hide changes."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Automatic phase boundary and CLI/artifact expectations.",
+      "key_findings": [
+        "Automatic phases stop at P13; P14 requires VSLAB_ALLOW_1000_DRYRUN.",
+        "Reports must read artifacts and must not become source of truth.",
+        "The project must keep missing data explicit rather than fabricated."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent output and implementation_worker role contract.",
+      "key_findings": [
+        "implementation_worker must follow stage_design.md and current_harness_plan.json.",
+        "The verdict artifact must be JSON at the stage subagents path.",
+        "The response schema requires context, findings, harness, implementation plan, criteria, risks, forbidden shortcuts, commands, verdict, and notes."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Harness integrity, artifact-first, real-evidence, and anti-regression rules.",
+      "key_findings": [
+        "Static analysis must use machine-readable JSON/JSONL artifacts rather than Markdown or rendered views.",
+        "1000+ behavior is dry-run/resource/planner by default and must not count as real Valkey coverage.",
+        "Real Valkey evidence requires real_valkey=true, Valkey 9.1.x, observed nodes, cluster/data-path proof, cleanup PASS, and schema validation PASS."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L03 stage target and acceptance criteria.",
+      "key_findings": [
+        "L03 must add metric catalog and coverage matrix schemas, builder, tests, and generated JSON artifacts.",
+        "Each metric requires name, unit, source_artifact, scenario, node_count_scope, and missing semantics.",
+        "Coverage must be layered as fake, small-real, 30, 50, 100, and 1000-dry-run.",
+        "1000 dry-run must not be recorded as real coverage."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/stage_design.md",
+      "purpose": "Detailed L03 design under review.",
+      "key_findings": [
+        "Builder must write and validate metric_catalog.json and coverage_matrix.json.",
+        "Metric entries must include source artifact, SHA256, pointer, phase/run/scenario, node-count scope, evidence layer/class, real/dry-run flags, source type, and missing semantics.",
+        "Rendered CSV, SVG, HTML, and Markdown outputs are report_view/view coverage only.",
+        "L03 must not run P14 or real/fault wrapper gates."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "purpose": "Planned L03 harness and acceptance checks.",
+      "key_findings": [
+        "Required files are the two schemas, scripts/build_metric_coverage_matrix.py, metric/coverage/CI tests, workflow entries, and generated metric/coverage artifacts.",
+        "Acceptance requires schema-valid outputs, required layers and surfaces, real evidence cross-checks, explicit missing/skipped/no-baseline semantics, and dry-run-not-real behavior.",
+        "No historical phase/gate artifact may be modified to manufacture coverage."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Schema for this replacement verdict.",
+      "key_findings": [
+        "agent_role must be implementation_worker.",
+        "verdict must be APPROVED, CHANGES_REQUESTED, or BLOCKED.",
+        "No additional top-level properties are allowed."
+      ]
+    },
+    {
+      "path": "schemas/artifact/metric_catalog.schema.json",
+      "purpose": "Implemented metric catalog artifact schema.",
+      "key_findings": [
+        "Requires metric identity, source_artifact, source_sha256, source_artifact_type, source_kind, source_pointer, phase_id, run_id, scenario, node_count_scope, evidence_layer, evidence_class, real_valkey_coverage, dry_run_only, value_status, value, and missing_semantics.",
+        "Allows value_status values MEASURED, PASS, FAIL, MISSING, SKIPPED_WITH_REASON, and NO_BASELINE_YET.",
+        "Evidence layer enum is exactly fake, small-real, 30, 50, 100, and 1000-dry-run."
+      ]
+    },
+    {
+      "path": "schemas/artifact/coverage_matrix.schema.json",
+      "purpose": "Implemented coverage matrix artifact schema.",
+      "key_findings": [
+        "Requires six layers and ten required surfaces.",
+        "Requires each matrix entry to carry status, evidence class, metric count/names, source artifacts, node scope, real_valkey_coverage, dry_run_only, and reason.",
+        "Requires a p14_boundary object with real_valkey_coverage and reason."
+      ]
+    },
+    {
+      "path": "scripts/build_metric_coverage_matrix.py",
+      "purpose": "Implemented metric catalog and coverage matrix builder.",
+      "key_findings": [
+        "Uses curated extractors for phase JSON/JSONL artifacts, including real evidence, cleanup, management, workload, observability, fault, failover, analysis/report index, stability, scale rung, and 1000 dry-run planner artifacts.",
+        "Validates generated outputs against schemas and returns nonzero on blocking findings or schema errors.",
+        "Preserves MISSING, SKIPPED_WITH_REASON, and NO_BASELINE_YET with reasons.",
+        "Classifies P02 1000-node planner data as evidence_layer=1000-dry-run, evidence_class=dry_run_planner, real_valkey_coverage=false, dry_run_only=true.",
+        "Flags report view suffixes as blocking if used as measured metric sources."
+      ]
+    },
+    {
+      "path": "tests/metrics/test_metric_catalog.py",
+      "purpose": "Implemented metric catalog tests.",
+      "key_findings": [
+        "Checks catalog PASS status, required metric source fields, required surfaces/layers, missing/skipped/no-baseline reasons, rendered view boundary, and P02 1000 dry-run not-real behavior."
+      ]
+    },
+    {
+      "path": "tests/coverage/test_coverage_matrix.py",
+      "purpose": "Implemented coverage matrix tests.",
+      "key_findings": [
+        "Checks required layer/surface cells, small-real real evidence, 30/50/100 real scale evidence, 1000 dry-run not-real behavior, and P14 skipped opt-in boundary."
+      ]
+    },
+    {
+      "path": "tests/ci/test_metric_coverage_gate.py",
+      "purpose": "Implemented static CI guard tests.",
+      "key_findings": [
+        "Runs the builder in a temporary directory and validates both generated outputs against schemas.",
+        "Checks .github/workflows/github-coverage-gates.yml contains the L03 static commands.",
+        "Forbids VSLAB_ALLOW_1000_DRYRUN and real/fault wrapper script tokens in the static workflow."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "Workflow changes for L03 static gates.",
+      "key_findings": [
+        "Adds metric coverage builder, metric catalog schema validation, coverage matrix schema validation, and focused metric coverage tests.",
+        "The inspected workflow does not contain P14 opt-in or forbidden real/fault wrapper commands."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/metric_catalog.json",
+      "purpose": "Generated metric catalog artifact under review.",
+      "key_findings": [
+        "Status is PASS with 226 metrics and zero findings.",
+        "Summary records 202 measured/pass metrics, 2 missing metrics, 20 skipped metrics, and 2 no-baseline metrics.",
+        "No missing/skipped/no-baseline metric has an empty missing_semantics reason.",
+        "Contains one 1000-dry-run metric and it is not real Valkey coverage."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "purpose": "Generated coverage matrix artifact under review.",
+      "key_findings": [
+        "Status is PASS with 60 entries and zero findings.",
+        "Layers are fake, small-real, 30, 50, 100, and 1000-dry-run.",
+        "P14 boundary is SKIPPED_WITH_REASON, real_valkey_coverage=false, dry_run_only=true.",
+        "No 1000-dry-run entry has real_valkey_coverage=true."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/previous_harness_result.json",
+      "purpose": "Previous harness record for L03.",
+      "key_findings": [
+        "Previous harness status is PASS.",
+        "The record states no P14, valkey_e2e_gate.py, fault_safety_gate.py, or fault_failover_gate.py command was run during L03 previous harness."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/stage_state.json",
+      "purpose": "Stage state and touched-file inventory.",
+      "key_findings": [
+        "Stage is IN_PROGRESS in IMPLEMENT phase.",
+        "files_touched lists the expected L03 schemas, builder, tests, workflow, generated reports, and stage artifacts."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/commands.jsonl",
+      "purpose": "Stage command log consistency check.",
+      "key_findings": [
+        "Current stage validation passes against the command log.",
+        "The log includes focused L03 PASS results and does not show P14 or forbidden wrapper execution."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/requirements_analyst.json",
+      "purpose": "Prior requirements analysis context.",
+      "key_findings": [
+        "Identified fragmented metric sources across management, workload, observability, fault, failover, stability, cleanup, scale, and reporting artifacts.",
+        "Confirmed P14 is optional dry-run and absent as real evidence."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/harness_architect.json",
+      "purpose": "Prior harness design context.",
+      "key_findings": [
+        "Required a schema-first builder that reads JSON/JSONL artifacts and validates outputs.",
+        "Required CI static checks that do not invoke P14 or real/fault wrappers."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/risk_auditor.json",
+      "purpose": "Prior risk audit context.",
+      "key_findings": [
+        "Blocking risks include counting 1000 dry-run as real coverage, converting missing/skipped/no-baseline data to measured values, and using rendered reports as metric truth.",
+        "The implemented artifacts and checks preserve those boundaries."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "IW-L03-001",
+      "severity": "low",
+      "description": "No implementation blocker found against stage_design.md or current_harness_plan.json.",
+      "evidence": [
+        "Focused L03 static builder, schema validation, pytest suite, and stage artifact validation passed.",
+        "metric_catalog.json and coverage_matrix.json both report status PASS and zero findings.",
+        "coverage_matrix.json keeps P14 and the 1000-dry-run layer dry-run-only with real_valkey_coverage=false."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "metric_catalog_schema_validation",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "artifacts/loop_engineering/reports/metric_catalog.json validates against schemas/artifact/metric_catalog.schema.json."
+    },
+    {
+      "name": "coverage_matrix_schema_validation",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "artifacts/loop_engineering/reports/coverage_matrix.json validates against schemas/artifact/coverage_matrix.schema.json."
+    },
+    {
+      "name": "metric_coverage_builder_cli",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "scripts/build_metric_coverage_matrix.py generates schema-valid metric_catalog.json and coverage_matrix.json and exits 0 when no blocking findings exist."
+    },
+    {
+      "name": "metric_catalog_and_coverage_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "tests/metrics, tests/coverage, and tests/ci/test_metric_coverage_gate.py pass and prove required fields, layers, surfaces, real evidence checks, missing semantics, report-view boundary, and dry-run-not-real behavior."
+    },
+    {
+      "name": "github_static_metric_coverage_gate",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": ".github/workflows/github-coverage-gates.yml runs the static L03 builder/schema/test steps and contains no P14 opt-in or real/fault wrapper commands."
+    },
+    {
+      "name": "loop_stage_artifact_validation",
+      "type": "artifact",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "scripts/loop_engineering_validate.py accepts the current L03 stage artifacts."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Inspect required instructions, stage design, harness plan, and subagent schema before judging.",
+      "files": [
+        "AGENTS.md",
+        "CODEX_START_HERE.md",
+        "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+        "codex/loop_engineering/03_HARNESS_POLICY.md",
+        "codex/loop_engineering/04_STAGE_MANIFEST.md",
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/stage_design.md",
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+        "schemas/loop_engineering/subagent_response.schema.json"
+      ],
+      "rationale": "The user required these files to be read before judging and the verdict must follow the loop-engineering contract."
+    },
+    {
+      "step": "Inspect schemas, builder, tests, workflow, generated report artifacts, and L03 stage artifacts.",
+      "files": [
+        "schemas/artifact/metric_catalog.schema.json",
+        "schemas/artifact/coverage_matrix.schema.json",
+        "scripts/build_metric_coverage_matrix.py",
+        "tests/metrics/test_metric_catalog.py",
+        "tests/coverage/test_coverage_matrix.py",
+        "tests/ci/test_metric_coverage_gate.py",
+        ".github/workflows/github-coverage-gates.yml",
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/previous_harness_result.json",
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/stage_state.json",
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/commands.jsonl"
+      ],
+      "rationale": "The verdict depends on whether the implementation matches the required artifact-first catalog/matrix design and preserves real/dry-run/missing-data boundaries."
+    },
+    {
+      "step": "Run safe static checks only.",
+      "files": [
+        "scripts/build_metric_coverage_matrix.py",
+        "scripts/validate_json_schema.py",
+        "tests/metrics/test_metric_catalog.py",
+        "tests/coverage/test_coverage_matrix.py",
+        "tests/ci/test_metric_coverage_gate.py",
+        "scripts/loop_engineering_validate.py"
+      ],
+      "rationale": "The user forbade P14 and real/fault wrapper execution; static builder/schema/test/stage validation is sufficient for this replacement implementation_worker verdict."
+    },
+    {
+      "step": "Write only the replacement implementation_worker verdict JSON.",
+      "files": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/implementation_worker.json"
+      ],
+      "rationale": "The user explicitly allowed overwriting only this subagent artifact."
+    }
+  ],
+  "acceptance_criteria": [
+    "Metric catalog schema, coverage matrix schema, builder, tests, CI guard, and generated artifacts exist.",
+    "Generated metric_catalog.json and coverage_matrix.json validate against their schemas.",
+    "Each catalog metric has identity, unit, source artifact, SHA256, scenario, node-count scope, evidence layer/class, real/dry-run flags, and missing semantics.",
+    "Coverage matrix contains exactly fake, small-real, 30, 50, 100, and 1000-dry-run layers and all ten required surfaces.",
+    "Real coverage entries are backed by committed real Valkey evidence with real_valkey=true, status PASS, Valkey 9.1.x, and matching observed node counts.",
+    "1000-dry-run entries have real_valkey_coverage=false and dry_run_only=true.",
+    "MISSING, SKIPPED_WITH_REASON, and NO_BASELINE_YET values keep non-empty reasons and are not converted to zero/PASS/measured values.",
+    "Rendered CSV, SVG, HTML, and Markdown views are not used as measured metric sources.",
+    "No P14, scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py command is run for this review."
+  ],
+  "risks": [
+    "The builder contains curated extractors rather than a generic artifact discovery model, so future phase artifact shape changes will need explicit extractor updates.",
+    "Fake-layer coverage is represented as explicit skipped deterministic-test placeholders; this is acceptable for L03 but must not be interpreted as measured or real Valkey coverage.",
+    "Only static artifact inspection and tests were run in this review, by user constraint; no live Valkey evidence was refreshed."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN or set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not execute scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py.",
+    "Do not classify 1000 dry-run planner/resource artifacts as real Valkey coverage.",
+    "Do not convert MISSING, SKIPPED_WITH_REASON, or NO_BASELINE_YET metrics to numeric zero, PASS, or measured coverage.",
+    "Do not use rendered CSV, SVG, HTML, or Markdown report views as metric sources of truth.",
+    "Do not edit implementation files or historical phase/gate artifacts during this replacement review."
+  ],
+  "commands_to_run": [
+    "PASS: env PYTHONDONTWRITEBYTECODE=1 python3 scripts/build_metric_coverage_matrix.py --out-dir /private/tmp/valkey-scale-lab-l03-review-reports -> PASS metric_coverage /private/tmp/valkey-scale-lab-l03-review-reports/metric_catalog.json /private/tmp/valkey-scale-lab-l03-review-reports/coverage_matrix.json",
+    "PASS: env PYTHONDONTWRITEBYTECODE=1 python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_catalog.schema.json --instance artifacts/loop_engineering/reports/metric_catalog.json -> PASS schema=schemas/artifact/metric_catalog.schema.json instance=artifacts/loop_engineering/reports/metric_catalog.json",
+    "PASS: env PYTHONDONTWRITEBYTECODE=1 python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json -> PASS schema=schemas/artifact/coverage_matrix.schema.json instance=artifacts/loop_engineering/reports/coverage_matrix.json",
+    "PASS: env PYTHONDONTWRITEBYTECODE=1 PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH python3 -m pytest -q tests/metrics tests/coverage tests/ci/test_metric_coverage_gate.py -> 12 passed in 1.07s",
+    "PASS: env PYTHONDONTWRITEBYTECODE=1 python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L03_METRIC_CATALOG_AND_COVERAGE_MATRIX -> PASS loop_engineering root=artifacts/loop_engineering",
+    "INSPECTED: coverage_matrix.json summary -> status PASS, entries 60, real_coverage_entry_count 12, dry_run_entry_count 10, findings 0, p14 SKIPPED_WITH_REASON false true, 1000_real_any false",
+    "INSPECTED: metric_catalog.json summary -> status PASS, metrics 226, missing 2, skipped 20, no_baseline 2, findings 0, 1000_metrics 1, missing_reasons_empty 0"
+  ],
+  "verdict": "APPROVED",
+  "notes": "APPROVED. The inspected L03 implementation follows stage_design.md and current_harness_plan.json for static artifact-first metric catalog and coverage matrix generation. I did not run P14 or any real/fault wrapper. To honor the overwrite constraint during review, I ran the builder into /private/tmp and validated the committed generated artifacts in place; the only repository file intentionally overwritten by this replacement review is this implementation_worker.json."
+}

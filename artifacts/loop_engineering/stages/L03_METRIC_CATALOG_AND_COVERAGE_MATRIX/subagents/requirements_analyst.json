@@ -1,0 +1,433 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L03_METRIC_CATALOG_AND_COVERAGE_MATRIX",
+  "agent_role": "requirements_analyst",
+  "created_at": "2026-06-30T06:38:02Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety and phase-loop contract.",
+      "key_findings": [
+        "Machine-readable artifacts are the product; reports are only views.",
+        "Fake-only gates must not be presented as real Valkey evidence.",
+        "Missing metrics must be encoded as MISSING or SKIPPED_WITH_REASON.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic and must not be run without explicit opt-in."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Autonomous loop entrypoint and phase boundary constraints.",
+      "key_findings": [
+        "Automatic work stops at P13_SCALE_LADDER_50_100.",
+        "P14 requires VSLAB_ALLOW_1000_DRYRUN and is dry-run/resource/planner only.",
+        "Reports must read artifacts and must not become source of truth."
+      ]
+    },
+    {
+      "path": "README.md",
+      "purpose": "Project bootstrap overview.",
+      "key_findings": [
+        "Repository is a Codex bootstrap for valkey-scale-lab.",
+        "The automatic loop stops after P13; P14 is not automatic."
+      ]
+    },
+    {
+      "path": "codex/phase_manifest.json",
+      "purpose": "Phase requirements, real evidence boundaries, required artifacts, and P14 optional dry-run definition.",
+      "key_findings": [
+        "P03-P11 each require committed real Valkey evidence artifacts.",
+        "P12 requires 10 and 30 node real evidence; P13 requires 50 and 100 node real evidence.",
+        "P14 is automatic=false, real_valkey_required=false, and its gates are resource preflight plus planner dry-run with explicit opt-in."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent output schema and role responsibilities.",
+      "key_findings": [
+        "requirements_analyst must analyze requirements and gaps only, not write code.",
+        "The required output path is artifacts/loop_engineering/stages/<stage>/subagents/requirements_analyst.json.",
+        "The main loop requires an APPROVED requirements verdict before implementation can proceed."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Harness policy for artifact-first behavior and anti-regression rules.",
+      "key_findings": [
+        "Analysis and reporting must read machine-readable artifacts, not Markdown reports.",
+        "Real Valkey evidence requires real_valkey=true, Valkey 9.1.x, observed node count, expected cluster state, data path proof, cleanup, and schema validation.",
+        "1000+ defaults are forbidden; 1000+ coverage is dry-run/resource/planner only unless separately authorized."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md#L03_METRIC_CATALOG_AND_COVERAGE_MATRIX",
+      "purpose": "Current L03 stage definition.",
+      "key_findings": [
+        "L03 must establish a unified metric catalog and coverage matrix.",
+        "Coverage must span cluster build, management, workload, observability, fault, failover, stability, cleanup, scale, report, and visualization.",
+        "Required harness includes metric_catalog and coverage_matrix schemas, scripts/build_metric_coverage_matrix.py, tests for fake plus real artifact coverage, and generated metric_catalog.json and coverage_matrix.json."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md#metric-coverage-validation",
+      "purpose": "Stage-specific validation commands.",
+      "key_findings": [
+        "L03 validation must run python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports.",
+        "L03 validation must run python3 -m pytest -q tests/metrics tests/coverage."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/06_STATE_AND_ARTIFACT_CONTRACT.md",
+      "purpose": "Loop state and artifact expectations.",
+      "key_findings": [
+        "Stage artifacts live under artifacts/loop_engineering/stages/<STAGE_ID>/.",
+        "stage_result.json must record metrics_added, visualizations_added, real_valkey_gates, fake_gates, and known_missing_metrics.",
+        "Known missing metrics require status and reason."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Validation schema for this response.",
+      "key_findings": [
+        "agent_role must be requirements_analyst.",
+        "verdict must be APPROVED, CHANGES_REQUESTED, or BLOCKED.",
+        "additionalProperties is false, so the response must use only the declared top-level fields."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/read_context.md",
+      "purpose": "Stage read-context summary from the main loop.",
+      "key_findings": [
+        "L03 must add schemas, builder script, tests, and generated report artifacts.",
+        "Coverage layers must include fake, small-real, 30, 50, 100, and 1000-dry-run.",
+        "Historical phase and gate artifacts must not be mutated to improve apparent coverage."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/audit_report.json",
+      "purpose": "Committed artifact audit state.",
+      "key_findings": [
+        "Audit status is PASS with zero blocking findings.",
+        "Automatic phase real_evidence_count is 13.",
+        "Historical manifest hash mismatches are allowlisted; P13 also has a non-blocking historical gate command mismatch.",
+        "P06 metric_sample and event JSONL artifacts lack optional producer/status metadata, which should be normalized by the catalog rather than hidden."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "purpose": "Existing provenance DAG and source-of-truth classification.",
+      "key_findings": [
+        "Provenance graph status is PASS with 95 nodes and 70 edges.",
+        "There are 89 source-of-truth nodes and 6 report view nodes.",
+        "P09 report views trace back to source artifacts, but report/CSV/HTML outputs must remain views rather than metric sources."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json through artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+      "purpose": "Representative small-real Valkey evidence sources.",
+      "key_findings": [
+        "P03-P11 evidence files show real_valkey=true, status PASS, Valkey 9.1.0 probes, and six-node small-real coverage.",
+        "These files provide real coverage proof but not a unified metric catalog."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "purpose": "Management operation metric source.",
+      "key_findings": [
+        "Operations include duration_seconds and PASS/SKIPPED_WITH_REASON status.",
+        "Deferred destructive operations are explicitly SKIPPED_WITH_REASON and must not be treated as measured success."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "purpose": "Workload metric source.",
+      "key_findings": [
+        "Workload metrics include requested_qps, achieved_qps, latency percentiles, operation counts, timing windows, and errors.",
+        "These fields are not currently represented in a catalog."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl and events.jsonl",
+      "purpose": "Observability timeseries metric sources.",
+      "key_findings": [
+        "Metric samples include cluster, docker, logs, and valkey sections per node.",
+        "Sample metrics include cluster_known_nodes, cluster_slots_assigned, connected_clients, total_commands_processed, uptime_in_seconds, used_memory, docker cpu/memory/net/block/pids, and log status.",
+        "JSONL samples are source artifacts and need schema-backed extraction into catalog entries."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json and artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+      "purpose": "Fault and failover metric sources.",
+      "key_findings": [
+        "Fault artifacts capture sandbox scope and safety checks.",
+        "Failover artifacts capture promotion and failover latency.",
+        "split_brain_duration_ms is explicitly MISSING with reason not_measured_by_primary_stop_gate."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json and report_index.json",
+      "purpose": "Analysis/report metric and view sources.",
+      "key_findings": [
+        "analysis_summary contains normalized metrics and missing_metrics sourced from P08 artifacts.",
+        "report_index links generated CSV, SVG, HTML, and Markdown views to analysis_summary.",
+        "Coverage must mark report/visualization as views over artifacts, not independent metric evidence."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/orchestration_report.json",
+      "purpose": "Multi-host/orchestration metric source.",
+      "key_findings": [
+        "Orchestration operations include prepare/start/collect/stop durations and host placement details.",
+        "phase_summary marks remote_ssh_latency_ms as SKIPPED_WITH_REASON until explicit multi-host inventory exists."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json and stability_metrics.jsonl",
+      "purpose": "Stability and soak metric sources.",
+      "key_findings": [
+        "Stability report includes bounded soak duration, memory growth, restarts, workload latency/error counts, and baseline status.",
+        "The first baseline is NO_BASELINE_YET with baseline_source SKIPPED_WITH_REASON.",
+        "Per-node memory growth may be MISSING when too few samples exist."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30 and artifacts/phases/P13_SCALE_LADDER_50_100 representative scale artifacts",
+      "purpose": "Scale-layer metric sources for 30, 50, and 100 node coverage.",
+      "key_findings": [
+        "P12 has real 10 and 30 node evidence; P13 has real 50 and 100 node evidence.",
+        "scale_rung artifacts expose node_count, role counts, cluster_known_nodes_observed, az/host distribution, management status, valkey_versions, total_used_memory, avg_used_memory, and total_commands_processed.",
+        "P13 timing breakdown artifacts add setup/runtime timing surfaces that should be cataloged if included in report/scale coverage."
+      ]
+    },
+    {
+      "path": "tests/analysis/test_analysis_summary.py, tests/report/test_report_rendering.py, tests/scale/test_scale_ladder.py, tests/stability/test_stability_soak.py",
+      "purpose": "Existing tests around analysis, report, scale, and stability.",
+      "key_findings": [
+        "Existing tests verify specific missing metric preservation, report rendering, scale rung summaries, and stability soak summaries.",
+        "No existing tests create a unified metric catalog or coverage matrix.",
+        "The new L03 tests must preserve existing expectations while adding catalog and layer assertions."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/analysis/summary.py, src/valkey_scale_lab/report/render.py, src/valkey_scale_lab/runtime/docker_runtime.py",
+      "purpose": "Existing producers and consumers of metric-like fields.",
+      "key_findings": [
+        "Metric-like data is emitted from analysis, report rendering, runtime observability, stability, workload, management, and scale helper functions.",
+        "Current producers are deterministic enough for tests but use different field shapes.",
+        "L03 should normalize from artifacts without forcing historical artifact rewrites."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L03-REQ-001",
+      "severity": "high",
+      "description": "The required L03 implementation artifacts are currently absent, so there is no schema-backed metric catalog, coverage matrix, builder, or dedicated metric/coverage test suite.",
+      "evidence": [
+        "schemas/artifact/metric_catalog.schema.json does not exist.",
+        "schemas/artifact/coverage_matrix.schema.json does not exist.",
+        "scripts/build_metric_coverage_matrix.py does not exist.",
+        "artifacts/loop_engineering/reports/metric_catalog.json and coverage_matrix.json do not exist.",
+        "tests/metrics and tests/coverage directories do not exist."
+      ]
+    },
+    {
+      "id": "L03-REQ-002",
+      "severity": "high",
+      "description": "Metric sources are fragmented across heterogeneous artifacts and must be normalized from machine-readable source artifacts instead of report views.",
+      "evidence": [
+        "P04 management_ops_report.json stores operations[].duration_seconds and skipped operation reasons.",
+        "P05 workload_report.json stores requested_qps, achieved_qps, latency, operation_counts, timing_windows, and errors.",
+        "P06 metrics_timeseries.jsonl stores nested cluster/docker/logs/valkey metrics.",
+        "P08 failover_report.json stores failover latency and a MISSING split_brain_duration_ms.",
+        "P11 stability_report.json and stability_metrics.jsonl store soak, memory growth, restart, workload, and baseline metrics.",
+        "P12/P13 scale_rung artifacts store node_count, memory, command, cluster membership, and placement metrics."
+      ]
+    },
+    {
+      "id": "L03-REQ-003",
+      "severity": "high",
+      "description": "Coverage layers must distinguish fake, small-real, 30, 50, 100, and 1000-dry-run evidence; P14 dry-run must never be counted as real coverage.",
+      "evidence": [
+        "P03-P11 committed evidence provides six-node small-real Valkey 9.1.0 coverage.",
+        "P12 committed evidence provides real 10 and 30 node coverage.",
+        "P13 committed evidence provides real 50 and 100 node coverage.",
+        "P14 is automatic=false and real_valkey_required=false in codex/phase_manifest.json.",
+        "artifacts/phases/P14_SCALE_1000_OPTIN_DRYRUN is absent, so the 1000-dry-run layer is presently SKIPPED_WITH_REASON or MISSING, not real."
+      ]
+    },
+    {
+      "id": "L03-REQ-004",
+      "severity": "medium",
+      "description": "Missing metric semantics exist in several places but are not cataloged uniformly, and schemas are permissive enough that L03 must add stricter catalog/matrix validation.",
+      "evidence": [
+        "AGENTS.md requires MISSING or SKIPPED_WITH_REASON for missing metrics.",
+        "P08 and P09 encode split_brain_duration_ms as MISSING with reason.",
+        "P10 encodes remote_ssh_latency_ms as SKIPPED_WITH_REASON.",
+        "P11 baseline_source is SKIPPED_WITH_REASON and memory growth can be MISSING with too few samples.",
+        "Existing schemas generally allow additionalProperties and do not enforce a shared metric entry shape."
+      ]
+    },
+    {
+      "id": "L03-REQ-005",
+      "severity": "medium",
+      "description": "Report and visualization coverage must be represented as derived views with provenance, not as independent source measurements.",
+      "evidence": [
+        "P09 report_index.json renders metrics.csv, missing_metrics.csv, baseline_comparison.csv, metric_chart.svg, report.md, and index.html from analysis_summary.json.",
+        "provenance_graph.json classifies report outputs as view nodes and has zero missing_source_count.",
+        "Harness policy forbids deriving analysis from Markdown reports."
+      ]
+    },
+    {
+      "id": "L03-REQ-006",
+      "severity": "medium",
+      "description": "The fake coverage layer needs an explicit definition because committed phase artifacts after P03 are real, while existing fake coverage lives mainly in deterministic unit tests and monkeypatched producer tests.",
+      "evidence": [
+        "tests/analysis, tests/report, tests/scale, and tests/stability create temporary artifacts with fake or monkeypatched data.",
+        "P00-P02 are fake-only/bootstrap phases and do not provide real Valkey evidence.",
+        "L03 validation explicitly requires tests verifying fake plus real artifact coverage."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "metric_catalog_schema_validation",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "schemas/artifact/metric_catalog.schema.json validates artifacts/loop_engineering/reports/metric_catalog.json and rejects catalog entries missing name, unit, source_artifact, scenario, node_count_scope, layer, and missing_semantics."
+    },
+    {
+      "name": "coverage_matrix_schema_validation",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "schemas/artifact/coverage_matrix.schema.json validates artifacts/loop_engineering/reports/coverage_matrix.json and requires exactly the fake, small-real, 30, 50, 100, and 1000-dry-run layers with explicit real_vs_dry_run classification."
+    },
+    {
+      "name": "metric_coverage_builder_cli",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports reads committed machine-readable artifacts and writes deterministic metric_catalog.json and coverage_matrix.json without running real Valkey or P14 gates."
+    },
+    {
+      "name": "fake_fixture_metric_coverage_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "tests/metrics verifies catalog extraction from small deterministic fake artifacts, including MISSING and SKIPPED_WITH_REASON values with reasons."
+    },
+    {
+      "name": "committed_real_artifact_coverage_tests",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "tests/coverage verifies P03-P13 committed artifacts populate small-real, 30, 50, and 100 layers from real_valkey evidence and scale artifacts, while P14 appears only as 1000-dry-run."
+    },
+    {
+      "name": "dry_run_not_real_guard",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "A coverage test fails if any metric or matrix cell for node_count_scope=1000 has evidence_type real, real_valkey=true, or contributes to real coverage totals."
+    },
+    {
+      "name": "report_view_provenance_guard",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Coverage for report/visualization records the source analysis/report_index artifacts and does not use Markdown, HTML, SVG, or CSV rendered views as source measurements."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define strict schemas for metric_catalog and coverage_matrix.",
+      "files": [
+        "schemas/artifact/metric_catalog.schema.json",
+        "schemas/artifact/coverage_matrix.schema.json"
+      ],
+      "rationale": "L03 acceptance requires schema-backed artifacts, and current source schemas do not provide a common metric contract."
+    },
+    {
+      "step": "Implement a deterministic artifact scanner and normalizer.",
+      "files": [
+        "scripts/build_metric_coverage_matrix.py"
+      ],
+      "rationale": "Metric extraction must come from committed machine-readable artifacts under artifacts/phases and loop-engineering reports, not from report views or live gates."
+    },
+    {
+      "step": "Map source artifacts into coverage domains and layers.",
+      "files": [
+        "scripts/build_metric_coverage_matrix.py"
+      ],
+      "rationale": "The builder must explicitly classify cluster_build, management, workload, observability, fault, failover, stability, cleanup, scale, report, and visualization coverage across fake, small-real, 30, 50, 100, and 1000-dry-run layers."
+    },
+    {
+      "step": "Represent missing and skipped measurements explicitly.",
+      "files": [
+        "scripts/build_metric_coverage_matrix.py",
+        "schemas/artifact/metric_catalog.schema.json",
+        "schemas/artifact/coverage_matrix.schema.json"
+      ],
+      "rationale": "Absent P14 dry-run artifacts, deferred remote latency, first baselines, and unmeasured split-brain duration must be encoded as MISSING or SKIPPED_WITH_REASON with reason and impact."
+    },
+    {
+      "step": "Add fake fixture tests for normalizer behavior.",
+      "files": [
+        "tests/metrics"
+      ],
+      "rationale": "L03 requires fake coverage and negative tests without relying on live Valkey execution."
+    },
+    {
+      "step": "Add committed artifact coverage tests and dry-run boundary tests.",
+      "files": [
+        "tests/coverage"
+      ],
+      "rationale": "The coverage matrix must verify real evidence layers from committed P03-P13 artifacts while preventing P14 dry-run from being counted as real."
+    },
+    {
+      "step": "Generate the L03 report artifacts from the builder.",
+      "files": [
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json"
+      ],
+      "rationale": "The stage product is the versioned machine-readable catalog and matrix; any later reports must read these artifacts."
+    }
+  ],
+  "acceptance_criteria": [
+    "metric_catalog.json and coverage_matrix.json are generated under artifacts/loop_engineering/reports and validate against new schemas.",
+    "Every catalog metric includes name, unit, source_artifact, scenario, node_count_scope, coverage layer, source phase, source pointer or extraction path, and missing semantics.",
+    "The catalog covers cluster build, management, workload, observability, fault, failover, stability, cleanup, scale, report, and visualization surfaces.",
+    "The coverage matrix has explicit fake, small-real, 30, 50, 100, and 1000-dry-run layers.",
+    "small-real coverage is backed by committed P03-P11 real Valkey evidence with Valkey 9.1.x and six observed nodes.",
+    "30, 50, and 100 coverage is backed by committed P12/P13 real Valkey evidence and scale rung artifacts.",
+    "1000-dry-run coverage is marked dry-run/resource/planner only and contributes zero real coverage; when P14 artifacts are absent it is encoded as SKIPPED_WITH_REASON or MISSING with reason.",
+    "P14_SCALE_1000_OPTIN_DRYRUN, valkey_e2e_gate.py, fault_safety_gate.py, and fault_failover_gate.py are not run for L03 requirements or validation.",
+    "No historical phase artifacts, gate results, or lock/manifest controls are mutated to improve coverage appearance.",
+    "Missing values are never invented or coerced to numeric zero; missing or unavailable values use MISSING or SKIPPED_WITH_REASON with reason and impact where applicable.",
+    "Report and visualization rows reference machine-readable source artifacts and provenance; rendered Markdown, HTML, SVG, and CSV files are treated as views.",
+    "tests/metrics and tests/coverage pass, and existing tests/analysis, tests/report, tests/stability, and tests/scale remain compatible."
+  ],
+  "risks": [
+    "The builder may overfit current artifact file names and miss future metrics unless extraction rules are documented and schema-backed.",
+    "Loose historical schemas may permit malformed metric-like fields; the L03 catalog schema must be stricter than source schemas.",
+    "Counting P14 planner/resource evidence as real would materially misrepresent scale coverage.",
+    "Using report CSV or Markdown as metric sources would invert the artifact-first contract.",
+    "Treating absent P14 artifacts as failure instead of SKIPPED_WITH_REASON could incorrectly block automatic stages, while treating them as PASS would overstate coverage.",
+    "Fake fixture coverage can be useful for extraction behavior but must be clearly separated from real Valkey coverage.",
+    "Historical audit findings are non-blocking but should remain visible; L03 must not rewrite old gate results to remove them."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Do not run scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py for this stage analysis.",
+    "Do not count P14, 1000-node planner output, or resource preflight as real Valkey coverage.",
+    "Do not default any execution path to 1000 Valkey nodes.",
+    "Do not mutate historical artifacts under artifacts/phases or artifacts/gates to make coverage look better.",
+    "Do not hand-write PASS into gate results or coverage cells.",
+    "Do not scrape Markdown, HTML, SVG, or CSV report views as source measurements.",
+    "Do not invent metric values, substitute zero for missing values, or omit missing reasons.",
+    "Do not weaken existing schemas, gate locks, phase manifests, CI gates, or safety rules.",
+    "Do not use host network, firewall, route, interface, sudo, or global OS modifications."
+  ],
+  "commands_to_run": [
+    "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+    "python3 -m pytest -q tests/metrics tests/coverage",
+    "python3 -m pytest -q tests/analysis tests/report tests/stability tests/scale",
+    "python3 -m compileall -q src scripts tests"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Requirements are clear and implementation can proceed to harness design. Approval is for the requirements analysis only; the repository still lacks the L03 schemas, builder, tests, and generated catalog/matrix artifacts."
+}

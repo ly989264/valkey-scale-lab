@@ -1,0 +1,198 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L03_METRIC_CATALOG_AND_COVERAGE_MATRIX",
+  "agent_role": "validation_agent",
+  "created_at": "2026-06-30T07:07:33Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository and safety instructions.",
+      "key_findings": [
+        "Machine-readable artifacts are the product.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic.",
+        "Real Valkey and fault wrappers must not be executed for this static L03 validation request."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Autonomous phase-loop entry and P14 opt-in boundary.",
+      "key_findings": [
+        "Automatic work stops before P14 unless explicitly opted in.",
+        "Artifact discipline requires missing data to be explicit and reports to remain views."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Validation agent output contract.",
+      "key_findings": [
+        "validation_agent runs validation commands, explains results, and records command summaries.",
+        "Subagent JSON must use agent_role validation_agent and schema_version v1."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+      "purpose": "Baseline and stage validation command catalog.",
+      "key_findings": [
+        "Baseline includes precheck, safety scan, compileall, and pytest suites.",
+        "L03 metric coverage validation includes builder and schema validation.",
+        "Real Valkey and 1000-node dry-run commands are separate optional sections and were not used."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "purpose": "Current L03 harness plan and acceptance criteria.",
+      "key_findings": [
+        "L03 requires metric catalog and coverage matrix schemas, builder, tests, CI guard, and generated artifacts.",
+        "Coverage must include fake, small-real, 30, 50, 100, and 1000-dry-run layers.",
+        "1000 dry-run coverage must not count as real Valkey coverage."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/implementation_worker.json",
+      "purpose": "Implementation summary and claimed validation baseline.",
+      "key_findings": [
+        "Implementation worker reports required schemas, builder, focused tests, workflow entries, and generated artifacts.",
+        "Metric catalog reported 226 metrics and coverage matrix reported 60 entries with zero findings.",
+        "Implementation worker explicitly forbids P14 and real/fault wrapper execution for this review."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Schema used to shape this validation response.",
+      "key_findings": [
+        "Required fields include findings, commands_to_run, verdict, and notes.",
+        "Allowed validation verdicts are APPROVED, CHANGES_REQUESTED, and BLOCKED."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "VAL-L03-001",
+      "severity": "low",
+      "description": "All required static previous-harness and L03 harness validation commands passed on the clean rerun.",
+      "evidence": [
+        "python3 scripts/codex_gate.py precheck --all -> PASS.",
+        "python3 scripts/safety_scan.py -> PASS.",
+        "python3 -m compileall -q src scripts tests -> PASS.",
+        "Combined pytest command -> 170 passed in 2.73s.",
+        "audit_report, provenance_graph, metric_catalog, and coverage_matrix builders/schema validators -> PASS.",
+        "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L03_METRIC_CATALOG_AND_COVERAGE_MATRIX -> PASS."
+      ]
+    },
+    {
+      "id": "VAL-L03-002",
+      "severity": "low",
+      "description": "An initial pytest attempt failed only because this validation agent appended malformed command-log entries with command as a string instead of an array; the entries were corrected and the full command sequence passed afterward.",
+      "evidence": [
+        "Initial pytest failure cited commands.jsonl lines 26-28 with expected type array for command.",
+        "Malformed entries were converted to command arrays matching schemas/loop_engineering/command_log_entry.schema.json.",
+        "Final combined pytest rerun passed with 170 tests."
+      ]
+    },
+    {
+      "id": "VAL-L03-003",
+      "severity": "low",
+      "description": "No forbidden L03 runtime commands were executed.",
+      "evidence": [
+        "Did not run P14_SCALE_1000_OPTIN_DRYRUN.",
+        "Did not execute scripts/valkey_e2e_gate.py.",
+        "Did not execute scripts/fault_safety_gate.py.",
+        "Did not execute scripts/fault_failover_gate.py."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "previous_harness_static_validation",
+      "type": "ci",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "Existing precheck, safety scan, compile, and broad pytest suite pass."
+    },
+    {
+      "name": "audit_and_provenance_artifact_validation",
+      "type": "artifact",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "audit_report.json and provenance_graph.json are generated and schema-valid."
+    },
+    {
+      "name": "metric_catalog_and_coverage_matrix_validation",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Metric catalog and coverage matrix are generated by the builder and validate against their schemas."
+    },
+    {
+      "name": "l03_loop_engineering_stage_validation",
+      "type": "artifact",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "loop_engineering_validate accepts the L03 stage artifacts and command log."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Read required instructions and L03 harness context before validation.",
+      "files": [
+        "AGENTS.md",
+        "CODEX_START_HERE.md",
+        "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+        "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/implementation_worker.json"
+      ],
+      "rationale": "The validation run must honor the static-only L03 boundary and the subagent output contract."
+    },
+    {
+      "step": "Run the requested previous-harness and L03 static validation command set.",
+      "files": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/commands.jsonl"
+      ],
+      "rationale": "Each command result must be recorded with timestamps, cwd, command, output tails, exit code, and status."
+    },
+    {
+      "step": "Write validation_agent.json with command interpretation and verdict.",
+      "files": [
+        "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/validation_agent.json"
+      ],
+      "rationale": "The main agent needs a machine-readable validation decision for the L03 stage."
+    }
+  ],
+  "acceptance_criteria": [
+    "Required context files were read before validation commands.",
+    "No P14 command or real/fault wrapper was executed.",
+    "PYTHONDONTWRITEBYTECODE=1 was used for validation commands.",
+    "Pytest used PATH prefix /private/tmp/valkey-scale-lab-l00-venv/bin.",
+    "Previous harness commands passed.",
+    "Current L03 metric catalog and coverage matrix builder/schema validations passed.",
+    "Command results were appended to commands.jsonl.",
+    "validation_agent.json follows schemas/loop_engineering/subagent_response.schema.json."
+  ],
+  "risks": [
+    "The command log contains earlier failed implementation-worker and validation attempts, but the final complete required validation sequence passed and loop_engineering_validate accepts the stage.",
+    "audit_report.json and provenance_graph.json were regenerated during validation and may differ by timestamp or derived graph refresh; per instruction, these generated changes were not restored.",
+    "compileall was run with PYTHONPYCACHEPREFIX pointing to /private/tmp to avoid repository bytecode churn."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Do not execute scripts/valkey_e2e_gate.py.",
+    "Do not execute scripts/fault_safety_gate.py.",
+    "Do not execute scripts/fault_failover_gate.py.",
+    "Do not edit implementation files.",
+    "Do not restore generated audit/provenance outputs if they only changed timestamps."
+  ],
+  "commands_to_run": [
+    "PASS: python3 scripts/codex_gate.py precheck --all -> PASS precheck.",
+    "PASS: python3 scripts/safety_scan.py -> PASS safety_scan.",
+    "PASS: python3 -m compileall -q src scripts tests -> exit 0.",
+    "PASS: python3 -m pytest -q tests/ci/test_postcheck_compatibility.py tests/unit tests/ci/test_github_coverage_gates.py tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator tests/analysis tests/report tests/stability tests/scale tests/loop_engineering tests/ci/test_loop_engineering_pack.py tests/audit tests/ci/test_committed_artifact_audit_gate.py tests/provenance tests/ci/test_provenance_graph_gate.py tests/metrics tests/coverage tests/ci/test_metric_coverage_gate.py -> 170 passed in 2.73s.",
+    "PASS: python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json -> PASS audit_report.",
+    "PASS: python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json -> PASS.",
+    "PASS: python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json -> PASS provenance_graph.",
+    "PASS: python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json -> PASS.",
+    "PASS: python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports -> PASS metric_coverage.",
+    "PASS: python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_catalog.schema.json --instance artifacts/loop_engineering/reports/metric_catalog.json -> PASS.",
+    "PASS: python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json -> PASS.",
+    "PASS: python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L03_METRIC_CATALOG_AND_COVERAGE_MATRIX -> PASS loop_engineering.",
+    "NOTE: an initial pytest attempt failed because this validation agent wrote command log entries in the wrong shape; after correcting those entries, the full required command sequence passed."
+  ],
+  "verdict": "APPROVED",
+  "notes": "Static L03 validation is approved. All required validation commands passed on the final complete run, command results were appended to commands.jsonl, and no P14 or real/fault wrapper scripts were executed."
+}

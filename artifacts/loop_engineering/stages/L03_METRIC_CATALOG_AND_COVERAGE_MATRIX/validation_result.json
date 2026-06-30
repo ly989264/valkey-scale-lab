@@ -1,0 +1,78 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L03_METRIC_CATALOG_AND_COVERAGE_MATRIX",
+  "status": "PASS",
+  "completed_at": "2026-06-30T07:12:51Z",
+  "commands_log": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/commands.jsonl",
+  "commands": [
+    {
+      "name": "precheck_all",
+      "command": "python3 scripts/codex_gate.py precheck --all",
+      "status": "PASS"
+    },
+    {
+      "name": "safety_scan",
+      "command": "python3 scripts/safety_scan.py",
+      "status": "PASS"
+    },
+    {
+      "name": "compileall",
+      "command": "python3 -m compileall -q src scripts tests",
+      "status": "PASS"
+    },
+    {
+      "name": "combined_pytest",
+      "command": "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py tests/unit tests/ci/test_github_coverage_gates.py tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator tests/analysis tests/report tests/stability tests/scale tests/loop_engineering tests/ci/test_loop_engineering_pack.py tests/audit tests/ci/test_committed_artifact_audit_gate.py tests/provenance tests/ci/test_provenance_graph_gate.py tests/metrics tests/coverage tests/ci/test_metric_coverage_gate.py",
+      "status": "PASS",
+      "stdout_tail": "170 passed in 2.73s"
+    },
+    {
+      "name": "committed_artifact_audit",
+      "command": "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+      "status": "PASS"
+    },
+    {
+      "name": "audit_report_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json",
+      "status": "PASS"
+    },
+    {
+      "name": "provenance_graph",
+      "command": "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+      "status": "PASS"
+    },
+    {
+      "name": "provenance_graph_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json",
+      "status": "PASS"
+    },
+    {
+      "name": "metric_coverage_builder",
+      "command": "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+      "status": "PASS"
+    },
+    {
+      "name": "metric_catalog_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_catalog.schema.json --instance artifacts/loop_engineering/reports/metric_catalog.json",
+      "status": "PASS"
+    },
+    {
+      "name": "coverage_matrix_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json",
+      "status": "PASS"
+    },
+    {
+      "name": "loop_engineering_stage_validate",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L03_METRIC_CATALOG_AND_COVERAGE_MATRIX",
+      "status": "PASS"
+    },
+    {
+      "name": "anti_regression_guardian",
+      "command": "static diff inspection by anti_regression_guardian",
+      "status": "PASS"
+    }
+  ],
+  "current_harness_passed": true,
+  "previous_harness_passed": true,
+  "notes": "Final validation passed after malformed validation-agent command log entries were corrected. Generated timestamp-only audit/provenance and tracked pycache churn were restored before commit. P14 and real/fault wrapper gates were not run."
+}
