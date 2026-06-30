@@ -1,0 +1,1162 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "scale_build_metrics",
+  "created_at": "2026-06-30T11:56:24.707488Z",
+  "producer": {
+    "name": "scripts/audit_scale_build_metrics.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": {
+    "blocking_findings_count": 0,
+    "rung_count": 3,
+    "canonical_node_counts": [
+      30,
+      50,
+      100
+    ],
+    "measured_metric_count": 68,
+    "missing_metric_count": 16,
+    "skipped_metric_count": 0,
+    "real_valkey_rung_count": 3,
+    "cleanup_pass_count": 3,
+    "p14_dry_run_only": true
+  },
+  "canonical_rungs": [
+    {
+      "node_count": 30,
+      "scenario": "scale_30",
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "status": "PASS",
+      "evidence_path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+      "source_artifacts": [
+        {
+          "role": "resource_preflight",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+          "exists": true,
+          "sha256": "8acb354c3c6cd1d948ec4fa630abaebb7b821914937e8fe25c3f732e11bbe89d",
+          "artifact_type": "resource_preflight",
+          "status": "PASS"
+        },
+        {
+          "role": "real_evidence",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+          "exists": true,
+          "sha256": "7d46291b11c0e6dc240b619e8d8aeda08d07d6be0fa0ab63bd41ef693ade11a1",
+          "artifact_type": "valkey_e2e_evidence",
+          "status": "PASS"
+        },
+        {
+          "role": "scale_rung",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/scale_rung_30.json",
+          "exists": true,
+          "sha256": "10a5a70aebd0f6b61de92a23da0f608ae5e024ecfbf04deaee6be09c681c170c",
+          "artifact_type": "scale_rung_summary",
+          "status": "PASS"
+        },
+        {
+          "role": "cleanup",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json",
+          "exists": true,
+          "sha256": "bff1dcdd8caf72234aa27fad4564b017743cdd58468e975386317752789027a7",
+          "artifact_type": "cleanup_report",
+          "status": "PASS"
+        },
+        {
+          "role": "cluster_snapshots",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/cluster_snapshots_scale_30.json",
+          "exists": true,
+          "sha256": "c89fdb32339833bd76ae96af99ef35c9d2dcd95d87f2135b53b4b953df003090",
+          "artifact_type": null,
+          "status": null
+        },
+        {
+          "role": "scale_ladder_report",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json",
+          "exists": true,
+          "sha256": "88753908cb280048eb656ebdd8ea7208f2f7e6c5f650d4a1c202bd1cc7562230",
+          "artifact_type": "scale_ladder_report",
+          "status": "PASS"
+        }
+      ],
+      "real_valkey": true,
+      "nodes_observed": 30,
+      "cluster_state_observed": "ok",
+      "probe_result": "PASS",
+      "data_path_result": "PASS",
+      "valkey_versions": [
+        "9.1.0"
+      ],
+      "metric_records": [
+        {
+          "name": "resource_preflight.can_run",
+          "status": "MEASURED",
+          "required": true,
+          "value": true,
+          "unit": null,
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+          "source_role": "resource_preflight",
+          "reason": "resource preflight must pass before real scale evidence can be accepted"
+        },
+        {
+          "name": "resource_preflight.status",
+          "status": "MEASURED",
+          "required": true,
+          "value": "PASS",
+          "unit": null,
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+          "source_role": "resource_preflight",
+          "reason": ""
+        },
+        {
+          "name": "process_startup.nodehost_start_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/p13_timing_breakdown_scale_30.json",
+          "source_role": "timing_breakdown",
+          "reason": "30-node historical evidence predates P13 timing breakdown"
+        },
+        {
+          "name": "process_startup.process_config_prepare_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/p13_timing_breakdown_scale_30.json",
+          "source_role": "timing_breakdown",
+          "reason": "30-node historical evidence predates P13 timing breakdown"
+        },
+        {
+          "name": "process_startup.process_start_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/p13_timing_breakdown_scale_30.json",
+          "source_role": "timing_breakdown",
+          "reason": "30-node historical evidence predates P13 timing breakdown"
+        },
+        {
+          "name": "process_startup.process_ready_wait_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/p13_timing_breakdown_scale_30.json",
+          "source_role": "timing_breakdown",
+          "reason": "30-node historical evidence predates P13 timing breakdown"
+        },
+        {
+          "name": "cluster_create.primary_cluster_create_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/p13_timing_breakdown_scale_30.json",
+          "source_role": "timing_breakdown",
+          "reason": "30-node historical evidence predates P13 timing breakdown"
+        },
+        {
+          "name": "cluster_create.replica_meet_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/p13_timing_breakdown_scale_30.json",
+          "source_role": "timing_breakdown",
+          "reason": "30-node historical evidence predates P13 timing breakdown"
+        },
+        {
+          "name": "role_convergence.replica_replicate_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/p13_timing_breakdown_scale_30.json",
+          "source_role": "timing_breakdown",
+          "reason": "30-node historical evidence predates P13 timing breakdown"
+        },
+        {
+          "name": "slot_assignment.slots_assigned",
+          "status": "MEASURED",
+          "required": true,
+          "value": 16384,
+          "unit": "slots",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cluster_snapshots_scale_30.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "slot_assignment.slots_ok",
+          "status": "MEASURED",
+          "required": true,
+          "value": 16384,
+          "unit": "slots",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cluster_snapshots_scale_30.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "membership_convergence.known_nodes",
+          "status": "MEASURED",
+          "required": true,
+          "value": 30,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cluster_snapshots_scale_30.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "membership_convergence.handshake_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cluster_snapshots_scale_30.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "membership_convergence.fail_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cluster_snapshots_scale_30.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "role_convergence.primary_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 15,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cluster_snapshots_scale_30.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "role_convergence.replica_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 15,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cluster_snapshots_scale_30.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "data_path.result",
+          "status": "MEASURED",
+          "required": true,
+          "value": "PASS",
+          "unit": null,
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+          "source_role": "real_evidence",
+          "reason": ""
+        },
+        {
+          "name": "data_path.probe_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 30,
+          "unit": "probes",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+          "source_role": "real_evidence",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_terminate_processes_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json",
+          "source_role": "cleanup",
+          "reason": "30-node historical cleanup report predates cleanup_timing fields"
+        },
+        {
+          "name": "cleanup.cleanup_verify_process_exit_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json",
+          "source_role": "cleanup",
+          "reason": "30-node historical cleanup report predates cleanup_timing fields"
+        },
+        {
+          "name": "cleanup.cleanup_verify_nodehost_empty_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json",
+          "source_role": "cleanup",
+          "reason": "30-node historical cleanup report predates cleanup_timing fields"
+        },
+        {
+          "name": "cleanup.cleanup_remove_containers_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json",
+          "source_role": "cleanup",
+          "reason": "30-node historical cleanup report predates cleanup_timing fields"
+        },
+        {
+          "name": "cleanup.cleanup_remove_networks_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json",
+          "source_role": "cleanup",
+          "reason": "30-node historical cleanup report predates cleanup_timing fields"
+        },
+        {
+          "name": "cleanup.cleanup_residual_scan_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json",
+          "source_role": "cleanup",
+          "reason": "30-node historical cleanup report predates cleanup_timing fields"
+        },
+        {
+          "name": "cleanup.resources_remaining_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0,
+          "unit": "resources",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "setup_timeline.setup_command_wall_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/setup_timeline_scale_30.json",
+          "source_role": "setup_timeline",
+          "reason": "30-node historical evidence predates setup_timeline artifact"
+        },
+        {
+          "name": "setup_timeline.total_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/setup_timeline_scale_30.json",
+          "source_role": "setup_timeline",
+          "reason": "30-node historical evidence predates setup_timeline artifact"
+        },
+        {
+          "name": "runtime.cluster_create_duration_seconds",
+          "status": "MISSING",
+          "required": true,
+          "value": null,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/runtime_timing_breakdown_scale_30.json",
+          "source_role": "runtime_timing",
+          "reason": "30-node historical evidence predates runtime_timing_breakdown artifact"
+        }
+      ],
+      "findings": []
+    },
+    {
+      "node_count": 50,
+      "scenario": "scale_50",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "status": "PASS",
+      "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "source_artifacts": [
+        {
+          "role": "resource_preflight",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+          "exists": true,
+          "sha256": "ec3b330d8c39f76fefe962789c89cad2b8ace0fa182d04862942a1b644ca73c5",
+          "artifact_type": "resource_preflight",
+          "status": "PASS"
+        },
+        {
+          "role": "real_evidence",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+          "exists": true,
+          "sha256": "a04bf652e7b32496bd0d2b97f08212d3c477ac92505f4e19677bfd5746cda037",
+          "artifact_type": "valkey_e2e_evidence",
+          "status": "PASS"
+        },
+        {
+          "role": "scale_rung",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json",
+          "exists": true,
+          "sha256": "7ebbbeaf8b0a136d3917142762829f999088d0ea64067cc87c3188011eb0894c",
+          "artifact_type": "scale_rung_summary",
+          "status": "PASS"
+        },
+        {
+          "role": "cleanup",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "exists": true,
+          "sha256": "11f98fd117fde1390415bcc6ecc2899e390269bdff92be745500231e86ff325a",
+          "artifact_type": "cleanup_report",
+          "status": "PASS"
+        },
+        {
+          "role": "cluster_snapshots",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_50.json",
+          "exists": true,
+          "sha256": "af2263fc586291a439b3e25b17b3279d8e6741b992b051d6b9fe1a10f4f5f914",
+          "artifact_type": null,
+          "status": null
+        },
+        {
+          "role": "scale_ladder_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+          "exists": true,
+          "sha256": "8f361663f6ccf6bfbb81189c7f8e5276d07ab0a8826fbbf07d2e7ff6abeadfe5",
+          "artifact_type": "scale_ladder_report",
+          "status": "PASS"
+        },
+        {
+          "role": "timing_breakdown",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+          "exists": true,
+          "sha256": "c8bdde24a12f9701861abceaa197930bd12a1e0614df0e20f876aa3fbd2afad3",
+          "artifact_type": "p13_timing_breakdown",
+          "status": "PASS"
+        },
+        {
+          "role": "runtime_timing",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/runtime_timing_breakdown_scale_50.json",
+          "exists": true,
+          "sha256": "5f91a9c17584664644f8bc4fe35cb2ebfdf1ea07eaaf6a3ab33d6f62f9f33b1c",
+          "artifact_type": "p13_timing_breakdown",
+          "status": "PASS"
+        },
+        {
+          "role": "setup_timeline",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
+          "exists": true,
+          "sha256": "95cdfc372f13e776f2859b81d20731b84a7be78be7b322df73f50597d1d3ce86",
+          "artifact_type": "p13_setup_exhaustive_timeline",
+          "status": "PASS"
+        }
+      ],
+      "real_valkey": true,
+      "nodes_observed": 50,
+      "cluster_state_observed": "ok",
+      "probe_result": "PASS",
+      "data_path_result": "PASS",
+      "valkey_versions": [
+        "9.1.0"
+      ],
+      "metric_records": [
+        {
+          "name": "resource_preflight.can_run",
+          "status": "MEASURED",
+          "required": true,
+          "value": true,
+          "unit": null,
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+          "source_role": "resource_preflight",
+          "reason": "resource preflight must pass before real scale evidence can be accepted"
+        },
+        {
+          "name": "resource_preflight.status",
+          "status": "MEASURED",
+          "required": true,
+          "value": "PASS",
+          "unit": null,
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+          "source_role": "resource_preflight",
+          "reason": ""
+        },
+        {
+          "name": "process_startup.nodehost_start_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.349833,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "process_startup.process_config_prepare_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.112561,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "process_startup.process_start_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.271075,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "process_startup.process_ready_wait_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.039364,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "cluster_create.primary_cluster_create_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 11.176592,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "cluster_create.replica_meet_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 4.05051,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "role_convergence.replica_replicate_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.103871,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "slot_assignment.slots_assigned",
+          "status": "MEASURED",
+          "required": true,
+          "value": 16384,
+          "unit": "slots",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_50.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "slot_assignment.slots_ok",
+          "status": "MEASURED",
+          "required": true,
+          "value": 16384,
+          "unit": "slots",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_50.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "membership_convergence.known_nodes",
+          "status": "MEASURED",
+          "required": true,
+          "value": 50,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_50.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "membership_convergence.handshake_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_50.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "membership_convergence.fail_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_50.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "role_convergence.primary_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 25,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_50.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "role_convergence.replica_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 25,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_50.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "data_path.result",
+          "status": "MEASURED",
+          "required": true,
+          "value": "PASS",
+          "unit": null,
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+          "source_role": "real_evidence",
+          "reason": ""
+        },
+        {
+          "name": "data_path.probe_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 50,
+          "unit": "probes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+          "source_role": "real_evidence",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_terminate_processes_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.392717,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_verify_process_exit_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.386002,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_verify_nodehost_empty_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.044747,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_remove_containers_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 5.355305,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_remove_networks_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.072121,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_residual_scan_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.037925,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.resources_remaining_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0,
+          "unit": "resources",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "setup_timeline.setup_command_wall_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 22.601064,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
+          "source_role": "setup_timeline",
+          "reason": ""
+        },
+        {
+          "name": "setup_timeline.total_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 22.552887,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
+          "source_role": "setup_timeline",
+          "reason": ""
+        },
+        {
+          "name": "runtime.cluster_create_duration_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 15.330973,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/runtime_timing_breakdown_scale_50.json",
+          "source_role": "runtime_timing",
+          "reason": ""
+        }
+      ],
+      "findings": []
+    },
+    {
+      "node_count": 100,
+      "scenario": "scale_100",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "status": "PASS",
+      "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+      "source_artifacts": [
+        {
+          "role": "resource_preflight",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+          "exists": true,
+          "sha256": "270389fb0c89ebba805129e9f6963f48c9a1a531fe31d0c8de69df484446100c",
+          "artifact_type": "resource_preflight",
+          "status": "PASS"
+        },
+        {
+          "role": "real_evidence",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "exists": true,
+          "sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de",
+          "artifact_type": "valkey_e2e_evidence",
+          "status": "PASS"
+        },
+        {
+          "role": "scale_rung",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_100.json",
+          "exists": true,
+          "sha256": "8aeebcdebed1ebf21a9df26adb3604b6fc61f51dea2ad6f80d595688c69f085a",
+          "artifact_type": "scale_rung_summary",
+          "status": "PASS"
+        },
+        {
+          "role": "cleanup",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "exists": true,
+          "sha256": "93117cbfdb86afdf23648e4b923c85c97e93acce7083db97e258558c2f349bb0",
+          "artifact_type": "cleanup_report",
+          "status": "PASS"
+        },
+        {
+          "role": "cluster_snapshots",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json",
+          "exists": true,
+          "sha256": "2dc2d67b9da513cc5b42c8b6f8484df470f1c9b61a31e45d70af732db7a492fd",
+          "artifact_type": null,
+          "status": null
+        },
+        {
+          "role": "scale_ladder_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+          "exists": true,
+          "sha256": "8f361663f6ccf6bfbb81189c7f8e5276d07ab0a8826fbbf07d2e7ff6abeadfe5",
+          "artifact_type": "scale_ladder_report",
+          "status": "PASS"
+        },
+        {
+          "role": "timing_breakdown",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+          "exists": true,
+          "sha256": "fc697ee2aecd7c3738086b1d811f58fc33d5675a9afd8c4ed17830c24057816f",
+          "artifact_type": "p13_timing_breakdown",
+          "status": "PASS"
+        },
+        {
+          "role": "runtime_timing",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/runtime_timing_breakdown_scale_100.json",
+          "exists": true,
+          "sha256": "b913d86942dccdea16dce0875b22d8c60d65a30e674444ab88af35fb0f8d21cb",
+          "artifact_type": "p13_timing_breakdown",
+          "status": "PASS"
+        },
+        {
+          "role": "setup_timeline",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
+          "exists": true,
+          "sha256": "ab91709c8dd235479eb70751da7ffd75e7461a0407945a7818f431e4cce2b96c",
+          "artifact_type": "p13_setup_exhaustive_timeline",
+          "status": "PASS"
+        }
+      ],
+      "real_valkey": true,
+      "nodes_observed": 100,
+      "cluster_state_observed": "ok",
+      "probe_result": "PASS",
+      "data_path_result": "PASS",
+      "valkey_versions": [
+        "9.1.0"
+      ],
+      "metric_records": [
+        {
+          "name": "resource_preflight.can_run",
+          "status": "MEASURED",
+          "required": true,
+          "value": true,
+          "unit": null,
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+          "source_role": "resource_preflight",
+          "reason": "resource preflight must pass before real scale evidence can be accepted"
+        },
+        {
+          "name": "resource_preflight.status",
+          "status": "MEASURED",
+          "required": true,
+          "value": "PASS",
+          "unit": null,
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+          "source_role": "resource_preflight",
+          "reason": ""
+        },
+        {
+          "name": "process_startup.nodehost_start_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.470391,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "process_startup.process_config_prepare_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.133571,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "process_startup.process_start_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.314088,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "process_startup.process_ready_wait_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.074443,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "cluster_create.primary_cluster_create_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 102.728968,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "cluster_create.replica_meet_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 3.050774,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "role_convergence.replica_replicate_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.271537,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+          "source_role": "timing_breakdown",
+          "reason": ""
+        },
+        {
+          "name": "slot_assignment.slots_assigned",
+          "status": "MEASURED",
+          "required": true,
+          "value": 16384,
+          "unit": "slots",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "slot_assignment.slots_ok",
+          "status": "MEASURED",
+          "required": true,
+          "value": 16384,
+          "unit": "slots",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "membership_convergence.known_nodes",
+          "status": "MEASURED",
+          "required": true,
+          "value": 100,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "membership_convergence.handshake_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "membership_convergence.fail_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "role_convergence.primary_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 50,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "role_convergence.replica_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 50,
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json",
+          "source_role": "cluster_snapshots",
+          "reason": ""
+        },
+        {
+          "name": "data_path.result",
+          "status": "MEASURED",
+          "required": true,
+          "value": "PASS",
+          "unit": null,
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "source_role": "real_evidence",
+          "reason": ""
+        },
+        {
+          "name": "data_path.probe_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 100,
+          "unit": "probes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "source_role": "real_evidence",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_terminate_processes_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.765785,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_verify_process_exit_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.796795,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_verify_nodehost_empty_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.050241,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_remove_containers_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 5.611292,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_remove_networks_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.078956,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.cleanup_residual_scan_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0.03145,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "cleanup.resources_remaining_count",
+          "status": "MEASURED",
+          "required": true,
+          "value": 0,
+          "unit": "resources",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "source_role": "cleanup",
+          "reason": ""
+        },
+        {
+          "name": "setup_timeline.setup_command_wall_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 248.41558,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
+          "source_role": "setup_timeline",
+          "reason": ""
+        },
+        {
+          "name": "setup_timeline.total_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 248.37056,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
+          "source_role": "setup_timeline",
+          "reason": ""
+        },
+        {
+          "name": "runtime.cluster_create_duration_seconds",
+          "status": "MEASURED",
+          "required": true,
+          "value": 106.051279,
+          "unit": "seconds",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/runtime_timing_breakdown_scale_100.json",
+          "source_role": "runtime_timing",
+          "reason": ""
+        }
+      ],
+      "findings": []
+    }
+  ],
+  "p14_boundary": {
+    "phase_id": "P14_SCALE_1000_OPTIN_DRYRUN",
+    "status": "SKIPPED_WITH_REASON",
+    "dry_run_only": true,
+    "real_valkey_coverage": false,
+    "real_evidence_count": 0,
+    "reason": "P14 is opt-in dry-run/resource/planner only and is not counted as real scale build coverage."
+  },
+  "findings": [
+    {
+      "id": "L07-SCALE-0001",
+      "severity": "high",
+      "category": "missing_artifact",
+      "classification": "current",
+      "blocking": false,
+      "description": "Artifact is missing: artifacts/phases/P12_SCALE_LADDER_10_30/p13_timing_breakdown_scale_30.json",
+      "evidence": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/p13_timing_breakdown_scale_30.json"
+      ]
+    },
+    {
+      "id": "L07-SCALE-0002",
+      "severity": "high",
+      "category": "missing_artifact",
+      "classification": "current",
+      "blocking": false,
+      "description": "Artifact is missing: artifacts/phases/P12_SCALE_LADDER_10_30/runtime_timing_breakdown_scale_30.json",
+      "evidence": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/runtime_timing_breakdown_scale_30.json"
+      ]
+    },
+    {
+      "id": "L07-SCALE-0003",
+      "severity": "high",
+      "category": "missing_artifact",
+      "classification": "current",
+      "blocking": false,
+      "description": "Artifact is missing: artifacts/phases/P12_SCALE_LADDER_10_30/setup_timeline_scale_30.json",
+      "evidence": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/setup_timeline_scale_30.json"
+      ]
+    }
+  ]
+}

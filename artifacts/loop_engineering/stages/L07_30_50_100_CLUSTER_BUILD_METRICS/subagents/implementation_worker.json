@@ -1,0 +1,138 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L07_30_50_100_CLUSTER_BUILD_METRICS",
+  "agent_role": "implementation_worker",
+  "created_at": "2026-06-30T11:45:00Z",
+  "context_files_read": [
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Repository phase-loop and safety entrypoint",
+      "key_findings": [
+        "Do not run P14 without explicit opt-in.",
+        "Machine-readable artifacts are the source of truth."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L07_30_50_100_CLUSTER_BUILD_METRICS/stage_design.md",
+      "purpose": "L07 design and acceptance criteria",
+      "key_findings": [
+        "L07 requires normalized 30/50/100 scale build metric coverage from committed JSON source artifacts.",
+        "P14 must remain dry-run-only and must not be counted as real Valkey coverage.",
+        "30-node historical timing gaps must remain explicit MISSING or SKIPPED_WITH_REASON."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L07_30_50_100_CLUSTER_BUILD_METRICS/current_harness_plan.json",
+      "purpose": "L07 planned files, gates, and acceptance criteria",
+      "key_findings": [
+        "New gates are audit_scale_build_metrics.py and schema validation for scale_build_metrics.json.",
+        "Coverage matrix and rendered reports must consume the scale build metrics artifact."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Response artifact schema",
+      "key_findings": [
+        "The response must use schema_version v1, agent_role implementation_worker, and an approved verdict only when acceptance criteria are met."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L07-IMPLEMENTATION-001",
+      "severity": "medium",
+      "description": "The GitHub coverage workflow generated the metric coverage matrix before generating scale_build_metrics.json, so a fresh CI run could omit L07 cluster_build coverage from coverage_matrix.json.",
+      "evidence": [
+        ".github/workflows/github-coverage-gates.yml now runs scripts/audit_scale_build_metrics.py and schema validation before scripts/build_metric_coverage_matrix.py.",
+        "tests/ci/test_scale_build_metrics_gate.py includes a workflow-order regression assertion."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "scale_build_metrics_audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Produces PASS scale_build_metrics.json with canonical 30/50/100 rungs, zero blocking findings, real Valkey proof checks, explicit 30-node gaps, cleanup checks, and P14 dry-run boundary."
+    },
+    {
+      "name": "scale_build_metrics_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Validates artifacts/loop_engineering/reports/scale_build_metrics.json against schemas/artifact/scale_build_metrics.schema.json."
+    },
+    {
+      "name": "scale_build_metric_coverage",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Coverage matrix reports cluster_build coverage for 30, 50, and 100 from scale_build_metrics.json without treating P14 as real coverage."
+    },
+    {
+      "name": "scale_build_metrics_report",
+      "type": "integration",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Rendered report index lists scale_build_metrics.json as a source artifact and displays scale build summary values."
+    },
+    {
+      "name": "scale_build_metrics_ci_gate",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "CI runs the scale-build audit and schema validation before metric coverage generation, then runs the focused L07 tests."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Verify and preserve the L07 audit artifact implementation.",
+      "files": [
+        "scripts/audit_scale_build_metrics.py",
+        "schemas/artifact/scale_build_metrics.schema.json",
+        "tests/scale/test_scale_build_metrics_audit.py"
+      ],
+      "rationale": "The audit checks committed JSON sources for 30/50/100, real Valkey evidence, resource preflight blockers, cleanup residue, missing semantics, and P14 dry-run-only behavior."
+    },
+    {
+      "step": "Verify coverage/report consumers and repair CI ordering.",
+      "files": [
+        "scripts/build_metric_coverage_matrix.py",
+        "scripts/render_audit_report.py",
+        ".github/workflows/github-coverage-gates.yml",
+        "tests/coverage/test_scale_build_metric_coverage.py",
+        "tests/report/test_scale_build_metrics_report.py",
+        "tests/ci/test_scale_build_metrics_gate.py"
+      ],
+      "rationale": "The coverage matrix must consume scale_build_metrics.json after it exists, and rendered reports must treat it as source data rather than fabricated view data."
+    }
+  ],
+  "acceptance_criteria": [
+    "scale_build_metrics audit status PASS with blocking_findings_count 0 on committed evidence.",
+    "Canonical real rungs 30, 50, and 100 are present and trace to wrapper-produced evidence.",
+    "Resource preflight failure or can_run=false for canonical rungs is blocking.",
+    "Real evidence requires real_valkey=true, Valkey 9.1.x, exact node count, cluster_state_observed=ok, probe_result=PASS, and data_path_result=PASS.",
+    "50/100 timing metrics are measured from P13 timing/setup/runtime artifacts.",
+    "30-node timing gaps remain explicit MISSING with reasons.",
+    "Cleanup residue is blocking and cleanup timing gaps are explicit.",
+    "Rendered HTML/SVG/CSV/Markdown are rejected as measured metric sources.",
+    "P14 remains dry-run-only with real_valkey_coverage=false and no real evidence counted."
+  ],
+  "risks": [
+    "Local pytest is unavailable in this environment, so focused tests were executed directly by importing test functions instead of through pytest.",
+    "The scale_build_metrics.json report artifact is generated by the audit gate and intentionally not left as a persistent workspace change in this response."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run real Valkey scale gates for L07 validation.",
+    "Do not run P14 or set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not count P14 planner or dry-run artifacts as real Valkey evidence.",
+    "Do not use rendered report views as metric sources.",
+    "Do not invent missing timing or cleanup metrics."
+  ],
+  "commands_to_run": [
+    "python3 scripts/audit_scale_build_metrics.py --root . --out artifacts/loop_engineering/reports/scale_build_metrics.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/scale_build_metrics.schema.json --instance artifacts/loop_engineering/reports/scale_build_metrics.json",
+    "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+    "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/loop_report_index.schema.json --instance artifacts/loop_engineering/reports/report_index.json",
+    "python3 -m pytest -q tests/scale/test_scale_build_metrics_audit.py tests/coverage/test_scale_build_metric_coverage.py tests/report/test_scale_build_metrics_report.py tests/ci/test_scale_build_metrics_gate.py"
+  ],
+  "verdict": "APPROVED",
+  "notes": "The implementation matches the L07 design after the workflow-order fix. Script/schema validations passed; direct focused test-function execution passed because pytest is not installed locally. The generated scale_build_metrics summary observed status PASS, canonical_node_counts [30, 50, 100], real_valkey_rung_count 3, blocking_findings_count 0, and P14 real_evidence_count 0."
+}

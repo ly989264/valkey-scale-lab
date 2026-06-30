@@ -1,0 +1,150 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L07_30_50_100_CLUSTER_BUILD_METRICS",
+  "agent_role": "validation_agent",
+  "created_at": "2026-06-30T11:56:47Z",
+  "context_files_read": [
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Confirm the required structure for the refreshed validation response artifact.",
+      "key_findings": [
+        "The artifact must include all required fields and no additional properties.",
+        "A passing validation verdict must use APPROVED."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "Confirm L07 validation scope and P14 boundary requirements.",
+      "key_findings": [
+        "L07 requires 30/50/100 scale build metrics and report consistency.",
+        "1000+ coverage must remain dry-run/resource/planner only."
+      ]
+    },
+    {
+      "path": "schemas/artifact/scale_build_metrics.schema.json",
+      "purpose": "Validate the scale build metrics audit artifact generated after the final P14 metadata fix.",
+      "key_findings": [
+        "The schema requires canonical 30/50/100 rungs and a p14_boundary object.",
+        "The p14_boundary status may be SKIPPED_WITH_REASON, which is appropriate for dry-run-only P14 metadata."
+      ]
+    },
+    {
+      "path": "schemas/artifact/loop_report_index.schema.json",
+      "purpose": "Validate report index output from the renderer.",
+      "key_findings": [
+        "Report outputs are not source-of-truth artifacts.",
+        "Machine-readable source artifacts must be listed with SHA-256 values."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [
+    {
+      "name": "scale_build_metrics_audit_cli",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "audit_scale_build_metrics.py exits zero and emits PASS for 30/50/100 scale build metrics while keeping P14 dry-run-only."
+    },
+    {
+      "name": "scale_build_metrics_schema_validation",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The generated scale_build_metrics.json validates against schemas/artifact/scale_build_metrics.schema.json."
+    },
+    {
+      "name": "metric_coverage_generation",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "build_metric_coverage_matrix.py exits zero and produces metric_catalog.json and coverage_matrix.json."
+    },
+    {
+      "name": "loop_report_rendering",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "render_audit_report.py exits zero and produces six report outputs from machine-readable sources."
+    },
+    {
+      "name": "loop_report_index_schema_validation",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The rendered report_index.json validates against schemas/artifact/loop_report_index.schema.json."
+    },
+    {
+      "name": "focused_l07_pytest_group",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Focused L07 tests for audit, coverage, report, and CI gate behavior pass."
+    },
+    {
+      "name": "tests_ci",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "All tests/ci tests pass without running real Valkey scale gates or P14."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "No implementation files were modified by this validation rerun.",
+      "files": [],
+      "rationale": "The requested work was validation and overwriting this response artifact with a fresh verdict."
+    },
+    {
+      "step": "Run the required audit, schema, coverage, and report commands against temporary outputs.",
+      "files": [
+        "scripts/audit_scale_build_metrics.py",
+        "schemas/artifact/scale_build_metrics.schema.json",
+        "scripts/build_metric_coverage_matrix.py",
+        "scripts/render_audit_report.py",
+        "schemas/artifact/loop_report_index.schema.json"
+      ],
+      "rationale": "Temporary outputs under /private/tmp validate behavior without rewriting repository report artifacts."
+    },
+    {
+      "step": "Run focused L07 pytest coverage and the full CI test directory.",
+      "files": [
+        "tests/scale/test_scale_build_metrics_audit.py",
+        "tests/coverage/test_scale_build_metric_coverage.py",
+        "tests/report/test_scale_build_metrics_report.py",
+        "tests/ci/test_scale_build_metrics_gate.py",
+        "tests/ci"
+      ],
+      "rationale": "These tests cover the final P14 metadata behavior, report integration, and CI gate wiring."
+    }
+  ],
+  "acceptance_criteria": [
+    "audit_scale_build_metrics.py exits 0 and emits PASS.",
+    "Generated scale_build_metrics.json validates against schemas/artifact/scale_build_metrics.schema.json.",
+    "scale_build_metrics summary reports status PASS, blocking_findings_count 0, canonical_node_counts [30, 50, 100], and real_valkey_rung_count 3.",
+    "P14 boundary reports status SKIPPED_WITH_REASON, dry_run_only true, real_valkey_coverage false, and real_evidence_count 0.",
+    "build_metric_coverage_matrix.py exits 0.",
+    "render_audit_report.py exits 0.",
+    "Rendered report_index.json validates against schemas/artifact/loop_report_index.schema.json.",
+    "Rendered report_index.json includes scale_build_metrics.json as a source artifact.",
+    "Focused L07 pytest group passes.",
+    "tests/ci passes.",
+    "No real Valkey scale gates or P14 commands are run."
+  ],
+  "risks": [
+    "This validation uses existing machine-readable scale evidence and does not rerun expensive real 30/50/100 Valkey scale gates.",
+    "Historical 30-node timing gaps remain acceptable only because the audit records explicit missing semantics.",
+    "The worktree contains broader L07 implementation and generated report changes outside this validation artifact."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14 or set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not run real Valkey 30/50/100 scale gates in this validation rerun.",
+    "Do not treat rendered HTML, SVG, CSV, or Markdown as metric sources of truth.",
+    "Do not fabricate missing metrics.",
+    "Do not modify implementation files from the validation agent."
+  ],
+  "commands_to_run": [
+    "PASS: PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 scripts/audit_scale_build_metrics.py --root . --out /private/tmp/valkey-scale-lab-l07-validation-agent-final/scale_build_metrics.json -> PASS scale_build_metrics /private/tmp/valkey-scale-lab-l07-validation-agent-final/scale_build_metrics.json",
+    "PASS: PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 scripts/validate_json_schema.py --schema schemas/artifact/scale_build_metrics.schema.json --instance /private/tmp/valkey-scale-lab-l07-validation-agent-final/scale_build_metrics.json -> PASS",
+    "PASS: PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 scripts/build_metric_coverage_matrix.py --out-dir /private/tmp/valkey-scale-lab-l07-validation-agent-final/reports -> PASS metric_coverage",
+    "PASS: PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir /private/tmp/valkey-scale-lab-l07-validation-agent-final/reports -> PASS loop_report 6 reports",
+    "PASS: PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 scripts/validate_json_schema.py --schema schemas/artifact/loop_report_index.schema.json --instance /private/tmp/valkey-scale-lab-l07-validation-agent-final/reports/report_index.json -> PASS",
+    "PASS: PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider tests/scale/test_scale_build_metrics_audit.py tests/coverage/test_scale_build_metric_coverage.py tests/report/test_scale_build_metrics_report.py tests/ci/test_scale_build_metrics_gate.py -> 17 passed in 1.72s",
+    "PASS: PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider tests/ci -> 29 passed in 1.07s"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Final P14 dry-run metadata validation passed. Temporary scale_build_metrics summary: status PASS, blocking_findings_count 0, canonical_node_counts [30, 50, 100], real_valkey_rung_count 3, measured_metric_count 68, missing_metric_count 16, skipped_metric_count 0. P14 boundary summary: status SKIPPED_WITH_REASON, dry_run_only true, real_valkey_coverage false, real_evidence_count 0. Temporary rendered report_index summary: status PASS, source_count 10, report_count 6, has_scale_build_metrics true. No real Valkey scale gates or P14 commands were run."
+}

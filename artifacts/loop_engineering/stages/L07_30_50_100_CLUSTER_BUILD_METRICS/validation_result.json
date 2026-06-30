@@ -1,0 +1,26 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L07_30_50_100_CLUSTER_BUILD_METRICS",
+  "status": "PASS",
+  "completed_at": "2026-06-30T14:15:00Z",
+  "commands_log": "artifacts/loop_engineering/stages/L07_30_50_100_CLUSTER_BUILD_METRICS/commands.jsonl",
+  "commands": [
+    {"name": "precheck_all", "command": "python3 scripts/codex_gate.py precheck --all", "status": "PASS"},
+    {"name": "safety_scan", "command": "python3 scripts/safety_scan.py", "status": "PASS"},
+    {"name": "compileall", "command": "python3 -m compileall -q src scripts tests", "status": "PASS"},
+    {"name": "scale_build_metrics_audit", "command": "python3 scripts/audit_scale_build_metrics.py --root . --out artifacts/loop_engineering/reports/scale_build_metrics.json", "status": "PASS"},
+    {"name": "scale_build_metrics_schema", "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/scale_build_metrics.schema.json --instance artifacts/loop_engineering/reports/scale_build_metrics.json", "status": "PASS"},
+    {"name": "scale_build_metrics_tests", "command": "python3 -m pytest -q tests/scale/test_scale_build_metrics_audit.py tests/coverage/test_scale_build_metric_coverage.py tests/report/test_scale_build_metrics_report.py tests/ci/test_scale_build_metrics_gate.py", "status": "PASS"},
+    {"name": "metric_coverage", "command": "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports", "status": "PASS"},
+    {"name": "loop_report_render", "command": "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports", "status": "PASS"},
+    {"name": "tests_ci", "command": "python3 -m pytest -q tests/ci", "status": "PASS"},
+    {"name": "broad_runtime_tests", "command": "python3 -m pytest -q tests/unit tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator", "status": "PASS"},
+    {"name": "broad_analysis_tests", "command": "python3 -m pytest -q tests/analysis tests/stability tests/scale tests/audit tests/metrics tests/provenance tests/real_valkey", "status": "PASS"},
+    {"name": "report_coverage_tests", "command": "python3 -m pytest -q tests/coverage tests/report tests/visualization tests/ci/test_metric_coverage_gate.py tests/ci/test_loop_report_gate.py", "status": "PASS"},
+    {"name": "loop_engineering_validator", "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L07_30_50_100_CLUSTER_BUILD_METRICS", "status": "PASS"},
+    {"name": "anti_regression", "command": "python3 scripts/loop_engineering_validate.py --anti-regression --base-ref d6e49b7bda1e90e4b916ffd78b4315798b05feef --head-ref WORKTREE --report artifacts/loop_engineering/stages/L07_30_50_100_CLUSTER_BUILD_METRICS/anti_regression_check.json", "status": "PASS"}
+  ],
+  "current_harness_passed": true,
+  "previous_harness_passed": true,
+  "notes": "No real Valkey scale gates or P14 commands were run in L07. The audit uses committed 30/50/100 source artifacts, records explicit 30-node timing gaps, and keeps P14 dry-run-only."
+}

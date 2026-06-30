@@ -1,0 +1,262 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L07_30_50_100_CLUSTER_BUILD_METRICS",
+  "agent_role": "anti_regression_guardian",
+  "created_at": "2026-06-30T11:56:46Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling safety and harness integrity rules.",
+      "key_findings": [
+        "Automatic phases are capped at 100 nodes; P14 is not automatic.",
+        "Host network, firewall, routing, interface, sudo network changes, and unrelated process mutation are forbidden.",
+        "Machine-readable artifacts are source of truth; rendered reports are views only."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm phase boundary and P14 opt-in rules.",
+      "key_findings": [
+        "Automatic work completes at P13_SCALE_LADDER_50_100.",
+        "P14 requires explicit opt-in and must remain dry-run/resource/planner only by default.",
+        "Real scale gates must not be rerun for this anti-regression review."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Required output schema.",
+      "key_findings": [
+        "Response must use schema_version v1 and agent_role anti_regression_guardian.",
+        "Verdict is constrained to APPROVED, CHANGES_REQUESTED, or BLOCKED.",
+        "Additional top-level properties are forbidden."
+      ]
+    },
+    {
+      "path": "scripts/audit_scale_build_metrics.py",
+      "purpose": "Inspect final P14 dry-run metadata fix and scale evidence checks.",
+      "key_findings": [
+        "Canonical audited real rungs remain 30, 50, and 100 only.",
+        "Real evidence still requires PASS status, exact phase/scenario, real_valkey=true, exact nodes_observed, cluster_state_observed=ok, probe_result=PASS, data_path_result=PASS, probe count equal to node count, and Valkey 9.1.x.",
+        "P14 JSON scanning now allows dry-run metadata only when dry_run is true and no_execution is true or the artifact type is recognized dry-run metadata.",
+        "P14 still blocks valkey_e2e files, real_valkey=true, scenario scale_1000, scale_rung_summary, real-looking scale_ladder_report rungs, and node_count 1000 when it is not allowed dry-run metadata.",
+        "Rendered view suffixes .html, .svg, .csv, and .md are rejected as measured metric sources.",
+        "The script reads committed JSON artifacts and does not invoke P14 or real scale gates."
+      ]
+    },
+    {
+      "path": "schemas/artifact/scale_build_metrics.schema.json",
+      "purpose": "Inspect schema strength for real coverage and P14 boundary.",
+      "key_findings": [
+        "Summary requires rung_count=3, real_valkey_rung_count=3, cleanup_pass_count=3, and p14_dry_run_only=true.",
+        "canonical_node_counts is exactly three unique entries from [30, 50, 100], and canonical_rungs has exactly three items.",
+        "Real rung fields require real_valkey=true, nodes_observed in [30, 50, 100], cluster_state_observed=ok, probe_result=PASS, data_path_result=PASS, and Valkey 9.1.x versions.",
+        "P14 boundary requires SKIPPED_WITH_REASON, dry_run_only=true, real_valkey_coverage=false, and real_evidence_count=0."
+      ]
+    },
+    {
+      "path": "tests/scale/test_scale_build_metrics_audit.py",
+      "purpose": "Inspect P14 and scale-audit regression tests.",
+      "key_findings": [
+        "Tests cover current PASS, failed preflight, bad data path, missing P13 timing, cleanup residue, P14 valkey_e2e evidence, P14 scale_rung_1000, and P14 scale_ladder_report real rung.",
+        "New final-fix tests allow P14 dry-run cluster_plan metadata and dry-run resource_preflight metadata without creating real coverage.",
+        "30-node timing and cleanup timing gaps remain explicit MISSING records with reasons."
+      ]
+    },
+    {
+      "path": "tests/ci/test_scale_build_metrics_gate.py",
+      "purpose": "Inspect CI and schema regression tests.",
+      "key_findings": [
+        "Tests run audit_scale_build_metrics.py and schema validation without real scale gates.",
+        "Workflow ordering keeps scale_build_metrics audit/schema before metric coverage generation.",
+        "Schema drift tests reject duplicate canonical rungs and P14 real-coverage boundary changes.",
+        "Metric record checks preserve value and missing-reason semantics."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "Inspect workflow changes for gate weakening or forbidden execution.",
+      "key_findings": [
+        "Scale build metrics audit and schema validation were added before metric coverage generation.",
+        "Focused L07 tests were added.",
+        "No P14 command, VSLAB_ALLOW_1000_DRYRUN, or real Valkey wrapper command was added."
+      ]
+    },
+    {
+      "path": "scripts/build_metric_coverage_matrix.py",
+      "purpose": "Inspect report/coverage integration for real 1000 coverage regressions.",
+      "key_findings": [
+        "Scale build metrics are consumed only from artifacts/loop_engineering/reports/scale_build_metrics.json.",
+        "Node counts outside 30, 50, and 100 produce a blocking invalid_scale_build_rung finding.",
+        "1000-dry-run coverage remains handled by the existing dry-run path with real_valkey_coverage=false."
+      ]
+    },
+    {
+      "path": "scripts/render_audit_report.py",
+      "purpose": "Inspect rendered report integration.",
+      "key_findings": [
+        "Renderer reads scale_build_metrics.json as a source artifact.",
+        "Rendered HTML displays scale build summary values.",
+        "Rendered outputs remain views and are not measured metric sources."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "purpose": "Inspect generated scale build artifact.",
+      "key_findings": [
+        "status=PASS and blocking_findings_count=0.",
+        "canonical_node_counts=[30, 50, 100], real_valkey_rung_count=3, cleanup_pass_count=3, p14_dry_run_only=true.",
+        "p14_boundary is SKIPPED_WITH_REASON with dry_run_only=true, real_valkey_coverage=false, and real_evidence_count=0.",
+        "30-node unavailable timing/cleanup metrics are MISSING with explicit reasons, not fabricated values."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "purpose": "Confirm no real 1000 coverage.",
+      "key_findings": [
+        "All 1000-dry-run coverage entries have real_valkey_coverage=false and dry_run_only=true.",
+        "The only COVERED 1000-dry-run surface is scale, still real_valkey_coverage=false.",
+        "30, 50, and 100 cluster_build entries are real_valkey covered from canonical source artifacts."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/report_index.json",
+      "purpose": "Inspect source-of-truth classification after report integration.",
+      "key_findings": [
+        "scale_build_metrics.json is a source artifact.",
+        "Rendered CSV, SVG, and HTML reports remain source_of_truth=false.",
+        "Report index schema validation passed."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L07_30_50_100_CLUSTER_BUILD_METRICS/commands.jsonl",
+      "purpose": "Inspect command history for prohibited execution.",
+      "key_findings": [
+        "No command entry matched P14_SCALE_1000_OPTIN_DRYRUN, VSLAB_ALLOW_1000_DRYRUN, valkey_e2e_gate, fault_safety_gate, or fault_failover_gate in the command field.",
+        "Stage commands are artifact audits, schema checks, report generation, safety scan, and tests.",
+        "No real Valkey scale gate or P14 execution was observed."
+      ]
+    },
+    {
+      "path": "git diff -- scripts schemas tests .github artifacts/loop_engineering codex artifacts/gates artifacts/phases",
+      "purpose": "Inspect updated diff for historical artifact manipulation, deletions, and harness weakening.",
+      "key_findings": [
+        "No tracked diff exists under artifacts/gates, artifacts/phases, or codex.",
+        "No deleted files were found in scripts, schemas, tests, .github, artifacts/loop_engineering, codex, artifacts/gates, or artifacts/phases.",
+        "The diff adds L07 audit/schema/tests/workflow/report/coverage integration and regenerated loop reports.",
+        "A tracked scripts/__pycache__/schema_validator.cpython-313.pyc modification is present; this is bytecode churn, not a harness bypass, but it is repository hygiene risk outside the guardian artifact."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [
+    {
+      "name": "scale_build_metrics_audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Audit exits zero only when canonical 30/50/100 evidence is real, exact-node, data-path proven, cleanup-clean, and P14 remains dry-run-only."
+    },
+    {
+      "name": "p14_dryrun_metadata_boundary",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "P14 dry-run plan/preflight metadata with no execution is allowed while real-looking 1000-node artifacts remain blocking."
+    },
+    {
+      "name": "p14_real_artifact_blocker",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "P14 valkey_e2e artifacts, scale_rung_1000, scale_ladder_report real rungs, real_valkey=true, scenario scale_1000, or non-dry-run node_count 1000 are blocking."
+    },
+    {
+      "name": "scale_build_metrics_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Schema constrains canonical real rungs, exact summary counts, real evidence fields, and P14 dry-run-only boundary values."
+    },
+    {
+      "name": "cluster_build_coverage_matrix",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Coverage matrix reports cluster_build coverage for 30, 50, and 100 while all 1000-dry-run cells remain dry-run-only and non-real."
+    },
+    {
+      "name": "scale_build_metrics_ci_gate",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Workflow runs audit and schema validation before metric coverage and focused tests pass without P14 or real scale gate execution."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Re-review final P14 dry-run metadata change.",
+      "files": [
+        "scripts/audit_scale_build_metrics.py",
+        "tests/scale/test_scale_build_metrics_audit.py",
+        "schemas/artifact/scale_build_metrics.schema.json"
+      ],
+      "rationale": "The final change must allow dry-run metadata without admitting real 1000-node coverage."
+    },
+    {
+      "step": "Validate generated artifacts and focused tests without real gates.",
+      "files": [
+        "artifacts/loop_engineering/reports/scale_build_metrics.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/reports/report_index.json",
+        "tests/scale/test_scale_build_metrics_audit.py",
+        "tests/coverage/test_scale_build_metric_coverage.py",
+        "tests/report/test_scale_build_metrics_report.py",
+        "tests/ci/test_scale_build_metrics_gate.py"
+      ],
+      "rationale": "Schema checks and focused tests exercise the L07 harness boundaries while respecting the no-real-gate/no-P14 constraint."
+    },
+    {
+      "step": "Overwrite this anti-regression guardian artifact.",
+      "files": [
+        "artifacts/loop_engineering/stages/L07_30_50_100_CLUSTER_BUILD_METRICS/subagents/anti_regression_guardian.json"
+      ],
+      "rationale": "The user requested a fresh schema-valid verdict artifact."
+    }
+  ],
+  "acceptance_criteria": [
+    "No historical gate or phase artifacts are modified to manufacture PASS evidence.",
+    "No harness file is weakened, required gate optionalized, or canonical 30/50/100 count lowered.",
+    "P14 dry-run metadata is allowed only when it is explicitly dry-run/no-execution or recognized dry-run metadata.",
+    "No P14 execution or VSLAB_ALLOW_1000_DRYRUN usage is present.",
+    "No 1000-dry-run coverage has real_valkey_coverage=true.",
+    "Rendered views remain views over JSON source artifacts.",
+    "Focused non-real L07 tests, safety scan, and schema validations pass."
+  ],
+  "risks": [
+    "This pass validates committed artifacts and harness guards; it does not rerun real 30/50/100 Valkey scale gates.",
+    "The tracked scripts/__pycache__/schema_validator.cpython-313.pyc change is bytecode churn and should be cleaned up separately if this branch is intended to stay source/artifact-only.",
+    "The scale_build_metrics schema still permits additionalProperties, so script-level semantic checks and focused tests remain necessary enforcement."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN or set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not run real Valkey 30/50/100 scale gates for this anti-regression review.",
+    "Do not edit artifacts/gates or artifacts/phases to manufacture PASS evidence.",
+    "Do not lower 30/50/100 real node requirements.",
+    "Do not count 1000-node dry-run planner/resource artifacts as real Valkey coverage.",
+    "Do not use rendered HTML, SVG, CSV, or Markdown as measured metric sources.",
+    "Do not weaken schemas, remove tests, optionalize blockers, or convert failures to skips without reasons.",
+    "Do not add sudo, PF, nftables, iptables, route, ifconfig, host interface mutation, or broad process-kill behavior."
+  ],
+  "commands_to_run": [
+    "git status --short",
+    "git diff --stat -- scripts schemas tests .github artifacts/loop_engineering codex artifacts/gates artifacts/phases",
+    "git diff --name-status -- scripts schemas tests .github artifacts/loop_engineering codex artifacts/gates artifacts/phases",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/scale_build_metrics.schema.json --instance artifacts/loop_engineering/reports/scale_build_metrics.json",
+    "PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -p no:cacheprovider tests/scale/test_scale_build_metrics_audit.py tests/coverage/test_scale_build_metric_coverage.py tests/report/test_scale_build_metrics_report.py tests/ci/test_scale_build_metrics_gate.py",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/loop_report_index.schema.json --instance artifacts/loop_engineering/reports/report_index.json",
+    "python3 scripts/safety_scan.py",
+    "python3 -c 'import json; p=json.load(open(\"artifacts/loop_engineering/reports/scale_build_metrics.json\")); print(p[\"p14_boundary\"]); print(p[\"summary\"])'",
+    "python3 -c 'import json; m=json.load(open(\"artifacts/loop_engineering/reports/coverage_matrix.json\")); rows=[e for e in m[\"entries\"] if e[\"layer\"]==\"1000-dry-run\"]; print([(r[\"surface\"], r[\"status\"], r[\"real_valkey_coverage\"], r[\"dry_run_only\"]) for r in rows])'",
+    "git diff --name-only -- artifacts/gates artifacts/phases codex",
+    "git diff --name-only --diff-filter=D -- scripts schemas tests .github artifacts/loop_engineering codex artifacts/gates artifacts/phases",
+    "rg -n '\"command\":.*(P14_SCALE_1000_OPTIN_DRYRUN|VSLAB_ALLOW_1000_DRYRUN|valkey_e2e_gate|fault_safety_gate|fault_failover_gate)' artifacts/loop_engineering/stages/L07_30_50_100_CLUSTER_BUILD_METRICS/commands.jsonl",
+    "python3 scripts/validate_json_schema.py --schema schemas/loop_engineering/subagent_response.schema.json --instance artifacts/loop_engineering/stages/L07_30_50_100_CLUSTER_BUILD_METRICS/subagents/anti_regression_guardian.json"
+  ],
+  "verdict": "APPROVED",
+  "notes": "APPROVED. The final P14 dry-run metadata fix preserves the boundary: explicit dry-run/no-execution metadata is allowed, real-looking 1000-node artifacts still block, P14 boundary has real_valkey_coverage=false and real_evidence_count=0, and all 1000-dry-run coverage cells are dry-run-only/non-real. I found no harness weakening, no lowered node counts, no optionalized required gate, no historical gate/phase artifact manipulation, no rendered-view-as-source regression, no P14 execution, and no real 1000 coverage. Validation passed: focused L07 tests 17 passed, scale_build_metrics schema PASS, coverage_matrix schema PASS, loop_report_index schema PASS, and safety_scan PASS."
+}

@@ -653,6 +653,53 @@ class MetricCoverageBuilder:
                         evidence_layer=layer,
                     )
 
+    def add_scale_build_metrics(self) -> None:
+        path = "artifacts/loop_engineering/reports/scale_build_metrics.json"
+        payload = self.load_json(path)
+        if not payload:
+            return
+        for rung_idx, rung in enumerate(payload.get("canonical_rungs", [])):
+            if not isinstance(rung, dict):
+                continue
+            node_count = rung.get("node_count")
+            if node_count not in {30, 50, 100}:
+                self.finding(
+                    severity="high",
+                    category="invalid_scale_build_rung",
+                    blocking=True,
+                    description="Scale build metrics may only include canonical real rungs 30, 50, and 100",
+                    evidence=[str(node_count)],
+                )
+                continue
+            layer = self.layer_for(node_count=int(node_count), dry_run_only=False, real_valkey=rung.get("real_valkey") is True)
+            for metric_idx, record in enumerate(rung.get("metric_records", [])):
+                if not isinstance(record, dict):
+                    continue
+                value_status = {
+                    "MEASURED": "MEASURED",
+                    "MISSING": "MISSING",
+                    "SKIPPED_WITH_REASON": "SKIPPED_WITH_REASON",
+                    "NO_BASELINE_YET": "NO_BASELINE_YET",
+                }.get(str(record.get("status")), "MISSING")
+                source_artifact = record.get("source_artifact") or path
+                if value_status != "MEASURED":
+                    source_artifact = path
+                self.add_metric(
+                    name=f"cluster_build.{record.get('name')}",
+                    surface="cluster_build",
+                    unit=record.get("unit") or "status",
+                    source_artifact=source_artifact,
+                    source_pointer=f"$.canonical_rungs.{rung_idx}.metric_records.{metric_idx}",
+                    value=record.get("value"),
+                    value_status=value_status,
+                    reason=record.get("reason", ""),
+                    scenario=rung.get("scenario"),
+                    node_count_scope=str(node_count),
+                    evidence_layer=layer,
+                    evidence_class="real_valkey",
+                    real_valkey_coverage=rung.get("real_valkey") is True,
+                )
+
     def add_dryrun_metrics(self) -> None:
         path = "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json"
         payload = self.load_json(path)
@@ -713,6 +760,7 @@ class MetricCoverageBuilder:
         self.add_analysis_report_metrics()
         self.add_stability_metrics()
         self.add_scale_metrics()
+        self.add_scale_build_metrics()
         self.add_dryrun_metrics()
         self.check_required_surfaces()
 

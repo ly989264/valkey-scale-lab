@@ -1,0 +1,74 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L07_30_50_100_CLUSTER_BUILD_METRICS",
+  "new_tests": [
+    {
+      "path": "tests/scale/test_scale_build_metrics_audit.py",
+      "type": "artifact",
+      "acceptance": "Validates current audit PASS, explicit 30-node missing timing semantics, preflight blocking, data-path blocking, timing blocking, cleanup residue blocking, and P14 real-evidence blocking."
+    },
+    {
+      "path": "tests/coverage/test_scale_build_metric_coverage.py",
+      "type": "coverage",
+      "acceptance": "Requires cluster_build coverage cells for layers 30, 50, and 100 to be covered by real_valkey evidence from JSON source artifacts."
+    },
+    {
+      "path": "tests/report/test_scale_build_metrics_report.py",
+      "type": "report",
+      "acceptance": "Requires rendered report index and HTML to include scale_build_metrics.json as a source artifact and summarize build metrics."
+    },
+    {
+      "path": "tests/ci/test_scale_build_metrics_gate.py",
+      "type": "ci",
+      "acceptance": "Runs the audit script and schema validator as the CI gate."
+    }
+  ],
+  "new_schemas": [
+    "schemas/artifact/scale_build_metrics.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "name": "scale_build_metrics_audit",
+      "command": "python3 scripts/audit_scale_build_metrics.py --root . --out artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "acceptance": "Exits zero only when the normalized 30/50/100 build metric audit has zero blocking findings."
+    },
+    {
+      "name": "scale_build_metrics_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/scale_build_metrics.schema.json --instance artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "acceptance": "Validates the generated source artifact against the L07 schema."
+    }
+  ],
+  "new_artifact_checks": [
+    "canonical 30/50/100 rung presence",
+    "source artifact SHA tracking",
+    "resource preflight PASS and can_run blocker semantics",
+    "real Valkey version/node/data-path proof checks",
+    "startup/create/meet/slot/role/membership/data-path/cleanup metric records",
+    "explicit missing/skipped semantics for unavailable historical timing details",
+    "cleanup residual scan and timing checks",
+    "P14 dry-run-only boundary",
+    "report source-of-truth guard"
+  ],
+  "expected_initial_failures": [
+    {
+      "name": "missing_scale_build_metrics_schema",
+      "reason": "No scale_build_metrics schema or audit artifact existed before L07 implementation."
+    },
+    {
+      "name": "missing_cluster_build_metric_ci_gate",
+      "reason": "No CI gate validated 30/50/100 cluster-build metric completeness before L07 implementation."
+    },
+    {
+      "name": "missing_report_source_entry",
+      "reason": "No report index source entry included scale_build_metrics before L07 implementation."
+    }
+  ],
+  "acceptance_criteria": [
+    "scale_build_metrics audit status PASS with blocking_findings_count 0 on committed evidence.",
+    "All canonical real rungs 30, 50, and 100 are present and trace to wrapper-produced evidence.",
+    "Resource insufficiency for a canonical rung is blocking.",
+    "P14 remains dry-run-only with real_valkey_coverage false and no real evidence counted.",
+    "Every unavailable metric has explicit MISSING, SKIPPED_WITH_REASON, or NO_BASELINE_YET semantics.",
+    "Rendered HTML/SVG/CSV/Markdown are never metric sources for measured values."
+  ]
+}

@@ -1,0 +1,365 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L07_30_50_100_CLUSTER_BUILD_METRICS",
+  "agent_role": "requirements_analyst",
+  "created_at": "2026-06-30T11:23:12Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Read controlling repository safety, evidence, phase-loop, artifact, and P14 boundary rules.",
+      "key_findings": [
+        "Default development phases are capped at 100 nodes and must never default to 1000 Valkey nodes.",
+        "Machine-readable artifacts are the product; reports and charts are only views over versioned artifacts.",
+        "Real Valkey proof must come from wrapper scripts and include independently probed Valkey 9.1.x endpoint evidence.",
+        "Missing metrics must be encoded as MISSING or SKIPPED_WITH_REASON and must never be invented.",
+        "Resource ownership, deterministic cleanup, and no host-network mutation are non-negotiable."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm automatic phase ceiling, CLI contract, scale gate requirements, and P14 opt-in guard.",
+      "key_findings": [
+        "Automatic execution completes through P13_SCALE_LADDER_50_100.",
+        "Scale phases must execute real 10/30/50/100-node gates.",
+        "P14_SCALE_1000_OPTIN_DRYRUN requires explicit VSLAB_ALLOW_1000_DRYRUN opt-in and is dry-run/resource-check only.",
+        "Report artifacts must read machine-readable inputs and must not become source of truth."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "Read the L07 stage goal, required harness scope, and acceptance criteria.",
+      "key_findings": [
+        "L07 must enhance quantitative metrics and audit coverage for real 30/50/100 cluster build scenarios.",
+        "Required coverage includes resource preflight, process/container startup timing, cluster meet/create timing, slot assignment, role convergence, membership convergence, SET/GET data-path probe, cleanup timing and residual scan, and 30/50/100 scale report consistency.",
+        "1000+ must remain dry-run/resource/planner only.",
+        "Resource insufficiency cannot pass; it must become BLOCKED.",
+        "Visualizations must show the scale ladder and timing breakdown."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Confirm subagent role and JSON response contract.",
+      "key_findings": [
+        "requirements_analyst performs requirements and gap analysis only, without writing implementation code.",
+        "The response must be JSON at artifacts/loop_engineering/stages/<stage>/subagents/requirements_analyst.json.",
+        "The response must identify current-stage problem, existing capability, gaps, acceptance criteria, and forbidden behavior."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Ensure this artifact conforms to the required subagent schema.",
+      "key_findings": [
+        "Top-level additional properties are not allowed.",
+        "verdict must be APPROVED, CHANGES_REQUESTED, or BLOCKED.",
+        "proposed_harness entries must use one of the allowed harness type values."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L07_30_50_100_CLUSTER_BUILD_METRICS/read_context.md",
+      "purpose": "Use the stage-specific context and constraints already gathered for L07.",
+      "key_findings": [
+        "L07 must strengthen 30/50/100 real-cluster scale build metrics and audit surface.",
+        "P14 must not be run or marked as real coverage.",
+        "Resource insufficiency must be recorded as a blocker rather than passed with static artifacts.",
+        "Historical P12/P13 artifacts may have partial timing fields and must distinguish measured metrics from explicit gaps."
+      ]
+    },
+    {
+      "path": "codex/phase_manifest.json",
+      "purpose": "Map L07 requirements to P12/P13/P14 phase boundaries and required artifacts.",
+      "key_findings": [
+        "P12_SCALE_LADDER_10_30 is automatic, real_valkey_required true, max_nodes 30, and includes resource_preflight_30 plus scale_30_real_gate.",
+        "P13_SCALE_LADDER_50_100 is automatic, real_valkey_required true, max_nodes 100, and includes resource_preflight_50, scale_50_real_gate, resource_preflight_100, and scale_100_real_gate.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is automatic false, real_valkey_required false, max_nodes 1000, and its gates require opt-in plus --dry-run planner/resource commands."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+      "purpose": "Identify validation expectations without running real scale gates or P14.",
+      "key_findings": [
+        "The documented 30/50/100 validation flow runs resource preflight before each real scale gate.",
+        "If resource preflight fails, the real stage must not be marked PASS.",
+        "1000+ validation commands are explicitly dry-run only and must not be counted as real Valkey coverage."
+      ]
+    },
+    {
+      "path": "scripts/audit_p13_p14_scale.py",
+      "purpose": "Review current P13/P14 audit behavior relevant to L07 scale build requirements.",
+      "key_findings": [
+        "The current audit verifies P13 50/100 evidence status, real_valkey true, node counts, cluster_state_observed ok, probe_result PASS, data_path_result PASS, Valkey 9.1.x versions, cleanup PASS, timing paths, timing categories, and cleanup residuals.",
+        "The current audit enforces P14 as dry-run only and blocks real P14 evidence or a default P14 gate result.",
+        "The current audit is P13/P14-focused and does not provide equivalent 30/50/100 build-metric parity as an L07 artifact."
+      ]
+    },
+    {
+      "path": "scripts/build_metric_coverage_matrix.py",
+      "purpose": "Inspect current metric catalog and coverage layering behavior.",
+      "key_findings": [
+        "Coverage layers distinguish fake, small-real, 30, 50, 100, and 1000-dry-run.",
+        "1000 dry-run metrics are prevented from counting as real_valkey_coverage.",
+        "Current scale metrics include real evidence, node counts, primary/replica counts, cluster_known_nodes_max, memory, command counts, and selected P13 timing entries.",
+        "Current scale timing extraction only reads P13 p13_timing_breakdown_scale_*.json, so 30-node build timing parity is not yet evident."
+      ]
+    },
+    {
+      "path": "scripts/build_provenance_graph.py",
+      "purpose": "Review provenance requirements for artifact-first evidence.",
+      "key_findings": [
+        "Provenance tracks source artifacts, hashes, schemas, phase IDs, run IDs, and report views.",
+        "Report views must not become source-of-truth nodes.",
+        "P14 planner artifacts are classified as dry_run_plan and dry_run_only."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/resource.py",
+      "purpose": "Review current resource preflight semantics.",
+      "key_findings": [
+        "Resource preflight emits resource_preflight artifacts with status PASS or FAIL and can_run boolean.",
+        "Checks include config semantics, node_count_limit, Docker availability, CPU count, memory budget, disk free, client ports, cluster bus ports, and previous cleanup state.",
+        "The code can identify insufficient resources, but L07 needs a requirement that such insufficiency maps to BLOCKED rather than PASS."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/runtime/setup_timeline.py",
+      "purpose": "Review available setup timeline fields for build metrics.",
+      "key_findings": [
+        "The setup timeline model records required setup segments including process config, process start, cluster formation, cluster convergence wait, final snapshots, artifact writes, and state writes.",
+        "The schema and required segment list are currently named around P13 setup timelines and only allow scale_50 and scale_100 scenarios.",
+        "L07 requirements need 30-node parity or explicit missing semantics for comparable build timing fields."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/runtime/docker_runtime.py",
+      "purpose": "Inspect existing runtime evidence and timing surfaces for scale scenarios.",
+      "key_findings": [
+        "Runtime supports P12 scale_30 and P13 scale_50/scale_100 scenarios.",
+        "P13 timing names include nodehost_start, process_config_prepare, process_start, process_ready_wait, primary_cluster_create, replica_meet, replica_replicate, runtime probes, wrapper data path probe, and cleanup.",
+        "Cleanup reports include process termination, process exit verification, nodehost empty verification, resource cleanup, residual scan, and bounded parallelism timing for process runtime scale scenarios."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json and scale_ladder_report.json",
+      "purpose": "Assess existing 30-node scale evidence and report fields.",
+      "key_findings": [
+        "30-node evidence is PASS, real_valkey true, nodes_observed 30, cluster_state_observed ok, probe_result PASS, data_path_result PASS, and Valkey 9.1.0.",
+        "The 30-node scale rung has primary_count 15, replica_count 15, slots_assigned 16384, cluster_known_nodes_min/max 30, and memory/command metrics.",
+        "The 30-node scale report has timing_breakdown_path null and setup_timeline_path null, so detailed build timing is absent unless L07 adds it or encodes explicit missing semantics."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json, valkey_e2e_evidence_100.json, p13_timing_breakdown_scale_50.json, and p13_timing_breakdown_scale_100.json",
+      "purpose": "Assess existing 50/100 real evidence and timing artifacts.",
+      "key_findings": [
+        "50/100 evidence is PASS, real_valkey true, expected node counts, cluster_state_observed ok, probe_result PASS, data_path_result PASS, and Valkey 9.1.0.",
+        "50/100 timing artifacts include setup_command_wall_seconds, cluster_create_duration_seconds, replica_config_duration_seconds, wrapper probe timings, data-path probe timing, cleanup_command_wall_seconds, artifact_write_seconds, and accounting fields.",
+        "Diagnostic full probe duration is encoded as MISSING, which is acceptable only with explicit missing semantics.",
+        "50/100 scale_ladder_report currently has timing_breakdown_path null and setup_timeline_path null even though timing artifacts exist separately, creating a report-consistency gap for L07."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json and resource_preflight_100.json",
+      "purpose": "Assess existing resource preflight evidence for 50/100.",
+      "key_findings": [
+        "Both resource preflight artifacts are PASS and can_run true.",
+        "Both record Docker availability, CPU count, memory budget, disk, port availability, and previous cleanup state.",
+        "L07 still needs explicit acceptance criteria for the failure path: can_run false or failed checks must make the stage BLOCKED, not PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json and setup_timeline_scale_100.json",
+      "purpose": "Assess existing detailed setup timeline artifacts.",
+      "key_findings": [
+        "50/100 setup timelines are PASS and include setup wall time, total timeline time, unexplained seconds, largest segments, and largest gaps.",
+        "The largest segments expose cluster formation and process startup costs, including primary_cluster_create, replica_meet, replica_replicate, process_ready_wait, and nodehost_start_all.",
+        "The current setup timeline schema applies to 50/100 only, so 30-node L07 parity needs either a generalized metric artifact or explicit missing/skipped status."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json and artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json, cleanup_report_scale_100.json",
+      "purpose": "Assess cleanup timing and residual scan evidence.",
+      "key_findings": [
+        "30/50/100 cleanup reports have status PASS and resources_remaining count zero.",
+        "50/100 cleanup reports include cleanup_timing fields for process termination, process exit verification, nodehost empty verification, container/network cleanup, residual scan, and bounded parallelism.",
+        "30-node cleanup report lacks comparable cleanup_timing, so L07 must either add it or encode the gap explicitly."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+      "purpose": "Review current scale audit report status and P14 boundary evidence.",
+      "key_findings": [
+        "The report status is PASS with zero blocking findings.",
+        "P13 canonical node counts are 50 and 100 with two real evidence artifacts.",
+        "P14 status is SKIPPED_WITH_REASON, dry_run_only true, real_valkey_coverage false, no default gate result present, and no real evidence artifacts."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/metric_catalog.json and coverage_matrix.json",
+      "purpose": "Assess current metric coverage for scale layers.",
+      "key_findings": [
+        "Metric catalog includes 30, 50, and 100 scale layers with real evidence, scale rung, and cleanup metrics.",
+        "P13 optimization artifacts also contribute 50-node metrics, so L07 must define canonical vs optimization evidence selection to avoid ambiguous scale-build reporting.",
+        "Coverage matrix keeps 1000-dry-run distinct from real coverage."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "purpose": "Confirm current provenance state for scale artifacts.",
+      "key_findings": [
+        "Provenance graph status is PASS with zero blocking findings and zero missing source count.",
+        "Scale reports, resource preflight, real evidence, cleanup, timing, setup timeline, and P14 dry-run planner artifacts are represented as source-of-truth nodes where applicable.",
+        "Some nonblocking missing metadata findings remain for legacy/log artifacts, but no blocking provenance failure was observed."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L07_REQ_001",
+      "severity": "high",
+      "description": "L07 must define a unified 30/50/100 cluster-build metric contract; current evidence is split between P12 30-node summaries and P13 50/100 timing artifacts.",
+      "evidence": [
+        "codex/loop_engineering/04_STAGE_MANIFEST.md requires 30/50/100 scale build metrics.",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json has timing_breakdown_path null and setup_timeline_path null for scale_30.",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json and p13_timing_breakdown_scale_100.json provide detailed timing for 50/100 only."
+      ]
+    },
+    {
+      "id": "L07_REQ_002",
+      "severity": "high",
+      "description": "Resource insufficiency handling must be an explicit blocker condition: any failed preflight or can_run false for 30, 50, or 100 must produce BLOCKED stage status, not PASS from stale committed artifacts.",
+      "evidence": [
+        "AGENTS.md says no phase may pass without required artifacts, schema validation, gate logs, and an audit decision.",
+        "codex/loop_engineering/04_STAGE_MANIFEST.md states any resource insufficiency cannot be marked PASS and can only be BLOCKED.",
+        "src/valkey_scale_lab/resource.py emits status FAIL and can_run false when preflight checks fail."
+      ]
+    },
+    {
+      "id": "L07_REQ_003",
+      "severity": "medium",
+      "description": "50/100 scale reports currently do not cross-link available timing artifacts, so report consistency requirements must include timing_breakdown_path/setup_timeline_path or a dedicated build-metrics artifact with provenance links.",
+      "evidence": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json rungs have timing_breakdown_path null and setup_timeline_path null.",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json and setup_timeline_scale_50.json exist.",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json and setup_timeline_scale_100.json exist."
+      ]
+    },
+    {
+      "id": "L07_REQ_004",
+      "severity": "medium",
+      "description": "30-node build timing and cleanup timing are not currently comparable to 50/100; L07 must either collect them or encode each absent metric as MISSING or SKIPPED_WITH_REASON with a reason.",
+      "evidence": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json has timing_breakdown_path null.",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json has no cleanup_timing field in the inspected projection.",
+        "AGENTS.md requires missing metrics to be encoded explicitly and never invented."
+      ]
+    },
+    {
+      "id": "L07_REQ_005",
+      "severity": "medium",
+      "description": "L07 must distinguish canonical P12/P13 scale evidence from P13 optimization artifacts; optimization artifacts may inform analysis but must not silently replace canonical 30/50/100 scale-build evidence.",
+      "evidence": [
+        "scripts/audit_p13_p14_scale.py classifies P13O_CLUSTER_CREATE_AB and P13O_REPLICA_REPLICATE_BREAKDOWN separately from canonical P13 evidence.",
+        "artifacts/loop_engineering/reports/metric_catalog.json contains 50-node metrics sourced from P13O_* as well as canonical P13_SCALE_LADDER_50_100.",
+        "L07 acceptance is about 30/50/100 scale build metrics, not strategy optimization replacement evidence."
+      ]
+    },
+    {
+      "id": "L07_REQ_006",
+      "severity": "medium",
+      "description": "P14 boundary requirements are already clear but must remain in-scope for L07 validation: 1000+ may appear only as dry-run/resource/planner coverage and never as real scale-build evidence.",
+      "evidence": [
+        "codex/phase_manifest.json marks P14 automatic false and real_valkey_required false.",
+        "artifacts/loop_engineering/reports/p13_p14_scale_audit.json reports P14 SKIPPED_WITH_REASON, dry_run_only true, and real_valkey_coverage false.",
+        "CODEX_START_HERE.md requires VSLAB_ALLOW_1000_DRYRUN for P14 dry-run commands."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "l07_scale_build_metrics_schema_contract",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "A schema-valid machine-readable L07 scale build metrics artifact exists for node counts 30, 50, and 100; each record includes source artifact paths, source sha256, phase_id, run_id, scenario, node_count, status, and explicit missing semantics for unavailable metrics."
+    },
+    {
+      "name": "l07_30_50_100_artifact_first_audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The audit reads source JSON/JSONL artifacts, not HTML/SVG/CSV views, and verifies resource preflight, real evidence, timing, scale rung, cleanup, and provenance consistency for 30, 50, and 100."
+    },
+    {
+      "name": "l07_resource_insufficiency_blocks",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "A fixture with resource_preflight status FAIL or can_run false for any required node count produces BLOCKED and cannot be normalized to PASS, PARTIAL, or SKIPPED_WITH_REASON."
+    },
+    {
+      "name": "l07_real_scale_evidence_requirements",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "For each of 30, 50, and 100, canonical wrapper evidence must be PASS, real_valkey true, nodes_observed equal to requested node count, cluster_state_observed ok, probe_result PASS, data_path_result PASS, Valkey version prefix 9.1., and probes length equal to node count."
+    },
+    {
+      "name": "l07_build_timing_coverage",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Each 30/50/100 record accounts for process/container startup timing, cluster meet/create timing, slot assignment timing, role convergence timing, membership convergence, SET/GET data-path probe timing/result, cleanup timing, and residual scan; missing fields carry MISSING or SKIPPED_WITH_REASON plus reason."
+    },
+    {
+      "name": "l07_scale_report_visualization_consistency",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Scale ladder and timing breakdown visualizations are generated from the L07 JSON/CSV artifacts and show 30, 50, and 100 without hardcoded values or report-layer source-of-truth claims."
+    },
+    {
+      "name": "l07_p14_dryrun_boundary_guard",
+      "type": "ci",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "Any P14 real Valkey evidence, default P14 gate result, or 1000+ real_valkey_coverage entry is blocking; only dry-run/resource/planner artifacts with opt-in constraints may be referenced."
+    }
+  ],
+  "implementation_plan": [],
+  "acceptance_criteria": [
+    "L07 defines a canonical, artifact-first scale build metric contract covering exactly real node counts 30, 50, and 100, with 1000+ represented only as dry-run/resource/planner boundary data.",
+    "For node counts 30, 50, and 100, canonical evidence is traceable to wrapper-produced artifacts and includes source path, sha256, producer/schema metadata, phase_id, run_id, scenario, node_count, status, and provenance edges.",
+    "For each of 30, 50, and 100, resource_preflight must be PASS and can_run true before real evidence can be accepted; any failed check, can_run false, unavailable Docker, port collision, insufficient memory/disk, or prior cleanup residue makes the stage BLOCKED.",
+    "For each of 30, 50, and 100, real evidence must be PASS, real_valkey true, nodes_observed equal to the rung size, cluster_state_observed ok, probe_result PASS, data_path_result PASS, all observed Valkey versions starting with 9.1., and probe count equal to node count.",
+    "Build metrics must cover process/container startup timing, cluster meet/create timing, slot assignment timing, role convergence timing, membership convergence, SET/GET data-path probe timing/result, cleanup timing, and cleanup residual scan for each rung.",
+    "Where a required metric is not available, the artifact must encode MISSING or SKIPPED_WITH_REASON with a concrete reason and source context; numeric values must not be invented or copied from another rung.",
+    "30-node scale build metrics must either be measured to parity with 50/100 or explicitly identify each missing timing/cleanup field with missing semantics; a silent null timing path is not sufficient acceptance evidence.",
+    "50/100 scale reports or L07 aggregate artifacts must cross-link available timing and setup timeline artifacts so report consistency can be audited from machine-readable source files.",
+    "Scale ladder and timing breakdown visualizations must be generated from L07 machine-readable artifacts and must include 30, 50, and 100 rungs; HTML/SVG/CSV outputs remain views, not source evidence.",
+    "P13 optimization artifacts may be referenced as supplemental or comparative evidence only when labeled as such; canonical L07 acceptance must rely on P12 scale_30 and P13 scale_50/scale_100 evidence.",
+    "P14 remains automatic false and real_valkey_required false; no P14 real gate, no real 1000-node artifact, and no 1000+ real_valkey_coverage may appear in L07 acceptance.",
+    "Validation must include schema validation, artifact audit, metric coverage, provenance validation, report rendering checks, and blocker-path tests for resource insufficiency without running P14 or treating dry-run output as real."
+  ],
+  "risks": [
+    "A stale committed PASS artifact could mask a current resource preflight failure unless L07 makes can_run false a blocker.",
+    "30-node scale evidence could be counted as complete because real Valkey proof exists even though detailed build timing parity is absent.",
+    "P13 optimization metrics could be mixed with canonical P13 rungs and obscure which evidence proves the 50-node acceptance criteria.",
+    "Report views could accidentally become the metric source of truth instead of scale_rung, timing, preflight, cleanup, and real evidence artifacts.",
+    "Diagnostic or setup metrics could be silently null rather than explicitly MISSING or SKIPPED_WITH_REASON.",
+    "1000 dry-run planner/resource artifacts could be misclassified as real scale coverage if layer and real_valkey_coverage guards are weakened."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14 or any real 1000-node gate.",
+    "Do not count P14 or scale_1000 dry-run/resource/planner artifacts as real Valkey coverage.",
+    "Do not mark resource insufficiency, failed preflight, or can_run false as PASS.",
+    "Do not use HTML, SVG, CSV, markdown, or generated report views as source evidence for metrics.",
+    "Do not fabricate timing, convergence, SET/GET, cleanup, or residual values for missing 30-node fields.",
+    "Do not weaken schemas, manifest requirements, gate wrappers, provenance checks, or P14 opt-in guards.",
+    "Do not mutate host networking, firewall, routing, host interfaces, or unrelated processes.",
+    "Do not replace canonical P12/P13 scale evidence with P13O optimization artifacts without explicit supplemental classification."
+  ],
+  "commands_to_run": [
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+    "python3 scripts/audit_p13_p14_scale.py --out artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+    "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+    "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports",
+    "python3 -m pytest -q tests/scale tests/metrics tests/coverage tests/provenance tests/report tests/visualization",
+    "Do not run real 30/50/100 scale gates during requirements analysis; if implementation validation later needs them, run documented preflight first and BLOCK on failed resources.",
+    "Do not run P14 unless the user explicitly opts in in the current session and VSLAB_ALLOW_1000_DRYRUN is set to the required value; even then only dry-run/resource/planner commands are allowed."
+  ],
+  "verdict": "APPROVED",
+  "notes": "The L07 requirements and acceptance criteria are clear: produce artifact-first, schema-valid 30/50/100 scale build metrics; preserve real Valkey evidence boundaries; treat resource insufficiency as BLOCKED; keep P14 as dry-run/resource/planner only; and require visualization/report outputs to derive from machine-readable artifacts. Current gaps are primarily parity and cross-link gaps, especially 30-node build timing and cleanup timing versus 50/100."
+}

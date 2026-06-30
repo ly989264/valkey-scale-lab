@@ -26,7 +26,7 @@
     {
       "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
       "exists": true,
-      "sha256": "ba2d2d1c40e5f7e1578eb3c055f821f6b518773bfc869dacde32ebf79ad400ac",
+      "sha256": "a662b39753ed7168c115b01cdcf8c0d116d4114dedb8f4ff69f0e8e71da758ec",
       "artifact_type": "coverage_matrix",
       "schema_path": "schemas/artifact/coverage_matrix.schema.json",
       "schema_valid": true,
@@ -39,7 +39,7 @@
     {
       "path": "artifacts/loop_engineering/reports/metric_catalog.json",
       "exists": true,
-      "sha256": "d4ca63f773064a64964ef7884f4079d03df8316d952bc6c29ab6acacd3b952b2",
+      "sha256": "94476dcbd8ef418c738ebb15ebf9d35195871ddb36734f687eee53d6fca1eed6",
       "artifact_type": "metric_catalog",
       "schema_path": "schemas/artifact/metric_catalog.schema.json",
       "schema_valid": true,
@@ -52,7 +52,7 @@
     {
       "path": "artifacts/loop_engineering/reports/report_index.json",
       "exists": true,
-      "sha256": "0b5e740674caf158e49bd0b311f14b53a09ab43427bda6714ed4d265b6f24d1b",
+      "sha256": "bb47e0d3e935bb7a5535234beacfe7a0cac860543691dd7f2f15eac15b6371ae",
       "artifact_type": "loop_report_index",
       "schema_path": "schemas/artifact/loop_report_index.schema.json",
       "schema_valid": true,

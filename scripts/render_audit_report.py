@@ -341,6 +341,7 @@ def write_index_html(path: Path, sources: dict[str, dict[str, Any]], reports: li
     coverage = sources["coverage_matrix"]
     p13 = sources["p13_p14_scale_audit"]
     small_real = sources.get("small_real_parity_audit", {})
+    scale_build = sources.get("scale_build_metrics", {})
     source_rows = "\n".join(
         f"<tr><td><code>{escape(record['path'])}</code></td><td>{escape(record['artifact_type'])}</td><td>{escape(record['status'])}</td><td><code>{escape(record['sha256'][:12])}</code></td></tr>"
         for record in sources["source_records"]
@@ -364,6 +365,7 @@ def write_index_html(path: Path, sources: dict[str, dict[str, Any]], reports: li
   <p>Status: <code>{escape(audit.get("status"))}</code>. Metrics: <code>{escape(catalog.get("summary", {}).get("metric_count"))}</code>. Coverage cells: <code>{escape(coverage.get("summary", {}).get("entry_count"))}</code>.</p>
   <p>P13 real rungs: <code>{escape(p13.get("summary", {}).get("p13_real_evidence_count"))}</code>. P14 opt-in dry-run: <code>{escape(p13.get("summary", {}).get("p14_dry_run_only"))}</code>.</p>
   <p>Small-real parity surfaces: <code>{escape(small_real.get("summary", {}).get("surface_count", "MISSING"))}</code>. Missing metrics: <code>{escape(small_real.get("summary", {}).get("missing_count", "MISSING"))}</code>. Skipped metrics: <code>{escape(small_real.get("summary", {}).get("skipped_count", "MISSING"))}</code>.</p>
+  <p>Scale build rungs: <code>{escape(scale_build.get("summary", {}).get("canonical_node_counts", "MISSING"))}</code>. Measured build metrics: <code>{escape(scale_build.get("summary", {}).get("measured_metric_count", "MISSING"))}</code>. Missing build metrics: <code>{escape(scale_build.get("summary", {}).get("missing_metric_count", "MISSING"))}</code>.</p>
   <h2>Rendered Views</h2>
   <ul>{report_links}</ul>
   <h2>Source Artifacts</h2>
@@ -391,6 +393,7 @@ def build_report(root: Path, input_dir: Path, out_dir: Path) -> dict[str, Any]:
         "coverage_matrix": input_dir / "coverage_matrix.json",
         "p13_p14_scale_audit": input_dir / "p13_p14_scale_audit.json",
         "small_real_parity_audit": input_dir / "small_real_parity_audit.json",
+        "scale_build_metrics": input_dir / "scale_build_metrics.json",
         "scale_ladder_report": root / "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "p13_timing_50": root / "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "p13_timing_100": root / "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
