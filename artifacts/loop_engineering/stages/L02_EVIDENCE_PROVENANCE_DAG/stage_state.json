@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
-  "status": "IN_PROGRESS",
-  "phase": "COMMIT",
+  "status": "PASS",
+  "phase": "PASS",
   "started_at": "2026-06-30T04:37:56Z",
-  "updated_at": "2026-06-30T06:25:53Z",
+  "updated_at": "2026-06-30T06:29:11Z",
   "branch": "codex/valkey-scale-lab-loop",
   "base_head": "5a65a331d1100feac0f61cdcdef3bd08d914a5e7",
-  "current_head": "5a65a331d1100feac0f61cdcdef3bd08d914a5e7",
+  "current_head": "3aeb587ede3364bd1158813ded6092f95580a990",
   "constraints": [
     "Build artifact provenance DAG for committed evidence without running P14.",
     "Reports, HTML, markdown, and charts are views; machine-readable artifacts remain source-of-truth.",

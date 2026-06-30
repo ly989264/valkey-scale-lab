@@ -2,8 +2,8 @@
   "schema_version": "v1",
   "project": "valkey-scale-lab",
   "branch": "codex/valkey-scale-lab-loop",
-  "last_updated_at": "2026-06-30T04:34:54Z",
-  "current_stage": "L02_EVIDENCE_PROVENANCE_DAG",
+  "last_updated_at": "2026-06-30T06:29:11Z",
+  "current_stage": "L03_METRIC_CATALOG_AND_COVERAGE_MATRIX",
   "stages": [
     {
       "stage_id": "L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
@@ -18,8 +18,15 @@
       "commit_sha": "edd09f51bc7add182c264826e69879ef97faead5",
       "pushed": true,
       "result_path": "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/stage_result.json"
+    },
+    {
+      "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+      "status": "PASS",
+      "commit_sha": "3aeb587ede3364bd1158813ded6092f95580a990",
+      "pushed": true,
+      "result_path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/stage_result.json"
     }
   ],
   "blockers": [],
-  "latest_report_index": "artifacts/loop_engineering/reports/audit_report.json"
+  "latest_report_index": "artifacts/loop_engineering/reports/provenance_graph.json"
 }
