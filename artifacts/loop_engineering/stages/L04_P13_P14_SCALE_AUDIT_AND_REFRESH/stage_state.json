@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "stage_id": "L04_P13_P14_SCALE_AUDIT_AND_REFRESH",
-  "status": "IN_PROGRESS",
-  "phase": "COMMIT",
+  "status": "PASS",
+  "phase": "PASS",
   "started_at": "2026-06-30T07:19:55Z",
-  "updated_at": "2026-06-30T07:54:48Z",
+  "updated_at": "2026-06-30T07:57:31Z",
   "branch": "codex/valkey-scale-lab-loop",
   "base_head": "cea85f24bdf6e16f7f75c8a76b4bd8c96e9ddb85",
-  "current_head": "cea85f24bdf6e16f7f75c8a76b4bd8c96e9ddb85",
+  "current_head": "c398901976daf1b1b870259d754bc0f504871c88",
   "constraints": [
     "Audit P13 50/100 real evidence, timing, cleanup, scale report, empty artifacts, and postcheck compatibility.",
     "Audit P14 dry-run/resource/planner boundary without running P14.",

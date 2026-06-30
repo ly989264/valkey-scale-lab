@@ -2,8 +2,8 @@
   "schema_version": "v1",
   "stage_id": "L04_P13_P14_SCALE_AUDIT_AND_REFRESH",
   "status": "PASS",
-  "completed_at": "2026-06-30T07:54:48Z",
-  "commit_sha": "cea85f24bdf6e16f7f75c8a76b4bd8c96e9ddb85",
+  "completed_at": "2026-06-30T07:57:31Z",
+  "commit_sha": "c398901976daf1b1b870259d754bc0f504871c88",
   "pushed": true,
   "previous_harness_passed": true,
   "current_harness_passed": true,
@@ -71,7 +71,7 @@
     }
   ],
   "risks_remaining": [
-    "stage_result.json uses the current pushed base SHA until the L04 evidence commit is created; the bookkeeping commit will update it to the actual L04 evidence commit SHA.",
-    "L04 is a static artifact audit stage. It consumes committed P13 real Valkey evidence but does not rerun P13/P14 real or dry-run wrappers."
+    "L04 is a static artifact audit stage. It consumes committed P13 real Valkey evidence but does not rerun P13/P14 real or dry-run wrappers.",
+    "P13 historical manifest/scale_tests command drift remains recorded as explicit nonblocking historical findings; historical gate artifacts were not rewritten."
   ]
 }

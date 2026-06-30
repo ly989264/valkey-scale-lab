@@ -2,8 +2,8 @@
   "schema_version": "v1",
   "project": "valkey-scale-lab",
   "branch": "codex/valkey-scale-lab-loop",
-  "last_updated_at": "2026-06-30T07:17:26Z",
-  "current_stage": "L04_P13_P14_SCALE_AUDIT_AND_REFRESH",
+  "last_updated_at": "2026-06-30T07:57:31Z",
+  "current_stage": "L05_REPORTING_V2_FOR_AUDIT_RESULTS",
   "stages": [
     {
       "stage_id": "L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
@@ -32,8 +32,15 @@
       "commit_sha": "a8d6bcc4824d9ee2a2b33c8333e30ff41868faad",
       "pushed": true,
       "result_path": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/stage_result.json"
+    },
+    {
+      "stage_id": "L04_P13_P14_SCALE_AUDIT_AND_REFRESH",
+      "status": "PASS",
+      "commit_sha": "c398901976daf1b1b870259d754bc0f504871c88",
+      "pushed": true,
+      "result_path": "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/stage_result.json"
     }
   ],
   "blockers": [],
-  "latest_report_index": "artifacts/loop_engineering/reports/coverage_matrix.json"
+  "latest_report_index": "artifacts/loop_engineering/reports/p13_p14_scale_audit.json"
 }
