@@ -2,8 +2,8 @@
   "schema_version": "v1",
   "stage_id": "L03_METRIC_CATALOG_AND_COVERAGE_MATRIX",
   "status": "PASS",
-  "completed_at": "2026-06-30T07:12:51Z",
-  "commit_sha": "ab6a139b9f478ff76c3181b932cb684534e2e940",
+  "completed_at": "2026-06-30T07:17:26Z",
+  "commit_sha": "a8d6bcc4824d9ee2a2b33c8333e30ff41868faad",
   "pushed": true,
   "previous_harness_passed": true,
   "current_harness_passed": true,
@@ -43,7 +43,8 @@
     "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/implementation_worker.json",
     "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/review_agent.json",
     "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/validation_agent.json",
-    "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/anti_regression_guardian.json"
+    "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/subagents/anti_regression_guardian.json",
+    "artifacts/loop_engineering/global_loop_state.json"
   ],
   "metrics_added": [
     "metric_catalog:226 metrics across required surfaces and layers",
@@ -81,7 +82,7 @@
     }
   ],
   "risks_remaining": [
-    "stage_result.json uses the current pushed base commit as a temporary validator-compatible value before the L03 evidence commit exists; a follow-up bookkeeping commit replaces it with the L03 evidence commit SHA.",
+    "stage_result.json records the pushed L03 evidence commit; this result/global-state metadata is committed in a follow-up bookkeeping commit because a commit cannot include its own final SHA.",
     "L03 is static metric coverage analysis only. It consumed committed real Valkey evidence but did not rerun P14, real Valkey wrappers, or fault wrappers."
   ]
 }
