@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "stage_id": "L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE",
-  "status": "IN_PROGRESS",
-  "phase": "COMMIT",
+  "status": "PASS",
+  "phase": "PASS",
   "started_at": "2026-06-30T03:49:04Z",
-  "updated_at": "2026-06-30T04:32:24Z",
+  "updated_at": "2026-06-30T04:34:54Z",
   "branch": "codex/valkey-scale-lab-loop",
   "base_head": "9d660aa2c87136e8578e7bf1efd96fbcfdc97951",
-  "current_head": "9d660aa2c87136e8578e7bf1efd96fbcfdc97951",
+  "current_head": "edd09f51bc7add182c264826e69879ef97faead5",
   "constraints": [
     "Audit committed P00-P13 required artifacts and gate state without running P14.",
     "Keep P14 classified as opt-in dry-run only.",
@@ -41,6 +41,8 @@
     "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/subagents/anti_regression_guardian.json",
     "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/validation_result.json",
     "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/anti_regression_check.json",
-    "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/anti_regression_report.md"
+    "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/anti_regression_report.md",
+    "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/stage_result.json",
+    "artifacts/loop_engineering/global_loop_state.json"
   ]
 }
