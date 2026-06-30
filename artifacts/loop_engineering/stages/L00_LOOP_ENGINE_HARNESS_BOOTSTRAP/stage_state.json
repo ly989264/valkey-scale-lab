@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "stage_id": "L00_LOOP_ENGINE_HARNESS_BOOTSTRAP",
-  "status": "IN_PROGRESS",
-  "phase": "VALIDATE",
+  "status": "PASS",
+  "phase": "PASS",
   "started_at": "2026-06-30T03:07:03Z",
-  "updated_at": "2026-06-30T03:43:33Z",
+  "updated_at": "2026-06-30T03:46:52Z",
   "branch": "codex/valkey-scale-lab-loop",
   "base_head": "0e8cab5cbaceeae7ceac804b89e053bc2ba83ff6",
-  "current_head": "0e8cab5cbaceeae7ceac804b89e053bc2ba83ff6",
+  "current_head": "8c078b23ad0e02dc9bcc65d732f44a57cbf780fa",
   "constraints": [
     "Run loop-engineering stages in order from codex/loop_engineering/04_STAGE_MANIFEST.md.",
     "Do not execute P14_SCALE_1000_OPTIN_DRYRUN without explicit in-session opt-in and the required environment variable.",
@@ -46,6 +46,8 @@
     "schemas/loop_engineering/global_loop_state.schema.json",
     "scripts/loop_engineering_validate.py",
     "tests/loop_engineering/test_loop_state_contract.py",
-    "tests/ci/test_loop_engineering_pack.py"
+    "tests/ci/test_loop_engineering_pack.py",
+    "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/stage_result.json",
+    "artifacts/loop_engineering/global_loop_state.json"
   ]
 }
