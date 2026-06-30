@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "stage_id": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY",
-  "status": "IN_PROGRESS",
-  "phase": "COMMIT",
+  "status": "PASS",
+  "phase": "PASS",
   "started_at": "2026-06-30T08:33:31Z",
-  "updated_at": "2026-06-30T12:16:00Z",
+  "updated_at": "2026-06-30T12:22:00Z",
   "branch": "codex/valkey-scale-lab-loop",
   "base_head": "5c57761569d8322e3ee057afb2f15b2cfef849d7",
-  "current_head": "5c57761569d8322e3ee057afb2f15b2cfef849d7",
+  "current_head": "9b9cd83883488cbfadc77da92fc09bb56b995639",
   "constraints": [
     "Run previous harness baseline before current-stage harness design.",
     "Use artifact-first source data; report files are views only.",

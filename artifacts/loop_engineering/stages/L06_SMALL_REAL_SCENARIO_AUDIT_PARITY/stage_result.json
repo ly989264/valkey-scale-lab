@@ -1,0 +1,101 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY",
+  "status": "PASS",
+  "completed_at": "2026-06-30T12:22:00Z",
+  "commit_sha": "9b9cd83883488cbfadc77da92fc09bb56b995639",
+  "pushed": true,
+  "previous_harness_passed": true,
+  "current_harness_passed": true,
+  "subagent_verdicts": {
+    "requirements_analyst": "APPROVED",
+    "harness_architect": "APPROVED",
+    "risk_auditor": "APPROVED",
+    "implementation_worker": "APPROVED",
+    "review_agent": "APPROVED",
+    "validation_agent": "APPROVED",
+    "anti_regression_guardian": "APPROVED"
+  },
+  "commands_log": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/commands.jsonl",
+  "artifacts": [
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/read_context.md",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/stage_state.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/commands.jsonl",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/previous_harness_result.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/requirements_analyst.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/harness_architect.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/risk_auditor.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/stage_design.md",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+    "schemas/artifact/small_real_parity_audit.schema.json",
+    "scripts/audit_small_real_scenario_parity.py",
+    "scripts/render_audit_report.py",
+    "tests/audit/test_small_real_scenario_parity.py",
+    "tests/coverage/test_small_real_metric_parity.py",
+    "tests/report/test_small_real_parity_report.py",
+    "tests/real_valkey/test_small_real_gate_contract.py",
+    "tests/ci/test_small_real_parity_gate.py",
+    ".github/workflows/github-coverage-gates.yml",
+    "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+    "artifacts/loop_engineering/reports/report_index.json",
+    "artifacts/loop_engineering/reports/index.html",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/implementation_worker.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/review_agent.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/validation_agent.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/anti_regression_guardian.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/anti_regression_check.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/anti_regression_report.md",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/validation_result.json",
+    "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/stage_result.json"
+  ],
+  "metrics_added": [
+    "small_real_parity_audit:8 audited fake-to-real surfaces",
+    "small_real_parity_audit:89 audited metrics",
+    "small_real_parity_audit:60 measured source-artifact metrics",
+    "small_real_parity_audit:1 explicit MISSING metric",
+    "small_real_parity_audit:26 explicit SKIPPED_WITH_REASON metrics",
+    "small_real_parity_audit:8 cleanup parity checks"
+  ],
+  "visualizations_added": [
+    "artifacts/loop_engineering/reports/index.html"
+  ],
+  "real_valkey_gates": [
+    "audited committed P03 cluster smoke evidence from scripts/valkey_e2e_gate.py",
+    "audited committed P04 management operation evidence from scripts/valkey_e2e_gate.py",
+    "audited committed P05 workload smoke evidence from scripts/valkey_e2e_gate.py",
+    "audited committed P06 observability smoke evidence from scripts/valkey_e2e_gate.py",
+    "audited committed P07 fault sandbox evidence from scripts/fault_safety_gate.py",
+    "audited committed P08 failover evidence from scripts/fault_failover_gate.py",
+    "audited committed P11 stability soak evidence from scripts/valkey_e2e_gate.py"
+  ],
+  "fake_gates": [
+    "small_real_parity_audit_schema_validation",
+    "small_real_parity_audit_unit_tests",
+    "small_real_parity_audit_ci_gate",
+    "small_real_report_rendering_tests",
+    "loop_engineering_anti_regression"
+  ],
+  "known_missing_metrics": [
+    {
+      "metric": "failover_primary_stop.split_brain_duration_ms",
+      "status": "MISSING",
+      "reason": "The committed primary-stop failover gate does not measure split-brain duration; L06 preserves this as MISSING with reason not_measured_by_primary_stop_gate."
+    },
+    {
+      "metric": "fault_sandbox.data_path_result",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "The committed fault safety gate records the data-path safety check as skipped with an explicit reason rather than inventing a result."
+    },
+    {
+      "metric": "p14.real_valkey_coverage",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P14 remains non-automatic opt-in dry-run/resource/planner only; L06 audited the boundary without running it.",
+      "value": false
+    }
+  ],
+  "risks_remaining": [
+    "L06 audits committed real Valkey gate artifacts and does not rerun real wrappers; future evidence freshness still depends on later phase gates.",
+    "Review and validation subagents were attempted with high reasoning effort but the Codex app usage limit blocked new agent creation; isolated local fallback artifacts record the replacement reviews per the operating contract.",
+    "Split-brain duration is still not measured by the existing primary-stop failover gate and remains explicitly MISSING."
+  ]
+}
