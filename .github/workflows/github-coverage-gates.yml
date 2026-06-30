@@ -43,3 +43,9 @@ jobs:
         run: python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering
       - name: Loop-engineering tests
         run: python3 -m pytest -q tests/loop_engineering tests/ci/test_loop_engineering_pack.py
+      - name: Committed artifact audit
+        run: python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json
+      - name: Committed artifact audit schema
+        run: python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json
+      - name: Committed artifact audit tests
+        run: python3 -m pytest -q tests/audit tests/ci/test_committed_artifact_audit_gate.py

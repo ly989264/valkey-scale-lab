@@ -25,6 +25,19 @@ def test_minimal_in_progress_stage_validates(tmp_path: Path) -> None:
     assert validator.validate_loop_root(root) == []
 
 
+def test_previous_harness_stage_can_validate_before_design_artifacts(tmp_path: Path) -> None:
+    root = tmp_path / "loop"
+    stage = root / "stages" / STAGE_ID
+    stage.mkdir(parents=True)
+    state = _stage_state()
+    state["phase"] = "PREVIOUS_HARNESS"
+    (stage / "stage_state.json").write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+    (stage / "commands.jsonl").write_text(json.dumps(_command_entry()) + "\n", encoding="utf-8")
+    validator = _load_validator()
+
+    assert validator.validate_loop_root(root) == []
+
+
 def test_command_log_rejects_string_command(tmp_path: Path) -> None:
     root = _write_loop_root(tmp_path)
     log = root / "stages" / STAGE_ID / "commands.jsonl"

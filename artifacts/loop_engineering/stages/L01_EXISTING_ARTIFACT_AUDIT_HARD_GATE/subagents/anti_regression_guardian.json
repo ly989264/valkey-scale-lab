@@ -1,0 +1,220 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE",
+  "agent_role": "anti_regression_guardian",
+  "created_at": "2026-06-30T04:28:58Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Confirm controlling safety, harness integrity, real Valkey, historical artifact, and P14 rules.",
+      "key_findings": [
+        "Protected harness controls must not be weakened, deleted, bypassed, or edited to hide findings.",
+        "Historical gate and phase artifacts must not be manually edited to make results appear passing.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic and must not run without explicit opt-in."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm automatic phase boundary and exact P14 opt-in contract.",
+      "key_findings": [
+        "Automatic completion stops at P13_SCALE_LADDER_50_100.",
+        "P14 requires VSLAB_ALLOW_1000_DRYRUN=I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE.",
+        "Gate PASS results must be produced by scripts/codex_gate.py run, not manual edits."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/START_MAIN_LOOP.md",
+      "purpose": "Confirm loop-level anti-regression completion requirements.",
+      "key_findings": [
+        "Stage completion requires anti-regression confirmation.",
+        "Existing worktree changes must not be overwritten without recorded reason.",
+        "Stage outputs must be persisted under artifacts/loop_engineering/stages/<STAGE_ID>."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/current_harness_plan.json",
+      "purpose": "Confirm final L01 harness acceptance criteria.",
+      "key_findings": [
+        "The plan now requires explicit legacy manifest SHA allowlisting with non-allowlisted drift blocking.",
+        "The plan requires real Valkey evidence invariants to include observed 9.1.x version data.",
+        "Acceptance still requires P00-P13 coverage, P13 historical drift classification, P14 dry-run classification, and no historical gate or phase artifact edits."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/previous_harness_result.json",
+      "purpose": "Confirm previous harness status and pyc cleanup warning.",
+      "key_findings": [
+        "Previous harness status is PASS.",
+        "The baseline notes compileall rewrote tracked bytecode earlier and later anti-regression checks must verify bytecode remains clean.",
+        "The phase-aware loop validator fix is documented as a compatibility fix, not a weakening of completed-stage validation."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Confirm required subagent JSON contract.",
+      "key_findings": [
+        "anti_regression_guardian must inspect tests, scripts, schemas, workflows, codex files, and artifacts/gates diffs.",
+        "APPROVED, CHANGES_REQUESTED, and BLOCKED are valid verdicts.",
+        "The artifact must be written to subagents/anti_regression_guardian.json."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Identify regression blocker classes.",
+      "key_findings": [
+        "Default blockers include required-to-optional downgrades, real_valkey_required downgrades, manual gate PASS edits, min-node lowering, schema weakening, skipped tests without reason, and historical artifact edits without rerun evidence.",
+        "Anti-regression scope includes tests, scripts, schemas, .github, codex, artifacts/gates, and artifacts/phases.",
+        "1000+ behavior must remain dry-run/resource/planner unless explicitly opted in."
+      ]
+    },
+    {
+      "path": "codex/phase_manifest.json",
+      "purpose": "Confirm P00-P14 phase boundaries.",
+      "key_findings": [
+        "default_max_nodes remains 100.",
+        "automatic_stop_after remains P13_SCALE_LADDER_50_100.",
+        "P14_SCALE_1000_OPTIN_DRYRUN remains automatic=false, real_valkey_required=false, max_nodes=1000, with explicit opt-in and dry-run/resource/planner gates."
+      ]
+    },
+    {
+      "path": "scripts/audit_committed_artifacts.py",
+      "purpose": "Inspect final L01 audit implementation for allowlist and real evidence regressions.",
+      "key_findings": [
+        "LEGACY_GATE_MANIFEST_SHA256 is a single exact hash: 87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4.",
+        "LEGACY_GATE_MANIFEST_PHASES explicitly enumerates P00_REPO_CONTRACT through P13_SCALE_LADDER_50_100 and does not include P14.",
+        "Non-allowlisted manifest_sha256 mismatches are classified current/high/blocking with allowlist=none evidence.",
+        "Real Valkey evidence now requires valkey_versions to be non-empty and every observed version to start with 9.1."
+      ]
+    },
+    {
+      "path": "tests/audit/test_committed_artifact_audit.py",
+      "purpose": "Inspect final unit coverage for the new safeguards.",
+      "key_findings": [
+        "test_fixture_unallowlisted_manifest_sha_mismatch_blocks proves non-allowlisted manifest SHA drift is blocking.",
+        "test_fixture_real_evidence_requires_observed_version_data proves missing observed Valkey version data is blocking.",
+        "P14 fixture coverage keeps the optional 1000-node phase dry-run only and not real evidence."
+      ]
+    },
+    {
+      "path": "tests/ci/test_committed_artifact_audit_gate.py",
+      "purpose": "Inspect committed-repo CI guard for allowlist and boundary checks.",
+      "key_findings": [
+        "The CI test asserts P00-P13 coverage and P14 optional boundary.",
+        "The CI test asserts manifest SHA drift findings are historical, nonblocking, and explicitly allowlisted.",
+        "The CI test keeps P13 historical command drift nonblocking while requiring zero blocking findings."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "Inspect workflow diff for skipped or weakened checks.",
+      "key_findings": [
+        "The workflow only adds committed artifact audit, audit schema validation, and audit tests.",
+        "No existing workflow command is removed.",
+        "No P14 execution command, real Valkey gate, or fault gate is added."
+      ]
+    },
+    {
+      "path": "scripts/loop_engineering_validate.py",
+      "purpose": "Inspect protected script diff.",
+      "key_findings": [
+        "The diff adds phase-aware validation for in-progress stage artifacts.",
+        "Unknown phases remain strict because phase_at_least returns true on unknown phase names.",
+        "Completed PASS stage validation still requires previous/current harness pass, pushed true, commit SHA, command log, and required subagent artifacts."
+      ]
+    },
+    {
+      "path": "tests/loop_engineering/test_loop_state_contract.py",
+      "purpose": "Inspect existing test diff for weakening.",
+      "key_findings": [
+        "The diff only adds coverage for PREVIOUS_HARNESS stage validation before design artifacts exist.",
+        "No existing assertion is removed.",
+        "No skip or xfail marker is added."
+      ]
+    },
+    {
+      "path": "git diff -- codex/phase_manifest.json codex/gate_lock.json docs/codex templates schemas scripts .github/workflows/codex-gates.yml artifacts/gates artifacts/phases audit",
+      "purpose": "Inspect protected harness and historical artifact diffs.",
+      "key_findings": [
+        "Final protected tracked diff contains only scripts/loop_engineering_validate.py.",
+        "There is no tracked diff to codex/phase_manifest.json, codex/gate_lock.json, docs/codex, templates, existing schemas, .github/workflows/codex-gates.yml, artifacts/gates, artifacts/phases, or audit decisions.",
+        "No manual historical gate PASS edit or historical phase artifact rewrite is present."
+      ]
+    },
+    {
+      "path": "git status --short --untracked-files=all",
+      "purpose": "Inspect final worktree status.",
+      "key_findings": [
+        "Tracked source changes are .github/workflows/github-coverage-gates.yml, scripts/loop_engineering_validate.py, and tests/loop_engineering/test_loop_state_contract.py.",
+        "L01 audit script, schema, tests, report, and stage artifacts are untracked additions.",
+        "No historical artifacts/gates, artifacts/phases, or P00-P13 audit paths appear modified or untracked."
+      ]
+    },
+    {
+      "path": "git status --short --untracked-files=all -- scripts/__pycache__ && git diff --name-only -- scripts/__pycache__",
+      "purpose": "Verify generated Python bytecode state.",
+      "key_findings": [
+        "Final path-limited status for scripts/__pycache__ produced no output.",
+        "Final path-limited diff for scripts/__pycache__ produced no output.",
+        "Generated pyc files are clean in the final tracked diff."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/audit_report.json",
+      "purpose": "Inspect generated audit report outcome without rerunning gates.",
+      "key_findings": [
+        "The report status is PASS with zero blocking findings.",
+        "automatic_phase_ids cover P00_REPO_CONTRACT through P13_SCALE_LADDER_50_100 and optional_phase_ids is P14_SCALE_1000_OPTIN_DRYRUN.",
+        "P14 boundary reports SKIPPED_WITH_REASON, opt_in_required=true, dry_run_only=true, and real_evidence_count=0.",
+        "Manifest SHA drift findings cite allowlist=legacy_gate_manifest_sha256."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [],
+  "implementation_plan": [],
+  "acceptance_criteria": [
+    "Protected harness files were not weakened in final tracked diffs.",
+    "P14_SCALE_1000_OPTIN_DRYRUN remains opt-in, non-automatic, dry-run/resource/planner only, and was not run by this review.",
+    "No historical P00-P13 gate, phase, or audit artifacts were modified to hide findings.",
+    "The legacy manifest SHA allowlist is narrow and exact: one hash, explicitly scoped to P00-P13, with P14 excluded and non-allowlisted mismatches blocking.",
+    "Observed Valkey version data is required for real evidence and missing or non-9.1.x versions are blocking.",
+    "Generated pyc files are clean in the final tracked diff."
+  ],
+  "risks": [
+    "Untracked L01 files do not appear in plain git diff until staged, so this review inspected the untracked script, schema, tests, and generated report directly.",
+    "An earlier broad status/diff check briefly surfaced scripts/__pycache__ noise, but final path-limited status and diff for scripts/__pycache__ are clean.",
+    "This review intentionally did not run P14_SCALE_1000_OPTIN_DRYRUN, real Valkey gates, or fault gates."
+  ],
+  "forbidden_shortcuts": [
+    "Do not broaden the legacy manifest SHA allowlist beyond exact historical hashes and explicit P00-P13 phase IDs.",
+    "Do not allow manifest SHA drift to pass without allowlist evidence.",
+    "Do not accept real Valkey evidence without observed 9.1.x valkey_versions.",
+    "Do not commit generated scripts/__pycache__ bytecode changes.",
+    "Do not edit artifacts/gates/*/gate_result.json, artifacts/phases/P00-P13 outputs, or P00-P13 audit decisions to force PASS.",
+    "Do not make P14 automatic or count dry-run planner/resource artifacts as real 1000-node Valkey evidence."
+  ],
+  "commands_to_run": [
+    "sed -n '1,220p' AGENTS.md",
+    "sed -n '1,180p' CODEX_START_HERE.md",
+    "sed -n '1,260p' codex/loop_engineering/START_MAIN_LOOP.md",
+    "sed -n '1,260p' artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/current_harness_plan.json",
+    "sed -n '1,220p' artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/previous_harness_result.json",
+    "git status --short --untracked-files=all",
+    "rg -n \"LEGACY|ALLOW|allowlist|manifest_sha|manifest_sha256|valkey_versions|observed|version\" scripts/audit_committed_artifacts.py tests/audit/test_committed_artifact_audit.py tests/ci/test_committed_artifact_audit_gate.py schemas/artifact/audit_report.schema.json artifacts/loop_engineering/reports/audit_report.json",
+    "sed -n '1,920p' scripts/audit_committed_artifacts.py",
+    "sed -n '1,460p' tests/audit/test_committed_artifact_audit.py",
+    "sed -n '1,260p' tests/ci/test_committed_artifact_audit_gate.py",
+    "git diff -- .github/workflows/github-coverage-gates.yml",
+    "git diff -- scripts/loop_engineering_validate.py",
+    "git diff -- tests/loop_engineering/test_loop_state_contract.py",
+    "git diff -- codex/phase_manifest.json codex/gate_lock.json docs/codex templates schemas scripts .github/workflows/codex-gates.yml artifacts/gates artifacts/phases audit",
+    "git diff --name-status -- codex/phase_manifest.json codex/gate_lock.json docs/codex templates schemas scripts .github/workflows/codex-gates.yml artifacts/gates artifacts/phases audit",
+    "git status --short --untracked-files=all -- artifacts/gates artifacts/phases audit/P00_REPO_CONTRACT audit/P01_CONFIG_SCHEMA audit/P02_PLANNER audit/P03_LOCAL_DOCKER_VALKEY audit/P04_CLUSTER_MANAGEMENT_OPS audit/P05_WORKLOAD_ENGINE audit/P06_OBSERVABILITY_METRICS audit/P07_FAULT_INJECTION_SANDBOX audit/P08_FAILOVER_SPLIT_BRAIN audit/P09_ANALYSIS_REPORTING audit/P10_MULTI_HOST_ORCHESTRATION audit/P11_STABILITY_SOAK audit/P12_SCALE_LADDER_10_30 audit/P13_SCALE_LADDER_50_100",
+    "rg -n \"default_max_nodes|automatic_stop_after|P14_SCALE_1000_OPTIN_DRYRUN|VSLAB_ALLOW_1000_DRYRUN|real_valkey_required|max_nodes|--dry-run\" codex/phase_manifest.json CODEX_START_HERE.md AGENTS.md scripts/audit_committed_artifacts.py tests/audit/test_committed_artifact_audit.py tests/ci/test_committed_artifact_audit_gate.py",
+    "git status --short --untracked-files=all -- scripts/__pycache__",
+    "git diff --name-only -- scripts/__pycache__",
+    "git diff --stat"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Final anti-regression review approves L01. The allowlist is exact and bounded, observed Valkey versions are required, P14 remains opt-in dry-run only, historical P00-P13 artifacts were not modified, and final pyc checks are clean. I did not run P14, real Valkey gates, or fault gates; this update only rewrote the requested anti_regression_guardian.json artifact."
+}

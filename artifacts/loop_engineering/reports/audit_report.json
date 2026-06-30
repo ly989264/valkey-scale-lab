@@ -1,0 +1,2241 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_report",
+  "created_at": "2026-06-30T04:26:57.179893Z",
+  "producer": {
+    "name": "scripts/audit_committed_artifacts.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "audit_scope": {
+    "automatic_phase_ids": [
+      "P00_REPO_CONTRACT",
+      "P01_CONFIG_SCHEMA",
+      "P02_PLANNER",
+      "P03_LOCAL_DOCKER_VALKEY",
+      "P04_CLUSTER_MANAGEMENT_OPS",
+      "P05_WORKLOAD_ENGINE",
+      "P06_OBSERVABILITY_METRICS",
+      "P07_FAULT_INJECTION_SANDBOX",
+      "P08_FAILOVER_SPLIT_BRAIN",
+      "P09_ANALYSIS_REPORTING",
+      "P10_MULTI_HOST_ORCHESTRATION",
+      "P11_STABILITY_SOAK",
+      "P12_SCALE_LADDER_10_30",
+      "P13_SCALE_LADDER_50_100"
+    ],
+    "optional_phase_ids": [
+      "P14_SCALE_1000_OPTIN_DRYRUN"
+    ],
+    "required_artifact_count": 59
+  },
+  "manifest_summary": {
+    "default_max_nodes": 100,
+    "automatic_stop_after": "P13_SCALE_LADDER_50_100",
+    "valkey_version_required_prefix": "9.1.",
+    "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8"
+  },
+  "summary": {
+    "phase_count": 14,
+    "artifact_count": 59,
+    "gate_result_count": 14,
+    "blocking_findings_count": 0,
+    "historical_findings_count": 15,
+    "real_evidence_count": 13
+  },
+  "phase_results": [
+    {
+      "phase_id": "P00_REPO_CONTRACT",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 2,
+      "gate_result_checked": true,
+      "real_evidence_checked": false,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0001"
+      ]
+    },
+    {
+      "phase_id": "P01_CONFIG_SCHEMA",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 4,
+      "gate_result_checked": true,
+      "real_evidence_checked": false,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0002"
+      ]
+    },
+    {
+      "phase_id": "P02_PLANNER",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 3,
+      "gate_result_checked": true,
+      "real_evidence_checked": false,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0003"
+      ]
+    },
+    {
+      "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 3,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0004"
+      ]
+    },
+    {
+      "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 4,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0005"
+      ]
+    },
+    {
+      "phase_id": "P05_WORKLOAD_ENGINE",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 4,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0006"
+      ]
+    },
+    {
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 5,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0007",
+        "CAF-0008",
+        "CAF-0009",
+        "CAF-0010",
+        "CAF-0011"
+      ]
+    },
+    {
+      "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 4,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0012"
+      ]
+    },
+    {
+      "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 4,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0013"
+      ]
+    },
+    {
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 5,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0014"
+      ]
+    },
+    {
+      "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 3,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0015"
+      ]
+    },
+    {
+      "phase_id": "P11_STABILITY_SOAK",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 4,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0016"
+      ]
+    },
+    {
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 7,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 1,
+      "finding_ids": [
+        "CAF-0017"
+      ]
+    },
+    {
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "automatic": true,
+      "status": "PASS",
+      "required_artifacts_checked": 7,
+      "gate_result_checked": true,
+      "real_evidence_checked": true,
+      "blocking_findings": 0,
+      "historical_findings": 2,
+      "finding_ids": [
+        "CAF-0018",
+        "CAF-0019"
+      ]
+    }
+  ],
+  "artifact_results": [
+    {
+      "phase_id": "P00_REPO_CONTRACT",
+      "path": "artifacts/phases/P00_REPO_CONTRACT/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "5a26eabfa5667292a793f0435c9e002f38a7dd7ff77a9439e43ee8f954a93f13",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P00_REPO_CONTRACT",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P00_REPO_CONTRACT",
+      "path": "artifacts/phases/P00_REPO_CONTRACT/env_info.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/env_info.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "cd67925796ec663c29c36e08de59dfb5181453d46a6bb9341ccec17463b6c95e",
+      "metadata": {
+        "artifact_type": "env_info",
+        "phase_id": "P00_REPO_CONTRACT",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P01_CONFIG_SCHEMA",
+      "path": "artifacts/phases/P01_CONFIG_SCHEMA/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "8707aea6c9755f0b09af0a38c5dd97d023557042037f448ea77fcc314fd15e1a",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P01_CONFIG_SCHEMA",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P01_CONFIG_SCHEMA",
+      "path": "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/config_validation_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "10c1c2b31c223762ac5f1f3fc3645e3f3467e59c8567a49880d26b3e1f6dc9fb",
+      "metadata": {
+        "artifact_type": "config_validation_report",
+        "phase_id": "P01_CONFIG_SCHEMA",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P01_CONFIG_SCHEMA",
+      "path": "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_multi_az_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/config_validation_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "2047c85193fde32966df006dbacd8505ecbe60f909e6b06ad881ccd4b330a332",
+      "metadata": {
+        "artifact_type": "config_validation_report",
+        "phase_id": "P01_CONFIG_SCHEMA",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P01_CONFIG_SCHEMA",
+      "path": "artifacts/phases/P01_CONFIG_SCHEMA/config_schema_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/config_schema_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "0744004e7886752af4f5de5dfea6c2e2b8b9e4512bf6c9e61b9622c9c2f0f14c",
+      "metadata": {
+        "artifact_type": "config_schema_report",
+        "phase_id": "P01_CONFIG_SCHEMA",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P02_PLANNER",
+      "path": "artifacts/phases/P02_PLANNER/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "3744de0767fa94876025594825722790f2846056e9d0b17527c88171120b6672",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P02_PLANNER",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P02_PLANNER",
+      "path": "artifacts/phases/P02_PLANNER/cluster_plan.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cluster_plan.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "018819974e17942684762cdd9c7155634ba1cdb424bfc2a0af078ef44e815fd0",
+      "metadata": {
+        "artifact_type": "cluster_plan",
+        "phase_id": "P02_PLANNER",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P02_PLANNER",
+      "path": "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cluster_plan.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "6531601a7045895e8d35595120d640425b0deaeeb7c505ec4b84d116815a7564",
+      "metadata": {
+        "artifact_type": "cluster_plan",
+        "phase_id": "P02_PLANNER",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+      "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "fd2ee1a123b30247bc9a2cef7a703ea84b049d50abcb9d81065680ffa8b8d6dc",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+      "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "8cd3c251a3c8a2eee29192dc40a7894e7d501234cfba6e4f79f817f84110e3f2",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+      "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "f2cdb8c3fc890e0781a1c3a374f336a0a91c2cea2af542d374e505b5df98130f",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "a45e6d052c89ecc964266d76ee60b06ffb56cc06bba815f6a74968abc922ed17",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "044eb58c0117081fcda4e07cf80fd5c9c8aa7eb2b7ea9a2dcd490bcc6e3394f8",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "aa52298dd6e64ffd110b8cac0f5e06dc5bd36e53927689e13950c45dcdb8e943",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/management_ops_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "metadata": {
+        "artifact_type": "management_ops_report",
+        "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P05_WORKLOAD_ENGINE",
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "3aa0f2c7d12e4ea318208eda858077e4841ed9c2fa3eb52bbf4a961eb00418f9",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P05_WORKLOAD_ENGINE",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P05_WORKLOAD_ENGINE",
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "4f3a7938e5077cc8848c66e4a7ea3b96b3a9b45ff192dff1468164a26c2e06a2",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P05_WORKLOAD_ENGINE",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P05_WORKLOAD_ENGINE",
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "6705eb8287dba84212ea2c266e3489c7303aefe70dcee812cc9508b39bc0b304",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P05_WORKLOAD_ENGINE",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P05_WORKLOAD_ENGINE",
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/workload_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "dc2d9fcc9fbf5d2e74ff0d629099039cec8ec6f34903329913486ac756a722c7",
+      "metadata": {
+        "artifact_type": "workload_report",
+        "phase_id": "P05_WORKLOAD_ENGINE",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "b1135b0a3e9fabb150e62f30183f1ddd8ad4a6ebf4b142b7b74568bc13f126bd",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P06_OBSERVABILITY_METRICS",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "b89d370587e9ad095c0d8122a58d78bf5bf1eae3703d600bac4f21c83ea29806",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P06_OBSERVABILITY_METRICS",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "3094cf2f7e7ec5dc8913a638f5074b36eacca57471714dcd27364cd4f9b0828d",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P06_OBSERVABILITY_METRICS",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "jsonl",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/metric_sample.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "3138cf6cfbc696181a0334b0708733cf884f23ab886a380df54842a7af7dbf61",
+      "metadata": {
+        "artifact_type": "metric_sample",
+        "phase_id": "P06_OBSERVABILITY_METRICS",
+        "producer_present": false,
+        "producer_required_by_schema": false,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": false,
+        "status_required_by_schema": false,
+        "status": null
+      },
+      "finding_ids": [
+        "CAF-0008",
+        "CAF-0009"
+      ]
+    },
+    {
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "jsonl",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/event.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "1774de9e84f0fc31534aa9c5bf2fb41f30db9f2cf5597921b8e177c03f5cf93c",
+      "metadata": {
+        "artifact_type": "event",
+        "phase_id": "P06_OBSERVABILITY_METRICS",
+        "producer_present": false,
+        "producer_required_by_schema": false,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": false,
+        "status_required_by_schema": false,
+        "status": null
+      },
+      "finding_ids": [
+        "CAF-0010",
+        "CAF-0011"
+      ]
+    },
+    {
+      "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "cb191355a36890dd69396f8eda5e797111f097b1b04ec4223627b2e6e01c5780",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "156f0b11fcb9d4bc25d9e3c92cbbd3f79cfc9bb9c43dde1b91ea335650d2bf71",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/fault_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "6071f35974b9d619cd7d33c94b226876b256ce5a00d53050c308d85f5436b8a9",
+      "metadata": {
+        "artifact_type": "fault_report",
+        "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "863cbc9aabed2b3daacc4cd6d9b9ad892b26526168f0da56250e40518002c27a",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "37d42516bcf1d280aaee119a2b00bc7c28888517258a9f05b49c02946270a0b3",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "27338a03eb687bb4aef85b5c8a673bece51b87a00051f91c1215fd2ea4adf7d8",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/failover_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "f11772a63e7817ce0156c39c69de8d97f398fe7c4d56b4a68d23ec5bf6a31064",
+      "metadata": {
+        "artifact_type": "failover_report",
+        "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "7b575fd7a5fb1542541975f0649e6ac0803800dc30135bb63cb0ba8a27a5d6f7",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "bb55a70450856b353e7d581f54b54658d4e4770fac09d89180c0dc416b4268e3",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P09_ANALYSIS_REPORTING",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/analysis_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "8b5e206d6ea563b4fc3e01dddaf937d649680d1b2e3426b1f75408c7f685f950",
+      "metadata": {
+        "artifact_type": "analysis_summary",
+        "phase_id": "P09_ANALYSIS_REPORTING",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/report_index.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "3e0a060009e9d82769acc9aab1d536a77f4bd87270316a82beff9f45b8515f1c",
+      "metadata": {
+        "artifact_type": "report_index",
+        "phase_id": "P09_ANALYSIS_REPORTING",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "8aefa987218e7e2e40d07fa8b221857816ca13f63cbbef6f454c070b6891ffb6",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P09_ANALYSIS_REPORTING",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "571830067022cee3850af26ef7046e33590873538a76b610248552917e8a11e5",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P09_ANALYSIS_REPORTING",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+      "path": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "5f11ff87339f071f16d2b9f6948018689a48dadcbf88c15f82b990da48102738",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+      "path": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "592850f67f68236330d756f68164007899ac300f1f4daa76065aa3617c24519a",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+      "path": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "7dc3eb5105290fe9ece6b99b524cdb59cc5ace5e786b467dad87bc7666930f8d",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P11_STABILITY_SOAK",
+      "path": "artifacts/phases/P11_STABILITY_SOAK/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "da4f38aa80be58917fa53ac700c26886f56309948cea95a3ef9909e06c22765c",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P11_STABILITY_SOAK",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P11_STABILITY_SOAK",
+      "path": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "a869914311a15cfe595eed1d708591fbb36c7766c924ccd27a5e6ac52e18ff6f",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P11_STABILITY_SOAK",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P11_STABILITY_SOAK",
+      "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/stability_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "metadata": {
+        "artifact_type": "stability_report",
+        "phase_id": "P11_STABILITY_SOAK",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P11_STABILITY_SOAK",
+      "path": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "3a99f319f6d8513bb23a17dd9041842335725c80b1bd20dc5fc1b451bbd7b929",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P11_STABILITY_SOAK",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "12e51f4ad9a6a64ee2553bd94c495749eee3a53d339f76001c23c8e9d0b061b9",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P12_SCALE_LADDER_10_30",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_10.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/resource_preflight.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "cc06d0e7373a5992e0b48e09198caae6dd0c53cad4ded8e1dc1f33518b47780d",
+      "metadata": {
+        "artifact_type": "resource_preflight",
+        "phase_id": "P12_SCALE_LADDER_10_30",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/resource_preflight.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "8acb354c3c6cd1d948ec4fa630abaebb7b821914937e8fe25c3f732e11bbe89d",
+      "metadata": {
+        "artifact_type": "resource_preflight",
+        "phase_id": "P12_SCALE_LADDER_10_30",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_10.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "42bb0f2b27d459b2c61248c91b45e471d224f86da745c347d2e90c5f9134ca0c",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P12_SCALE_LADDER_10_30",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "7d46291b11c0e6dc240b619e8d8aeda08d07d6be0fa0ab63bd41ef693ade11a1",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P12_SCALE_LADDER_10_30",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/scale_ladder_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "88753908cb280048eb656ebdd8ea7208f2f7e6c5f650d4a1c202bd1cc7562230",
+      "metadata": {
+        "artifact_type": "scale_ladder_report",
+        "phase_id": "P12_SCALE_LADDER_10_30",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "bff1dcdd8caf72234aa27fad4564b017743cdd58468e975386317752789027a7",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P12_SCALE_LADDER_10_30",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/phase_summary.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/phase_summary.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "5e0aad888190eab9d8a85543ed6f372a304bc813b13772b15259c907bd67ff17",
+      "metadata": {
+        "artifact_type": "phase_summary",
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/resource_preflight.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "ec3b330d8c39f76fefe962789c89cad2b8ace0fa182d04862942a1b644ca73c5",
+      "metadata": {
+        "artifact_type": "resource_preflight",
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/resource_preflight.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "270389fb0c89ebba805129e9f6963f48c9a1a531fe31d0c8de69df484446100c",
+      "metadata": {
+        "artifact_type": "resource_preflight",
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "a04bf652e7b32496bd0d2b97f08212d3c477ac92505f4e19677bfd5746cda037",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de",
+      "metadata": {
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/scale_ladder_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "8f361663f6ccf6bfbb81189c7f8e5276d07ab0a8826fbbf07d2e7ff6abeadfe5",
+      "metadata": {
+        "artifact_type": "scale_ladder_report",
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    },
+    {
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+      "required": true,
+      "exists": true,
+      "empty": false,
+      "parse_mode": "json",
+      "json_valid": true,
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_exists": true,
+      "schema_valid": true,
+      "sha256": "93117cbfdb86afdf23648e4b923c85c97e93acce7083db97e258558c2f349bb0",
+      "metadata": {
+        "artifact_type": "cleanup_report",
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "producer_present": true,
+        "producer_required_by_schema": true,
+        "run_id_present": true,
+        "run_id_required_by_schema": true,
+        "status_present": true,
+        "status_required_by_schema": true,
+        "status": "PASS"
+      },
+      "finding_ids": []
+    }
+  ],
+  "gate_results": [
+    {
+      "phase_id": "P00_REPO_CONTRACT",
+      "path": "artifacts/gates/P00_REPO_CONTRACT/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0001"
+      ]
+    },
+    {
+      "phase_id": "P01_CONFIG_SCHEMA",
+      "path": "artifacts/gates/P01_CONFIG_SCHEMA/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0002"
+      ]
+    },
+    {
+      "phase_id": "P02_PLANNER",
+      "path": "artifacts/gates/P02_PLANNER/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0003"
+      ]
+    },
+    {
+      "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+      "path": "artifacts/gates/P03_LOCAL_DOCKER_VALKEY/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0004"
+      ]
+    },
+    {
+      "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+      "path": "artifacts/gates/P04_CLUSTER_MANAGEMENT_OPS/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0005"
+      ]
+    },
+    {
+      "phase_id": "P05_WORKLOAD_ENGINE",
+      "path": "artifacts/gates/P05_WORKLOAD_ENGINE/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0006"
+      ]
+    },
+    {
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/gates/P06_OBSERVABILITY_METRICS/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0007"
+      ]
+    },
+    {
+      "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+      "path": "artifacts/gates/P07_FAULT_INJECTION_SANDBOX/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0012"
+      ]
+    },
+    {
+      "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+      "path": "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0013"
+      ]
+    },
+    {
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "path": "artifacts/gates/P09_ANALYSIS_REPORTING/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0014"
+      ]
+    },
+    {
+      "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+      "path": "artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0015"
+      ]
+    },
+    {
+      "phase_id": "P11_STABILITY_SOAK",
+      "path": "artifacts/gates/P11_STABILITY_SOAK/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0016"
+      ]
+    },
+    {
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "path": "artifacts/gates/P12_SCALE_LADDER_10_30/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0017"
+      ]
+    },
+    {
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json",
+      "exists": true,
+      "schema_valid": true,
+      "status": "PASS",
+      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+      "command_mismatches": [
+        {
+          "gate": "scale_tests",
+          "expected": "python3 -m pytest -q tests/unit tests/scale tests/integration -m 'not slow and not perf'",
+          "observed": "python3 -m pytest -q tests/unit tests/scale tests/integration"
+        }
+      ],
+      "historical_drift": [
+        "manifest_sha256"
+      ],
+      "finding_ids": [
+        "CAF-0018",
+        "CAF-0019"
+      ]
+    }
+  ],
+  "p14_boundary": {
+    "phase_id": "P14_SCALE_1000_OPTIN_DRYRUN",
+    "automatic": false,
+    "opt_in_required": true,
+    "dry_run_only": true,
+    "not_required_for_automatic_completion": true,
+    "real_valkey_coverage": false,
+    "real_evidence_count": 0,
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "P14 is opt-in dry-run only and was not executed by L01.",
+    "finding_ids": []
+  },
+  "findings": [
+    {
+      "id": "CAF-0001",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P00_REPO_CONTRACT",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P00_REPO_CONTRACT",
+      "path": "artifacts/gates/P00_REPO_CONTRACT/gate_result.json"
+    },
+    {
+      "id": "CAF-0002",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P01_CONFIG_SCHEMA",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P01_CONFIG_SCHEMA",
+      "path": "artifacts/gates/P01_CONFIG_SCHEMA/gate_result.json"
+    },
+    {
+      "id": "CAF-0003",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P02_PLANNER",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P02_PLANNER",
+      "path": "artifacts/gates/P02_PLANNER/gate_result.json"
+    },
+    {
+      "id": "CAF-0004",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P03_LOCAL_DOCKER_VALKEY",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+      "path": "artifacts/gates/P03_LOCAL_DOCKER_VALKEY/gate_result.json"
+    },
+    {
+      "id": "CAF-0005",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P04_CLUSTER_MANAGEMENT_OPS",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+      "path": "artifacts/gates/P04_CLUSTER_MANAGEMENT_OPS/gate_result.json"
+    },
+    {
+      "id": "CAF-0006",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P05_WORKLOAD_ENGINE",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P05_WORKLOAD_ENGINE",
+      "path": "artifacts/gates/P05_WORKLOAD_ENGINE/gate_result.json"
+    },
+    {
+      "id": "CAF-0007",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P06_OBSERVABILITY_METRICS",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/gates/P06_OBSERVABILITY_METRICS/gate_result.json"
+    },
+    {
+      "id": "CAF-0008",
+      "severity": "low",
+      "category": "missing_producer",
+      "classification": "informational",
+      "blocking": false,
+      "description": "Artifact does not carry optional metadata field: producer",
+      "evidence": [
+        "producer is not required by schemas/artifact/metric_sample.schema.json"
+      ],
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl"
+    },
+    {
+      "id": "CAF-0009",
+      "severity": "low",
+      "category": "missing_status",
+      "classification": "informational",
+      "blocking": false,
+      "description": "Artifact does not carry optional metadata field: status",
+      "evidence": [
+        "status is not required by schemas/artifact/metric_sample.schema.json"
+      ],
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl"
+    },
+    {
+      "id": "CAF-0010",
+      "severity": "low",
+      "category": "missing_producer",
+      "classification": "informational",
+      "blocking": false,
+      "description": "Artifact does not carry optional metadata field: producer",
+      "evidence": [
+        "producer is not required by schemas/artifact/event.schema.json"
+      ],
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl"
+    },
+    {
+      "id": "CAF-0011",
+      "severity": "low",
+      "category": "missing_status",
+      "classification": "informational",
+      "blocking": false,
+      "description": "Artifact does not carry optional metadata field: status",
+      "evidence": [
+        "status is not required by schemas/artifact/event.schema.json"
+      ],
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl"
+    },
+    {
+      "id": "CAF-0012",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P07_FAULT_INJECTION_SANDBOX",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+      "path": "artifacts/gates/P07_FAULT_INJECTION_SANDBOX/gate_result.json"
+    },
+    {
+      "id": "CAF-0013",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P08_FAILOVER_SPLIT_BRAIN",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+      "path": "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/gate_result.json"
+    },
+    {
+      "id": "CAF-0014",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P09_ANALYSIS_REPORTING",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "path": "artifacts/gates/P09_ANALYSIS_REPORTING/gate_result.json"
+    },
+    {
+      "id": "CAF-0015",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P10_MULTI_HOST_ORCHESTRATION",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+      "path": "artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/gate_result.json"
+    },
+    {
+      "id": "CAF-0016",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P11_STABILITY_SOAK",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P11_STABILITY_SOAK",
+      "path": "artifacts/gates/P11_STABILITY_SOAK/gate_result.json"
+    },
+    {
+      "id": "CAF-0017",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P12_SCALE_LADDER_10_30",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "path": "artifacts/gates/P12_SCALE_LADDER_10_30/gate_result.json"
+    },
+    {
+      "id": "CAF-0018",
+      "severity": "medium",
+      "category": "manifest_sha256_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate result manifest_sha256 does not match current manifest for P13_SCALE_LADDER_50_100",
+      "evidence": [
+        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
+      ],
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json"
+    },
+    {
+      "id": "CAF-0019",
+      "severity": "medium",
+      "category": "gate_command_mismatch",
+      "classification": "historical",
+      "blocking": false,
+      "description": "Gate command mismatch for P13_SCALE_LADDER_50_100/scale_tests",
+      "evidence": [
+        "expected=python3 -m pytest -q tests/unit tests/scale tests/integration -m 'not slow and not perf'",
+        "observed=python3 -m pytest -q tests/unit tests/scale tests/integration"
+      ],
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json"
+    }
+  ]
+}

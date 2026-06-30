@@ -1,0 +1,68 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE",
+  "new_tests": [
+    {
+      "path": "tests/audit/test_committed_artifact_audit.py",
+      "purpose": "Unit and fixture tests for committed artifact audit coverage, metadata failures, P13 historical drift, explicit manifest SHA allowlisting, P14 dry-run boundary, JSONL validation, and real evidence classification."
+    },
+    {
+      "path": "tests/ci/test_committed_artifact_audit_gate.py",
+      "purpose": "CI guard that runs the committed artifact audit against the repository, validates the report schema, checks P00-P13/P13/P14 invariants, and verifies workflow coverage."
+    },
+    {
+      "path": "tests/loop_engineering/test_loop_state_contract.py",
+      "purpose": "Regression coverage for phase-aware loop validation discovered during L01 previous-harness baseline."
+    }
+  ],
+  "new_schemas": [
+    "schemas/artifact/audit_report.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "command": "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+      "acceptance": "Produces a schema-valid report and exits 0 when no blocking audit findings exist."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json",
+      "acceptance": "Validates the generated audit report."
+    }
+  ],
+  "new_artifact_checks": [
+    "P00-P13 automatic phase coverage",
+    "manifest required artifact existence and schema validation",
+    "non-empty JSON and JSONL validation",
+    "producer/run_id/status metadata presence for required phase artifacts",
+    "gate result command/status/exit/log/checksum validation",
+    "P13 historical command mismatch classification",
+    "exact legacy manifest SHA allowlist with unallowlisted mismatch blocking",
+    "P14 opt-in dry-run boundary classification",
+    "real Valkey evidence invariants for P03-P13, including observed 9.1.x version data",
+    "audit_decision.json presence and schema validation"
+  ],
+  "expected_initial_failures": [
+    {
+      "command": "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+      "reason": "L01 audit CLI does not exist before implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/audit",
+      "reason": "tests/audit does not exist before implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/ci/test_committed_artifact_audit_gate.py",
+      "reason": "L01 CI audit test does not exist before implementation."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS.",
+    "Audit report schema, CLI, tests, and CI guard exist.",
+    "Generated audit report validates against schema.",
+    "P00-P13 automatic phases are included.",
+    "P13 is included with historical nonblocking drift findings.",
+    "Non-allowlisted manifest SHA drift is blocking.",
+    "P14 is opt-in dry-run only and contributes no real Valkey evidence.",
+    "Fixture tests prove empty/missing/invalid artifacts become blocking findings.",
+    "No historical gate or phase artifact is modified to hide findings."
+  ]
+}

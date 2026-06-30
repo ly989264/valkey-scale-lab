@@ -1,0 +1,327 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE",
+  "agent_role": "harness_architect",
+  "created_at": "2026-06-30T03:59:22Z",
+  "context_files_read": [
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Original phase-loop entry point and P14 boundary",
+      "key_findings": [
+        "Automatic phase execution stops after P13_SCALE_LADDER_50_100.",
+        "P14_SCALE_1000_OPTIN_DRYRUN requires VSLAB_ALLOW_1000_DRYRUN and must remain dry-run/resource/planner only.",
+        "Gate results must be produced by scripts/codex_gate.py, not manually marked PASS."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/read_context.md",
+      "purpose": "Current L01 constraints and risks",
+      "key_findings": [
+        "L01 must audit committed P00-P13 artifacts and gate state without running P14.",
+        "P13 must not be excluded solely because of historical command mismatch.",
+        "Empty JSON artifacts, missing schema, missing producer, missing run_id, and missing status must be detected."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent output contract",
+      "key_findings": [
+        "harness_architect must design tests, schema, CLI gate, artifact validator, and real/fake boundaries without implementing code.",
+        "The output JSON requires findings, proposed_harness, implementation_plan, acceptance_criteria, risks, forbidden_shortcuts, commands_to_run, and verdict."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L01 stage definition",
+      "key_findings": [
+        "L01 must add scripts/audit_committed_artifacts.py.",
+        "L01 must add schemas/artifact/audit_report.schema.json.",
+        "L01 must add tests/audit/test_committed_artifact_audit.py and tests/ci/test_committed_artifact_audit_gate.py.",
+        "Acceptance requires P00-P13 audit coverage, P13 historical mismatch classification, P14 dry-run classification, and detection of empty or metadata-incomplete artifacts."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+      "purpose": "Required audit validation commands",
+      "key_findings": [
+        "The audit CLI command is python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json.",
+        "The stage audit tests are python3 -m pytest -q tests/audit and python3 -m pytest -q tests/ci/test_committed_artifact_audit_gate.py.",
+        "Dry-run 1000-node artifacts must not count as real Valkey coverage."
+      ]
+    },
+    {
+      "path": "scripts/codex_gate.py",
+      "purpose": "Existing manifest, gate, artifact, real-evidence, and audit validation logic",
+      "key_findings": [
+        "validate_gate_result currently treats stale manifest SHA and command mismatch as errors.",
+        "validate_artifact already validates JSON and JSONL against declared schemas and detects empty JSONL.",
+        "check_real_evidence requires real_valkey true, probe_result PASS, Valkey 9.1.x version prefix, and nodes_observed at least 1."
+      ]
+    },
+    {
+      "path": "tests/ci/test_postcheck_compatibility.py",
+      "purpose": "Existing committed artifact compatibility coverage",
+      "key_findings": [
+        "The current committed-artifact compatibility test covers P00 through P12.",
+        "The test explicitly excludes P13 because its committed gate result has a historical command mismatch.",
+        "L01 needs a separate audit gate that includes P13 and classifies the mismatch instead of hiding it."
+      ]
+    },
+    {
+      "path": "schemas/artifact/*.schema.json",
+      "purpose": "Existing artifact schema conventions",
+      "key_findings": [
+        "Phase artifacts generally require schema_version, artifact_type, phase_id, run_id, created_at, producer, and status.",
+        "gate_result.schema.json requires gate logs and checksums but allows additional properties.",
+        "valkey_e2e_evidence.schema.json distinguishes real Valkey evidence through real_valkey, version prefix, probe_result, nodes_observed, and data_path_result."
+      ]
+    },
+    {
+      "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json",
+      "purpose": "P13 committed gate state",
+      "key_findings": [
+        "The committed gate result status is PASS and contains eight gates.",
+        "The committed scale_tests command is python3 -m pytest -q tests/unit tests/scale tests/integration, while the current manifest adds -m 'not slow and not perf'.",
+        "The committed manifest_sha256 is stale relative to the current manifest and should be classified as historical metadata drift, not used to exclude P13."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100",
+      "purpose": "P13 required artifact evidence",
+      "key_findings": [
+        "P13 required artifacts are present, including resource_preflight_50, resource_preflight_100, valkey_e2e_evidence_50, valkey_e2e_evidence_100, scale_ladder_report, cleanup_report, and phase_summary.",
+        "P13 50-node and 100-node evidence report real_valkey=true, probe_result=PASS, data_path_result=PASS, Valkey version 9.1.0, and nodes_observed of 50 and 100 respectively.",
+        "The audit gate must continue to validate these artifacts even when gate-result command text has historical drift."
+      ]
+    },
+    {
+      "path": "artifacts/gates",
+      "purpose": "Committed gate inventory",
+      "key_findings": [
+        "Committed PASS gate results exist for P00 through P13 and P13 optimization phases.",
+        "No committed P14 gate result was found, which is consistent with P14 being opt-in and non-automatic.",
+        "The L01 mandatory scope should be manifest P00-P13 automatic phases; extra optimization gates may be summarized separately."
+      ]
+    },
+    {
+      "path": "artifacts/phases",
+      "purpose": "Committed phase artifact inventory",
+      "key_findings": [
+        "A lightweight inventory found no zero-byte JSON or JSONL files under artifacts/phases.",
+        "The audit harness must still include fixture tests proving empty JSON and JSONL artifacts are blocking findings.",
+        "P14 phase artifacts were not present and should be reported as opt-in not-run rather than missing real Valkey evidence."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/previous_harness_result.json",
+      "purpose": "Previous harness result for L01",
+      "key_findings": [
+        "The previous harness baseline is recorded as PASS.",
+        "The stage is already in DESIGN phase and can proceed to current harness design."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/harness_change_request.md",
+      "purpose": "Documented L00 validator compatibility fix encountered before L01 design",
+      "key_findings": [
+        "The existing loop validator was adjusted to be phase-aware for active in-progress stages.",
+        "Completed PASS stage validation remains strict and should not be weakened by L01."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L01-HA-001",
+      "severity": "high",
+      "description": "The committed-artifact audit harness required by L01 does not exist yet: there is no audit_committed_artifacts.py CLI, no audit_report schema, and no tests/audit directory.",
+      "evidence": [
+        "codex/loop_engineering/04_STAGE_MANIFEST.md requires scripts/audit_committed_artifacts.py, schemas/artifact/audit_report.schema.json, tests/audit/test_committed_artifact_audit.py, and tests/ci/test_committed_artifact_audit_gate.py.",
+        "Current file inventory did not find tests/audit or the audit script/schema."
+      ]
+    },
+    {
+      "id": "L01-HA-002",
+      "severity": "high",
+      "description": "P13 is excluded from the current committed postcheck compatibility test, so a real 50/100-node automatic phase is not covered by that gate.",
+      "evidence": [
+        "tests/ci/test_postcheck_compatibility.py POSTCHECK_PHASES ends at P12_SCALE_LADDER_10_30.",
+        "The same test asserts that P13_SCALE_LADDER_50_100 is not in POSTCHECK_PHASES because of historical command mismatch."
+      ]
+    },
+    {
+      "id": "L01-HA-003",
+      "severity": "medium",
+      "description": "The committed P13 gate result has historical metadata drift that must be recorded without causing P13 artifacts to disappear from audit coverage.",
+      "evidence": [
+        "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json records scale_tests without the current manifest's -m 'not slow and not perf' selector.",
+        "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json records a stale manifest_sha256.",
+        "P13 required artifacts and 50/100-node real evidence are present and schema-valid under artifacts/phases/P13_SCALE_LADDER_50_100."
+      ]
+    },
+    {
+      "id": "L01-HA-004",
+      "severity": "high",
+      "description": "The current harness has no repo-wide committed artifact metadata audit that fails on empty JSON, missing schema, missing producer, missing run_id, or missing status.",
+      "evidence": [
+        "scripts/codex_gate.py validates only manifest-declared artifacts during phase postcheck.",
+        "L01 read_context.md explicitly requires detection for empty JSON artifacts, missing schema, missing producer, missing run_id, and missing status.",
+        "No audit_report artifact schema exists to preserve such findings as machine-readable evidence."
+      ]
+    },
+    {
+      "id": "L01-HA-005",
+      "severity": "medium",
+      "description": "P14 must be audited as an opt-in dry-run boundary, not as an automatic real 1000-node evidence gap.",
+      "evidence": [
+        "codex/phase_manifest.json marks P14_SCALE_1000_OPTIN_DRYRUN automatic=false, max_nodes=1000, and real_valkey_required=false.",
+        "P14 gates are safety, dry-run resource preflight, dry-run planner, and planner constraints; none are real_valkey gates.",
+        "No committed P14 gate or phase artifacts were found, which is acceptable for non-opt-in L01 audit but must be explicit."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "audit_report_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add schemas/artifact/audit_report.schema.json requiring schema_version v1, artifact_type audit_report, created_at, producer, status PASS|FAIL|PARTIAL, audit_scope, manifest_summary, phase_results, p14_boundary, findings, and summary. Findings must include id, severity low|medium|high, category, classification current|historical|dry_run_boundary|informational, blocking boolean, description, evidence, and optional phase_id/path fields. phase_results must include every automatic phase P00 through P13 with required_artifacts_checked, gate_result_checked, real_evidence_checked, blocking_findings, historical_findings, and status."
+    },
+    {
+      "name": "committed_artifact_audit_cli",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add scripts/audit_committed_artifacts.py with --out and optional --root arguments. It must read codex/phase_manifest.json, artifacts/gates, artifacts/phases, schemas/artifact, and audit decisions as machine-readable inputs; produce the audit_report JSON; create parent directories for --out; print PASS/FAIL with the output path; and exit nonzero when blocking findings exist. It must not execute phase gates, run P14, probe live Valkey, or infer truth from Markdown reports."
+    },
+    {
+      "name": "manifest_phase_coverage_audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The audit CLI must iterate the manifest, include all automatic phases P00_REPO_CONTRACT through P13_SCALE_LADDER_50_100, and require each manifest-declared required artifact and gate_result.json to be checked. P13_SCALE_LADDER_50_100 must appear in phase_results even when its gate result has historical command or manifest-hash drift."
+    },
+    {
+      "name": "artifact_metadata_and_schema_audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "For each manifest-declared required artifact, fail with a blocking finding when the artifact is missing, empty, invalid JSON/JSONL, has missing schema, fails its schema, or lacks required metadata keys producer, run_id, or status when the artifact type is a phase artifact. JSONL artifacts must be considered empty if they contain no nonblank records."
+    },
+    {
+      "name": "gate_result_drift_classifier",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Reuse scripts/codex_gate.py validation helpers where practical, but classify stale manifest_sha256 and known historical command mismatch separately from current blocking errors. P13's scale_tests command mismatch and stale manifest hash must be emitted as nonblocking historical findings when logs exist, checksums match, gate status is PASS, and required artifacts plus real evidence validate. Missing gate logs, checksum mismatch, missing required gates, non-PASS required gates, or real-evidence failures must remain blocking."
+    },
+    {
+      "name": "real_valkey_evidence_boundary_audit",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "For automatic phases with real_valkey_required=true, validate every manifest-declared valkey_e2e_evidence artifact through schema checks and real evidence invariants: real_valkey true, probe_result PASS, valkey_version_prefix_required 9.1., observed versions beginning with 9.1. when present, nodes_observed at least the expected minimum implied by the evidence filename or gate command, data_path_result PASS when the gate command requires data path, and cleanup status PASS."
+    },
+    {
+      "name": "p14_dry_run_boundary_audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The audit report must include p14_boundary showing P14_SCALE_1000_OPTIN_DRYRUN is automatic=false, real_valkey_required=false, max_nodes=1000, opt_in_required=true, dry_run_only=true, real_evidence_count=0, status SKIPPED_WITH_REASON or NOT_RUN_OPT_IN, and reason that L01 did not run P14. Any P14 valkey_e2e_evidence artifact, real_valkey gate, automatic=true flag, or use of P14 dry-run artifacts as real coverage must be a blocking finding."
+    },
+    {
+      "name": "audit_unit_fixtures",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add tests/audit/test_committed_artifact_audit.py with temporary fixture repositories that prove the CLI detects empty JSON, empty JSONL, missing schema, missing producer, missing run_id, missing status, schema validation errors, missing required artifacts, real_valkey=false on required evidence, P13 historical command mismatch as nonblocking, and P14 dry-run boundary as non-real evidence."
+    },
+    {
+      "name": "committed_repo_audit_gate",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add tests/ci/test_committed_artifact_audit_gate.py that runs or imports the audit CLI against the committed repository, validates artifacts/loop_engineering/reports/audit_report.json against schemas/artifact/audit_report.schema.json, asserts P00-P13 are present, asserts P13 has a historical nonblocking mismatch finding, asserts P14 is present only as dry-run/not-run boundary, and asserts no blocking findings for the current committed repo state."
+    },
+    {
+      "name": "audit_workflow_coverage_guard",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Either wire the audit CLI and audit tests into the existing GitHub coverage workflow or have tests/ci/test_committed_artifact_audit_gate.py explicitly guard that L01's validation commands from codex/loop_engineering/05_VALIDATION_COMMANDS.md remain runnable in CI. Do not remove or weaken tests/ci/test_postcheck_compatibility.py to make this pass."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define the audit report contract first.",
+      "files": [
+        "schemas/artifact/audit_report.schema.json"
+      ],
+      "rationale": "The report is the machine-readable product of L01; schema-first design prevents the CLI from producing loose summaries that hide missing metadata, P13 drift, or P14 dry-run boundaries."
+    },
+    {
+      "step": "Implement the committed artifact audit CLI.",
+      "files": [
+        "scripts/audit_committed_artifacts.py"
+      ],
+      "rationale": "The CLI should centralize manifest traversal, required artifact validation, gate result checks, historical mismatch classification, real evidence invariants, and P14 dry-run classification."
+    },
+    {
+      "step": "Add deterministic unit tests with temporary repositories and fixture artifacts.",
+      "files": [
+        "tests/audit/test_committed_artifact_audit.py"
+      ],
+      "rationale": "Fixture tests make edge cases explicit without mutating committed historical artifacts or requiring live Valkey."
+    },
+    {
+      "step": "Add the committed repository CI gate.",
+      "files": [
+        "tests/ci/test_committed_artifact_audit_gate.py"
+      ],
+      "rationale": "The CI gate proves the current repository artifacts are auditable, P13 is included with a historical finding, and P14 is not counted as real evidence."
+    },
+    {
+      "step": "Strengthen CI workflow coverage only if the new CI test requires it.",
+      "files": [
+        ".github/workflows/github-coverage-gates.yml"
+      ],
+      "rationale": "A committed artifact hard gate should run in CI, but the change must only add audit coverage and must not weaken existing workflow commands or locked harness behavior."
+    },
+    {
+      "step": "Run the L01 audit validation commands and schema validation.",
+      "files": [
+        "artifacts/loop_engineering/reports/audit_report.json"
+      ],
+      "rationale": "The generated audit_report is the persistent machine-readable evidence for this stage and must validate against the new schema."
+    }
+  ],
+  "acceptance_criteria": [
+    "scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json exits 0 for the current committed repo only when blocking_findings_count is 0.",
+    "The generated audit_report validates against schemas/artifact/audit_report.schema.json using the repository schema validator.",
+    "audit_report.phase_results contains every automatic manifest phase from P00_REPO_CONTRACT through P13_SCALE_LADDER_50_100.",
+    "P13_SCALE_LADDER_50_100 is included in phase_results and records the stale manifest SHA and scale_tests command mismatch as historical nonblocking findings, not as a reason to skip P13.",
+    "P13 required artifacts are checked and the 50-node and 100-node valkey_e2e_evidence artifacts are classified as real Valkey evidence, with nodes_observed 50 and 100 and Valkey 9.1.x data.",
+    "P14_SCALE_1000_OPTIN_DRYRUN is represented only in p14_boundary as opt-in dry-run/not-run and contributes zero real Valkey evidence.",
+    "Fixture tests prove blocking failures for empty JSON, empty JSONL, missing schema, missing producer, missing run_id, missing status, invalid schema, missing required artifact, missing gate log, checksum mismatch, and invalid real evidence.",
+    "The audit CLI does not read Markdown reports as source of truth for PASS, run_id, status, real_valkey, node count, or coverage.",
+    "Existing tests/ci/test_postcheck_compatibility.py remains intact and is not weakened to make L01 pass.",
+    "No P14 gate is executed by L01 validation commands."
+  ],
+  "risks": [
+    "Over-whitelisting historical mismatches could hide current gate drift. Mitigation: allow historical classification only for explicit stale manifest SHA and the known P13 scale_tests command mismatch when all logs, checksums, statuses, required artifacts, and real evidence pass.",
+    "A schema that permits arbitrary findings without required blocking/classification fields would let empty artifacts pass silently. Mitigation: make audit_report.schema.json require blocking booleans, classification, category, and evidence on every finding.",
+    "Treating P02 or P14 1000-node dry-run plans as real evidence would inflate coverage. Mitigation: audit real evidence only from valkey_e2e_evidence artifacts tied to manifest real_valkey gates and explicitly set P14 real_evidence_count to 0.",
+    "Using Markdown audit files as truth would violate artifact-first rules. Mitigation: use audit_decision.json only for structured audit decision checks and never parse AUDIT.md for pass/fail evidence in this L01 gate.",
+    "Updating historical gate artifacts to erase mismatch would lose audit trail. Mitigation: classify committed mismatch in audit_report and leave historical artifacts untouched unless a future phase explicitly refreshes them by rerunning gates."
+  ],
+  "forbidden_shortcuts": [
+    "Do not remove P13 from L01 audit scope.",
+    "Do not modify artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json to hide the historical mismatch.",
+    "Do not loosen codex/phase_manifest.json, schemas/artifact/*.schema.json, scripts/codex_gate.py, or tests/ci/test_postcheck_compatibility.py to make audit pass.",
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN or require VSLAB_ALLOW_1000_DRYRUN for L01.",
+    "Do not count P14 dry-run planner or resource artifacts as real Valkey evidence.",
+    "Do not use Markdown reports, rendered HTML, or narrative audit text as the source of truth for artifact status.",
+    "Do not mark missing metrics or missing artifacts as PASS; use MISSING or SKIPPED_WITH_REASON with explicit evidence and blocking status as appropriate.",
+    "Do not add network, Docker, or live Valkey execution to the committed artifact audit CLI."
+  ],
+  "commands_to_run": [
+    "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json",
+    "python3 -m pytest -q tests/audit",
+    "python3 -m pytest -q tests/ci/test_committed_artifact_audit_gate.py",
+    "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering"
+  ],
+  "verdict": "APPROVED",
+  "notes": "This is a harness design only. The worker should implement the L01 audit as a deterministic, artifact-first CLI plus schema and tests. P13 must be audited with its historical mismatch recorded, and P14 must remain an opt-in dry-run boundary with zero real evidence."
+}

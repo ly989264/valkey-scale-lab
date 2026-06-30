@@ -1,0 +1,52 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE",
+  "status": "PASS",
+  "completed_at": "2026-06-30T04:32:24Z",
+  "commands_log": "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/commands.jsonl",
+  "commands": [
+    {
+      "name": "audit_report_generation",
+      "command": "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+      "status": "PASS"
+    },
+    {
+      "name": "audit_report_schema_validation",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json",
+      "status": "PASS"
+    },
+    {
+      "name": "audit_tests",
+      "command": "python3 -m pytest -q tests/audit tests/ci/test_committed_artifact_audit_gate.py",
+      "status": "PASS"
+    },
+    {
+      "name": "codex_precheck_all",
+      "command": "python3 scripts/codex_gate.py precheck --all",
+      "status": "PASS"
+    },
+    {
+      "name": "safety_scan",
+      "command": "python3 scripts/safety_scan.py",
+      "status": "PASS"
+    },
+    {
+      "name": "full_fast_pytest_set",
+      "command": "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py tests/unit tests/ci/test_github_coverage_gates.py tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator tests/analysis tests/report tests/stability tests/scale tests/audit tests/ci/test_committed_artifact_audit_gate.py tests/loop_engineering tests/ci/test_loop_engineering_pack.py",
+      "status": "PASS"
+    },
+    {
+      "name": "compileall",
+      "command": "python3 -m compileall -q src scripts tests",
+      "status": "PASS"
+    },
+    {
+      "name": "anti_regression",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --anti-regression --base-ref 9d660aa2c87136e8578e7bf1efd96fbcfdc97951 --head-ref WORKTREE --report artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/anti_regression_check.json",
+      "status": "PASS"
+    }
+  ],
+  "current_harness_passed": true,
+  "previous_harness_passed": true,
+  "notes": "Final validation used /private/tmp/valkey-scale-lab-l00-venv for pytest because the system Python lacks pytest. Required compileall rewrote tracked bytecode; generated scripts/__pycache__ changes were restored. P14 and real/fault wrapper gates were not run."
+}

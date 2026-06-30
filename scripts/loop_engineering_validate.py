@@ -25,6 +25,20 @@ REQUIRED_AGENT_ROLES = [
     "anti_regression_guardian",
 ]
 
+PHASE_ORDER = [
+    "READ_CONTEXT",
+    "PREVIOUS_HARNESS",
+    "DESIGN",
+    "HARNESS",
+    "IMPLEMENT",
+    "REVIEW",
+    "VALIDATE",
+    "COMMIT",
+    "PUSH",
+    "PASS",
+    "BLOCKED",
+]
+
 CONTROLLED_PATH_PREFIXES = (
     "tests/",
     "scripts/",
@@ -151,15 +165,32 @@ def validate_stage_result(path: Path, stage_id: str, stage_dir: Path) -> list[st
 def validate_stage(stage_dir: Path) -> list[str]:
     errors: list[str] = []
     stage_id = stage_dir.name
-    required_in_progress = [
-        ("stage_state.json", "stage_state"),
-        ("previous_harness_result.json", "previous_harness_result"),
-        ("current_harness_plan.json", "current_harness_plan"),
+    stage_state = stage_dir / "stage_state.json"
+    phase = "READ_CONTEXT"
+    if not stage_state.exists():
+        errors.append(f"{rel(stage_state)}: missing required stage artifact")
+    else:
+        errors.extend(validate_json_file(stage_state, "stage_state"))
+        data, load_errors = load_json_with_errors(stage_state)
+        errors.extend(load_errors)
+        if isinstance(data, dict):
+            phase = str(data.get("phase", phase))
+
+    def phase_at_least(required: str) -> bool:
+        try:
+            return PHASE_ORDER.index(phase) >= PHASE_ORDER.index(required)
+        except ValueError:
+            return True
+
+    conditional_artifacts = [
+        ("previous_harness_result.json", "previous_harness_result", "DESIGN"),
+        ("current_harness_plan.json", "current_harness_plan", "DESIGN"),
     ]
-    for filename, schema_name in required_in_progress:
+    for filename, schema_name, required_phase in conditional_artifacts:
         path = stage_dir / filename
         if not path.exists():
-            errors.append(f"{rel(path)}: missing required stage artifact")
+            if phase_at_least(required_phase):
+                errors.append(f"{rel(path)}: missing required stage artifact")
         else:
             errors.extend(validate_json_file(path, schema_name))
 
@@ -171,7 +202,8 @@ def validate_stage(stage_dir: Path) -> list[str]:
 
     subagent_dir = stage_dir / "subagents"
     if not subagent_dir.exists():
-        errors.append(f"{rel(subagent_dir)}: missing subagent directory")
+        if phase_at_least("DESIGN"):
+            errors.append(f"{rel(subagent_dir)}: missing subagent directory")
     else:
         for subagent_path in sorted(subagent_dir.glob("*.json")):
             errors.extend(validate_subagent(subagent_path, stage_id))

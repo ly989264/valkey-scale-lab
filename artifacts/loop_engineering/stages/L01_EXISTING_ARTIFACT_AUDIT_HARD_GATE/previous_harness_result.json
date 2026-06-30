@@ -1,0 +1,25 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE",
+  "status": "PASS",
+  "completed_at": "2026-06-30T03:54:45Z",
+  "environment_notes": [
+    "Pytest was run through /private/tmp/valkey-scale-lab-l00-venv because the system python3 lacks pytest.",
+    "Required compileall rewrote tracked bytecode; scripts/__pycache__ was restored and later anti-regression checks must verify it remains clean.",
+    "The first root loop-engineering validation failed because L00 validator was too strict for PREVIOUS_HARNESS in-progress stages; a harness_change_request documents the defect and the phase-aware fix."
+  ],
+  "commands_log": "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/commands.jsonl",
+  "commands": [
+    {"name": "codex_precheck_all", "command": "python3 scripts/codex_gate.py precheck --all", "status": "PASS"},
+    {"name": "safety_scan", "command": "python3 scripts/safety_scan.py", "status": "PASS"},
+    {"name": "compileall", "command": "python3 -m compileall -q src scripts tests", "status": "PASS"},
+    {"name": "postcheck_compatibility", "command": "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py", "status": "PASS"},
+    {"name": "unit_and_github_coverage", "command": "python3 -m pytest -q tests/unit tests/ci/test_github_coverage_gates.py", "status": "PASS"},
+    {"name": "config_and_planner", "command": "python3 -m pytest -q tests/config tests/planner", "status": "PASS"},
+    {"name": "runtime_fault_failover_orchestrator", "command": "python3 -m pytest -q tests/integration tests/fault tests/failover tests/orchestrator", "status": "PASS"},
+    {"name": "analysis_report_stability_scale", "command": "python3 -m pytest -q tests/analysis tests/report tests/stability tests/scale", "status": "PASS"},
+    {"name": "loop_validator_root", "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering", "status": "PASS"},
+    {"name": "loop_engineering_tests", "command": "python3 -m pytest -q tests/loop_engineering tests/ci/test_loop_engineering_pack.py", "status": "PASS"}
+  ],
+  "all_required_baseline_commands_passed": true
+}
