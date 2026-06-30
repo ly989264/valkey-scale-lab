@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "stage_id": "L07_30_50_100_CLUSTER_BUILD_METRICS",
-  "status": "IN_PROGRESS",
-  "phase": "COMMIT",
+  "status": "PASS",
+  "phase": "PASS",
   "started_at": "2026-06-30T12:35:00Z",
-  "updated_at": "2026-06-30T14:20:00Z",
+  "updated_at": "2026-06-30T14:28:00Z",
   "branch": "codex/valkey-scale-lab-loop",
   "base_head": "d6e49b7bda1e90e4b916ffd78b4315798b05feef",
-  "current_head": "d6e49b7bda1e90e4b916ffd78b4315798b05feef",
+  "current_head": "6dcc3d2450488d6db2d954d4a020b7a9412d4ca8",
   "constraints": [
     "Run previous harness baseline before current-stage harness design.",
     "Cover 30/50/100 scale build metrics from machine-readable artifacts.",
