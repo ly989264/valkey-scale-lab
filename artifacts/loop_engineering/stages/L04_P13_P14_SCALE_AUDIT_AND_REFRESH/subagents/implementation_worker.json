@@ -1,0 +1,117 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L04_P13_P14_SCALE_AUDIT_AND_REFRESH",
+  "agent_role": "implementation_worker",
+  "created_at": "2026-06-30T07:54:48Z",
+  "context_files_read": [
+    {
+      "path": "codex/loop_engineering/START_MAIN_LOOP.md",
+      "purpose": "Main loop control instructions.",
+      "key_findings": [
+        "L04 must be completed through harness, subagents, validation, commit, and push.",
+        "P14 must not be executed without explicit opt-in."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/stage_design.md",
+      "purpose": "L04 design source.",
+      "key_findings": [
+        "Add a static P13/P14 scale audit artifact, schema, tests, and CI guard.",
+        "Audit canonical P13 50/100 evidence and P14 dry-run boundary."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/current_harness_plan.json",
+      "purpose": "L04 harness plan.",
+      "key_findings": [
+        "Focused tests and CLI/schema gates must pass.",
+        "No L04 command may invoke P14 opt-in, real Valkey wrappers, or fault wrappers."
+      ]
+    },
+    {
+      "path": "scripts/audit_p13_p14_scale.py",
+      "purpose": "L04 static audit implementation.",
+      "key_findings": [
+        "Builds schema-valid p13_p14_scale_audit.json from machine-readable artifacts.",
+        "Classifies historical P13 gate drift as nonblocking and current boundary violations as blocking."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "CI guard surface.",
+      "key_findings": [
+        "Adds static P13/P14 audit, schema validation, and focused pytest steps only."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [
+    {
+      "name": "p13_p14_scale_audit_cli",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Audit CLI exits 0 and writes a schema-valid PASS artifact when committed P13/P14 boundaries are intact."
+    },
+    {
+      "name": "p13_p14_scale_audit_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Fixture mutations fail on bad P13 evidence, timing metadata/categories, cleanup residue/reference, P14 real evidence, P14 max_nodes drift, missing opt-in config, and invalid dry-run plan."
+    },
+    {
+      "name": "p13_p14_scale_audit_ci_guard",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Workflow runs static audit/schema/tests and contains no P14 opt-in token or real/fault wrapper command."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Audit canonical P13 artifacts",
+      "files": [
+        "scripts/audit_p13_p14_scale.py",
+        "tests/scale/test_p13_p14_scale_audit.py"
+      ],
+      "rationale": "Machine-readable checks catch drift in real evidence, timing, cleanup, and reports."
+    },
+    {
+      "step": "Audit P14 dry-run boundary",
+      "files": [
+        "scripts/audit_p13_p14_scale.py",
+        "schemas/artifact/p13_p14_scale_audit.schema.json"
+      ],
+      "rationale": "P14 must remain non-automatic, opt-in, dry-run/resource/planner only."
+    },
+    {
+      "step": "Add CI/static guards",
+      "files": [
+        "tests/ci/test_p13_p14_scale_audit_gate.py",
+        ".github/workflows/github-coverage-gates.yml"
+      ],
+      "rationale": "Keep the audit in default static CI without running P14 or real wrappers."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS.",
+    "Current L04 audit report validates and reports PASS with zero blocking findings.",
+    "P13 canonical 50/100 evidence, timing, cleanup, and report cross-links are checked from JSON artifacts.",
+    "P14 has no default gate result or real evidence and remains opt-in dry-run only.",
+    "No L04 command runs P14, real Valkey wrappers, or fault wrappers."
+  ],
+  "risks": [
+    "Historical P13 gate drift must remain explicit and nonblocking only when allowlisted.",
+    "P14 dry-run artifacts must not be counted as real Valkey evidence."
+  ],
+  "forbidden_shortcuts": [
+    "Do not edit historical P13/P14 artifacts to hide drift.",
+    "Do not weaken schemas/tests/workflow guards.",
+    "Do not run P14 or real/fault wrappers for L04."
+  ],
+  "commands_to_run": [
+    "python3 scripts/audit_p13_p14_scale.py --out artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/p13_p14_scale_audit.schema.json --instance artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+    "python3 -m pytest -q tests/scale/test_p13_p14_scale_audit.py tests/ci/test_p13_p14_scale_audit_gate.py"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Initial review requested P14 max_nodes and P13 cleanup-reference checks; main agent fixed both. Recheck approved with no findings. Focused local tests passed with 12 tests."
+}

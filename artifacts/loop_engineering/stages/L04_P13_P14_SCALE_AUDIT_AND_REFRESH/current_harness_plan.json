@@ -1,0 +1,65 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L04_P13_P14_SCALE_AUDIT_AND_REFRESH",
+  "new_tests": [
+    {
+      "path": "tests/scale/test_p13_p14_scale_audit.py",
+      "purpose": "Validate the static P13/P14 audit builder with current committed artifacts and fixture regressions for bad evidence, timing gaps, cleanup residue, P13O confusion, and P14 dry-run misuse."
+    },
+    {
+      "path": "tests/ci/test_p13_p14_scale_audit_gate.py",
+      "purpose": "Validate CLI/schema generation and ensure CI includes static L04 commands without P14 opt-in execution or real/fault wrapper execution."
+    }
+  ],
+  "new_schemas": [
+    "schemas/artifact/p13_p14_scale_audit.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "command": "python3 scripts/audit_p13_p14_scale.py --out artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+      "acceptance": "Generates a schema-valid PASS audit artifact and exits 0 only when no blocking P13/P14 findings exist."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/p13_p14_scale_audit.schema.json --instance artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+      "acceptance": "Validates the generated P13/P14 scale audit artifact."
+    }
+  ],
+  "new_artifact_checks": [
+    "P13 50/100 evidence is canonical, real_valkey=true, status PASS, Valkey 9.1.x, nodes_observed exactly matching rung, cluster_state_observed ok, data_path_result PASS, probes all PASS, and cleanup PASS.",
+    "P13 timing breakdowns validate against schema and include setup/process, cluster create, replica config, probe, cleanup, and accounting categories with nonnegative durations or explicit missing semantics.",
+    "P13 cleanup reports are PASS with empty resources_remaining and nonempty cleanup_actions.",
+    "P13 scale_ladder_report and scale_rung artifacts cross-link only to canonical P13 evidence and report 50/100 rungs with comparison 50 to 100.",
+    "P13 historical manifest/scale_tests command drift remains explicit nonblocking; unexpected gate drift is blocking.",
+    "P13O optimization artifacts are classified separately and never used as canonical P13 50/100 evidence.",
+    "P14 remains automatic=false, real_valkey_required=false, opt-in guarded, dry-run/resource/planner only, and has no default real evidence or gate result.",
+    "P02 1000-node dry-run plan remains dry_run/no_execution/opt_in_1000 with default_node_cap 100 and real_valkey_coverage false."
+  ],
+  "expected_initial_failures": [
+    {
+      "command": "python3 scripts/audit_p13_p14_scale.py --out artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+      "reason": "L04 audit builder does not exist before implementation."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/p13_p14_scale_audit.schema.json --instance artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+      "reason": "L04 audit schema and generated artifact do not exist before implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/scale/test_p13_p14_scale_audit.py",
+      "reason": "Focused L04 scale audit tests do not exist before implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/ci/test_p13_p14_scale_audit_gate.py",
+      "reason": "L04 CI audit gate test does not exist before implementation."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS.",
+    "P13/P14 scale audit schema, builder, tests, CI guard, and generated audit artifact exist.",
+    "Generated p13_p14_scale_audit.json validates against schema and has status PASS.",
+    "P13 50/100 evidence and timing/cleanup/report artifacts are validated from machine-readable artifacts, not rendered reports.",
+    "P13O optimization artifacts are never counted as canonical P13 rung evidence.",
+    "P14 dry-run/resource/planner boundary is enforced without running P14.",
+    "No L04 command invokes P14, VSLAB_ALLOW_1000_DRYRUN, scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py.",
+    "No historical phase/gate artifact is modified to manufacture consistency."
+  ]
+}

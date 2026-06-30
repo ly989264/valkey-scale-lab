@@ -1,0 +1,321 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_p14_scale_audit",
+  "created_at": "2026-06-30T07:51:01.903789Z",
+  "producer": {
+    "name": "scripts/audit_p13_p14_scale.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": {
+    "blocking_findings_count": 0,
+    "p13_rung_count": 2,
+    "p13_real_evidence_count": 2,
+    "p13_canonical_node_counts": [
+      50,
+      100
+    ],
+    "p14_status": "SKIPPED_WITH_REASON",
+    "p14_real_evidence_count": 0,
+    "p14_dry_run_only": true
+  },
+  "p13": {
+    "phase_id": "P13_SCALE_LADDER_50_100",
+    "status": "PASS",
+    "canonical_artifact_dir": "artifacts/phases/P13_SCALE_LADDER_50_100",
+    "rungs": [
+      {
+        "node_count": 50,
+        "scenario": "scale_50",
+        "status": "PASS",
+        "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+        "evidence_sha256": "a04bf652e7b32496bd0d2b97f08212d3c477ac92505f4e19677bfd5746cda037",
+        "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+        "scale_rung_path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json",
+        "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+        "real_valkey": true,
+        "nodes_observed": 50,
+        "probe_count": 50,
+        "failed_probe_count": 0,
+        "cluster_state_observed": "ok",
+        "data_path_result": "PASS",
+        "valkey_versions": [
+          "9.1.0"
+        ],
+        "timing_checks": {
+          "status": "PASS",
+          "finding_ids": [],
+          "node_count": 50,
+          "required_names_present": [
+            "artifact_write",
+            "cleanup",
+            "cleanup_command_wall",
+            "nodehost_start",
+            "primary_cluster_create",
+            "process_config_prepare",
+            "process_ready_wait",
+            "process_start",
+            "replica_meet",
+            "replica_replicate",
+            "runtime_final_full_probe",
+            "runtime_representative_probe",
+            "setup_command_wall",
+            "state_load",
+            "wrapper_data_path_probe",
+            "wrapper_wait_cluster_ok"
+          ],
+          "missing_names": [],
+          "summary_fields_present": [
+            "artifact_write_seconds",
+            "cleanup_command_wall_seconds",
+            "cluster_create_duration_seconds",
+            "final_full_probe_duration_seconds",
+            "replica_config_duration_seconds",
+            "setup_command_wall_seconds",
+            "state_load_seconds",
+            "total_gate_seconds",
+            "unattributed_seconds",
+            "unattributed_status",
+            "wrapper_probe_duration_seconds"
+          ],
+          "missing_semantics": {
+            "status": "MISSING",
+            "reason": "Diagnostic full probe duration is optional diagnostic data; wrapper and final full probes are measured."
+          }
+        },
+        "cleanup_checks": {
+          "status": "PASS",
+          "finding_ids": [],
+          "node_count": 50,
+          "resources_remaining_count": 0,
+          "action_count": 107,
+          "skipped_without_reason_count": 50,
+          "skipped_policy": "SKIPPED_WITH_REASON cleanup actions without per-action reason are accepted only because final cleanup status is PASS and resources_remaining is empty."
+        },
+        "scale_rung_checks": {
+          "status": "PASS",
+          "finding_ids": []
+        },
+        "findings": []
+      },
+      {
+        "node_count": 100,
+        "scenario": "scale_100",
+        "status": "PASS",
+        "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+        "evidence_sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de",
+        "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+        "scale_rung_path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_100.json",
+        "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+        "real_valkey": true,
+        "nodes_observed": 100,
+        "probe_count": 100,
+        "failed_probe_count": 0,
+        "cluster_state_observed": "ok",
+        "data_path_result": "PASS",
+        "valkey_versions": [
+          "9.1.0"
+        ],
+        "timing_checks": {
+          "status": "PASS",
+          "finding_ids": [],
+          "node_count": 100,
+          "required_names_present": [
+            "artifact_write",
+            "cleanup",
+            "cleanup_command_wall",
+            "nodehost_start",
+            "primary_cluster_create",
+            "process_config_prepare",
+            "process_ready_wait",
+            "process_start",
+            "replica_meet",
+            "replica_replicate",
+            "runtime_final_full_probe",
+            "runtime_representative_probe",
+            "setup_command_wall",
+            "state_load",
+            "wrapper_data_path_probe",
+            "wrapper_wait_cluster_ok"
+          ],
+          "missing_names": [],
+          "summary_fields_present": [
+            "artifact_write_seconds",
+            "cleanup_command_wall_seconds",
+            "cluster_create_duration_seconds",
+            "final_full_probe_duration_seconds",
+            "replica_config_duration_seconds",
+            "setup_command_wall_seconds",
+            "state_load_seconds",
+            "total_gate_seconds",
+            "unattributed_seconds",
+            "unattributed_status",
+            "wrapper_probe_duration_seconds"
+          ],
+          "missing_semantics": {
+            "status": "MISSING",
+            "reason": "Diagnostic full probe duration is optional diagnostic data; wrapper and final full probes are measured."
+          }
+        },
+        "cleanup_checks": {
+          "status": "PASS",
+          "finding_ids": [],
+          "node_count": 100,
+          "resources_remaining_count": 0,
+          "action_count": 207,
+          "skipped_without_reason_count": 100,
+          "skipped_policy": "SKIPPED_WITH_REASON cleanup actions without per-action reason are accepted only because final cleanup status is PASS and resources_remaining is empty."
+        },
+        "scale_rung_checks": {
+          "status": "PASS",
+          "finding_ids": []
+        },
+        "findings": []
+      }
+    ],
+    "scale_report": {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+      "status": "PASS",
+      "finding_ids": [],
+      "expected_rungs": [
+        50,
+        100
+      ]
+    },
+    "gate_compatibility": {
+      "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json",
+      "status": "PASS",
+      "finding_ids": [],
+      "historical_finding_ids": [
+        "P13P14-0001",
+        "P13P14-0002"
+      ],
+      "historical_drift_allowed": true
+    },
+    "optimization_artifacts": {
+      "classified_separately": true,
+      "paths": [
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/cleanup_report.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/cleanup_report_scale_50.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/cluster_snapshots_scale_50.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/p13_cluster_create_strategy_comparison.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/p13_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/phase_summary.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/runtime_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/scale_ladder_report.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/scale_rung_50.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/state_scale_50.json",
+        "artifacts/phases/P13O_CLUSTER_CREATE_AB/valkey_e2e_evidence_manual_scale_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/cleanup_report.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/cleanup_report_scale_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/cluster_snapshots_scale_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/p13_replica_replicate_breakdown.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/p13_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/phase_summary.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/runtime_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/scale_ladder_report.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/scale_rung_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/state_scale_50.json",
+        "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/valkey_e2e_evidence_parallelism_16_scale_50.json"
+      ],
+      "canonical_evidence_paths": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json"
+      ]
+    },
+    "required_artifacts": [
+      {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/phase_summary.json",
+        "schema_path": "schemas/artifact/phase_summary.schema.json",
+        "exists": true,
+        "status": "PASS",
+        "sha256": "5e0aad888190eab9d8a85543ed6f372a304bc813b13772b15259c907bd67ff17"
+      },
+      {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+        "schema_path": "schemas/artifact/resource_preflight.schema.json",
+        "exists": true,
+        "status": "PASS",
+        "sha256": "ec3b330d8c39f76fefe962789c89cad2b8ace0fa182d04862942a1b644ca73c5"
+      },
+      {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+        "schema_path": "schemas/artifact/resource_preflight.schema.json",
+        "exists": true,
+        "status": "PASS",
+        "sha256": "270389fb0c89ebba805129e9f6963f48c9a1a531fe31d0c8de69df484446100c"
+      },
+      {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+        "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+        "exists": true,
+        "status": "PASS",
+        "sha256": "a04bf652e7b32496bd0d2b97f08212d3c477ac92505f4e19677bfd5746cda037"
+      },
+      {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+        "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+        "exists": true,
+        "status": "PASS",
+        "sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de"
+      },
+      {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+        "schema_path": "schemas/artifact/scale_ladder_report.schema.json",
+        "exists": true,
+        "status": "PASS",
+        "sha256": "8f361663f6ccf6bfbb81189c7f8e5276d07ab0a8826fbbf07d2e7ff6abeadfe5"
+      },
+      {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+        "schema_path": "schemas/artifact/cleanup_report.schema.json",
+        "exists": true,
+        "status": "PASS",
+        "sha256": "93117cbfdb86afdf23648e4b923c85c97e93acce7083db97e258558c2f349bb0"
+      }
+    ]
+  },
+  "p14_boundary": {
+    "phase_id": "P14_SCALE_1000_OPTIN_DRYRUN",
+    "status": "SKIPPED_WITH_REASON",
+    "automatic": false,
+    "real_valkey_required": false,
+    "max_nodes": 1000,
+    "dry_run_only": true,
+    "real_valkey_coverage": false,
+    "opt_in_required": true,
+    "default_gate_result_present": false,
+    "real_evidence_count": 0,
+    "dry_run_artifacts": [
+      "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json"
+    ],
+    "finding_ids": [],
+    "reason": "P14 is opt-in dry-run/resource/planner only and was not executed by L04."
+  },
+  "findings": [
+    {
+      "id": "P13P14-0001",
+      "severity": "medium",
+      "category": "p13_historical_manifest_drift",
+      "classification": "historical",
+      "blocking": false,
+      "description": "P13 gate result has allowlisted legacy manifest SHA drift",
+      "evidence": [
+        "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+        "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8"
+      ]
+    },
+    {
+      "id": "P13P14-0002",
+      "severity": "medium",
+      "category": "p13_historical_command_drift",
+      "classification": "historical",
+      "blocking": false,
+      "description": "P13 scale_tests command drift is historical and explicitly recorded",
+      "evidence": [
+        "python3 -m pytest -q tests/unit tests/scale tests/integration",
+        "python3 -m pytest -q tests/unit tests/scale tests/integration -m 'not slow and not perf'"
+      ]
+    }
+  ]
+}

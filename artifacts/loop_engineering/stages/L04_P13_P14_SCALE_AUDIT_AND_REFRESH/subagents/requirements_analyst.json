@@ -1,0 +1,553 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L04_P13_P14_SCALE_AUDIT_AND_REFRESH",
+  "agent_role": "requirements_analyst",
+  "created_at": "2026-06-30T07:26:43Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository instructions and safety rules.",
+      "key_findings": [
+        "Automatic development phases are capped at 100 nodes and P14 must not be run without explicit opt-in.",
+        "Real Valkey proof must come from wrapper scripts and include live endpoint evidence, data path proof, and Valkey 9.1.x version data.",
+        "Missing metrics must be encoded as MISSING or SKIPPED_WITH_REASON; handwritten PASS and fake-only real evidence are forbidden."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Automatic phase boundary and P14 opt-in contract.",
+      "key_findings": [
+        "The automatic loop completes at P13_SCALE_LADDER_50_100.",
+        "P14_SCALE_1000_OPTIN_DRYRUN requires VSLAB_ALLOW_1000_DRYRUN=I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE.",
+        "1000-node behavior is dry-run/resource/planner only by default."
+      ]
+    },
+    {
+      "path": "README.md",
+      "purpose": "Project-level summary.",
+      "key_findings": [
+        "The repository is a Codex bootstrap package for valkey-scale-lab.",
+        "The README repeats that P14 is not automatic."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent output contract and requirements_analyst role.",
+      "key_findings": [
+        "requirements_analyst performs requirements and gap analysis only.",
+        "Subagent output must be a JSON file under artifacts/loop_engineering/stages/<stage>/subagents/.",
+        "Main agent may proceed only if requirements_analyst verdict is APPROVED."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Harness strengthening, artifact-first, and real/dry-run evidence boundaries.",
+      "key_findings": [
+        "L04 must strengthen schema, artifact, committed artifact, CLI, or CI harness rather than relying on reports.",
+        "Real Valkey evidence requires real_valkey=true, Valkey 9.1 prefix, sufficient observed nodes, cluster state, data path proof, cleanup PASS, and schema validation PASS.",
+        "1000+ must not run as a default real gate and can only be dry-run/resource/planner unless separately opted in."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L04 stage definition.",
+      "key_findings": [
+        "L04 must audit P13 50/100 evidence, timing, cleanup, scale report, empty artifact handling, and postcheck compatibility.",
+        "L04 must audit P14 dry-run/resource/planner boundaries.",
+        "Required harness includes P13 audit tests, P14 dry-run invariant tests, postcheck compatibility extension or a separate P13 audit gate, and P13 timing breakdown schema validation."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/read_context.md",
+      "purpose": "Existing stage context and constraints.",
+      "key_findings": [
+        "Previous context already identified P13 artifacts and P14 boundary as the stage focus.",
+        "The stage must not run P14 or the real/fault wrappers during this requirements task.",
+        "Historical P13 gate mismatch must be audited explicitly rather than hidden."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/previous_harness_result.json",
+      "purpose": "Baseline validation status.",
+      "key_findings": [
+        "Previous harness status is PASS with 170 pytest tests passing.",
+        "Audit, provenance, metric coverage builders and schema validation passed.",
+        "No P14, real Valkey wrapper, or fault wrapper command was run during previous harness."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/global_loop_state.json",
+      "purpose": "Current loop state.",
+      "key_findings": [
+        "Current stage is L04_P13_P14_SCALE_AUDIT_AND_REFRESH.",
+        "L00 through L03 are PASS and pushed.",
+        "There are no recorded blockers."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/stage_state.json",
+      "purpose": "Current stage constraints.",
+      "key_findings": [
+        "The stage is IN_PROGRESS at the previous harness phase.",
+        "Constraints explicitly prohibit modifying historical P13/P14 artifacts to hide issues.",
+        "P14 dry-run/planner artifacts must not count as real Valkey coverage."
+      ]
+    },
+    {
+      "path": "codex/phase_manifest.json",
+      "purpose": "Authoritative P13/P14 phase requirements.",
+      "key_findings": [
+        "P13 is automatic, real_valkey_required=true, max_nodes=100, and requires real 50/100 gates.",
+        "P14 is automatic=false, real_valkey_required=false, max_nodes=1000, and gates are opt-in dry-run/resource/planner only.",
+        "P14 retains the require_1000_opt_in guard using VSLAB_ALLOW_1000_DRYRUN."
+      ]
+    },
+    {
+      "path": "docs/codex/02_PHASES.md",
+      "purpose": "Human-readable P13/P14 pass criteria.",
+      "key_findings": [
+        "P13 must pass real 50-node and 100-node gates with cleanup protections.",
+        "P14 must provide dry-run planning/resource checks without default container or process starts.",
+        "P14 execution is explicitly disabled unless enabled."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+      "purpose": "Relevant validation boundaries.",
+      "key_findings": [
+        "30/50/100 real scale gates are listed for situations that require real validation.",
+        "1000 dry-run validation is listed separately and must not be counted as real Valkey coverage.",
+        "This requirements task must not run those real wrappers or P14 dry-run commands."
+      ]
+    },
+    {
+      "path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "purpose": "P13 real evidence schema.",
+      "key_findings": [
+        "Evidence must include status, real_valkey, version prefix, probe result, nodes observed, cluster state, data path result, probes, and cleanup.",
+        "Schema allows additional fields, so L04 needs semantic assertions beyond generic schema validity."
+      ]
+    },
+    {
+      "path": "schemas/artifact/p13_timing_breakdown.schema.json",
+      "purpose": "P13 timing schema.",
+      "key_findings": [
+        "Timing breakdown requires summary fields for total gate, setup command, state load, artifact write, cleanup command, cluster create, replica config, wrapper probe, final full probe, and accounting.",
+        "Schema does not by itself assert all L04 category names or non-empty timing semantics; tests should do that."
+      ]
+    },
+    {
+      "path": "schemas/artifact/scale_ladder_report.schema.json",
+      "purpose": "P13 scale report schema.",
+      "key_findings": [
+        "Scale report requires rungs and summary but leaves rung item structure permissive.",
+        "L04 should enforce rung-level linkage to 50/100 evidence, status consistency, and non-empty report semantics."
+      ]
+    },
+    {
+      "path": "schemas/artifact/cleanup_report.schema.json",
+      "purpose": "Cleanup artifact schema.",
+      "key_findings": [
+        "Cleanup report requires resources_remaining and cleanup_actions arrays.",
+        "L04 should require PASS cleanup to have zero remaining resources for P13 50/100, and to link from evidence/report artifacts."
+      ]
+    },
+    {
+      "path": "schemas/artifact/cluster_plan.schema.json",
+      "purpose": "1000 dry-run plan schema.",
+      "key_findings": [
+        "Cluster plan has constraints.default_node_cap maximum 100 and optional dry_run/opt_in_1000 flags.",
+        "The schema supports P14 dry-run boundary checks, but L04 should assert no execution/real evidence artifacts are present by default."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "purpose": "Static P13 50-node evidence inspection.",
+      "key_findings": [
+        "Evidence is non-empty, status=PASS, real_valkey=true, nodes_observed=50, cluster_state_observed=ok, data_path_result=PASS.",
+        "Valkey versions include 9.1.0, probe_count=50, failed_probes=0, and cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+      "purpose": "Static P13 100-node evidence inspection.",
+      "key_findings": [
+        "Evidence is non-empty, status=PASS, real_valkey=true, nodes_observed=100, cluster_state_observed=ok, data_path_result=PASS.",
+        "Valkey versions include 9.1.0, probe_count=100, failed_probes=0, and cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+      "purpose": "Static P13 50-node timing inspection.",
+      "key_findings": [
+        "Timing artifact is non-empty, status=PASS, node_count=50, scenario=scale_50, timings length is 21.",
+        "Summary includes setup, cluster create, replica config, wrapper/data path probe, final full probe, cleanup, and accounting fields.",
+        "diagnostic_full_probe_duration_seconds is explicitly MISSING."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+      "purpose": "Static P13 100-node timing inspection.",
+      "key_findings": [
+        "Timing artifact is non-empty, status=PASS, node_count=100, scenario=scale_100, timings length is 21.",
+        "Summary includes setup, cluster create, replica config, wrapper/data path probe, final full probe, cleanup, and accounting fields.",
+        "diagnostic_full_probe_duration_seconds is explicitly MISSING."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+      "purpose": "Static P13 aggregate cleanup inspection.",
+      "key_findings": [
+        "Cleanup status is PASS.",
+        "resources_remaining is empty and cleanup_actions length is 207.",
+        "The report is non-empty and has deterministic run_id metadata."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+      "purpose": "Static P13 50-node cleanup inspection.",
+      "key_findings": [
+        "Cleanup status is PASS.",
+        "resources_remaining is empty and cleanup_actions length is 107."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+      "purpose": "Static P13 100-node cleanup inspection.",
+      "key_findings": [
+        "Cleanup status is PASS.",
+        "resources_remaining is empty and cleanup_actions length is 207."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+      "purpose": "Static P13 scale report inspection.",
+      "key_findings": [
+        "Report status is PASS and contains two rungs for scale_100 and scale_50.",
+        "Rungs link to the 100-node and 50-node evidence paths.",
+        "The generic schema is permissive, so L04 should require rung status, node_count, scenario, evidence path, and consistency with referenced evidence."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+      "purpose": "Static 50-node resource preflight inspection.",
+      "key_findings": [
+        "Preflight status is PASS, node_count=50, dry_run=false.",
+        "Checks include config semantics, node count limit with default_cap=100, Docker, CPU, memory, disk, ports, and previous cleanup state."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+      "purpose": "Static 100-node resource preflight inspection.",
+      "key_findings": [
+        "Preflight status is PASS, node_count=100, dry_run=false.",
+        "Checks include node count limit with default_cap=100 and port collision checks."
+      ]
+    },
+    {
+      "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json",
+      "purpose": "Static P13 gate result inspection.",
+      "key_findings": [
+        "Gate result status is PASS and includes required real gate commands for scale_50 and scale_100 using scripts/valkey_e2e_gate.py.",
+        "The committed gate result still records scale_tests without the current -m 'not slow and not perf' selector, which existing audit classifies as historical non-blocking drift."
+      ]
+    },
+    {
+      "path": "audit/P13_SCALE_LADDER_50_100/AUDIT.md",
+      "purpose": "Fresh-context P13 audit evidence.",
+      "key_findings": [
+        "P13 audit decision is PASS.",
+        "Audit states required artifacts validated, real Valkey evidence observed 50 and 100 nodes, data path PASS, and cleanup verified."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json",
+      "purpose": "Existing 1000-node dry-run planner artifact.",
+      "key_findings": [
+        "Artifact belongs to P02_PLANNER, not P14.",
+        "node_count=1000, constraints.default_node_cap=100, dry_run=true, opt_in_1000=true, no_execution=true, and required env/value are recorded.",
+        "This is planner dry-run evidence only and must not be treated as P14 real Valkey evidence."
+      ]
+    },
+    {
+      "path": "templates/configs/scale_1000_dryrun_optin.yaml",
+      "purpose": "P14 dry-run config boundary.",
+      "key_findings": [
+        "allow_1000_nodes=true only in the 1000 template.",
+        "runtime.dry_run=true and scale_profile.dry_run_only=true.",
+        "require_1000_env is VSLAB_ALLOW_1000_DRYRUN."
+      ]
+    },
+    {
+      "path": "tests/ci/test_postcheck_compatibility.py",
+      "purpose": "Postcheck compatibility coverage gap.",
+      "key_findings": [
+        "POSTCHECK_PHASES covers P00-P12 only.",
+        "The test explicitly asserts that P13 is not included because of historical command mismatch.",
+        "L04 must either extend postcheck compatibility to cover P13 after a legitimate refresh or provide a separate explicit P13 audit gate."
+      ]
+    },
+    {
+      "path": "tests/ci/test_committed_artifact_audit_gate.py",
+      "purpose": "Existing committed artifact audit behavior.",
+      "key_findings": [
+        "Current tests require audit scope through P13 and classify P14 as optional.",
+        "P13 historical command mismatch is expected to be non-blocking.",
+        "Existing tests do not appear sufficient for L04's deeper P13 timing, cleanup, scale report, empty artifact, and P14 invariant requirements."
+      ]
+    },
+    {
+      "path": "tests/coverage/test_coverage_matrix.py",
+      "purpose": "Existing dry-run versus real coverage boundaries.",
+      "key_findings": [
+        "30/50/100 scale coverage uses real evidence artifacts.",
+        "1000-dry-run layer is asserted not to have real_valkey_coverage.",
+        "The dry-run scale source is P02 planner output."
+      ]
+    },
+    {
+      "path": "tests/metrics/test_metric_catalog.py",
+      "purpose": "Existing metric catalog coverage.",
+      "key_findings": [
+        "Metric catalog requires source metadata and missing semantics.",
+        "P02 1000 dry-run metric is asserted to be dry_run_planner and not real coverage."
+      ]
+    },
+    {
+      "path": "tests/planner/test_planner.py",
+      "purpose": "Existing planner dry-run tests.",
+      "key_findings": [
+        "1000-node plan test asserts node_count=1000, opt_in_1000=true, dry_run=true, and all planned nodes dry_run=true.",
+        "Planner tests already cover some P14 boundary capabilities but not artifact/gate absence or real evidence misclassification."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/audit_report.json",
+      "purpose": "Current committed artifact audit report.",
+      "key_findings": [
+        "Report status is PASS with P13 in automatic scope and P14 in optional scope.",
+        "P13 has two historical non-blocking findings: manifest_sha256_mismatch and scale_tests gate_command_mismatch.",
+        "P14 boundary status is SKIPPED_WITH_REASON with real_evidence_count=0."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "purpose": "Current coverage matrix P13/P14 classification.",
+      "key_findings": [
+        "50 and 100 scale entries are covered as real_valkey.",
+        "1000-dry-run scale entry is covered as dry_run_planner using the P02 dry-run plan.",
+        "P14 boundary remains SKIPPED_WITH_REASON and not real coverage."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "purpose": "Current provenance handling for P13/P14.",
+      "key_findings": [
+        "P13 nodes include timing, cleanup, scale rung, scale report, resource preflight, and real evidence artifacts.",
+        "P14 has no artifact nodes by design and is recorded as opt-in skipped.",
+        "There are non-blocking legacy provenance findings for setup timeline source direction."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "REQ-L04-001",
+      "severity": "high",
+      "description": "L04 must convert P13/P14 scale requirements into explicit artifact-first harness checks instead of relying on the permissive generic schemas and human audit text.",
+      "evidence": [
+        "codex/loop_engineering/04_STAGE_MANIFEST.md requires P13 audit tests, P14 dry-run invariant tests, postcheck compatibility extension or separate P13 audit gate, and p13 timing breakdown schema validation.",
+        "schemas/artifact/scale_ladder_report.schema.json allows rung objects without specific required fields.",
+        "schemas/artifact/valkey_e2e_evidence.schema.json permits additionalProperties, so semantic invariants like min observed nodes and real Valkey classification need tests."
+      ]
+    },
+    {
+      "id": "REQ-L04-002",
+      "severity": "medium",
+      "description": "Existing P13 evidence appears valid and non-empty for 50/100 real proof, but L04 should make those conditions mechanically enforced.",
+      "evidence": [
+        "valkey_e2e_evidence_50.json has status=PASS, real_valkey=true, nodes_observed=50, data_path_result=PASS, version 9.1.0, failed_probes=0.",
+        "valkey_e2e_evidence_100.json has status=PASS, real_valkey=true, nodes_observed=100, data_path_result=PASS, version 9.1.0, failed_probes=0.",
+        "cleanup_report_scale_50.json and cleanup_report_scale_100.json both have resources_remaining length 0."
+      ]
+    },
+    {
+      "id": "REQ-L04-003",
+      "severity": "medium",
+      "description": "P13 timing artifacts have the required data, including explicit MISSING semantics for diagnostic full probe, but L04 needs category-level checks for setup, cluster create, replica config, probe, cleanup, and accounting.",
+      "evidence": [
+        "p13_timing_breakdown_scale_50.json summary contains setup_command_wall_seconds, cluster_create_duration_seconds, replica_config_duration_seconds, wrapper_probe_duration_seconds, final_full_probe_duration_seconds, cleanup_command_wall_seconds, and accounting fields.",
+        "p13_timing_breakdown_scale_100.json contains the same categories.",
+        "diagnostic_full_probe_duration_seconds is encoded as MISSING rather than invented."
+      ]
+    },
+    {
+      "id": "REQ-L04-004",
+      "severity": "high",
+      "description": "P13 is not currently in the generic postcheck compatibility phase list due to historical command drift, so L04 must decide between legitimate artifact refresh plus postcheck inclusion or an explicit P13 audit gate that enforces current invariants while preserving the historical finding.",
+      "evidence": [
+        "tests/ci/test_postcheck_compatibility.py POSTCHECK_PHASES ends at P12 and asserts P13 is not included.",
+        "artifacts/loop_engineering/reports/audit_report.json records P13 gate_command_mismatch for scale_tests as historical, non-blocking.",
+        "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json observed scale_tests command lacks the current -m 'not slow and not perf' marker."
+      ]
+    },
+    {
+      "id": "REQ-L04-005",
+      "severity": "high",
+      "description": "P14 must remain optional dry-run/resource/planner only, and L04 must enforce absence of default P14 real evidence and automatic execution.",
+      "evidence": [
+        "codex/phase_manifest.json has P14 automatic=false and real_valkey_required=false.",
+        "P14 gates are harness_precheck, safety scan, opt-in env test, dry-run resource preflight, dry-run planner, and plan constraints.",
+        "No artifacts/phases/P14_SCALE_1000_OPTIN_DRYRUN or artifacts/gates/P14_SCALE_1000_OPTIN_DRYRUN artifacts were found in the static inspection.",
+        "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json records dry_run=true, opt_in_1000=true, no_execution=true, and default_node_cap=100."
+      ]
+    },
+    {
+      "id": "REQ-L04-006",
+      "severity": "medium",
+      "description": "P13O optimization artifacts can pollute P13 classification if L04 does not distinguish canonical P13 50/100 proof from optimization comparison evidence.",
+      "evidence": [
+        "coverage_matrix.json includes P13O_CLUSTER_CREATE_AB and P13O_REPLICA_REPLICATE_BREAKDOWN sources in the 50-node scale layer.",
+        "L04 read_context.md flags P13O artifacts as related but requiring explicit audit classification.",
+        "Canonical P13 evidence paths remain artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json and valkey_e2e_evidence_100.json."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "p13_scale_artifact_audit_tests",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "A dedicated test or audit command verifies P13 50/100 evidence files are non-empty, schema-valid, status=PASS, real_valkey=true, Valkey versions start with 9.1., nodes_observed equals or exceeds rung size, probe count equals observed nodes, cluster_state_observed=ok, data_path_result=PASS, no failed probes, and cleanup.status=PASS."
+    },
+    {
+      "name": "p13_timing_breakdown_semantic_validation",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Both p13_timing_breakdown_scale_50.json and p13_timing_breakdown_scale_100.json validate against schema and contain explicit setup, cluster create, replica config, probe, cleanup, and accounting fields; missing diagnostic values are encoded as MISSING or SKIPPED_WITH_REASON with reason."
+    },
+    {
+      "name": "p13_cleanup_and_scale_report_consistency",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "P13 cleanup_report.json plus rung-specific cleanup reports are non-empty, status-consistent, resources_remaining empty for PASS, and scale_ladder_report rungs link to canonical 50/100 evidence, cleanup, and timing artifacts with matching node_count/status."
+    },
+    {
+      "name": "empty_artifact_rejection_for_p13_p14_scope",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Any required P13 artifact or any present P14 artifact that is empty JSON, missing schema_version/artifact_type/status/run_id/producer, or mismatched with its manifest role is reported as blocking."
+    },
+    {
+      "name": "p14_dry_run_invariant_tests",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests assert P14 remains automatic=false, real_valkey_required=false, guarded by VSLAB_ALLOW_1000_DRYRUN, uses only dry-run/resource/planner/constraint gates, has no default real Valkey evidence artifacts, and any 1000-node source is dry_run_only with real_valkey_coverage=false."
+    },
+    {
+      "name": "p13_postcheck_compatibility_or_explicit_audit_gate",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Either tests/ci/test_postcheck_compatibility.py includes P13 after a legitimately refreshed gate result, or a separate explicit P13 audit gate validates current P13 artifacts and records historical manifest/command drift as non-blocking without excluding P13 from L04 scrutiny."
+    },
+    {
+      "name": "p13_p14_report_boundary_regression_tests",
+      "type": "artifact",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "Audit, provenance, metric catalog, and coverage matrix outputs continue to classify 50/100 as real scale evidence and 1000 as dry-run planner only, without using HTML/Markdown/report views as source-of-truth."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Design L04 harness around static artifact invariants before touching implementation.",
+      "files": [
+        "tests/ci/test_p13_p14_scale_audit.py",
+        "tests/audit/test_p13_p14_scale_artifacts.py",
+        "scripts/audit_committed_artifacts.py",
+        "schemas/artifact/p13_timing_breakdown.schema.json"
+      ],
+      "rationale": "L04 is an audit/refresh stage; harness should first encode the P13/P14 requirements and only then decide whether builder/script changes are necessary."
+    },
+    {
+      "step": "Strengthen P13 semantic artifact checks without rerunning real gates unless a later worker explicitly refreshes artifacts and records commands.",
+      "files": [
+        "tests/audit/test_p13_p14_scale_artifacts.py",
+        "scripts/audit_committed_artifacts.py"
+      ],
+      "rationale": "The current artifacts look acceptable, but generic schemas are too permissive to prevent future empty or misclassified artifacts."
+    },
+    {
+      "step": "Add or extend P14 boundary checks for manifest, config, artifact absence, dry-run plan metadata, and no real coverage classification.",
+      "files": [
+        "tests/ci/test_p13_p14_scale_audit.py",
+        "tests/coverage/test_coverage_matrix.py",
+        "tests/metrics/test_metric_catalog.py"
+      ],
+      "rationale": "P14 is intentionally optional; L04 should prove that non-execution and absence of real evidence are correct, not a missing implementation."
+    },
+    {
+      "step": "Resolve P13 postcheck compatibility requirement by either including P13 after a legitimate gate refresh or adding an explicit P13 audit gate with clear historical-drift semantics.",
+      "files": [
+        "tests/ci/test_postcheck_compatibility.py",
+        "tests/ci/test_committed_artifact_audit_gate.py",
+        "scripts/audit_committed_artifacts.py"
+      ],
+      "rationale": "Current postcheck compatibility intentionally excludes P13. L04 requires this gap to be closed by compatibility coverage or an equivalent explicit gate."
+    },
+    {
+      "step": "Update loop-engineering stage artifacts only after validation.",
+      "files": [
+        "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/current_harness_plan.json",
+        "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/stage_design.md",
+        "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/stage_result.json"
+      ],
+      "rationale": "Stage artifacts are the product and must describe the harness, validation, and decision trail."
+    }
+  ],
+  "acceptance_criteria": [
+    "P13 canonical 50-node and 100-node evidence artifacts are non-empty, schema-valid, status-consistent, real_valkey=true, produced by scripts/valkey_e2e_gate.py, observe at least 50 and 100 nodes respectively, include Valkey 9.1.x versions, have cluster_state_observed=ok, data_path_result=PASS, no failed probes, and cleanup PASS.",
+    "P13 resource preflight artifacts for 50 and 100 are non-empty, PASS, dry_run=false, enforce default_cap=100, and show port/cleanup/resource checks.",
+    "P13 cleanup artifacts are non-empty, schema-valid, PASS only when resources_remaining is empty, and include cleanup_actions.",
+    "P13 scale_ladder_report is non-empty, schema-valid, PASS only when its 50/100 rungs match canonical evidence node counts/status and link to evidence, timing, and cleanup where required.",
+    "P13 timing breakdown artifacts for scale_50 and scale_100 validate against schema and semantically include setup, cluster create, replica config, probe, cleanup, and accounting fields, with missing diagnostic metrics represented explicitly.",
+    "Empty JSON artifacts, missing status/run_id/producer/schema_version, mismatched phase_id, or permissive schema pass-through are blocking for L04 P13/P14 audit scope.",
+    "P13 is no longer effectively unaudited by postcheck compatibility: either it is included in compatible validation after a legitimate refresh, or a separate explicit P13 audit gate exists and is run in CI/stage validation.",
+    "P14 remains automatic=false, requires VSLAB_ALLOW_1000_DRYRUN for opt-in dry-run, has no automatic real Valkey gate, no default P14 real evidence artifacts, and no default process/container execution.",
+    "Any 1000-node artifact used by reports is classified as dry-run/resource/planner, dry_run_only=true, real_valkey_coverage=false, and not counted as real scale coverage.",
+    "L00-L03 audit, provenance, metric catalog, and coverage matrix behavior remains intact."
+  ],
+  "risks": [
+    "Refreshing P13 artifacts just to make postcheck compatibility pass could overwrite historical evidence without a recorded gate command trail.",
+    "Leaving P13 out of postcheck compatibility without a replacement explicit gate would preserve the current blind spot.",
+    "A permissive schema can allow a PASS artifact that has empty rungs, missing timing categories, or missing semantic links.",
+    "P13O optimization evidence can be accidentally treated as the canonical P13 50-node rung, obscuring the main P13 requirements.",
+    "P14 absence can be incorrectly treated as missing required evidence instead of correct opt-in skipped state, or the P02 1000 dry-run plan can be incorrectly counted as P14 real evidence.",
+    "Running P14 or real/fault wrappers during this stage analysis would violate the user constraints and repository safety rules.",
+    "Changing historical gate results or hand-editing PASS would compromise artifact provenance."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN in this stage unless the user explicitly opts in and sets the required environment variable.",
+    "Do not execute scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py for this requirements analysis task.",
+    "Do not handwrite PASS into gate_result.json, audit decisions, evidence artifacts, or cleanup reports.",
+    "Do not modify historical P13/P14 artifacts to hide command drift, empty artifacts, or schema gaps.",
+    "Do not count P02 or P14 1000-node dry-run planner/resource artifacts as real Valkey coverage.",
+    "Do not weaken schemas, make required artifacts optional, lower min-node requirements, or set real_valkey_required=false for P13.",
+    "Do not treat Markdown/HTML reports as source-of-truth for metrics or audit decisions.",
+    "Do not use sudo or host-level network/firewall/route/interface changes."
+  ],
+  "commands_to_run": [
+    "python3 scripts/codex_gate.py precheck --all",
+    "python3 scripts/safety_scan.py",
+    "PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-l04-pycache python3 -m compileall -q src scripts tests",
+    "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py",
+    "python3 -m pytest -q tests/audit tests/ci/test_committed_artifact_audit_gate.py",
+    "python3 -m pytest -q tests/coverage tests/metrics tests/planner",
+    "python3 -m pytest -q <new L04 P13/P14 audit tests>",
+    "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json",
+    "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L04_P13_P14_SCALE_AUDIT_AND_REFRESH"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Requirements are clear and no real blocker was found from static inspection. The main open design choice is how to satisfy the postcheck compatibility requirement for P13: legitimate artifact refresh plus inclusion in POSTCHECK_PHASES, or a separate explicit P13 audit gate that keeps the historical command mismatch visible while enforcing the stronger L04 invariants."
+}

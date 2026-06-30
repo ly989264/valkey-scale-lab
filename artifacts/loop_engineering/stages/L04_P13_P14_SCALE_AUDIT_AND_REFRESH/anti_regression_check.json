@@ -1,0 +1,47 @@
+{
+  "schema_version": "v1",
+  "status": "PASS",
+  "stage_id": "L04_P13_P14_SCALE_AUDIT_AND_REFRESH",
+  "base_ref": "cea85f24bdf6e16f7f75c8a76b4bd8c96e9ddb85",
+  "head_ref": "WORKTREE",
+  "checked_at": "2026-06-30T07:54:48Z",
+  "verdict": "APPROVED",
+  "blockers": [],
+  "non_blocking_observations": [
+    {
+      "id": "ARG-L04-001",
+      "description": "Older generated audit/provenance/metric reports changed only timestamp/root-commit metadata during validation and were restored before commit."
+    },
+    {
+      "id": "ARG-L04-002",
+      "description": "Tracked schema_validator bytecode changed during validation and was restored before commit."
+    }
+  ],
+  "checks": {
+    "deleted_tests_or_harness_files": false,
+    "existing_assertions_removed": false,
+    "real_valkey_requirements_lowered": false,
+    "schemas_weakened_for_existing_contracts": false,
+    "historical_gate_or_phase_results_modified": false,
+    "p14_or_forbidden_wrappers_executed": false,
+    "dry_run_1000_counted_as_real": false,
+    "rendered_reports_used_as_source_metric_evidence": false,
+    "missing_or_skipped_metrics_fabricated": false
+  },
+  "changed_files_reviewed": [
+    ".github/workflows/github-coverage-gates.yml",
+    "schemas/artifact/p13_p14_scale_audit.schema.json",
+    "scripts/audit_p13_p14_scale.py",
+    "tests/scale/test_p13_p14_scale_audit.py",
+    "tests/ci/test_p13_p14_scale_audit_gate.py",
+    "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+    "artifacts/loop_engineering/stages/L04_P13_P14_SCALE_AUDIT_AND_REFRESH/"
+  ],
+  "evidence": {
+    "artifacts_gates_phases_diff": "none",
+    "workflow_forbidden_wrapper_commands": 0,
+    "commands_log_forbidden_wrapper_execution": 0,
+    "p14_default_gate_or_real_evidence_artifacts": 0,
+    "historical_artifact_rewrites": 0
+  }
+}
