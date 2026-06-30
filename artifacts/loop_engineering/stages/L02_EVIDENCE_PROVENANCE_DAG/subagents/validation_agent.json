@@ -1,0 +1,146 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "agent_role": "validation_agent",
+  "created_at": "2026-06-30T06:15:45Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Repository safety and phase-loop constraints.",
+      "key_findings": [
+        "P14_SCALE_1000_OPTIN_DRYRUN must not run without explicit opt-in.",
+        "Real Valkey and fault wrapper gates are separate evidence paths and must not be faked.",
+        "Generated artifacts and validation results must remain machine-readable."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Autonomous build entry point and artifact discipline.",
+      "key_findings": [
+        "P14 remains opt-in only.",
+        "Artifacts are the source of truth for reports and phase evidence."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent role contract.",
+      "key_findings": [
+        "validation_agent runs validation commands and explains results.",
+        "Commands, exit codes, and output summaries must be recorded in commands.jsonl and validation_agent.json."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+      "purpose": "Validation command catalog.",
+      "key_findings": [
+        "Baseline validation includes precheck, safety scan, compileall, and pytest suites.",
+        "Audit and loop-engineering validations are required.",
+        "Real Valkey, fault, and P14 dry-run commands are only run when the stage requires and permits them."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/current_harness_plan.json",
+      "purpose": "L02 acceptance plan.",
+      "key_findings": [
+        "L02 adds provenance graph schema, builder, committed artifact checks, CI gate, and generated graph artifact.",
+        "Acceptance explicitly forbids P14, real Valkey wrapper, and fault wrapper execution for this static provenance stage."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/command_log_entry.schema.json",
+      "purpose": "Command log schema.",
+      "key_findings": [
+        "Each command entry requires timestamps, cwd, command array, exit_code, stdout_tail, stderr_tail, and PASS/FAIL/SKIPPED_WITH_REASON status.",
+        "PASS entries must have exit_code 0."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Validation response schema.",
+      "key_findings": [
+        "agent_role must be validation_agent.",
+        "verdict must be APPROVED, CHANGES_REQUESTED, or BLOCKED."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [
+    {
+      "name": "previous-static-baseline",
+      "type": "ci",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "precheck --all, safety_scan, compileall, and the combined pytest baseline exit 0."
+    },
+    {
+      "name": "committed-artifact-audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "audit_committed_artifacts.py produces a schema-valid audit report."
+    },
+    {
+      "name": "L02-provenance-graph",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "build_provenance_graph.py produces a schema-valid provenance graph and provenance tests/CI gate pass."
+    },
+    {
+      "name": "loop-engineering-stage-validation",
+      "type": "schema",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "loop_engineering_validate.py accepts the L02 stage artifact set."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "No implementation performed by validation_agent.",
+      "files": [
+        "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/commands.jsonl",
+        "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/validation_agent.json"
+      ],
+      "rationale": "The validation role is limited to command execution, command logging, generated-noise cleanup, and result reporting."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS.",
+    "Provenance graph schema, builder, tests, CI guard, and generated graph exist.",
+    "Generated provenance graph validates against schema.",
+    "P09, P11, P12, and P13 committed artifacts have required provenance coverage.",
+    "Report view outputs cannot be source-of-truth nodes.",
+    "Fixture tests prove missing sources, hash drift, cycles, and report view misuse become blocking findings.",
+    "No historical phase, gate, report, or audit artifact is modified to hide provenance gaps.",
+    "No P14, real Valkey, or fault wrapper command is run."
+  ],
+  "risks": [
+    "compileall and validation scripts refreshed tracked scripts/__pycache__ bytecode; restored from HEAD.",
+    "audit_committed_artifacts.py refreshed only audit_report.json created_at; restored from HEAD after diff confirmation.",
+    "git restore required escalated index access because .git is read-only in the managed sandbox.",
+    "The worktree still contains L02 implementation artifacts and .github/workflows/github-coverage-gates.yml changes from the stage work; validation_agent left them untouched."
+  ],
+  "forbidden_shortcuts": [
+    "Did not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Did not run scripts/valkey_e2e_gate.py.",
+    "Did not run scripts/fault_safety_gate.py.",
+    "Did not run scripts/fault_failover_gate.py.",
+    "Did not modify code or tests."
+  ],
+  "commands_to_run": [
+    "python3 scripts/codex_gate.py precheck --all",
+    "python3 scripts/safety_scan.py",
+    "python3 -m compileall -q src scripts tests",
+    "PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH python3 -m pytest -q tests/ci/test_postcheck_compatibility.py tests/unit tests/ci/test_github_coverage_gates.py tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator tests/analysis tests/report tests/stability tests/scale tests/loop_engineering tests/ci/test_loop_engineering_pack.py tests/audit tests/ci/test_committed_artifact_audit_gate.py tests/provenance tests/ci/test_provenance_graph_gate.py",
+    "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json",
+    "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L02_EVIDENCE_PROVENANCE_DAG",
+    "git status --short",
+    "git diff -- artifacts/loop_engineering/reports/audit_report.json",
+    "git restore --source=HEAD --worktree artifacts/loop_engineering/reports/audit_report.json scripts/__pycache__",
+    "python3 scripts/validate_json_schema.py --schema schemas/loop_engineering/subagent_response.schema.json --instance artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/validation_agent.json",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L02_EVIDENCE_PROVENANCE_DAG",
+    "git restore --source=HEAD --worktree scripts/__pycache__/schema_validator.cpython-313.pyc",
+    "git status --short"
+  ],
+  "verdict": "APPROVED",
+  "notes": "All requested validation commands passed. precheck --all, safety_scan.py, compileall, the combined pytest suite, audit report generation/schema validation, provenance graph generation/schema validation, validation_agent schema validation, and L02 loop-engineering validation all exited 0. The combined pytest command reported 158 passed in 1.24s. The audit_report.json diff was created_at-only and was restored together with tracked scripts/__pycache__ bytecode; schema_validator pycache was restored again after the final schema checks. Final git status showed no tracked generated pycache or audit_report noise. No P14, real Valkey, or fault wrapper command was run."
+}

@@ -1,0 +1,166 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "agent_role": "review_agent",
+  "created_at": "2026-06-30T06:12:50Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety, artifact-first, missing-data, and P14 boundary rules.",
+      "key_findings": [
+        "Machine-readable artifacts are the product; rendered reports are views only.",
+        "Missing values must be encoded explicitly as MISSING or SKIPPED_WITH_REASON rather than invented or silently omitted.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic and must not be run or treated as real Valkey evidence."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm automatic phase boundary and P14 opt-in rule.",
+      "key_findings": [
+        "Automatic work stops before P14.",
+        "P14 requires VSLAB_ALLOW_1000_DRYRUN and is dry-run/resource-check only.",
+        "Reports must read artifacts and cannot become the source of truth."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Review-agent output contract.",
+      "key_findings": [
+        "review_agent must independently review the diff against stage_design.md.",
+        "The review verdict must be APPROVED or CHANGES_REQUESTED/BLOCKED.",
+        "The JSON response must follow schemas/loop_engineering/subagent_response.schema.json."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L02 stage scope and acceptance.",
+      "key_findings": [
+        "L02 must build a provenance DAG with source artifact, sha256, producer, schema, phase, and run_id coverage.",
+        "P09 report, P11 stability report, and P12/P13 scale reports must trace back to source artifacts.",
+        "The DAG must be written to artifacts/loop_engineering/reports/provenance_graph.json."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/stage_design.md",
+      "purpose": "Detailed L02 design and prior finding criteria.",
+      "key_findings": [
+        "The builder must compute SHA256 from disk and distinguish source-of-truth artifacts from rendered views.",
+        "Blocking findings include missing required sources, hash mismatches, graph cycles, missing endpoints, report views used as sources, P14 real coverage, and required coverage gaps.",
+        "Nonblocking findings may record missing optional metadata only when the graph explicitly marks the missing field as MISSING.",
+        "P13 timing nodes must trace to setup timeline, runtime timing breakdown, real evidence, and cleanup artifacts where present."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/current_harness_plan.json",
+      "purpose": "Planned harness and acceptance commands.",
+      "key_findings": [
+        "The planned gate is static-only: build the provenance graph, validate its schema, and run provenance CI tests.",
+        "The plan requires P09/P11/P12/P13 coverage and report-view/source-of-truth separation.",
+        "No P14, real Valkey, or fault wrapper command may run for L02."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/review_agent.json",
+      "purpose": "Prior CHANGES_REQUESTED review findings.",
+      "key_findings": [
+        "Prior finding REVIEW-L02-001 required schema-invalid required source nodes to produce blocking invalid_source_schema findings.",
+        "Prior finding REVIEW-L02-002 required missing metadata to be explicit through metadata_status and/or missing_metadata findings.",
+        "Prior finding REVIEW-L02-003 required P13 setup timeline provenance to point from setup_timeline_scale_* into p13_timing_breakdown_scale_* rather than accepting the legacy reverse source_artifact edge."
+      ]
+    },
+    {
+      "path": "scripts/build_provenance_graph.py",
+      "purpose": "Primary implementation review.",
+      "key_findings": [
+        "Required provenance source relations include setup_timeline_source.",
+        "Legacy P13 setup timeline source_artifacts entries pointing back to p13_timing_breakdown_scale_* are skipped with nonblocking legacy_declared_source_skipped findings.",
+        "P13 timing now adds setup_timeline_scale_* -> p13_timing_breakdown_scale_* edges using relation setup_timeline_source and separately links runtime timing, real evidence, cleanup, and setup/cleanup logs into the timing artifact.",
+        "evaluate_node_metadata now attaches metadata_status to every node, emits blocking invalid_source_schema findings for invalid required source schemas, and emits nonblocking missing_metadata findings for absent metadata.",
+        "P14 boundary logic requires P14 to remain non-automatic and reports real_valkey_coverage=false."
+      ]
+    },
+    {
+      "path": "tests/provenance/test_provenance_graph.py",
+      "purpose": "Focused provenance harness review.",
+      "key_findings": [
+        "Current-repo tests assert graph PASS, zero blocking findings, P09/P11/P12/P13 PASS coverage, P14 real_valkey_coverage=false, and report views not used as upstream sources.",
+        "Fixture tests prove missing sources, hash drift, report-view misuse, invalid required source schema, missing metadata visibility, graph cycles, and duplicate edge prevention.",
+        "P13 tests assert setup_timeline_scale_50.json -> p13_timing_breakdown_scale_50.json with relation setup_timeline_source and assert the reverse p13_timing_breakdown_scale_50.json -> setup_timeline_scale_50.json source_artifact edge is absent."
+      ]
+    },
+    {
+      "path": "tests/ci/test_provenance_graph_gate.py",
+      "purpose": "Static CI gate review.",
+      "key_findings": [
+        "The CI guard runs the provenance builder, validates the graph schema, checks graph status PASS, and enforces static workflow commands.",
+        "The workflow forbidden-token check covers P14, VSLAB_ALLOW_1000_DRYRUN, valkey_e2e_gate.py, fault_safety_gate.py, and fault_failover_gate.py.",
+        "The CI guard keeps L02 static-only."
+      ]
+    },
+    {
+      "path": "schemas/artifact/provenance_graph.schema.json",
+      "purpose": "DAG artifact schema review.",
+      "key_findings": [
+        "Nodes require metadata_status with artifact_type, phase_id, run_id, producer, status, and schema entries.",
+        "metadata_status values are constrained to PRESENT, VALID, INVALID, MISSING, or SKIPPED_WITH_REASON.",
+        "Summary includes missing_metadata_count and invalid_source_schema_count."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "CI workflow coverage review.",
+      "key_findings": [
+        "The workflow runs the provenance graph builder, provenance schema validation, and provenance pytest suite.",
+        "The workflow does not run P14 or any real Valkey/fault wrapper command.",
+        "The workflow addition preserves the existing fast-gate structure."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "purpose": "Generated graph artifact review.",
+      "key_findings": [
+        "The committed graph reports status PASS, 95 nodes, 70 edges, zero blocking findings, zero missing sources, zero hash mismatches, 11 nonblocking missing_metadata findings, and zero invalid_source_schema findings.",
+        "P09/P11/P12/P13 phase_coverage entries are PASS with no finding_ids.",
+        "P14 boundary is SKIPPED_WITH_REASON, automatic=false, and real_valkey_coverage=false.",
+        "P13 setup_timeline_scale_50 and setup_timeline_scale_100 are upstream setup_timeline_source nodes for p13_timing_breakdown_scale_50 and p13_timing_breakdown_scale_100.",
+        "The legacy p13_timing_breakdown_scale_* -> setup_timeline_scale_* source_artifact declarations are represented only as nonblocking legacy_declared_source_skipped findings, not accepted edges."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Output schema validation.",
+      "key_findings": [
+        "The review artifact must use schema_version v1, agent_role review_agent, required context/findings/plan arrays, and verdict APPROVED, CHANGES_REQUESTED, or BLOCKED.",
+        "additionalProperties are not allowed at the top level."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [],
+  "implementation_plan": [],
+  "acceptance_criteria": [
+    "Prior finding REVIEW-L02-001 is fixed: invalid required source schemas produce blocking invalid_source_schema findings and have fixture coverage.",
+    "Prior finding REVIEW-L02-002 is fixed: node metadata_status records MISSING/SKIPPED_WITH_REASON/VALID/PRESENT states and missing metadata is emitted as nonblocking missing_metadata findings.",
+    "Prior finding REVIEW-L02-003 is fixed: P13 setup timeline artifacts are modeled as setup_timeline_source inputs to p13_timing_breakdown_scale_* and the legacy reverse source_artifact declarations are skipped.",
+    "The current committed provenance graph remains PASS with zero blocking findings.",
+    "P14 remains SKIPPED_WITH_REASON with real_valkey_coverage=false and no L02 command ran P14, valkey_e2e_gate.py, fault_safety_gate.py, or fault_failover_gate.py."
+  ],
+  "risks": [
+    "Local interpreter variance: /opt/homebrew/bin/python3 lacks pytest, but the repository python 3.12.4 environment ran the static pytest suite successfully."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Do not run VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not run scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py.",
+    "Do not modify implementation code or historical phase/gate/audit artifacts during this review.",
+    "Do not treat rendered reports or 1000-node dry-run artifacts as real Valkey evidence."
+  ],
+  "commands_to_run": [
+    "python3 scripts/build_provenance_graph.py --out /private/tmp/vslab_l02_review_provenance_graph.json -> PASS provenance_graph /private/tmp/vslab_l02_review_provenance_graph.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json -> PASS",
+    "python3 -m pytest -q tests/provenance tests/ci/test_provenance_graph_gate.py -> not runnable in /opt/homebrew/bin/python3 because pytest is not installed",
+    "python -m pytest -q tests/provenance tests/ci/test_provenance_graph_gate.py -> 12 passed in 0.38s"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Re-review found the prior CHANGES_REQUESTED items fixed. Static builder/schema checks pass, the focused provenance pytest suite passes under the repo python, the committed graph is PASS with zero blocking findings, and P14 remains opt-in dry-run only with no real coverage."
+}

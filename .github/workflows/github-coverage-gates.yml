@@ -49,3 +49,9 @@ jobs:
         run: python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json
       - name: Committed artifact audit tests
         run: python3 -m pytest -q tests/audit tests/ci/test_committed_artifact_audit_gate.py
+      - name: Provenance graph
+        run: python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json
+      - name: Provenance graph schema
+        run: python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json
+      - name: Provenance graph tests
+        run: python3 -m pytest -q tests/provenance tests/ci/test_provenance_graph_gate.py

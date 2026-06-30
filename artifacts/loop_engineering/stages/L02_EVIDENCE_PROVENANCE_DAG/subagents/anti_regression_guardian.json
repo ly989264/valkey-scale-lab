@@ -1,0 +1,159 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "agent_role": "anti_regression_guardian",
+  "created_at": "2026-06-30T06:15:46Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety, harness integrity, real Valkey, and P14 boundary rules.",
+      "key_findings": [
+        "Harness controls must not be weakened or edited to hide defects.",
+        "Fake-only evidence must never be presented as real Valkey evidence.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic and must not be run without explicit opt-in."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Automatic phase loop, artifact discipline, and P14 opt-in contract.",
+      "key_findings": [
+        "Automatic work stops at P13; P14 requires VSLAB_ALLOW_1000_DRYRUN.",
+        "Reports must read artifacts and cannot become source of truth.",
+        "Gate PASS results must be produced by the gate scripts, not hand-written."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Anti-regression role and JSON response contract.",
+      "key_findings": [
+        "anti_regression_guardian checks tests, scripts, schemas, workflows, codex, and gate artifact changes for harness weakening.",
+        "Verdict must be APPROVED, CHANGES_REQUESTED, or BLOCKED."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L02 stage objective and acceptance criteria.",
+      "key_findings": [
+        "L02 must build a provenance DAG with source artifacts, SHA256, producer, schema, phase, and run_id traceability.",
+        "P09, P11, P12, and P13 reports must trace back to source artifacts.",
+        "Missing sources must become findings, and the DAG must be written to artifacts/loop_engineering/reports/provenance_graph.json."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/current_harness_plan.json",
+      "purpose": "Planned L02 harness and acceptance checks.",
+      "key_findings": [
+        "The planned L02 gate is static: build the provenance graph, validate schema, and run provenance tests.",
+        "The plan explicitly forbids editing historical phase, gate, report, or audit artifacts to hide provenance gaps.",
+        "The plan forbids running P14, real Valkey wrapper gates, or fault wrapper gates."
+      ]
+    },
+    {
+      "path": "scripts/build_provenance_graph.py",
+      "purpose": "New provenance builder implementation.",
+      "key_findings": [
+        "The builder recomputes SHA256 values from disk and records metadata_status for artifact_type, schema, phase_id, run_id, producer, and status.",
+        "Missing sources, source hash mismatches, missing edge endpoints, graph cycles, report views used as sources, invalid required source schemas, and P14 real-evidence boundary violations produce blocking findings.",
+        "P13 setup timeline direction was strengthened to setup_timeline -> p13_timing_breakdown -> scale_ladder_report, while the legacy reverse source edge is skipped with a non-blocking finding."
+      ]
+    },
+    {
+      "path": "tests/provenance/test_provenance_graph.py",
+      "purpose": "Focused provenance tests.",
+      "key_findings": [
+        "Current-repo tests assert P09/P11/P12/P13 coverage, report-view source_of_truth=false behavior, P14 non-real coverage, P13 setup timeline direction, and runtime timing schema skip semantics.",
+        "Negative fixtures cover missing sources, source hash mismatch, report view used as source, invalid required source schema, explicit missing metadata, graph cycles, and duplicate edge prevention.",
+        "No skip or xfail markers were found in the new provenance tests."
+      ]
+    },
+    {
+      "path": "tests/ci/test_provenance_graph_gate.py",
+      "purpose": "CI guard for the static provenance gate.",
+      "key_findings": [
+        "The test runs the builder, validates the generated graph schema, and asserts PASS with zero blocking findings.",
+        "The workflow guard requires the static provenance commands and forbids P14 and real/fault wrapper tokens in github-coverage-gates.yml.",
+        "No skip or xfail markers were found in the CI provenance test."
+      ]
+    },
+    {
+      "path": "schemas/artifact/provenance_graph.schema.json",
+      "purpose": "Provenance graph schema.",
+      "key_findings": [
+        "The schema requires report view policy, P14 boundary, phase coverage, nodes, edges, findings, and per-node metadata_status.",
+        "metadata_status statuses include PRESENT, VALID, INVALID, MISSING, and SKIPPED_WITH_REASON.",
+        "The schema is additive and does not modify or weaken existing schemas."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "Tracked CI workflow change.",
+      "key_findings": [
+        "The workflow diff only adds provenance graph build, provenance graph schema validation, and provenance tests after the existing audit tests.",
+        "The added workflow lines do not invoke P14, VSLAB_ALLOW_1000_DRYRUN, valkey_e2e_gate.py, fault_safety_gate.py, or fault_failover_gate.py."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "purpose": "Generated L02 provenance graph artifact.",
+      "key_findings": [
+        "The current graph reports PASS, 95 nodes, 70 edges, zero blocking findings, zero missing sources, zero hash mismatches, and zero invalid source schemas.",
+        "P09/P11/P12/P13 phase coverage entries are all PASS.",
+        "P14 is represented as SKIPPED_WITH_REASON with real_valkey_coverage=false and no P14 nodes."
+      ]
+    },
+    {
+      "path": "git status and git diff",
+      "purpose": "Current worktree review across tests, scripts, schemas, workflows, codex, and artifacts.",
+      "key_findings": [
+        "No source-level diffs were found in scripts/*.py, codex/phase_manifest.json, codex/gate_lock.json, .github/workflows/codex-gates.yml, docs/codex, templates, artifacts/gates, artifacts/phases, or audit.",
+        "The tracked github-coverage-gates workflow diff is additive and static-only.",
+        "Current final git status shows no tracked scripts/__pycache__ bytecode modifications."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [],
+  "implementation_plan": [],
+  "acceptance_criteria": [
+    "Current git status must not include tracked scripts/__pycache__ bytecode modifications.",
+    "Keep the L02 workflow addition static-only and free of P14, VSLAB_ALLOW_1000_DRYRUN, valkey_e2e_gate.py, fault_safety_gate.py, and fault_failover_gate.py invocations.",
+    "Keep P09/P11/P12/P13 provenance graph coverage PASS with zero blocking findings.",
+    "Keep metadata_status explicit for missing, skipped, valid, and invalid source metadata states.",
+    "Keep P13 setup timeline provenance in the strengthened upstream direction: setup_timeline -> p13_timing_breakdown -> scale_ladder_report.",
+    "Do not edit historical phase, gate, report, or audit artifacts to hide provenance gaps."
+  ],
+  "risks": [
+    "Tracked bytecode churn can obscure the intended review surface if it reappears before commit.",
+    "The generated provenance graph contains non-blocking missing metadata findings for historical artifacts; this is acceptable because the missing state is explicit and no source hashes or real evidence are fabricated.",
+    "The legacy P13 reverse setup-timeline source edge is intentionally skipped with a non-blocking finding; the replacement edge direction is covered by tests."
+  ],
+  "forbidden_shortcuts": [
+    "Do not delete provenance assertions or add skip/xfail markers to make L02 pass.",
+    "Do not lower real_valkey requirements or P14 opt-in constraints in manifests, workflows, schemas, or tests.",
+    "Do not weaken the provenance schema to hide missing metadata, invalid schemas, missing sources, or source hash mismatches.",
+    "Do not modify artifacts/gates or historical phase artifacts to create apparent provenance coverage.",
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN, scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py for L02."
+  ],
+  "commands_to_run": [
+    "sed -n '1,240p' AGENTS.md",
+    "sed -n '1,240p' CODEX_START_HERE.md",
+    "sed -n '1,260p' codex/loop_engineering/02_AGENT_PROTOCOL.md",
+    "sed -n '49,130p' codex/loop_engineering/04_STAGE_MANIFEST.md",
+    "sed -n '1,260p' artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/current_harness_plan.json",
+    "sed -n '1,980p' scripts/build_provenance_graph.py",
+    "sed -n '1,620p' tests/provenance/test_provenance_graph.py",
+    "sed -n '1,260p' tests/ci/test_provenance_graph_gate.py",
+    "sed -n '1,320p' schemas/artifact/provenance_graph.schema.json",
+    "sed -n '1,260p' .github/workflows/github-coverage-gates.yml",
+    "sed -n '1,260p' artifacts/loop_engineering/reports/provenance_graph.json",
+    "git status --short",
+    "git status --short artifacts/gates artifacts/phases audit codex scripts schemas tests .github",
+    "git diff -- .github/workflows/github-coverage-gates.yml",
+    "git diff -- scripts/*.py codex/phase_manifest.json codex/gate_lock.json .github/workflows/codex-gates.yml docs/codex templates schemas/artifact/provenance_graph.schema.json",
+    "git diff --numstat -- scripts/__pycache__/schema_validator.cpython-313.pyc",
+    "git status --short scripts/__pycache__/schema_validator.cpython-313.pyc",
+    "rg -n 'pytest\\.mark\\.(skip|xfail)|skip\\(|xfail\\(|real_valkey_required|P14_SCALE_1000_OPTIN_DRYRUN|VSLAB_ALLOW_1000_DRYRUN|scripts/valkey_e2e_gate\\.py|scripts/fault_safety_gate\\.py|scripts/fault_failover_gate\\.py' tests/provenance tests/ci/test_provenance_graph_gate.py .github/workflows/github-coverage-gates.yml scripts/build_provenance_graph.py schemas/artifact/provenance_graph.schema.json artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/current_harness_plan.json"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Substantive L02 review fixes strengthen the harness: metadata_status now makes missing and skipped metadata explicit, invalid required source schemas are blocking, P13 setup timeline provenance points upstream into timing, P14 remains opt-in dry-run only, and no historical phase/gate/audit artifacts were modified to hide gaps. No deleted assertions, added skips/xfails, lowered real_valkey/P14 requirements, weakened existing schemas, fake-only real evidence, provenance-gap hiding, or current tracked bytecode churn were found."
+}

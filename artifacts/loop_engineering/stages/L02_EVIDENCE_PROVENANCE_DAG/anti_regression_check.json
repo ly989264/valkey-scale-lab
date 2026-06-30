@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "status": "PASS",
+  "base_ref": "5a65a331d1100feac0f61cdcdef3bd08d914a5e7",
+  "head_ref": "WORKTREE",
+  "changed_files": [
+    ".github/workflows/github-coverage-gates.yml",
+    "artifacts/loop_engineering/reports/provenance_graph.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/anti_regression_report.md",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/commands.jsonl",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/current_harness_plan.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/previous_harness_result.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/read_context.md",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/stage_design.md",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/stage_state.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/anti_regression_guardian.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/harness_architect.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/implementation_worker.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/requirements_analyst.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/review_agent.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/risk_auditor.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/validation_agent.json",
+    "schemas/artifact/provenance_graph.schema.json",
+    "scripts/build_provenance_graph.py",
+    "tests/ci/test_provenance_graph_gate.py",
+    "tests/provenance/test_provenance_graph.py"
+  ],
+  "findings": []
+}

@@ -1,0 +1,228 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "agent_role": "implementation_worker",
+  "created_at": "2026-06-30T06:22:53Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety, artifact-first, harness integrity, real-gate, and P14 rules.",
+      "key_findings": [
+        "Machine-readable artifacts are the product.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic and must not run without explicit opt-in.",
+        "Harness files must not be weakened, deleted, bypassed, or modified to hide defects."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Autonomous phase-loop entry point and P14 boundary.",
+      "key_findings": [
+        "Automatic completion stops before P14.",
+        "P14 requires VSLAB_ALLOW_1000_DRYRUN and is dry-run/resource-check only.",
+        "Reports read artifacts and cannot become source of truth."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent output contract and implementation_worker role limits.",
+      "key_findings": [
+        "implementation_worker writes artifacts/loop_engineering/stages/<STAGE_ID>/subagents/implementation_worker.json.",
+        "The response must follow the shared subagent JSON shape.",
+        "Main-agent merge requires review_agent, validation_agent, and anti_regression_guardian approval."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L02 stage manifest entry.",
+      "key_findings": [
+        "L02 requires a provenance graph builder, DAG schema, source artifact hash checks, and report-as-view tests.",
+        "P09, P11, P12, and P13 reports must trace to source artifacts.",
+        "The graph must be written to artifacts/loop_engineering/reports/provenance_graph.json."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/stage_design.md",
+      "purpose": "Detailed stage scope, required coverage, findings semantics, and P14 boundary.",
+      "key_findings": [
+        "The builder must recompute SHA256 from disk and distinguish source-of-truth artifacts from rendered views.",
+        "Blocking findings include missing required source artifacts, hash mismatches, cycles, missing endpoints, report views used as sources, P14 real coverage, and required coverage gaps.",
+        "Nonblocking findings may record missing optional metadata only when the graph explicitly marks the missing field as MISSING.",
+        "P13 timing nodes must trace to setup timeline, runtime timing breakdown, real evidence, and cleanup artifacts where present."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/current_harness_plan.json",
+      "purpose": "Planned L02 static harness and acceptance criteria.",
+      "key_findings": [
+        "The L02 gate is static: build the provenance graph, validate schema, and run provenance tests.",
+        "Acceptance requires P09/P11/P12/P13 coverage and report-view/source-of-truth separation.",
+        "Acceptance forbids P14, real Valkey wrapper, and fault wrapper execution."
+      ]
+    },
+    {
+      "path": "scripts/build_provenance_graph.py",
+      "purpose": "Final implementation inspection.",
+      "key_findings": [
+        "add_edge uses edge_by_key to de-duplicate exact source-target-relation-discovery provenance edges.",
+        "evaluate_node_metadata attaches metadata_status to every node and emits blocking invalid_source_schema findings for invalid required source schemas.",
+        "missing_metadata findings are nonblocking and explicit; schema statuses include VALID, INVALID, MISSING, and SKIPPED_WITH_REASON.",
+        "build_p13_timing emits setup_timeline_scale_* -> p13_timing_breakdown_scale_* edges with relation setup_timeline_source and skips legacy reverse P13 source_artifacts edges with nonblocking findings.",
+        "p14_boundary keeps P14 optional, SKIPPED_WITH_REASON, and real_valkey_coverage=false."
+      ]
+    },
+    {
+      "path": "tests/provenance/test_provenance_graph.py",
+      "purpose": "Focused provenance test inspection.",
+      "key_findings": [
+        "Current-repo tests assert graph PASS, zero blocking findings, P09/P11/P12/P13 coverage PASS, and P14 real_valkey_coverage=false.",
+        "Tests assert unique edge keys and report views are not source-of-truth upstream sources.",
+        "Tests assert P13 setup_timeline_scale_50.json -> p13_timing_breakdown_scale_50.json with relation setup_timeline_source and the legacy reverse source_artifact edge is absent.",
+        "Negative fixtures cover missing sources, source hash mismatch, report-view misuse, invalid required source schema, missing metadata visibility, and graph cycles."
+      ]
+    },
+    {
+      "path": "tests/ci/test_provenance_graph_gate.py",
+      "purpose": "CI static gate inspection.",
+      "key_findings": [
+        "The CI test runs the builder, validates the generated graph against the provenance schema, and asserts PASS with zero blocking findings.",
+        "The workflow guard requires the static L02 commands.",
+        "The workflow guard forbids P14, VSLAB_ALLOW_1000_DRYRUN, valkey_e2e_gate.py, fault_safety_gate.py, and fault_failover_gate.py tokens."
+      ]
+    },
+    {
+      "path": "schemas/artifact/provenance_graph.schema.json",
+      "purpose": "Provenance graph artifact schema inspection.",
+      "key_findings": [
+        "Nodes require schema_path, schema_sha256, schema_valid, metadata_status, dry_run_only, and real_valkey_coverage fields.",
+        "metadata_status requires artifact_type, phase_id, run_id, producer, status, and schema entries.",
+        "Summary includes missing_metadata_count and invalid_source_schema_count."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "purpose": "Generated graph artifact final check.",
+      "key_findings": [
+        "The graph reports status PASS, 95 nodes, 70 edges, and zero blocking findings.",
+        "Edge count equals unique edge count: 70 unique edges and no duplicates.",
+        "P09/P11/P12/P13 phase_coverage entries are PASS with no finding_ids.",
+        "Findings are limited to two nonblocking legacy_declared_source_skipped findings and eleven nonblocking missing_metadata findings.",
+        "P14 boundary is SKIPPED_WITH_REASON, automatic=false, real_valkey_coverage=false, and dry_run_artifact_count=0."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/review_agent.json",
+      "purpose": "Latest review-agent output.",
+      "key_findings": [
+        "Verdict is APPROVED.",
+        "Review confirms prior schema/metadata findings were fixed.",
+        "Review confirms P13 setup timeline direction and P14 static-only boundary."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/validation_agent.json",
+      "purpose": "Latest validation-agent output.",
+      "key_findings": [
+        "Verdict is APPROVED.",
+        "Validation reports precheck, safety scan, compileall, combined pytest, audit/schema checks, provenance build/schema checks, and loop-engineering validation all exited 0.",
+        "Validation explicitly records that P14, valkey_e2e_gate.py, fault_safety_gate.py, and fault_failover_gate.py were not run."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/anti_regression_guardian.json",
+      "purpose": "Latest anti-regression output.",
+      "key_findings": [
+        "Verdict is APPROVED.",
+        "No deleted assertions, skips/xfails, lowered real_valkey/P14 requirements, weakened schemas, or historical artifact edits were found.",
+        "Anti-regression confirms metadata_status, P13 setup direction, P14 boundary, and no current tracked bytecode churn."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/commands.jsonl",
+      "purpose": "Command-log check for forbidden gate execution.",
+      "key_findings": [
+        "Direct JSONL command-array query found no actual command entries invoking P14_SCALE_1000_OPTIN_DRYRUN.",
+        "Direct JSONL command-array query found no actual command entries invoking VSLAB_ALLOW_1000_DRYRUN or the real/fault wrapper gate scripts.",
+        "Latest logged validations are static provenance/schema/pytest/loop-engineering checks."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Output schema for this final-refresh response.",
+      "key_findings": [
+        "agent_role must be implementation_worker.",
+        "verdict must be APPROVED, CHANGES_REQUESTED, or BLOCKED.",
+        "No additional top-level properties are allowed."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [],
+  "implementation_plan": [
+    {
+      "step": "Perform final-refresh verification without modifying implementation code or tests.",
+      "files": [
+        "scripts/build_provenance_graph.py",
+        "tests/provenance/test_provenance_graph.py",
+        "tests/ci/test_provenance_graph_gate.py",
+        "schemas/artifact/provenance_graph.schema.json",
+        "artifacts/loop_engineering/reports/provenance_graph.json"
+      ],
+      "rationale": "The main implementation and review fixes were already complete; final-refresh only needed to confirm no blocking mismatch remains."
+    },
+    {
+      "step": "Overwrite the permitted implementation_worker final-refresh artifact.",
+      "files": [
+        "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/implementation_worker.json"
+      ],
+      "rationale": "The user explicitly permitted only this artifact to be overwritten."
+    }
+  ],
+  "acceptance_criteria": [
+    "Edge de-duplication is present in the builder and confirmed in the graph artifact with 70 edges and 70 unique edge keys.",
+    "Schema/metadata findings are implemented: invalid required source schemas are blocking, missing metadata is explicit and nonblocking, and summary counts include missing_metadata_count and invalid_source_schema_count.",
+    "Every graph node has metadata_status keys for artifact_type, phase_id, run_id, producer, status, and schema.",
+    "P13 setup timeline provenance points from setup_timeline_scale_* into p13_timing_breakdown_scale_* using relation setup_timeline_source; the legacy reverse source_artifact edge is absent.",
+    "P14 boundary is represented as SKIPPED_WITH_REASON with automatic=false and real_valkey_coverage=false.",
+    "No actual L02 command-log entry invokes P14_SCALE_1000_OPTIN_DRYRUN, VSLAB_ALLOW_1000_DRYRUN, scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py.",
+    "Latest review_agent, validation_agent, and anti_regression_guardian verdicts are APPROVED.",
+    "No code or test changes were made during final-refresh."
+  ],
+  "risks": [
+    "The generated graph intentionally retains nonblocking missing_metadata findings for historical artifacts; this is acceptable because the missing state is explicit and no source values are invented.",
+    "The command log includes earlier failed static attempts from implementation development, but latest validation passes and the final command-array query found no forbidden gate execution.",
+    "The worktree contains existing untracked L02 implementation artifacts and one modified workflow from prior stage work; final-refresh left those collaborator changes untouched."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Do not set or invoke VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not run scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py.",
+    "Do not modify code or tests during final-refresh unless a blocking mismatch is found.",
+    "Do not edit historical phase, gate, report, or audit artifacts to hide provenance gaps.",
+    "Do not treat rendered report views or 1000-node dry-run planner artifacts as real Valkey evidence."
+  ],
+  "commands_to_run": [
+    "sed -n '1,220p' AGENTS.md -> read",
+    "sed -n '1,180p' CODEX_START_HERE.md -> read",
+    "sed -n '1,180p' codex/loop_engineering/02_AGENT_PROTOCOL.md -> read",
+    "sed -n '49,94p' codex/loop_engineering/04_STAGE_MANIFEST.md -> read L02 entry",
+    "sed -n '1,140p' artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/stage_design.md -> read",
+    "sed -n '1,140p' artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/current_harness_plan.json -> read",
+    "sed -n '1,980p' scripts/build_provenance_graph.py -> read in chunks",
+    "sed -n '1,360p' tests/provenance/test_provenance_graph.py -> read",
+    "sed -n '1,220p' tests/ci/test_provenance_graph_gate.py -> read",
+    "sed -n '1,260p' schemas/artifact/provenance_graph.schema.json -> read",
+    "sed -n '1,220p' artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/review_agent.json -> APPROVED",
+    "sed -n '1,220p' artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/validation_agent.json -> APPROVED",
+    "sed -n '1,220p' artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/anti_regression_guardian.json -> APPROVED",
+    "jq '{status, summary, p14_boundary, phase_coverage, report_view_policy}' artifacts/loop_engineering/reports/provenance_graph.json -> PASS, zero blocking findings, P14 skipped",
+    "jq edge uniqueness query on artifacts/loop_engineering/reports/provenance_graph.json -> edge_count=70 unique_edge_count=70",
+    "jq findings category query on artifacts/loop_engineering/reports/provenance_graph.json -> only nonblocking legacy_declared_source_skipped and missing_metadata findings",
+    "jq P13 timing/setup node metadata query on artifacts/loop_engineering/reports/provenance_graph.json -> metadata_status present and schemas valid/skipped as expected",
+    "jq P13 setup_timeline edge query on artifacts/loop_engineering/reports/provenance_graph.json -> setup_timeline_source edges PASS for 50 and 100",
+    "jq reverse P13 setup_timeline edge query on artifacts/loop_engineering/reports/provenance_graph.json -> no reverse edge output",
+    "jq metadata_status key completeness query on artifacts/loop_engineering/reports/provenance_graph.json -> nodes_missing_metadata_status_keys=0",
+    "jq command-array forbidden invocation query on artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/commands.jsonl -> no matching actual command entries"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Final-refresh found no blocking mismatch. The implementation includes edge de-duplication, explicit schema/metadata findings, required metadata_status, corrected P13 setup_timeline_source direction, the P14 dry-run boundary, and no forbidden gate execution. No code or tests were modified."
+}

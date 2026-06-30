@@ -1,0 +1,61 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "new_tests": [
+    {
+      "path": "tests/provenance/test_provenance_graph.py",
+      "purpose": "Fixture and committed-repository tests for source hash checks, missing source findings, report-as-view policy, DAG integrity, P09/P11/P12/P13 coverage, and P14 dry-run boundary."
+    },
+    {
+      "path": "tests/ci/test_provenance_graph_gate.py",
+      "purpose": "CI guard that runs the provenance builder, validates the graph schema, checks workflow coverage, and ensures the gate stays static-only."
+    }
+  ],
+  "new_schemas": [
+    "schemas/artifact/provenance_graph.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "command": "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+      "acceptance": "Generates a schema-valid provenance graph and exits 0 when there are no blocking findings."
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json",
+      "acceptance": "Validates the generated provenance graph."
+    }
+  ],
+  "new_artifact_checks": [
+    "P09 report_index views trace to analysis_summary and P08 source artifacts",
+    "P11 stability_report traces to stability metrics, baseline comparison, real evidence, cleanup, and phase summary",
+    "P12 scale_ladder_report traces to 10/30 preflight, evidence, rung, cleanup, and phase summary",
+    "P13 scale_ladder_report traces to 50/100 preflight, evidence, rung, cleanup, timing, and phase summary",
+    "Report-indexed HTML/Markdown/SVG/CSV outputs are source_of_truth=false",
+    "Source artifact hashes and report view hashes are recomputed from disk",
+    "Missing source artifacts and hash mismatches produce blocking findings",
+    "P14 and 1000-node dry-run artifacts never count as real evidence"
+  ],
+  "expected_initial_failures": [
+    {
+      "command": "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+      "reason": "L02 provenance builder does not exist before implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/provenance",
+      "reason": "tests/provenance does not exist before implementation."
+    },
+    {
+      "command": "python3 -m pytest -q tests/ci/test_provenance_graph_gate.py",
+      "reason": "L02 CI provenance test does not exist before implementation."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS.",
+    "Provenance graph schema, builder, tests, CI guard, and generated graph exist.",
+    "Generated provenance graph validates against schema.",
+    "P09, P11, P12, and P13 committed artifacts have required provenance coverage.",
+    "Report view outputs cannot be source-of-truth nodes.",
+    "Fixture tests prove missing sources, hash drift, cycles, and report view misuse become blocking findings.",
+    "No historical phase, gate, report, or audit artifact is modified to hide provenance gaps.",
+    "No P14, real Valkey, or fault wrapper command is run."
+  ]
+}

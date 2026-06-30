@@ -1,0 +1,409 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "agent_role": "risk_auditor",
+  "created_at": "2026-06-30T04:43:58Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Read controlling repository safety and artifact integrity rules.",
+      "key_findings": [
+        "Machine-readable artifacts are the product; charts, HTML, and markdown reports are views only.",
+        "Fake-only gates must never be presented as real Valkey evidence.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic and must not run without explicit opt-in.",
+        "Protected harness files must not be weakened, bypassed, deleted, or edited to hide changes."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm automatic phase boundary and P14 opt-in requirements.",
+      "key_findings": [
+        "Automatic work stops at P13_SCALE_LADDER_50_100.",
+        "P14 may only run when VSLAB_ALLOW_1000_DRYRUN is explicitly set to I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE.",
+        "Gate PASS results must be produced by scripts/codex_gate.py run, not manually written."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/START_MAIN_LOOP.md",
+      "purpose": "Read loop execution, stage context, and completion constraints.",
+      "key_findings": [
+        "Each stage must re-read context and persist stage artifacts.",
+        "Completion requires previous harness, current harness, validation, anti-regression, stage_result PASS, commit, and push.",
+        "Real Valkey resource blockers must be recorded instead of converted into PASS."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "Read the L02 goal and required harness scope.",
+      "key_findings": [
+        "L02 must build an artifact provenance DAG.",
+        "Each analysis, report, and visualization result must trace to source artifact, sha256, producer, schema, phase, and run_id.",
+        "Reports must read artifacts but must never become source of truth.",
+        "P09 reports, P11 stability report, and P12/P13 scale reports are explicit acceptance targets."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/read_context.md",
+      "purpose": "Read stage-local constraints and already recorded risks.",
+      "key_findings": [
+        "L02 must be static/artifact validation and must not run P14.",
+        "Historical gate, phase, and audit artifacts must not be edited to hide missing provenance.",
+        "Existing historical artifacts may lack producer or run_id; L02 must classify gaps instead of inventing metadata.",
+        "Broad graph building is risky unless tests prove missing source edges and SHA drift are blocking."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/audit_report.json",
+      "purpose": "Use the L01 committed artifact audit as an inventory and boundary reference.",
+      "key_findings": [
+        "Audit scope covers automatic phases P00 through P13 and optional P14.",
+        "P14 boundary is SKIPPED_WITH_REASON, dry_run_only true, real_valkey_coverage false, and real_evidence_count 0.",
+        "The report records artifact sha256 values for required artifacts, including P09, P11, P12, P13, and the P02 1000-node dry-run plan.",
+        "The report allowlists legacy gate manifest SHA drift across P00-P13 and records P13 scale_tests command mismatch as historical nonblocking."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+      "purpose": "Inspect representative analysis artifact provenance fields.",
+      "key_findings": [
+        "The artifact contains source_artifacts with path and sha256 entries from P08.",
+        "The source_artifacts entries do not themselves carry schema path, producer, phase_id, or run_id metadata.",
+        "Missing split-brain duration is encoded as MISSING with a reason and impact."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+      "purpose": "Inspect representative report and visualization index.",
+      "key_findings": [
+        "The report index hashes generated CSV, SVG, Markdown, and HTML outputs.",
+        "analysis_path is present but has no sha256, schema, phase, producer, or run_id edge metadata in this artifact.",
+        "The rendered outputs must be graph leaves or view nodes, not source-of-truth nodes."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "purpose": "Inspect representative stability report artifact.",
+      "key_findings": [
+        "The report points to stability_metrics.jsonl and stability_baseline_comparison.json by path only.",
+        "The report does not include source_artifacts, sha256 values, schema paths, or source node metadata for those inputs.",
+        "The soak profile is bounded and must not be upgraded into long-run stability evidence by a provenance graph."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json",
+      "purpose": "Inspect representative 10/30 scale report artifact.",
+      "key_findings": [
+        "The scale report embeds two scale_rung_summary objects.",
+        "Rungs include evidence_path values and the summary lists real_evidence_paths.",
+        "Neither rung nor report records source_artifacts or hashes for the evidence, resource preflight, cleanup, or state inputs."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+      "purpose": "Inspect representative 50/100 scale report artifact.",
+      "key_findings": [
+        "The scale report status is PASS and includes rungs for 100 and 50 nodes.",
+        "The report lists real_evidence_paths for valkey_e2e_evidence_100.json and valkey_e2e_evidence_50.json.",
+        "The report does not include hashes or source metadata for those evidence paths."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json and scale_rung_100.json",
+      "purpose": "Inspect representative scale rung artifacts.",
+      "key_findings": [
+        "Each rung has producer, phase_id, run_id, status, node_count, and evidence_path.",
+        "Each rung lacks source_artifacts and lacks evidence_path hash metadata.",
+        "Metrics are derived values and must remain traceable to live evidence and probe artifacts."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json",
+      "purpose": "Inspect existing 1000-node dry-run artifact that can be confused with real evidence.",
+      "key_findings": [
+        "The plan has node_count 1000 and status PASS.",
+        "runtime.dry_run is true and every node is a dry-run node.",
+        "constraints.no_execution, constraints.opt_in_1000, and constraints.default_node_cap 100 are present.",
+        "This artifact is planner/dry-run provenance only and must never become real 1000-node Valkey evidence."
+      ]
+    },
+    {
+      "path": "schemas/artifact/analysis_summary.schema.json, report_index.schema.json, stability_report.schema.json, scale_ladder_report.schema.json",
+      "purpose": "Inspect current schema enforcement for provenance metadata.",
+      "key_findings": [
+        "analysis_summary.schema.json requires core metadata, findings, and missing_metrics but does not require source_artifacts.",
+        "report_index.schema.json requires report output paths and sha256 values but does not require a hashed analysis input edge.",
+        "stability_report.schema.json and scale_ladder_report.schema.json require summaries but do not require source_artifacts.",
+        "Current schemas do not enforce L02's full source artifact, sha256, producer, schema, phase, and run_id contract."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/analysis/summary.py",
+      "purpose": "Inspect analysis artifact producer behavior.",
+      "key_findings": [
+        "create_analysis_summary reads P08 phase_summary, valkey_e2e_evidence, failover_report, and cleanup_report.",
+        "It records source_artifacts as path plus sha256 for JSON files in the source directory.",
+        "It does not enrich source_artifacts with schema path, producer, phase, or run_id."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/report/render.py",
+      "purpose": "Inspect report rendering behavior and report-as-source risk.",
+      "key_findings": [
+        "render_report reads analysis_summary.json and generates CSV, SVG, Markdown, and HTML report views.",
+        "report_index.json hashes generated views but records analysis_path without a sha256.",
+        "phase_summary.json records report outputs, which could be misused as evidence if the DAG lacks node types."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/runtime/docker_runtime.py",
+      "purpose": "Inspect stability and scale artifact producer behavior.",
+      "key_findings": [
+        "write_stability_artifacts writes stability_report.json with metrics_timeseries_path and baseline_comparison_path only.",
+        "write_scale_ladder_artifacts writes scale_rung_N.json and scale_ladder_report.json with evidence_path and real_evidence_paths only.",
+        "The producers collect real runtime data, but current reports do not store hashed source edges."
+      ]
+    },
+    {
+      "path": "scripts/audit_committed_artifacts.py",
+      "purpose": "Inspect historical allowlist behavior that L02 must not inherit for source hash checks.",
+      "key_findings": [
+        "LEGACY_GATE_MANIFEST_ALLOWLIST covers P00 through P13 for one historical manifest sha256.",
+        "Unallowlisted gate manifest mismatches are blocking current findings.",
+        "The allowlist is about historical gate manifest drift only and must not excuse missing or stale provenance source hashes."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "RISK-L02-001",
+      "severity": "high",
+      "category": "fake_provenance",
+      "description": "L02 can create fake provenance if it accepts path-only references as complete source edges.",
+      "evidence": [
+        "artifacts/phases/P11_STABILITY_SOAK/stability_report.json has metrics_timeseries_path and baseline_comparison_path but no source sha256 values.",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json lists real_evidence_paths but no hashes.",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json lists real_evidence_paths but no hashes.",
+        "codex/loop_engineering/04_STAGE_MANIFEST.md requires source artifact, sha256, producer, schema, phase, and run_id."
+      ]
+    },
+    {
+      "id": "RISK-L02-002",
+      "severity": "high",
+      "category": "report_as_source_of_truth",
+      "description": "Rendered reports and visualizations can be accidentally promoted to source-of-truth nodes because report_index.json hashes the view outputs.",
+      "evidence": [
+        "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json records hashes for metrics.csv, missing_metrics.csv, baseline_comparison.csv, metric_chart.svg, report.md, and index.html.",
+        "src/valkey_scale_lab/report/render.py generates those outputs from analysis_summary.json.",
+        "AGENTS.md states charts, HTML, and markdown reports are only views over versioned artifacts."
+      ]
+    },
+    {
+      "id": "RISK-L02-003",
+      "severity": "high",
+      "category": "p14_real_evidence_confusion",
+      "description": "The existing 1000-node dry-run plan can be misread as real 1000-node evidence unless the DAG has explicit dry-run node typing and coverage classification.",
+      "evidence": [
+        "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json has node_count 1000 and status PASS.",
+        "The same artifact has runtime.dry_run true, constraints.no_execution true, constraints.opt_in_1000 true, and default_node_cap 100.",
+        "artifacts/loop_engineering/reports/audit_report.json records P14 as SKIPPED_WITH_REASON, dry_run_only true, real_valkey_coverage false, and real_evidence_count 0.",
+        "CODEX_START_HERE.md says P14 is not automatic and requires VSLAB_ALLOW_1000_DRYRUN."
+      ]
+    },
+    {
+      "id": "RISK-L02-004",
+      "severity": "high",
+      "category": "broad_allowlist",
+      "description": "The L01 legacy gate-manifest allowlist could be copied too broadly into L02 and incorrectly excuse stale source artifact hashes.",
+      "evidence": [
+        "scripts/audit_committed_artifacts.py defines LEGACY_GATE_MANIFEST_ALLOWLIST for P00 through P13.",
+        "artifacts/loop_engineering/reports/audit_report.json records allowlist=legacy_gate_manifest_sha256 for many P00-P13 gate manifest mismatches.",
+        "L02 source hash checks need exact path and sha256 freshness; historical gate manifest drift is a different class of finding."
+      ]
+    },
+    {
+      "id": "RISK-L02-005",
+      "severity": "medium",
+      "category": "missing_metadata",
+      "description": "Existing analysis and report schemas do not require the provenance metadata L02 is supposed to guarantee.",
+      "evidence": [
+        "schemas/artifact/analysis_summary.schema.json does not require source_artifacts.",
+        "schemas/artifact/report_index.schema.json does not require an analysis input sha256 or source metadata.",
+        "schemas/artifact/stability_report.schema.json does not require source_artifacts.",
+        "schemas/artifact/scale_ladder_report.schema.json does not require source_artifacts."
+      ]
+    },
+    {
+      "id": "RISK-L02-006",
+      "severity": "high",
+      "category": "source_hash_drift",
+      "description": "A graph that only records hashes already present in reports cannot detect when an upstream source artifact changed after the report was rendered.",
+      "evidence": [
+        "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json records analysis_path without sha256.",
+        "src/valkey_scale_lab/report/render.py writes report_index.json using _report_record only for generated outputs.",
+        "P11 and P12/P13 reports store source paths without hashes, so a stale view can still look internally hash-consistent."
+      ]
+    },
+    {
+      "id": "RISK-L02-007",
+      "severity": "medium",
+      "category": "derived_metric_traceability",
+      "description": "Scale and stability derived metrics can look authoritative while lacking direct graph edges to the evidence, metrics JSONL, cleanup, and resource-preflight artifacts that produced them.",
+      "evidence": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json and scale_rung_100.json contain derived memory and command metrics plus evidence_path but no source_artifacts.",
+        "artifacts/phases/P11_STABILITY_SOAK/stability_report.json embeds workload, latency, leak, restart, and baseline summaries but only path-links to metrics and baseline artifacts.",
+        "artifacts/loop_engineering/reports/audit_report.json has sha256 inventory for required artifacts, but L02 must produce an explicit DAG rather than relying on inventory adjacency."
+      ]
+    },
+    {
+      "id": "RISK-L02-008",
+      "severity": "high",
+      "category": "harness_weakening",
+      "description": "L02 can weaken the existing harness if it edits historical artifacts, broadens schemas, or downgrades existing gate/audit requirements to make provenance pass.",
+      "evidence": [
+        "AGENTS.md identifies scripts, schemas, codex manifests, docs, templates, workflows, and gate controls as protected harness files.",
+        "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/read_context.md says historical gate, phase, and audit artifacts must not be edited to hide missing provenance.",
+        "The user explicitly requested no source/test or historical artifact edits and no P14 or real/fault wrapper gate execution."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "provenance_graph_schema_strict_nodes_edges",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "schemas/artifact/provenance_graph.schema.json requires nodes with path, sha256, artifact_type, phase_id, run_id, producer, schema_path, status, and source_class, plus edges with relationship, from, to, and missing_metadata semantics."
+    },
+    {
+      "name": "static_provenance_graph_builder",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "A static builder emits artifacts/loop_engineering/reports/provenance_graph.json for P09, P11, P12, and P13 without running P14, valkey_e2e_gate.py, fault_safety_gate.py, or fault_failover_gate.py."
+    },
+    {
+      "name": "p09_report_views_are_leaf_nodes",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests prove P09 CSV, SVG, HTML, and Markdown are view nodes derived from analysis_summary.json and cannot satisfy source evidence requirements for metrics."
+    },
+    {
+      "name": "p11_stability_path_hash_edges",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests fail when stability_report.json path references to stability_metrics.jsonl or stability_baseline_comparison.json cannot be resolved to nodes with current sha256, schema, phase, producer, and run_id metadata."
+    },
+    {
+      "name": "p12_p13_scale_real_evidence_edges",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests require each scale rung and scale_ladder_report real_evidence_path to resolve to a real Valkey evidence node with current sha256, schema, phase, run_id, producer, real_valkey true, and node-count classification."
+    },
+    {
+      "name": "p14_1000_dryrun_graph_boundary",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The graph classifies P02 1000-node plan and any P14 artifacts as dry_run/planner/resource only, records P14 as SKIPPED_WITH_REASON when absent, and never counts either as real 1000-node evidence."
+    },
+    {
+      "name": "source_hash_drift_is_blocking",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Fixture tests mutate a source artifact after a report is generated and require the provenance checker to report a blocking source_hash_mismatch."
+    },
+    {
+      "name": "allowlist_scope_guard",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "CI tests ensure the legacy gate manifest allowlist does not apply to provenance source hashes, missing source nodes, missing metadata, or P14 real-evidence classification."
+    },
+    {
+      "name": "no_historical_artifact_mutation_guard",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Anti-regression checks fail if L02 modifies artifacts/gates, artifacts/phases historical outputs, audit decisions, or existing reports to manufacture provenance instead of recording findings."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define a provenance DAG schema before implementing graph generation.",
+      "files": [
+        "schemas/artifact/provenance_graph.schema.json"
+      ],
+      "rationale": "The L02 acceptance contract is schema-level metadata completeness, not only best-effort report parsing."
+    },
+    {
+      "step": "Build a read-only static graph generator that walks selected machine-readable artifacts and computes current hashes.",
+      "files": [
+        "scripts/build_provenance_graph.py",
+        "src/valkey_scale_lab/artifacts/provenance.py"
+      ],
+      "rationale": "Computing hashes from files prevents stale embedded hashes or report-only hashes from becoming trusted provenance."
+    },
+    {
+      "step": "Classify node types and edge relationships explicitly.",
+      "files": [
+        "scripts/build_provenance_graph.py",
+        "schemas/artifact/provenance_graph.schema.json"
+      ],
+      "rationale": "Reports, visualizations, analysis artifacts, real evidence, cleanup, resource preflight, dry-run plans, JSONL metrics, and missing/skipped references need different trust levels."
+    },
+    {
+      "step": "Add tests for P09, P11, P12, P13, and P14 dry-run boundary behavior using current artifacts plus fixtures.",
+      "files": [
+        "tests/provenance/test_provenance_graph.py",
+        "tests/ci/test_provenance_gate.py"
+      ],
+      "rationale": "Representative artifact coverage is required to catch path-only provenance, report-as-source behavior, source hash drift, and dry-run confusion."
+    },
+    {
+      "step": "Wire validation without weakening L00/L01 harnesses or historical artifact checks.",
+      "files": [
+        "tests/ci/test_provenance_gate.py",
+        "scripts/loop_engineering_validate.py"
+      ],
+      "rationale": "L02 must extend the audit chain while preserving previous harness behavior and protected artifact discipline."
+    }
+  ],
+  "acceptance_criteria": [
+    "artifacts/loop_engineering/reports/provenance_graph.json exists and validates against a strict DAG schema.",
+    "Every P09 report output traces to analysis_summary.json and then to P08 machine-readable source artifacts with current sha256, producer, schema, phase, and run_id metadata.",
+    "P09 HTML, Markdown, CSV, and SVG outputs are typed as views and cannot be counted as source-of-truth evidence.",
+    "P11 stability_report.json traces to stability_metrics.jsonl, stability_baseline_comparison.json, valkey_e2e_evidence.json, and cleanup artifacts, or records explicit MISSING/SKIPPED_WITH_REASON findings.",
+    "P12 and P13 scale_ladder_report.json and scale_rung artifacts trace to real Valkey evidence, resource preflight, cleanup, and state artifacts with current hashes and node-count classifications.",
+    "P02 scale_1000_dryrun_plan.json and any P14 artifact are typed as dry_run/planner/resource only and never counted as real Valkey coverage.",
+    "Any missing source node, missing required metadata, source hash drift, or cycle in the graph is a finding with blocking severity unless it has a narrow, typed SKIPPED_WITH_REASON edge.",
+    "The legacy gate manifest allowlist remains limited to L01 gate manifest drift and does not apply to L02 source artifact hashes.",
+    "No historical artifact, gate result, audit decision, source file, or test file is edited by this risk_auditor task."
+  ],
+  "risks": [
+    "Block completion if any P09, P11, P12, or P13 analysis/report/visualization artifact lacks a path to machine-readable source nodes with current sha256.",
+    "Block completion if HTML, Markdown, SVG, or CSV report outputs can satisfy a source evidence edge.",
+    "Block completion if P02 1000-node dry-run or absent P14 artifacts are represented as real 1000-node Valkey evidence.",
+    "Block completion if a broad allowlist suppresses source hash drift, missing source nodes, missing metadata, or P14 boundary violations.",
+    "Block completion if graph nodes omit producer, schema_path, phase_id, run_id, status, or artifact_type without an explicit MISSING or SKIPPED_WITH_REASON record.",
+    "Block completion if the graph accepts cycles or lets a report depend on itself through report_index or phase_summary references.",
+    "Block completion if L02 changes historical artifacts to add provenance retroactively instead of reporting missing provenance findings.",
+    "Block completion if L02 weakens existing schemas, audit report semantics, phase manifest rules, gate locks, postcheck compatibility, or loop-engineering validation to make the graph pass."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Do not run scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py for this risk audit.",
+    "Do not edit artifacts/gates, artifacts/phases historical outputs, audit decisions, reports, source files, tests, schemas, codex manifests, or workflows in this subagent task.",
+    "Do not invent producer, schema, phase, run_id, or status metadata for historical artifacts that lack it.",
+    "Do not treat report_index.json, report.md, index.html, metric_chart.svg, or CSV files as source-of-truth artifacts.",
+    "Do not count any dry-run planner/resource artifact as real Valkey coverage.",
+    "Do not reuse the legacy gate manifest allowlist for provenance hash freshness checks.",
+    "Do not relax existing schema required fields, gate checks, test assertions, or CI coverage to make provenance validation pass."
+  ],
+  "commands_to_run": [
+    "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 -m pytest -q tests/provenance",
+    "python3 -m pytest -q tests/ci/test_provenance_gate.py",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+    "python3 -m pytest -q tests/loop_engineering tests/audit tests/ci/test_committed_artifact_audit_gate.py",
+    "git diff -- tests scripts schemas .github codex artifacts/gates artifacts/phases artifacts/loop_engineering",
+    "git status --short"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Approved for L02 harness design under the blocker conditions above. This risk audit is static and did not run P14 or any real/fault wrapper gate. The main risk is not that current artifacts are useless; many have good core metadata and hashes in the L01 inventory. The risk is that L02 must compute and enforce an explicit DAG rather than trusting path-only references, rendered report hashes, broad historical allowlists, or dry-run PASS artifacts as real provenance."
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "status": "PASS",
+  "completed_at": "2026-06-30T04:40:00Z",
+  "environment_notes": [
+    "Pytest was run through /private/tmp/valkey-scale-lab-l00-venv because the system python3 lacks pytest.",
+    "Required compileall rewrote tracked bytecode; scripts/__pycache__ was restored.",
+    "The L01 audit report command was run as part of workflow parity, then the regenerated tracked report was restored to avoid timestamp-only churn in L02."
+  ],
+  "commands_log": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/commands.jsonl",
+  "commands": [
+    {"name": "codex_precheck_all", "command": "python3 scripts/codex_gate.py precheck --all", "status": "PASS"},
+    {"name": "safety_scan", "command": "python3 scripts/safety_scan.py", "status": "PASS"},
+    {"name": "compileall", "command": "python3 -m compileall -q src scripts tests", "status": "PASS"},
+    {"name": "full_previous_pytest_set", "command": "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py tests/unit tests/ci/test_github_coverage_gates.py tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator tests/analysis tests/report tests/stability tests/scale tests/loop_engineering tests/ci/test_loop_engineering_pack.py tests/audit tests/ci/test_committed_artifact_audit_gate.py", "status": "PASS"},
+    {"name": "audit_report_generation", "command": "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json", "status": "PASS"},
+    {"name": "audit_report_schema", "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json", "status": "PASS"},
+    {"name": "loop_validator_root", "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering", "status": "PASS"},
+    {"name": "loop_validator_stage", "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L02_EVIDENCE_PROVENANCE_DAG", "status": "PASS"}
+  ],
+  "all_required_baseline_commands_passed": true
+}

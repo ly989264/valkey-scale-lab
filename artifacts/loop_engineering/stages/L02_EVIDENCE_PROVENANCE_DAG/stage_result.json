@@ -1,0 +1,67 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "status": "PASS",
+  "completed_at": "2026-06-30T06:25:53Z",
+  "commit_sha": "PENDING_EVIDENCE_COMMIT",
+  "pushed": true,
+  "previous_harness_passed": true,
+  "current_harness_passed": true,
+  "subagent_verdicts": {
+    "requirements_analyst": "APPROVED",
+    "harness_architect": "APPROVED",
+    "risk_auditor": "APPROVED",
+    "implementation_worker": "APPROVED",
+    "review_agent": "APPROVED",
+    "validation_agent": "APPROVED",
+    "anti_regression_guardian": "APPROVED"
+  },
+  "commands_log": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/commands.jsonl",
+  "artifacts": [
+    "schemas/artifact/provenance_graph.schema.json",
+    "scripts/build_provenance_graph.py",
+    "tests/provenance/test_provenance_graph.py",
+    "tests/ci/test_provenance_graph_gate.py",
+    ".github/workflows/github-coverage-gates.yml",
+    "artifacts/loop_engineering/reports/provenance_graph.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/read_context.md",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/stage_state.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/commands.jsonl",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/previous_harness_result.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/stage_design.md",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/current_harness_plan.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/validation_result.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/anti_regression_check.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/anti_regression_report.md",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/stage_result.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/requirements_analyst.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/harness_architect.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/risk_auditor.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/implementation_worker.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/review_agent.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/validation_agent.json",
+    "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/subagents/anti_regression_guardian.json",
+    "artifacts/loop_engineering/global_loop_state.json"
+  ],
+  "metrics_added": [],
+  "visualizations_added": [],
+  "real_valkey_gates": [],
+  "fake_gates": [
+    "provenance_graph_static_builder",
+    "provenance_graph_schema_validation",
+    "provenance_fixture_tests",
+    "provenance_graph_ci_guard",
+    "loop_engineering_anti_regression"
+  ],
+  "known_missing_metrics": [
+    {
+      "metric": "historical_optional_metadata",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "Historical source artifacts that legitimately lack producer/status/schema metadata are represented through node metadata_status and nonblocking missing_metadata findings instead of invented values."
+    }
+  ],
+  "risks_remaining": [
+    "stage_result.json records the pushed L02 evidence commit; this result artifact is committed in a follow-up bookkeeping commit because a commit cannot include its own final SHA.",
+    "L02 is static provenance analysis only. It did not rerun P14, real Valkey wrappers, or fault wrappers; those remain outside this stage by design."
+  ]
+}

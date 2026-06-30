@@ -1,0 +1,305 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "agent_role": "harness_architect",
+  "created_at": "2026-06-30T05:00:00Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository instructions and artifact safety rules.",
+      "key_findings": [
+        "Machine-readable artifacts are the product; charts, HTML, and markdown reports are views only.",
+        "Missing metrics and missing evidence must be encoded explicitly, never fabricated.",
+        "P14 is opt-in only and must not be run or treated as automatic evidence."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Automatic phase boundary and CLI contract.",
+      "key_findings": [
+        "Automatic completion stops at P13_SCALE_LADDER_50_100.",
+        "P14_SCALE_1000_OPTIN_DRYRUN requires explicit opt-in and is not a default real gate.",
+        "Reports must read artifacts rather than becoming the source of truth."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/START_MAIN_LOOP.md",
+      "purpose": "Loop execution expectations for stage work.",
+      "key_findings": [
+        "Each stage must be recoverable, auditable, and harness-first.",
+        "Stage artifacts must record read context, subagent outputs, validation, result, commit, and push state.",
+        "Existing worktree changes must not be overwritten without recording a reason."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Harness priority, artifact-first rules, and anti-regression policy.",
+      "key_findings": [
+        "Preferred L02 harness types are schema validation, artifact validation, committed artifact compatibility, CLI contract tests, and CI coverage tests.",
+        "Rendered reports must never be treated as source artifacts.",
+        "Historical artifact edits that hide missing provenance are forbidden."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L02 target scope and acceptance requirements.",
+      "key_findings": [
+        "L02 must add or strengthen a provenance graph builder, DAG schema, source artifact hash check, and report-as-view tests.",
+        "P09 report, P11 stability report, and P12/P13 scale reports must trace back to source artifacts.",
+        "The graph output path is artifacts/loop_engineering/reports/provenance_graph.json."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/read_context.md",
+      "purpose": "Current L02 stage-specific context.",
+      "key_findings": [
+        "L00 and L01 are PASS and pushed; L02 is the current stage.",
+        "L02 is expected to be static artifact validation, not a real Valkey or fault-wrapper run.",
+        "Missing provenance must become findings rather than historical artifact rewrites."
+      ]
+    },
+    {
+      "path": "scripts/audit_committed_artifacts.py",
+      "purpose": "Existing committed-artifact audit semantics to reuse.",
+      "key_findings": [
+        "Existing audit already loads the phase manifest, checks required artifacts, validates schemas, computes sha256, and distinguishes current, historical, and informational findings.",
+        "P13 historical gate command mismatch and legacy manifest sha drift are explicitly nonblocking when allowlisted.",
+        "P14 boundary logic verifies automatic=false, dry-run-only gates, opt-in guard, and absence of default real evidence."
+      ]
+    },
+    {
+      "path": "schemas/artifact/*.schema.json",
+      "purpose": "Artifact schema inventory for graph node metadata and report coverage.",
+      "key_findings": [
+        "Core artifact schemas consistently expose schema_version, artifact_type, phase_id, run_id, producer, status, and created_at where applicable.",
+        "report_index lists rendered report paths and sha256 values but does not define source provenance edges.",
+        "analysis_summary, stability_report, scale_ladder_report, p13_timing_breakdown, resource_preflight, valkey_e2e_evidence, cleanup_report, and phase_summary provide the primary machine-readable node types L02 must model."
+      ]
+    },
+    {
+      "path": "tests/audit/test_committed_artifact_audit.py",
+      "purpose": "Fixture style and expected audit finding behavior.",
+      "key_findings": [
+        "Audit tests build isolated temporary repositories and assert exact blocking categories.",
+        "Existing tests cover empty JSON, missing artifacts, invalid JSONL, real evidence failures, P13 historical drift, and P14 dry-run boundary.",
+        "The L02 tests should follow the same fixture pattern for missing provenance and source hash drift."
+      ]
+    },
+    {
+      "path": "tests/ci/test_committed_artifact_audit_gate.py",
+      "purpose": "CI expectations for committed artifact audit.",
+      "key_findings": [
+        "CI expects the audit report to be generated and schema-valid.",
+        "The audit scope covers P00 through P13 and excludes P14 from automatic coverage.",
+        "P13 historical command mismatch remains nonblocking and must not cause the provenance graph to exclude P13."
+      ]
+    },
+    {
+      "path": "tests/ci/test_loop_engineering_pack.py",
+      "purpose": "Loop-engineering schema and workflow coverage expectations.",
+      "key_findings": [
+        "Loop validation must remain available in CI.",
+        "The workflow must stay off P14 and real/fault wrapper scripts.",
+        "Subagent artifacts must validate against schemas/loop_engineering/subagent_response.schema.json."
+      ]
+    },
+    {
+      "path": "tests/ci/test_postcheck_compatibility.py",
+      "purpose": "Fast postcheck compatibility boundaries.",
+      "key_findings": [
+        "P13 is intentionally excluded from this fast compatibility list because of historical command mismatch.",
+        "L02 provenance coverage must include P13 through the committed-artifact audit model rather than postcheck compatibility alone.",
+        "Validation should not refresh or rewrite historical gate artifacts."
+      ]
+    },
+    {
+      "path": "tests/ci/test_github_coverage_gates.py",
+      "purpose": "Workflow command and safety boundary coverage.",
+      "key_findings": [
+        "Existing GitHub coverage gate runs precheck, safety scan, and fast non-opt-in test families.",
+        "The workflow must not mention P14, VSLAB_ALLOW_1000_DRYRUN, valkey_e2e_gate.py, fault_safety_gate.py, or fault_failover_gate.py.",
+        "L02 CI additions should run static provenance commands only."
+      ]
+    },
+    {
+      "path": "codex/phase_manifest.json",
+      "purpose": "Concrete P09/P11/P12/P13 required artifact paths and schemas.",
+      "key_findings": [
+        "P09 required artifacts include phase_summary, analysis_summary, report_index, valkey_e2e_evidence, and cleanup_report.",
+        "P11 required artifacts include phase_summary, valkey_e2e_evidence, stability_report, and cleanup_report.",
+        "P12 and P13 required artifacts include resource preflight artifacts, per-rung real Valkey evidence, scale_ladder_report, cleanup_report, and phase_summary."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "HARCH-L02-001",
+      "severity": "high",
+      "description": "The existing report and analysis schemas do not require provenance edges, so a separate DAG artifact and schema are required to enforce traceability without mutating historical phase artifacts.",
+      "evidence": [
+        "schemas/artifact/report_index.schema.json requires reports[].path and reports[].sha256 only.",
+        "schemas/artifact/analysis_summary.schema.json allows arbitrary findings but has no source_artifacts contract."
+      ]
+    },
+    {
+      "id": "HARCH-L02-002",
+      "severity": "high",
+      "description": "Rendered outputs in P09 report_index can be hash-checked, but they must be classified as report_view nodes with incoming source edges only.",
+      "evidence": [
+        "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json lists CSV, SVG, Markdown, and HTML report outputs.",
+        "AGENTS.md says charts, HTML, and markdown reports are only views over versioned artifacts."
+      ]
+    },
+    {
+      "id": "HARCH-L02-003",
+      "severity": "medium",
+      "description": "P11 has a no-baseline state that should remain explicit rather than causing fabricated baseline edges.",
+      "evidence": [
+        "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json has baseline_source.status=SKIPPED_WITH_REASON.",
+        "L02 graph should still trace stability_report to stability_metrics.jsonl, valkey_e2e_evidence.json, cleanup_report.json, and the baseline comparison sidecar."
+      ]
+    },
+    {
+      "id": "HARCH-L02-004",
+      "severity": "high",
+      "description": "P12 and P13 scale reports already cite real evidence paths, and the provenance harness must verify those paths, hashes, phases, run IDs, node counts, and schemas.",
+      "evidence": [
+        "P12 scale_ladder_report.summary.real_evidence_paths cites valkey_e2e_evidence_10.json and valkey_e2e_evidence_30.json.",
+        "P13 scale_ladder_report.summary.real_evidence_paths cites valkey_e2e_evidence_100.json and valkey_e2e_evidence_50.json."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "provenance_graph_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add schemas/artifact/provenance_graph.schema.json requiring schema_version, artifact_type=provenance_graph, created_at, producer, status, root_commit_sha, manifest_sha256, nodes, edges, phase_coverage, report_view_policy, summary, and findings. Nodes must include path, exists, sha256, artifact_role, artifact_type, phase_id, run_id, producer, schema_path, schema_sha256, and status where available. Edges must include source_path, target_path, relation, discovered_by, evidence_pointer, source_sha256, target_sha256, required, and status. Findings must include id, severity, category, blocking, description, evidence, and optional phase_id/path."
+    },
+    {
+      "name": "build_provenance_graph_cli",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add scripts/build_provenance_graph.py with python3 scripts/build_provenance_graph.py --root . --out artifacts/loop_engineering/reports/provenance_graph.json. The command must scan codex/phase_manifest.json, required artifacts, gate results, audit decisions, report_index records, known sidecar artifacts, and report outputs; compute sha256 for every existing node; validate referenced report_index hashes; infer and validate source edges; detect cycles; and exit nonzero only when blocking current findings exist."
+    },
+    {
+      "name": "source_artifact_hash_checks",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add tests/provenance/test_provenance_graph.py fixture coverage proving that every source and report_view node gets a sha256, report_index declared hashes are checked against file contents, and a declared or inferred source hash mismatch creates a blocking finding with category source_hash_mismatch or report_view_hash_mismatch."
+    },
+    {
+      "name": "report_as_view_policy",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add fixture tests proving that .html, .md, .svg, and report-indexed CSV outputs are artifact_role=report_view, have no outgoing source-of-truth edges, and trigger report_view_used_as_source if any analysis or report tries to use a rendered view as an upstream source."
+    },
+    {
+      "name": "missing_source_findings",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add fixture tests where analysis_summary, stability_report sidecars, or scale_ladder_report evidence_path references point at missing artifacts. The builder must keep the graph schema-valid and emit blocking findings with category missing_source_artifact, status MISSING or SKIPPED_WITH_REASON, and the exact missing path."
+    },
+    {
+      "name": "p09_p11_p12_p13_current_repo_coverage",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add a current-repository test that builds artifacts/loop_engineering/reports/provenance_graph.json and asserts coverage entries for P09_ANALYSIS_REPORTING, P11_STABILITY_SOAK, P12_SCALE_LADDER_10_30, and P13_SCALE_LADDER_50_100. P09 report views must trace to analysis_summary, valkey_e2e_evidence, cleanup_report, and phase_summary. P11 stability_report must trace to stability_metrics.jsonl, stability_baseline_comparison.json, valkey_e2e_evidence, cleanup_report, and phase_summary. P12/P13 scale_ladder_report must trace to resource_preflight, per-rung valkey_e2e_evidence, cleanup_report, phase_summary, and P13 timing artifacts where present."
+    },
+    {
+      "name": "provenance_ci_static_gate",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Extend .github/workflows/github-coverage-gates.yml with static-only provenance commands: python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json, python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json, and python3 -m pytest -q tests/provenance tests/ci/test_provenance_graph_gate.py. The workflow must continue to omit P14 and real/fault wrapper gates."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define the DAG artifact contract.",
+      "files": [
+        "schemas/artifact/provenance_graph.schema.json"
+      ],
+      "rationale": "A standalone graph schema enforces provenance for historical artifacts without broadening existing phase schemas or rewriting committed evidence."
+    },
+    {
+      "step": "Implement a deterministic static graph builder CLI.",
+      "files": [
+        "scripts/build_provenance_graph.py"
+      ],
+      "rationale": "The builder should reuse script-local patterns from audit_committed_artifacts.py: Path-relative output, sha256_file, JSON/JSONL parsing, schema_validator.validate, finding IDs, P14 exclusion, and historical/current classification."
+    },
+    {
+      "step": "Model graph nodes and source edges conservatively.",
+      "files": [
+        "scripts/build_provenance_graph.py"
+      ],
+      "rationale": "Source-of-truth nodes are JSON/JSONL artifacts declared by the phase manifest or discovered as known sidecars. Rendered report outputs are report_view nodes. Edges flow only from source or derived machine-readable artifacts to derived artifacts or report views."
+    },
+    {
+      "step": "Add fixture-driven provenance tests.",
+      "files": [
+        "tests/provenance/test_provenance_graph.py"
+      ],
+      "rationale": "Temporary-repository fixtures can prove source hash checks, missing source findings, report-as-view enforcement, DAG acyclicity, and schema validity without touching historical artifacts."
+    },
+    {
+      "step": "Add current-repository coverage tests.",
+      "files": [
+        "tests/provenance/test_current_repo_provenance.py"
+      ],
+      "rationale": "L02 acceptance requires actual committed P09/P11/P12/P13 artifact coverage, including P13 despite its nonblocking historical gate command mismatch."
+    },
+    {
+      "step": "Add CI workflow coverage for the static provenance gate.",
+      "files": [
+        ".github/workflows/github-coverage-gates.yml",
+        "tests/ci/test_provenance_graph_gate.py"
+      ],
+      "rationale": "The provenance graph should be regenerated and schema-validated in CI while preserving the existing non-opt-in and no-real-wrapper boundaries."
+    },
+    {
+      "step": "Generate the L02 output graph.",
+      "files": [
+        "artifacts/loop_engineering/reports/provenance_graph.json"
+      ],
+      "rationale": "The stage acceptance explicitly requires this path. The file must be builder-produced, schema-valid, and contain findings instead of patched historical evidence when provenance is absent."
+    }
+  ],
+  "acceptance_criteria": [
+    "artifacts/loop_engineering/reports/provenance_graph.json validates against schemas/artifact/provenance_graph.schema.json.",
+    "The graph contains nodes for all automatic P00-P13 required artifacts and excludes P14 from automatic coverage while recording P14 as optional dry-run boundary when represented.",
+    "Every existing graph node records sha256; every schema-backed node records schema_path and schema_sha256; missing nodes record exists=false and a MISSING finding rather than an invented hash.",
+    "P09 report_index report outputs are report_view nodes and have incoming edges from machine-readable artifacts; no rendered report node is allowed as a source-of-truth upstream.",
+    "P11 stability_report traces to stability_metrics.jsonl, stability_baseline_comparison.json, valkey_e2e_evidence.json, cleanup_report.json, and phase_summary.json. The no-baseline state remains SKIPPED_WITH_REASON or NO_BASELINE_YET.",
+    "P12 scale_ladder_report traces to resource_preflight_10.json, resource_preflight_30.json, valkey_e2e_evidence_10.json, valkey_e2e_evidence_30.json, cleanup_report.json, and phase_summary.json.",
+    "P13 scale_ladder_report traces to resource_preflight_50.json, resource_preflight_100.json, valkey_e2e_evidence_50.json, valkey_e2e_evidence_100.json, p13_timing_breakdown_scale_50.json, p13_timing_breakdown_scale_100.json, cleanup_report.json, and phase_summary.json.",
+    "Any source path referenced by analysis, stability, scale, report_index, audit decisions, or known sidecars that cannot be resolved creates a blocking missing_source_artifact finding unless the source is explicitly SKIPPED_WITH_REASON with reason and impact.",
+    "The CLI and tests are static-only and do not invoke scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, scripts/fault_failover_gate.py, P14_SCALE_1000_OPTIN_DRYRUN, or VSLAB_ALLOW_1000_DRYRUN.",
+    "Existing L00/L01 tests, committed artifact audit tests, loop validation, and fast CI checks remain compatible."
+  ],
+  "risks": [
+    "Over-inference could make a report appear traceable when it only shares a phase directory; source edges must be based on explicit fields, known producer sidecars, manifest-required artifacts, or recorded audit declarations.",
+    "Under-inference could mark valid legacy artifacts as missing provenance; historical gaps should be represented as nonfabricated findings with clear categories and blocking policy.",
+    "Rendered CSV files inside report directories can look machine-readable; the builder should classify report-indexed CSV outputs as report_view unless they are also manifest-declared source artifacts.",
+    "P13 has known historical gate drift; the builder must include P13 provenance coverage without treating the drift as a reason to exclude P13.",
+    "P11 no-baseline data could be misread as missing evidence; the graph should preserve NO_BASELINE_YET and SKIPPED_WITH_REASON semantics."
+  ],
+  "forbidden_shortcuts": [
+    "Do not edit artifacts/gates, artifacts/phases, audit decisions, or historical reports to add provenance retroactively.",
+    "Do not make HTML, Markdown, SVG, report CSV, or screenshots source-of-truth nodes.",
+    "Do not hand-write PASS into provenance_graph.json or gate_result.json.",
+    "Do not mark missing source data as PASS or silently skip it without MISSING or SKIPPED_WITH_REASON reason text.",
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN, set VSLAB_ALLOW_1000_DRYRUN, or run real/fault wrapper gates for L02.",
+    "Do not weaken existing schemas, tests, CI commands, phase manifest requirements, or safety scans to make provenance pass."
+  ],
+  "commands_to_run": [
+    "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 -m pytest -q tests/provenance tests/ci/test_provenance_graph_gate.py",
+    "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L02_EVIDENCE_PROVENANCE_DAG",
+    "python3 -m pytest -q tests/ci"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Harness design is static and artifact-first. It intentionally strengthens provenance around committed P09/P11/P12/P13 artifacts without requiring source/test edits in this subagent turn, without refreshing historical artifacts, and without invoking P14 or any real/fault wrapper gates."
+}

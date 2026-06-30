@@ -1,0 +1,451 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L02_EVIDENCE_PROVENANCE_DAG",
+  "agent_role": "requirements_analyst",
+  "created_at": "2026-06-30T04:43:52Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "controlling repository instructions and artifact integrity rules",
+      "key_findings": [
+        "Machine-readable artifacts are the product; charts, HTML, and Markdown are views over versioned artifacts.",
+        "Missing metrics and evidence must be encoded as MISSING or SKIPPED_WITH_REASON and never invented.",
+        "P14_SCALE_1000_OPTIN_DRYRUN must not run without explicit opt-in and must not count as real 1000-node evidence.",
+        "Historical phase, gate, schema, script, template, docs, and workflow controls must not be weakened to make a later check pass."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "automatic phase loop and P14 boundary",
+      "key_findings": [
+        "Automatic completion stops at P13_SCALE_LADDER_50_100.",
+        "P14 is intentionally not automatic and requires VSLAB_ALLOW_1000_DRYRUN=I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE.",
+        "Gate results must be produced by scripts/codex_gate.py run, not manual PASS edits."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/START_MAIN_LOOP.md",
+      "purpose": "loop-engineering controller requirements",
+      "key_findings": [
+        "Each stage must re-read context and persist stage artifacts under artifacts/loop_engineering.",
+        "Stage completion requires previous harness pass, current harness design and implementation, validation, anti-regression review, stage_result PASS, commit, and push.",
+        "If resources are insufficient for real Valkey stages, the stage must record blockers rather than mark PASS."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L02 stage definition and acceptance criteria",
+      "key_findings": [
+        "L02 must build an artifact provenance DAG.",
+        "Required harness additions are a provenance graph builder, DAG schema, source artifact hash check, and tests proving reports read artifacts but never become source-of-truth.",
+        "P09 report, P12/P13 scale report, and P11 stability report must trace to source artifacts.",
+        "Any visualization or analysis item without a source must be recorded as a finding.",
+        "The required graph output is artifacts/loop_engineering/reports/provenance_graph.json."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/read_context.md",
+      "purpose": "current L02 stage read context",
+      "key_findings": [
+        "L02 is expected to be static artifact validation and should not run P14 or real/fault wrapper gates.",
+        "Reports must never become source-of-truth.",
+        "Historical artifacts may lack producer, run_id, or provenance fields; L02 must classify gaps rather than mutate committed artifacts.",
+        "P14 dry-run artifacts from P02 must not be represented as real 1000-node provenance."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L00_LOOP_ENGINE_HARNESS_BOOTSTRAP/stage_result.json",
+      "purpose": "previous loop stage status",
+      "key_findings": [
+        "L00 status is PASS and pushed.",
+        "Loop validation harness, subagent schema, command log schema, stage result schema, and anti-regression entrypoint are established.",
+        "L00 remaining risk notes that stage_result commit SHA bookkeeping is a follow-up artifact pattern."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L01_EXISTING_ARTIFACT_AUDIT_HARD_GATE/stage_result.json",
+      "purpose": "previous artifact audit stage status",
+      "key_findings": [
+        "L01 status is PASS and pushed.",
+        "Committed artifact audit report and gate are established.",
+        "L01 records historical manifest SHA drift through an allowlist and does not rewrite historical gate results."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "schema for this requirements_analyst artifact",
+      "key_findings": [
+        "agent_role must be one of the declared subagent roles and this file must use requirements_analyst.",
+        "verdict must be APPROVED, CHANGES_REQUESTED, or BLOCKED.",
+        "Top-level additionalProperties are forbidden.",
+        "proposed_harness entries require name, type, expected_to_fail_before_impl, and acceptance."
+      ]
+    },
+    {
+      "path": "schemas/artifact/analysis_summary.schema.json",
+      "purpose": "P09 analysis artifact contract",
+      "key_findings": [
+        "analysis_summary requires schema_version, artifact_type, phase_id, run_id, created_at, producer, status, findings, and missing_metrics.",
+        "The schema allows additionalProperties, which can carry source_artifacts but does not require them."
+      ]
+    },
+    {
+      "path": "schemas/artifact/report_index.schema.json",
+      "purpose": "P09 report index artifact contract",
+      "key_findings": [
+        "report_index requires metadata plus a reports array with path and sha256 for rendered outputs.",
+        "The schema does not require source_artifacts, so L02 must enforce upstream report provenance outside the existing report_index schema.",
+        "Rendered report files listed by report_index must be treated as views, not source artifacts."
+      ]
+    },
+    {
+      "path": "schemas/artifact/stability_report.schema.json",
+      "purpose": "P11 stability report contract",
+      "key_findings": [
+        "stability_report requires metadata, duration_seconds, and summary.",
+        "The schema does not require source_artifacts or a metrics JSONL path.",
+        "L02 must add provenance checks for stability_report inputs such as stability_metrics.jsonl, stability_baseline_comparison.json, valkey_e2e_evidence.json, and cleanup_report.json."
+      ]
+    },
+    {
+      "path": "schemas/artifact/scale_ladder_report.schema.json",
+      "purpose": "P12/P13 scale ladder report contract",
+      "key_findings": [
+        "scale_ladder_report requires metadata, rungs, and summary.",
+        "The schema does not require source_artifacts.",
+        "Existing rungs include evidence_path values and summaries include real_evidence_paths, which can seed deterministic provenance edges but still need hash verification."
+      ]
+    },
+    {
+      "path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "purpose": "real Valkey evidence contract used as a source artifact",
+      "key_findings": [
+        "valkey_e2e_evidence requires real_valkey, 9.1. version prefix, probe_result, nodes_observed, cluster_state_observed, data_path_result, probes, cleanup, producer, run_id, and status.",
+        "These evidence artifacts are source artifacts for P09 analysis, P11 stability, and P12/P13 scale reports."
+      ]
+    },
+    {
+      "path": "schemas/artifact/resource_preflight.schema.json",
+      "purpose": "scale preflight source artifact contract",
+      "key_findings": [
+        "resource_preflight requires node_count, can_run, checks, producer, run_id, and status.",
+        "P12 and P13 scale reports must trace each rung to its matching resource_preflight artifact."
+      ]
+    },
+    {
+      "path": "schemas/artifact/cleanup_report.schema.json",
+      "purpose": "cleanup source artifact contract",
+      "key_findings": [
+        "cleanup_report requires resources_remaining and cleanup_actions.",
+        "Cleanup evidence must remain a source artifact for stability, scale, and reporting phases rather than being inferred from rendered reports."
+      ]
+    },
+    {
+      "path": "schemas/artifact/phase_summary.schema.json",
+      "purpose": "phase summary artifact contract",
+      "key_findings": [
+        "phase_summary requires required_artifacts, missing_metrics, risks, producer, run_id, and status.",
+        "Phase summaries can provide manifest-declared artifact inventory but should not replace detailed source artifacts."
+      ]
+    },
+    {
+      "path": "schemas/artifact/p13_timing_breakdown.schema.json",
+      "purpose": "P13 timing provenance-relevant artifact contract",
+      "key_findings": [
+        "p13_timing_breakdown requires scenario, node_count, timings, summary, accounting, producer, run_id, and status.",
+        "The schema does not require source_artifacts even though timing fields are derived from setup, wrapper, probe, cleanup, and accounting artifacts.",
+        "L02 should require provenance coverage for P13 timing breakdowns because they are analysis artifacts used by later audit/report stages."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+      "purpose": "representative P09 analysis artifact",
+      "key_findings": [
+        "analysis_summary already includes source_artifacts with paths and sha256 values for P08 cleanup, failover, fault, phase summary, state, and valkey_e2e_evidence artifacts.",
+        "It records missing split_brain_duration_ms as MISSING with reason and impact.",
+        "The source_artifacts hashes must be verified against committed files by L02 rather than trusted blindly."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+      "purpose": "representative P09 rendered report index",
+      "key_findings": [
+        "report_index lists metrics.csv, missing_metrics.csv, baseline_comparison.csv, metric_chart.svg, report.md, and index.html with sha256 values.",
+        "report_index has no source_artifacts field linking rendered views back to analysis_summary.json.",
+        "L02 must create graph edges from each rendered report node to analysis_summary.json and must mark rendered outputs source_of_truth=false."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "purpose": "representative P11 stability report",
+      "key_findings": [
+        "stability_report contains measured duration, workload latency, memory growth, restart deltas, error classification, and baseline comparison summary.",
+        "source_artifacts and metrics_path are absent/null.",
+        "L02 must require edges to stability_metrics.jsonl, stability_baseline_comparison.json, valkey_e2e_evidence.json, cleanup_report.json, and phase_summary.json or else record missing provenance findings."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json",
+      "purpose": "representative P12 scale report",
+      "key_findings": [
+        "scale_ladder_report has rungs for 10 and 30 nodes with evidence_path fields and real_evidence_paths summary entries.",
+        "source_artifacts is absent/null.",
+        "Each rung must trace to matching resource_preflight_N.json, valkey_e2e_evidence_N.json, scale_rung_N.json, cleanup_report or cleanup_report_scale_N.json, and phase_summary.json with verified hashes."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+      "purpose": "representative P13 scale report",
+      "key_findings": [
+        "scale_ladder_report has real 50-node and 100-node rung summaries with evidence_path values and Valkey 9.1.0 versions.",
+        "source_artifacts is absent/null.",
+        "L02 must trace both rungs to resource_preflight_50.json, resource_preflight_100.json, valkey_e2e_evidence_50.json, valkey_e2e_evidence_100.json, scale_rung_50.json, scale_rung_100.json, cleanup artifacts, and timing breakdowns."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+      "purpose": "representative P13 timing analysis artifact",
+      "key_findings": [
+        "The artifact records setup, cluster create, replica config, wrapper probe, final probe, cleanup, artifact write, and accounting timings.",
+        "diagnostic_full_probe_duration_seconds is explicitly MISSING, which must remain a missing metric rather than fabricated evidence.",
+        "source_artifacts is absent/null even though the values come from setup timelines, runtime timing breakdowns, wrapper gate evidence, and cleanup logs."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/audit_report.json",
+      "purpose": "L01 committed artifact audit report",
+      "key_findings": [
+        "The audit report records historical manifest SHA mismatch findings as non-blocking when allowlisted.",
+        "It flags missing producer on artifacts whose schemas do not require it as informational rather than hiding the metadata gap.",
+        "L02 should build on this audit report but must not substitute it for direct provenance graph and hash validation."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L02-REQ-001",
+      "severity": "high",
+      "description": "There is no committed provenance DAG contract or graph output for analysis, report, stability, scale, timing, and rendered artifacts. L02 must add a schema-backed graph at artifacts/loop_engineering/reports/provenance_graph.json.",
+      "evidence": [
+        "codex/loop_engineering/04_STAGE_MANIFEST.md requires a provenance graph builder, DAG schema, source artifact hash check, and graph output path.",
+        "artifacts/loop_engineering/reports currently contains audit_report.json but no provenance_graph.json.",
+        "Existing artifact schemas allow source_artifacts as additionalProperties but do not require a unified DAG."
+      ]
+    },
+    {
+      "id": "L02-REQ-002",
+      "severity": "high",
+      "description": "Rendered P09 report outputs are indexed with hashes but are not linked to their source analysis artifact. The graph must mark report files as views and trace them to analysis_summary.json and then to P08 source artifacts.",
+      "evidence": [
+        "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json lists report files with sha256 but source_artifacts is null.",
+        "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json already lists P08 source_artifacts with sha256.",
+        "AGENTS.md states charts, HTML, and Markdown reports are only views over versioned artifacts."
+      ]
+    },
+    {
+      "id": "L02-REQ-003",
+      "severity": "high",
+      "description": "P11 stability_report contains derived metrics but lacks explicit source_artifacts. L02 must require deterministic source edges to stability_metrics.jsonl, stability_baseline_comparison.json, real Valkey evidence, cleanup, and phase summary artifacts, or record missing provenance findings.",
+      "evidence": [
+        "artifacts/phases/P11_STABILITY_SOAK/stability_report.json has source_artifacts null and metrics_path null.",
+        "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl and stability_baseline_comparison.json exist as representative upstream artifacts.",
+        "schemas/artifact/stability_report.schema.json does not require any provenance field."
+      ]
+    },
+    {
+      "id": "L02-REQ-004",
+      "severity": "high",
+      "description": "P12 and P13 scale_ladder_report artifacts contain rung metrics but lack explicit source_artifacts. The graph must link every rung to its resource preflight, real Valkey evidence, scale rung summary, cleanup, and phase summary artifacts with verified sha256.",
+      "evidence": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/scale_ladder_report.json has source_artifacts null but rungs refer to valkey_e2e_evidence_10.json and valkey_e2e_evidence_30.json.",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json has source_artifacts null but rungs refer to valkey_e2e_evidence_50.json and valkey_e2e_evidence_100.json.",
+        "codex/phase_manifest.json declares resource_preflight, valkey_e2e_evidence, scale_ladder_report, cleanup_report, and phase_summary artifacts for P12 and P13."
+      ]
+    },
+    {
+      "id": "L02-REQ-005",
+      "severity": "medium",
+      "description": "P13 timing breakdown artifacts are provenance-relevant analysis artifacts but do not expose source_artifacts. L02 must either trace timing values to setup timelines, runtime timing breakdowns, wrapper evidence, cleanup logs, and cleanup reports, or emit findings for unresolved timing sources.",
+      "evidence": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json records derived timing and accounting fields.",
+        "source_artifacts is null in the representative timing artifact.",
+        "schemas/artifact/p13_timing_breakdown.schema.json requires timing/accounting fields but not provenance."
+      ]
+    },
+    {
+      "id": "L02-REQ-006",
+      "severity": "high",
+      "description": "Source artifact hashes must be recomputed from disk and compared to declared hashes. A graph that merely copies source_artifacts or report_index hashes would not satisfy L02.",
+      "evidence": [
+        "codex/loop_engineering/04_STAGE_MANIFEST.md explicitly requires source artifact hash check.",
+        "P09 analysis_summary.json and report_index.json contain sha256 values that can drift from file contents if not recomputed.",
+        "L01 audit_report.json already records hash-related historical drift, so L02 must be explicit about hash match, mismatch, and missing source files."
+      ]
+    },
+    {
+      "id": "L02-REQ-007",
+      "severity": "medium",
+      "description": "The graph must distinguish explicit source edges from deterministic inferred edges. Existing artifacts often lack source_artifacts, so the builder must not silently treat inferred relationships as if the producer declared them.",
+      "evidence": [
+        "P09 analysis_summary.json carries explicit source_artifacts.",
+        "P09 report_index.json, P11 stability_report.json, P12 scale_ladder_report.json, P13 scale_ladder_report.json, and P13 timing breakdown samples have source_artifacts absent or null.",
+        "The L02 read_context.md warns that existing historical artifacts may lack metadata and must classify gaps without mutating committed artifacts."
+      ]
+    },
+    {
+      "id": "L02-REQ-008",
+      "severity": "medium",
+      "description": "P14 and 1000-node dry-run artifacts must be excluded from real evidence provenance and may only appear as dry-run/planner boundary nodes if the builder scans them at all.",
+      "evidence": [
+        "AGENTS.md and CODEX_START_HERE.md forbid automatic P14 execution without opt-in.",
+        "codex/loop_engineering/04_STAGE_MANIFEST.md L02 scope names P09, P11, P12, and P13, not P14 real evidence.",
+        "artifacts/loop_engineering/stages/L02_EVIDENCE_PROVENANCE_DAG/read_context.md states P14 dry-run artifacts from P02 must not be represented as real 1000-node provenance."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "provenance_graph_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "schemas/artifact/provenance_graph.schema.json requires schema_version, artifact_type=provenance_graph, generated_at, producer, status, scope, nodes, edges, findings, and summary. Nodes must include id, path, sha256_actual, artifact_type, schema_path or null, phase_id or null, run_id or null, producer or null, status or null, source_of_truth boolean, artifact_role, and hash_status. Edges must include from, to, relation, source_declaration, hash_status, and evidence."
+    },
+    {
+      "name": "provenance_graph_builder_cli",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json deterministically reads committed artifacts and writes a schema-valid DAG without running P14, scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py."
+    },
+    {
+      "name": "source_artifact_hash_check",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests prove every declared source_artifacts sha256 and every report_index report sha256 is recomputed from disk; missing files and mismatches produce findings with severity, path, expected_sha256, actual_sha256 or MISSING, and blocking=true for source artifacts required by L02 scope."
+    },
+    {
+      "name": "report_view_not_source_of_truth_test",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests prove HTML, Markdown, SVG, and CSV report files from P09 are graph nodes with source_of_truth=false and incoming provenance from analysis_summary.json; no report file is allowed to be the terminal source for a metric or conclusion."
+    },
+    {
+      "name": "p09_p11_p12_p13_traceability_tests",
+      "type": "integration",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests verify graph paths exist from P09 report files to P09 analysis_summary and P08 source artifacts; from P11 stability_report to stability_metrics.jsonl, stability_baseline_comparison.json, valkey_e2e_evidence.json, cleanup_report.json, and phase_summary.json; from P12 scale_ladder_report to 10/30 preflight, evidence, rung, cleanup, and summary artifacts; and from P13 scale_ladder_report to 50/100 preflight, evidence, rung, cleanup, timing, and summary artifacts."
+    },
+    {
+      "name": "missing_provenance_finding_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Fixture tests create analysis, stability, scale, timing, and visualization artifacts with no explicit or deterministic source; the builder must emit MISSING_PROVENANCE findings instead of inventing source values."
+    },
+    {
+      "name": "dag_integrity_and_no_p14_real_evidence_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests prove the graph is acyclic, every edge endpoint exists, P14 real_valkey coverage is absent, dry-run/planner nodes are labeled dry_run_only when present, and 1000-node dry-run artifacts never satisfy real evidence traceability."
+    },
+    {
+      "name": "provenance_graph_ci_gate",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "A CI test asserts the builder CLI, schema validation, hash checks, and report-as-view tests are part of the validation path without invoking real Valkey, fault wrappers, Docker cluster creation, or P14."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define the provenance graph artifact schema before implementation.",
+      "files": [
+        "schemas/artifact/provenance_graph.schema.json"
+      ],
+      "rationale": "The DAG must be machine-readable and strict enough to prevent empty graphs, unverified hashes, missing endpoints, and report files being treated as sources."
+    },
+    {
+      "step": "Build a static provenance graph builder over committed artifact files.",
+      "files": [
+        "scripts/build_provenance_graph.py"
+      ],
+      "rationale": "L02 should derive provenance from existing JSON/JSONL/CSV/SVG/HTML/Markdown artifacts, phase manifest commands, declared source_artifacts, report_index entries, and deterministic phase-specific path rules without running real gates."
+    },
+    {
+      "step": "Implement explicit and inferred edge handling with hash verification.",
+      "files": [
+        "scripts/build_provenance_graph.py"
+      ],
+      "rationale": "Existing artifacts mix explicit source_artifacts with missing/null provenance fields; the graph must record source_declaration as explicit, manifest_command, known_phase_artifact, report_index, or unresolved and must recompute hashes for every linked file."
+    },
+    {
+      "step": "Add focused provenance tests for L02 target phases and negative fixtures.",
+      "files": [
+        "tests/provenance/test_provenance_graph.py"
+      ],
+      "rationale": "Tests must prove concrete traceability for P09, P11, P12, and P13 while blocking missing source edges and hash drift."
+    },
+    {
+      "step": "Add CI guard coverage for the provenance gate.",
+      "files": [
+        "tests/ci/test_provenance_graph_gate.py",
+        ".github/workflows/github-coverage-gates.yml"
+      ],
+      "rationale": "The provenance DAG must remain part of the committed validation path and must stay static-only."
+    },
+    {
+      "step": "Generate the L02 graph artifact through the builder.",
+      "files": [
+        "artifacts/loop_engineering/reports/provenance_graph.json"
+      ],
+      "rationale": "The graph output is a product artifact and must be reproducible from committed inputs rather than handwritten."
+    }
+  ],
+  "acceptance_criteria": [
+    "artifacts/loop_engineering/reports/provenance_graph.json exists, is generated by the L02 builder, and validates against schemas/artifact/provenance_graph.schema.json.",
+    "The graph status is PASS only when there are no blocking findings; unresolved source provenance, missing required source files, or hash mismatches for L02-required source artifacts are blocking findings.",
+    "Every graph node has path, sha256_actual, hash_status, artifact_role, source_of_truth, artifact_type when available, schema_path when known, phase_id when available, run_id when available, producer when available, and status when available.",
+    "Every graph edge has existing from/to node ids, relation, source_declaration, hash_status, and evidence explaining whether the edge came from source_artifacts, report_index, manifest command input, known phase artifact mapping, or deterministic artifact field such as evidence_path.",
+    "The graph is a DAG: validation fails if any cycle exists or any edge endpoint is missing.",
+    "For P09_ANALYSIS_REPORTING, graph paths exist from report/metrics.csv, report/missing_metrics.csv, report/baseline_comparison.csv, report/metric_chart.svg, report/report.md, and report/index.html to report_index.json, analysis_summary.json, and the P08 source artifacts declared in analysis_summary.json.",
+    "P09 rendered report nodes have source_of_truth=false and artifact_role values such as rendered_report, visualization, markdown_report, html_report, or csv_view; they are never accepted as source nodes for measured metrics.",
+    "Every sha256 declared in P09 analysis_summary.json source_artifacts and P09 report_index.json reports is recomputed from disk and recorded as MATCH, MISMATCH, or MISSING.",
+    "For P11_STABILITY_SOAK, graph paths exist from stability_report.json to stability_metrics.jsonl, stability_baseline_comparison.json, valkey_e2e_evidence.json, cleanup_report.json, and phase_summary.json; missing explicit provenance in the historical artifact is either represented by deterministic inferred edges or by a non-hidden finding.",
+    "For P12_SCALE_LADDER_10_30, graph paths exist from scale_ladder_report.json to resource_preflight_10.json, resource_preflight_30.json, valkey_e2e_evidence_10.json, valkey_e2e_evidence_30.json, scale_rung_10.json, scale_rung_30.json, cleanup_report.json or per-scenario cleanup reports, and phase_summary.json.",
+    "For P13_SCALE_LADDER_50_100, graph paths exist from scale_ladder_report.json to resource_preflight_50.json, resource_preflight_100.json, valkey_e2e_evidence_50.json, valkey_e2e_evidence_100.json, scale_rung_50.json, scale_rung_100.json, cleanup_report.json or per-scenario cleanup reports, p13_timing_breakdown_scale_50.json, p13_timing_breakdown_scale_100.json, and phase_summary.json.",
+    "P13 timing breakdown nodes trace to available setup_timeline_scale_N.json, runtime_timing_breakdown_scale_N.json, valkey_e2e_evidence_N.json, cleanup_report_scale_N.json, and setup/cleanup log artifacts where present; any unavailable timing source is recorded as MISSING_PROVENANCE with reason and impact.",
+    "MISSING values already present in artifacts, such as diagnostic_full_probe_duration_seconds=MISSING, remain represented as missing evidence and are not backfilled with invented values.",
+    "P14_SCALE_1000_OPTIN_DRYRUN is not run; no L02 command invokes scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, scripts/fault_failover_gate.py, Docker cluster creation, or P14 real/dry-run execution.",
+    "If 1000-node dry-run/planner artifacts are included in the graph, they are marked dry_run_only=true, source_of_truth=false for real evidence coverage, and real_valkey_coverage=false.",
+    "The builder does not edit artifacts/phases, artifacts/gates, audit decisions, source code outputs from prior phases, or historical report files to repair provenance gaps.",
+    "tests/provenance include negative fixtures for missing source_artifacts, broken source paths, sha256 mismatch, source cycles, missing edge endpoints, and report nodes incorrectly marked source_of_truth=true.",
+    "The L02 validation path remains static and fast: it validates schemas, graph integrity, hashes, and tests without requiring live Valkey, Docker availability, host network changes, or fault injection."
+  ],
+  "risks": [
+    "A graph builder that only follows explicit source_artifacts will miss P09 report_index, P11 stability_report, P12 scale_ladder_report, P13 scale_ladder_report, and P13 timing artifacts because those samples have null or absent source_artifacts.",
+    "A graph builder that relies only on filename heuristics can invent false provenance; inferred edges must record their derivation and produce findings when confidence is insufficient.",
+    "Copying sha256 values from artifacts without recomputing them would fail the source artifact hash requirement.",
+    "Rendered report files could accidentally become source-of-truth unless the schema and tests force source_of_truth=false for HTML, Markdown, SVG, and CSV views.",
+    "P13 nodehost bundles and large node config trees could make the graph noisy; L02 should include them only when they are actual sources for a target report or timing artifact.",
+    "Including P14 dry-run artifacts without strong labels could make later coverage stages mistake dry-run planning for real 1000-node evidence.",
+    "Relaxing existing artifact schemas or rewriting historical artifacts to add source_artifacts would violate the requested scope and the harness integrity rules."
+  ],
+  "forbidden_shortcuts": [
+    "Do not edit source files, tests, historical phase artifacts, historical gate artifacts, or historical audit decisions as part of this requirements_analyst output.",
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Do not run scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py for L02 requirements analysis.",
+    "Do not treat report_index.json, HTML, Markdown, SVG, or CSV outputs as source-of-truth for measured values.",
+    "Do not copy declared sha256 values into the graph without recomputing file hashes.",
+    "Do not silently ignore missing source_artifacts on analysis, report, scale, stability, timing, or visualization artifacts.",
+    "Do not fabricate source paths, run_id values, producer metadata, or missing metrics to make the graph complete.",
+    "Do not weaken AGENTS.md, codex/phase_manifest.json, schemas, scripts, workflows, templates, or loop-engineering requirements to pass L02.",
+    "Do not count dry-run planner/resource artifacts as real Valkey evidence or real 1000-node provenance."
+  ],
+  "commands_to_run": [
+    "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json",
+    "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json",
+    "python3 -m pytest -q tests/provenance",
+    "python3 -m pytest -q tests/ci/test_provenance_graph_gate.py",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering"
+  ],
+  "verdict": "APPROVED",
+  "notes": "L02 requirements are concrete enough to proceed: the stage must add a schema-backed static provenance DAG, verify hashes from disk, prove report artifacts are views, trace P09/P11/P12/P13 target artifacts to source artifacts, and emit machine-readable findings for unresolved provenance. This requirements artifact intentionally performs no implementation work and does not mutate historical phase or gate evidence."
+}
