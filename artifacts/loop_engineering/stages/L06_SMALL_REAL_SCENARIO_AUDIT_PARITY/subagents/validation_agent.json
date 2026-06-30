@@ -1,0 +1,68 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY",
+  "agent_role": "validation_agent",
+  "created_at": "2026-06-30T12:12:00Z",
+  "context_files_read": [
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+      "purpose": "Select baseline, current-stage, report, and loop validation commands.",
+      "key_findings": [
+        "Baseline requires precheck, safety scan, compileall, pytest groups, and loop validation.",
+        "Real small-cluster wrapper commands are available but were not run in L06 because this stage audits committed source artifacts and no fresh real-gate requirement was added."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "purpose": "Identify current-stage L06 validation commands.",
+      "key_findings": [
+        "Required current gate is audit_small_real_scenario_parity.py plus schema validation and focused tests.",
+        "P14 execution and VSLAB_ALLOW_1000_DRYRUN are forbidden."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/commands.jsonl",
+      "purpose": "Confirm command execution and P14 guard.",
+      "key_findings": [
+        "No successful command ran P14 or set the opt-in token.",
+        "The command log records failed app-level subagent spawns and the local fallback validation."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [],
+  "implementation_plan": [],
+  "acceptance_criteria": [
+    "Previous harness commands pass.",
+    "Current L06 parity audit, schema, and focused tests pass.",
+    "Report/provenance artifacts validate after regeneration.",
+    "Loop validator passes for L06.",
+    "No P14 or real/fault wrapper gate was run."
+  ],
+  "risks": [
+    "Actual app subagent validation spawn failed due usage limit; this JSON records the local fallback validation."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14.",
+    "Do not set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not run scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py for this static L06 validation."
+  ],
+  "commands_to_run": [
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/codex_gate.py precheck --all -> PASS",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/safety_scan.py -> PASS",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-l06-final-pycache python3 -m compileall -q src scripts tests -> PASS",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/audit_small_real_scenario_parity.py --root . --out artifacts/loop_engineering/reports/small_real_parity_audit.json --require-fake --require-real --validate-report-views -> PASS",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/validate_json_schema.py --schema schemas/artifact/small_real_parity_audit.schema.json --instance artifacts/loop_engineering/reports/small_real_parity_audit.json -> PASS",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json -> PASS",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports -> PASS",
+    "PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q tests/audit/test_small_real_scenario_parity.py tests/coverage/test_small_real_metric_parity.py tests/report/test_small_real_parity_report.py tests/real_valkey/test_small_real_gate_contract.py tests/ci/test_small_real_parity_gate.py -> 26 passed",
+    "PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q tests/ci -> 25 passed",
+    "PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q tests/report tests/visualization -> 12 passed",
+    "PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q tests/unit tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator -> 104 passed",
+    "PATH=/private/tmp/valkey-scale-lab-l00-venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q tests/analysis tests/stability tests/scale tests/audit tests/coverage tests/metrics tests/provenance tests/real_valkey -> 65 passed",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L06_SMALL_REAL_SCENARIO_AUDIT_PARITY -> PASS",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/loop_engineering_validate.py --anti-regression --base-ref 5c57761569d8322e3ee057afb2f15b2cfef849d7 --head-ref WORKTREE --report artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/anti_regression_check.json -> PASS"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Subagent spawn for validation_agent failed due the Codex app usage limit. The main controller ran the validation fallback locally; all required commands passed."
+}

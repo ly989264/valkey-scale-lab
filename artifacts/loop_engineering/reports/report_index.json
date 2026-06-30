@@ -13,36 +13,43 @@
   "source_artifacts": [
     {
       "path": "artifacts/loop_engineering/reports/audit_report.json",
-      "sha256": "b60d3a8572a2827027091a9d0899df17e86f7719aa8e1f95a8282cf3deaee337",
+      "sha256": "e91cb63c0fe270f55a1df5694474fe5900771e43b13a941a13781572436fb37f",
       "artifact_type": "audit_report",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/provenance_graph.json",
-      "sha256": "6a7bb83d32fd30dc6099b65ce1034f556c881c517afe08d914d9970c06a7bf29",
+      "sha256": "841a44b7f4f11313b3aff2503c10f5857b8911bbd4b6c42995676d3b9e18f671",
       "artifact_type": "provenance_graph",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/metric_catalog.json",
-      "sha256": "ef3e0d4371c4862fd954464fc656a5a4d1ee780b64d9f54f2366094e116e30a7",
+      "sha256": "d4ca63f773064a64964ef7884f4079d03df8316d952bc6c29ab6acacd3b952b2",
       "artifact_type": "metric_catalog",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
-      "sha256": "e01d4b371ab845a88204b5b8fe65b33e7c03fc1dbd75ce226334a6adf596dc87",
+      "sha256": "ba2d2d1c40e5f7e1578eb3c055f821f6b518773bfc869dacde32ebf79ad400ac",
       "artifact_type": "coverage_matrix",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
-      "sha256": "38a3d5eb45c29b6289bae44a061bab65ec65c6f9760459ababb36d44fd0cffa3",
+      "sha256": "6dba6722fdd8bde149164cd5d227af187d6e646f9f5b4e5c782e6181c9487658",
       "artifact_type": "p13_p14_scale_audit",
+      "status": "PASS",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+      "sha256": "7c3b40e3b4ed3edf102e2e04b902e3b21c50676383c09e82d22b98e557139f1e",
+      "artifact_type": "small_real_parity_audit",
       "status": "PASS",
       "source_of_truth": true
     },
@@ -80,6 +87,7 @@
         "artifacts/loop_engineering/reports/metric_catalog.json",
         "artifacts/loop_engineering/reports/coverage_matrix.json",
         "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -96,6 +104,7 @@
         "artifacts/loop_engineering/reports/metric_catalog.json",
         "artifacts/loop_engineering/reports/coverage_matrix.json",
         "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -112,6 +121,7 @@
         "artifacts/loop_engineering/reports/metric_catalog.json",
         "artifacts/loop_engineering/reports/coverage_matrix.json",
         "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -128,6 +138,7 @@
         "artifacts/loop_engineering/reports/metric_catalog.json",
         "artifacts/loop_engineering/reports/coverage_matrix.json",
         "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -144,6 +155,7 @@
         "artifacts/loop_engineering/reports/metric_catalog.json",
         "artifacts/loop_engineering/reports/coverage_matrix.json",
         "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -151,7 +163,7 @@
     },
     {
       "path": "artifacts/loop_engineering/reports/index.html",
-      "sha256": "301dc4d6ecd79a3ec296d5d60bfd42172414751f9f211995561eeb98e78dd85e",
+      "sha256": "e340b6b7572c44dde8f084007bf4ac20cbaf95d57a3d7dbaa337d2cbc89d8bf6",
       "role": "html_report",
       "source_of_truth": false,
       "source_artifacts": [
@@ -160,6 +172,7 @@
         "artifacts/loop_engineering/reports/metric_catalog.json",
         "artifacts/loop_engineering/reports/coverage_matrix.json",
         "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"

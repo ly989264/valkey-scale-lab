@@ -1,0 +1,2869 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "small_real_parity_audit",
+  "stage_id": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY",
+  "run_id": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY-small-real-parity-v1",
+  "created_at": "2026-06-30T00:00:00Z",
+  "producer": {
+    "name": "scripts/audit_small_real_scenario_parity.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": {
+    "surface_count": 8,
+    "required_surface_count": 8,
+    "fake_covered_count": 8,
+    "real_covered_count": 8,
+    "cleanup_pass_count": 8,
+    "metric_count": 89,
+    "measured_count": 60,
+    "missing_count": 1,
+    "skipped_count": 26,
+    "no_baseline_count": 2,
+    "blocking_findings_count": 0
+  },
+  "source_artifacts": [
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "exists": true,
+      "sha256": "ba2d2d1c40e5f7e1578eb3c055f821f6b518773bfc869dacde32ebf79ad400ac",
+      "artifact_type": "coverage_matrix",
+      "schema_path": "schemas/artifact/coverage_matrix.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/build_metric_coverage_matrix.py",
+      "run_id": null,
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/metric_catalog.json",
+      "exists": true,
+      "sha256": "d4ca63f773064a64964ef7884f4079d03df8316d952bc6c29ab6acacd3b952b2",
+      "artifact_type": "metric_catalog",
+      "schema_path": "schemas/artifact/metric_catalog.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/build_metric_coverage_matrix.py",
+      "run_id": null,
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/report_index.json",
+      "exists": true,
+      "sha256": "0b5e740674caf158e49bd0b311f14b53a09ab43427bda6714ed4d265b6f24d1b",
+      "artifact_type": "loop_report_index",
+      "schema_path": "schemas/artifact/loop_report_index.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/render_audit_report.py",
+      "run_id": "L05_REPORTING_V2_FOR_AUDIT_RESULTS-report-v1",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "exists": true,
+      "sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "artifact_type": "json",
+      "schema_path": "",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": null,
+      "producer": null,
+      "run_id": null,
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+      "exists": true,
+      "sha256": "f2cdb8c3fc890e0781a1c3a374f336a0a91c2cea2af542d374e505b5df98130f",
+      "artifact_type": "cleanup_report",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P03_LOCAL_DOCKER_VALKEY-cluster_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json",
+      "exists": true,
+      "sha256": "8cd3c251a3c8a2eee29192dc40a7894e7d501234cfba6e4f79f817f84110e3f2",
+      "artifact_type": "valkey_e2e_evidence",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/valkey_e2e_gate.py",
+      "run_id": "phase-P03_LOCAL_DOCKER_VALKEY-cluster_smoke",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+      "exists": true,
+      "sha256": "aa52298dd6e64ffd110b8cac0f5e06dc5bd36e53927689e13950c45dcdb8e943",
+      "artifact_type": "cleanup_report",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P04_CLUSTER_MANAGEMENT_OPS-management_ops-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "exists": true,
+      "sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "artifact_type": "management_ops_report",
+      "schema_path": "schemas/artifact/management_ops_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P04_CLUSTER_MANAGEMENT_OPS-management_ops-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json",
+      "exists": true,
+      "sha256": "044eb58c0117081fcda4e07cf80fd5c9c8aa7eb2b7ea9a2dcd490bcc6e3394f8",
+      "artifact_type": "valkey_e2e_evidence",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/valkey_e2e_gate.py",
+      "run_id": "phase-P04_CLUSTER_MANAGEMENT_OPS-management_ops",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+      "exists": true,
+      "sha256": "6705eb8287dba84212ea2c266e3489c7303aefe70dcee812cc9508b39bc0b304",
+      "artifact_type": "cleanup_report",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P05_WORKLOAD_ENGINE-workload_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json",
+      "exists": true,
+      "sha256": "4f3a7938e5077cc8848c66e4a7ea3b96b3a9b45ff192dff1468164a26c2e06a2",
+      "artifact_type": "valkey_e2e_evidence",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/valkey_e2e_gate.py",
+      "run_id": "phase-P05_WORKLOAD_ENGINE-workload_smoke",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "exists": true,
+      "sha256": "dc2d9fcc9fbf5d2e74ff0d629099039cec8ec6f34903329913486ac756a722c7",
+      "artifact_type": "workload_report",
+      "schema_path": "schemas/artifact/workload_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P05_WORKLOAD_ENGINE-workload_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+      "exists": true,
+      "sha256": "3094cf2f7e7ec5dc8913a638f5074b36eacca57471714dcd27364cd4f9b0828d",
+      "artifact_type": "cleanup_report",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P06_OBSERVABILITY_METRICS-observability_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl",
+      "exists": true,
+      "sha256": "1774de9e84f0fc31534aa9c5bf2fb41f30db9f2cf5597921b8e177c03f5cf93c",
+      "artifact_type": "event",
+      "schema_path": "schemas/artifact/event.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": null,
+      "producer": null,
+      "run_id": "P06_OBSERVABILITY_METRICS-observability_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl",
+      "exists": true,
+      "sha256": "3138cf6cfbc696181a0334b0708733cf884f23ab886a380df54842a7af7dbf61",
+      "artifact_type": "metric_sample",
+      "schema_path": "schemas/artifact/metric_sample.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": null,
+      "producer": null,
+      "run_id": "P06_OBSERVABILITY_METRICS-observability_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json",
+      "exists": true,
+      "sha256": "b89d370587e9ad095c0d8122a58d78bf5bf1eae3703d600bac4f21c83ea29806",
+      "artifact_type": "valkey_e2e_evidence",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/valkey_e2e_gate.py",
+      "run_id": "phase-P06_OBSERVABILITY_METRICS-observability_smoke",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+      "exists": true,
+      "sha256": "863cbc9aabed2b3daacc4cd6d9b9ad892b26526168f0da56250e40518002c27a",
+      "artifact_type": "cleanup_report",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P07_FAULT_INJECTION_SANDBOX-fault_sandbox_setup-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+      "exists": true,
+      "sha256": "6071f35974b9d619cd7d33c94b226876b256ce5a00d53050c308d85f5436b8a9",
+      "artifact_type": "fault_report",
+      "schema_path": "schemas/artifact/fault_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P07_FAULT_INJECTION_SANDBOX-fault_sandbox_setup-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
+      "exists": true,
+      "sha256": "156f0b11fcb9d4bc25d9e3c92cbbd3f79cfc9bb9c43dde1b91ea335650d2bf71",
+      "artifact_type": "valkey_e2e_evidence",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/fault_safety_gate.py",
+      "run_id": "phase-P07_FAULT_INJECTION_SANDBOX-fault-sandbox",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+      "exists": true,
+      "sha256": "7b575fd7a5fb1542541975f0649e6ac0803800dc30135bb63cb0ba8a27a5d6f7",
+      "artifact_type": "cleanup_report",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P08_FAILOVER_SPLIT_BRAIN-failover_setup-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+      "exists": true,
+      "sha256": "f11772a63e7817ce0156c39c69de8d97f398fe7c4d56b4a68d23ec5bf6a31064",
+      "artifact_type": "failover_report",
+      "schema_path": "schemas/artifact/failover_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/fault_failover_gate.py",
+      "run_id": "phase-P08_FAILOVER_SPLIT_BRAIN-primary-stop",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_report.json",
+      "exists": true,
+      "sha256": "459f2539ea79f4889f3b6fb1a4c8f70d297d74cdd624cb8dd317a871fa67e36b",
+      "artifact_type": "fault_report",
+      "schema_path": "schemas/artifact/fault_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P08_FAILOVER_SPLIT_BRAIN-failover_setup-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/state_failover.json",
+      "exists": true,
+      "sha256": "11d3ac4931bebdc0afc3ff541693b3f91e5676117dc051a45966a469066e3ba8",
+      "artifact_type": "json",
+      "schema_path": "",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": null,
+      "producer": null,
+      "run_id": null,
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
+      "exists": true,
+      "sha256": "27338a03eb687bb4aef85b5c8a673bece51b87a00051f91c1215fd2ea4adf7d8",
+      "artifact_type": "valkey_e2e_evidence",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/fault_failover_gate.py",
+      "run_id": "phase-P08_FAILOVER_SPLIT_BRAIN-primary-stop",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
+      "exists": true,
+      "sha256": "571830067022cee3850af26ef7046e33590873538a76b610248552917e8a11e5",
+      "artifact_type": "cleanup_report",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P09_ANALYSIS_REPORTING-reporting_source_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
+      "exists": true,
+      "sha256": "7dc3eb5105290fe9ece6b99b524cdb59cc5ace5e786b467dad87bc7666930f8d",
+      "artifact_type": "cleanup_report",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P10_MULTI_HOST_ORCHESTRATION-orchestrated_localhost-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+      "exists": true,
+      "sha256": "3a99f319f6d8513bb23a17dd9041842335725c80b1bd20dc5fc1b451bbd7b929",
+      "artifact_type": "cleanup_report",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
+      "exists": true,
+      "sha256": "c1d693f3f3d9fea6ba21ec3e986b5f3c3dcd55503b92892d1c34f42dd9465bc7",
+      "artifact_type": "stability_baseline_comparison",
+      "schema_path": "",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "NO_BASELINE_YET",
+      "producer": "valkey-scale-lab",
+      "run_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
+      "exists": true,
+      "sha256": "81ac533f008573df8ba8576be56ac2223cf06065c946022c1bd5c52e6eb180a3",
+      "artifact_type": "metric_sample",
+      "schema_path": "schemas/artifact/metric_sample.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": null,
+      "producer": null,
+      "run_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "exists": true,
+      "sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "artifact_type": "stability_report",
+      "schema_path": "schemas/artifact/stability_report.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "valkey-scale-lab",
+      "run_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+      "exists": true,
+      "sha256": "a869914311a15cfe595eed1d708591fbb36c7766c924ccd27a5e6ac52e18ff6f",
+      "artifact_type": "valkey_e2e_evidence",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_valid": true,
+      "schema_errors": [],
+      "status": "PASS",
+      "producer": "scripts/valkey_e2e_gate.py",
+      "run_id": "phase-P11_STABILITY_SOAK-stability_soak_smoke",
+      "source_of_truth": true
+    }
+  ],
+  "surfaces": [
+    {
+      "surface": "cluster_smoke",
+      "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+      "scenario": "cluster_smoke",
+      "status": "PASS",
+      "fake_coverage": {
+        "present": true,
+        "evidence_class": "fake",
+        "real_valkey_coverage": false,
+        "metric_names": [
+          "cluster_smoke.real_evidence.nodes_observed",
+          "cluster_smoke.real_evidence.data_path_result"
+        ],
+        "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json"
+      },
+      "real_coverage": {
+        "present": true,
+        "evidence_class": "real_valkey",
+        "real_valkey_coverage": true,
+        "source_artifacts": [
+          "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json"
+        ],
+        "checks": [
+          {
+            "name": "producer",
+            "status": "PASS",
+            "actual": "scripts/valkey_e2e_gate.py"
+          },
+          {
+            "name": "status",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "real_valkey",
+            "status": "PASS",
+            "actual": true
+          },
+          {
+            "name": "version_prefix",
+            "status": "PASS",
+            "actual": [
+              "9.1.0"
+            ]
+          },
+          {
+            "name": "nodes_observed",
+            "status": "PASS",
+            "actual": 6
+          },
+          {
+            "name": "cluster_state_observed",
+            "status": "PASS",
+            "actual": "ok"
+          },
+          {
+            "name": "data_path_result",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "evidence_cleanup_status",
+            "status": "PASS",
+            "actual": {
+              "status": "PASS",
+              "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json"
+            }
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "PASS",
+        "resources_remaining": 0,
+        "source_artifact": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json"
+      },
+      "metrics": [
+        "cluster_smoke.cleanup.resources_remaining",
+        "cluster_smoke.real_evidence.data_path_result",
+        "cluster_smoke.real_evidence.nodes_observed"
+      ]
+    },
+    {
+      "surface": "management_ops",
+      "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+      "scenario": "management_ops",
+      "status": "PASS",
+      "fake_coverage": {
+        "present": true,
+        "evidence_class": "fake",
+        "real_valkey_coverage": false,
+        "metric_names": [
+          "management_ops.operation.meet.duration_seconds",
+          "management_ops.operation.remove_node.status"
+        ],
+        "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json"
+      },
+      "real_coverage": {
+        "present": true,
+        "evidence_class": "real_valkey",
+        "real_valkey_coverage": true,
+        "source_artifacts": [
+          "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json"
+        ],
+        "checks": [
+          {
+            "name": "producer",
+            "status": "PASS",
+            "actual": "scripts/valkey_e2e_gate.py"
+          },
+          {
+            "name": "status",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "real_valkey",
+            "status": "PASS",
+            "actual": true
+          },
+          {
+            "name": "version_prefix",
+            "status": "PASS",
+            "actual": [
+              "9.1.0"
+            ]
+          },
+          {
+            "name": "nodes_observed",
+            "status": "PASS",
+            "actual": 6
+          },
+          {
+            "name": "cluster_state_observed",
+            "status": "PASS",
+            "actual": "ok"
+          },
+          {
+            "name": "data_path_result",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "evidence_cleanup_status",
+            "status": "PASS",
+            "actual": {
+              "status": "PASS",
+              "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json"
+            }
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "PASS",
+        "resources_remaining": 0,
+        "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json"
+      },
+      "metrics": [
+        "management_ops.cleanup.resources_remaining",
+        "management_ops.operation.add_replica.duration_seconds",
+        "management_ops.operation.add_slots.duration_seconds",
+        "management_ops.operation.cluster_info.duration_seconds",
+        "management_ops.operation.cluster_nodes.duration_seconds",
+        "management_ops.operation.convergence_check.duration_seconds",
+        "management_ops.operation.meet.duration_seconds",
+        "management_ops.operation.rebalance.duration_seconds",
+        "management_ops.operation.remove_node.duration_seconds",
+        "management_ops.operation.remove_node.status",
+        "management_ops.operation.reshard.duration_seconds",
+        "management_ops.operation.rolling_restart.duration_seconds",
+        "management_ops.real_evidence.data_path_result",
+        "management_ops.real_evidence.nodes_observed"
+      ]
+    },
+    {
+      "surface": "workload_smoke",
+      "phase_id": "P05_WORKLOAD_ENGINE",
+      "scenario": "workload_smoke",
+      "status": "PASS",
+      "fake_coverage": {
+        "present": true,
+        "evidence_class": "fake",
+        "real_valkey_coverage": false,
+        "metric_names": [
+          "workload_smoke.achieved_qps",
+          "workload_smoke.latency.p95_ms"
+        ],
+        "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json"
+      },
+      "real_coverage": {
+        "present": true,
+        "evidence_class": "real_valkey",
+        "real_valkey_coverage": true,
+        "source_artifacts": [
+          "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json"
+        ],
+        "checks": [
+          {
+            "name": "producer",
+            "status": "PASS",
+            "actual": "scripts/valkey_e2e_gate.py"
+          },
+          {
+            "name": "status",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "real_valkey",
+            "status": "PASS",
+            "actual": true
+          },
+          {
+            "name": "version_prefix",
+            "status": "PASS",
+            "actual": [
+              "9.1.0"
+            ]
+          },
+          {
+            "name": "nodes_observed",
+            "status": "PASS",
+            "actual": 6
+          },
+          {
+            "name": "cluster_state_observed",
+            "status": "PASS",
+            "actual": "ok"
+          },
+          {
+            "name": "data_path_result",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "evidence_cleanup_status",
+            "status": "PASS",
+            "actual": {
+              "status": "PASS",
+              "path": "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json"
+            }
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "PASS",
+        "resources_remaining": 0,
+        "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json"
+      },
+      "metrics": [
+        "workload_smoke.achieved_qps",
+        "workload_smoke.cleanup.resources_remaining",
+        "workload_smoke.errors.total",
+        "workload_smoke.latency.p95_ms",
+        "workload_smoke.real_evidence.data_path_result",
+        "workload_smoke.real_evidence.nodes_observed",
+        "workload_smoke.timing_window.after_recovery.duration_seconds",
+        "workload_smoke.timing_window.before_fault.duration_seconds",
+        "workload_smoke.timing_window.during_fault.duration_seconds"
+      ]
+    },
+    {
+      "surface": "observability_smoke",
+      "phase_id": "P06_OBSERVABILITY_METRICS",
+      "scenario": "observability_smoke",
+      "status": "PASS",
+      "fake_coverage": {
+        "present": true,
+        "evidence_class": "fake",
+        "real_valkey_coverage": false,
+        "metric_names": [
+          "observability_smoke.metrics.sample_count",
+          "observability_smoke.events.count"
+        ],
+        "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json"
+      },
+      "real_coverage": {
+        "present": true,
+        "evidence_class": "real_valkey",
+        "real_valkey_coverage": true,
+        "source_artifacts": [
+          "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json"
+        ],
+        "checks": [
+          {
+            "name": "producer",
+            "status": "PASS",
+            "actual": "scripts/valkey_e2e_gate.py"
+          },
+          {
+            "name": "status",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "real_valkey",
+            "status": "PASS",
+            "actual": true
+          },
+          {
+            "name": "version_prefix",
+            "status": "PASS",
+            "actual": [
+              "9.1.0"
+            ]
+          },
+          {
+            "name": "nodes_observed",
+            "status": "PASS",
+            "actual": 6
+          },
+          {
+            "name": "cluster_state_observed",
+            "status": "PASS",
+            "actual": "ok"
+          },
+          {
+            "name": "data_path_result",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "evidence_cleanup_status",
+            "status": "PASS",
+            "actual": {
+              "status": "PASS",
+              "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json"
+            }
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "PASS",
+        "resources_remaining": 0,
+        "source_artifact": "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json"
+      },
+      "metrics": [
+        "observability_smoke.cleanup.resources_remaining",
+        "observability_smoke.events.count",
+        "observability_smoke.metrics.sample_count",
+        "observability_smoke.real_evidence.data_path_result",
+        "observability_smoke.real_evidence.nodes_observed"
+      ]
+    },
+    {
+      "surface": "fault_sandbox",
+      "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+      "scenario": "fault_sandbox",
+      "status": "PASS",
+      "fake_coverage": {
+        "present": true,
+        "evidence_class": "fake",
+        "real_valkey_coverage": false,
+        "metric_names": [
+          "fault_sandbox.safety.host_network_mutated",
+          "fault_sandbox.observed_impact"
+        ],
+        "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json"
+      },
+      "real_coverage": {
+        "present": true,
+        "evidence_class": "real_valkey",
+        "real_valkey_coverage": true,
+        "source_artifacts": [
+          "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json"
+        ],
+        "checks": [
+          {
+            "name": "producer",
+            "status": "PASS",
+            "actual": "scripts/fault_safety_gate.py"
+          },
+          {
+            "name": "status",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "real_valkey",
+            "status": "PASS",
+            "actual": true
+          },
+          {
+            "name": "version_prefix",
+            "status": "PASS",
+            "actual": [
+              "9.1.0"
+            ]
+          },
+          {
+            "name": "nodes_observed",
+            "status": "PASS",
+            "actual": 6
+          },
+          {
+            "name": "cluster_state_observed",
+            "status": "PASS",
+            "actual": "ok"
+          },
+          {
+            "name": "data_path_result",
+            "status": "PASS",
+            "actual": "SKIPPED_WITH_REASON"
+          },
+          {
+            "name": "evidence_cleanup_status",
+            "status": "PASS",
+            "actual": {
+              "status": "PASS",
+              "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json"
+            }
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "PASS",
+        "resources_remaining": 0,
+        "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json"
+      },
+      "metrics": [
+        "fault_sandbox.cleanup.resources_remaining",
+        "fault_sandbox.observed_impact",
+        "fault_sandbox.real_evidence.data_path_result",
+        "fault_sandbox.real_evidence.nodes_observed",
+        "fault_sandbox.safety.fault_state_cleared",
+        "fault_sandbox.safety.global_firewall_mutated",
+        "fault_sandbox.safety.host_network_mutated",
+        "fault_sandbox.safety.sandbox_only"
+      ]
+    },
+    {
+      "surface": "failover_primary_stop",
+      "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+      "scenario": "primary_stop_failover",
+      "status": "PASS",
+      "fake_coverage": {
+        "present": true,
+        "evidence_class": "fake",
+        "real_valkey_coverage": false,
+        "metric_names": [
+          "failover_primary_stop.failover_latency_ms",
+          "failover_primary_stop.split_brain_duration_ms"
+        ],
+        "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json"
+      },
+      "real_coverage": {
+        "present": true,
+        "evidence_class": "real_valkey",
+        "real_valkey_coverage": true,
+        "source_artifacts": [
+          "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json"
+        ],
+        "checks": [
+          {
+            "name": "producer",
+            "status": "PASS",
+            "actual": "scripts/fault_failover_gate.py"
+          },
+          {
+            "name": "status",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "real_valkey",
+            "status": "PASS",
+            "actual": true
+          },
+          {
+            "name": "version_prefix",
+            "status": "PASS",
+            "actual": [
+              "9.1.0"
+            ]
+          },
+          {
+            "name": "nodes_observed_minimum",
+            "status": "PASS",
+            "actual": 5
+          },
+          {
+            "name": "cluster_state_observed",
+            "status": "PASS",
+            "actual": "ok"
+          },
+          {
+            "name": "data_path_result",
+            "status": "PASS",
+            "actual": "SKIPPED_WITH_REASON"
+          },
+          {
+            "name": "evidence_cleanup_status",
+            "status": "PASS",
+            "actual": {
+              "status": "PASS",
+              "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json"
+            }
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "PASS",
+        "resources_remaining": 0,
+        "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json"
+      },
+      "metrics": [
+        "failover_primary_stop.cleanup.resources_remaining",
+        "failover_primary_stop.failover_latency_ms",
+        "failover_primary_stop.initial_nodes",
+        "failover_primary_stop.promotion_observed",
+        "failover_primary_stop.real_evidence.data_path_result",
+        "failover_primary_stop.real_evidence.nodes_observed",
+        "failover_primary_stop.split_brain_duration_ms"
+      ]
+    },
+    {
+      "surface": "stability_soak",
+      "phase_id": "P11_STABILITY_SOAK",
+      "scenario": "stability_soak_smoke",
+      "status": "PASS",
+      "fake_coverage": {
+        "present": true,
+        "evidence_class": "fake",
+        "real_valkey_coverage": false,
+        "metric_names": [
+          "stability_soak.duration_seconds",
+          "stability_soak.baseline.max_memory_growth_bytes"
+        ],
+        "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json"
+      },
+      "real_coverage": {
+        "present": true,
+        "evidence_class": "real_valkey",
+        "real_valkey_coverage": true,
+        "source_artifacts": [
+          "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json"
+        ],
+        "checks": [
+          {
+            "name": "producer",
+            "status": "PASS",
+            "actual": "scripts/valkey_e2e_gate.py"
+          },
+          {
+            "name": "status",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "real_valkey",
+            "status": "PASS",
+            "actual": true
+          },
+          {
+            "name": "version_prefix",
+            "status": "PASS",
+            "actual": [
+              "9.1.0"
+            ]
+          },
+          {
+            "name": "nodes_observed",
+            "status": "PASS",
+            "actual": 6
+          },
+          {
+            "name": "cluster_state_observed",
+            "status": "PASS",
+            "actual": "ok"
+          },
+          {
+            "name": "data_path_result",
+            "status": "PASS",
+            "actual": "PASS"
+          },
+          {
+            "name": "evidence_cleanup_status",
+            "status": "PASS",
+            "actual": {
+              "status": "PASS",
+              "path": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json"
+            }
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "PASS",
+        "resources_remaining": 0,
+        "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json"
+      },
+      "metrics": [
+        "stability_soak.baseline.error_count",
+        "stability_soak.baseline.max_memory_growth_bytes",
+        "stability_soak.cleanup.resources_remaining",
+        "stability_soak.duration_seconds",
+        "stability_soak.leaks.max_growth_bytes",
+        "stability_soak.real_evidence.data_path_result",
+        "stability_soak.real_evidence.nodes_observed",
+        "stability_soak.restart_delta_total",
+        "stability_soak.workload.error_count"
+      ]
+    },
+    {
+      "surface": "cleanup",
+      "phase_id": "P03_P11_SMALL_REAL_CLEANUP",
+      "scenario": "cleanup",
+      "status": "PASS",
+      "fake_coverage": {
+        "present": true,
+        "evidence_class": "fake",
+        "real_valkey_coverage": false,
+        "metric_names": [
+          "cleanup.resources_remaining",
+          "cleanup.action_count"
+        ],
+        "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json"
+      },
+      "real_coverage": {
+        "present": true,
+        "evidence_class": "source_artifact",
+        "real_valkey_coverage": false,
+        "source_artifacts": [
+          "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+          "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+          "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+          "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+          "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+          "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+          "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
+          "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
+          "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json"
+        ],
+        "checks": [
+          {
+            "name": "cleanup_source_artifact_surface",
+            "status": "PASS"
+          }
+        ]
+      },
+      "cleanup": {
+        "status": "PASS",
+        "resources_remaining": 0,
+        "source_artifact": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json"
+      },
+      "metrics": [
+        "cleanup.action_count",
+        "cleanup.cleanup.resources_remaining",
+        "cleanup.resources_remaining"
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.1",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.0",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "cluster_smoke.real_evidence.data_path_result",
+      "surface": "cluster_smoke",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.1",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "cluster_smoke.real_evidence.nodes_observed",
+      "surface": "cluster_smoke",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.0",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "failover_primary_stop.failover_latency_ms",
+      "surface": "failover_primary_stop",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.0",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "failover_primary_stop.split_brain_duration_ms",
+      "surface": "failover_primary_stop",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.1",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "fault_sandbox.observed_impact",
+      "surface": "fault_sandbox",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.1",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "fault_sandbox.safety.host_network_mutated",
+      "surface": "fault_sandbox",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.0",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "management_ops.operation.meet.duration_seconds",
+      "surface": "management_ops",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.0",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "management_ops.operation.remove_node.status",
+      "surface": "management_ops",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.1",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "observability_smoke.events.count",
+      "surface": "observability_smoke",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.1",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "observability_smoke.metrics.sample_count",
+      "surface": "observability_smoke",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.0",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "stability_soak.baseline.max_memory_growth_bytes",
+      "surface": "stability_soak",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.1",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "stability_soak.duration_seconds",
+      "surface": "stability_soak",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.0",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "workload_smoke.achieved_qps",
+      "surface": "workload_smoke",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.0",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "workload_smoke.latency.p95_ms",
+      "surface": "workload_smoke",
+      "unit": "fixture",
+      "source_artifact": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "source_sha256": "b775539630ffef23edfd1ff80a793f0d9546af77917869824002329d6b9b0c10",
+      "source_pointer": "$.new_tests.1",
+      "scenario": "fake",
+      "node_count_scope": "fake",
+      "evidence_layer": "fake",
+      "evidence_class": "fake",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Deterministic fake fixture exercises extraction shape but cannot satisfy real Valkey coverage."
+      }
+    },
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+      "source_sha256": "f2cdb8c3fc890e0781a1c3a374f336a0a91c2cea2af542d374e505b5df98130f",
+      "source_pointer": "$.cleanup_actions",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 13,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+      "source_sha256": "aa52298dd6e64ffd110b8cac0f5e06dc5bd36e53927689e13950c45dcdb8e943",
+      "source_pointer": "$.cleanup_actions",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 13,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+      "source_sha256": "6705eb8287dba84212ea2c266e3489c7303aefe70dcee812cc9508b39bc0b304",
+      "source_pointer": "$.cleanup_actions",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 13,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+      "source_sha256": "3094cf2f7e7ec5dc8913a638f5074b36eacca57471714dcd27364cd4f9b0828d",
+      "source_pointer": "$.cleanup_actions",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 13,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+      "source_sha256": "863cbc9aabed2b3daacc4cd6d9b9ad892b26526168f0da56250e40518002c27a",
+      "source_pointer": "$.cleanup_actions",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 13,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+      "source_sha256": "7b575fd7a5fb1542541975f0649e6ac0803800dc30135bb63cb0ba8a27a5d6f7",
+      "source_pointer": "$.cleanup_actions",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 14,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
+      "source_sha256": "571830067022cee3850af26ef7046e33590873538a76b610248552917e8a11e5",
+      "source_pointer": "$.cleanup_actions",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 13,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
+      "source_sha256": "7dc3eb5105290fe9ece6b99b524cdb59cc5ace5e786b467dad87bc7666930f8d",
+      "source_pointer": "$.cleanup_actions",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 14,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.action_count",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+      "source_sha256": "3a99f319f6d8513bb23a17dd9041842335725c80b1bd20dc5fc1b451bbd7b929",
+      "source_pointer": "$.cleanup_actions",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 13,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+      "source_sha256": "f2cdb8c3fc890e0781a1c3a374f336a0a91c2cea2af542d374e505b5df98130f",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+      "source_sha256": "f2cdb8c3fc890e0781a1c3a374f336a0a91c2cea2af542d374e505b5df98130f",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+      "source_sha256": "aa52298dd6e64ffd110b8cac0f5e06dc5bd36e53927689e13950c45dcdb8e943",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+      "source_sha256": "6705eb8287dba84212ea2c266e3489c7303aefe70dcee812cc9508b39bc0b304",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+      "source_sha256": "3094cf2f7e7ec5dc8913a638f5074b36eacca57471714dcd27364cd4f9b0828d",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+      "source_sha256": "863cbc9aabed2b3daacc4cd6d9b9ad892b26526168f0da56250e40518002c27a",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+      "source_sha256": "7b575fd7a5fb1542541975f0649e6ac0803800dc30135bb63cb0ba8a27a5d6f7",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
+      "source_sha256": "571830067022cee3850af26ef7046e33590873538a76b610248552917e8a11e5",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json",
+      "source_sha256": "7dc3eb5105290fe9ece6b99b524cdb59cc5ace5e786b467dad87bc7666930f8d",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cleanup.resources_remaining",
+      "surface": "cleanup",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+      "source_sha256": "3a99f319f6d8513bb23a17dd9041842335725c80b1bd20dc5fc1b451bbd7b929",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cleanup",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cluster_smoke.cleanup.resources_remaining",
+      "surface": "cluster_smoke",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/cleanup_report.json",
+      "source_sha256": "f2cdb8c3fc890e0781a1c3a374f336a0a91c2cea2af542d374e505b5df98130f",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "cluster_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cluster_smoke.real_evidence.data_path_result",
+      "surface": "cluster_smoke",
+      "unit": "status",
+      "source_artifact": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json",
+      "source_sha256": "8cd3c251a3c8a2eee29192dc40a7894e7d501234cfba6e4f79f817f84110e3f2",
+      "source_pointer": "$.data_path_result",
+      "scenario": "cluster_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "PASS",
+      "value": "PASS",
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "cluster_smoke.real_evidence.nodes_observed",
+      "surface": "cluster_smoke",
+      "unit": "nodes",
+      "source_artifact": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json",
+      "source_sha256": "8cd3c251a3c8a2eee29192dc40a7894e7d501234cfba6e4f79f817f84110e3f2",
+      "source_pointer": "$.nodes_observed",
+      "scenario": "cluster_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "MEASURED",
+      "value": 6,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "failover_primary_stop.cleanup.resources_remaining",
+      "surface": "failover_primary_stop",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json",
+      "source_sha256": "7b575fd7a5fb1542541975f0649e6ac0803800dc30135bb63cb0ba8a27a5d6f7",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "primary_stop_failover",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "failover_primary_stop.failover_latency_ms",
+      "surface": "failover_primary_stop",
+      "unit": "ms",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+      "source_sha256": "f11772a63e7817ce0156c39c69de8d97f398fe7c4d56b4a68d23ec5bf6a31064",
+      "source_pointer": "$.failovers.0.failover_latency_ms",
+      "scenario": "primary_stop_failover",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 408.125,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "failover_primary_stop.initial_nodes",
+      "surface": "failover_primary_stop",
+      "unit": "nodes",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/state_failover.json",
+      "source_sha256": "11d3ac4931bebdc0afc3ff541693b3f91e5676117dc051a45966a469066e3ba8",
+      "source_pointer": "$.nodes",
+      "scenario": "primary_stop_failover",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 6,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "failover_primary_stop.promotion_observed",
+      "surface": "failover_primary_stop",
+      "unit": "boolean",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+      "source_sha256": "f11772a63e7817ce0156c39c69de8d97f398fe7c4d56b4a68d23ec5bf6a31064",
+      "source_pointer": "$.summary.promotion_observed",
+      "scenario": "primary_stop_failover",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": true,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "failover_primary_stop.real_evidence.data_path_result",
+      "surface": "failover_primary_stop",
+      "unit": "status",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
+      "source_sha256": "27338a03eb687bb4aef85b5c8a673bece51b87a00051f91c1215fd2ea4adf7d8",
+      "source_pointer": "$.data_path_result",
+      "scenario": "primary_stop_failover",
+      "node_count_scope": "5",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Fault/failover wrapper records liveness and cluster-state proof while data-path is intentionally skipped."
+      }
+    },
+    {
+      "name": "failover_primary_stop.real_evidence.nodes_observed",
+      "surface": "failover_primary_stop",
+      "unit": "nodes",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
+      "source_sha256": "27338a03eb687bb4aef85b5c8a673bece51b87a00051f91c1215fd2ea4adf7d8",
+      "source_pointer": "$.nodes_observed",
+      "scenario": "primary_stop_failover",
+      "node_count_scope": "5",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "MEASURED",
+      "value": 5,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "failover_primary_stop.split_brain_duration_ms",
+      "surface": "failover_primary_stop",
+      "unit": "ms",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+      "source_sha256": "f11772a63e7817ce0156c39c69de8d97f398fe7c4d56b4a68d23ec5bf6a31064",
+      "source_pointer": "$.summary.split_brain_duration_ms",
+      "scenario": "primary_stop_failover",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MISSING",
+      "value": null,
+      "missing_semantics": {
+        "status": "MISSING",
+        "reason": "not_measured_by_primary_stop_gate"
+      }
+    },
+    {
+      "name": "fault_sandbox.cleanup.resources_remaining",
+      "surface": "fault_sandbox",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json",
+      "source_sha256": "863cbc9aabed2b3daacc4cd6d9b9ad892b26526168f0da56250e40518002c27a",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "fault_sandbox",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "fault_sandbox.observed_impact",
+      "surface": "fault_sandbox",
+      "unit": "status",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+      "source_sha256": "6071f35974b9d619cd7d33c94b226876b256ce5a00d53050c308d85f5436b8a9",
+      "source_pointer": "$.faults.0.observed_impact",
+      "scenario": "fault_sandbox",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "P07 safety gate validates sandbox lifecycle and post-clear cluster health; no host-level network impairment is applied."
+      }
+    },
+    {
+      "name": "fault_sandbox.real_evidence.data_path_result",
+      "surface": "fault_sandbox",
+      "unit": "status",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
+      "source_sha256": "156f0b11fcb9d4bc25d9e3c92cbbd3f79cfc9bb9c43dde1b91ea335650d2bf71",
+      "source_pointer": "$.data_path_result",
+      "scenario": "fault_sandbox",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Fault/failover wrapper records liveness and cluster-state proof while data-path is intentionally skipped."
+      }
+    },
+    {
+      "name": "fault_sandbox.real_evidence.nodes_observed",
+      "surface": "fault_sandbox",
+      "unit": "nodes",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
+      "source_sha256": "156f0b11fcb9d4bc25d9e3c92cbbd3f79cfc9bb9c43dde1b91ea335650d2bf71",
+      "source_pointer": "$.nodes_observed",
+      "scenario": "fault_sandbox",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "MEASURED",
+      "value": 6,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "fault_sandbox.safety.fault_state_cleared",
+      "surface": "fault_sandbox",
+      "unit": "boolean",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+      "source_sha256": "6071f35974b9d619cd7d33c94b226876b256ce5a00d53050c308d85f5436b8a9",
+      "source_pointer": "$.safety_checks.fault_state_cleared",
+      "scenario": "fault_sandbox",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": true,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "fault_sandbox.safety.global_firewall_mutated",
+      "surface": "fault_sandbox",
+      "unit": "boolean",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+      "source_sha256": "6071f35974b9d619cd7d33c94b226876b256ce5a00d53050c308d85f5436b8a9",
+      "source_pointer": "$.safety_checks.global_firewall_mutated",
+      "scenario": "fault_sandbox",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": false,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "fault_sandbox.safety.host_network_mutated",
+      "surface": "fault_sandbox",
+      "unit": "boolean",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+      "source_sha256": "6071f35974b9d619cd7d33c94b226876b256ce5a00d53050c308d85f5436b8a9",
+      "source_pointer": "$.safety_checks.host_network_mutated",
+      "scenario": "fault_sandbox",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": false,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "fault_sandbox.safety.sandbox_only",
+      "surface": "fault_sandbox",
+      "unit": "boolean",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+      "source_sha256": "6071f35974b9d619cd7d33c94b226876b256ce5a00d53050c308d85f5436b8a9",
+      "source_pointer": "$.safety_checks.sandbox_only",
+      "scenario": "fault_sandbox",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": true,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "management_ops.cleanup.resources_remaining",
+      "surface": "management_ops",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/cleanup_report.json",
+      "source_sha256": "aa52298dd6e64ffd110b8cac0f5e06dc5bd36e53927689e13950c45dcdb8e943",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "management_ops.operation.add_replica.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.2.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 2.041548,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "management_ops.operation.add_slots.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.1.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 4.856831,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "management_ops.operation.cluster_info.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.5.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0.056938,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "management_ops.operation.cluster_nodes.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.4.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0.059916,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "management_ops.operation.convergence_check.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.3.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0.372283,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "management_ops.operation.meet.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.0.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 3.294039,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "management_ops.operation.rebalance.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.8.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Valkey cluster rebalance orchestration is deferred until management expansion."
+      }
+    },
+    {
+      "name": "management_ops.operation.remove_node.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.6.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "P04 records taxonomy only; destructive removal is deferred until a dedicated lifecycle phase."
+      }
+    },
+    {
+      "name": "management_ops.operation.reshard.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.7.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "P04 smoke cluster keeps slot ownership stable for wrapper data-path proof."
+      }
+    },
+    {
+      "name": "management_ops.operation.rolling_restart.duration_seconds",
+      "surface": "management_ops",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "source_pointer": "$.operations.9.duration_seconds",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Restart orchestration is deferred to later stability/fault phases."
+      }
+    },
+    {
+      "name": "management_ops.real_evidence.data_path_result",
+      "surface": "management_ops",
+      "unit": "status",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json",
+      "source_sha256": "044eb58c0117081fcda4e07cf80fd5c9c8aa7eb2b7ea9a2dcd490bcc6e3394f8",
+      "source_pointer": "$.data_path_result",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "PASS",
+      "value": "PASS",
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "management_ops.real_evidence.nodes_observed",
+      "surface": "management_ops",
+      "unit": "nodes",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json",
+      "source_sha256": "044eb58c0117081fcda4e07cf80fd5c9c8aa7eb2b7ea9a2dcd490bcc6e3394f8",
+      "source_pointer": "$.nodes_observed",
+      "scenario": "management_ops",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "MEASURED",
+      "value": 6,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "observability_smoke.cleanup.resources_remaining",
+      "surface": "observability_smoke",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P06_OBSERVABILITY_METRICS/cleanup_report.json",
+      "source_sha256": "3094cf2f7e7ec5dc8913a638f5074b36eacca57471714dcd27364cd4f9b0828d",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "observability_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "observability_smoke.events.count",
+      "surface": "observability_smoke",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl",
+      "source_sha256": "1774de9e84f0fc31534aa9c5bf2fb41f30db9f2cf5597921b8e177c03f5cf93c",
+      "source_pointer": "$",
+      "scenario": "observability_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 8,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "observability_smoke.metrics.sample_count",
+      "surface": "observability_smoke",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl",
+      "source_sha256": "3138cf6cfbc696181a0334b0708733cf884f23ab886a380df54842a7af7dbf61",
+      "source_pointer": "$",
+      "scenario": "observability_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 6,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "observability_smoke.real_evidence.data_path_result",
+      "surface": "observability_smoke",
+      "unit": "status",
+      "source_artifact": "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json",
+      "source_sha256": "b89d370587e9ad095c0d8122a58d78bf5bf1eae3703d600bac4f21c83ea29806",
+      "source_pointer": "$.data_path_result",
+      "scenario": "observability_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "PASS",
+      "value": "PASS",
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "observability_smoke.real_evidence.nodes_observed",
+      "surface": "observability_smoke",
+      "unit": "nodes",
+      "source_artifact": "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json",
+      "source_sha256": "b89d370587e9ad095c0d8122a58d78bf5bf1eae3703d600bac4f21c83ea29806",
+      "source_pointer": "$.nodes_observed",
+      "scenario": "observability_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "MEASURED",
+      "value": 6,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "stability_soak.baseline.error_count",
+      "surface": "stability_soak",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_pointer": "$.summary.baseline.comparisons.0",
+      "scenario": "stability_soak_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "NO_BASELINE_YET",
+      "value": null,
+      "missing_semantics": {
+        "status": "NO_BASELINE_YET",
+        "reason": "No previous stability baseline artifact exists."
+      }
+    },
+    {
+      "name": "stability_soak.baseline.max_memory_growth_bytes",
+      "surface": "stability_soak",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_pointer": "$.summary.baseline.comparisons.1",
+      "scenario": "stability_soak_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "NO_BASELINE_YET",
+      "value": null,
+      "missing_semantics": {
+        "status": "NO_BASELINE_YET",
+        "reason": "No previous stability baseline artifact exists."
+      }
+    },
+    {
+      "name": "stability_soak.cleanup.resources_remaining",
+      "surface": "stability_soak",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
+      "source_sha256": "3a99f319f6d8513bb23a17dd9041842335725c80b1bd20dc5fc1b451bbd7b929",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "stability_soak_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "stability_soak.duration_seconds",
+      "surface": "stability_soak",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_pointer": "$.duration_seconds",
+      "scenario": "stability_soak_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 3.987332,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "stability_soak.leaks.max_growth_bytes",
+      "surface": "stability_soak",
+      "unit": "bytes",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_pointer": "$.summary.leaks.max_growth_bytes",
+      "scenario": "stability_soak_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 42216,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "stability_soak.real_evidence.data_path_result",
+      "surface": "stability_soak",
+      "unit": "status",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+      "source_sha256": "a869914311a15cfe595eed1d708591fbb36c7766c924ccd27a5e6ac52e18ff6f",
+      "source_pointer": "$.data_path_result",
+      "scenario": "stability_soak_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "PASS",
+      "value": "PASS",
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "stability_soak.real_evidence.nodes_observed",
+      "surface": "stability_soak",
+      "unit": "nodes",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+      "source_sha256": "a869914311a15cfe595eed1d708591fbb36c7766c924ccd27a5e6ac52e18ff6f",
+      "source_pointer": "$.nodes_observed",
+      "scenario": "stability_soak_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "MEASURED",
+      "value": 6,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "stability_soak.restart_delta_total",
+      "surface": "stability_soak",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_pointer": "$.summary.restarts.total_restart_delta",
+      "scenario": "stability_soak_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "stability_soak.workload.error_count",
+      "surface": "stability_soak",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_pointer": "$.summary.workload.error_count",
+      "scenario": "stability_soak_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "workload_smoke.achieved_qps",
+      "surface": "workload_smoke",
+      "unit": "qps",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "source_sha256": "dc2d9fcc9fbf5d2e74ff0d629099039cec8ec6f34903329913486ac756a722c7",
+      "source_pointer": "$.achieved_qps",
+      "scenario": "workload_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 18.724217,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "workload_smoke.cleanup.resources_remaining",
+      "surface": "workload_smoke",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/cleanup_report.json",
+      "source_sha256": "6705eb8287dba84212ea2c266e3489c7303aefe70dcee812cc9508b39bc0b304",
+      "source_pointer": "$.resources_remaining",
+      "scenario": "workload_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "workload_smoke.errors.total",
+      "surface": "workload_smoke",
+      "unit": "count",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "source_sha256": "dc2d9fcc9fbf5d2e74ff0d629099039cec8ec6f34903329913486ac756a722c7",
+      "source_pointer": "$.errors.total",
+      "scenario": "workload_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 0,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "workload_smoke.latency.p95_ms",
+      "surface": "workload_smoke",
+      "unit": "ms",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "source_sha256": "dc2d9fcc9fbf5d2e74ff0d629099039cec8ec6f34903329913486ac756a722c7",
+      "source_pointer": "$.latency.p95",
+      "scenario": "workload_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "MEASURED",
+      "value": 59.89764,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "workload_smoke.real_evidence.data_path_result",
+      "surface": "workload_smoke",
+      "unit": "status",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json",
+      "source_sha256": "4f3a7938e5077cc8848c66e4a7ea3b96b3a9b45ff192dff1468164a26c2e06a2",
+      "source_pointer": "$.data_path_result",
+      "scenario": "workload_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "PASS",
+      "value": "PASS",
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "workload_smoke.real_evidence.nodes_observed",
+      "surface": "workload_smoke",
+      "unit": "nodes",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json",
+      "source_sha256": "4f3a7938e5077cc8848c66e4a7ea3b96b3a9b45ff192dff1468164a26c2e06a2",
+      "source_pointer": "$.nodes_observed",
+      "scenario": "workload_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "real_valkey",
+      "real_valkey_coverage": true,
+      "value_status": "MEASURED",
+      "value": 6,
+      "missing_semantics": {
+        "status": "PRESENT",
+        "reason": ""
+      }
+    },
+    {
+      "name": "workload_smoke.timing_window.after_recovery.duration_seconds",
+      "surface": "workload_smoke",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "source_sha256": "dc2d9fcc9fbf5d2e74ff0d629099039cec8ec6f34903329913486ac756a722c7",
+      "source_pointer": "$.timing_windows.3.duration_seconds",
+      "scenario": "workload_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "P05 workload_smoke has no recovery window."
+      }
+    },
+    {
+      "name": "workload_smoke.timing_window.before_fault.duration_seconds",
+      "surface": "workload_smoke",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "source_sha256": "dc2d9fcc9fbf5d2e74ff0d629099039cec8ec6f34903329913486ac756a722c7",
+      "source_pointer": "$.timing_windows.1.duration_seconds",
+      "scenario": "workload_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "P05 workload_smoke has no fault window."
+      }
+    },
+    {
+      "name": "workload_smoke.timing_window.during_fault.duration_seconds",
+      "surface": "workload_smoke",
+      "unit": "seconds",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "source_sha256": "dc2d9fcc9fbf5d2e74ff0d629099039cec8ec6f34903329913486ac756a722c7",
+      "source_pointer": "$.timing_windows.2.duration_seconds",
+      "scenario": "workload_smoke",
+      "node_count_scope": "6",
+      "evidence_layer": "small-real",
+      "evidence_class": "source_artifact",
+      "real_valkey_coverage": false,
+      "value_status": "SKIPPED_WITH_REASON",
+      "value": null,
+      "missing_semantics": {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "P05 workload_smoke has no fault window."
+      }
+    }
+  ],
+  "fake_real_parity": {
+    "required_surfaces": [
+      "cluster_smoke",
+      "management_ops",
+      "workload_smoke",
+      "observability_smoke",
+      "fault_sandbox",
+      "failover_primary_stop",
+      "stability_soak",
+      "cleanup"
+    ],
+    "fake_surfaces": [
+      "cleanup",
+      "cluster_smoke",
+      "failover_primary_stop",
+      "fault_sandbox",
+      "management_ops",
+      "observability_smoke",
+      "stability_soak",
+      "workload_smoke"
+    ],
+    "real_surfaces": [
+      "cleanup",
+      "cluster_smoke",
+      "failover_primary_stop",
+      "fault_sandbox",
+      "management_ops",
+      "observability_smoke",
+      "stability_soak",
+      "workload_smoke"
+    ],
+    "fake_can_satisfy_real": false
+  },
+  "real_valkey_boundary": {
+    "wrapper_producers": {
+      "normal": "scripts/valkey_e2e_gate.py",
+      "fault": "scripts/fault_safety_gate.py",
+      "failover": "scripts/fault_failover_gate.py"
+    },
+    "version_prefix_required": "9.1.",
+    "p08_expected_nodes": {
+      "initial_state_nodes": 6,
+      "post_fault_min_live_nodes": 5,
+      "reason": "primary-stop failover evidence observes live nodes after the stopped primary is removed from the probe set"
+    },
+    "p14_real_valkey_coverage": false,
+    "p14_execution_allowed": false
+  },
+  "report_checks": [
+    {
+      "name": "metric_status_measured_present",
+      "status": "PASS",
+      "value": true
+    },
+    {
+      "name": "metric_status_missing_present",
+      "status": "PASS",
+      "value": true
+    },
+    {
+      "name": "metric_status_skipped_with_reason_present",
+      "status": "PASS",
+      "value": true
+    },
+    {
+      "name": "metric_status_no_baseline_yet_present",
+      "status": "PASS",
+      "value": true
+    },
+    {
+      "name": "rendered_views_not_measured_sources",
+      "status": "PASS",
+      "value": true
+    },
+    {
+      "name": "report_index_source_of_truth_false",
+      "status": "PASS",
+      "value": false
+    },
+    {
+      "name": "rendered_reports_source_of_truth_false",
+      "status": "PASS",
+      "value": true
+    },
+    {
+      "name": "p14_forbidden_command_guard",
+      "status": "PASS",
+      "value": true,
+      "forbidden_tokens": [
+        "P14_SCALE_1000_OPTIN_DRYRUN",
+        "VSLAB_ALLOW_1000_DRYRUN"
+      ]
+    }
+  ],
+  "findings": []
+}

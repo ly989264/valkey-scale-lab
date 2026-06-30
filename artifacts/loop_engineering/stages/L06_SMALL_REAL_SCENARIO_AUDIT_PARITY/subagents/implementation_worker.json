@@ -1,0 +1,209 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY",
+  "agent_role": "implementation_worker",
+  "created_at": "2026-06-30T12:00:00Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Confirm repository safety and phase-loop constraints.",
+      "key_findings": [
+        "Do not run P14 without explicit opt-in.",
+        "Do not mutate host network, firewall, routing, or interfaces.",
+        "Machine-readable artifacts remain source of truth."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm autonomous build entry constraints before editing.",
+      "key_findings": [
+        "P14 requires explicit opt-in environment token and must not be automatic.",
+        "Real wrapper gates are part of phase evidence but were not requested for this L06 focused validation."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/stage_design.md",
+      "purpose": "Verify L06 objective, evidence semantics, and acceptance criteria.",
+      "key_findings": [
+        "L06 requires eight small-real surfaces with separate fake and real records.",
+        "P07 and P08 skipped data-path semantics must remain explicit.",
+        "Rendered reports must remain views and not measured metric sources."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+      "purpose": "Verify planned schema, script, tests, CI gate, and artifact checks.",
+      "key_findings": [
+        "The harness plan matches the implemented small-real parity audit command.",
+        "Acceptance requires schema validation, fake/real separation, cleanup linkage, report checks, and P14 command guard."
+      ]
+    },
+    {
+      "path": "schemas/artifact/small_real_parity_audit.schema.json",
+      "purpose": "Check output contract for the L06 audit artifact.",
+      "key_findings": [
+        "Schema requires source artifacts, surfaces, metrics, fake-real parity, real-Valkey boundary, report checks, and findings.",
+        "Metric records preserve value_status and missing_semantics."
+      ]
+    },
+    {
+      "path": "scripts/audit_small_real_scenario_parity.py",
+      "purpose": "Inspect implementation against L06 design.",
+      "key_findings": [
+        "The script validates wrapper producer names, Valkey 9.1.x evidence, node counts, cluster state, cleanup, P07/P08 safety, and explicit missing/skipped semantics.",
+        "The script rejects measured metrics sourced from rendered HTML/SVG/CSV/Markdown views.",
+        "The script guards the L06 command log for P14 execution and opt-in tokens."
+      ]
+    },
+    {
+      "path": ".github/workflows/github-coverage-gates.yml",
+      "purpose": "Verify CI includes the L06 parity gate without weakening previous gates.",
+      "key_findings": [
+        "The small-real parity audit and schema validation are present.",
+        "I moved the audit/schema steps before report rendering so reports are rendered from the freshly generated parity artifact."
+      ]
+    },
+    {
+      "path": "tests/audit/test_small_real_scenario_parity.py",
+      "purpose": "Check audit-level positive and negative coverage.",
+      "key_findings": [
+        "Tests cover current repo pass, Valkey version rejection, rendered-source rejection, missing split-brain reason rejection, schema failures, and per-surface fake/real records."
+      ]
+    },
+    {
+      "path": "tests/coverage/test_small_real_metric_parity.py",
+      "purpose": "Check metric parity and status preservation tests.",
+      "key_findings": [
+        "Tests assert separate fake and small-real layers across all surfaces.",
+        "Tests preserve SKIPPED_WITH_REASON, MISSING, and NO_BASELINE_YET semantics."
+      ]
+    },
+    {
+      "path": "tests/report/test_small_real_parity_report.py",
+      "purpose": "Check report-layer parity and rendered-view safeguards.",
+      "key_findings": [
+        "Tests assert measured, missing, skipped, and no-baseline statuses remain distinct.",
+        "Tests render report views and verify small_real_parity_audit.json is a source artifact, not a rendered view."
+      ]
+    },
+    {
+      "path": "tests/real_valkey/test_small_real_gate_contract.py",
+      "purpose": "Check committed real evidence contract tests without running wrapper gates.",
+      "key_findings": [
+        "Tests validate committed wrapper-produced evidence for normal, fault, and failover scenarios.",
+        "Tests preserve P08 split_brain_duration_ms as explicit MISSING with reason not_measured_by_primary_stop_gate."
+      ]
+    },
+    {
+      "path": "tests/ci/test_small_real_parity_gate.py",
+      "purpose": "Check CI contract for L06 parity gate.",
+      "key_findings": [
+        "Tests run the audit script against committed artifacts and validate the schema.",
+        "Tests assert the workflow contains the L06 command, schema validation, focused pytest command, and no P14 opt-in token."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "IW-L06-001",
+      "severity": "low",
+      "description": "The L06 harness matched the stage design overall; I made one narrow workflow ordering correction so loop report rendering consumes the freshly generated small-real parity audit artifact.",
+      "evidence": [
+        ".github/workflows/github-coverage-gates.yml now runs Small real parity audit and schema before Loop report render.",
+        "Focused L06 validation passed after the correction."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "small_real_parity_audit_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "artifacts/loop_engineering/reports/small_real_parity_audit.json validates against schemas/artifact/small_real_parity_audit.schema.json."
+    },
+    {
+      "name": "small_real_scenario_parity_tests",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Focused tests verify all eight surfaces, fake/real separation, cleanup linkage, missing/skipped/no-baseline semantics, and rendered-source rejection."
+    },
+    {
+      "name": "small_real_gate_contract_tests",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests inspect committed wrapper-produced real evidence without starting new Valkey nodes or running real/fault wrapper gates."
+    },
+    {
+      "name": "github_coverage_small_real_gate",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "GitHub coverage workflow runs the L06 audit, schema validation, and focused L06 tests without P14 opt-in tokens."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Inspect existing L06 harness against design.",
+      "files": [
+        "schemas/artifact/small_real_parity_audit.schema.json",
+        "scripts/audit_small_real_scenario_parity.py",
+        "tests/audit/test_small_real_scenario_parity.py",
+        "tests/coverage/test_small_real_metric_parity.py",
+        "tests/report/test_small_real_parity_report.py",
+        "tests/real_valkey/test_small_real_gate_contract.py",
+        "tests/ci/test_small_real_parity_gate.py"
+      ],
+      "rationale": "Confirm the main-agent implementation satisfies L06 parity, evidence, report, and boundary requirements before making edits."
+    },
+    {
+      "step": "Correct CI ordering for fresh report provenance.",
+      "files": [
+        ".github/workflows/github-coverage-gates.yml"
+      ],
+      "rationale": "Render reports after regenerating small_real_parity_audit.json so report_index provenance reflects the current L06 artifact."
+    },
+    {
+      "step": "Regenerate and validate the L06 audit artifact.",
+      "files": [
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json"
+      ],
+      "rationale": "Confirm the emitted artifact is PASS and schema-valid with no blocking findings."
+    },
+    {
+      "step": "Write implementation worker response.",
+      "files": [
+        "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/implementation_worker.json"
+      ],
+      "rationale": "Record validation outcome and required subagent verdict in machine-readable form."
+    }
+  ],
+  "acceptance_criteria": [
+    "L06 parity audit artifact status is PASS.",
+    "All eight required surfaces have fake and real records separated.",
+    "Real coverage is accepted only from wrapper-produced committed artifacts with Valkey 9.1.x semantics.",
+    "Cleanup is PASS with zero residual resources for required small-real surfaces.",
+    "P07/P08 skipped data-path semantics remain SKIPPED_WITH_REASON with reasons.",
+    "P08 split_brain_duration_ms remains MISSING with reason not_measured_by_primary_stop_gate.",
+    "Report checks preserve MEASURED, MISSING, SKIPPED_WITH_REASON, and NO_BASELINE_YET as distinct statuses.",
+    "Rendered report files are not accepted as measured metric sources.",
+    "No P14 command, opt-in environment token, or real/fault wrapper gate was run by this worker."
+  ],
+  "risks": [
+    "The focused pytest command requires the existing /private/tmp/valkey-scale-lab-l00-venv environment because the default python3 lacks pytest.",
+    "The workflow now requires small_real_parity_audit.json generation before report rendering, which is intentional because render_audit_report.py consumes that source artifact."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Do not set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not run scripts/valkey_e2e_gate.py, scripts/fault_safety_gate.py, or scripts/fault_failover_gate.py for this focused worker pass.",
+    "Do not treat fake fixture coverage as real Valkey coverage.",
+    "Do not use rendered HTML, SVG, CSV, or Markdown views as measured metric sources.",
+    "Do not weaken existing harness controls or schema validation."
+  ],
+  "commands_to_run": [
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/audit_small_real_scenario_parity.py --root . --out artifacts/loop_engineering/reports/small_real_parity_audit.json --require-fake --require-real --validate-report-views",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/validate_json_schema.py --schema schemas/artifact/small_real_parity_audit.schema.json --instance artifacts/loop_engineering/reports/small_real_parity_audit.json",
+    "PYTHONDONTWRITEBYTECODE=1 /private/tmp/valkey-scale-lab-l00-venv/bin/python -m pytest -q tests/audit/test_small_real_scenario_parity.py tests/coverage/test_small_real_metric_parity.py tests/report/test_small_real_parity_report.py tests/real_valkey/test_small_real_gate_contract.py tests/ci/test_small_real_parity_gate.py"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Focused validation results: parity audit PASS, schema validation PASS, and 26 focused L06 tests passed in the project venv. A default python3 pytest attempt failed before collection because pytest was not installed in that interpreter; the venv rerun passed. No P14, opt-in token, or real/fault wrapper gate was run."
+}

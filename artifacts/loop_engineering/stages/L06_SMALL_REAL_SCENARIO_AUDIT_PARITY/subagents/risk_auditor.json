@@ -1,0 +1,479 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY",
+  "agent_role": "risk_auditor",
+  "created_at": "2026-06-30T08:41:43Z",
+  "context_files_read": [
+    {
+      "path": "README.md",
+      "purpose": "Repository bootstrap and automatic phase boundary.",
+      "key_findings": [
+        "The automatic loop stops after P13_SCALE_LADDER_50_100.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is not automatic."
+      ]
+    },
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling safety and evidence instructions.",
+      "key_findings": [
+        "Machine-readable artifacts are the product; reports are only views.",
+        "Real Valkey proof from P03 onward must come from wrapper scripts and include Valkey 9.1.x endpoint evidence.",
+        "Host network, firewall, routing, and interface mutation are forbidden.",
+        "Missing metrics must be encoded as MISSING or SKIPPED_WITH_REASON and never invented."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Phase loop entrypoint and P14 opt-in guard.",
+      "key_findings": [
+        "P14 requires explicit opt-in via VSLAB_ALLOW_1000_DRYRUN=I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE.",
+        "The project interface expects real gates through valkey_scale_lab CLI wrapper commands."
+      ]
+    },
+    {
+      "path": "codex/phase_manifest.json",
+      "purpose": "P03-P11 and P14 required artifacts and real-Valkey requirements.",
+      "key_findings": [
+        "P03 through P11 are automatic and real_valkey_required=true.",
+        "P03-P11 required artifacts cover cluster smoke, management ops, workload, observability, fault sandbox, failover, analysis/reporting, orchestration, stability, and cleanup.",
+        "P14 is automatic=false and real_valkey_required=false with dry-run planner/resource artifacts only."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/00_OPERATING_CONTRACT.md",
+      "purpose": "Loop-level harness-first and artifact-first contract.",
+      "key_findings": [
+        "Stages must not use reports to backfill data or bypass artifact source-of-truth.",
+        "Missing values must be encoded as MISSING, SKIPPED_WITH_REASON, or NO_BASELINE_YET.",
+        "Harness must not be deleted, weakened, skipped, renamed, or downgraded to pass validation."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent output contract and risk_auditor responsibility.",
+      "key_findings": [
+        "risk_auditor must identify falsification, skipping, dry-run confusion, resource exhaustion, and harness weakening risks.",
+        "Main agent may proceed if risk_auditor has no unresolved high-severity blocker."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Previous harness, real evidence boundary, and anti-regression rules.",
+      "key_findings": [
+        "Real evidence must validate real_valkey=true, Valkey 9.1.x, required node count, cluster state, data path or explicit expected state, cleanup PASS, and schema validation.",
+        "1000+ is dry-run/resource/planner by default and must not run as a real automatic gate.",
+        "Anti-regression must block lowered real-Valkey requirements, weaker schemas, removed tests, or handwritten PASS results."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L06 stage scope and acceptance criteria.",
+      "key_findings": [
+        "L06 must make the six-node real scenario a parity control group before larger scale expansion.",
+        "Required surfaces are cluster smoke, management ops, workload smoke, observability smoke, fault sandbox, failover primary stop, stability soak, and cleanup.",
+        "Failover split-brain must be explicit MISSING if unmeasured.",
+        "Reports must distinguish measured, missing, and skipped values."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/read_context.md",
+      "purpose": "Stage-specific context gathered before this risk audit.",
+      "key_findings": [
+        "Existing small-real coverage is visible in committed reports, but L06 must audit artifact-level parity rather than rely on report views.",
+        "P07/P08 evidence has fault/failover-specific skipped or missing semantics that must be preserved.",
+        "Fresh real Valkey validation can be resource-constrained; resource unavailability must be a blocker rather than a static-artifact PASS if freshness is required."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "purpose": "Existing coverage layer and P14 boundary signal.",
+      "key_findings": [
+        "summary.entry_count is 60 with blocking_findings_count 0.",
+        "small-real entries are COVERED for cluster_build, management, workload, observability, fault, failover, stability, cleanup, scale, and report_visualization.",
+        "P14 boundary is SKIPPED_WITH_REASON, real_valkey_coverage=false, dry_run_only=true, and dry_run_artifact_count=0."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/metric_catalog.json",
+      "purpose": "Existing metric semantics for measured, missing, skipped, and baseline values.",
+      "key_findings": [
+        "summary.metric_count is 226 with 202 measured, 2 missing, 20 skipped, 2 no-baseline, and blocking_findings_count 0.",
+        "P08 failover split_brain_duration_ms is MISSING with reason not_measured_by_primary_stop_gate.",
+        "P07 fault observed_impact and P07/P08 data-path results are SKIPPED_WITH_REASON where the wrapper intentionally validates liveness/cluster state rather than data path during the fault action.",
+        "P11 stability baseline comparisons are NO_BASELINE_YET rather than fabricated."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Validate this subagent JSON shape.",
+      "key_findings": [
+        "Required fields include schema_version, stage_id, agent_role, created_at, context_files_read, findings, proposed_harness, implementation_plan, acceptance_criteria, risks, forbidden_shortcuts, commands_to_run, verdict, and notes.",
+        "agent_role must be risk_auditor and verdict must be APPROVED, CHANGES_REQUESTED, or BLOCKED."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json",
+      "purpose": "Cluster smoke real Valkey evidence.",
+      "key_findings": [
+        "Producer is scripts/valkey_e2e_gate.py.",
+        "status=PASS, real_valkey=true, valkey_versions includes 9.1.0, nodes_observed=6, cluster_state_observed=ok, data_path_result=PASS, cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "purpose": "Management metric source artifact.",
+      "key_findings": [
+        "Management report provides measured operations and explicit SKIPPED_WITH_REASON semantics for deferred destructive or expansion operations.",
+        "L06 should preserve skipped semantics rather than infer zero-duration or successful operations."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json",
+      "purpose": "Management real Valkey evidence.",
+      "key_findings": [
+        "Producer is scripts/valkey_e2e_gate.py.",
+        "status=PASS, real_valkey=true, Valkey 9.1.0, nodes_observed=6, cluster_state_observed=ok, data_path_result=PASS, cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "purpose": "Workload metric source artifact.",
+      "key_findings": [
+        "Workload metrics include measured operation, latency, error, requested QPS, achieved QPS, and all-run timing values.",
+        "Fault and recovery workload windows in the P05 smoke scenario are SKIPPED_WITH_REASON, not measured."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json",
+      "purpose": "Workload real Valkey evidence.",
+      "key_findings": [
+        "Producer is scripts/valkey_e2e_gate.py.",
+        "status=PASS, real_valkey=true, Valkey 9.1.0, nodes_observed=6, cluster_state_observed=ok, data_path_result=PASS, cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl",
+      "purpose": "Observability metric source artifact.",
+      "key_findings": [
+        "Observability coverage is sourced from machine-readable JSONL samples, not report text.",
+        "L06 should validate sample schema and source linkage before reporting measured observability parity."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json",
+      "purpose": "Observability real Valkey evidence.",
+      "key_findings": [
+        "Producer is scripts/valkey_e2e_gate.py.",
+        "status=PASS, real_valkey=true, Valkey 9.1.0, nodes_observed=6, cluster_state_observed=ok, data_path_result=PASS, cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+      "purpose": "Fault sandbox behavior and safety source artifact.",
+      "key_findings": [
+        "status=PASS with fault_type=network_delay and scope=container_namespace_or_sandbox_proxy.",
+        "safety_checks show host_network_mutated=false, global_firewall_mutated=false, sandbox_only=true, and fault_state_cleared=true.",
+        "observed_impact is SKIPPED_WITH_REASON because P07 validates sandbox lifecycle and post-clear health without host-level network impairment."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_apply.json",
+      "purpose": "Fault apply safety proof.",
+      "key_findings": [
+        "status=PASS with scope=container_namespace_or_sandbox_proxy.",
+        "safety_checks show global_firewall_mutated=false, host_network_mutated=false, sandbox_only=true."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_clear.json",
+      "purpose": "Fault clear safety proof.",
+      "key_findings": [
+        "status=PASS and cleared=true.",
+        "safety_checks show global_firewall_mutated=false, host_network_mutated=false, sandbox_only=true."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
+      "purpose": "Fault sandbox real Valkey wrapper evidence.",
+      "key_findings": [
+        "Producer is scripts/fault_safety_gate.py.",
+        "status=PASS, real_valkey=true, Valkey 9.1.0, nodes_observed=6, cluster_state_observed=ok, data_path_result=SKIPPED_WITH_REASON, cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_report.json",
+      "purpose": "Failover primary-stop fault source artifact.",
+      "key_findings": [
+        "status=PASS with fault_type=node_stop and scope=owned_container_or_process.",
+        "observed_impact records container_stop on an owned P08 container.",
+        "safety_checks show host_network_mutated=false, global_firewall_mutated=false, sandbox_only=true, and fault_state_cleared=true."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+      "purpose": "Failover and split-brain metric source artifact.",
+      "key_findings": [
+        "status=PASS with primary_stop_observed=true and promotion_observed=true.",
+        "failover_latency_ms is measured.",
+        "split_brain_duration_ms is explicitly MISSING with reason not_measured_by_primary_stop_gate."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
+      "purpose": "Failover real Valkey wrapper evidence.",
+      "key_findings": [
+        "Producer is scripts/fault_failover_gate.py.",
+        "status=PASS, real_valkey=true, Valkey 9.1.0, nodes_observed=5 after primary stop, cluster_state_observed=ok, data_path_result=SKIPPED_WITH_REASON, cleanup.status=PASS.",
+        "old_primary_node_id, promoted_node_id, and failover_latency_ms are recorded."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+      "purpose": "Analysis/reporting source artifact for report-derived-data risk.",
+      "key_findings": [
+        "Analysis includes report-visible values derived from source artifacts.",
+        "L06 must not allow analysis or rendered reports to become upstream source-of-truth."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json",
+      "purpose": "Reporting source real Valkey evidence.",
+      "key_findings": [
+        "Producer is scripts/valkey_e2e_gate.py.",
+        "status=PASS, real_valkey=true, Valkey 9.1.0, nodes_observed=6, cluster_state_observed=ok, data_path_result=PASS, cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json",
+      "purpose": "Local orchestration real Valkey evidence.",
+      "key_findings": [
+        "Producer is scripts/valkey_e2e_gate.py.",
+        "status=PASS, real_valkey=true, Valkey 9.1.0, nodes_observed=6, cluster_state_observed=ok, data_path_result=PASS, cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "purpose": "Stability soak metric source artifact.",
+      "key_findings": [
+        "Stability metrics include measured duration, sample count, nodes_observed, restart count, errors, and memory growth/leak values.",
+        "Baseline comparisons are NO_BASELINE_YET where no prior stability baseline exists."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+      "purpose": "Stability real Valkey evidence.",
+      "key_findings": [
+        "Producer is scripts/valkey_e2e_gate.py.",
+        "status=PASS, real_valkey=true, Valkey 9.1.0, nodes_observed=6, cluster_state_observed=ok, data_path_result=PASS, cleanup.status=PASS."
+      ]
+    },
+    {
+      "path": "artifacts/harness_exception/P14_SCALE_1000_OPTIN_DRYRUN.md",
+      "purpose": "Historical P14 dry-run template exception.",
+      "key_findings": [
+        "The exception documents a two-AZ dry-run template strengthening without editing codex/gate_lock.json.",
+        "The profile remains dry-run only and still requires the existing 1000-node opt-in guard."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L06-RISK-001",
+      "severity": "high",
+      "description": "L06 can overclaim parity by trusting existing coverage_matrix/report views instead of revalidating source artifacts for each small-real surface.",
+      "evidence": [
+        "00_OPERATING_CONTRACT.md forbids using reports to backfill data or bypass source artifacts.",
+        "coverage_matrix.json marks small-real entries as COVERED, but L06 acceptance requires audit/metric/report parity, not just report rendering.",
+        "P03-P11 source artifacts exist and must remain the source of truth for L06."
+      ],
+      "blocker_condition": "A PASS L06 result based only on coverage_matrix.json, CSV, HTML, Markdown, or SVG report outputs without validating P03-P11 source artifacts is a blocker.",
+      "safeguard": "Require an artifact-level parity audit that joins each L06 surface to source artifact paths, schema validation results, source hashes, producer names, run IDs, value status, and report classification."
+    },
+    {
+      "id": "L06-RISK-002",
+      "severity": "high",
+      "description": "Fake or skipped evidence can be misclassified as real small-real Valkey proof, especially for P07/P08 where data-path probes are intentionally skipped during fault/failover wrappers.",
+      "evidence": [
+        "AGENTS.md requires real Valkey evidence from wrapper scripts from P03 onward.",
+        "P07 valkey_e2e_evidence.json is produced by scripts/fault_safety_gate.py with real_valkey=true, Valkey 9.1.0, nodes_observed=6, cluster_state_observed=ok, but data_path_result=SKIPPED_WITH_REASON.",
+        "P08 valkey_e2e_evidence.json is produced by scripts/fault_failover_gate.py with real_valkey=true, Valkey 9.1.0, nodes_observed=5 after primary stop, cluster_state_observed=ok, but data_path_result=SKIPPED_WITH_REASON."
+      ],
+      "blocker_condition": "Any L06 artifact or report that treats fake tests, skipped data-path probes, generated logs, or static files as equivalent to real wrapper evidence is a blocker.",
+      "safeguard": "For each surface, require producer allowlists and semantic checks: valkey_e2e_gate.py for normal small-real scenarios, fault_safety_gate.py for fault sandbox, fault_failover_gate.py for failover, plus explicit skipped reason preservation."
+    },
+    {
+      "id": "L06-RISK-003",
+      "severity": "high",
+      "description": "Report-derived data can be fed back into metric extraction, hiding missing or stale source values.",
+      "evidence": [
+        "AGENTS.md states charts, HTML, and markdown reports are only views over versioned artifacts.",
+        "P09 contains rendered report files alongside analysis_summary.json and report_index.json.",
+        "metric_catalog.json already includes report_visualization.analysis.split_brain_duration_ms as MISSING from analysis_summary.json, which must remain downstream of source evidence."
+      ],
+      "blocker_condition": "Using report/index.html, report.md, SVG, CSV, or coverage_matrix.csv as an input source for L06 measured metrics is a blocker.",
+      "safeguard": "Metric extraction should read only source JSON/JSONL artifacts and record report artifacts as views with provenance edges back to source artifacts."
+    },
+    {
+      "id": "L06-RISK-004",
+      "severity": "high",
+      "description": "P14 1000-node dry-run or P02 1000 planner artifacts can leak into L06 parity as real evidence or resource expectation.",
+      "evidence": [
+        "codex/phase_manifest.json marks P14 automatic=false and real_valkey_required=false.",
+        "coverage_matrix.json p14_boundary is SKIPPED_WITH_REASON, real_valkey_coverage=false, dry_run_only=true.",
+        "README.md and CODEX_START_HERE.md both state P14 is not automatic."
+      ],
+      "blocker_condition": "Any L06 validation command that runs P14, sets VSLAB_ALLOW_1000_DRYRUN, or counts a 1000 dry-run/resource/planner artifact as real coverage is a blocker.",
+      "safeguard": "Keep L06 scoped to six-node and committed small-real artifacts; add command-log checks forbidding P14 phase execution, P14 opt-in env token, and real 1000-node claims."
+    },
+    {
+      "id": "L06-RISK-005",
+      "severity": "high",
+      "description": "Fresh real-gate validation can fail due to Docker/Valkey resource constraints; static artifacts alone should not be used to claim fresh evidence when the L06 harness requires freshness.",
+      "evidence": [
+        "read_context.md warns that fresh real Valkey validation may require Docker/Valkey resources.",
+        "03_HARNESS_POLICY.md requires real evidence boundary checks, cleanup PASS, and schema validation for real gates.",
+        "L06 acceptance requires fake tests and real Valkey six-node gate coverage."
+      ],
+      "blocker_condition": "If L06 design requires fresh six-node real gates and Docker/Valkey resources are unavailable or cleanup cannot be proven, the stage must be BLOCKED rather than passed from stale committed artifacts.",
+      "safeguard": "Separate committed-artifact parity audit from fresh real-gate smoke validation; when fresh gates are required, record resource preflight, wrapper command logs, evidence paths, and deterministic cleanup before PASS."
+    },
+    {
+      "id": "L06-RISK-006",
+      "severity": "high",
+      "description": "Host-network safety can regress if fault sandbox or failover validation uses sudo, host firewall/routing tools, host interfaces, or unrelated process kills.",
+      "evidence": [
+        "AGENTS.md forbids physical host network configuration changes and global firewall/routing/interface mutation.",
+        "P07 fault_apply.json and fault_report.json record host_network_mutated=false, global_firewall_mutated=false, sandbox_only=true, and scope=container_namespace_or_sandbox_proxy.",
+        "P08 fault_report.json records node_stop scoped to owned_container_or_process and safety_checks host_network_mutated=false, global_firewall_mutated=false, sandbox_only=true."
+      ],
+      "blocker_condition": "Any L06 fault/failover harness, source code change, command, or artifact that mutates host network/firewall/routing/interfaces or kills unrelated host processes is a blocker.",
+      "safeguard": "Run safety_scan.py, validate P07/P08 safety_check fields, require owned container/process or sandbox proxy scopes, and require cleanup residual checks after fault/failover validation."
+    },
+    {
+      "id": "L06-RISK-007",
+      "severity": "medium",
+      "description": "Split-brain metrics are not measured by the current primary-stop gate and must remain explicit MISSING, not converted to zero or PASS.",
+      "evidence": [
+        "P08 failover_report.json summary.split_brain_duration_ms has value=null, status=MISSING, reason=not_measured_by_primary_stop_gate.",
+        "metric_catalog.json carries failover.split_brain_duration_ms as MISSING with the same reason.",
+        "L06 acceptance specifically says failover split-brain must be explicit MISSING if unmeasured."
+      ],
+      "blocker_condition": "Any L06 extraction, report, or visualization that turns missing split-brain duration into 0, PASS, measured false safety, or omits the missing reason is a blocker.",
+      "safeguard": "Require report classifications for MEASURED, MISSING, SKIPPED_WITH_REASON, and NO_BASELINE_YET, and include a regression test for P08 split_brain_duration_ms missing semantics."
+    },
+    {
+      "id": "L06-RISK-008",
+      "severity": "high",
+      "description": "Harness weakening can hide L06 gaps by relaxing schemas, changing phase_manifest, deleting tests, editing historical artifacts, or making required evidence optional.",
+      "evidence": [
+        "03_HARNESS_POLICY.md blocks deleted tests, required-to-optional changes, lowered real_valkey requirements, lowered min-nodes, enum weakening, and historical artifact rewrites that hide failures.",
+        "AGENTS.md lists codex/phase_manifest.json, scripts/*.py, schemas/**/*.json, templates/**/*, docs/codex/**/*, and workflows as harness controls.",
+        "The user explicitly requested no source code or test modifications for this risk_auditor task."
+      ],
+      "blocker_condition": "Any L06 diff that weakens pre-existing harness controls, handwrites PASS, hides historical evidence, or edits source/tests during this risk-auditor task is a blocker.",
+      "safeguard": "For this task, modify only risk_auditor.json. For later L06 implementation, require anti-regression review over tests, scripts, schemas, .github, codex, artifacts/gates, and artifacts/phases."
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "small_real_source_artifact_parity_audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Validate each L06 surface from source artifacts, not reports: cluster=P03, management=P04, workload=P05, observability=P06, fault=P07, failover=P08, report source=P09, orchestration=P10, stability=P11, and cleanup reports. Require schema-valid artifacts, producer, run_id, status, source hash, and explicit value_status."
+    },
+    {
+      "name": "small_real_real_fake_boundary_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Assert fake-layer coverage cannot satisfy small-real real_valkey coverage; require real_valkey=true, Valkey version prefix 9.1., wrapper producer allowlist, required node count, cluster state, and data-path PASS or explicit SKIPPED_WITH_REASON for P07/P08 fault-specific evidence."
+    },
+    {
+      "name": "p07_p08_safety_and_missing_semantics_regression",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Assert P07/P08 safety_checks have host_network_mutated=false, global_firewall_mutated=false, sandbox_only=true, owned/sandbox scope, cleanup PASS, and assert P08 split_brain_duration_ms remains MISSING with reason not_measured_by_primary_stop_gate."
+    },
+    {
+      "name": "report_view_source_guard",
+      "type": "integration",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Report rendering may consume the L06 parity/metric artifacts as views, but metric extraction must reject rendered HTML, Markdown, SVG, and CSV as source-of-truth inputs."
+    },
+    {
+      "name": "p14_forbidden_in_l06_command_guard",
+      "type": "ci",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "Validate L06 commands.jsonl contains no P14 phase run, no VSLAB_ALLOW_1000_DRYRUN assignment, and no claim that 1000 dry-run/planner artifacts are real Valkey evidence."
+    },
+    {
+      "name": "fresh_small_real_resource_preflight",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "If L06 requires fresh real gates, run a bounded six-node preflight and wrappers only when resources are available; otherwise record a BLOCKED result with reason rather than substituting committed static artifacts for fresh evidence."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Do not implement code or tests in the risk-auditor role.",
+      "files": [
+        "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/risk_auditor.json"
+      ],
+      "rationale": "The user requested a subagent JSON risk audit and explicitly prohibited source code or test modifications."
+    },
+    {
+      "step": "Downstream L06 implementation should add artifact-level parity extraction and tests after stage_design.md and current_harness_plan.json exist.",
+      "files": [
+        "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/stage_design.md",
+        "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/current_harness_plan.json",
+        "scripts/*",
+        "tests/*",
+        "schemas/*"
+      ],
+      "rationale": "The risk audit identifies required safeguards, but implementation must be performed by the proper worker role and must pass anti-regression review."
+    }
+  ],
+  "acceptance_criteria": [
+    "L06 source-of-truth checks validate P03-P11 machine-readable artifacts directly and do not depend on rendered report files.",
+    "Every L06 real surface has a source artifact, schema validation result, producer, run_id, source hash, status, and metric extraction entry.",
+    "Real evidence is accepted only from the appropriate wrapper producer with real_valkey=true, Valkey version prefix 9.1., expected node count, cluster state, cleanup PASS, and data-path PASS or an explicit fault/failover SKIPPED_WITH_REASON.",
+    "P07 and P08 safety checks prove host_network_mutated=false, global_firewall_mutated=false, sandbox_only=true, and owned-container/sandbox scope.",
+    "P08 split_brain_duration_ms remains MISSING with reason not_measured_by_primary_stop_gate until a real split-brain/partition scenario measures it.",
+    "Reports and visualizations distinguish MEASURED, MISSING, SKIPPED_WITH_REASON, and NO_BASELINE_YET values.",
+    "P14 remains opt-in dry-run only and is not run, counted as real coverage, or used as an L06 resource target.",
+    "If fresh real six-node gates are required, resource unavailability or cleanup failure blocks L06 rather than falling back to stale committed evidence.",
+    "No source code, tests, schemas, scripts, manifest, workflow, or historical gate artifacts are weakened or modified by this risk-auditor task."
+  ],
+  "risks": [
+    "Existing coverage reports can make L06 appear complete without artifact-level parity validation.",
+    "P07/P08 fault-specific SKIPPED_WITH_REASON data-path results can be mistaken for normal data-path PASS evidence.",
+    "Rendered reports can accidentally become metric inputs and hide missing source values.",
+    "P14 or P02 1000-node dry-run planner artifacts can be misread as real 1000-node or L06 evidence.",
+    "Fresh six-node real gates may be resource-constrained; passing from static artifacts would be unsafe if freshness is required.",
+    "Fault and failover validation can regress into host-network mutation if safety guards are not checked.",
+    "Split-brain duration is currently unmeasured and must not be fabricated.",
+    "Harness controls can be weakened by relaxing schemas, deleting tests, lowering real evidence requirements, or editing historical artifacts."
+  ],
+  "forbidden_shortcuts": [
+    "Do not modify source code or tests for this risk-auditor task.",
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN or set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not count P02 or P14 1000 dry-run artifacts as real Valkey evidence.",
+    "Do not use rendered HTML, Markdown, SVG, or CSV reports as source-of-truth for L06 metrics.",
+    "Do not convert MISSING, SKIPPED_WITH_REASON, or NO_BASELINE_YET values into zero, PASS, or measured values.",
+    "Do not mutate host firewall, routing, PF, nftables, iptables, host interfaces, or OS network services.",
+    "Do not use sudo or kill unrelated host processes for fault/failover validation.",
+    "Do not handwrite PASS into gate, audit, validation, or report artifacts.",
+    "Do not weaken schemas, tests, CI workflows, phase manifest requirements, or historical gate evidence to pass L06."
+  ],
+  "commands_to_run": [
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --stage L06_SMALL_REAL_SCENARIO_AUDIT_PARITY",
+    "python3 scripts/safety_scan.py",
+    "python3 -m pytest -q tests/ci/test_committed_artifact_audit_gate.py tests/ci/test_metric_coverage_gate.py tests/ci/test_provenance_graph_gate.py",
+    "python3 -m pytest -q tests/audit tests/coverage tests/report",
+    "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_catalog.schema.json --instance artifacts/loop_engineering/reports/metric_catalog.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/loop_engineering/subagent_response.schema.json --instance artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/risk_auditor.json"
+  ],
+  "verdict": "APPROVED",
+  "notes": "APPROVED because the identified high risks have clear, testable mitigations and no unresolved blocker is present in this read-only risk audit. Approval is conditional on L06 staying artifact-first, preserving P07/P08 safety and missing semantics, not running or reclassifying P14, blocking rather than passing when fresh real-gate resources are unavailable, and preventing any harness weakening."
+}

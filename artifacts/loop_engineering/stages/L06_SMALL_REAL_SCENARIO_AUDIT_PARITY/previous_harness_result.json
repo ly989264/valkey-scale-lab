@@ -1,0 +1,42 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY",
+  "status": "PASS",
+  "completed_at": "2026-06-30T08:39:00Z",
+  "environment_notes": [
+    "Previous harness baseline ran with PYTHONDONTWRITEBYTECODE=1.",
+    "Compileall used PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-l06-pycache to avoid repository bytecode churn.",
+    "No P14 dry-run or real wrapper command was executed during the baseline."
+  ],
+  "commands_log": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/commands.jsonl",
+  "commands": [
+    {"name": "precheck_all", "command": "python3 scripts/codex_gate.py precheck --all", "status": "PASS"},
+    {"name": "safety_scan", "command": "python3 scripts/safety_scan.py", "status": "PASS"},
+    {"name": "compileall", "command": "python3 -m compileall -q src scripts tests", "status": "PASS"},
+    {"name": "postcheck_compatibility", "command": "python3 -m pytest -q tests/ci/test_postcheck_compatibility.py", "status": "PASS"},
+    {"name": "unit_cli_contract", "command": "python3 -m pytest -q tests/unit tests/ci/test_github_coverage_gates.py", "status": "PASS"},
+    {"name": "config_planner", "command": "python3 -m pytest -q tests/config tests/planner", "status": "PASS"},
+    {"name": "runtime_fault_failover_orchestrator", "command": "python3 -m pytest -q tests/integration tests/fault tests/failover tests/orchestrator", "status": "PASS"},
+    {"name": "analysis_report_stability_scale", "command": "python3 -m pytest -q tests/analysis tests/report tests/stability tests/scale", "status": "PASS"},
+    {"name": "visualization_tests", "command": "python3 -m pytest -q tests/visualization", "status": "PASS"},
+    {"name": "loop_engineering_validator", "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering", "status": "PASS"},
+    {"name": "loop_engineering_tests", "command": "python3 -m pytest -q tests/loop_engineering tests/ci/test_loop_engineering_pack.py", "status": "PASS"},
+    {"name": "committed_artifact_audit", "command": "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json", "status": "PASS"},
+    {"name": "audit_schema", "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/audit_report.schema.json --instance artifacts/loop_engineering/reports/audit_report.json", "status": "PASS"},
+    {"name": "audit_tests", "command": "python3 -m pytest -q tests/audit tests/ci/test_committed_artifact_audit_gate.py", "status": "PASS"},
+    {"name": "provenance_graph", "command": "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json", "status": "PASS"},
+    {"name": "provenance_schema", "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/provenance_graph.schema.json --instance artifacts/loop_engineering/reports/provenance_graph.json", "status": "PASS"},
+    {"name": "provenance_tests", "command": "python3 -m pytest -q tests/provenance tests/ci/test_provenance_graph_gate.py", "status": "PASS"},
+    {"name": "metric_coverage", "command": "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports", "status": "PASS"},
+    {"name": "metric_catalog_schema", "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_catalog.schema.json --instance artifacts/loop_engineering/reports/metric_catalog.json", "status": "PASS"},
+    {"name": "coverage_matrix_schema", "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/coverage_matrix.schema.json --instance artifacts/loop_engineering/reports/coverage_matrix.json", "status": "PASS"},
+    {"name": "metric_coverage_tests", "command": "python3 -m pytest -q tests/metrics tests/coverage tests/ci/test_metric_coverage_gate.py", "status": "PASS"},
+    {"name": "p13_p14_scale_audit", "command": "python3 scripts/audit_p13_p14_scale.py --out artifacts/loop_engineering/reports/p13_p14_scale_audit.json", "status": "PASS"},
+    {"name": "p13_p14_scale_audit_schema", "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/p13_p14_scale_audit.schema.json --instance artifacts/loop_engineering/reports/p13_p14_scale_audit.json", "status": "PASS"},
+    {"name": "p13_p14_scale_audit_tests", "command": "python3 -m pytest -q tests/scale/test_p13_p14_scale_audit.py tests/ci/test_p13_p14_scale_audit_gate.py", "status": "PASS"},
+    {"name": "loop_report_render", "command": "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports", "status": "PASS"},
+    {"name": "loop_report_schema", "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/loop_report_index.schema.json --instance artifacts/loop_engineering/reports/report_index.json", "status": "PASS"},
+    {"name": "loop_report_tests", "command": "python3 -m pytest -q tests/report tests/visualization tests/ci/test_loop_report_gate.py", "status": "PASS"}
+  ],
+  "all_required_baseline_commands_passed": true
+}

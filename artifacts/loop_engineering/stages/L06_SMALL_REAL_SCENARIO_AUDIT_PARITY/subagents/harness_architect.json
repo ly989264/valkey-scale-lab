@@ -1,0 +1,341 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY",
+  "agent_role": "harness_architect",
+  "created_at": "2026-06-30T08:41:06Z",
+  "context_files_read": [
+    {
+      "path": "README.md",
+      "purpose": "Confirm repository bootstrap and automatic phase boundary.",
+      "key_findings": [
+        "The automatic loop stops after P13.",
+        "P14 is not automatic and must remain outside L06 execution."
+      ]
+    },
+    {
+      "path": "AGENTS.md",
+      "purpose": "Apply controlling safety and evidence rules.",
+      "key_findings": [
+        "P03 and later real evidence must come from the wrapper gates, not project tests alone.",
+        "Missing metrics must be encoded explicitly and fake-only evidence must not be presented as real.",
+        "Host network, firewall, route, and interface mutation is forbidden."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm phase-loop and CLI contract constraints.",
+      "key_findings": [
+        "Required real gate wrapper commands use python3 -m valkey_scale_lab.cli underneath.",
+        "P14 requires explicit user opt-in and environment variable; L06 must not propose running it."
+      ]
+    },
+    {
+      "path": "codex/phase_manifest.json",
+      "purpose": "Map L06 surfaces to existing phase gates and artifacts.",
+      "key_findings": [
+        "P03, P04, P05, P06, P07, P08, P10, and P11 provide the small-real real-Valkey surfaces.",
+        "Each surface has required phase_summary, valkey_e2e_evidence, cleanup_report, and scenario-specific artifacts where applicable.",
+        "P07 uses fault_safety_gate.py and P08 uses fault_failover_gate.py."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Use the required subagent JSON response contract.",
+      "key_findings": [
+        "harness_architect must design tests, schemas, CLI gate, artifact validator, and real/fake evidence boundaries.",
+        "Output must be a JSON file under the stage subagents directory."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Apply previous-harness baseline and artifact-first policy.",
+      "key_findings": [
+        "Stage harness should prioritize schema validation, artifact validation, fake deterministic tests, real Valkey e2e gates, and report golden tests.",
+        "Real evidence must verify Valkey 9.1.x, node count, cluster state or expected fault state, data path, cleanup PASS, and schema validation.",
+        "1000+ real execution is prohibited by default."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "Read the L06 goal and acceptance criteria.",
+      "key_findings": [
+        "L06 must make the six-node real scenario a parity control group before large-cluster expansion.",
+        "Required surfaces are cluster smoke, management ops, workload smoke, observability smoke, fault sandbox, failover primary stop, stability soak, and cleanup.",
+        "Fake tests and real six-node gates both need harness coverage, and reports must distinguish measured, missing, and skipped."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/read_context.md",
+      "purpose": "Reuse stage-specific prior context and risk notes.",
+      "key_findings": [
+        "Existing coverage reports already show small-real coverage but L06 must audit parity at artifact level.",
+        "P07 and P08 contain skipped data-path or missing split-brain semantics that must be preserved.",
+        "Fresh real gates may require Docker resources; static artifact audit alone is insufficient if freshness is required."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Validate the required response shape.",
+      "key_findings": [
+        "The response allows only the top-level keys used in this file.",
+        "verdict must be APPROVED, CHANGES_REQUESTED, or BLOCKED."
+      ]
+    },
+    {
+      "path": "scripts/audit_committed_artifacts.py",
+      "purpose": "Inspect existing artifact audit patterns.",
+      "key_findings": [
+        "Committed artifact audit validates required phase artifacts, schemas, gate results, metadata, and historical mismatch allowlists.",
+        "L06 should build on artifact-level validation rather than rendered report views."
+      ]
+    },
+    {
+      "path": "scripts/build_metric_coverage_matrix.py",
+      "purpose": "Inspect metric extraction and coverage layering.",
+      "key_findings": [
+        "Existing builder extracts small-real metrics from P03-P11 artifacts and records missing/skipped semantics.",
+        "P08 split_brain_duration_ms is already modeled as an explicit missing metric.",
+        "The existing real evidence validator assumes cluster_state_observed ok and allows data_path_result SKIPPED_WITH_REASON."
+      ]
+    },
+    {
+      "path": "scripts/render_audit_report.py",
+      "purpose": "Inspect report rendering guarantees.",
+      "key_findings": [
+        "Rendered HTML, CSV, and SVG are views over JSON source artifacts.",
+        "Renderer rejects measured metrics sourced from rendered views.",
+        "Missing metrics CSV preserves status and reason."
+      ]
+    },
+    {
+      "path": "schemas/artifact/metric_catalog.schema.json",
+      "purpose": "Inspect current metric catalog contract.",
+      "key_findings": [
+        "Each metric must include source artifact, source hash, source pointer, evidence layer/class, real coverage flag, dry-run flag, and missing semantics.",
+        "Allowed value statuses include MEASURED, PASS, FAIL, MISSING, SKIPPED_WITH_REASON, and NO_BASELINE_YET."
+      ]
+    },
+    {
+      "path": "schemas/artifact/coverage_matrix.schema.json",
+      "purpose": "Inspect current coverage matrix contract.",
+      "key_findings": [
+        "Coverage layers distinguish fake, small-real, 30, 50, 100, and 1000-dry-run.",
+        "Entries must not count 1000 dry-run as real coverage."
+      ]
+    },
+    {
+      "path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "purpose": "Inspect real evidence schema requirements.",
+      "key_findings": [
+        "Real evidence requires real_valkey, Valkey version prefix, probe result, nodes observed, cluster state, data path result, probes, and cleanup.",
+        "data_path_result may be SKIPPED_WITH_REASON but must remain explicit."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P03_LOCAL_DOCKER_VALKEY through artifacts/phases/P11_STABILITY_SOAK",
+      "purpose": "Sample existing small-real machine-readable artifacts.",
+      "key_findings": [
+        "P03, P04, P05, P06, P10, and P11 valkey_e2e_evidence artifacts report real_valkey true, status PASS, six nodes observed, cluster_state_observed ok, data_path_result PASS, and Valkey 9.1.0.",
+        "P07 valkey_e2e_evidence reports real_valkey true, six nodes observed, cluster_state_observed ok, and data_path_result SKIPPED_WITH_REASON for the sandbox fault safety scenario.",
+        "P08 primary-stop failover evidence reports real_valkey true, five nodes observed after the stopped primary, cluster_state_observed ok, and data_path_result SKIPPED_WITH_REASON; the harness must verify six-node starting topology separately from the state artifact.",
+        "P08 failover_report summary encodes split_brain_duration_ms as MISSING with reason not_measured_by_primary_stop_gate.",
+        "All sampled cleanup_report artifacts have status PASS and empty resources_remaining."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L06-HA-001",
+      "severity": "medium",
+      "description": "Existing coverage artifacts mark small-real surfaces as covered, but L06 needs a dedicated parity audit that proves fake fixture expectations and real six-node artifacts are checked by the same extraction contract.",
+      "evidence": [
+        "codex/loop_engineering/04_STAGE_MANIFEST.md L06 acceptance requires fake tests and real Valkey six-node gate coverage.",
+        "scripts/build_metric_coverage_matrix.py currently produces a broad cross-stage matrix, not a focused small-real parity audit artifact."
+      ]
+    },
+    {
+      "id": "L06-HA-002",
+      "severity": "medium",
+      "description": "Failover evidence has a special real boundary: primary-stop evidence observes five live nodes after the fault, so L06 must require six-node initial state plus expected post-fault semantics instead of blindly enforcing nodes_observed == 6 on P08.",
+      "evidence": [
+        "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json nodes_observed is 5.",
+        "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json summary.primary_stop_observed and promotion_observed are true."
+      ]
+    },
+    {
+      "id": "L06-HA-003",
+      "severity": "low",
+      "description": "Split-brain duration is not measured by the primary-stop gate and must remain an explicit missing metric in the parity audit and rendered report views.",
+      "evidence": [
+        "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json summary.split_brain_duration_ms.status is MISSING.",
+        "AGENTS.md requires missing metrics to be encoded as MISSING or SKIPPED_WITH_REASON, never invented."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "schemas/artifact/small_real_parity_audit.schema.json",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Schema requires schema_version v1, artifact_type small_real_parity_audit, stage_id L06_SMALL_REAL_SCENARIO_AUDIT_PARITY, producer, created_at, status PASS|FAIL|BLOCKED, source_artifacts with sha256, surfaces, metrics, report_checks, fake_real_parity, real_valkey_boundary, findings, and summary counts for measured, missing, skipped, fake-covered, real-covered, cleanup-pass, and blocking findings."
+    },
+    {
+      "name": "scripts/audit_small_real_scenario_parity.py",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "CLI reads only JSON/JSONL source artifacts from P03, P04, P05, P06, P07, P08, P10, and P11 plus existing loop report JSON sources; validates schemas; computes sha256 for every source; emits artifacts/loop_engineering/reports/small_real_parity_audit.json; exits nonzero on blocking findings; never reads rendered HTML/SVG/Markdown as metric source."
+    },
+    {
+      "name": "tests/audit/test_small_real_scenario_parity.py",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Unit tests use temporary fixture artifacts to prove the builder fails on missing real evidence, wrong Valkey version prefix, fake-only real claims, absent cleanup PASS, missing source sha, rendered report metric source, and missing/skipped metrics without reasons."
+    },
+    {
+      "name": "tests/coverage/test_small_real_metric_parity.py",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests assert all eight L06 surfaces have both fake fixture coverage and small-real coverage, use the same normalized metric names where applicable, and include required metrics: real_evidence.nodes_observed, real_evidence.cluster_state_observed, real_evidence.data_path_result, cleanup.resources_remaining, management operation durations, workload qps/latency/errors, observability cluster/docker/valkey samples, fault safety booleans, failover latency/promotion/split_brain_duration_ms, and stability duration/leak/restart/workload metrics."
+    },
+    {
+      "name": "tests/report/test_small_real_parity_report.py",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Tests render or inspect report-source artifacts and prove measured, MISSING, and SKIPPED_WITH_REASON values appear as distinct classes in JSON-derived CSV/HTML/SVG outputs; split_brain_duration_ms must appear as MISSING with its source artifact and reason, while P07/P08 skipped data-path semantics remain skipped rather than failed or fabricated."
+    },
+    {
+      "name": "tests/real_valkey/test_small_real_gate_contract.py",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Contract tests verify the real boundary without running P14: P03, P04, P05, P06, P10, and P11 require real_valkey true, status PASS, Valkey 9.1.x, six nodes observed, cluster_state_observed ok, data_path_result PASS, and cleanup PASS; P07 requires six nodes and sandbox-only safety with data_path_result SKIPPED_WITH_REASON allowed; P08 requires a six-node state artifact, primary stop observed, promotion observed, post-fault live nodes at least five, data_path_result SKIPPED_WITH_REASON allowed, and split-brain metric explicitly MISSING if unmeasured."
+    },
+    {
+      "name": "tests/ci/test_small_real_parity_gate.py",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "CI test invokes python3 scripts/audit_small_real_scenario_parity.py --root . --out artifacts/loop_engineering/reports/small_real_parity_audit.json --require-fake --require-real --validate-report-views, validates the output against small_real_parity_audit.schema.json, and asserts status PASS for committed artifacts."
+    },
+    {
+      "name": ".github/workflows/github-coverage-gates.yml small-real parity step",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Workflow runs the L06 parity script and tests after existing audit, provenance, metric coverage, P13/P14, and report rendering gates, preserving the no-P14-real-execution boundary."
+    },
+    {
+      "name": "fake-vs-real fixture parity checks",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Fake deterministic fixtures under tests/fixtures/small_real_parity or inline tmp_path fixtures cover the same surfaces and normalized metric names as the real artifacts, but every fake metric has evidence_layer fake, evidence_class fake, real_valkey_coverage false, and cannot satisfy the real surface requirement."
+    },
+    {
+      "name": "report source-of-truth guard",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Parity audit records report_checks proving report_index.json, metric_catalog.json, coverage_matrix.json, and small_real_parity_audit.json are source artifacts, while index.html, CSVs, SVGs, and Markdown are source_of_truth false views; measured metrics sourced from rendered views are blocking findings."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define the focused L06 audit schema.",
+      "files": [
+        "schemas/artifact/small_real_parity_audit.schema.json"
+      ],
+      "rationale": "A dedicated schema prevents L06 from being satisfied by broad coverage_matrix rendering alone and gives future stages a stable small-real control-group contract."
+    },
+    {
+      "step": "Implement a small-real parity audit builder and validator.",
+      "files": [
+        "scripts/audit_small_real_scenario_parity.py"
+      ],
+      "rationale": "The builder should normalize metrics from machine-readable artifacts, verify source hashes and schemas, and fail fast on real/fake evidence boundary violations."
+    },
+    {
+      "step": "Encode the exact surface map in the builder.",
+      "files": [
+        "scripts/audit_small_real_scenario_parity.py"
+      ],
+      "rationale": "Use P03 cluster_smoke, P04 management_ops, P05 workload_smoke, P06 observability_smoke, P07 fault_sandbox, P08 primary_stop_failover, P11 stability_soak_smoke, and cleanup reports from all real phases. Include P10 only as an additional orchestrated-localhost real boundary metric, not as a replacement for P03 cluster smoke."
+    },
+    {
+      "step": "Add fake fixture parity tests before relying on real committed artifacts.",
+      "files": [
+        "tests/audit/test_small_real_scenario_parity.py",
+        "tests/coverage/test_small_real_metric_parity.py"
+      ],
+      "rationale": "Fake fixtures should prove deterministic extraction, status semantics, and failure modes without Docker, while remaining unable to satisfy real_valkey coverage."
+    },
+    {
+      "step": "Add real committed artifact contract tests for the eight L06 surfaces.",
+      "files": [
+        "tests/real_valkey/test_small_real_gate_contract.py"
+      ],
+      "rationale": "These tests should validate committed real evidence artifacts and gate-result linkage without re-running Docker unless the validation agent explicitly runs wrapper gates."
+    },
+    {
+      "step": "Add report parity checks.",
+      "files": [
+        "tests/report/test_small_real_parity_report.py"
+      ],
+      "rationale": "Report tests must prove JSON-derived views distinguish MEASURED, MISSING, SKIPPED_WITH_REASON, and NO_BASELINE_YET and never become source-of-truth."
+    },
+    {
+      "step": "Wire the L06 gate into CI without weakening previous gates.",
+      "files": [
+        "tests/ci/test_small_real_parity_gate.py",
+        ".github/workflows/github-coverage-gates.yml"
+      ],
+      "rationale": "The dedicated parity gate should run alongside existing audit, provenance, coverage, and report gates so regressions are visible in CI."
+    },
+    {
+      "step": "Emit versioned L06 artifacts.",
+      "files": [
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/reports/index.html"
+      ],
+      "rationale": "The small-real audit should be the L06 machine-readable product, with existing catalog, matrix, and report outputs refreshed only by scripts and only as views or derived artifacts."
+    }
+  ],
+  "acceptance_criteria": [
+    "The L06 parity audit schema validates artifacts/loop_engineering/reports/small_real_parity_audit.json.",
+    "All eight required L06 surfaces have fake fixture coverage and real small-Valkey coverage recorded separately.",
+    "Real coverage is satisfied only by wrapper-produced artifacts with real_valkey true, Valkey version prefix 9.1., PASS status, schema-valid probes, live endpoint evidence, and cleanup PASS.",
+    "P03, P04, P05, P06, P10, and P11 real evidence require six nodes observed; P07 requires six nodes plus sandbox-only safety; P08 requires a six-node starting state and post-primary-stop evidence with at least five live nodes, promotion observed, and cleanup PASS.",
+    "Every real scenario contributes normalized metrics with source_artifact, source_sha256, source_pointer, scenario, node_count_scope, evidence_layer small-real, evidence_class real_valkey or source_artifact, value_status, and missing_semantics.",
+    "split_brain_duration_ms remains MISSING with reason not_measured_by_primary_stop_gate unless a future real split-brain measurement artifact exists.",
+    "SKIPPED_WITH_REASON values are preserved for P07/P08 data-path and safety/fault windows and are not silently converted to PASS or MISSING.",
+    "Report checks prove measured, missing, skipped, and no-baseline states are visually and machine-readably distinct.",
+    "Rendered report files are never used as measured metric sources.",
+    "No L06 harness proposes or runs P14 real execution or treats 1000-node dry-run artifacts as real coverage.",
+    "The stage-specific CI gate runs after previous audit, coverage, provenance, and report gates without deleting or weakening existing assertions."
+  ],
+  "risks": [
+    "A naive node-count assertion would incorrectly fail P08 after primary stop; the harness must check initial six-node topology separately from post-fault observed live nodes.",
+    "Existing coverage_matrix PASS could mask missing small-real parity details; L06 needs its own artifact with per-surface fake and real records.",
+    "Report rendering might accidentally source values from HTML or CSV views; the builder and tests must reject this for measured metrics.",
+    "Docker resources may be unavailable for fresh wrapper runs; if freshness is required and wrappers cannot run, validation should mark the stage blocked rather than accepting stale or fake evidence.",
+    "Refreshing loop report artifacts can change generated files; command logs and source hashes must make the refresh reproducible."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run or propose P14_SCALE_1000_OPTIN_DRYRUN real execution.",
+    "Do not count fake fixtures as real_valkey coverage.",
+    "Do not treat rendered HTML, SVG, Markdown, or CSV report views as source-of-truth metric artifacts.",
+    "Do not convert split_brain_duration_ms from MISSING to zero or PASS without a real measurement source.",
+    "Do not require P08 nodes_observed == 6 after the primary is stopped; require six-node initial state and explicit post-fault semantics instead.",
+    "Do not weaken existing schemas, tests, scripts, phase manifest requirements, gate locks, or historical gate results.",
+    "Do not mutate host network configuration, firewall, routing, interfaces, or unrelated processes.",
+    "Do not handwrite PASS into gate or parity artifacts; produce them through scripts."
+  ],
+  "commands_to_run": [
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/codex_gate.py precheck --all",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/safety_scan.py",
+    "PYTHONDONTWRITEBYTECODE=1 python3 -m compileall -q src scripts tests",
+    "PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q tests/audit/test_small_real_scenario_parity.py tests/coverage/test_small_real_metric_parity.py tests/report/test_small_real_parity_report.py tests/real_valkey/test_small_real_gate_contract.py tests/ci/test_small_real_parity_gate.py",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/audit_small_real_scenario_parity.py --root . --out artifacts/loop_engineering/reports/small_real_parity_audit.json --require-fake --require-real --validate-report-views",
+    "PYTHONDONTWRITEBYTECODE=1 python3 scripts/loop_engineering_validate.py subagent --path artifacts/loop_engineering/stages/L06_SMALL_REAL_SCENARIO_AUDIT_PARITY/subagents/harness_architect.json",
+    "PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q tests/ci"
+  ],
+  "verdict": "APPROVED",
+  "notes": "L06 should be implemented as a focused artifact-first parity audit over the committed six-node real surfaces, with optional fresh wrapper validation handled by the validation agent if resources are available. The design intentionally excludes P14 execution and preserves P08 split-brain as explicit MISSING until directly measured."
+}

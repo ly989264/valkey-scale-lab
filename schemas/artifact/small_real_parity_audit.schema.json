@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Small Real Scenario Parity Audit",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "stage_id",
+    "run_id",
+    "created_at",
+    "producer",
+    "status",
+    "summary",
+    "source_artifacts",
+    "surfaces",
+    "metrics",
+    "fake_real_parity",
+    "real_valkey_boundary",
+    "report_checks",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "small_real_parity_audit"},
+    "stage_id": {"type": "string", "const": "L06_SMALL_REAL_SCENARIO_AUDIT_PARITY"},
+    "run_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "minLength": 1},
+    "producer": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED"]},
+    "summary": {
+      "type": "object",
+      "required": [
+        "surface_count",
+        "required_surface_count",
+        "fake_covered_count",
+        "real_covered_count",
+        "cleanup_pass_count",
+        "metric_count",
+        "measured_count",
+        "missing_count",
+        "skipped_count",
+        "no_baseline_count",
+        "blocking_findings_count"
+      ],
+      "properties": {
+        "surface_count": {"type": "integer", "minimum": 1},
+        "required_surface_count": {"type": "integer", "minimum": 1},
+        "fake_covered_count": {"type": "integer", "minimum": 0},
+        "real_covered_count": {"type": "integer", "minimum": 0},
+        "cleanup_pass_count": {"type": "integer", "minimum": 0},
+        "metric_count": {"type": "integer", "minimum": 1},
+        "measured_count": {"type": "integer", "minimum": 0},
+        "missing_count": {"type": "integer", "minimum": 0},
+        "skipped_count": {"type": "integer", "minimum": 0},
+        "no_baseline_count": {"type": "integer", "minimum": 0},
+        "blocking_findings_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": true
+    },
+    "source_artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "exists", "sha256", "artifact_type", "schema_path", "schema_valid", "status", "source_of_truth"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "exists": {"type": "boolean"},
+          "sha256": {"type": "string", "minLength": 1},
+          "artifact_type": {"type": "string", "minLength": 1},
+          "schema_path": {"type": "string"},
+          "schema_valid": {"type": "boolean"},
+          "status": {"type": ["string", "null"]},
+          "producer": {"type": ["string", "null"]},
+          "run_id": {"type": ["string", "null"]},
+          "source_of_truth": {"type": "boolean"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "surfaces": {
+      "type": "array",
+      "minItems": 8,
+      "items": {
+        "type": "object",
+        "required": ["surface", "phase_id", "scenario", "fake_coverage", "real_coverage", "cleanup", "metrics", "status"],
+        "properties": {
+          "surface": {"type": "string", "minLength": 1},
+          "phase_id": {"type": "string", "minLength": 1},
+          "scenario": {"type": "string", "minLength": 1},
+          "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED"]},
+          "fake_coverage": {
+            "type": "object",
+            "required": ["present", "evidence_class", "real_valkey_coverage", "metric_names"],
+            "properties": {
+              "present": {"type": "boolean"},
+              "evidence_class": {"type": "string", "const": "fake"},
+              "real_valkey_coverage": {"type": "boolean", "const": false},
+              "metric_names": {"type": "array", "items": {"type": "string"}}
+            },
+            "additionalProperties": true
+          },
+          "real_coverage": {
+            "type": "object",
+            "required": ["present", "evidence_class", "real_valkey_coverage", "source_artifacts"],
+            "properties": {
+              "present": {"type": "boolean"},
+              "evidence_class": {"type": "string", "enum": ["real_valkey", "source_artifact"]},
+              "real_valkey_coverage": {"type": "boolean"},
+              "source_artifacts": {"type": "array", "items": {"type": "string"}}
+            },
+            "additionalProperties": true
+          },
+          "cleanup": {
+            "type": "object",
+            "required": ["status", "resources_remaining", "source_artifact"],
+            "properties": {
+              "status": {"type": "string", "enum": ["PASS", "FAIL", "MISSING"]},
+              "resources_remaining": {"type": "integer", "minimum": 0},
+              "source_artifact": {"type": "string"}
+            },
+            "additionalProperties": true
+          },
+          "metrics": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "surface",
+          "unit",
+          "source_artifact",
+          "source_sha256",
+          "source_pointer",
+          "scenario",
+          "node_count_scope",
+          "evidence_layer",
+          "evidence_class",
+          "real_valkey_coverage",
+          "value_status",
+          "value",
+          "missing_semantics"
+        ],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "surface": {"type": "string", "minLength": 1},
+          "unit": {"type": "string", "minLength": 1},
+          "source_artifact": {"type": "string", "minLength": 1},
+          "source_sha256": {"type": "string", "minLength": 1},
+          "source_pointer": {"type": "string", "minLength": 1},
+          "scenario": {"type": ["string", "null"]},
+          "node_count_scope": {"type": "string", "minLength": 1},
+          "evidence_layer": {"type": "string", "enum": ["fake", "small-real"]},
+          "evidence_class": {"type": "string", "enum": ["fake", "real_valkey", "source_artifact", "report_view"]},
+          "real_valkey_coverage": {"type": "boolean"},
+          "value_status": {"type": "string", "enum": ["MEASURED", "PASS", "FAIL", "MISSING", "SKIPPED_WITH_REASON", "NO_BASELINE_YET"]},
+          "value": {},
+          "missing_semantics": {
+            "type": "object",
+            "required": ["status", "reason"],
+            "properties": {
+              "status": {"type": "string", "enum": ["PRESENT", "MISSING", "SKIPPED_WITH_REASON", "NO_BASELINE_YET"]},
+              "reason": {"type": "string"}
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "fake_real_parity": {"type": "object"},
+    "real_valkey_boundary": {"type": "object"},
+    "report_checks": {"type": "array", "items": {"type": "object"}},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "category", "blocking", "description", "evidence"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+          "category": {"type": "string", "minLength": 1},
+          "blocking": {"type": "boolean"},
+          "description": {"type": "string", "minLength": 1},
+          "evidence": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
