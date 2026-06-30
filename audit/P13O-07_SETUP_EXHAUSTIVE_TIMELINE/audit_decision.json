@@ -1,0 +1,24 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-06-30T02:46:23Z",
+  "gate_result_path": "artifacts/gates/P13O-07_SETUP_EXHAUSTIVE_TIMELINE/gate_result.json",
+  "gate_result_sha256": "40df3092d439046c279c844a339ba095c1c315e9842f92dfcb473d0af8292840",
+  "artifact_paths": [
+    "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
+    "artifacts/phases/P13O_SETUP_EXHAUSTIVE_TIMELINE/p13_setup_exhaustive_timeline.json",
+    "artifacts/phases/P13O_SETUP_EXHAUSTIVE_TIMELINE/phase_summary.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+    "artifacts/harness_exception/P13O-07_SETUP_EXHAUSTIVE_TIMELINE.md"
+  ],
+  "risks": [],
+  "rationale": "All P13O-07 manifest gates passed with matching commands and log hashes. Required setup timeline artifacts, aggregate timeline, phase summary, real Valkey evidence, and cleanup reports exist and schema-validate. Real Valkey 9.1.0 scale_50 and scale_100 evidence preserves require-data-path, role counts 25/25 and 50/50, full-node final probes, and cleanup resources_remaining=[]. Safety review found no host network mutation, global firewall mutation, default sudo path, default >100-node execution, or P14 execution. The harness exception at artifacts/harness_exception/P13O-07_SETUP_EXHAUSTIVE_TIMELINE.md explains the protected harness changes as strengthening the gate with schema validation, freshness checks, real evidence, cleanup evidence, required segment coverage, parent/child non-double-counting, and setup_timeline_unexplained_seconds <= 2.0."
+}

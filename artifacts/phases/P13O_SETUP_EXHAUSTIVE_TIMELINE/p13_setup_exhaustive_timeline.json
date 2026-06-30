@@ -1,0 +1,1237 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_setup_exhaustive_timeline",
+  "phase_id": "P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
+  "optimization_phase_id": "P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
+  "run_id": "phase-P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
+  "scenario": "scale_100",
+  "created_at": "2026-06-30T02:44:05.299063Z",
+  "producer": {
+    "name": "valkey-scale-lab-runtime",
+    "version": "0.0.0"
+  },
+  "status": "PASS",
+  "node_count": 100,
+  "setup_command_wall_seconds": 248.41558,
+  "setup_timeline_total_seconds": 248.37056,
+  "setup_timeline_unexplained_seconds": 0.04502,
+  "setup_timeline_unexplained_status": "PASS",
+  "setup_timeline_unexplained_explanation": {
+    "status": "PASS",
+    "reason": "setup timeline explains setup_command_wall within the two-second process-boundary tolerance"
+  },
+  "segments": [
+    {
+      "id": "segment_001",
+      "name": "setup_entry",
+      "kind": "span",
+      "category": "setup_lifecycle",
+      "start_monotonic": 284785.132933,
+      "end_monotonic": 284785.132954,
+      "duration_seconds": 2.1e-05,
+      "status": "PASS",
+      "details": {
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "scenario": "scale_100"
+      }
+    },
+    {
+      "id": "segment_002",
+      "name": "config_parse_and_validate",
+      "kind": "span",
+      "category": "configuration",
+      "start_monotonic": 284785.132965,
+      "end_monotonic": 284785.133101,
+      "duration_seconds": 0.000136,
+      "status": "PASS",
+      "details": {
+        "config_path": "templates/configs/scale_100.yaml"
+      }
+    },
+    {
+      "id": "segment_003",
+      "name": "node_spec_generation",
+      "kind": "span",
+      "category": "planning",
+      "start_monotonic": 284785.133106,
+      "end_monotonic": 284785.133173,
+      "duration_seconds": 6.7e-05,
+      "status": "PASS",
+      "details": {
+        "run_id": "P13_SCALE_LADDER_50_100-scale_100-20260628"
+      }
+    },
+    {
+      "id": "segment_004",
+      "name": "port_preflight_check",
+      "kind": "span",
+      "category": "preflight",
+      "start_monotonic": 284785.133176,
+      "end_monotonic": 284785.134125,
+      "duration_seconds": 0.000949,
+      "status": "PASS",
+      "details": {
+        "port_count": 200
+      }
+    },
+    {
+      "id": "segment_005",
+      "name": "pre_cleanup_by_label",
+      "kind": "span",
+      "category": "docker_cleanup",
+      "start_monotonic": 284785.134131,
+      "end_monotonic": 284785.168408,
+      "duration_seconds": 0.034277,
+      "status": "PASS",
+      "details": {
+        "run_id": "P13_SCALE_LADDER_50_100-scale_100-20260628"
+      }
+    },
+    {
+      "id": "segment_006",
+      "name": "docker_network_create",
+      "kind": "span",
+      "category": "docker_network",
+      "start_monotonic": 284785.168425,
+      "end_monotonic": 284785.211151,
+      "duration_seconds": 0.042726,
+      "status": "PASS",
+      "details": {
+        "network_name": "vslab-p13-scale-ladder-50-100-scale_100"
+      }
+    },
+    {
+      "id": "segment_007",
+      "name": "nodehost_plan",
+      "kind": "span",
+      "category": "planning",
+      "start_monotonic": 284785.211183,
+      "end_monotonic": 284785.211229,
+      "duration_seconds": 4.6e-05,
+      "status": "PASS",
+      "details": {
+        "node_count": 100
+      }
+    },
+    {
+      "id": "segment_008",
+      "name": "nodehost_start",
+      "kind": "span",
+      "category": "nodehost_start",
+      "start_monotonic": 284785.211244,
+      "end_monotonic": 284785.681612,
+      "duration_seconds": 0.470368,
+      "status": "PASS",
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    },
+    {
+      "id": "segment_009",
+      "name": "node_config_local_generate",
+      "kind": "span",
+      "category": "process_config_prepare",
+      "start_monotonic": 284785.681684,
+      "end_monotonic": 284785.689361,
+      "duration_seconds": 0.007677,
+      "status": "PASS",
+      "details": {
+        "node_count": 100
+      }
+    },
+    {
+      "id": "segment_010",
+      "name": "nodehost_bundle_write",
+      "kind": "span",
+      "category": "process_config_prepare",
+      "start_monotonic": 284785.689381,
+      "end_monotonic": 284785.703529,
+      "duration_seconds": 0.014148,
+      "status": "PASS",
+      "details": {
+        "nodehost_count": 2
+      }
+    },
+    {
+      "id": "segment_011",
+      "name": "docker_cp_bundle",
+      "kind": "span",
+      "category": "process_config_prepare",
+      "start_monotonic": 284785.70355,
+      "end_monotonic": 284785.72903,
+      "duration_seconds": 0.02548,
+      "status": "PASS",
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    },
+    {
+      "id": "segment_012",
+      "name": "nodehost_bundle_install",
+      "kind": "span",
+      "category": "process_config_prepare",
+      "start_monotonic": 284785.729056,
+      "end_monotonic": 284785.815183,
+      "duration_seconds": 0.086127,
+      "status": "PASS",
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    },
+    {
+      "id": "segment_013",
+      "name": "nodehost_start_all",
+      "kind": "span",
+      "category": "process_start",
+      "start_monotonic": 284785.815229,
+      "end_monotonic": 284786.066846,
+      "duration_seconds": 0.251617,
+      "status": "PASS",
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    },
+    {
+      "id": "segment_014",
+      "name": "pidfile_collect",
+      "kind": "span",
+      "category": "process_start",
+      "start_monotonic": 284786.066883,
+      "end_monotonic": 284786.129266,
+      "duration_seconds": 0.062383,
+      "status": "PASS",
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    },
+    {
+      "id": "segment_015",
+      "name": "process_ready_wait",
+      "kind": "span",
+      "category": "process_ready_wait",
+      "start_monotonic": 284786.129343,
+      "end_monotonic": 284786.203766,
+      "duration_seconds": 0.074423,
+      "status": "PASS",
+      "details": {
+        "node_count": 100
+      }
+    },
+    {
+      "id": "segment_016",
+      "name": "state_write_before_cluster",
+      "kind": "span",
+      "category": "state_write",
+      "start_monotonic": 284786.203893,
+      "end_monotonic": 284786.205561,
+      "duration_seconds": 0.001668,
+      "status": "PASS",
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_100.json"
+      }
+    },
+    {
+      "id": "segment_017",
+      "name": "primary_cluster_create",
+      "kind": "span",
+      "category": "cluster_formation",
+      "start_monotonic": 284786.20558,
+      "end_monotonic": 284888.934519,
+      "duration_seconds": 102.728939,
+      "status": "PASS",
+      "details": {
+        "primary_count": 50,
+        "strategy": "valkey_cli_cluster_create_primaries"
+      }
+    },
+    {
+      "id": "segment_018",
+      "name": "replica_meet",
+      "kind": "span",
+      "category": "cluster_formation",
+      "start_monotonic": 284888.934577,
+      "end_monotonic": 284891.985312,
+      "duration_seconds": 3.050735,
+      "status": "PASS",
+      "details": {
+        "fanout": 4,
+        "parallelism": 8,
+        "replica_count": 50
+      }
+    },
+    {
+      "id": "segment_019",
+      "name": "replica_replicate",
+      "kind": "span",
+      "category": "cluster_formation",
+      "start_monotonic": 284891.985378,
+      "end_monotonic": 284892.256897,
+      "duration_seconds": 0.271519,
+      "status": "PASS",
+      "details": {
+        "parallelism": 8,
+        "replica_count": 50
+      }
+    },
+    {
+      "id": "segment_020",
+      "name": "cluster_convergence_wait",
+      "kind": "span",
+      "category": "cluster_formation",
+      "start_monotonic": 284892.256928,
+      "end_monotonic": 284892.263808,
+      "duration_seconds": 0.00688,
+      "status": "PASS",
+      "details": {
+        "expected_nodes": 100,
+        "expected_primaries": 50,
+        "expected_replicas": 50
+      }
+    },
+    {
+      "id": "segment_021",
+      "name": "cluster_final_snapshot",
+      "kind": "span",
+      "category": "cluster_formation",
+      "start_monotonic": 284892.263826,
+      "end_monotonic": 284892.266086,
+      "duration_seconds": 0.00226,
+      "status": "PASS",
+      "details": {
+        "node_count": 100,
+        "sample_scope": "representative_by_az"
+      }
+    },
+    {
+      "id": "segment_022",
+      "name": "cluster_final_full_snapshot",
+      "kind": "span",
+      "category": "cluster_formation",
+      "start_monotonic": 284892.266108,
+      "end_monotonic": 285033.266191,
+      "duration_seconds": 141.000083,
+      "status": "PASS",
+      "details": {
+        "node_count": 100,
+        "sample_scope": "all_nodes"
+      }
+    },
+    {
+      "id": "segment_023",
+      "name": "cluster_snapshot_write",
+      "kind": "span",
+      "category": "artifact_write",
+      "start_monotonic": 285033.26628,
+      "end_monotonic": 285033.268661,
+      "duration_seconds": 0.002381,
+      "status": "PASS",
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json"
+      }
+    },
+    {
+      "id": "segment_024",
+      "name": "runtime_timing_write",
+      "kind": "span",
+      "category": "artifact_write",
+      "start_monotonic": 285033.268917,
+      "end_monotonic": 285033.27328,
+      "duration_seconds": 0.004363,
+      "status": "PASS",
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/runtime_timing_breakdown_scale_100.json"
+      }
+    },
+    {
+      "id": "segment_025",
+      "name": "state_write_after_cluster",
+      "kind": "span",
+      "category": "state_write",
+      "start_monotonic": 285033.27331,
+      "end_monotonic": 285033.283261,
+      "duration_seconds": 0.009951,
+      "status": "PASS",
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_100.json"
+      }
+    },
+    {
+      "id": "segment_026",
+      "name": "scale_ladder_artifact_write",
+      "kind": "span",
+      "category": "artifact_write",
+      "start_monotonic": 285033.283301,
+      "end_monotonic": 285033.492034,
+      "duration_seconds": 0.208733,
+      "status": "PASS",
+      "details": {
+        "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
+      }
+    },
+    {
+      "id": "segment_027",
+      "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
+      "kind": "gap",
+      "category": "gap",
+      "start_monotonic": 285033.492034,
+      "end_monotonic": 285033.494243,
+      "duration_seconds": 0.002209,
+      "status": "PASS",
+      "details": {
+        "next_segment": "state_write_setup_timeline_reference",
+        "previous_segment": "scale_ladder_artifact_write",
+        "reason": "elapsed setup time between adjacent recorded stages"
+      }
+    },
+    {
+      "id": "segment_028",
+      "name": "state_write_setup_timeline_reference",
+      "kind": "span",
+      "category": "state_write",
+      "start_monotonic": 285033.494243,
+      "end_monotonic": 285033.504636,
+      "duration_seconds": 0.010393,
+      "status": "PASS",
+      "details": {
+        "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_100.json",
+        "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json"
+      }
+    },
+    {
+      "id": "segment_029",
+      "name": "setup_return",
+      "kind": "span",
+      "category": "setup_lifecycle",
+      "start_monotonic": 285033.504681,
+      "end_monotonic": 285033.504682,
+      "duration_seconds": 1e-06,
+      "status": "PASS",
+      "details": {
+        "error": "",
+        "exit_code": 0
+      }
+    }
+  ],
+  "phase_hierarchy": [
+    {
+      "name": "process_config_prepare",
+      "category": "process_config_prepare",
+      "inclusive_duration_seconds": 0.133432,
+      "exclusive_duration_seconds": 0.0,
+      "children": [
+        {
+          "name": "node_config_local_generate",
+          "inclusive_duration_seconds": 0.007677,
+          "exclusive_duration_seconds": 0.007677,
+          "segment_ids": [
+            "segment_009"
+          ],
+          "status": "PASS"
+        },
+        {
+          "name": "nodehost_bundle_write",
+          "inclusive_duration_seconds": 0.014148,
+          "exclusive_duration_seconds": 0.014148,
+          "segment_ids": [
+            "segment_010"
+          ],
+          "status": "PASS"
+        },
+        {
+          "name": "docker_cp_bundle",
+          "inclusive_duration_seconds": 0.02548,
+          "exclusive_duration_seconds": 0.02548,
+          "segment_ids": [
+            "segment_011"
+          ],
+          "status": "PASS"
+        },
+        {
+          "name": "nodehost_bundle_install",
+          "inclusive_duration_seconds": 0.086127,
+          "exclusive_duration_seconds": 0.086127,
+          "segment_ids": [
+            "segment_012"
+          ],
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "process_start",
+      "category": "process_start",
+      "inclusive_duration_seconds": 0.314,
+      "exclusive_duration_seconds": 0.0,
+      "children": [
+        {
+          "name": "nodehost_start_all",
+          "inclusive_duration_seconds": 0.251617,
+          "exclusive_duration_seconds": 0.251617,
+          "segment_ids": [
+            "segment_013"
+          ],
+          "status": "PASS"
+        },
+        {
+          "name": "pidfile_collect",
+          "inclusive_duration_seconds": 0.062383,
+          "exclusive_duration_seconds": 0.062383,
+          "segment_ids": [
+            "segment_014"
+          ],
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "name": "cluster_formation",
+      "category": "cluster_formation",
+      "inclusive_duration_seconds": 247.060416,
+      "exclusive_duration_seconds": 0.0,
+      "children": [
+        {
+          "name": "primary_cluster_create",
+          "inclusive_duration_seconds": 102.728939,
+          "exclusive_duration_seconds": 102.728939,
+          "segment_ids": [
+            "segment_017"
+          ],
+          "status": "PASS"
+        },
+        {
+          "name": "replica_meet",
+          "inclusive_duration_seconds": 3.050735,
+          "exclusive_duration_seconds": 3.050735,
+          "segment_ids": [
+            "segment_018"
+          ],
+          "status": "PASS"
+        },
+        {
+          "name": "replica_replicate",
+          "inclusive_duration_seconds": 0.271519,
+          "exclusive_duration_seconds": 0.271519,
+          "segment_ids": [
+            "segment_019"
+          ],
+          "status": "PASS"
+        },
+        {
+          "name": "cluster_convergence_wait",
+          "inclusive_duration_seconds": 0.00688,
+          "exclusive_duration_seconds": 0.00688,
+          "segment_ids": [
+            "segment_020"
+          ],
+          "status": "PASS"
+        },
+        {
+          "name": "cluster_final_snapshot",
+          "inclusive_duration_seconds": 0.00226,
+          "exclusive_duration_seconds": 0.00226,
+          "segment_ids": [
+            "segment_021"
+          ],
+          "status": "PASS"
+        },
+        {
+          "name": "cluster_final_full_snapshot",
+          "inclusive_duration_seconds": 141.000083,
+          "exclusive_duration_seconds": 141.000083,
+          "segment_ids": [
+            "segment_022"
+          ],
+          "status": "PASS"
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "required_phase_coverage": {
+    "required_segments": {
+      "setup_entry": "PASS",
+      "config_parse_and_validate": "PASS",
+      "node_spec_generation": "PASS",
+      "port_preflight_check": "PASS",
+      "pre_cleanup_by_label": "PASS",
+      "docker_network_create": "PASS",
+      "nodehost_plan": "PASS",
+      "nodehost_start": "PASS",
+      "node_config_local_generate": "PASS",
+      "nodehost_bundle_write": "PASS",
+      "docker_cp_bundle": "PASS",
+      "nodehost_bundle_install": "PASS",
+      "nodehost_start_all": "PASS",
+      "pidfile_collect": "PASS",
+      "process_ready_wait": "PASS",
+      "state_write_before_cluster": "PASS",
+      "primary_cluster_create": "PASS",
+      "replica_meet": "PASS",
+      "replica_replicate": "PASS",
+      "cluster_convergence_wait": "PASS",
+      "cluster_final_snapshot": "PASS",
+      "cluster_snapshot_write": "PASS",
+      "runtime_timing_write": "PASS",
+      "state_write_after_cluster": "PASS",
+      "scale_ladder_artifact_write": "PASS",
+      "state_write_setup_timeline_reference": "PASS",
+      "setup_return": "PASS"
+    },
+    "required_groups": {
+      "process_config_prepare": "PASS",
+      "process_start": "PASS",
+      "cluster_formation": "PASS"
+    },
+    "status": "PASS"
+  },
+  "largest_segments": [
+    {
+      "id": "segment_022",
+      "name": "cluster_final_full_snapshot",
+      "category": "cluster_formation",
+      "duration_seconds": 141.000083,
+      "details": {
+        "node_count": 100,
+        "sample_scope": "all_nodes"
+      }
+    },
+    {
+      "id": "segment_017",
+      "name": "primary_cluster_create",
+      "category": "cluster_formation",
+      "duration_seconds": 102.728939,
+      "details": {
+        "primary_count": 50,
+        "strategy": "valkey_cli_cluster_create_primaries"
+      }
+    },
+    {
+      "id": "segment_018",
+      "name": "replica_meet",
+      "category": "cluster_formation",
+      "duration_seconds": 3.050735,
+      "details": {
+        "fanout": 4,
+        "parallelism": 8,
+        "replica_count": 50
+      }
+    },
+    {
+      "id": "segment_008",
+      "name": "nodehost_start",
+      "category": "nodehost_start",
+      "duration_seconds": 0.470368,
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    },
+    {
+      "id": "segment_019",
+      "name": "replica_replicate",
+      "category": "cluster_formation",
+      "duration_seconds": 0.271519,
+      "details": {
+        "parallelism": 8,
+        "replica_count": 50
+      }
+    },
+    {
+      "id": "segment_013",
+      "name": "nodehost_start_all",
+      "category": "process_start",
+      "duration_seconds": 0.251617,
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    },
+    {
+      "id": "segment_026",
+      "name": "scale_ladder_artifact_write",
+      "category": "artifact_write",
+      "duration_seconds": 0.208733,
+      "details": {
+        "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
+      }
+    },
+    {
+      "id": "segment_012",
+      "name": "nodehost_bundle_install",
+      "category": "process_config_prepare",
+      "duration_seconds": 0.086127,
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    },
+    {
+      "id": "segment_015",
+      "name": "process_ready_wait",
+      "category": "process_ready_wait",
+      "duration_seconds": 0.074423,
+      "details": {
+        "node_count": 100
+      }
+    },
+    {
+      "id": "segment_014",
+      "name": "pidfile_collect",
+      "category": "process_start",
+      "duration_seconds": 0.062383,
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    }
+  ],
+  "largest_gaps": [
+    {
+      "id": "segment_027",
+      "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
+      "category": "gap",
+      "duration_seconds": 0.002209,
+      "details": {
+        "next_segment": "state_write_setup_timeline_reference",
+        "previous_segment": "scale_ladder_artifact_write",
+        "reason": "elapsed setup time between adjacent recorded stages"
+      }
+    }
+  ],
+  "real_valkey_evidence_summary": {
+    "status": "PASS",
+    "real_valkey": true,
+    "nodes_observed": 100,
+    "expected_nodes": 100,
+    "data_path_result": "PASS",
+    "role_counts": {
+      "primary": 50,
+      "replica": 50,
+      "handshake": 0,
+      "fail": 0,
+      "pfail": 0
+    },
+    "valkey_versions": [
+      "9.1.0"
+    ],
+    "cluster_state_observed": "ok"
+  },
+  "source_artifacts": [
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
+      "sha256": "95cdfc372f13e776f2859b81d20731b84a7be78be7b322df73f50597d1d3ce86"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
+      "sha256": "ab91709c8dd235479eb70751da7ffd75e7461a0407945a7818f431e4cce2b96c"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+      "sha256": "c8bdde24a12f9701861abceaa197930bd12a1e0614df0e20f876aa3fbd2afad3"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+      "sha256": "fc697ee2aecd7c3738086b1d811f58fc33d5675a9afd8c4ed17830c24057816f"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "sha256": "a04bf652e7b32496bd0d2b97f08212d3c477ac92505f4e19677bfd5746cda037"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+      "sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de"
+    }
+  ],
+  "summary": {
+    "setup_command_wall_seconds": 248.41558,
+    "setup_timeline_total_seconds": 248.37056,
+    "setup_timeline_unexplained_seconds": 0.04502,
+    "setup_timeline_unexplained_status": "PASS",
+    "largest_segments": [
+      {
+        "id": "segment_022",
+        "name": "cluster_final_full_snapshot",
+        "category": "cluster_formation",
+        "duration_seconds": 141.000083,
+        "details": {
+          "node_count": 100,
+          "sample_scope": "all_nodes"
+        }
+      },
+      {
+        "id": "segment_017",
+        "name": "primary_cluster_create",
+        "category": "cluster_formation",
+        "duration_seconds": 102.728939,
+        "details": {
+          "primary_count": 50,
+          "strategy": "valkey_cli_cluster_create_primaries"
+        }
+      },
+      {
+        "id": "segment_018",
+        "name": "replica_meet",
+        "category": "cluster_formation",
+        "duration_seconds": 3.050735,
+        "details": {
+          "fanout": 4,
+          "parallelism": 8,
+          "replica_count": 50
+        }
+      },
+      {
+        "id": "segment_008",
+        "name": "nodehost_start",
+        "category": "nodehost_start",
+        "duration_seconds": 0.470368,
+        "details": {
+          "nodehost_count": 2,
+          "parallelism": 8
+        }
+      },
+      {
+        "id": "segment_019",
+        "name": "replica_replicate",
+        "category": "cluster_formation",
+        "duration_seconds": 0.271519,
+        "details": {
+          "parallelism": 8,
+          "replica_count": 50
+        }
+      },
+      {
+        "id": "segment_013",
+        "name": "nodehost_start_all",
+        "category": "process_start",
+        "duration_seconds": 0.251617,
+        "details": {
+          "nodehost_count": 2,
+          "parallelism": 8
+        }
+      },
+      {
+        "id": "segment_026",
+        "name": "scale_ladder_artifact_write",
+        "category": "artifact_write",
+        "duration_seconds": 0.208733,
+        "details": {
+          "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
+        }
+      },
+      {
+        "id": "segment_012",
+        "name": "nodehost_bundle_install",
+        "category": "process_config_prepare",
+        "duration_seconds": 0.086127,
+        "details": {
+          "nodehost_count": 2,
+          "parallelism": 8
+        }
+      },
+      {
+        "id": "segment_015",
+        "name": "process_ready_wait",
+        "category": "process_ready_wait",
+        "duration_seconds": 0.074423,
+        "details": {
+          "node_count": 100
+        }
+      },
+      {
+        "id": "segment_014",
+        "name": "pidfile_collect",
+        "category": "process_start",
+        "duration_seconds": 0.062383,
+        "details": {
+          "nodehost_count": 2,
+          "parallelism": 8
+        }
+      }
+    ],
+    "largest_gaps": [
+      {
+        "id": "segment_027",
+        "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
+        "category": "gap",
+        "duration_seconds": 0.002209,
+        "details": {
+          "next_segment": "state_write_setup_timeline_reference",
+          "previous_segment": "scale_ladder_artifact_write",
+          "reason": "elapsed setup time between adjacent recorded stages"
+        }
+      }
+    ]
+  },
+  "errors": [],
+  "scenario_timelines": [
+    {
+      "scenario": "scale_50",
+      "node_count": 50,
+      "status": "PASS",
+      "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
+      "setup_command_wall_seconds": 22.601064,
+      "setup_timeline_total_seconds": 22.552887,
+      "setup_timeline_unexplained_seconds": 0.048177,
+      "setup_timeline_unexplained_status": "PASS",
+      "largest_segments": [
+        {
+          "id": "segment_017",
+          "name": "primary_cluster_create",
+          "category": "cluster_formation",
+          "duration_seconds": 11.176557,
+          "details": {
+            "primary_count": 25,
+            "strategy": "valkey_cli_cluster_create_primaries"
+          }
+        },
+        {
+          "id": "segment_022",
+          "name": "cluster_final_full_snapshot",
+          "category": "cluster_formation",
+          "duration_seconds": 6.217648,
+          "details": {
+            "node_count": 50,
+            "sample_scope": "all_nodes"
+          }
+        },
+        {
+          "id": "segment_018",
+          "name": "replica_meet",
+          "category": "cluster_formation",
+          "duration_seconds": 4.050456,
+          "details": {
+            "fanout": 4,
+            "parallelism": 8,
+            "replica_count": 25
+          }
+        },
+        {
+          "id": "segment_008",
+          "name": "nodehost_start",
+          "category": "nodehost_start",
+          "duration_seconds": 0.349809,
+          "details": {
+            "nodehost_count": 2,
+            "parallelism": 8
+          }
+        },
+        {
+          "id": "segment_013",
+          "name": "nodehost_start_all",
+          "category": "process_start",
+          "duration_seconds": 0.212641,
+          "details": {
+            "nodehost_count": 2,
+            "parallelism": 8
+          }
+        },
+        {
+          "id": "segment_026",
+          "name": "scale_ladder_artifact_write",
+          "category": "artifact_write",
+          "duration_seconds": 0.119105,
+          "details": {
+            "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
+          }
+        },
+        {
+          "id": "segment_019",
+          "name": "replica_replicate",
+          "category": "cluster_formation",
+          "duration_seconds": 0.103842,
+          "details": {
+            "parallelism": 8,
+            "replica_count": 25
+          }
+        },
+        {
+          "id": "segment_012",
+          "name": "nodehost_bundle_install",
+          "category": "process_config_prepare",
+          "duration_seconds": 0.072283,
+          "details": {
+            "nodehost_count": 2,
+            "parallelism": 8
+          }
+        },
+        {
+          "id": "segment_014",
+          "name": "pidfile_collect",
+          "category": "process_start",
+          "duration_seconds": 0.058344,
+          "details": {
+            "nodehost_count": 2,
+            "parallelism": 8
+          }
+        },
+        {
+          "id": "segment_006",
+          "name": "docker_network_create",
+          "category": "docker_network",
+          "duration_seconds": 0.04679,
+          "details": {
+            "network_name": "vslab-p13-scale-ladder-50-100-scale_50"
+          }
+        }
+      ],
+      "largest_gaps": [
+        {
+          "id": "segment_027",
+          "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
+          "category": "gap",
+          "duration_seconds": 0.001369,
+          "details": {
+            "next_segment": "state_write_setup_timeline_reference",
+            "previous_segment": "scale_ladder_artifact_write",
+            "reason": "elapsed setup time between adjacent recorded stages"
+          }
+        }
+      ],
+      "required_phase_coverage": {
+        "required_segments": {
+          "setup_entry": "PASS",
+          "config_parse_and_validate": "PASS",
+          "node_spec_generation": "PASS",
+          "port_preflight_check": "PASS",
+          "pre_cleanup_by_label": "PASS",
+          "docker_network_create": "PASS",
+          "nodehost_plan": "PASS",
+          "nodehost_start": "PASS",
+          "node_config_local_generate": "PASS",
+          "nodehost_bundle_write": "PASS",
+          "docker_cp_bundle": "PASS",
+          "nodehost_bundle_install": "PASS",
+          "nodehost_start_all": "PASS",
+          "pidfile_collect": "PASS",
+          "process_ready_wait": "PASS",
+          "state_write_before_cluster": "PASS",
+          "primary_cluster_create": "PASS",
+          "replica_meet": "PASS",
+          "replica_replicate": "PASS",
+          "cluster_convergence_wait": "PASS",
+          "cluster_final_snapshot": "PASS",
+          "cluster_snapshot_write": "PASS",
+          "runtime_timing_write": "PASS",
+          "state_write_after_cluster": "PASS",
+          "scale_ladder_artifact_write": "PASS",
+          "state_write_setup_timeline_reference": "PASS",
+          "setup_return": "PASS"
+        },
+        "required_groups": {
+          "process_config_prepare": "PASS",
+          "process_start": "PASS",
+          "cluster_formation": "PASS"
+        },
+        "status": "PASS"
+      },
+      "real_valkey_evidence_summary": {
+        "status": "PASS",
+        "real_valkey": true,
+        "nodes_observed": 50,
+        "expected_nodes": 50,
+        "data_path_result": "PASS",
+        "role_counts": {
+          "primary": 25,
+          "replica": 25,
+          "handshake": 0,
+          "fail": 0,
+          "pfail": 0
+        },
+        "valkey_versions": [
+          "9.1.0"
+        ],
+        "cluster_state_observed": "ok"
+      }
+    },
+    {
+      "scenario": "scale_100",
+      "node_count": 100,
+      "status": "PASS",
+      "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
+      "setup_command_wall_seconds": 248.41558,
+      "setup_timeline_total_seconds": 248.37056,
+      "setup_timeline_unexplained_seconds": 0.04502,
+      "setup_timeline_unexplained_status": "PASS",
+      "largest_segments": [
+        {
+          "id": "segment_022",
+          "name": "cluster_final_full_snapshot",
+          "category": "cluster_formation",
+          "duration_seconds": 141.000083,
+          "details": {
+            "node_count": 100,
+            "sample_scope": "all_nodes"
+          }
+        },
+        {
+          "id": "segment_017",
+          "name": "primary_cluster_create",
+          "category": "cluster_formation",
+          "duration_seconds": 102.728939,
+          "details": {
+            "primary_count": 50,
+            "strategy": "valkey_cli_cluster_create_primaries"
+          }
+        },
+        {
+          "id": "segment_018",
+          "name": "replica_meet",
+          "category": "cluster_formation",
+          "duration_seconds": 3.050735,
+          "details": {
+            "fanout": 4,
+            "parallelism": 8,
+            "replica_count": 50
+          }
+        },
+        {
+          "id": "segment_008",
+          "name": "nodehost_start",
+          "category": "nodehost_start",
+          "duration_seconds": 0.470368,
+          "details": {
+            "nodehost_count": 2,
+            "parallelism": 8
+          }
+        },
+        {
+          "id": "segment_019",
+          "name": "replica_replicate",
+          "category": "cluster_formation",
+          "duration_seconds": 0.271519,
+          "details": {
+            "parallelism": 8,
+            "replica_count": 50
+          }
+        },
+        {
+          "id": "segment_013",
+          "name": "nodehost_start_all",
+          "category": "process_start",
+          "duration_seconds": 0.251617,
+          "details": {
+            "nodehost_count": 2,
+            "parallelism": 8
+          }
+        },
+        {
+          "id": "segment_026",
+          "name": "scale_ladder_artifact_write",
+          "category": "artifact_write",
+          "duration_seconds": 0.208733,
+          "details": {
+            "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
+          }
+        },
+        {
+          "id": "segment_012",
+          "name": "nodehost_bundle_install",
+          "category": "process_config_prepare",
+          "duration_seconds": 0.086127,
+          "details": {
+            "nodehost_count": 2,
+            "parallelism": 8
+          }
+        },
+        {
+          "id": "segment_015",
+          "name": "process_ready_wait",
+          "category": "process_ready_wait",
+          "duration_seconds": 0.074423,
+          "details": {
+            "node_count": 100
+          }
+        },
+        {
+          "id": "segment_014",
+          "name": "pidfile_collect",
+          "category": "process_start",
+          "duration_seconds": 0.062383,
+          "details": {
+            "nodehost_count": 2,
+            "parallelism": 8
+          }
+        }
+      ],
+      "largest_gaps": [
+        {
+          "id": "segment_027",
+          "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
+          "category": "gap",
+          "duration_seconds": 0.002209,
+          "details": {
+            "next_segment": "state_write_setup_timeline_reference",
+            "previous_segment": "scale_ladder_artifact_write",
+            "reason": "elapsed setup time between adjacent recorded stages"
+          }
+        }
+      ],
+      "required_phase_coverage": {
+        "required_segments": {
+          "setup_entry": "PASS",
+          "config_parse_and_validate": "PASS",
+          "node_spec_generation": "PASS",
+          "port_preflight_check": "PASS",
+          "pre_cleanup_by_label": "PASS",
+          "docker_network_create": "PASS",
+          "nodehost_plan": "PASS",
+          "nodehost_start": "PASS",
+          "node_config_local_generate": "PASS",
+          "nodehost_bundle_write": "PASS",
+          "docker_cp_bundle": "PASS",
+          "nodehost_bundle_install": "PASS",
+          "nodehost_start_all": "PASS",
+          "pidfile_collect": "PASS",
+          "process_ready_wait": "PASS",
+          "state_write_before_cluster": "PASS",
+          "primary_cluster_create": "PASS",
+          "replica_meet": "PASS",
+          "replica_replicate": "PASS",
+          "cluster_convergence_wait": "PASS",
+          "cluster_final_snapshot": "PASS",
+          "cluster_snapshot_write": "PASS",
+          "runtime_timing_write": "PASS",
+          "state_write_after_cluster": "PASS",
+          "scale_ladder_artifact_write": "PASS",
+          "state_write_setup_timeline_reference": "PASS",
+          "setup_return": "PASS"
+        },
+        "required_groups": {
+          "process_config_prepare": "PASS",
+          "process_start": "PASS",
+          "cluster_formation": "PASS"
+        },
+        "status": "PASS"
+      },
+      "real_valkey_evidence_summary": {
+        "status": "PASS",
+        "real_valkey": true,
+        "nodes_observed": 100,
+        "expected_nodes": 100,
+        "data_path_result": "PASS",
+        "role_counts": {
+          "primary": 50,
+          "replica": 50,
+          "handshake": 0,
+          "fail": 0,
+          "pfail": 0
+        },
+        "valkey_versions": [
+          "9.1.0"
+        ],
+        "cluster_state_observed": "ok"
+      }
+    }
+  ],
+  "source_timeline_paths": {
+    "scale_50": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
+    "scale_100": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json"
+  }
+}

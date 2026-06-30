@@ -339,9 +339,9 @@
         "slots_assigned": 16384
       },
       "metrics": {
-        "avg_used_memory": 3564564.48,
-        "total_commands_processed": 26753,
-        "total_used_memory": 356456448
+        "avg_used_memory": 3564572.8,
+        "total_commands_processed": 23427,
+        "total_used_memory": 356457280
       },
       "node_count": 100,
       "phase_id": "P13_SCALE_LADDER_50_100",
@@ -541,9 +541,9 @@
         "slots_assigned": 16384
       },
       "metrics": {
-        "avg_used_memory": 3291444.16,
-        "total_commands_processed": 1654,
-        "total_used_memory": 164572208
+        "avg_used_memory": 3291481.6,
+        "total_commands_processed": 1585,
+        "total_used_memory": 164574080
       },
       "node_count": 50,
       "phase_id": "P13_SCALE_LADDER_50_100",
@@ -568,7 +568,7 @@
   "summary": {
     "comparison": {
       "from_nodes": 50,
-      "memory_multiplier": 2.165958,
+      "memory_multiplier": 2.165938,
       "node_count_multiplier": 2.0,
       "primary_count_delta": 25,
       "replica_count_delta": 25,

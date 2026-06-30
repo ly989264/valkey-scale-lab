@@ -7,16 +7,18 @@ import shutil
 import socket
 import subprocess
 import time
+from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, TypeVar
+from typing import Any, Callable, ContextManager, Iterable, TypeVar
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.config.validation import normalize_config, validate_semantics
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
 from valkey_scale_lab.orchestrator.local import write_phase_summary as write_p10_phase_summary
+from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 
 PROJECT = "valkey-scale-lab"
 LABEL_PREFIX = "org.valkey-scale-lab"
@@ -65,6 +67,28 @@ class DockerResult:
     returncode: int
 
 
+def _timeline_span(
+    timeline: SetupTimeline | None,
+    name: str,
+    category: str,
+    details: dict[str, Any] | None = None,
+) -> ContextManager[None]:
+    if timeline is None:
+        return nullcontext()
+    return timeline.span(name, category, details)
+
+
+def _timeline_call(
+    timeline: SetupTimeline | None,
+    name: str,
+    category: str,
+    func: Callable[[], T],
+    details: dict[str, Any] | None = None,
+) -> T:
+    with _timeline_span(timeline, name, category, details):
+        return func()
+
+
 def run_docker(args: list[str], timeout: int = 120, check: bool = True) -> DockerResult:
     try:
         proc = subprocess.run(
@@ -99,6 +123,7 @@ def create_scenario(
     config_path: str | Path,
     artifacts_dir: str | Path,
     state_out: str | Path,
+    setup_timeline: SetupTimeline | None = None,
 ) -> dict[str, Any]:
     if (phase, scenario) not in {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"),
@@ -116,24 +141,30 @@ def create_scenario(
         ("P13_SCALE_LADDER_50_100", "scale_100"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
-    run_id = _run_id(phase, scenario)
+    with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
+        run_id = _run_id(phase, scenario)
+        artifacts = Path(artifacts_dir)
+        artifacts.mkdir(parents=True, exist_ok=True)
 
-    artifacts = Path(artifacts_dir)
-    artifacts.mkdir(parents=True, exist_ok=True)
-    config = normalize_config(parse_config_file(config_path))
-    errors = validate_semantics(config)
-    if errors:
-        message = "; ".join(f"{item['code']}: {item['message']}" for item in errors)
-        raise DockerRuntimeError(message)
-    cluster = config["cluster"]
-    node_count = int(cluster["shards"]) * (1 + int(cluster["replicas_per_shard"]))
-    if not _scenario_node_count_allowed(phase, scenario, node_count):
-        raise DockerRuntimeError(f"{phase}/{scenario} does not allow {node_count} nodes")
-    nodes = _node_specs(config, phase, scenario, run_id)
-    ports = [node["client_port"] for node in nodes]
-    if _uses_docker_process_runtime(phase, scenario):
-        ports.extend(node["cluster_bus_port"] for node in nodes)
-    _check_ports_free(ports)
+    with _timeline_span(setup_timeline, "config_parse_and_validate", "configuration", {"config_path": str(config_path)}):
+        config = normalize_config(parse_config_file(config_path))
+        errors = validate_semantics(config)
+        if errors:
+            message = "; ".join(f"{item['code']}: {item['message']}" for item in errors)
+            raise DockerRuntimeError(message)
+
+    with _timeline_span(setup_timeline, "node_spec_generation", "planning", {"run_id": run_id}):
+        cluster = config["cluster"]
+        node_count = int(cluster["shards"]) * (1 + int(cluster["replicas_per_shard"]))
+        if not _scenario_node_count_allowed(phase, scenario, node_count):
+            raise DockerRuntimeError(f"{phase}/{scenario} does not allow {node_count} nodes")
+        nodes = _node_specs(config, phase, scenario, run_id)
+        ports = [node["client_port"] for node in nodes]
+        if _uses_docker_process_runtime(phase, scenario):
+            ports.extend(node["cluster_bus_port"] for node in nodes)
+
+    with _timeline_span(setup_timeline, "port_preflight_check", "preflight", {"port_count": len(ports)}):
+        _check_ports_free(ports)
 
     if _uses_docker_process_runtime(phase, scenario):
         return _create_process_scenario(
@@ -144,6 +175,7 @@ def create_scenario(
             artifacts=artifacts,
             state_out=Path(state_out),
             nodes=nodes,
+            setup_timeline=setup_timeline,
         )
 
     network_name = _network_name(phase, scenario)
@@ -325,24 +357,28 @@ def _create_process_scenario(
     artifacts: Path,
     state_out: Path,
     nodes: list[dict[str, Any]],
+    setup_timeline: SetupTimeline | None = None,
 ) -> dict[str, Any]:
     network_name = _network_name(phase, scenario)
-    cleanup_by_label(phase=phase, run_id=run_id)
-    run_docker(
-        [
-            "network",
-            "create",
-            "--label",
-            f"{LABEL_PREFIX}.project={PROJECT}",
-            "--label",
-            f"{LABEL_PREFIX}.phase={phase}",
-            "--label",
-            f"{LABEL_PREFIX}.run_id={run_id}",
-            network_name,
-        ],
-        timeout=120,
-    )
-    nodehosts = _process_nodehosts(config, nodes, phase, scenario, run_id)
+    with _timeline_span(setup_timeline, "pre_cleanup_by_label", "docker_cleanup", {"run_id": run_id}):
+        cleanup_by_label(phase=phase, run_id=run_id)
+    with _timeline_span(setup_timeline, "docker_network_create", "docker_network", {"network_name": network_name}):
+        run_docker(
+            [
+                "network",
+                "create",
+                "--label",
+                f"{LABEL_PREFIX}.project={PROJECT}",
+                "--label",
+                f"{LABEL_PREFIX}.phase={phase}",
+                "--label",
+                f"{LABEL_PREFIX}.run_id={run_id}",
+                network_name,
+            ],
+            timeout=120,
+        )
+    with _timeline_span(setup_timeline, "nodehost_plan", "planning", {"node_count": len(nodes)}):
+        nodehosts = _process_nodehosts(config, nodes, phase, scenario, run_id)
     snapshots: list[dict[str, Any]] = []
     timings: dict[str, dict[str, Any]] = {}
     try:
@@ -354,12 +390,18 @@ def _create_process_scenario(
         _run_timed_step(
             timings,
             "nodehost_start",
-            lambda: _bounded_parallel(
-                nodehosts,
-                start_nodehost,
-                parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-                timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
-                label="nodehost container startup",
+            lambda: _timeline_call(
+                setup_timeline,
+                "nodehost_start",
+                "nodehost_start",
+                lambda: _bounded_parallel(
+                    nodehosts,
+                    start_nodehost,
+                    parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+                    timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
+                    label="nodehost container startup",
+                ),
+                {"nodehost_count": len(nodehosts), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
             ),
             {"nodehost_count": len(nodehosts), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
         )
@@ -376,6 +418,7 @@ def _create_process_scenario(
                     nodehost_by_id=nodehost_by_id,
                     artifacts=artifacts,
                     run_id=run_id,
+                    setup_timeline=setup_timeline,
                 )
             ),
             config_prepare_details,
@@ -389,6 +432,7 @@ def _create_process_scenario(
                 _start_process_nodes_batched(
                     nodes=nodes,
                     nodehosts=nodehosts,
+                    setup_timeline=setup_timeline,
                 )
             ),
             process_start_details,
@@ -404,25 +448,36 @@ def _create_process_scenario(
         _run_timed_step(
             timings,
             "process_ready_wait",
-            lambda: _wait_process_nodes_ready(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0)),
+            lambda: _timeline_call(
+                setup_timeline,
+                "process_ready_wait",
+                "process_ready_wait",
+                lambda: _wait_process_nodes_ready(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0)),
+                {"node_count": len(nodes)},
+            ),
             {"node_count": len(nodes)},
         )
         state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
-        _write_state(state_out, state)
-        operations, snapshots = _configure_process_cluster(nodes, timings=timings)
+        with _timeline_span(setup_timeline, "state_write_before_cluster", "state_write", {"path": state_out.as_posix()}):
+            _write_state(state_out, state)
+        operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
         snapshots_path = artifacts / f"cluster_snapshots_{scenario}.json"
-        snapshots_path.write_text(json.dumps(snapshots, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        with _timeline_span(setup_timeline, "cluster_snapshot_write", "artifact_write", {"path": snapshots_path.as_posix()}):
+            snapshots_path.write_text(json.dumps(snapshots, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
         state["runtime"]["cluster_snapshot_path"] = snapshots_path.as_posix()
         state["runtime"]["operations"] = operations
         timing_path = artifacts / f"runtime_timing_breakdown_{scenario}.json"
-        _write_runtime_timing_breakdown(timing_path, phase, scenario, run_id, nodes, timings, status="PASS")
+        with _timeline_span(setup_timeline, "runtime_timing_write", "artifact_write", {"path": timing_path.as_posix()}):
+            _write_runtime_timing_breakdown(timing_path, phase, scenario, run_id, nodes, timings, status="PASS")
         state["runtime"]["timing_breakdown_path"] = timing_path.as_posix()
         state["runtime"]["timings"] = _timing_entries(timings)
-        _write_state(state_out, state)
-        write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        with _timeline_span(setup_timeline, "state_write_after_cluster", "state_write", {"path": state_out.as_posix()}):
+            _write_state(state_out, state)
+        with _timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
+            write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         return state
     except Exception:
         cleanup_by_label(phase=phase, run_id=run_id)
@@ -662,11 +717,20 @@ def _write_nodehost_bundle(nodehost: dict[str, Any], hosted_nodes: list[dict[str
     }
 
 
-def _install_nodehost_bundle(nodehost: dict[str, Any]) -> None:
+def _copy_nodehost_bundle(nodehost: dict[str, Any]) -> None:
     container = str(nodehost["container_name"])
     remote_bundle_parent = PROCESS_BUNDLE_ROOT
     run_docker(["cp", str(nodehost["bundle_artifact_dir"]), f"{container}:{remote_bundle_parent}/"], timeout=120)
+
+
+def _run_nodehost_bundle_install(nodehost: dict[str, Any]) -> None:
+    container = str(nodehost["container_name"])
     run_docker(["exec", container, "sh", f"{nodehost['remote_bundle_dir']}/install.sh"], timeout=120)
+
+
+def _install_nodehost_bundle(nodehost: dict[str, Any]) -> None:
+    _copy_nodehost_bundle(nodehost)
+    _run_nodehost_bundle_install(nodehost)
 
 
 def _prepare_process_nodehost_bundles(
@@ -676,32 +740,76 @@ def _prepare_process_nodehost_bundles(
     nodehost_by_id: dict[str, dict[str, Any]],
     artifacts: Path,
     run_id: str,
+    setup_timeline: SetupTimeline | None = None,
 ) -> dict[str, Any]:
-    local_started = time.monotonic()
     hosted = _nodes_by_nodehost(nodes)
     bundle_records: list[dict[str, Any]] = []
-    for node in nodes:
-        nodehost = nodehost_by_id[str(node["nodehost_id"])]
-        _prepare_process_node_metadata(node, nodehost, artifacts, run_id)
-    for nodehost in nodehosts:
-        bundle_records.append(_write_nodehost_bundle(nodehost, hosted.get(str(nodehost["nodehost_id"]), []), artifacts, run_id))
-    local_seconds = round(max(time.monotonic() - local_started, 0.0), 6)
+    local_generate_started = time.monotonic()
+    with _timeline_span(
+        setup_timeline,
+        "node_config_local_generate",
+        "process_config_prepare",
+        {"node_count": len(nodes)},
+    ):
+        for node in nodes:
+            nodehost = nodehost_by_id[str(node["nodehost_id"])]
+            _prepare_process_node_metadata(node, nodehost, artifacts, run_id)
+    local_generate_seconds = round(max(time.monotonic() - local_generate_started, 0.0), 6)
 
-    remote_started = time.monotonic()
-    _bounded_parallel(
-        nodehosts,
-        _install_nodehost_bundle,
-        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
-        label="nodehost config bundle install",
-    )
-    remote_seconds = round(max(time.monotonic() - remote_started, 0.0), 6)
+    bundle_write_started = time.monotonic()
+    with _timeline_span(
+        setup_timeline,
+        "nodehost_bundle_write",
+        "process_config_prepare",
+        {"nodehost_count": len(nodehosts)},
+    ):
+        for nodehost in nodehosts:
+            bundle_records.append(_write_nodehost_bundle(nodehost, hosted.get(str(nodehost["nodehost_id"]), []), artifacts, run_id))
+    bundle_write_seconds = round(max(time.monotonic() - bundle_write_started, 0.0), 6)
+
+    docker_cp_started = time.monotonic()
+    with _timeline_span(
+        setup_timeline,
+        "docker_cp_bundle",
+        "process_config_prepare",
+        {"nodehost_count": len(nodehosts), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
+    ):
+        _bounded_parallel(
+            nodehosts,
+            _copy_nodehost_bundle,
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
+            label="nodehost config bundle docker cp",
+        )
+    docker_cp_seconds = round(max(time.monotonic() - docker_cp_started, 0.0), 6)
+
+    remote_install_started = time.monotonic()
+    with _timeline_span(
+        setup_timeline,
+        "nodehost_bundle_install",
+        "process_config_prepare",
+        {"nodehost_count": len(nodehosts), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
+    ):
+        _bounded_parallel(
+            nodehosts,
+            _run_nodehost_bundle_install,
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            timeout=_scale_timeout(nodes, floor=120.0, per_node=2.0),
+            label="nodehost config bundle install",
+        )
+    remote_install_seconds = round(max(time.monotonic() - remote_install_started, 0.0), 6)
+    local_seconds = round(local_generate_seconds + bundle_write_seconds, 6)
+    remote_seconds = round(docker_cp_seconds + remote_install_seconds, 6)
     return {
         "node_count": len(nodes),
         "nodehost_count": len(nodehosts),
         "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
         "config_local_generate_seconds": local_seconds,
         "config_remote_install_seconds": remote_seconds,
+        "node_config_local_generate_seconds": local_generate_seconds,
+        "nodehost_bundle_write_seconds": bundle_write_seconds,
+        "docker_cp_bundle_seconds": docker_cp_seconds,
+        "nodehost_bundle_install_seconds": remote_install_seconds,
         "nodehost_bulk_install_used": True,
         "bundle_records": bundle_records,
         "docker_exec_count_before_after": {
@@ -721,7 +829,12 @@ def _prepare_process_nodehost_bundles(
     }
 
 
-def _start_process_nodes_batched(*, nodes: list[dict[str, Any]], nodehosts: list[dict[str, Any]]) -> dict[str, Any]:
+def _start_process_nodes_batched(
+    *,
+    nodes: list[dict[str, Any]],
+    nodehosts: list[dict[str, Any]],
+    setup_timeline: SetupTimeline | None = None,
+) -> dict[str, Any]:
     start_started = time.monotonic()
 
     def start_nodehost(nodehost: dict[str, Any]) -> None:
@@ -730,13 +843,19 @@ def _start_process_nodes_batched(*, nodes: list[dict[str, Any]], nodehosts: list
             timeout=max(30, int(nodehost.get("logical_node_count", 1)) * 3),
         )
 
-    _bounded_parallel(
-        nodehosts,
-        start_nodehost,
-        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
-        label="nodehost bulk Valkey process startup",
-    )
+    with _timeline_span(
+        setup_timeline,
+        "nodehost_start_all",
+        "process_start",
+        {"nodehost_count": len(nodehosts), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
+    ):
+        _bounded_parallel(
+            nodehosts,
+            start_nodehost,
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
+            label="nodehost bulk Valkey process startup",
+        )
     start_seconds = round(max(time.monotonic() - start_started, 0.0), 6)
 
     collect_started = time.monotonic()
@@ -759,13 +878,19 @@ def _start_process_nodes_batched(*, nodes: list[dict[str, Any]], nodehosts: list
                 raise DockerRuntimeError(f"invalid pidfile value for {logical_id}: {parts[1]!r}") from exc
         return collected
 
-    collected_by_nodehost = _bounded_parallel(
-        nodehosts,
-        collect_nodehost,
-        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
-        label="nodehost pidfile collection",
-    )
+    with _timeline_span(
+        setup_timeline,
+        "pidfile_collect",
+        "process_start",
+        {"nodehost_count": len(nodehosts), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
+    ):
+        collected_by_nodehost = _bounded_parallel(
+            nodehosts,
+            collect_nodehost,
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            timeout=_scale_timeout(nodes, floor=120.0, per_node=3.0),
+            label="nodehost pidfile collection",
+        )
     for collected in collected_by_nodehost:
         pid_by_logical_id.update(collected)
     for node in nodes:
@@ -1619,9 +1744,10 @@ def _representative_nodes(nodes: list[dict[str, Any]], *, primaries_only: bool =
 def _configure_process_cluster(
     nodes: list[dict[str, Any]],
     timings: dict[str, dict[str, Any]] | None = None,
+    setup_timeline: SetupTimeline | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if len(nodes) > 30:
-        return _configure_large_process_cluster(nodes, timings=timings)
+        return _configure_large_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
 
     operations: list[dict[str, Any]] = []
     snapshots: list[dict[str, Any]] = []
@@ -1763,6 +1889,7 @@ def _replica_replicate_parallelism_source() -> str:
 def _configure_large_process_cluster(
     nodes: list[dict[str, Any]],
     timings: dict[str, dict[str, Any]] | None = None,
+    setup_timeline: SetupTimeline | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     operations: list[dict[str, Any]] = []
     snapshots: list[dict[str, Any]] = []
@@ -1771,29 +1898,47 @@ def _configure_large_process_cluster(
     replicas = [node for node in nodes if node["role"] == "replica"]
 
     create_started = time.monotonic()
-    if timings is None:
+    if timings is None and setup_timeline is None:
         create_output = _create_large_cluster(primaries, replicas, timeout=timeout)
+    elif timings is None:
+        create_output = _create_large_cluster(primaries, replicas, timeout=timeout, setup_timeline=setup_timeline)
     else:
-        create_output = _create_large_cluster(primaries, replicas, timeout=timeout, timings=timings)
-    _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False, timings=timings)
-    _wait_process_slots_assigned(nodes, timeout=timeout, final_check=False, timings=timings)
-    _wait_process_cluster_ok(nodes, timeout=timeout, final_check=False, timings=timings)
-    _wait_process_role_counts(
-        nodes,
-        expected_primaries=len(primaries),
-        expected_replicas=len(replicas),
-        timeout=timeout,
-        final_check=False,
-        timings=timings,
-    )
-    snapshots.append(
-        _process_cluster_summary(
-            "after_cluster_create",
-            _representative_nodes(nodes),
-            total_node_count=len(nodes),
-            sample_scope="representative_by_az",
+        create_output = _create_large_cluster(primaries, replicas, timeout=timeout, timings=timings, setup_timeline=setup_timeline)
+    with _timeline_span(
+        setup_timeline,
+        "cluster_convergence_wait",
+        "cluster_formation",
+        {
+            "expected_nodes": len(nodes),
+            "expected_primaries": len(primaries),
+            "expected_replicas": len(replicas),
+        },
+    ):
+        _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False, timings=timings)
+        _wait_process_slots_assigned(nodes, timeout=timeout, final_check=False, timings=timings)
+        _wait_process_cluster_ok(nodes, timeout=timeout, final_check=False, timings=timings)
+        _wait_process_role_counts(
+            nodes,
+            expected_primaries=len(primaries),
+            expected_replicas=len(replicas),
+            timeout=timeout,
+            final_check=False,
+            timings=timings,
         )
-    )
+    with _timeline_span(
+        setup_timeline,
+        "cluster_final_snapshot",
+        "cluster_formation",
+        {"sample_scope": "representative_by_az", "node_count": len(nodes)},
+    ):
+        snapshots.append(
+            _process_cluster_summary(
+                "after_cluster_create",
+                _representative_nodes(nodes),
+                total_node_count=len(nodes),
+                sample_scope="representative_by_az",
+            )
+        )
     operations.append(
         _operation(
             "cluster_create",
@@ -1811,15 +1956,21 @@ def _configure_large_process_cluster(
     )
 
     final_started = time.monotonic()
-    _wait_process_snapshot_clean(
-        nodes,
-        expected_nodes=len(nodes),
-        expected_primaries=len(primaries),
-        expected_replicas=len(replicas),
-        timeout=timeout,
-        timings=timings,
-    )
-    snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
+    with _timeline_span(
+        setup_timeline,
+        "cluster_final_full_snapshot",
+        "cluster_formation",
+        {"sample_scope": "all_nodes", "node_count": len(nodes)},
+    ):
+        _wait_process_snapshot_clean(
+            nodes,
+            expected_nodes=len(nodes),
+            expected_primaries=len(primaries),
+            expected_replicas=len(replicas),
+            timeout=timeout,
+            timings=timings,
+        )
+        snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
     operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
     return operations, snapshots
 
@@ -2258,6 +2409,7 @@ def _create_large_cluster(
     replicas: list[dict[str, Any]],
     timeout: float,
     timings: dict[str, dict[str, Any]] | None = None,
+    setup_timeline: SetupTimeline | None = None,
 ) -> str:
     if not primaries:
         raise DockerRuntimeError("large cluster create requires at least one primary")
@@ -2281,7 +2433,13 @@ def _create_large_cluster(
     _run_timed_step(
         timings,
         "primary_cluster_create",
-        create_primaries,
+        lambda: _timeline_call(
+            setup_timeline,
+            "primary_cluster_create",
+            "cluster_formation",
+            create_primaries,
+            {"primary_count": len(primaries), "strategy": strategy},
+        ),
         primary_create_details,
     )
     if replicas:
@@ -2294,7 +2452,17 @@ def _create_large_cluster(
         meet_commands = _run_timed_step(
             timings,
             "replica_meet",
-            meet_replicas,
+            lambda: _timeline_call(
+                setup_timeline,
+                "replica_meet",
+                "cluster_formation",
+                meet_replicas,
+                {
+                    "replica_count": len(replicas),
+                    "fanout": CLUSTER_MEET_FANOUT,
+                    "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
+                },
+            ),
             {"replica_count": len(replicas), "fanout": CLUSTER_MEET_FANOUT, "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
         )
         timings and timings.get("replica_meet", {}).setdefault("details", {}).update({"meet_commands": meet_commands})
@@ -2313,7 +2481,20 @@ def _create_large_cluster(
             replica_details.update(details)
             return text
 
-        output.append(_run_timed_step(timings, "replica_replicate", configure_replicas, replica_details))
+        output.append(
+            _run_timed_step(
+                timings,
+                "replica_replicate",
+                lambda: _timeline_call(
+                    setup_timeline,
+                    "replica_replicate",
+                    "cluster_formation",
+                    configure_replicas,
+                    {"replica_count": len(replicas), "parallelism": replica_parallelism},
+                ),
+                replica_details,
+            )
+        )
     return "\n".join(part for part in output if part)
 
 

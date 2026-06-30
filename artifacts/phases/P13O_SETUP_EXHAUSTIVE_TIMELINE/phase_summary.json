@@ -1,0 +1,120 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "p13_optimization_phase_summary",
+  "phase_id": "P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
+  "artifact_phase_id": "P13O_SETUP_EXHAUSTIVE_TIMELINE",
+  "run_id": "phase-P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
+  "created_at": "2026-06-30T02:44:05.299419Z",
+  "producer": {
+    "name": "scripts/p13_optimization_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P13 setup command wall time is now explained by a non-overlapping setup subprocess timeline with explicit gaps and parent-only aggregation.",
+  "required_artifacts": [
+    "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
+    "artifacts/phases/P13O_SETUP_EXHAUSTIVE_TIMELINE/p13_setup_exhaustive_timeline.json",
+    "artifacts/phases/P13O_SETUP_EXHAUSTIVE_TIMELINE/phase_summary.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json"
+  ],
+  "real_valkey_evidence": {
+    "scale_50": {
+      "status": "PASS",
+      "real_valkey": true,
+      "nodes_observed": 50,
+      "expected_nodes": 50,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 25,
+        "replica": 25,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "valkey_versions": [
+        "9.1.0"
+      ],
+      "cluster_state_observed": "ok"
+    },
+    "scale_100": {
+      "status": "PASS",
+      "real_valkey": true,
+      "nodes_observed": 100,
+      "expected_nodes": 100,
+      "data_path_result": "PASS",
+      "role_counts": {
+        "primary": 50,
+        "replica": 50,
+        "handshake": 0,
+        "fail": 0,
+        "pfail": 0
+      },
+      "valkey_versions": [
+        "9.1.0"
+      ],
+      "cluster_state_observed": "ok"
+    }
+  },
+  "timing_accounting": {
+    "scale_50": {
+      "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
+      "setup_command_wall_seconds": 22.601064,
+      "setup_timeline_total_seconds": 22.552887,
+      "setup_timeline_unexplained_seconds": 0.048177,
+      "setup_timeline_unexplained_status": "PASS",
+      "largest_segment": {
+        "id": "segment_017",
+        "name": "primary_cluster_create",
+        "category": "cluster_formation",
+        "duration_seconds": 11.176557,
+        "details": {
+          "primary_count": 25,
+          "strategy": "valkey_cli_cluster_create_primaries"
+        }
+      },
+      "largest_gap": {
+        "id": "segment_027",
+        "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
+        "category": "gap",
+        "duration_seconds": 0.001369,
+        "details": {
+          "next_segment": "state_write_setup_timeline_reference",
+          "previous_segment": "scale_ladder_artifact_write",
+          "reason": "elapsed setup time between adjacent recorded stages"
+        }
+      }
+    },
+    "scale_100": {
+      "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
+      "setup_command_wall_seconds": 248.41558,
+      "setup_timeline_total_seconds": 248.37056,
+      "setup_timeline_unexplained_seconds": 0.04502,
+      "setup_timeline_unexplained_status": "PASS",
+      "largest_segment": {
+        "id": "segment_022",
+        "name": "cluster_final_full_snapshot",
+        "category": "cluster_formation",
+        "duration_seconds": 141.000083,
+        "details": {
+          "node_count": 100,
+          "sample_scope": "all_nodes"
+        }
+      },
+      "largest_gap": {
+        "id": "segment_027",
+        "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
+        "category": "gap",
+        "duration_seconds": 0.002209,
+        "details": {
+          "next_segment": "state_write_setup_timeline_reference",
+          "previous_segment": "scale_ladder_artifact_write",
+          "reason": "elapsed setup time between adjacent recorded stages"
+        }
+      }
+    }
+  },
+  "setup_exhaustive_timeline_path": "artifacts/phases/P13O_SETUP_EXHAUSTIVE_TIMELINE/p13_setup_exhaustive_timeline.json",
+  "errors": []
+}

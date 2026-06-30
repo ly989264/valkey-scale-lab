@@ -26,6 +26,7 @@ P13O_CLEANUP_PHASE = "P13O-03_CLEANUP_OPTIMIZATION"
 P13O_FAST_TEST_SPLIT_PHASE = "P13O-04_FAST_TEST_SPLIT"
 P13O_PERF_BUDGET_PHASE = "P13O-05_PERF_REGRESSION_BUDGET"
 P13O_PROCESS_BOOTSTRAP_PHASE = "P13O-06_PROCESS_RUNTIME_BOOTSTRAP_BATCHING"
+P13O_SETUP_TIMELINE_PHASE = "P13O-07_SETUP_EXHAUSTIVE_TIMELINE"
 DEFAULT_CLUSTER_CREATE_STRATEGY = "valkey_cli_cluster_create_primaries"
 MANUAL_CLUSTER_CREATE_STRATEGY = "manual_tree_meet_parallel_slots"
 REPLICA_REPLICATE_ARTIFACT_PHASE = "P13O_REPLICA_REPLICATE_BREAKDOWN"
@@ -36,6 +37,7 @@ FAST_TEST_SPLIT_ARTIFACT_PHASE = "P13O_FAST_TEST_SPLIT"
 FAST_TEST_MAX_SECONDS = 30.0
 PERF_BUDGET_ARTIFACT_PHASE = "P13O_PERF_REGRESSION_BUDGET"
 PROCESS_BOOTSTRAP_ARTIFACT_PHASE = "P13O_PROCESS_BOOTSTRAP_BATCHING"
+SETUP_TIMELINE_ARTIFACT_PHASE = "P13O_SETUP_EXHAUSTIVE_TIMELINE"
 STRICT_PERF_BUDGET_ENV = "VSLAB_STRICT_PERF_BUDGET"
 PERF_BUDGET_THRESHOLDS = {
     "scale_50_real_gate": 150.0,
@@ -46,7 +48,13 @@ PERF_BUDGET_THRESHOLDS = {
 }
 
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "src"))
 from schema_validator import load_json, validate  # noqa: E402
+from valkey_scale_lab.runtime.setup_timeline import (  # noqa: E402
+    SETUP_TIMELINE_UNEXPLAINED_LIMIT_SECONDS,
+    build_setup_timeline_artifact,
+    validate_setup_timeline_artifact,
+)
 
 
 def utc_now() -> str:
@@ -2032,6 +2040,285 @@ def validate_process_bootstrap_artifacts(phase: dict[str, Any], *, write_summary
     return 0
 
 
+def setup_timeline_path(scenario: str) -> Path:
+    return ROOT / "artifacts" / "phases" / BASE_PHASE / f"setup_timeline_{scenario}.json"
+
+
+def setup_timeline_source_records(paths: list[Path]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for path in paths:
+        records.append(
+            {
+                "path": rel(path),
+                "sha256": sha256_file(path) if path.exists() else "MISSING",
+            }
+        )
+    return records
+
+
+def setup_timeline_freshness_errors(artifact: dict[str, Any], *, root: Path = ROOT) -> list[str]:
+    errors: list[str] = []
+    records = artifact.get("source_artifacts", [])
+    if not isinstance(records, list) or not records:
+        return ["setup timeline artifact missing source_artifacts freshness records"]
+    for record in records:
+        if not isinstance(record, dict):
+            errors.append("setup timeline source_artifacts entries must be objects")
+            continue
+        source_path = root / str(record.get("path", ""))
+        expected = record.get("sha256")
+        if not source_path.exists():
+            errors.append(f"setup timeline source missing: {rel(source_path)}")
+            continue
+        actual = sha256_file(source_path)
+        if expected != actual:
+            errors.append(f"setup timeline source stale: {rel(source_path)} expected={expected} actual={actual}")
+    return errors
+
+
+def real_valkey_setup_summary(evidence: dict[str, Any], expected_nodes: int) -> dict[str, Any]:
+    return {
+        "status": evidence.get("status", "MISSING"),
+        "real_valkey": evidence.get("real_valkey", "MISSING"),
+        "nodes_observed": evidence.get("nodes_observed", "MISSING"),
+        "expected_nodes": expected_nodes,
+        "data_path_result": evidence.get("data_path_result", "MISSING"),
+        "role_counts": evidence.get("role_counts", "MISSING"),
+        "valkey_versions": evidence.get("valkey_versions", "MISSING"),
+        "cluster_state_observed": evidence.get("cluster_state_observed", "MISSING"),
+    }
+
+
+def enrich_setup_timeline_for_scenario(
+    *,
+    scenario: str,
+    expected_nodes: int,
+    timing: dict[str, Any],
+    evidence: dict[str, Any],
+    errors: list[str],
+) -> dict[str, Any]:
+    path = setup_timeline_path(scenario)
+    if not path.exists():
+        errors.append(f"{scenario}: missing setup timeline artifact {rel(path)}")
+        return {}
+    raw = load_json(path)
+    setup_wall = timing.get("summary", {}).get("setup_command_wall_seconds")
+    if not numeric(setup_wall):
+        errors.append(f"{scenario}: setup_command_wall_seconds missing from timing artifact")
+        setup_wall = None
+    if raw.get("node_count") != expected_nodes:
+        errors.append(f"{scenario}: setup timeline node_count expected {expected_nodes}, got {raw.get('node_count')}")
+    expected_timeline_ref = rel(path)
+    nodehost_entry = timing_entry(timing, "nodehost_start")
+    timing_timeline_ref = (nodehost_entry or {}).get("details", {}).get("setup_timeline_path") if isinstance(nodehost_entry, dict) else None
+    if timing_timeline_ref != expected_timeline_ref:
+        errors.append(f"{scenario}: p13 timing artifact must reference setup timeline {expected_timeline_ref}, got {timing_timeline_ref!r}")
+    source_paths = [
+        path,
+        ROOT / "artifacts" / "phases" / BASE_PHASE / f"p13_timing_breakdown_{scenario}.json",
+        ROOT / "artifacts" / "phases" / BASE_PHASE / f"valkey_e2e_evidence_{scenario.removeprefix('scale_')}.json",
+    ]
+    enriched = build_setup_timeline_artifact(
+        phase_id=BASE_PHASE,
+        run_id=str(raw.get("run_id") or f"phase-{BASE_PHASE}-{scenario}"),
+        scenario=scenario,
+        node_count=expected_nodes,
+        status="PASS" if raw.get("status") == "PASS" and evidence.get("status") == "PASS" else "FAIL",
+        segments=raw.get("segments", []),
+        setup_command_wall_seconds=float(setup_wall) if numeric(setup_wall) else None,
+        real_valkey_evidence_summary=real_valkey_setup_summary(evidence, expected_nodes),
+        source_artifacts=setup_timeline_source_records(source_paths[1:]),
+        extra={
+            "runtime_setup_timeline_path": rel(path),
+            "timing_breakdown_path": rel(source_paths[1]),
+            "timing_breakdown_setup_timeline_reference": timing_timeline_ref,
+            "real_valkey_evidence_path": rel(source_paths[2]),
+        },
+    )
+    write_json(path, enriched)
+    errors.extend(validate_schema(path, ROOT / "schemas" / "artifact" / "p13_setup_exhaustive_timeline.schema.json"))
+    timeline_errors = validate_setup_timeline_artifact(enriched)
+    errors.extend(f"{scenario}: {err}" for err in timeline_errors)
+    if enriched.get("setup_timeline_unexplained_status") != "PASS":
+        errors.append(f"{scenario}: setup timeline unexplained status is {enriched.get('setup_timeline_unexplained_status')}")
+    if numeric(enriched.get("setup_timeline_unexplained_seconds")) and float(enriched["setup_timeline_unexplained_seconds"]) > SETUP_TIMELINE_UNEXPLAINED_LIMIT_SECONDS:
+        errors.append(f"{scenario}: setup_timeline_unexplained_seconds exceeds 2.0")
+    return enriched
+
+
+def setup_timeline_observation(scenario: str, expected_nodes: int, artifact: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "scenario": scenario,
+        "node_count": expected_nodes,
+        "status": artifact.get("status", "MISSING"),
+        "setup_timeline_path": rel(setup_timeline_path(scenario)),
+        "setup_command_wall_seconds": artifact.get("setup_command_wall_seconds", "MISSING"),
+        "setup_timeline_total_seconds": artifact.get("setup_timeline_total_seconds", "MISSING"),
+        "setup_timeline_unexplained_seconds": artifact.get("setup_timeline_unexplained_seconds", "MISSING"),
+        "setup_timeline_unexplained_status": artifact.get("setup_timeline_unexplained_status", "MISSING"),
+        "largest_segments": artifact.get("largest_segments", []),
+        "largest_gaps": artifact.get("largest_gaps", []),
+        "required_phase_coverage": artifact.get("required_phase_coverage", {}),
+        "real_valkey_evidence_summary": artifact.get("real_valkey_evidence_summary", {}),
+    }
+
+
+def write_setup_timeline_aggregate(
+    phase: dict[str, Any],
+    timelines: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> tuple[Path, dict[str, Any]]:
+    out = ROOT / "artifacts" / "phases" / SETUP_TIMELINE_ARTIFACT_PHASE / "p13_setup_exhaustive_timeline.json"
+    primary = timelines.get("scale_100") or timelines.get("scale_50") or {}
+    source_paths = [
+        setup_timeline_path("scale_50"),
+        setup_timeline_path("scale_100"),
+        ROOT / "artifacts" / "phases" / BASE_PHASE / "p13_timing_breakdown_scale_50.json",
+        ROOT / "artifacts" / "phases" / BASE_PHASE / "p13_timing_breakdown_scale_100.json",
+        ROOT / "artifacts" / "phases" / BASE_PHASE / "valkey_e2e_evidence_50.json",
+        ROOT / "artifacts" / "phases" / BASE_PHASE / "valkey_e2e_evidence_100.json",
+    ]
+    aggregate = build_setup_timeline_artifact(
+        phase_id=str(phase["id"]),
+        run_id=f"phase-{phase['id']}",
+        scenario=str(primary.get("scenario", "scale_100")),
+        node_count=int(primary.get("node_count", 100) or 100),
+        status="PASS" if timelines and not errors and all(item.get("status") == "PASS" for item in timelines.values()) else "FAIL",
+        segments=primary.get("segments", []),
+        setup_command_wall_seconds=primary.get("setup_command_wall_seconds") if numeric(primary.get("setup_command_wall_seconds")) else None,
+        real_valkey_evidence_summary=primary.get("real_valkey_evidence_summary", {}),
+        source_artifacts=setup_timeline_source_records(source_paths),
+        extra={
+            "scenario_timelines": [
+                setup_timeline_observation("scale_50", 50, timelines.get("scale_50", {})),
+                setup_timeline_observation("scale_100", 100, timelines.get("scale_100", {})),
+            ],
+            "source_timeline_paths": {
+                "scale_50": rel(setup_timeline_path("scale_50")),
+                "scale_100": rel(setup_timeline_path("scale_100")),
+            },
+            "errors": errors,
+        },
+    )
+    write_json(out, aggregate)
+    return out, aggregate
+
+
+def write_setup_timeline_phase_summary(
+    phase: dict[str, Any],
+    aggregate: dict[str, Any],
+    timelines: dict[str, dict[str, Any]],
+    evidence: dict[str, dict[str, Any]],
+    errors: list[str],
+) -> Path:
+    phase_id = str(phase["id"])
+    artifact_id = artifact_phase_id(phase)
+    out = ROOT / "artifacts" / "phases" / artifact_id / "phase_summary.json"
+    timing_accounting = {
+        scenario: {
+            "setup_timeline_path": rel(setup_timeline_path(scenario)),
+            "setup_command_wall_seconds": artifact.get("setup_command_wall_seconds", "MISSING"),
+            "setup_timeline_total_seconds": artifact.get("setup_timeline_total_seconds", "MISSING"),
+            "setup_timeline_unexplained_seconds": artifact.get("setup_timeline_unexplained_seconds", "MISSING"),
+            "setup_timeline_unexplained_status": artifact.get("setup_timeline_unexplained_status", "MISSING"),
+            "largest_segment": (artifact.get("largest_segments") or ["MISSING"])[0],
+            "largest_gap": (artifact.get("largest_gaps") or ["MISSING"])[0],
+        }
+        for scenario, artifact in timelines.items()
+    }
+    real_evidence = {
+        scenario: real_valkey_setup_summary(artifact, 100 if scenario == "scale_100" else 50)
+        for scenario, artifact in evidence.items()
+    }
+    summary = {
+        "schema_version": "v1",
+        "artifact_type": "p13_optimization_phase_summary",
+        "phase_id": phase_id,
+        "artifact_phase_id": artifact_id,
+        "run_id": f"phase-{phase_id}",
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/p13_optimization_gate.py", "version": "v1"},
+        "status": "PASS" if not errors and aggregate.get("status") == "PASS" else "FAIL",
+        "summary": "P13 setup command wall time is now explained by a non-overlapping setup subprocess timeline with explicit gaps and parent-only aggregation.",
+        "required_artifacts": [item["path"] for item in phase.get("required_artifacts", [])],
+        "real_valkey_evidence": real_evidence,
+        "timing_accounting": timing_accounting,
+        "setup_exhaustive_timeline_path": rel(
+            ROOT / "artifacts" / "phases" / artifact_id / "p13_setup_exhaustive_timeline.json"
+        ),
+        "errors": errors,
+    }
+    write_json(out, summary)
+    return out
+
+
+def validate_setup_timeline_artifacts(phase: dict[str, Any], *, write_summary_artifact: bool = True) -> int:
+    all_errors: list[str] = []
+    timelines: dict[str, dict[str, Any]] = {}
+    evidence: dict[str, dict[str, Any]] = {}
+    if write_summary_artifact:
+        for scenario, expected_nodes in {"scale_50": 50, "scale_100": 100}.items():
+            timing, timing_errors = validate_timing_artifact(scenario, expected_nodes)
+            all_errors.extend(timing_errors)
+            real, evidence_errors = validate_real_evidence(scenario, expected_nodes)
+            evidence[scenario] = real
+            all_errors.extend(evidence_errors)
+            timelines[scenario] = enrich_setup_timeline_for_scenario(
+                scenario=scenario,
+                expected_nodes=expected_nodes,
+                timing=timing,
+                evidence=real,
+                errors=all_errors,
+            )
+        aggregate_path, aggregate = write_setup_timeline_aggregate(phase, timelines, all_errors)
+        summary_path = write_setup_timeline_phase_summary(phase, aggregate, timelines, evidence, all_errors)
+    else:
+        aggregate_path = ROOT / "artifacts" / "phases" / SETUP_TIMELINE_ARTIFACT_PHASE / "p13_setup_exhaustive_timeline.json"
+        summary_path = ROOT / "artifacts" / "phases" / SETUP_TIMELINE_ARTIFACT_PHASE / "phase_summary.json"
+        if aggregate_path.exists():
+            aggregate = load_json(aggregate_path)
+        else:
+            aggregate = {}
+            all_errors.append(f"missing setup exhaustive timeline artifact: {rel(aggregate_path)}")
+        if not summary_path.exists():
+            all_errors.append(f"missing phase summary artifact: {rel(summary_path)}")
+        for scenario, expected_nodes in {"scale_50": 50, "scale_100": 100}.items():
+            path = setup_timeline_path(scenario)
+            if not path.exists():
+                all_errors.append(f"{scenario}: missing setup timeline artifact {rel(path)}")
+                continue
+            artifact = load_json(path)
+            timelines[scenario] = artifact
+            all_errors.extend(validate_schema(path, ROOT / "schemas" / "artifact" / "p13_setup_exhaustive_timeline.schema.json"))
+            all_errors.extend(f"{scenario}: {err}" for err in validate_setup_timeline_artifact(artifact))
+            all_errors.extend(f"{scenario}: {err}" for err in setup_timeline_freshness_errors(artifact, root=ROOT))
+    if aggregate_path.exists():
+        all_errors.extend(validate_schema(aggregate_path, ROOT / "schemas" / "artifact" / "p13_setup_exhaustive_timeline.schema.json"))
+        if aggregate:
+            all_errors.extend(f"aggregate: {err}" for err in validate_setup_timeline_artifact(aggregate))
+            all_errors.extend(f"aggregate: {err}" for err in setup_timeline_freshness_errors(aggregate, root=ROOT))
+            observations = {item.get("scenario"): item for item in aggregate.get("scenario_timelines", []) if isinstance(item, dict)}
+            for scenario in ["scale_50", "scale_100"]:
+                observation = observations.get(scenario)
+                if not observation:
+                    all_errors.append(f"aggregate missing scenario timeline {scenario}")
+                elif observation.get("setup_timeline_unexplained_status") != "PASS":
+                    all_errors.append(f"aggregate {scenario}: unexplained status is {observation.get('setup_timeline_unexplained_status')}")
+    if summary_path.exists():
+        all_errors.extend(validate_schema(summary_path, ROOT / "schemas" / "artifact" / "p13_optimization_phase_summary.schema.json"))
+        if not write_summary_artifact:
+            summary = load_json(summary_path)
+            if summary.get("status") != "PASS":
+                all_errors.append(f"phase summary status is {summary.get('status')}")
+
+    if all_errors:
+        for err in all_errors:
+            print(f"FAIL: {err}", file=sys.stderr)
+        return 1
+    print(f"PASS p13o artifacts phase={phase['id']} summary={rel(summary_path)}")
+    return 0
+
+
 def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool = True) -> int:
     manifest = load_manifest()
     phase = phase_by_id(manifest, args.phase)
@@ -2047,6 +2334,8 @@ def validate_artifacts(args: argparse.Namespace, *, write_summary_artifact: bool
         return validate_perf_budget_artifacts(phase, write_summary_artifact=write_summary_artifact)
     if args.phase == P13O_PROCESS_BOOTSTRAP_PHASE:
         return validate_process_bootstrap_artifacts(phase, write_summary_artifact=write_summary_artifact)
+    if args.phase == P13O_SETUP_TIMELINE_PHASE:
+        return validate_setup_timeline_artifacts(phase, write_summary_artifact=write_summary_artifact)
 
     all_errors: list[str] = []
     timings: dict[str, dict[str, Any]] = {}

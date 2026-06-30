@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.analysis import AnalysisError, create_analysis_summary
@@ -13,6 +14,7 @@ from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.report import ReportError, render_report
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
+from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 
 
 UNIMPLEMENTED = (
@@ -51,18 +53,85 @@ def _plan(args: argparse.Namespace) -> int:
 
 
 def _gate_scenario(args: argparse.Namespace) -> int:
+    setup_timeline = SetupTimeline() if args.phase == "P13_SCALE_LADDER_50_100" else None
+    state: dict[str, object] = {}
+    exit_code = 0
+    error: str | None = None
     try:
-        create_scenario(
+        state = create_scenario(
             phase=args.phase,
             scenario=args.scenario,
             config_path=args.config,
             artifacts_dir=args.artifacts_dir,
             state_out=args.state_out,
+            setup_timeline=setup_timeline,
         )
     except DockerRuntimeError as exc:
         print(f"ERROR: gate scenario: {exc}", file=sys.stderr)
-        return 1
-    return 0
+        exit_code = 1
+        error = str(exc)
+    finally:
+        if setup_timeline is not None:
+            _finalize_setup_timeline(args, setup_timeline, state, exit_code=exit_code, error=error)
+    return exit_code
+
+
+def _finalize_setup_timeline(
+    args: argparse.Namespace,
+    setup_timeline: SetupTimeline,
+    state: dict[str, object],
+    *,
+    exit_code: int,
+    error: str | None,
+) -> None:
+    artifacts_dir = Path(args.artifacts_dir)
+    timeline_path = artifacts_dir / f"setup_timeline_{args.scenario}.json"
+    state_path = Path(args.state_out)
+    state_obj = dict(state)
+    if state_path.exists():
+        try:
+            loaded = json.loads(state_path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                state_obj = loaded
+        except (OSError, json.JSONDecodeError):
+            pass
+    runtime = state_obj.setdefault("runtime", {})
+    if isinstance(runtime, dict):
+        runtime["setup_timeline_path"] = timeline_path.as_posix()
+        timings = runtime.get("timings")
+        if isinstance(timings, list):
+            for entry in timings:
+                if isinstance(entry, dict) and entry.get("name") == "nodehost_start":
+                    details = entry.setdefault("details", {})
+                    if isinstance(details, dict):
+                        details["setup_timeline_path"] = timeline_path.as_posix()
+                    break
+    with setup_timeline.span(
+        "state_write_setup_timeline_reference",
+        "state_write",
+        {"path": state_path.as_posix(), "setup_timeline_path": timeline_path.as_posix()},
+    ):
+        if state_obj:
+            state_path.parent.mkdir(parents=True, exist_ok=True)
+            state_path.write_text(json.dumps(state_obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    with setup_timeline.span("setup_return", "setup_lifecycle", {"exit_code": exit_code, "error": error or ""}):
+        pass
+    node_count = len(state_obj.get("nodes", [])) if isinstance(state_obj.get("nodes"), list) else 0
+    run_id = str(state_obj.get("cluster_id") or f"phase-{args.phase}-{args.scenario}")
+    setup_timeline.write_artifact(
+        timeline_path,
+        phase_id=args.phase,
+        run_id=run_id,
+        scenario=args.scenario,
+        node_count=node_count,
+        status="PASS" if exit_code == 0 else "FAIL",
+        extra={
+            "setup_command_wall_source": {
+                "status": "MISSING",
+                "reason": "outer wrapper attaches setup_command_wall_seconds during P13O validation",
+            }
+        },
+    )
 
 
 def _gate_cleanup(args: argparse.Namespace) -> int:

@@ -6,6 +6,7 @@ import pytest
 
 from valkey_scale_lab.runtime import docker_runtime
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError
+from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 
 
 def test_p03_node_specs_are_deterministic() -> None:
@@ -211,6 +212,54 @@ def test_process_bootstrap_uses_nodehost_bundle_for_scale_30(tmp_path: Path, mon
         "scale_30",
         30,
     )
+
+
+def test_process_bootstrap_records_setup_timeline_child_spans(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_10.yaml"))
+    run_id = "P12_SCALE_LADDER_10_30-scale_10-20260628"
+    nodes = docker_runtime._node_specs(config, "P12_SCALE_LADDER_10_30", "scale_10", run_id)
+    nodehosts = docker_runtime._process_nodehosts(config, nodes, "P12_SCALE_LADDER_10_30", "scale_10", run_id)
+    for index, nodehost in enumerate(nodehosts):
+        nodehost["container_id"] = f"cid-{index}"
+        nodehost["container_ip"] = f"172.18.0.{index + 2}"
+    nodehost_by_id = {nodehost["nodehost_id"]: nodehost for nodehost in nodehosts}
+    timeline = SetupTimeline(gap_threshold_seconds=60.0)
+
+    def fake_parallel(items, worker, *, parallelism, timeout, label):
+        return [worker(item) for item in list(items)]
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        if args[0] == "cp":
+            return docker_runtime.DockerResult("", "", 0)
+        if args[:1] == ["exec"]:
+            if args[3].endswith("/collect_pidfiles.sh"):
+                nodehost = next(item for item in nodehosts if item["container_name"] == args[1])
+                hosted = [node for node in nodes if node["nodehost_id"] == nodehost["nodehost_id"]]
+                stdout = "\n".join(f"{node['logical_id']}\t{5000 + idx}" for idx, node in enumerate(hosted))
+                return docker_runtime.DockerResult(stdout + "\n", "", 0)
+            return docker_runtime.DockerResult("", "", 0)
+        raise AssertionError(f"unexpected docker command: {args}")
+
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    docker_runtime._prepare_process_nodehost_bundles(
+        nodes=nodes,
+        nodehosts=nodehosts,
+        nodehost_by_id=nodehost_by_id,
+        artifacts=tmp_path,
+        run_id=run_id,
+        setup_timeline=timeline,
+    )
+    docker_runtime._start_process_nodes_batched(nodes=nodes, nodehosts=nodehosts, setup_timeline=timeline)
+
+    names = [segment["name"] for segment in timeline.segments]
+    assert "node_config_local_generate" in names
+    assert "nodehost_bundle_write" in names
+    assert "docker_cp_bundle" in names
+    assert "nodehost_bundle_install" in names
+    assert "nodehost_start_all" in names
+    assert "pidfile_collect" in names
 
 
 def test_process_runtime_state_records_required_node_fields() -> None:

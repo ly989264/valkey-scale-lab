@@ -4,7 +4,7 @@
   "phase_id": "P13_SCALE_LADDER_50_100",
   "run_id": "phase-P13_SCALE_LADDER_50_100-scale_100",
   "scenario": "scale_100",
-  "created_at": "2026-06-29T15:01:07.959943Z",
+  "created_at": "2026-06-30T02:31:35.618899Z",
   "producer": {
     "name": "scripts/valkey_e2e_gate.py",
     "version": "v1"
@@ -16,9 +16,10 @@
       "count": 1,
       "details": {
         "nodehost_count": 2,
-        "parallelism": 8
+        "parallelism": 8,
+        "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json"
       },
-      "duration_seconds": 1.615819,
+      "duration_seconds": 0.470391,
       "name": "nodehost_start",
       "status": "PASS"
     },
@@ -39,8 +40,9 @@
             "remote_bundle_dir": "/tmp/vslab-bundle-P13_SCALE_LADDER_50_100-scale_100-20260628-nodehost-az-b"
           }
         ],
-        "config_local_generate_seconds": 0.033004,
-        "config_remote_install_seconds": 0.147218,
+        "config_local_generate_seconds": 0.021865,
+        "config_remote_install_seconds": 0.111658,
+        "docker_cp_bundle_seconds": 0.025504,
         "docker_cp_count_before_after": {
           "after": 2,
           "after_basis": "one config bundle docker cp per nodehost",
@@ -55,13 +57,16 @@
           "before_basis": "legacy per-node mkdir",
           "stage": "config_remote_install"
         },
+        "node_config_local_generate_seconds": 0.007698,
         "node_count": 100,
         "nodehost_bulk_install_used": true,
+        "nodehost_bundle_install_seconds": 0.086154,
+        "nodehost_bundle_write_seconds": 0.014167,
         "nodehost_count": 2,
         "parallelism": 8,
         "process_bootstrap_batching": {
-          "config_local_generate_seconds": 0.033004,
-          "config_remote_install_seconds": 0.147218,
+          "config_local_generate_seconds": 0.021865,
+          "config_remote_install_seconds": 0.111658,
           "docker_cp_count_before_after": {
             "after": 2,
             "basis": "deterministic setup command plan for config transfer",
@@ -128,7 +133,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary/valkey.log",
               "logical_id": "shard-0002-primary",
-              "pid": 131,
+              "pid": 125,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary/valkey.pid"
             },
             {
@@ -137,7 +142,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary/valkey.log",
               "logical_id": "shard-0003-primary",
-              "pid": 131,
+              "pid": 125,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary/valkey.pid"
             },
             {
@@ -146,7 +151,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary/valkey.log",
               "logical_id": "shard-0004-primary",
-              "pid": 140,
+              "pid": 134,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary/valkey.pid"
             },
             {
@@ -155,7 +160,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary/valkey.log",
               "logical_id": "shard-0005-primary",
-              "pid": 140,
+              "pid": 137,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary/valkey.pid"
             },
             {
@@ -173,7 +178,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary/valkey.log",
               "logical_id": "shard-0007-primary",
-              "pid": 149,
+              "pid": 143,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary/valkey.pid"
             },
             {
@@ -182,7 +187,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary/valkey.log",
               "logical_id": "shard-0008-primary",
-              "pid": 152,
+              "pid": 158,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary/valkey.pid"
             },
             {
@@ -191,7 +196,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary/valkey.log",
               "logical_id": "shard-0009-primary",
-              "pid": 152,
+              "pid": 158,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary/valkey.pid"
             },
             {
@@ -209,7 +214,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary/valkey.log",
               "logical_id": "shard-0011-primary",
-              "pid": 167,
+              "pid": 166,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary/valkey.pid"
             },
             {
@@ -218,7 +223,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary/valkey.log",
               "logical_id": "shard-0012-primary",
-              "pid": 176,
+              "pid": 170,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary/valkey.pid"
             },
             {
@@ -254,7 +259,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary/valkey.log",
               "logical_id": "shard-0016-primary",
-              "pid": 194,
+              "pid": 188,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary/valkey.pid"
             },
             {
@@ -281,7 +286,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary/valkey.log",
               "logical_id": "shard-0019-primary",
-              "pid": 203,
+              "pid": 202,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary/valkey.pid"
             },
             {
@@ -290,7 +295,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary/valkey.log",
               "logical_id": "shard-0020-primary",
-              "pid": 212,
+              "pid": 206,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary/valkey.pid"
             },
             {
@@ -299,7 +304,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary/valkey.log",
               "logical_id": "shard-0021-primary",
-              "pid": 212,
+              "pid": 206,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary/valkey.pid"
             },
             {
@@ -326,7 +331,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary/valkey.log",
               "logical_id": "shard-0024-primary",
-              "pid": 230,
+              "pid": 224,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary/valkey.pid"
             },
             {
@@ -335,7 +340,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary/valkey.log",
               "logical_id": "shard-0025-primary",
-              "pid": 230,
+              "pid": 227,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary/valkey.pid"
             },
             {
@@ -353,7 +358,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary/valkey.log",
               "logical_id": "shard-0027-primary",
-              "pid": 233,
+              "pid": 239,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary/valkey.pid"
             },
             {
@@ -380,7 +385,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary/valkey.log",
               "logical_id": "shard-0030-primary",
-              "pid": 257,
+              "pid": 251,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary/valkey.pid"
             },
             {
@@ -416,7 +421,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary/valkey.log",
               "logical_id": "shard-0034-primary",
-              "pid": 275,
+              "pid": 269,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary/valkey.pid"
             },
             {
@@ -443,7 +448,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary/valkey.log",
               "logical_id": "shard-0037-primary",
-              "pid": 284,
+              "pid": 278,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary/valkey.pid"
             },
             {
@@ -452,7 +457,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary/valkey.log",
               "logical_id": "shard-0038-primary",
-              "pid": 293,
+              "pid": 287,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary/valkey.pid"
             },
             {
@@ -461,7 +466,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary/valkey.log",
               "logical_id": "shard-0039-primary",
-              "pid": 293,
+              "pid": 287,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary/valkey.pid"
             },
             {
@@ -470,7 +475,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary/valkey.log",
               "logical_id": "shard-0040-primary",
-              "pid": 302,
+              "pid": 296,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary/valkey.pid"
             },
             {
@@ -479,7 +484,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary/valkey.log",
               "logical_id": "shard-0041-primary",
-              "pid": 302,
+              "pid": 301,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary/valkey.pid"
             },
             {
@@ -506,7 +511,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary/valkey.log",
               "logical_id": "shard-0044-primary",
-              "pid": 320,
+              "pid": 314,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary/valkey.pid"
             },
             {
@@ -551,7 +556,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary/valkey.log",
               "logical_id": "shard-0049-primary",
-              "pid": 338,
+              "pid": 332,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary/valkey.pid"
             },
             {
@@ -569,7 +574,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00/valkey.log",
               "logical_id": "shard-0001-replica-00",
-              "pid": 347,
+              "pid": 341,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00/valkey.pid"
             },
             {
@@ -605,7 +610,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00/valkey.log",
               "logical_id": "shard-0005-replica-00",
-              "pid": 365,
+              "pid": 359,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00/valkey.pid"
             },
             {
@@ -623,7 +628,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00/valkey.log",
               "logical_id": "shard-0007-replica-00",
-              "pid": 374,
+              "pid": 368,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00/valkey.pid"
             },
             {
@@ -668,7 +673,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00/valkey.log",
               "logical_id": "shard-0012-replica-00",
-              "pid": 395,
+              "pid": 401,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00/valkey.pid"
             },
             {
@@ -776,7 +781,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00/valkey.log",
               "logical_id": "shard-0024-replica-00",
-              "pid": 449,
+              "pid": 455,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00/valkey.pid"
             },
             {
@@ -785,7 +790,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00/valkey.log",
               "logical_id": "shard-0025-replica-00",
-              "pid": 449,
+              "pid": 455,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00/valkey.pid"
             },
             {
@@ -794,7 +799,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00/valkey.log",
               "logical_id": "shard-0026-replica-00",
-              "pid": 464,
+              "pid": 458,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00/valkey.pid"
             },
             {
@@ -821,7 +826,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00/valkey.log",
               "logical_id": "shard-0029-replica-00",
-              "pid": 473,
+              "pid": 467,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00/valkey.pid"
             },
             {
@@ -839,7 +844,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00/valkey.log",
               "logical_id": "shard-0031-replica-00",
-              "pid": 482,
+              "pid": 476,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00/valkey.pid"
             },
             {
@@ -857,7 +862,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00/valkey.log",
               "logical_id": "shard-0033-replica-00",
-              "pid": 491,
+              "pid": 485,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00/valkey.pid"
             },
             {
@@ -866,7 +871,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00/valkey.log",
               "logical_id": "shard-0034-replica-00",
-              "pid": 494,
+              "pid": 500,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00/valkey.pid"
             },
             {
@@ -884,7 +889,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00/valkey.log",
               "logical_id": "shard-0036-replica-00",
-              "pid": 503,
+              "pid": 509,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00/valkey.pid"
             },
             {
@@ -893,7 +898,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00/valkey.log",
               "logical_id": "shard-0037-replica-00",
-              "pid": 503,
+              "pid": 509,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00/valkey.pid"
             },
             {
@@ -902,7 +907,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00/valkey.log",
               "logical_id": "shard-0038-replica-00",
-              "pid": 512,
+              "pid": 518,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00/valkey.pid"
             },
             {
@@ -911,7 +916,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00/valkey.log",
               "logical_id": "shard-0039-replica-00",
-              "pid": 506,
+              "pid": 518,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00/valkey.pid"
             },
             {
@@ -920,7 +925,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00/valkey.log",
               "logical_id": "shard-0040-replica-00",
-              "pid": 521,
+              "pid": 527,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00/valkey.pid"
             },
             {
@@ -929,7 +934,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00/valkey.log",
               "logical_id": "shard-0041-replica-00",
-              "pid": 515,
+              "pid": 527,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00/valkey.pid"
             },
             {
@@ -956,7 +961,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00/valkey.log",
               "logical_id": "shard-0044-replica-00",
-              "pid": 545,
+              "pid": 539,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00/valkey.pid"
             },
             {
@@ -965,7 +970,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00/valkey.log",
               "logical_id": "shard-0045-replica-00",
-              "pid": 545,
+              "pid": 539,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00/valkey.pid"
             },
             {
@@ -983,7 +988,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00/valkey.log",
               "logical_id": "shard-0047-replica-00",
-              "pid": 554,
+              "pid": 548,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00/valkey.pid"
             },
             {
@@ -1005,11 +1010,11 @@
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-replica-00/valkey.pid"
             }
           ],
-          "pidfile_collect_seconds": 0.080519,
-          "process_start_command_seconds": 0.338232
+          "pidfile_collect_seconds": 0.062434,
+          "process_start_command_seconds": 0.251646
         }
       },
-      "duration_seconds": 0.180251,
+      "duration_seconds": 0.133571,
       "name": "process_config_prepare",
       "status": "PASS"
     },
@@ -1027,10 +1032,10 @@
         "nodehost_bulk_start_used": true,
         "nodehost_count": 2,
         "parallelism": 8,
-        "pidfile_collect_seconds": 0.080519,
+        "pidfile_collect_seconds": 0.062434,
         "process_bootstrap_batching": {
-          "config_local_generate_seconds": 0.033004,
-          "config_remote_install_seconds": 0.147218,
+          "config_local_generate_seconds": 0.021865,
+          "config_remote_install_seconds": 0.111658,
           "docker_cp_count_before_after": {
             "after": 2,
             "basis": "deterministic setup command plan for config transfer",
@@ -1097,7 +1102,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary/valkey.log",
               "logical_id": "shard-0002-primary",
-              "pid": 131,
+              "pid": 125,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0002-primary/valkey.pid"
             },
             {
@@ -1106,7 +1111,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary/valkey.log",
               "logical_id": "shard-0003-primary",
-              "pid": 131,
+              "pid": 125,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0003-primary/valkey.pid"
             },
             {
@@ -1115,7 +1120,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary/valkey.log",
               "logical_id": "shard-0004-primary",
-              "pid": 140,
+              "pid": 134,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0004-primary/valkey.pid"
             },
             {
@@ -1124,7 +1129,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary/valkey.log",
               "logical_id": "shard-0005-primary",
-              "pid": 140,
+              "pid": 137,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-primary/valkey.pid"
             },
             {
@@ -1142,7 +1147,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary/valkey.log",
               "logical_id": "shard-0007-primary",
-              "pid": 149,
+              "pid": 143,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-primary/valkey.pid"
             },
             {
@@ -1151,7 +1156,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary/valkey.log",
               "logical_id": "shard-0008-primary",
-              "pid": 152,
+              "pid": 158,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0008-primary/valkey.pid"
             },
             {
@@ -1160,7 +1165,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary/valkey.log",
               "logical_id": "shard-0009-primary",
-              "pid": 152,
+              "pid": 158,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0009-primary/valkey.pid"
             },
             {
@@ -1178,7 +1183,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary/valkey.log",
               "logical_id": "shard-0011-primary",
-              "pid": 167,
+              "pid": 166,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0011-primary/valkey.pid"
             },
             {
@@ -1187,7 +1192,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary/valkey.log",
               "logical_id": "shard-0012-primary",
-              "pid": 176,
+              "pid": 170,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-primary/valkey.pid"
             },
             {
@@ -1223,7 +1228,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary/valkey.log",
               "logical_id": "shard-0016-primary",
-              "pid": 194,
+              "pid": 188,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0016-primary/valkey.pid"
             },
             {
@@ -1250,7 +1255,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary/valkey.log",
               "logical_id": "shard-0019-primary",
-              "pid": 203,
+              "pid": 202,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0019-primary/valkey.pid"
             },
             {
@@ -1259,7 +1264,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary/valkey.log",
               "logical_id": "shard-0020-primary",
-              "pid": 212,
+              "pid": 206,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0020-primary/valkey.pid"
             },
             {
@@ -1268,7 +1273,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary/valkey.log",
               "logical_id": "shard-0021-primary",
-              "pid": 212,
+              "pid": 206,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0021-primary/valkey.pid"
             },
             {
@@ -1295,7 +1300,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary/valkey.log",
               "logical_id": "shard-0024-primary",
-              "pid": 230,
+              "pid": 224,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-primary/valkey.pid"
             },
             {
@@ -1304,7 +1309,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary/valkey.log",
               "logical_id": "shard-0025-primary",
-              "pid": 230,
+              "pid": 227,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-primary/valkey.pid"
             },
             {
@@ -1322,7 +1327,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary/valkey.log",
               "logical_id": "shard-0027-primary",
-              "pid": 233,
+              "pid": 239,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0027-primary/valkey.pid"
             },
             {
@@ -1349,7 +1354,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary/valkey.log",
               "logical_id": "shard-0030-primary",
-              "pid": 257,
+              "pid": 251,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0030-primary/valkey.pid"
             },
             {
@@ -1385,7 +1390,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary/valkey.log",
               "logical_id": "shard-0034-primary",
-              "pid": 275,
+              "pid": 269,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-primary/valkey.pid"
             },
             {
@@ -1412,7 +1417,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary/valkey.log",
               "logical_id": "shard-0037-primary",
-              "pid": 284,
+              "pid": 278,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-primary/valkey.pid"
             },
             {
@@ -1421,7 +1426,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary/valkey.log",
               "logical_id": "shard-0038-primary",
-              "pid": 293,
+              "pid": 287,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-primary/valkey.pid"
             },
             {
@@ -1430,7 +1435,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary/valkey.log",
               "logical_id": "shard-0039-primary",
-              "pid": 293,
+              "pid": 287,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-primary/valkey.pid"
             },
             {
@@ -1439,7 +1444,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary/valkey.log",
               "logical_id": "shard-0040-primary",
-              "pid": 302,
+              "pid": 296,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-primary/valkey.pid"
             },
             {
@@ -1448,7 +1453,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary/valkey.log",
               "logical_id": "shard-0041-primary",
-              "pid": 302,
+              "pid": 301,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-primary/valkey.pid"
             },
             {
@@ -1475,7 +1480,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary/valkey.log",
               "logical_id": "shard-0044-primary",
-              "pid": 320,
+              "pid": 314,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-primary/valkey.pid"
             },
             {
@@ -1520,7 +1525,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary/valkey.log",
               "logical_id": "shard-0049-primary",
-              "pid": 338,
+              "pid": 332,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-primary/valkey.pid"
             },
             {
@@ -1538,7 +1543,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00/valkey.log",
               "logical_id": "shard-0001-replica-00",
-              "pid": 347,
+              "pid": 341,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0001-replica-00/valkey.pid"
             },
             {
@@ -1574,7 +1579,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00/valkey.log",
               "logical_id": "shard-0005-replica-00",
-              "pid": 365,
+              "pid": 359,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0005-replica-00/valkey.pid"
             },
             {
@@ -1592,7 +1597,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00/valkey.log",
               "logical_id": "shard-0007-replica-00",
-              "pid": 374,
+              "pid": 368,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0007-replica-00/valkey.pid"
             },
             {
@@ -1637,7 +1642,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00/valkey.log",
               "logical_id": "shard-0012-replica-00",
-              "pid": 395,
+              "pid": 401,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0012-replica-00/valkey.pid"
             },
             {
@@ -1745,7 +1750,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00/valkey.log",
               "logical_id": "shard-0024-replica-00",
-              "pid": 449,
+              "pid": 455,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0024-replica-00/valkey.pid"
             },
             {
@@ -1754,7 +1759,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00/valkey.log",
               "logical_id": "shard-0025-replica-00",
-              "pid": 449,
+              "pid": 455,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0025-replica-00/valkey.pid"
             },
             {
@@ -1763,7 +1768,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00/valkey.log",
               "logical_id": "shard-0026-replica-00",
-              "pid": 464,
+              "pid": 458,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0026-replica-00/valkey.pid"
             },
             {
@@ -1790,7 +1795,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00/valkey.log",
               "logical_id": "shard-0029-replica-00",
-              "pid": 473,
+              "pid": 467,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0029-replica-00/valkey.pid"
             },
             {
@@ -1808,7 +1813,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00/valkey.log",
               "logical_id": "shard-0031-replica-00",
-              "pid": 482,
+              "pid": 476,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0031-replica-00/valkey.pid"
             },
             {
@@ -1826,7 +1831,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00/valkey.log",
               "logical_id": "shard-0033-replica-00",
-              "pid": 491,
+              "pid": 485,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0033-replica-00/valkey.pid"
             },
             {
@@ -1835,7 +1840,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00/valkey.log",
               "logical_id": "shard-0034-replica-00",
-              "pid": 494,
+              "pid": 500,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0034-replica-00/valkey.pid"
             },
             {
@@ -1853,7 +1858,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00/valkey.log",
               "logical_id": "shard-0036-replica-00",
-              "pid": 503,
+              "pid": 509,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0036-replica-00/valkey.pid"
             },
             {
@@ -1862,7 +1867,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00/valkey.log",
               "logical_id": "shard-0037-replica-00",
-              "pid": 503,
+              "pid": 509,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0037-replica-00/valkey.pid"
             },
             {
@@ -1871,7 +1876,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00/valkey.log",
               "logical_id": "shard-0038-replica-00",
-              "pid": 512,
+              "pid": 518,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0038-replica-00/valkey.pid"
             },
             {
@@ -1880,7 +1885,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00/valkey.log",
               "logical_id": "shard-0039-replica-00",
-              "pid": 506,
+              "pid": 518,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0039-replica-00/valkey.pid"
             },
             {
@@ -1889,7 +1894,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00/valkey.log",
               "logical_id": "shard-0040-replica-00",
-              "pid": 521,
+              "pid": 527,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0040-replica-00/valkey.pid"
             },
             {
@@ -1898,7 +1903,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00/valkey.log",
               "logical_id": "shard-0041-replica-00",
-              "pid": 515,
+              "pid": 527,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0041-replica-00/valkey.pid"
             },
             {
@@ -1925,7 +1930,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00/valkey.log",
               "logical_id": "shard-0044-replica-00",
-              "pid": 545,
+              "pid": 539,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0044-replica-00/valkey.pid"
             },
             {
@@ -1934,7 +1939,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00/valkey.log",
               "logical_id": "shard-0045-replica-00",
-              "pid": 545,
+              "pid": 539,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0045-replica-00/valkey.pid"
             },
             {
@@ -1952,7 +1957,7 @@
               "data_dir": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00",
               "log_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00/valkey.log",
               "logical_id": "shard-0047-replica-00",
-              "pid": 554,
+              "pid": 548,
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0047-replica-00/valkey.pid"
             },
             {
@@ -1974,12 +1979,12 @@
               "pid_file": "/tmp/valkey-scale-lab/P13_SCALE_LADDER_50_100-scale_100-20260628/shard-0049-replica-00/valkey.pid"
             }
           ],
-          "pidfile_collect_seconds": 0.080519,
-          "process_start_command_seconds": 0.338232
+          "pidfile_collect_seconds": 0.062434,
+          "process_start_command_seconds": 0.251646
         },
-        "process_start_command_seconds": 0.338232
+        "process_start_command_seconds": 0.251646
       },
-      "duration_seconds": 0.418777,
+      "duration_seconds": 0.314088,
       "name": "process_start",
       "status": "PASS"
     },
@@ -1988,24 +1993,24 @@
       "details": {
         "node_count": 100
       },
-      "duration_seconds": 0.098836,
+      "duration_seconds": 0.074443,
       "name": "process_ready_wait",
       "status": "PASS"
     },
     {
       "count": 1,
       "details": {
-        "cluster_create_command_seconds": 33.407417,
+        "cluster_create_command_seconds": 102.713486,
         "parallelism": 8,
-        "primary_convergence_seconds": 0.003048,
+        "primary_convergence_seconds": 0.00188,
         "primary_count": 50,
         "primary_meet_seconds": 0.0,
-        "probe_slot_assignment_seconds": 0.015837,
+        "probe_slot_assignment_seconds": 0.01353,
         "slot_assignment_scope": "inside_valkey_cli_cluster_create",
         "slot_assignment_seconds": 0.0,
         "strategy": "valkey_cli_cluster_create_primaries"
       },
-      "duration_seconds": 33.42635,
+      "duration_seconds": 102.728968,
       "name": "primary_cluster_create",
       "status": "PASS"
     },
@@ -2017,7 +2022,7 @@
         "parallelism": 8,
         "replica_count": 50
       },
-      "duration_seconds": 5.100692,
+      "duration_seconds": 3.050774,
       "name": "replica_meet",
       "status": "PASS"
     },
@@ -2032,725 +2037,725 @@
         "replica_diagnostics": [
           {
             "logical_id": "shard-0000-replica-00",
-            "master_id": "be7fd8fb498512afb2632d704539ac433d042445",
-            "replica_knows_master_wait_seconds": 0.009031,
+            "master_id": "a7fdd685c10d2084727df1828d6757c527b8805e",
+            "replica_knows_master_wait_seconds": 0.003139,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.026673,
+            "replica_replicaof_wait_seconds": 0.014852,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.006384,
+            "replica_replicate_command_seconds": 0.018353,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.042088,
+            "replica_replicate_total_seconds": 0.036344,
             "shard_id": "shard-0000",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0001-replica-00",
-            "master_id": "f3c152a1975c0da2fde649d591f51b936ab04905",
-            "replica_knows_master_wait_seconds": 0.00986,
+            "master_id": "4616cf8c91cbff9da63a7fcbb5b74435bfeeace5",
+            "replica_knows_master_wait_seconds": 0.00271,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.031628,
+            "replica_replicaof_wait_seconds": 0.01405,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.006086,
+            "replica_replicate_command_seconds": 0.004511,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.047574,
+            "replica_replicate_total_seconds": 0.021271,
             "shard_id": "shard-0001",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0002-replica-00",
-            "master_id": "8eb3a3b722f1ab38464a9c35c2e223724bb1aff4",
-            "replica_knows_master_wait_seconds": 0.008207,
+            "master_id": "e9bcc67d01c23181f7ce8a8ba96bbd5033bb94a2",
+            "replica_knows_master_wait_seconds": 0.001928,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.030341,
+            "replica_replicaof_wait_seconds": 0.014534,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.008233,
+            "replica_replicate_command_seconds": 0.019188,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.046781,
+            "replica_replicate_total_seconds": 0.03565,
             "shard_id": "shard-0002",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0003-replica-00",
-            "master_id": "7ec5e21cc3a3fe8b4bef9a69be5c6eae29f34ae5",
-            "replica_knows_master_wait_seconds": 0.008672,
+            "master_id": "074be5d613886d49fc9fa1711489da6d11245cd3",
+            "replica_knows_master_wait_seconds": 0.002203,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.031061,
+            "replica_replicaof_wait_seconds": 0.014316,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.009304,
+            "replica_replicate_command_seconds": 0.003934,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.049037,
+            "replica_replicate_total_seconds": 0.020453,
             "shard_id": "shard-0003",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0004-replica-00",
-            "master_id": "3aa4d12720cb6a44adbaa57bd78a118debb15f3f",
-            "replica_knows_master_wait_seconds": 0.008944,
+            "master_id": "25eaeaee4e9ef5c76f2a5ceaa11e53dcd08bec11",
+            "replica_knows_master_wait_seconds": 0.002003,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.030638,
+            "replica_replicaof_wait_seconds": 0.012584,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.005965,
+            "replica_replicate_command_seconds": 0.019785,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.045547,
+            "replica_replicate_total_seconds": 0.034372,
             "shard_id": "shard-0004",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0005-replica-00",
-            "master_id": "609e5bb218509b65e2a173f29e346db59a1375c5",
-            "replica_knows_master_wait_seconds": 0.007721,
+            "master_id": "5d8ca92701bf86fba0bbebcd6457f2e6dfe173f9",
+            "replica_knows_master_wait_seconds": 0.002222,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.026261,
+            "replica_replicaof_wait_seconds": 0.01262,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.033726,
+            "replica_replicate_command_seconds": 0.031044,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.067708,
+            "replica_replicate_total_seconds": 0.045886,
             "shard_id": "shard-0005",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0006-replica-00",
-            "master_id": "2443023322b0cdf448d125640b199f08e774236b",
-            "replica_knows_master_wait_seconds": 0.008922,
+            "master_id": "c1c6ea335dc9287ad8fa1fe7ad1b6536b409405f",
+            "replica_knows_master_wait_seconds": 0.002201,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.029274,
+            "replica_replicaof_wait_seconds": 0.013771,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.030125,
+            "replica_replicate_command_seconds": 0.021145,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.068321,
+            "replica_replicate_total_seconds": 0.037117,
             "shard_id": "shard-0006",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0007-replica-00",
-            "master_id": "0d4d299cbe014ebbc7c435472bd1419821b66eb2",
-            "replica_knows_master_wait_seconds": 0.008319,
+            "master_id": "28d7bb6e6bb4db1a4b69300b9548680a25da6909",
+            "replica_knows_master_wait_seconds": 0.002056,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.030474,
+            "replica_replicaof_wait_seconds": 0.012206,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.032987,
+            "replica_replicate_command_seconds": 0.01931,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.07178,
+            "replica_replicate_total_seconds": 0.033572,
             "shard_id": "shard-0007",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0008-replica-00",
-            "master_id": "93219596e93ffa31a90bd28d064767735899de9a",
-            "replica_knows_master_wait_seconds": 0.003399,
+            "master_id": "d75f13633b26ca58d74d60c8ce93211b322782dd",
+            "replica_knows_master_wait_seconds": 0.001241,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.004152,
+            "replica_replicaof_wait_seconds": 0.001697,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.042637,
+            "replica_replicate_command_seconds": 0.018312,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.050188,
+            "replica_replicate_total_seconds": 0.02125,
             "shard_id": "shard-0008",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0009-replica-00",
-            "master_id": "1bac24d7b4ea0cb92f7e41cebf0fe0fb168c4ad6",
-            "replica_knows_master_wait_seconds": 0.002772,
+            "master_id": "3d0682fdaf451d0f92a58359c883df4e2cfb846c",
+            "replica_knows_master_wait_seconds": 0.002003,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.00119,
+            "replica_replicaof_wait_seconds": 0.002519,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.059273,
+            "replica_replicate_command_seconds": 0.015491,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.063235,
+            "replica_replicate_total_seconds": 0.020013,
             "shard_id": "shard-0009",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0010-replica-00",
-            "master_id": "a81d505d65c59c4529002cd7cc131da9b49669c8",
-            "replica_knows_master_wait_seconds": 0.002858,
+            "master_id": "cf373ec22e7e3534eb3d98827665dcb13bfd040a",
+            "replica_knows_master_wait_seconds": 0.002638,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.000982,
+            "replica_replicaof_wait_seconds": 0.001985,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.06017,
+            "replica_replicate_command_seconds": 0.037244,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.06401,
+            "replica_replicate_total_seconds": 0.041867,
             "shard_id": "shard-0010",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0011-replica-00",
-            "master_id": "060d203d01ee6779f9fe42b1aa59f03fe26a7910",
-            "replica_knows_master_wait_seconds": 0.002942,
+            "master_id": "050b5301c7c404914ebb3ddce55d7c7803da97ff",
+            "replica_knows_master_wait_seconds": 0.002864,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001725,
+            "replica_replicaof_wait_seconds": 0.001396,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.039585,
+            "replica_replicate_command_seconds": 0.036199,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.044252,
+            "replica_replicate_total_seconds": 0.040459,
             "shard_id": "shard-0011",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0012-replica-00",
-            "master_id": "dd8b4e818bafb98a4221cb13bf499b544f951bcc",
-            "replica_knows_master_wait_seconds": 0.003071,
+            "master_id": "1290245d8a79dc8e81448e405852354305c7817c",
+            "replica_knows_master_wait_seconds": 0.002927,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002421,
+            "replica_replicaof_wait_seconds": 0.001063,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.060381,
+            "replica_replicate_command_seconds": 0.033406,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.065873,
+            "replica_replicate_total_seconds": 0.037396,
             "shard_id": "shard-0012",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0013-replica-00",
-            "master_id": "62f484af946c0d35bca9134ebe921920a5200f42",
-            "replica_knows_master_wait_seconds": 0.002784,
+            "master_id": "7aefa7213299b0328fe49e5e5ccf51e22d1017d3",
+            "replica_knows_master_wait_seconds": 0.002478,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001761,
+            "replica_replicaof_wait_seconds": 0.001395,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.035364,
+            "replica_replicate_command_seconds": 0.035393,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.039909,
+            "replica_replicate_total_seconds": 0.039266,
             "shard_id": "shard-0013",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0014-replica-00",
-            "master_id": "f5079cb064905ac90d6491be08ed770191ff8118",
-            "replica_knows_master_wait_seconds": 0.003731,
+            "master_id": "e4becb8cfbd5e11c5a90d8c5772419cc6e4a480a",
+            "replica_knows_master_wait_seconds": 0.00245,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001968,
+            "replica_replicaof_wait_seconds": 0.00114,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.035597,
+            "replica_replicate_command_seconds": 0.03556,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.041296,
+            "replica_replicate_total_seconds": 0.03915,
             "shard_id": "shard-0014",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0015-replica-00",
-            "master_id": "120ad9cdeb7f12e9197771df6bb7a2f5aafa8fa5",
-            "replica_knows_master_wait_seconds": 0.003395,
+            "master_id": "367f37a454a4b9499086a56a145cb479a9c1a7c0",
+            "replica_knows_master_wait_seconds": 0.00241,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002462,
+            "replica_replicaof_wait_seconds": 0.001335,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.07144,
+            "replica_replicate_command_seconds": 0.034021,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.077297,
+            "replica_replicate_total_seconds": 0.037766,
             "shard_id": "shard-0015",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0016-replica-00",
-            "master_id": "f7bc25d146ccc85922f41ff74b60c9dd83df8071",
-            "replica_knows_master_wait_seconds": 0.007076,
+            "master_id": "4d2a0342a4d8bcf85b4bc4c62643a858950225d4",
+            "replica_knows_master_wait_seconds": 0.00249,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002464,
+            "replica_replicaof_wait_seconds": 0.001443,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.042065,
+            "replica_replicate_command_seconds": 0.021451,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.051605,
+            "replica_replicate_total_seconds": 0.025384,
             "shard_id": "shard-0016",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0017-replica-00",
-            "master_id": "31de1d62217541e9126db887fbf093b5244c7b20",
-            "replica_knows_master_wait_seconds": 0.007247,
+            "master_id": "0169a9a379cfe9ffc57f577ebb90d04428b9e6fa",
+            "replica_knows_master_wait_seconds": 0.00209,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002622,
+            "replica_replicaof_wait_seconds": 0.001131,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.020455,
+            "replica_replicate_command_seconds": 0.039306,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.030324,
+            "replica_replicate_total_seconds": 0.042527,
             "shard_id": "shard-0017",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0018-replica-00",
-            "master_id": "ef064c95cfb73dff7df5f4ee35adc54f7a940847",
-            "replica_knows_master_wait_seconds": 0.005981,
+            "master_id": "cbd401569483bd28a5823632501bd29019a44bae",
+            "replica_knows_master_wait_seconds": 0.004209,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.00166,
+            "replica_replicaof_wait_seconds": 0.001234,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.057709,
+            "replica_replicate_command_seconds": 0.026946,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.06535,
+            "replica_replicate_total_seconds": 0.032389,
             "shard_id": "shard-0018",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0019-replica-00",
-            "master_id": "804d92a4509b0960a51b2a58a051fc61d2522c64",
-            "replica_knows_master_wait_seconds": 0.006548,
+            "master_id": "53559b650eeee59ad0b9cc8a67185ca6296503b0",
+            "replica_knows_master_wait_seconds": 0.005137,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002202,
+            "replica_replicaof_wait_seconds": 0.00103,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.084362,
+            "replica_replicate_command_seconds": 0.033551,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.093112,
+            "replica_replicate_total_seconds": 0.039718,
             "shard_id": "shard-0019",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0020-replica-00",
-            "master_id": "18ad6daaa7e0e5adfe72e413fd5d0076392fcb5a",
-            "replica_knows_master_wait_seconds": 0.005285,
+            "master_id": "4e4e15ecda24c30620a916fa40b36b82c5f97d4d",
+            "replica_knows_master_wait_seconds": 0.006566,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002027,
+            "replica_replicaof_wait_seconds": 0.001152,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.023444,
+            "replica_replicate_command_seconds": 0.045265,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.030756,
+            "replica_replicate_total_seconds": 0.052983,
             "shard_id": "shard-0020",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0021-replica-00",
-            "master_id": "173b2f8c3cf846a026ca2a5106319e4f6fdd23b2",
-            "replica_knows_master_wait_seconds": 0.006289,
+            "master_id": "bdfd50081f43fa17a8eef9fe24b831070fa1061c",
+            "replica_knows_master_wait_seconds": 0.007676,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.003005,
+            "replica_replicaof_wait_seconds": 0.001299,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.078274,
+            "replica_replicate_command_seconds": 0.019159,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.087568,
+            "replica_replicate_total_seconds": 0.028134,
             "shard_id": "shard-0021",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0022-replica-00",
-            "master_id": "bf68669b03a11a40e810862f46668c915875557e",
-            "replica_knows_master_wait_seconds": 0.006609,
+            "master_id": "61a93cb709cfc42308a08610ac895abfbf207d9c",
+            "replica_knows_master_wait_seconds": 0.005826,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002519,
+            "replica_replicaof_wait_seconds": 0.001335,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.020958,
+            "replica_replicate_command_seconds": 0.047237,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.030086,
+            "replica_replicate_total_seconds": 0.054398,
             "shard_id": "shard-0022",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0023-replica-00",
-            "master_id": "1926b70331fd7fba9bdce491b9c86f2742f2307d",
-            "replica_knows_master_wait_seconds": 0.00669,
+            "master_id": "54da958fd3e9ebcbf3b6ed52886167b076706061",
+            "replica_knows_master_wait_seconds": 0.005573,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.003478,
+            "replica_replicaof_wait_seconds": 0.001067,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.037645,
+            "replica_replicate_command_seconds": 0.044688,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.047813,
+            "replica_replicate_total_seconds": 0.051328,
             "shard_id": "shard-0023",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0024-replica-00",
-            "master_id": "475aa8b13d11a64fe5b3a76e3b0fc96e61c33af3",
-            "replica_knows_master_wait_seconds": 0.003157,
+            "master_id": "c7c05cf7be55d2988759159da0628f6747423664",
+            "replica_knows_master_wait_seconds": 0.005449,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002346,
+            "replica_replicaof_wait_seconds": 0.001267,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.019216,
+            "replica_replicate_command_seconds": 0.027269,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.024719,
+            "replica_replicate_total_seconds": 0.033985,
             "shard_id": "shard-0024",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0025-replica-00",
-            "master_id": "74d547a3948453ca63dd5410cd6da2e9be684c2c",
-            "replica_knows_master_wait_seconds": 0.002827,
+            "master_id": "d3a37ae33db46cd1c70ded0682e738f5d1c04bb2",
+            "replica_knows_master_wait_seconds": 0.005405,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002681,
+            "replica_replicaof_wait_seconds": 0.001339,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.098974,
+            "replica_replicate_command_seconds": 0.029598,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.104482,
+            "replica_replicate_total_seconds": 0.036342,
             "shard_id": "shard-0025",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0026-replica-00",
-            "master_id": "0ccf6fb253d99fb6c2cd62ddf5c401e2f1b2fd48",
-            "replica_knows_master_wait_seconds": 0.005346,
+            "master_id": "afa7f655c49010452cca2afdbf8048b7c95184f7",
+            "replica_knows_master_wait_seconds": 0.004509,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002172,
+            "replica_replicaof_wait_seconds": 0.001315,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.065095,
+            "replica_replicate_command_seconds": 0.027631,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.072613,
+            "replica_replicate_total_seconds": 0.033455,
             "shard_id": "shard-0026",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0027-replica-00",
-            "master_id": "08e7f51d6122ce275cc99af0609e801ba69ff68a",
-            "replica_knows_master_wait_seconds": 0.004255,
+            "master_id": "b38766e14033fef2947700954e7c9de6f04eda8e",
+            "replica_knows_master_wait_seconds": 0.003653,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.003162,
+            "replica_replicaof_wait_seconds": 0.001334,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.106495,
+            "replica_replicate_command_seconds": 0.044737,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.113912,
+            "replica_replicate_total_seconds": 0.049724,
             "shard_id": "shard-0027",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0028-replica-00",
-            "master_id": "0c7a671b75aea26ea69c7a1e1be8e8004460da2e",
-            "replica_knows_master_wait_seconds": 0.004691,
+            "master_id": "3d5043cbe51005ff5b59386a54da44c978942975",
+            "replica_knows_master_wait_seconds": 0.003859,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002569,
+            "replica_replicaof_wait_seconds": 0.001589,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.104785,
+            "replica_replicate_command_seconds": 0.036521,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.112045,
+            "replica_replicate_total_seconds": 0.041969,
             "shard_id": "shard-0028",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0029-replica-00",
-            "master_id": "b70341da79c0e73bec01a954bd616dd90725e665",
-            "replica_knows_master_wait_seconds": 0.004397,
+            "master_id": "bdec381627622fe3c55ffe3f4da79b687b7109a9",
+            "replica_knows_master_wait_seconds": 0.003318,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.00201,
+            "replica_replicaof_wait_seconds": 0.001155,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.129091,
+            "replica_replicate_command_seconds": 0.032358,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.135498,
+            "replica_replicate_total_seconds": 0.036831,
             "shard_id": "shard-0029",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0030-replica-00",
-            "master_id": "62737b1a1a01e23947a2420ff23ee119b7f3d635",
-            "replica_knows_master_wait_seconds": 0.002591,
+            "master_id": "1d2b34b5b9d20a493f1a10cba06c9418510d0407",
+            "replica_knows_master_wait_seconds": 0.003415,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001984,
+            "replica_replicaof_wait_seconds": 0.001287,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.065467,
+            "replica_replicate_command_seconds": 0.044336,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.070042,
+            "replica_replicate_total_seconds": 0.049038,
             "shard_id": "shard-0030",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0031-replica-00",
-            "master_id": "f38419f66abf9f1861a3b9961416f7eba4ddc6ee",
-            "replica_knows_master_wait_seconds": 0.00436,
+            "master_id": "f9c2e5bf64f46b0c0e922e696ffacffd6ad43e29",
+            "replica_knows_master_wait_seconds": 0.00288,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002151,
+            "replica_replicaof_wait_seconds": 0.001418,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.119742,
+            "replica_replicate_command_seconds": 0.019251,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.126253,
+            "replica_replicate_total_seconds": 0.023549,
             "shard_id": "shard-0031",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0032-replica-00",
-            "master_id": "4040bffcad6a7977281515895a9e0c6f36b25b19",
-            "replica_knows_master_wait_seconds": 0.00374,
+            "master_id": "5ecbd76c58008b436c9f60b512a51ca7ea473a76",
+            "replica_knows_master_wait_seconds": 0.00306,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002066,
+            "replica_replicaof_wait_seconds": 0.001119,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.088949,
+            "replica_replicate_command_seconds": 0.034409,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.094755,
+            "replica_replicate_total_seconds": 0.038588,
             "shard_id": "shard-0032",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0033-replica-00",
-            "master_id": "ac7eeb64165120e327878991dbcae419b88089af",
-            "replica_knows_master_wait_seconds": 0.003198,
+            "master_id": "f08fdc57430563d436bd5b558a01d68498ee5119",
+            "replica_knows_master_wait_seconds": 0.002029,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002137,
+            "replica_replicaof_wait_seconds": 0.00162,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.032793,
+            "replica_replicate_command_seconds": 0.018942,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.038128,
+            "replica_replicate_total_seconds": 0.022591,
             "shard_id": "shard-0033",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0034-replica-00",
-            "master_id": "b21e6cf79af2bed5a82f1bce814ebc54578ec81b",
-            "replica_knows_master_wait_seconds": 0.003422,
+            "master_id": "7ca9c7fb38e05108ec00ce6249025cbc011f41fe",
+            "replica_knows_master_wait_seconds": 0.002383,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001999,
+            "replica_replicaof_wait_seconds": 0.001278,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.115677,
+            "replica_replicate_command_seconds": 0.016777,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.121098,
+            "replica_replicate_total_seconds": 0.020438,
             "shard_id": "shard-0034",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0035-replica-00",
-            "master_id": "8ad0fbfd6010acd38b1b8740451ecc5c3d5711c7",
-            "replica_knows_master_wait_seconds": 0.002754,
+            "master_id": "996e67c693e3bf0581b0b82a20bda037c7646229",
+            "replica_knows_master_wait_seconds": 0.002492,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001905,
+            "replica_replicaof_wait_seconds": 0.001828,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.050746,
+            "replica_replicate_command_seconds": 0.047851,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.055405,
+            "replica_replicate_total_seconds": 0.052171,
             "shard_id": "shard-0035",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0036-replica-00",
-            "master_id": "2a5d2dec934085e09c383f498feb65079309a57c",
-            "replica_knows_master_wait_seconds": 0.002968,
+            "master_id": "b5e60c694414c8d80f6b64a0684d7119c83e1633",
+            "replica_knows_master_wait_seconds": 0.002889,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002006,
+            "replica_replicaof_wait_seconds": 0.001704,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.0572,
+            "replica_replicate_command_seconds": 0.012385,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.062174,
+            "replica_replicate_total_seconds": 0.016978,
             "shard_id": "shard-0036",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0037-replica-00",
-            "master_id": "469204df3ebb7321b84e6b8f8df449d8c8ef7f96",
-            "replica_knows_master_wait_seconds": 0.002482,
+            "master_id": "010e405fa34f199b2640d56b773ee85ef52a4770",
+            "replica_knows_master_wait_seconds": 0.00232,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002258,
+            "replica_replicaof_wait_seconds": 0.001707,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.112006,
+            "replica_replicate_command_seconds": 0.050307,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.116746,
+            "replica_replicate_total_seconds": 0.054334,
             "shard_id": "shard-0037",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0038-replica-00",
-            "master_id": "0e1dfd1aff002a36a6ccaa2aeb78e4ceb1f96cf6",
-            "replica_knows_master_wait_seconds": 0.002783,
+            "master_id": "e8ec353a9d705f2bf31b5d621cebbf85bc7716bb",
+            "replica_knows_master_wait_seconds": 0.002349,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001762,
+            "replica_replicaof_wait_seconds": 0.001211,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.092486,
+            "replica_replicate_command_seconds": 0.047479,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.097031,
+            "replica_replicate_total_seconds": 0.051039,
             "shard_id": "shard-0038",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0039-replica-00",
-            "master_id": "659d322a6ccca3ad394627d1908ecda06673810e",
-            "replica_knows_master_wait_seconds": 0.002808,
+            "master_id": "7716eae2f0083a357908276535fca5999ca57af6",
+            "replica_knows_master_wait_seconds": 0.002241,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002252,
+            "replica_replicaof_wait_seconds": 0.00161,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.106673,
+            "replica_replicate_command_seconds": 0.012288,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.111733,
+            "replica_replicate_total_seconds": 0.016139,
             "shard_id": "shard-0039",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0040-replica-00",
-            "master_id": "59f4043ba96b8a20c264a0544ba97c9fa05a9b98",
-            "replica_knows_master_wait_seconds": 0.002858,
+            "master_id": "84e6ee25a641125f2ccafd6f03c06cd42b4a819d",
+            "replica_knows_master_wait_seconds": 0.002341,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001832,
+            "replica_replicaof_wait_seconds": 0.001635,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.103532,
+            "replica_replicate_command_seconds": 0.050223,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.108222,
+            "replica_replicate_total_seconds": 0.054199,
             "shard_id": "shard-0040",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0041-replica-00",
-            "master_id": "b139de192bcd74b914a5614fd598c5cb83916504",
-            "replica_knows_master_wait_seconds": 0.00283,
+            "master_id": "436386bee062fcfbb41fe22147e04f093a326b84",
+            "replica_knows_master_wait_seconds": 0.002134,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002509,
+            "replica_replicaof_wait_seconds": 0.001676,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.069863,
+            "replica_replicate_command_seconds": 0.022566,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.075202,
+            "replica_replicate_total_seconds": 0.026376,
             "shard_id": "shard-0041",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0042-replica-00",
-            "master_id": "6e93c92dfdd6a8ef70e05ed99eeeaa91167f9516",
-            "replica_knows_master_wait_seconds": 0.002896,
+            "master_id": "c3e4bbb5e5b845a6b61123968258f05728996138",
+            "replica_knows_master_wait_seconds": 0.002601,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002071,
+            "replica_replicaof_wait_seconds": 0.001229,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.112482,
+            "replica_replicate_command_seconds": 0.05156,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.117449,
+            "replica_replicate_total_seconds": 0.05539,
             "shard_id": "shard-0042",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0043-replica-00",
-            "master_id": "5814b858883890e3b363837dea43117a61d3a4a5",
-            "replica_knows_master_wait_seconds": 0.002791,
+            "master_id": "569570df714d87b63a284887ca9bd2920d0c3e7b",
+            "replica_knows_master_wait_seconds": 0.003868,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001604,
+            "replica_replicaof_wait_seconds": 0.001081,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.042333,
+            "replica_replicate_command_seconds": 0.048671,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.046728,
+            "replica_replicate_total_seconds": 0.05362,
             "shard_id": "shard-0043",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0044-replica-00",
-            "master_id": "fcad336c864565d849bad73d48ce144f655cab84",
-            "replica_knows_master_wait_seconds": 0.00294,
+            "master_id": "33da628854eedf09791a281daf80a96ed734d0f7",
+            "replica_knows_master_wait_seconds": 0.003276,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002168,
+            "replica_replicaof_wait_seconds": 0.001319,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.082533,
+            "replica_replicate_command_seconds": 0.053829,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.087641,
+            "replica_replicate_total_seconds": 0.058424,
             "shard_id": "shard-0044",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0045-replica-00",
-            "master_id": "3c07a0fb43a0a503ed4f2ede0bdd4a8886e317b1",
-            "replica_knows_master_wait_seconds": 0.002635,
+            "master_id": "3b5ec4358f37568654bf136cc8f8d786d3a1fb2e",
+            "replica_knows_master_wait_seconds": 0.003216,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001796,
+            "replica_replicaof_wait_seconds": 0.001438,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.106624,
+            "replica_replicate_command_seconds": 0.009253,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.111055,
+            "replica_replicate_total_seconds": 0.013907,
             "shard_id": "shard-0045",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0046-replica-00",
-            "master_id": "7c8354b9f0cc34cc51f347e3cfd60d22d764d2cf",
-            "replica_knows_master_wait_seconds": 0.00277,
+            "master_id": "01589bf4f8115cebc690ee3ebb0cea57c01303f5",
+            "replica_knows_master_wait_seconds": 0.003466,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001876,
+            "replica_replicaof_wait_seconds": 0.001248,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.077689,
+            "replica_replicate_command_seconds": 0.04658,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.082335,
+            "replica_replicate_total_seconds": 0.051294,
             "shard_id": "shard-0046",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0047-replica-00",
-            "master_id": "ec7a0bb422e19cb683f9467902391630b1cde4e6",
-            "replica_knows_master_wait_seconds": 0.003021,
+            "master_id": "75459dd45384370b8c77c703d7699644854a1f04",
+            "replica_knows_master_wait_seconds": 0.003307,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002124,
+            "replica_replicaof_wait_seconds": 0.001375,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.099324,
+            "replica_replicate_command_seconds": 0.040814,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.104469,
+            "replica_replicate_total_seconds": 0.045496,
             "shard_id": "shard-0047",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0048-replica-00",
-            "master_id": "89106416510e3e696c26430e42a087da45d15b7d",
-            "replica_knows_master_wait_seconds": 0.002382,
+            "master_id": "6aee3c9d5bcbde3fa693c3686059ddd6ad50ef44",
+            "replica_knows_master_wait_seconds": 0.003121,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001588,
+            "replica_replicaof_wait_seconds": 0.001138,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.085299,
+            "replica_replicate_command_seconds": 0.033405,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.089269,
+            "replica_replicate_total_seconds": 0.037664,
             "shard_id": "shard-0048",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0049-replica-00",
-            "master_id": "6690572468ab403477037e928e5084fc25d36e15",
-            "replica_knows_master_wait_seconds": 0.002342,
+            "master_id": "0ba52ce10904c56c888edaa3fb66eb4bc1f7da02",
+            "replica_knows_master_wait_seconds": 0.003223,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.00149,
+            "replica_replicaof_wait_seconds": 0.001066,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.045024,
+            "replica_replicate_command_seconds": 0.022379,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.048856,
+            "replica_replicate_total_seconds": 0.026668,
             "shard_id": "shard-0049",
             "status": "PASS"
           }
         ],
-        "replica_knows_master_wait_seconds": 0.030857,
-        "replica_primary_id_lookup_seconds": 0.023286,
-        "replica_replicaof_wait_seconds": 0.042721,
-        "replica_replicate_command_seconds": 0.412685,
-        "replica_replicate_total_seconds": 0.509816,
+        "replica_knows_master_wait_seconds": 0.021069,
+        "replica_primary_id_lookup_seconds": 0.017613,
+        "replica_replicaof_wait_seconds": 0.021894,
+        "replica_replicate_command_seconds": 0.210775,
+        "replica_replicate_total_seconds": 0.271486,
         "slowest_count": 5,
         "slowest_replicas": [
           {
-            "logical_id": "shard-0029-replica-00",
-            "master_id": "b70341da79c0e73bec01a954bd616dd90725e665",
-            "replica_knows_master_wait_seconds": 0.004397,
+            "logical_id": "shard-0044-replica-00",
+            "master_id": "33da628854eedf09791a281daf80a96ed734d0f7",
+            "replica_knows_master_wait_seconds": 0.003276,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.00201,
+            "replica_replicaof_wait_seconds": 0.001319,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.129091,
+            "replica_replicate_command_seconds": 0.053829,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.135498,
-            "shard_id": "shard-0029",
-            "status": "PASS"
-          },
-          {
-            "logical_id": "shard-0031-replica-00",
-            "master_id": "f38419f66abf9f1861a3b9961416f7eba4ddc6ee",
-            "replica_knows_master_wait_seconds": 0.00436,
-            "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002151,
-            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.119742,
-            "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.126253,
-            "shard_id": "shard-0031",
-            "status": "PASS"
-          },
-          {
-            "logical_id": "shard-0034-replica-00",
-            "master_id": "b21e6cf79af2bed5a82f1bce814ebc54578ec81b",
-            "replica_knows_master_wait_seconds": 0.003422,
-            "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.001999,
-            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.115677,
-            "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.121098,
-            "shard_id": "shard-0034",
+            "replica_replicate_total_seconds": 0.058424,
+            "shard_id": "shard-0044",
             "status": "PASS"
           },
           {
             "logical_id": "shard-0042-replica-00",
-            "master_id": "6e93c92dfdd6a8ef70e05ed99eeeaa91167f9516",
-            "replica_knows_master_wait_seconds": 0.002896,
+            "master_id": "c3e4bbb5e5b845a6b61123968258f05728996138",
+            "replica_knows_master_wait_seconds": 0.002601,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002071,
+            "replica_replicaof_wait_seconds": 0.001229,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.112482,
+            "replica_replicate_command_seconds": 0.05156,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.117449,
+            "replica_replicate_total_seconds": 0.05539,
             "shard_id": "shard-0042",
             "status": "PASS"
           },
           {
-            "logical_id": "shard-0037-replica-00",
-            "master_id": "469204df3ebb7321b84e6b8f8df449d8c8ef7f96",
-            "replica_knows_master_wait_seconds": 0.002482,
+            "logical_id": "shard-0022-replica-00",
+            "master_id": "61a93cb709cfc42308a08610ac895abfbf207d9c",
+            "replica_knows_master_wait_seconds": 0.005826,
             "replica_knows_master_wait_seconds_result": "master_visible",
-            "replica_replicaof_wait_seconds": 0.002258,
+            "replica_replicaof_wait_seconds": 0.001335,
             "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
-            "replica_replicate_command_seconds": 0.112006,
+            "replica_replicate_command_seconds": 0.047237,
             "replica_replicate_command_seconds_result": "replicate_command_sent",
-            "replica_replicate_total_seconds": 0.116746,
+            "replica_replicate_total_seconds": 0.054398,
+            "shard_id": "shard-0022",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0037-replica-00",
+            "master_id": "010e405fa34f199b2640d56b773ee85ef52a4770",
+            "replica_knows_master_wait_seconds": 0.00232,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001707,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.050307,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.054334,
             "shard_id": "shard-0037",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0040-replica-00",
+            "master_id": "84e6ee25a641125f2ccafd6f03c06cd42b4a819d",
+            "replica_knows_master_wait_seconds": 0.002341,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.001635,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.050223,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.054199,
+            "shard_id": "shard-0040",
             "status": "PASS"
           }
         ],
@@ -2760,7 +2765,7 @@
           32
         ]
       },
-      "duration_seconds": 0.509886,
+      "duration_seconds": 0.271537,
       "name": "replica_replicate",
       "status": "PASS"
     },
@@ -2771,7 +2776,7 @@
         "sample_count": 2,
         "sample_scope": "representative"
       },
-      "duration_seconds": 0.015675,
+      "duration_seconds": 0.009173,
       "name": "runtime_representative_probe",
       "status": "PASS"
     },
@@ -2782,39 +2787,39 @@
         "sample_count": 100,
         "sample_scope": "all_nodes"
       },
-      "duration_seconds": 0.062771,
+      "duration_seconds": 0.046785,
       "name": "runtime_final_full_probe",
       "status": "PASS"
     },
     {
-      "count": 80,
+      "count": 69,
       "details": {
         "mode": "diagnostic",
         "predicate": "cluster clean snapshot did not converge",
         "sample_count": 100,
         "sample_scope": "all_nodes"
       },
-      "duration_seconds": 6.385143,
+      "duration_seconds": 4.434566,
       "name": "runtime_diagnostic_full_probe",
       "status": "FAIL"
     },
     {
       "name": "wrapper_wait_cluster_ok",
       "status": "PASS",
-      "duration_seconds": 0.057314,
+      "duration_seconds": 0.034365,
       "count": 1,
       "details": {
         "min_nodes": 100,
         "endpoint_count": 100,
-        "representative_probe_duration_seconds": 0.008182,
-        "final_full_probe_duration_seconds": 0.044593,
+        "representative_probe_duration_seconds": 0.004182,
+        "final_full_probe_duration_seconds": 0.028325,
         "diagnostic_full_probe_duration_seconds": "MISSING"
       }
     },
     {
       "name": "wrapper_data_path_probe",
       "status": "PASS",
-      "duration_seconds": 0.001544,
+      "duration_seconds": 0.001111,
       "count": 1,
       "details": {
         "required": true
@@ -2823,22 +2828,22 @@
     {
       "name": "cleanup",
       "status": "PASS",
-      "duration_seconds": 30.192626,
+      "duration_seconds": 7.429302,
       "count": 1,
       "details": {
         "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
         "exit_code": 0,
-        "cleanup_command_wall_seconds": 30.192303
+        "cleanup_command_wall_seconds": 7.429097
       }
     },
     {
       "name": "setup_command_wall",
       "status": "PASS",
-      "duration_seconds": 207.060863,
+      "duration_seconds": 248.41558,
       "count": 1,
       "details": {
         "command": [
-          "/Library/Developer/CommandLineTools/usr/bin/python3",
+          "/opt/anaconda3/bin/python3",
           "-m",
           "valkey_scale_lab.cli",
           "gate",
@@ -2860,7 +2865,7 @@
     {
       "name": "setup_stdout_write",
       "status": "PASS",
-      "duration_seconds": 0.000297,
+      "duration_seconds": 0.000243,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_100_setup.stdout.log"
@@ -2878,7 +2883,7 @@
     {
       "name": "state_load",
       "status": "PASS",
-      "duration_seconds": 0.002121,
+      "duration_seconds": 0.001109,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_100.json"
@@ -2887,7 +2892,7 @@
     {
       "name": "cleanup_command_wall",
       "status": "PASS",
-      "duration_seconds": 30.192303,
+      "duration_seconds": 7.429097,
       "count": 1,
       "details": {
         "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
@@ -2897,7 +2902,7 @@
     {
       "name": "cleanup_stdout_write",
       "status": "PASS",
-      "duration_seconds": 0.000157,
+      "duration_seconds": 0.000117,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_100_cleanup.stdout.log"
@@ -2906,7 +2911,7 @@
     {
       "name": "cleanup_stderr_write",
       "status": "PASS",
-      "duration_seconds": 5.4e-05,
+      "duration_seconds": 3.2e-05,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_100_cleanup.stderr.log"
@@ -2915,7 +2920,7 @@
     {
       "name": "artifact_write",
       "status": "PASS",
-      "duration_seconds": 0.003611,
+      "duration_seconds": 0.002338,
       "count": 1,
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
@@ -2924,8 +2929,8 @@
     }
   ],
   "wrapper_probe_details": {
-    "representative_probe_duration_seconds": 0.008182,
-    "final_full_probe_duration_seconds": 0.044593,
+    "representative_probe_duration_seconds": 0.004182,
+    "final_full_probe_duration_seconds": 0.028325,
     "diagnostic_full_probe_duration_seconds": "MISSING",
     "wait_cluster_ok_probe_counts": {
       "representative_probe": 1,
@@ -2934,24 +2939,24 @@
     }
   },
   "summary": {
-    "cluster_create_duration_seconds": 39.036928,
-    "replica_config_duration_seconds": 0.509886,
-    "wrapper_probe_duration_seconds": 0.058858,
-    "final_full_probe_duration_seconds": 0.044593,
+    "cluster_create_duration_seconds": 106.051279,
+    "replica_config_duration_seconds": 0.271537,
+    "wrapper_probe_duration_seconds": 0.035476,
+    "final_full_probe_duration_seconds": 0.028325,
     "diagnostic_full_probe_duration_seconds": "MISSING",
-    "total_gate_seconds": 237.319113,
-    "setup_command_wall_seconds": 207.060863,
-    "setup_stdout_write_seconds": 0.000297,
+    "total_gate_seconds": 255.884527,
+    "setup_command_wall_seconds": 248.41558,
+    "setup_stdout_write_seconds": 0.000243,
     "setup_stderr_write_seconds": 7.6e-05,
-    "state_load_seconds": 0.002121,
-    "wrapper_wait_cluster_ok_seconds": 0.057314,
-    "wrapper_data_path_probe_seconds": 0.001544,
-    "cleanup_command_wall_seconds": 30.192303,
-    "cleanup_stdout_write_seconds": 0.000157,
-    "cleanup_stderr_write_seconds": 5.4e-05,
-    "artifact_write_seconds": 0.003611,
-    "accounted_seconds": 237.31834,
-    "unattributed_seconds": 0.000773,
+    "state_load_seconds": 0.001109,
+    "wrapper_wait_cluster_ok_seconds": 0.034365,
+    "wrapper_data_path_probe_seconds": 0.001111,
+    "cleanup_command_wall_seconds": 7.429097,
+    "cleanup_stdout_write_seconds": 0.000117,
+    "cleanup_stderr_write_seconds": 3.2e-05,
+    "artifact_write_seconds": 0.002338,
+    "accounted_seconds": 255.884068,
+    "unattributed_seconds": 0.000459,
     "unattributed_status": "PASS",
     "unattributed_explanation": {
       "status": "PASS",
@@ -2959,19 +2964,19 @@
     }
   },
   "accounting": {
-    "total_gate_seconds": 237.319113,
-    "setup_command_wall_seconds": 207.060863,
-    "setup_stdout_write_seconds": 0.000297,
+    "total_gate_seconds": 255.884527,
+    "setup_command_wall_seconds": 248.41558,
+    "setup_stdout_write_seconds": 0.000243,
     "setup_stderr_write_seconds": 7.6e-05,
-    "state_load_seconds": 0.002121,
-    "wrapper_wait_cluster_ok_seconds": 0.057314,
-    "wrapper_data_path_probe_seconds": 0.001544,
-    "cleanup_command_wall_seconds": 30.192303,
-    "cleanup_stdout_write_seconds": 0.000157,
-    "cleanup_stderr_write_seconds": 5.4e-05,
-    "artifact_write_seconds": 0.003611,
-    "accounted_seconds": 237.31834,
-    "unattributed_seconds": 0.000773,
+    "state_load_seconds": 0.001109,
+    "wrapper_wait_cluster_ok_seconds": 0.034365,
+    "wrapper_data_path_probe_seconds": 0.001111,
+    "cleanup_command_wall_seconds": 7.429097,
+    "cleanup_stdout_write_seconds": 0.000117,
+    "cleanup_stderr_write_seconds": 3.2e-05,
+    "artifact_write_seconds": 0.002338,
+    "accounted_seconds": 255.884068,
+    "unattributed_seconds": 0.000459,
     "unattributed_status": "PASS",
     "unattributed_explanation": {
       "status": "PASS",

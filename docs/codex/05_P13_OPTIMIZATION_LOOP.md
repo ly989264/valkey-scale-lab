@@ -79,3 +79,24 @@ Pass criteria:
 - artifact records config local generation, remote install, process start command, pidfile collection, docker exec before/after, and docker cp before/after;
 - unit tests cover bundle generation and path safety;
 - integration tests cover 10/30-node bootstrap without per-node docker cp/mkdir/start regression.
+
+### P13O-07_SETUP_EXHAUSTIVE_TIMELINE
+
+Emit an exhaustive setup subprocess timeline for P13 `scale_50` and `scale_100`. The timeline is a sequential leaf-segment list with explicit `gap` segments, and parent phases such as `process_config_prepare`, `process_start`, and `cluster_formation` are represented only as hierarchy aggregates with `inclusive_duration_seconds`, `exclusive_duration_seconds`, and `children`.
+
+Required artifacts:
+
+- `artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json`
+- `artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json`
+- `artifacts/phases/P13O_SETUP_EXHAUSTIVE_TIMELINE/p13_setup_exhaustive_timeline.json`
+- `artifacts/phases/P13O_SETUP_EXHAUSTIVE_TIMELINE/phase_summary.json`
+
+Pass criteria:
+
+- P13 `scale_50` and `scale_100` real gates still pass with `--require-data-path`;
+- each setup timeline has non-overlapping segments and no silent gap larger than validator tolerance;
+- required setup stages are present, including config parse, port preflight, cleanup, network create, nodehost start, config bundle generation/copy/install, process start, readiness wait, cluster formation, state writes, runtime timing write, scale ladder write, and setup return;
+- parent hierarchy durations do not double-count children;
+- `setup_timeline_unexplained_seconds <= 2.0` for both 50-node and 100-node gates;
+- cleanup reports for both rungs pass with no owned resources remaining;
+- postcheck fails if the P13O aggregate artifact or source setup timeline artifacts are missing or stale.
