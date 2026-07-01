@@ -71,7 +71,7 @@
     {
       "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
       "status": "PASS",
-      "commit_sha": "PENDING_COMMIT",
+      "commit_sha": "dc8ccf654635dd7ecb4573052d9915b3e89f0408",
       "pushed": true,
       "result_path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/stage_result.json"
     }
