@@ -1,0 +1,108 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "status": "PASS",
+  "completed_at": "2026-07-01T02:28:23.292777Z",
+  "commit_sha": "7c4ef21273a75c0dd16daafb21a12fb4f571b7d3",
+  "pushed": true,
+  "previous_harness_passed": true,
+  "current_harness_passed": true,
+  "subagent_verdicts": {
+    "requirements_analyst": "APPROVED",
+    "harness_architect": "APPROVED",
+    "risk_auditor": "APPROVED",
+    "implementation_worker": "APPROVED",
+    "review_agent": "APPROVED",
+    "validation_agent": "APPROVED",
+    "anti_regression_guardian": "APPROVED"
+  },
+  "commands_log": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/commands.jsonl",
+  "artifacts": [
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/read_context.md",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/stage_state.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/commands.jsonl",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/previous_harness_result.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/current_harness_plan.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/stage_design.md",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/subagents/requirements_analyst.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/subagents/harness_architect.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/subagents/risk_auditor.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/subagents/implementation_worker.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/subagents/review_agent.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/subagents/validation_agent.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/subagents/anti_regression_guardian.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/validation_result.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/anti_regression_check.json",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/anti_regression_report.md",
+    "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/stage_result.json",
+    "artifacts/harness_exception/L08_30_50_100_FAULT_FAILOVER_SCENARIOS.md",
+    "scripts/fault_failover_gate.py",
+    "scripts/audit_fault_failover_scale.py",
+    "scripts/loop_engineering_validate.py",
+    "src/valkey_scale_lab/fault/sandbox.py",
+    "schemas/artifact/fault_failover_scale.schema.json",
+    "schemas/artifact/workload_window_report.schema.json",
+    "tests/ci/test_fault_failover_scale_gate.py",
+    "tests/failover/test_fault_failover_scale_audit.py",
+    "tests/fault/test_sandbox_fault.py",
+    "tests/provenance/test_provenance_graph.py",
+    "artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "artifacts/loop_engineering/reports/provenance_graph.json",
+    "artifacts/loop_engineering/reports/report_index.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+    "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+    "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json"
+  ],
+  "metrics_added": [
+    "fault_failover_scale:3 canonical real rungs audited",
+    "fault_failover_scale:30/50/100 failed-primary-slot workload windows measured",
+    "fault_failover_scale:data_path_result PASS required for all rungs",
+    "provenance_graph:18 L08 source artifact edges hash-matched",
+    "p14_boundary:dry_run_only true and real_valkey_coverage false"
+  ],
+  "visualizations_added": [
+    "artifacts/loop_engineering/reports/index.html",
+    "artifacts/loop_engineering/reports/coverage_heatmap.svg"
+  ],
+  "real_valkey_gates": [
+    "scripts/fault_failover_gate.py scale_30_fault_failover --min-nodes 30 --require-data-path",
+    "scripts/fault_failover_gate.py scale_50_fault_failover --min-nodes 50 --require-data-path",
+    "scripts/fault_failover_gate.py scale_100_fault_failover --min-nodes 100 --require-data-path"
+  ],
+  "fake_gates": [
+    "fault_failover_scale_static_audit",
+    "fault_failover_scale_schema_validation",
+    "fault_failover_scale_pytest_group",
+    "provenance_l08_source_audit",
+    "loop_engineering_anti_regression"
+  ],
+  "known_missing_metrics": [
+    {
+      "metric": "failover.split_brain_duration_ms",
+      "status": "MISSING",
+      "reason": "Primary-stop gate did not observe conflicting primaries; artifact records explicit MISSING with reason instead of inventing a value."
+    },
+    {
+      "metric": "p14.real_valkey_coverage",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P14 remains opt-in dry-run/resource/planner only; L08 did not execute P14 and does not count P14 as real coverage.",
+      "value": false
+    }
+  ],
+  "risks_remaining": [
+    "Earlier command-log rows include initial red-state failures and pre-enforcement real reruns; latest PASS rows are authoritative and guarded by tests.",
+    "Generated report files remain views over JSON artifacts and are not source of truth."
+  ]
+}
