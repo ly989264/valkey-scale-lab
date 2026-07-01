@@ -599,6 +599,60 @@ class MetricCoverageBuilder:
                 node_count_scope="6",
                 evidence_layer="small-real",
             )
+        self.add_stability_soak_rollup_metrics()
+
+    def add_stability_soak_rollup_metrics(self) -> None:
+        path = "artifacts/loop_engineering/reports/stability_soak_metrics.json"
+        payload = self.load_json(path)
+        if not payload:
+            return
+        for profile_idx, profile in enumerate(payload.get("profiles", [])):
+            if not isinstance(profile, dict):
+                continue
+            node_count = profile.get("node_count")
+            layer = str(profile.get("evidence_layer") or self.layer_for(
+                node_count=node_count,
+                dry_run_only=False,
+                real_valkey=profile.get("real_valkey_coverage") is True,
+            ))
+            real = profile.get("real_valkey_coverage") is True
+            evidence_class = "real_valkey" if real else "source_artifact"
+            for record_idx, record in enumerate(profile.get("metric_records", [])):
+                if not isinstance(record, dict):
+                    continue
+                status = str(record.get("status") or "MISSING")
+                value_status = status if status in {"MISSING", "SKIPPED_WITH_REASON", "NO_BASELINE_YET"} else "MEASURED"
+                self.add_metric(
+                    name=f"stability_soak.{record.get('name')}",
+                    surface=record.get("surface") or "stability",
+                    unit=record.get("unit") or "status",
+                    source_artifact=record.get("source_artifact") or path,
+                    source_pointer=record.get("source_pointer") or f"$.profiles.{profile_idx}.metric_records.{record_idx}",
+                    value=record.get("value"),
+                    value_status=value_status,
+                    reason=record.get("reason", ""),
+                    scenario=profile.get("run_id"),
+                    node_count_scope=str(node_count),
+                    evidence_layer=layer,
+                    evidence_class=evidence_class,
+                    real_valkey_coverage=real,
+                )
+            if profile.get("status") == "SKIPPED_WITH_REASON":
+                self.add_metric(
+                    name="stability_soak.profile.resource_aware_status",
+                    surface="stability",
+                    unit="status",
+                    source_artifact=path,
+                    source_pointer=f"$.profiles.{profile_idx}.status",
+                    value=None,
+                    value_status="SKIPPED_WITH_REASON",
+                    reason=profile.get("reason", "Resource-aware bounded profile was not measured."),
+                    scenario=profile.get("run_id"),
+                    node_count_scope=str(node_count),
+                    evidence_layer=layer,
+                    evidence_class="source_artifact",
+                    real_valkey_coverage=False,
+                )
 
     def add_scale_metrics(self) -> None:
         for path in sorted((self.root / "artifacts" / "phases").glob("P*/scale_rung_*.json")):

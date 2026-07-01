@@ -37,6 +37,7 @@ PROVENANCE_SOURCE_RELATIONS = {
     "timing_source",
     "setup_timeline_source",
     "fault_failover_source",
+    "stability_soak_source",
 }
 
 
@@ -577,6 +578,29 @@ class ProvenanceGraph:
             f"{phase_dir}/phase_summary.json",
         ]:
             self.add_edge(source, report, relation="stability_source", discovered_by="deterministic_p11", evidence_pointer=report)
+        self.build_stability_soak_rollup()
+
+    def build_stability_soak_rollup(self) -> None:
+        rollup = "artifacts/loop_engineering/reports/stability_soak_metrics.json"
+        rollup_path = self.root / rollup
+        if not rollup_path.exists():
+            return
+        self.add_node(rollup, self.schema_by_path.get(rollup))
+        payload = self.node_payloads.get(rollup)
+        if not isinstance(payload, dict):
+            return
+        for profile_idx, profile in enumerate(payload.get("profiles", []) or []):
+            if not isinstance(profile, dict):
+                continue
+            for source in profile.get("source_artifacts", []) or []:
+                if isinstance(source, str):
+                    self.add_edge(
+                        source,
+                        rollup,
+                        relation="stability_soak_source",
+                        discovered_by=f"profile_{profile.get('node_count')}",
+                        evidence_pointer=f"{rollup}.profiles[{profile_idx}]",
+                    )
 
     def build_scale_phase(self, phase_id: str, rungs: list[int]) -> None:
         phase_dir = f"artifacts/phases/{phase_id}"

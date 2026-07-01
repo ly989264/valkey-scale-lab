@@ -14,7 +14,7 @@
     },
     {
       "baseline_value": null,
-      "current_value": 42216,
+      "current_value": 50208,
       "delta": null,
       "metric": "max_memory_growth_bytes",
       "status": "NO_BASELINE_YET"

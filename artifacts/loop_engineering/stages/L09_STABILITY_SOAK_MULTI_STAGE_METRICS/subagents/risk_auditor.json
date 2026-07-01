@@ -1,0 +1,155 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "agent_role": "risk_auditor",
+  "created_at": "2026-07-01T02:34:13Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety and evidence policy.",
+      "key_findings": [
+        "Default development phases are capped at 100 nodes.",
+        "Fake-only gates must never be presented as real Valkey evidence.",
+        "Harness controls must not be weakened."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Automatic phase-loop and P14 boundary policy.",
+      "key_findings": [
+        "Automatic loop completes through P13 only.",
+        "P14 requires explicit opt-in and VSLAB_ALLOW_1000_DRYRUN.",
+        "Machine-readable artifacts are the source of truth."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "purpose": "Existing stability evidence.",
+      "key_findings": [
+        "Current report is a 6-node small-real smoke with duration under 4 seconds.",
+        "It includes bounded profile metadata and some summaries.",
+        "It does not provide L09 multi-stage windows."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "purpose": "Coverage layer and P14 classification evidence.",
+      "key_findings": [
+        "Layers include fake, small-real, 30, 50, 100, and 1000-dry-run.",
+        "Current stability coverage exists only in small-real.",
+        "1000-dry-run entries have dry_run_only=true and real_valkey_coverage=false."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L09-RISK-001",
+      "severity": "high",
+      "description": "L09 can falsely pass by reusing P11 small-real smoke evidence as multi-stage soak evidence.",
+      "evidence": [
+        "P11 has no baseline, steady, fault, recovery, or post-recovery window records."
+      ]
+    },
+    {
+      "id": "L09-RISK-003",
+      "severity": "high",
+      "description": "30/50/100 bounded soak profiles are resource and time expensive; failures must be BLOCKED/FAIL, not skipped PASS.",
+      "evidence": [
+        "L09 requires 30/50/100 bounded soak gates or explicitly gated resource-aware profiles."
+      ]
+    },
+    {
+      "id": "L09-RISK-008",
+      "severity": "high",
+      "description": "P14 or 1000-node artifacts must not be executed or counted as stability/soak evidence.",
+      "evidence": [
+        "CODEX_START_HERE.md says P14 is not automatic.",
+        "coverage_matrix.json marks 1000-dry-run stability as real_valkey_coverage=false."
+      ]
+    },
+    {
+      "id": "L09-RISK-012",
+      "severity": "medium",
+      "description": "Report-layer backflow remains a risk if HTML, SVG, CSV, or markdown trend views are parsed as source metrics.",
+      "evidence": [
+        "Charts, HTML, and markdown reports are only views over versioned artifacts."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "multi_stage_soak_artifact_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "A new L09 artifact schema requires profile metadata, bounded/resource-aware flags, all five stage windows, JSONL references, source hashes, node_count, evidence_layer, missing semantics, and provenance fields."
+    },
+    {
+      "name": "bounded_large_soak_profile_guard",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "30/50/100 soak profiles must be real bounded profiles with preflight PASS, exact node count, cleanup PASS, and bounded=true, or BLOCKED/SKIPPED_WITH_REASON with explicit resource reason; they must never be counted as long_run."
+    },
+    {
+      "name": "p14_stability_boundary_guard",
+      "type": "ci",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "CI fails if L09 commands, artifacts, coverage, or reports contain P14 execution or real_valkey_coverage=true for 1000-dry-run stability."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define the L09 artifact contract before changing runtime behavior.",
+      "files": [
+        "schemas/artifact/stability_soak_rollup.schema.json",
+        "tests/stability/test_stability_soak_artifact_audit.py"
+      ],
+      "rationale": "The current stability_report schema cannot enforce L09 stage windows, bounded flags, provenance, or missing semantics."
+    },
+    {
+      "step": "Add an artifact auditor for L09 source bundles.",
+      "files": [
+        "scripts/audit_stability_soak_metrics.py"
+      ],
+      "rationale": "The audit should verify JSONL samples, bounded profile semantics, exact node counts, cleanup, missing metrics, fake/real separation, and P14 exclusion."
+    },
+    {
+      "step": "Integrate L09 outputs into coverage, metric catalog, provenance, and reports as views over source artifacts.",
+      "files": [
+        "scripts/build_metric_coverage_matrix.py",
+        "scripts/build_provenance_graph.py",
+        "scripts/render_audit_report.py"
+      ],
+      "rationale": "Trend and window reports must not become source-of-truth and must keep dry-run, fake, and real layers separate."
+    }
+  ],
+  "acceptance_criteria": [
+    "L09 has a schema-valid multi-stage soak artifact that includes baseline, steady, fault, recovery, and post-recovery windows.",
+    "Every L09 soak profile emits non-empty JSONL time series with stage/window labels, source identity, timestamps, and metric statuses.",
+    "Small real L09 soak evidence is wrapper-produced with real_valkey=true, Valkey 9.1.x, data_path_result=PASS, cluster_state_observed=ok, and cleanup PASS.",
+    "30/50/100 L09 profiles are bounded real/resource-aware profiles with exact node counts and cleanup PASS, or explicit resource-aware SKIPPED_WITH_REASON profiles.",
+    "P14 and 1000-dry-run stability entries remain dry_run_only=true and real_valkey_coverage=false."
+  ],
+  "risks": [
+    "Resource risk: repeated 30/50/100 bounded soak with fault and recovery windows can exceed local Docker CPU, memory, port, or time budget.",
+    "Fake-evidence risk: deterministic fake soak timeline tests can be accidentally counted as real Valkey coverage.",
+    "Bounded-soak risk: short profile windows may be reported as long-run stability.",
+    "Cleanup risk: stale P11/L07/L08 cleanup reports may be reused instead of per-profile L09 cleanup proof.",
+    "Harness-weakening risk: permissive schemas, optional required fields, lowered node counts, deleted tests, or manual PASS gate results could hide incomplete L09 work."
+  ],
+  "forbidden_shortcuts": [
+    "Do not edit historical P11, L07, L08, P12, P13, or gate artifacts to fabricate L09 soak evidence.",
+    "Do not count fake tests, generated static files, or report views as real Valkey evidence.",
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN, scale_1000 configs, or set VSLAB_ALLOW_1000_DRYRUN in L09.",
+    "Do not claim long-run, sustained, leak-free, or production-stable results from bounded short windows.",
+    "Do not convert resource failure, timeout, port collision, Docker unavailable, partial artifact, or cleanup residue into skipped PASS.",
+    "Do not weaken scripts, schemas, tests, workflows, codex controls, templates, gate locks, or required artifact checks."
+  ],
+  "commands_to_run": [
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/safety_scan.py",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 -m pytest -q -p no:cacheprovider tests/stability tests/coverage tests/provenance tests/report tests/ci",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/audit_stability_soak_metrics.py --root . --out artifacts/loop_engineering/reports/stability_soak_metrics.json",
+    "git diff -- tests scripts schemas .github codex artifacts/gates artifacts/phases"
+  ],
+  "verdict": "APPROVED",
+  "notes": "No unresolved high-severity blocker is present for design work if L09 adds strict artifact-first harness before implementation and preserves the P14 boundary."
+}

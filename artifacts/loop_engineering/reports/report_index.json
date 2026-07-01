@@ -20,21 +20,21 @@
     },
     {
       "path": "artifacts/loop_engineering/reports/provenance_graph.json",
-      "sha256": "07bd13b842d5064b4520f431e4ad621754ada12f9f583ce70fcf7fc64c307d8d",
+      "sha256": "57c51afc28281bb2b05049946c569e9d569e98beb747d4dec5bfc8174d8886b7",
       "artifact_type": "provenance_graph",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/metric_catalog.json",
-      "sha256": "b2988a866a71488473f006f77f2bc932ece28d223813f548e222e1d4f02f3b45",
+      "sha256": "045024bc353fddca7a6796b00e2ab3e01846f5769bfebefaa052479c226b17c7",
       "artifact_type": "metric_catalog",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
-      "sha256": "2be3de6a0dc259225ea438019ad0c91248128e519331b9a7ff35e451664c407a",
+      "sha256": "06309851eae00204e0d28d4389b172150f2785f0bd7f8157db32277f60a7f24c",
       "artifact_type": "coverage_matrix",
       "status": "PASS",
       "source_of_truth": true
@@ -55,15 +55,22 @@
     },
     {
       "path": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "sha256": "7ecfa93c5e00a0567c058299b06a19ef567b29f288d82eb2a3bf64c07f4e1dc6",
+      "sha256": "ff42023cd5de75563bc720edf772a3053580dc171435d58285bb4ff9562aaa3a",
       "artifact_type": "scale_build_metrics",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
-      "sha256": "0450d4b96970d6a1e108825890b5097494a522894a86f6d9aba5ce7523ac98c1",
+      "sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
       "artifact_type": "fault_failover_scale",
+      "status": "PASS",
+      "source_of_truth": true
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "artifact_type": "stability_soak_metrics",
       "status": "PASS",
       "source_of_truth": true
     },
@@ -92,7 +99,7 @@
   "reports": [
     {
       "path": "artifacts/loop_engineering/reports/coverage_matrix.csv",
-      "sha256": "eeff48e47fa06444196e0057e2d41bd5469b7de39843e20623a64d518a86eecc",
+      "sha256": "495b0811a313608ce0c3f3f00f7c37962ee26df101dca507ab354280a2203011",
       "role": "csv_view",
       "source_of_truth": false,
       "source_artifacts": [
@@ -104,6 +111,7 @@
         "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/loop_engineering/reports/scale_build_metrics.json",
         "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -111,7 +119,7 @@
     },
     {
       "path": "artifacts/loop_engineering/reports/missing_metrics.csv",
-      "sha256": "3045872271bf3c62a9f2fdd2c8915a8557b15e10e59abe08e4796e8681b9153a",
+      "sha256": "d4a1a412ed1864f789f4e832bb973a19c91579577aa9e940404ad1c9fee47ad9",
       "role": "csv_view",
       "source_of_truth": false,
       "source_artifacts": [
@@ -123,6 +131,7 @@
         "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/loop_engineering/reports/scale_build_metrics.json",
         "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -130,7 +139,7 @@
     },
     {
       "path": "artifacts/loop_engineering/reports/coverage_heatmap.svg",
-      "sha256": "436c38076d25f027b80a868e51bdf88f45fc94e623a8686d4a9c0fc0d955537e",
+      "sha256": "63a9e43afec1f13ce980c35f419d9305f8e61af86a686d3a89f6a6d054771960",
       "role": "visualization",
       "source_of_truth": false,
       "source_artifacts": [
@@ -142,6 +151,7 @@
         "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/loop_engineering/reports/scale_build_metrics.json",
         "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -161,6 +171,7 @@
         "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/loop_engineering/reports/scale_build_metrics.json",
         "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -180,6 +191,7 @@
         "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/loop_engineering/reports/scale_build_metrics.json",
         "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
@@ -187,7 +199,7 @@
     },
     {
       "path": "artifacts/loop_engineering/reports/index.html",
-      "sha256": "617d44a293f208361169cff88daad429688d9d755889f7b8accdc371738c5be1",
+      "sha256": "1e8900965a3fb3af59b772efc262aa5934244d6c1ec6b1bbc4086de10df0145a",
       "role": "html_report",
       "source_of_truth": false,
       "source_artifacts": [
@@ -199,6 +211,7 @@
         "artifacts/loop_engineering/reports/small_real_parity_audit.json",
         "artifacts/loop_engineering/reports/scale_build_metrics.json",
         "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"

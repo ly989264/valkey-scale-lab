@@ -1,0 +1,146 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "agent_role": "requirements_analyst",
+  "created_at": "2026-07-01T03:10:00Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository and safety contract.",
+      "key_findings": [
+        "Default development phases are capped at 100 nodes and P14/1000 is not automatic.",
+        "Real Valkey evidence must come from wrapper scripts, not project tests alone.",
+        "Missing metrics must be encoded as MISSING or SKIPPED_WITH_REASON."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L09 stage definition.",
+      "key_findings": [
+        "L09 must extend stability and soak from short smoke into baseline, steady, fault, recovery, and post-recovery metric stages.",
+        "Harness must cover fake timeline tests, small real soak gate, and 30/50/100 bounded or resource-aware profiles.",
+        "Each soak profile must output JSONL time series and short windows must be marked bounded."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/runtime/docker_runtime.py",
+      "purpose": "Existing stability artifact producer.",
+      "key_findings": [
+        "Current P11 stability logic lives in write_stability_artifacts.",
+        "Current smoke uses interval_count 3 and ops_per_interval 12.",
+        "Current artifacts do not encode named baseline, steady, fault, recovery, or post-recovery windows."
+      ]
+    },
+    {
+      "path": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+      "purpose": "Small real Valkey stability proof.",
+      "key_findings": [
+        "Existing evidence has real_valkey true, Valkey 9.1.0, nodes_observed 6, cluster_state_observed ok, and data_path_result PASS.",
+        "It does not prove 30/50/100 stability soak behavior."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L09-REQ-001",
+      "severity": "high",
+      "description": "Current stability capability is a short bounded P11 smoke, not the required multi-stage soak model.",
+      "evidence": [
+        "write_stability_artifacts uses interval_count=3 and no named stage/window field.",
+        "stability_report.json has no baseline, steady, fault, recovery, or post-recovery windows."
+      ]
+    },
+    {
+      "id": "L09-REQ-002",
+      "severity": "high",
+      "description": "There is no 30/50/100 stability soak evidence or resource-aware stability profile artifact set.",
+      "evidence": [
+        "P12/P13 artifacts contain scale and fault/failover reports, but no stability_soak_30/50/100 JSONL or stability report.",
+        "build_metric_coverage_matrix.py only extracts stability metrics from P11 small-real artifacts."
+      ]
+    },
+    {
+      "id": "L09-REQ-003",
+      "severity": "high",
+      "description": "The stability schema is too permissive to enforce L09 required metrics and missing semantics.",
+      "evidence": [
+        "schemas/artifact/stability_report.schema.json does not require window summaries, JSONL paths, missing metric reasons, or bounded profile metadata."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "stability_multistage_fake_timeline_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Deterministic fake samples produce baseline, steady, fault, recovery, and post-recovery windows with ordered timestamps, JSONL rows, per-window latency percentiles, memory growth, restart deltas, error taxonomy, and explicit missing reasons."
+    },
+    {
+      "name": "strict_stability_multistage_schema",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Schemas require stability report and JSONL rows to include stage/window identity, bounded profile metadata, source paths, latency p50/p95/p99 or explicit missing objects, memory/leak summaries, restart deltas, error taxonomy, baseline comparison, and missing metric reasons."
+    },
+    {
+      "name": "bounded_30_50_100_soak_profiles",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "30, 50, and 100 profiles run only after resource preflight; successful runs emit bounded multi-stage stability artifacts, while resource insufficiency records a genuine blocker and cannot be marked PASS."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define L09 artifact contracts before feature implementation.",
+      "files": [
+        "schemas/artifact/stability_report.schema.json",
+        "schemas/artifact/stability_timeseries_sample.schema.json",
+        "tests/stability/test_stability_soak_multistage.py"
+      ],
+      "rationale": "L09 needs schema-first enforcement for windows, trend metrics, missing semantics, and bounded profile metadata."
+    },
+    {
+      "step": "Implement multi-stage soak model and JSONL writer.",
+      "files": [
+        "src/valkey_scale_lab/runtime/docker_runtime.py"
+      ],
+      "rationale": "The existing CLI contract should produce baseline, steady, fault, recovery, and post-recovery windows while preserving P11 behavior."
+    },
+    {
+      "step": "Implement L09 artifact audit and coverage extraction.",
+      "files": [
+        "scripts/audit_stability_soak_metrics.py",
+        "scripts/build_metric_coverage_matrix.py",
+        "scripts/build_provenance_graph.py"
+      ],
+      "rationale": "Machine-readable artifacts must drive metric coverage and reject fabricated, missing, or report-derived values."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness baseline remains PASS before and after L09 changes.",
+    "Each L09 soak profile emits a JSONL time series with schema_version, artifact_type, phase_id, run_id, timestamp, source, stage/window name, and metrics or explicit missing objects.",
+    "Small real stability soak evidence is wrapper-produced with real_valkey true, Valkey version prefix 9.1., live node probes, data-path proof, schema validation PASS, and cleanup PASS.",
+    "30, 50, and 100 stability soak profiles either run bounded real gates after passing resource preflight or record a genuine BLOCKED resource result.",
+    "All short automatic soak windows are marked bounded and cannot claim long-run stability."
+  ],
+  "risks": [
+    "30/50/100 real soak gates may exceed local Docker CPU, memory, port, or timeout budgets.",
+    "Short bounded runs can be misread as long-run stability.",
+    "Missing restart counts, memory values, or latency samples may be accidentally converted to zero.",
+    "Report integration can accidentally source metrics from rendered views instead of JSON/JSONL artifacts."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run or count P14/1000 real stability, fault, failover, or soak gates without explicit user opt-in and the required environment variable.",
+    "Do not claim long-run stability from short bounded soak windows.",
+    "Do not mark 30/50/100 resource-preflight failure as PASS.",
+    "Do not use fake tests, generated logs, static files, or project tests alone as real Valkey evidence.",
+    "Do not fabricate memory, latency, restart, baseline, fault, recovery, or error metrics."
+  ],
+  "commands_to_run": [
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/codex_gate.py precheck --all",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/safety_scan.py",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 -m pytest -q -p no:cacheprovider tests/stability tests/coverage tests/report tests/ci/test_stability_soak_metrics_gate.py",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/audit_stability_soak_metrics.py --out artifacts/loop_engineering/reports/stability_soak_metrics.json"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Requirements are clear enough for harness design. L09 must preserve P11 behavior while adding multi-stage, bounded, artifact-first stability evidence."
+}

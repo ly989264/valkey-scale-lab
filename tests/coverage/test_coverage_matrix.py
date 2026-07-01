@@ -66,6 +66,17 @@ def test_scale_ladder_entries_use_real_evidence_for_30_50_and_100() -> None:
         assert evidence_path in entry["source_artifacts"]
 
 
+def test_stability_large_rungs_are_resource_aware_not_real_coverage() -> None:
+    _, matrix = build_metric_coverage_matrix.build_reports(REPO_ROOT)
+
+    for layer in ["30", "50", "100"]:
+        entry = entry_by_key(matrix, layer, "stability")
+        assert entry["status"] == "SKIPPED_WITH_REASON"
+        assert entry["real_valkey_coverage"] is False
+        assert entry["dry_run_only"] is False
+        assert "artifacts/loop_engineering/reports/stability_soak_metrics.json" in entry["source_artifacts"]
+
+
 def test_1000_dryrun_layer_is_never_real_coverage() -> None:
     _, matrix = build_metric_coverage_matrix.build_reports(REPO_ROOT)
 

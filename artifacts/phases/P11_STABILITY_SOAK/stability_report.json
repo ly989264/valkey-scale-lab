@@ -2,7 +2,7 @@
   "artifact_type": "stability_report",
   "baseline_comparison_path": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
   "created_at": "2026-06-28T00:00:00Z",
-  "duration_seconds": 3.987332,
+  "duration_seconds": 3.405719,
   "metrics_timeseries_path": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
   "phase_id": "P11_STABILITY_SOAK",
   "producer": {
@@ -14,10 +14,21 @@
   "schema_version": "v1",
   "soak_profile": {
     "bounded": true,
+    "bounded_reason": "Automatic local soak uses short deterministic windows and does not claim long-run stability.",
     "configured_max_nodes": 6,
-    "interval_count": 3,
+    "evidence_layer": "small-real",
+    "interval_count": 5,
+    "long_run_stability_claim": false,
     "ops_per_interval": 12,
-    "total_operations_attempted": 36
+    "resource_aware": true,
+    "total_operations_attempted": 60,
+    "windows": [
+      "baseline",
+      "steady",
+      "fault",
+      "recovery",
+      "post_recovery"
+    ]
   },
   "status": "PASS",
   "summary": {
@@ -37,7 +48,7 @@
         },
         {
           "baseline_value": null,
-          "current_value": 42216,
+          "current_value": 50208,
           "delta": null,
           "metric": "max_memory_growth_bytes",
           "status": "NO_BASELINE_YET"
@@ -55,50 +66,63 @@
     },
     "errors": {
       "classification": "none",
-      "items": []
+      "items": [],
+      "taxonomy": {
+        "categories": {
+          "cluster_unavailable": 0,
+          "fault_expected": 0,
+          "none": 1,
+          "recovery_error": 0,
+          "timeout": 0,
+          "unknown": 0,
+          "workload_error": 0
+        },
+        "status": "MEASURED",
+        "total": 0
+      }
     },
     "leaks": {
-      "max_growth_bytes": 42216,
+      "max_growth_bytes": 50208,
       "nodes": [
         {
-          "first_used_memory": 3043048,
+          "first_used_memory": 3046912,
           "growth_bytes": 24688,
-          "last_used_memory": 3067736,
+          "last_used_memory": 3071600,
           "logical_id": "shard-0000-primary",
           "status": "PASS"
         },
         {
-          "first_used_memory": 2921872,
-          "growth_bytes": 42216,
-          "last_used_memory": 2964088,
+          "first_used_memory": 2946496,
+          "growth_bytes": 24688,
+          "last_used_memory": 2971184,
           "logical_id": "shard-0000-replica-00",
           "status": "PASS"
         },
         {
-          "first_used_memory": 3018512,
-          "growth_bytes": 24688,
-          "last_used_memory": 3043200,
+          "first_used_memory": 2973368,
+          "growth_bytes": 49376,
+          "last_used_memory": 3022744,
           "logical_id": "shard-0001-primary",
           "status": "PASS"
         },
         {
-          "first_used_memory": 2921744,
-          "growth_bytes": 42216,
-          "last_used_memory": 2963960,
+          "first_used_memory": 2945984,
+          "growth_bytes": 24688,
+          "last_used_memory": 2970672,
           "logical_id": "shard-0001-replica-00",
           "status": "PASS"
         },
         {
-          "first_used_memory": 3068464,
-          "growth_bytes": 25072,
-          "last_used_memory": 3093536,
+          "first_used_memory": 3043632,
+          "growth_bytes": 50208,
+          "last_used_memory": 3093840,
           "logical_id": "shard-0002-primary",
           "status": "PASS"
         },
         {
-          "first_used_memory": 2921552,
-          "growth_bytes": 24712,
-          "last_used_memory": 2946264,
+          "first_used_memory": 2946688,
+          "growth_bytes": 24688,
+          "last_used_memory": 2971376,
           "logical_id": "shard-0002-replica-00",
           "status": "PASS"
         }
@@ -106,8 +130,8 @@
       "status": "PASS"
     },
     "metrics": {
-      "interval_count": 3,
-      "sample_count": 18,
+      "interval_count": 5,
+      "sample_count": 30,
       "samples_per_interval": 6
     },
     "nodes_observed": 6,
@@ -152,17 +176,199 @@
       ],
       "total_restart_delta": 0
     },
+    "windows": {
+      "baseline": {
+        "bounded": true,
+        "errors": {
+          "items": [],
+          "taxonomy": {
+            "categories": {
+              "cluster_unavailable": 0,
+              "fault_expected": 0,
+              "none": 1,
+              "recovery_error": 0,
+              "timeout": 0,
+              "unknown": 0,
+              "workload_error": 0
+            },
+            "status": "MEASURED",
+            "total": 0
+          }
+        },
+        "long_run_stability_claim": false,
+        "sample_count": 6,
+        "status": "MEASURED",
+        "workload": {
+          "attempted_operations": 12,
+          "completed_operations": 12,
+          "error_count": 0,
+          "latency_ms": {
+            "max": 63.425166,
+            "min": 51.472417,
+            "p50": 53.829938,
+            "p95": 62.044964,
+            "p99": 63.149126,
+            "sample_count": 12,
+            "unit": "ms"
+          }
+        }
+      },
+      "fault": {
+        "bounded": true,
+        "errors": {
+          "items": [],
+          "taxonomy": {
+            "categories": {
+              "cluster_unavailable": 0,
+              "fault_expected": 0,
+              "none": 1,
+              "recovery_error": 0,
+              "timeout": 0,
+              "unknown": 0,
+              "workload_error": 0
+            },
+            "status": "MEASURED",
+            "total": 0
+          }
+        },
+        "long_run_stability_claim": false,
+        "sample_count": 6,
+        "status": "MEASURED",
+        "workload": {
+          "attempted_operations": 12,
+          "completed_operations": 12,
+          "error_count": 0,
+          "latency_ms": {
+            "max": 63.248875,
+            "min": 49.356458,
+            "p50": 55.059584,
+            "p95": 60.741586,
+            "p99": 62.747417,
+            "sample_count": 12,
+            "unit": "ms"
+          }
+        }
+      },
+      "post_recovery": {
+        "bounded": true,
+        "errors": {
+          "items": [],
+          "taxonomy": {
+            "categories": {
+              "cluster_unavailable": 0,
+              "fault_expected": 0,
+              "none": 1,
+              "recovery_error": 0,
+              "timeout": 0,
+              "unknown": 0,
+              "workload_error": 0
+            },
+            "status": "MEASURED",
+            "total": 0
+          }
+        },
+        "long_run_stability_claim": false,
+        "sample_count": 6,
+        "status": "MEASURED",
+        "workload": {
+          "attempted_operations": 12,
+          "completed_operations": 12,
+          "error_count": 0,
+          "latency_ms": {
+            "max": 61.648042,
+            "min": 48.977042,
+            "p50": 54.077792,
+            "p95": 60.574396,
+            "p99": 61.433313,
+            "sample_count": 12,
+            "unit": "ms"
+          }
+        }
+      },
+      "recovery": {
+        "bounded": true,
+        "errors": {
+          "items": [],
+          "taxonomy": {
+            "categories": {
+              "cluster_unavailable": 0,
+              "fault_expected": 0,
+              "none": 1,
+              "recovery_error": 0,
+              "timeout": 0,
+              "unknown": 0,
+              "workload_error": 0
+            },
+            "status": "MEASURED",
+            "total": 0
+          }
+        },
+        "long_run_stability_claim": false,
+        "sample_count": 6,
+        "status": "MEASURED",
+        "workload": {
+          "attempted_operations": 12,
+          "completed_operations": 12,
+          "error_count": 0,
+          "latency_ms": {
+            "max": 56.306958,
+            "min": 42.950792,
+            "p50": 51.049895,
+            "p95": 55.585931,
+            "p99": 56.162753,
+            "sample_count": 12,
+            "unit": "ms"
+          }
+        }
+      },
+      "steady": {
+        "bounded": true,
+        "errors": {
+          "items": [],
+          "taxonomy": {
+            "categories": {
+              "cluster_unavailable": 0,
+              "fault_expected": 0,
+              "none": 1,
+              "recovery_error": 0,
+              "timeout": 0,
+              "unknown": 0,
+              "workload_error": 0
+            },
+            "status": "MEASURED",
+            "total": 0
+          }
+        },
+        "long_run_stability_claim": false,
+        "sample_count": 6,
+        "status": "MEASURED",
+        "workload": {
+          "attempted_operations": 12,
+          "completed_operations": 12,
+          "error_count": 0,
+          "latency_ms": {
+            "max": 59.768875,
+            "min": 48.361125,
+            "p50": 53.967605,
+            "p95": 59.593884,
+            "p99": 59.733877,
+            "sample_count": 12,
+            "unit": "ms"
+          }
+        }
+      }
+    },
     "workload": {
-      "attempted_operations": 36,
-      "completed_operations": 36,
+      "attempted_operations": 60,
+      "completed_operations": 60,
       "error_count": 0,
       "latency_ms": {
-        "max": 65.608625,
-        "min": 42.409625,
-        "p50": 54.157084,
-        "p95": 63.453125,
-        "p99": 65.063894,
-        "sample_count": 36,
+        "max": 63.425166,
+        "min": 42.950792,
+        "p50": 53.829938,
+        "p95": 60.952325,
+        "p99": 63.321154,
+        "sample_count": 60,
         "unit": "ms"
       }
     }

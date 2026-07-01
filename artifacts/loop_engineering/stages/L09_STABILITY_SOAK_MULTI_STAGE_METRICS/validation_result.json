@@ -1,0 +1,91 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "status": "PASS",
+  "completed_at": "2026-07-01T03:25:00Z",
+  "commands_log": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/commands.jsonl",
+  "commands": [
+    {
+      "name": "stability_soak_audit",
+      "command": "python3 scripts/audit_stability_soak_metrics.py --root . --out artifacts/loop_engineering/reports/stability_soak_metrics.json --require-node-counts 6,30,50,100",
+      "status": "PASS"
+    },
+    {
+      "name": "stability_report_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/stability_report.schema.json --instance artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "status": "PASS"
+    },
+    {
+      "name": "stability_timeseries_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/stability_timeseries_sample.schema.json --instance artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl --jsonl",
+      "status": "PASS"
+    },
+    {
+      "name": "stability_rollup_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/stability_soak_rollup.schema.json --instance artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "status": "PASS"
+    },
+    {
+      "name": "precheck_all",
+      "command": "python3 scripts/codex_gate.py precheck --all",
+      "status": "PASS"
+    },
+    {
+      "name": "safety_scan",
+      "command": "python3 scripts/safety_scan.py",
+      "status": "PASS"
+    },
+    {
+      "name": "compileall",
+      "command": "python3 -m compileall -q src scripts tests",
+      "status": "PASS"
+    },
+    {
+      "name": "focused_l09_pytest",
+      "command": "python -m pytest -q -p no:cacheprovider tests/stability/test_stability_soak_artifact_audit.py tests/ci/test_stability_soak_metrics_gate.py tests/coverage/test_coverage_matrix.py tests/provenance/test_provenance_graph.py tests/report/test_loop_report_rendering.py",
+      "status": "PASS",
+      "result": "30 passed"
+    },
+    {
+      "name": "previous_harness_groups",
+      "command": "python -m pytest -q -p no:cacheprovider tests/unit tests/ci/test_github_coverage_gates.py tests/config tests/planner tests/integration tests/fault tests/failover tests/orchestrator",
+      "status": "PASS",
+      "result": "117 passed"
+    },
+    {
+      "name": "broad_l09_groups",
+      "command": "python -m pytest -q -p no:cacheprovider tests/analysis tests/report tests/stability tests/scale tests/coverage tests/provenance tests/ci/test_stability_soak_metrics_gate.py",
+      "status": "PASS",
+      "result": "72 passed"
+    },
+    {
+      "name": "cache_pollution_guard",
+      "command": "python -m pytest -q -p no:cacheprovider tests/ci/test_committed_artifact_audit_gate.py tests/ci/test_scale_build_metrics_gate.py tests/ci/test_p13_p14_scale_audit_gate.py tests/ci/test_fault_failover_scale_gate.py",
+      "status": "PASS",
+      "result": "19 passed"
+    },
+    {
+      "name": "loop_engineering_validate",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+      "status": "PASS"
+    },
+    {
+      "name": "anti_regression",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering --anti-regression --base-ref 3c79ec4aecb552702efb489a358e5af2f49bc3d4 --head-ref WORKTREE --report artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/anti_regression_check.json",
+      "status": "PASS"
+    },
+    {
+      "name": "cache_scratch_cleanliness",
+      "command": "find . for __pycache__, .pyc, and .pytest_cache",
+      "status": "PASS"
+    },
+    {
+      "name": "diff_check",
+      "command": "git diff --check",
+      "status": "PASS"
+    }
+  ],
+  "current_harness_passed": true,
+  "previous_harness_passed": true,
+  "notes": "L09 validation passed after removing generated scripts/__pycache__ cache pollution. P14 was not run and VSLAB_ALLOW_1000_DRYRUN remained unset."
+}

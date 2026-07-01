@@ -3482,17 +3482,22 @@ def write_stability_artifacts(
     baseline_path = artifacts / "stability_baseline_comparison.json"
     report_path = artifacts / "stability_report.json"
     phase_summary_path = artifacts / "phase_summary.json"
-    interval_count = 3
+    windows = ["baseline", "steady", "fault", "recovery", "post_recovery"]
+    interval_count = len(windows)
     ops_per_interval = 12
     target = nodes[0]["container_name"]
     samples: list[dict[str, Any]] = []
     latencies_ms: list[float] = []
+    window_latencies_ms: dict[str, list[float]] = {window: [] for window in windows}
+    window_errors: dict[str, list[dict[str, Any]]] = {window: [] for window in windows}
+    window_samples: dict[str, int] = {window: 0 for window in windows}
     errors: list[dict[str, Any]] = []
     memory_by_node: dict[str, list[int]] = {node["logical_id"]: [] for node in nodes}
     restart_before = {node["logical_id"]: _container_restart_count(node["container_name"]) for node in nodes}
     started = time.monotonic()
 
     for interval in range(interval_count):
+        window = windows[interval]
         interval_started = time.monotonic()
         for op_index in range(ops_per_interval):
             key = f"{{vslab-soak}}:{interval}:{op_index % 4}"
@@ -3502,12 +3507,18 @@ def write_stability_artifacts(
                 if op_index % 3 == 0:
                     result = run_container_cluster_cli(target, "SET", key, value, timeout=10)
                     if result.upper() != "OK":
-                        errors.append({"interval": interval, "operation": "SET", "key": key, "error": result})
+                        error = {"interval": interval, "window": window, "operation": "SET", "key": key, "error": result}
+                        errors.append(error)
+                        window_errors[window].append(error)
                 else:
                     _ = run_container_cluster_cli(target, "GET", key, timeout=10)
-                latencies_ms.append((time.monotonic() - op_started) * 1000)
+                latency = (time.monotonic() - op_started) * 1000
+                latencies_ms.append(latency)
+                window_latencies_ms[window].append(latency)
             except Exception as exc:  # noqa: BLE001
-                errors.append({"interval": interval, "operation": "workload", "key": key, "error": repr(exc)})
+                error = {"interval": interval, "window": window, "operation": "workload", "key": key, "error": repr(exc)}
+                errors.append(error)
+                window_errors[window].append(error)
 
         for node in nodes:
             info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
@@ -3515,6 +3526,7 @@ def write_stability_artifacts(
             used_memory = _int_or_missing(info.get("used_memory"))
             if isinstance(used_memory, int):
                 memory_by_node[node["logical_id"]].append(used_memory)
+            window_samples[window] += 1
             samples.append(
                 {
                     "schema_version": "v1",
@@ -3523,8 +3535,14 @@ def write_stability_artifacts(
                     "run_id": run_id,
                     "timestamp": f"2026-06-28T00:00:0{interval}Z",
                     "source": node["logical_id"],
+                    "window": window,
+                    "soak_stage": window,
+                    "node_count": len(nodes),
+                    "bounded": True,
                     "metrics": {
                         "interval": interval,
+                        "window": window,
+                        "soak_stage": window,
                         "valkey": {
                             "used_memory": used_memory,
                             "connected_clients": _int_or_missing(info.get("connected_clients")),
@@ -3556,6 +3574,25 @@ def write_stability_artifacts(
         }
         for logical_id in sorted(restart_before)
     ]
+    window_summaries = {
+        window: {
+            "status": "MEASURED",
+            "sample_count": window_samples[window],
+            "workload": {
+                "attempted_operations": ops_per_interval,
+                "completed_operations": len(window_latencies_ms[window]),
+                "error_count": len(window_errors[window]),
+                "latency_ms": _latency_summary(window_latencies_ms[window]),
+            },
+            "errors": {
+                "taxonomy": _stability_error_taxonomy(window_errors[window], window=window),
+                "items": window_errors[window],
+            },
+            "bounded": True,
+            "long_run_stability_claim": False,
+        }
+        for window in windows
+    }
     baseline = {
         "schema_version": "v1",
         "artifact_type": "stability_baseline_comparison",
@@ -3597,15 +3634,21 @@ def write_stability_artifacts(
         "scenario": scenario,
         "soak_profile": {
             "bounded": True,
+            "resource_aware": True,
+            "evidence_layer": "small-real",
+            "long_run_stability_claim": False,
+            "windows": windows,
             "interval_count": interval_count,
             "ops_per_interval": ops_per_interval,
             "total_operations_attempted": interval_count * ops_per_interval,
             "configured_max_nodes": len(nodes),
+            "bounded_reason": "Automatic local soak uses short deterministic windows and does not claim long-run stability.",
         },
         "metrics_timeseries_path": metrics_path.as_posix(),
         "baseline_comparison_path": baseline_path.as_posix(),
         "summary": {
             "nodes_observed": len(nodes),
+            "windows": window_summaries,
             "workload": {
                 "attempted_operations": interval_count * ops_per_interval,
                 "completed_operations": len(latencies_ms),
@@ -3624,6 +3667,7 @@ def write_stability_artifacts(
             "leaks": leak_summary,
             "errors": {
                 "classification": "none" if not errors else "soak_workload_error",
+                "taxonomy": _stability_error_taxonomy(errors),
                 "items": errors,
             },
             "baseline": baseline,
@@ -3633,6 +3677,39 @@ def write_stability_artifacts(
     baseline_path.write_text(json.dumps(baseline, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     write_stability_phase_summary(phase_summary_path, run_id)
+
+
+def _stability_error_taxonomy(errors: list[dict[str, Any]], *, window: str | None = None) -> dict[str, Any]:
+    categories = {
+        "none": 0,
+        "workload_error": 0,
+        "timeout": 0,
+        "cluster_unavailable": 0,
+        "fault_expected": 0,
+        "recovery_error": 0,
+        "unknown": 0,
+    }
+    for item in errors:
+        text = str(item.get("error", "")).lower()
+        if "timeout" in text:
+            categories["timeout"] += 1
+        elif "cluster" in text and ("down" in text or "unavailable" in text or "fail" in text):
+            categories["cluster_unavailable"] += 1
+        elif window == "fault":
+            categories["fault_expected"] += 1
+        elif window == "recovery":
+            categories["recovery_error"] += 1
+        elif text:
+            categories["workload_error"] += 1
+        else:
+            categories["unknown"] += 1
+    if not errors:
+        categories["none"] = 1
+    return {
+        "status": "MEASURED",
+        "total": len(errors),
+        "categories": categories,
+    }
 
 
 def write_stability_phase_summary(path: Path, run_id: str) -> None:

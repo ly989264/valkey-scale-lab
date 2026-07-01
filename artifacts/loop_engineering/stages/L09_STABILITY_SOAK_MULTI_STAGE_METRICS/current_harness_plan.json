@@ -1,0 +1,113 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "new_tests": [
+    {
+      "path": "tests/stability/test_stability_soak_multistage.py",
+      "purpose": "Validate deterministic fake multi-stage soak timelines, ordered JSONL samples, per-window summaries, missing semantics, and bounded fake/non-real evidence classification.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/stability/test_stability_soak_artifact_audit.py",
+      "purpose": "Validate the L09 artifact audit rejects missing windows, empty or unordered JSONL, invented metrics, invalid percentile ordering, unreasoned missing data, long-run claims from bounded profiles, cleanup gaps, and P14 real coverage.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/ci/test_stability_soak_metrics_gate.py",
+      "purpose": "CI guard for the L09 audit command, schema validation, required profile node counts, bounded/resource-aware 30/50/100 semantics, and P14 boundary.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/coverage/test_scale_build_metric_coverage.py",
+      "purpose": "Verify stability trend/window metrics and 30/50/100 profile states are sourced from stability_soak_metrics.json and JSONL artifacts.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/provenance/test_provenance_graph.py",
+      "purpose": "Verify provenance edges from stability JSONL, baseline comparison, resource preflights, real evidence, cleanup reports, and profile artifacts into the L09 rollup.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/report/test_loop_report_rendering.py",
+      "purpose": "Verify rendered loop reports include stability trends, window comparisons, missing metrics, bounded profile labels, and no report-view source backflow.",
+      "expected_to_fail_before_impl": true
+    }
+  ],
+  "new_schemas": [
+    "schemas/artifact/stability_timeseries_sample.schema.json",
+    "schemas/artifact/stability_soak_profile.schema.json",
+    "schemas/artifact/stability_soak_rollup.schema.json",
+    "schemas/artifact/stability_report.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "name": "stability_soak_metrics_audit",
+      "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/audit_stability_soak_metrics.py --root . --out artifacts/loop_engineering/reports/stability_soak_metrics.json --require-node-counts 6,30,50,100",
+      "real_valkey": false
+    },
+    {
+      "name": "small_real_multistage_soak",
+      "command": "python3 scripts/valkey_e2e_gate.py --phase P11_STABILITY_SOAK --config templates/configs/single_mac_6node.yaml --scenario stability_soak_smoke --out artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+      "real_valkey": true
+    },
+    {
+      "name": "resource_aware_soak_profile_30",
+      "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_30.yaml --out artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+      "real_valkey": false
+    },
+    {
+      "name": "resource_aware_soak_profile_50",
+      "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_50.yaml --out artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+      "real_valkey": false
+    },
+    {
+      "name": "resource_aware_soak_profile_100",
+      "command": "python3 -m valkey_scale_lab.cli resource preflight --config templates/configs/scale_100.yaml --out artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+      "real_valkey": false
+    }
+  ],
+  "new_artifact_checks": [
+    "All L09 stability profiles include bounded=true for short automatic windows and long_run_stability_claim=false.",
+    "The five windows baseline, steady, fault, recovery, and post_recovery exist in report summaries and JSONL time series.",
+    "Latency p50/p95/p99 are present per measured window with p50 <= p95 <= p99, or explicitly MISSING/SKIPPED_WITH_REASON with reasons.",
+    "Memory growth/leak summaries and restart deltas are measured from source samples or explicitly MISSING/SKIPPED_WITH_REASON with reasons.",
+    "Error taxonomy is window-aware and uses stable categories rather than raw strings alone.",
+    "Baseline comparison preserves NO_BASELINE_YET or measured deltas with reasons.",
+    "Small-real evidence requires producer scripts/valkey_e2e_gate.py, real_valkey true, Valkey 9.1.x, nodes_observed >= 6, data_path_result PASS, schema validation PASS, and cleanup PASS.",
+    "30/50/100 profiles require resource preflight and either bounded measured JSONL with cleanup PASS or resource-aware SKIPPED_WITH_REASON; fake-only evidence cannot satisfy real coverage.",
+    "P14/1000 real stability evidence is forbidden and real_valkey_coverage must remain false for 1000-dry-run entries.",
+    "Rendered Markdown, HTML, SVG, and CSV outputs are views only and cannot be metric sources."
+  ],
+  "expected_initial_failures": [
+    {
+      "name": "missing_l09_stability_audit",
+      "reason": "scripts/audit_stability_soak_metrics.py and artifacts/loop_engineering/reports/stability_soak_metrics.json do not exist yet."
+    },
+    {
+      "name": "missing_multistage_windows",
+      "reason": "P11 stability_report.json and stability_metrics.jsonl do not encode baseline, steady, fault, recovery, and post_recovery windows."
+    },
+    {
+      "name": "permissive_stability_schema",
+      "reason": "schemas/artifact/stability_report.schema.json does not require L09 window summaries, JSONL paths, bounded profile semantics, or missing reasons."
+    },
+    {
+      "name": "missing_30_50_100_stability_profiles",
+      "reason": "P12/P13 have scale and fault/failover artifacts but no L09 stability soak profile artifacts for 30, 50, and 100 nodes."
+    },
+    {
+      "name": "coverage_and_report_gap",
+      "reason": "Metric catalog, coverage matrix, provenance graph, and rendered loop reports do not expose L09 stability trend/window coverage."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness baseline remains PASS.",
+    "The L09 harness catches missing windows, fake-as-real evidence, P14 real evidence, invented metrics, long-run claims from bounded windows, and report-view source backflow.",
+    "Every soak profile emits JSONL time series and schema-valid profile/rollup artifacts.",
+    "Small-real P11 stability evidence is wrapper-produced and includes real Valkey 9.1.x, data-path proof, live node probes, schema validation, and cleanup PASS.",
+    "30/50/100 profiles are bounded measured profiles with resource preflight and cleanup proof, or explicit resource-aware SKIPPED_WITH_REASON profiles that do not count as real coverage.",
+    "Reports display stability trends, window comparisons, missing metrics, and bounded labels from machine-readable artifacts only.",
+    "P14 remains dry-run/opt-in only and is not executed for L09.",
+    "Review, validation, and anti-regression agents approve before commit."
+  ]
+}

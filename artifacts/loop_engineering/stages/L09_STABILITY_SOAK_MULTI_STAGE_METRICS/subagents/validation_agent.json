@@ -1,0 +1,70 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "agent_role": "validation_agent",
+  "created_at": "2026-07-01T11:20:00+08:00",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository instructions.",
+      "key_findings": [
+        "Do not run P14 unless explicitly opted in.",
+        "Harness artifacts and schema validation are required evidence."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Phase-loop entry instructions.",
+      "key_findings": [
+        "P14 requires VSLAB_ALLOW_1000_DRYRUN and is not automatic.",
+        "Machine-readable artifacts are source of truth."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/stage_design.md",
+      "purpose": "L09 stage scope and acceptance.",
+      "key_findings": [
+        "Required windows are baseline, steady, fault, recovery, and post_recovery.",
+        "30/50/100 profiles may be resource-aware SKIPPED_WITH_REASON without real coverage."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/current_harness_plan.json",
+      "purpose": "L09 planned tests, schemas, and audit gates.",
+      "key_findings": [
+        "L09 audit command requires node counts 6,30,50,100.",
+        "P14 must remain dry-run/opt-in only and must not count as real stability evidence."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [],
+  "implementation_plan": [],
+  "acceptance_criteria": [
+    "scripts/__pycache__ is absent and no tracked scripts/__pycache__ files exist.",
+    "Cache-pollution guard passes.",
+    "L09 stability soak audit passes and validates against stability_soak_rollup.schema.json.",
+    "Targeted and broader L09 pytest suites pass.",
+    "P14 was not run and VSLAB_ALLOW_1000_DRYRUN was not set."
+  ],
+  "risks": [
+    "The live P11 real Valkey wrapper was not rerun in the final validation retry; existing real-evidence artifacts were validated through the L09 audit."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Do not set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not create repository-local __pycache__ or .pytest_cache artifacts.",
+    "Do not count 30/50/100 resource-aware skipped profiles as real Valkey stability coverage."
+  ],
+  "commands_to_run": [
+    "find scripts -type d -name __pycache__ -print -> empty",
+    "python -m pytest -p no:cacheprovider -q tests/loop_engineering/test_loop_state_contract.py::test_anti_regression_detects_controlled_bytecode -> 1 passed",
+    "python3 scripts/audit_stability_soak_metrics.py --root . --out /private/tmp/valkey-scale-lab-stability_soak_metrics.json --require-node-counts 6,30,50,100 -> PASS",
+    "python -m pytest -p no:cacheprovider -q tests/stability/test_stability_soak_multistage.py tests/stability/test_stability_soak_artifact_audit.py tests/ci/test_stability_soak_metrics_gate.py -> 10 passed",
+    "python -m pytest -p no:cacheprovider -q tests/stability tests/ci/test_stability_soak_metrics_gate.py tests/coverage/test_scale_build_metric_coverage.py tests/coverage/test_coverage_matrix.py tests/metrics/test_metric_catalog.py tests/provenance/test_provenance_graph.py tests/report/test_loop_report_rendering.py tests/report/test_report_rendering.py tests/visualization/test_loop_report_visualizations.py tests/ci/test_metric_coverage_gate.py tests/ci/test_loop_report_gate.py -> 50 passed",
+    "python3 scripts/codex_gate.py precheck --all -> PASS",
+    "printenv VSLAB_ALLOW_1000_DRYRUN -> unset"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Final read-only L09 validation retry passed. The prior scripts/__pycache__ blocker is cleared, L09 audit reports PASS with four profiles, and P14 real_valkey_coverage remains false."
+}

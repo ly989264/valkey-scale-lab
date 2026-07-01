@@ -1,0 +1,26 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "l09_resource_aware_profile_deferral",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "created_at": "2026-07-01T03:40:00Z",
+  "status": "APPROVED_DEFERRAL",
+  "node_counts": [
+    30,
+    50,
+    100
+  ],
+  "bounded": true,
+  "real_valkey_coverage": false,
+  "long_run_stability_claim": false,
+  "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+  "source_artifacts": [
+    "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/stage_design.md",
+    "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/current_harness_plan.json"
+  ],
+  "p14_boundary": {
+    "status": "SKIPPED_WITH_REASON",
+    "real_valkey_coverage": false,
+    "dry_run_only": true,
+    "reason": "P14 remains opt-in dry-run only and was not executed by L09."
+  }
+}

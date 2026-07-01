@@ -11,6 +11,9 @@
     "producer",
     "status",
     "duration_seconds",
+    "soak_profile",
+    "metrics_timeseries_path",
+    "baseline_comparison_path",
     "summary"
   ],
   "properties": {
@@ -67,8 +70,200 @@
       "type": "number",
       "minimum": 0
     },
+    "soak_profile": {
+      "type": "object",
+      "required": [
+        "bounded",
+        "long_run_stability_claim",
+        "windows",
+        "interval_count",
+        "ops_per_interval",
+        "total_operations_attempted",
+        "configured_max_nodes"
+      ],
+      "properties": {
+        "bounded": {"type": "boolean"},
+        "long_run_stability_claim": {"type": "boolean", "const": false},
+        "windows": {
+          "type": "array",
+          "minItems": 5,
+          "items": {"type": "string"},
+          "contains": {"const": "baseline"}
+        }
+      },
+      "additionalProperties": true
+    },
+    "metrics_timeseries_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "baseline_comparison_path": {
+      "type": "string",
+      "minLength": 1
+    },
     "summary": {
-      "type": "object"
+      "type": "object",
+      "required": [
+        "nodes_observed",
+        "windows",
+        "workload",
+        "metrics",
+        "restarts",
+        "leaks",
+        "errors",
+        "baseline"
+      ],
+      "properties": {
+        "windows": {
+          "type": "object",
+          "required": [
+            "baseline",
+            "steady",
+            "fault",
+            "recovery",
+            "post_recovery"
+          ],
+          "properties": {
+            "baseline": {
+              "type": "object",
+              "required": ["status", "sample_count", "bounded", "long_run_stability_claim", "workload"],
+              "properties": {
+                "workload": {
+                  "type": "object",
+                  "required": ["attempted_operations", "completed_operations", "error_count", "latency_ms"],
+                  "properties": {
+                    "attempted_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "completed_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "error_count": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "latency_ms": {
+                      "type": "object",
+                      "required": ["p50", "p95", "p99"],
+                      "properties": {
+                        "p50": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p95": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p99": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true}
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            },
+            "steady": {
+              "type": "object",
+              "required": ["status", "sample_count", "bounded", "long_run_stability_claim", "workload"],
+              "properties": {
+                "workload": {
+                  "type": "object",
+                  "required": ["attempted_operations", "completed_operations", "error_count", "latency_ms"],
+                  "properties": {
+                    "attempted_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "completed_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "error_count": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "latency_ms": {
+                      "type": "object",
+                      "required": ["p50", "p95", "p99"],
+                      "properties": {
+                        "p50": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p95": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p99": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true}
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            },
+            "fault": {
+              "type": "object",
+              "required": ["status", "sample_count", "bounded", "long_run_stability_claim", "workload"],
+              "properties": {
+                "workload": {
+                  "type": "object",
+                  "required": ["attempted_operations", "completed_operations", "error_count", "latency_ms"],
+                  "properties": {
+                    "attempted_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "completed_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "error_count": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "latency_ms": {
+                      "type": "object",
+                      "required": ["p50", "p95", "p99"],
+                      "properties": {
+                        "p50": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p95": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p99": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true}
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            },
+            "recovery": {
+              "type": "object",
+              "required": ["status", "sample_count", "bounded", "long_run_stability_claim", "workload"],
+              "properties": {
+                "workload": {
+                  "type": "object",
+                  "required": ["attempted_operations", "completed_operations", "error_count", "latency_ms"],
+                  "properties": {
+                    "attempted_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "completed_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "error_count": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "latency_ms": {
+                      "type": "object",
+                      "required": ["p50", "p95", "p99"],
+                      "properties": {
+                        "p50": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p95": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p99": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true}
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            },
+            "post_recovery": {
+              "type": "object",
+              "required": ["status", "sample_count", "bounded", "long_run_stability_claim", "workload"],
+              "properties": {
+                "workload": {
+                  "type": "object",
+                  "required": ["attempted_operations", "completed_operations", "error_count", "latency_ms"],
+                  "properties": {
+                    "attempted_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "completed_operations": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "error_count": {"type": ["integer", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                    "latency_ms": {
+                      "type": "object",
+                      "required": ["p50", "p95", "p99"],
+                      "properties": {
+                        "p50": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p95": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true},
+                        "p99": {"type": ["number", "object"], "required": ["status", "reason"], "properties": {"status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON"]}, "reason": {"type": "string", "minLength": 1}}, "additionalProperties": true}
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
     }
   },
   "additionalProperties": true

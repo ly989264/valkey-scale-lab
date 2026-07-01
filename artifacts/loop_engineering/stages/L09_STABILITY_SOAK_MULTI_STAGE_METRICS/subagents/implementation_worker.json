@@ -1,0 +1,124 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "agent_role": "implementation_worker",
+  "created_at": "2026-07-01T00:00:00Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety and phase-loop instructions.",
+      "key_findings": [
+        "Do not run P14 unless explicitly opted in.",
+        "Fake-only gates must not be presented as real Valkey evidence.",
+        "Missing metrics must be explicit and artifacts are the product."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Autonomous phase and CLI contract instructions.",
+      "key_findings": [
+        "Automatic work stops before P14.",
+        "P11 and later require real Valkey evidence for real capabilities."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent role and JSON response contract.",
+      "key_findings": [
+        "implementation_worker may implement only stage_design.md and current_harness_plan.json.",
+        "Final response must use the subagent JSON shape."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/stage_design.md",
+      "purpose": "L09 implementation scope and safety boundaries.",
+      "key_findings": [
+        "L09 requires baseline, steady, fault, recovery, and post_recovery windows.",
+        "30/50/100 profiles require resource preflight evidence and must not count skipped profiles as real stability coverage.",
+        "P14 real stability evidence is forbidden for automatic L09."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/current_harness_plan.json",
+      "purpose": "Harness plan and expected tests/artifact checks.",
+      "key_findings": [
+        "Audit command must produce artifacts/loop_engineering/reports/stability_soak_metrics.json.",
+        "Resource-aware 30/50/100 profiles must be bounded measured profiles or SKIPPED_WITH_REASON with preflight evidence."
+      ]
+    },
+    {
+      "path": "scripts/audit_stability_soak_metrics.py",
+      "purpose": "Inspect and patch L09 stability soak artifact audit implementation.",
+      "key_findings": [
+        "Small-real P11 checks cover windows, schema, producer, cleanup, bounded claims, and percentile ordering.",
+        "Resource preflight loading crashed on missing required preflight evidence instead of emitting a machine-readable failed audit."
+      ]
+    },
+    {
+      "path": "tests/stability/test_stability_soak_artifact_audit.py",
+      "purpose": "Inspect and extend L09 audit regression coverage.",
+      "key_findings": [
+        "Existing tests covered required profiles, missing windows, and unordered latency.",
+        "Added missing resource preflight regression coverage."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L09-IMPL-001",
+      "severity": "medium",
+      "description": "Fixed a bounded implementation gap where missing 30/50/100 resource preflight evidence caused the L09 audit to raise instead of producing a failed machine-readable rollup with a blocking finding.",
+      "evidence": [
+        "scripts/audit_stability_soak_metrics.py: resource_profile now records resource_preflight_missing and returns a skipped profile with missing source hash.",
+        "tests/stability/test_stability_soak_artifact_audit.py: added test_stability_soak_audit_reports_missing_resource_preflight."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "missing_resource_preflight_negative_test",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Removing resource_preflight_100.json must make the L09 audit return status FAIL with category resource_preflight_missing while preserving real_valkey_coverage=false."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Handle absent resource preflight artifacts inside the L09 audit builder.",
+      "files": [
+        "scripts/audit_stability_soak_metrics.py"
+      ],
+      "rationale": "Required 30/50/100 resource-aware profiles must remain artifact-first even when evidence is missing."
+    },
+    {
+      "step": "Add regression coverage for missing resource preflight evidence.",
+      "files": [
+        "tests/stability/test_stability_soak_artifact_audit.py"
+      ],
+      "rationale": "Prevents future crashes or fake pass behavior when a required resource preflight artifact is absent."
+    }
+  ],
+  "acceptance_criteria": [
+    "L09 audit still passes against the current repository artifacts.",
+    "Missing required resource preflight evidence is reported as a blocking finding in the rollup instead of crashing.",
+    "Skipped 30/50/100 resource-aware profiles do not count as real Valkey stability coverage.",
+    "No P14 or 1000-node commands are run."
+  ],
+  "risks": [
+    "Focused pytest could not be executed by the worker because pytest is not installed in that Python environment.",
+    "The main controller reran focused pytest with the project Python environment after integrating the worker result."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN.",
+    "Do not set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not count resource-aware skipped profiles as real Valkey stability evidence.",
+    "Do not invent missing resource preflight metrics."
+  ],
+  "commands_to_run": [
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/audit_stability_soak_metrics.py --root . --out /private/tmp/l09_stability_soak_metrics.json --require-node-counts 6,30,50,100",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 -m py_compile scripts/audit_stability_soak_metrics.py tests/stability/test_stability_soak_artifact_audit.py",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python -m pytest -q -p no:cacheprovider tests/stability/test_stability_soak_artifact_audit.py"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Files changed by implementation worker: scripts/audit_stability_soak_metrics.py and tests/stability/test_stability_soak_artifact_audit.py. No P14 or 1000-node command was run."
+}

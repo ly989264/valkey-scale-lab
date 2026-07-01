@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Stability Timeseries Sample JSONL Line",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "timestamp",
+    "source",
+    "window",
+    "soak_stage",
+    "node_count",
+    "bounded",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "metric_sample"},
+    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "timestamp": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "window": {"type": "string", "enum": ["baseline", "steady", "fault", "recovery", "post_recovery"]},
+    "soak_stage": {"type": "string", "enum": ["baseline", "steady", "fault", "recovery", "post_recovery"]},
+    "node_count": {"type": "integer", "minimum": 1, "maximum": 100},
+    "bounded": {"type": "boolean"},
+    "metrics": {
+      "type": "object",
+      "required": ["interval", "window", "soak_stage", "valkey", "cluster", "docker"],
+      "properties": {
+        "interval": {"type": "integer", "minimum": 0},
+        "window": {"type": "string"},
+        "soak_stage": {"type": "string"},
+        "valkey": {
+          "type": "object",
+          "required": ["used_memory", "connected_clients", "total_commands_processed"],
+          "additionalProperties": true
+        },
+        "cluster": {
+          "type": "object",
+          "required": ["cluster_state", "cluster_known_nodes"],
+          "additionalProperties": true
+        },
+        "docker": {
+          "type": "object",
+          "required": ["restart_count"],
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

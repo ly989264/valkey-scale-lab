@@ -43,12 +43,20 @@ def test_stability_artifacts_encode_bounded_soak_and_baseline(tmp_path: Path, mo
 
     assert report["status"] == "PASS"
     assert report["soak_profile"]["bounded"] is True
-    assert report["summary"]["metrics"]["sample_count"] == 6
+    assert report["soak_profile"]["long_run_stability_claim"] is False
+    assert report["soak_profile"]["windows"] == ["baseline", "steady", "fault", "recovery", "post_recovery"]
+    assert report["summary"]["metrics"]["sample_count"] == 10
+    assert set(report["summary"]["windows"]) == {"baseline", "steady", "fault", "recovery", "post_recovery"}
+    assert all(window["bounded"] is True for window in report["summary"]["windows"].values())
+    assert all(window["long_run_stability_claim"] is False for window in report["summary"]["windows"].values())
     assert report["summary"]["restarts"]["total_restart_delta"] == 0
     assert report["summary"]["baseline"]["status"] == "NO_BASELINE_YET"
     assert baseline["status"] == "NO_BASELINE_YET"
-    assert len(metrics) == 6
-    assert calls["workload"] == 36
+    assert len(metrics) == 10
+    parsed = [docker_runtime.json.loads(line) for line in metrics]
+    assert {row["window"] for row in parsed} == {"baseline", "steady", "fault", "recovery", "post_recovery"}
+    assert all(row["bounded"] is True for row in parsed)
+    assert calls["workload"] == 60
 
 
 def test_memory_growth_summary_marks_missing_with_too_few_samples() -> None:

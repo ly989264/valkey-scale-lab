@@ -158,6 +158,25 @@ def test_current_repo_provenance_covers_l08_fault_failover_sources() -> None:
         assert has_edge(report, source, rollup, "fault_failover_source")
 
 
+def test_current_repo_provenance_covers_l09_stability_soak_sources() -> None:
+    report = build_provenance_graph.build_graph(REPO_ROOT)
+    rollup = "artifacts/loop_engineering/reports/stability_soak_metrics.json"
+
+    assert report["status"] == "PASS"
+    assert node(report, rollup)["artifact_type"] == "stability_soak_metrics"
+    for source in [
+        "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+        "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
+        "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
+        "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+        "artifacts/phases/P11_STABILITY_SOAK/cleanup_report_stability_soak_smoke.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+    ]:
+        assert has_edge(report, source, rollup, "stability_soak_source")
+
+
 def test_current_repo_provenance_edges_are_unique() -> None:
     report = build_provenance_graph.build_graph(REPO_ROOT)
 

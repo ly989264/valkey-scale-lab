@@ -1,0 +1,812 @@
+{
+  "artifact_type": "stability_soak_metrics",
+  "created_at": "2026-07-01T03:11:57.786380Z",
+  "findings": [],
+  "p14_boundary": {
+    "dry_run_only": true,
+    "phase_id": "P14_SCALE_1000_OPTIN_DRYRUN",
+    "real_valkey_coverage": false,
+    "reason": "P14 is opt-in dry-run only and was not executed by L09.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "producer": {
+    "name": "scripts/audit_stability_soak_metrics.py",
+    "version": "v1"
+  },
+  "profiles": [
+    {
+      "artifact_type": "stability_soak_profile",
+      "baseline_comparison_path": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
+      "bounded": true,
+      "created_at": "2026-07-01T03:11:57.785319Z",
+      "evidence_class": "real_valkey",
+      "evidence_layer": "small-real",
+      "long_run_stability_claim": false,
+      "metric_records": [
+        {
+          "evidence_layer": "small-real",
+          "name": "duration_seconds",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.duration_seconds",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "seconds",
+          "value": 3.405719
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "nodes_observed",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.nodes_observed",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "nodes",
+          "value": 6
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "restart_delta_total",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.restarts.total_restart_delta",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "count",
+          "value": 0
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.baseline.latency_ms.p50",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.baseline.workload.latency_ms.p50",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 53.829938
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.baseline.latency_ms.p95",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.baseline.workload.latency_ms.p95",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 62.044964
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.baseline.latency_ms.p99",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.baseline.workload.latency_ms.p99",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 63.149126
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.baseline.error_count",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.baseline.workload.error_count",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "count",
+          "value": 0
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.fault.latency_ms.p50",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.fault.workload.latency_ms.p50",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 55.059584
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.fault.latency_ms.p95",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.fault.workload.latency_ms.p95",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 60.741586
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.fault.latency_ms.p99",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.fault.workload.latency_ms.p99",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 62.747417
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.fault.error_count",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.fault.workload.error_count",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "count",
+          "value": 0
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.post_recovery.latency_ms.p50",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.post_recovery.workload.latency_ms.p50",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 54.077792
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.post_recovery.latency_ms.p95",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.post_recovery.workload.latency_ms.p95",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 60.574396
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.post_recovery.latency_ms.p99",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.post_recovery.workload.latency_ms.p99",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 61.433313
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.post_recovery.error_count",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.post_recovery.workload.error_count",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "count",
+          "value": 0
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.recovery.latency_ms.p50",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.recovery.workload.latency_ms.p50",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 51.049895
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.recovery.latency_ms.p95",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.recovery.workload.latency_ms.p95",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 55.585931
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.recovery.latency_ms.p99",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.recovery.workload.latency_ms.p99",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 56.162753
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.recovery.error_count",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.recovery.workload.error_count",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "count",
+          "value": 0
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.steady.latency_ms.p50",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.steady.workload.latency_ms.p50",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 53.967605
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.steady.latency_ms.p95",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.steady.workload.latency_ms.p95",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 59.593884
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.steady.latency_ms.p99",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.steady.workload.latency_ms.p99",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "milliseconds",
+          "value": 59.733877
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "window.steady.error_count",
+          "reason": "",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.windows.steady.workload.error_count",
+          "status": "MEASURED",
+          "surface": "stability",
+          "unit": "count",
+          "value": 0
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "baseline.error_count",
+          "reason": "No previous stability baseline artifact exists.",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.baseline.comparisons.0",
+          "status": "NO_BASELINE_YET",
+          "surface": "stability",
+          "unit": "count",
+          "value": null
+        },
+        {
+          "evidence_layer": "small-real",
+          "name": "baseline.max_memory_growth_bytes",
+          "reason": "No previous stability baseline artifact exists.",
+          "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "source_pointer": "$.summary.baseline.comparisons.1",
+          "status": "NO_BASELINE_YET",
+          "surface": "stability",
+          "unit": "count",
+          "value": null
+        }
+      ],
+      "metrics_timeseries_path": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
+      "node_count": 6,
+      "phase_id": "P11_STABILITY_SOAK",
+      "producer": {
+        "name": "scripts/audit_stability_soak_metrics.py",
+        "version": "v1"
+      },
+      "real_valkey_coverage": true,
+      "resource_aware": true,
+      "run_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+      "schema_version": "v1",
+      "source_artifacts": [
+        "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+        "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
+        "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
+        "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+        "artifacts/phases/P11_STABILITY_SOAK/cleanup_report_stability_soak_smoke.json"
+      ],
+      "source_hashes": [
+        {
+          "exists": true,
+          "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+          "sha256": "b7cb60f9a4ac7a65cd4e3bcf216de5dd8089ca1562cbc27ce2ef75859d903140"
+        },
+        {
+          "exists": true,
+          "path": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
+          "sha256": "a82649bc4ebe6ced654291fc1d180b56e2462fdff2e176fb0e73a33b22710f26"
+        },
+        {
+          "exists": true,
+          "path": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
+          "sha256": "b606ee94ce842aa9243f5e3aec5bb2ce5eb307bdc38d747ee02c8c881a1e9c64"
+        },
+        {
+          "exists": true,
+          "path": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+          "sha256": "b228e61454a00a9211975d097f45462969c0495e7ad555204e9c54418f1b4e4e"
+        },
+        {
+          "exists": true,
+          "path": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report_stability_soak_smoke.json",
+          "sha256": "471abc06fe4992da3411b4fce0f16dddaca12442fbd9c1ef8206b552fe1c5551"
+        }
+      ],
+      "status": "PASS",
+      "windows": {
+        "baseline": {
+          "bounded": true,
+          "errors": {
+            "items": [],
+            "taxonomy": {
+              "categories": {
+                "cluster_unavailable": 0,
+                "fault_expected": 0,
+                "none": 1,
+                "recovery_error": 0,
+                "timeout": 0,
+                "unknown": 0,
+                "workload_error": 0
+              },
+              "status": "MEASURED",
+              "total": 0
+            }
+          },
+          "long_run_stability_claim": false,
+          "sample_count": 6,
+          "status": "MEASURED",
+          "workload": {
+            "attempted_operations": 12,
+            "completed_operations": 12,
+            "error_count": 0,
+            "latency_ms": {
+              "max": 63.425166,
+              "min": 51.472417,
+              "p50": 53.829938,
+              "p95": 62.044964,
+              "p99": 63.149126,
+              "sample_count": 12,
+              "unit": "ms"
+            }
+          }
+        },
+        "fault": {
+          "bounded": true,
+          "errors": {
+            "items": [],
+            "taxonomy": {
+              "categories": {
+                "cluster_unavailable": 0,
+                "fault_expected": 0,
+                "none": 1,
+                "recovery_error": 0,
+                "timeout": 0,
+                "unknown": 0,
+                "workload_error": 0
+              },
+              "status": "MEASURED",
+              "total": 0
+            }
+          },
+          "long_run_stability_claim": false,
+          "sample_count": 6,
+          "status": "MEASURED",
+          "workload": {
+            "attempted_operations": 12,
+            "completed_operations": 12,
+            "error_count": 0,
+            "latency_ms": {
+              "max": 63.248875,
+              "min": 49.356458,
+              "p50": 55.059584,
+              "p95": 60.741586,
+              "p99": 62.747417,
+              "sample_count": 12,
+              "unit": "ms"
+            }
+          }
+        },
+        "post_recovery": {
+          "bounded": true,
+          "errors": {
+            "items": [],
+            "taxonomy": {
+              "categories": {
+                "cluster_unavailable": 0,
+                "fault_expected": 0,
+                "none": 1,
+                "recovery_error": 0,
+                "timeout": 0,
+                "unknown": 0,
+                "workload_error": 0
+              },
+              "status": "MEASURED",
+              "total": 0
+            }
+          },
+          "long_run_stability_claim": false,
+          "sample_count": 6,
+          "status": "MEASURED",
+          "workload": {
+            "attempted_operations": 12,
+            "completed_operations": 12,
+            "error_count": 0,
+            "latency_ms": {
+              "max": 61.648042,
+              "min": 48.977042,
+              "p50": 54.077792,
+              "p95": 60.574396,
+              "p99": 61.433313,
+              "sample_count": 12,
+              "unit": "ms"
+            }
+          }
+        },
+        "recovery": {
+          "bounded": true,
+          "errors": {
+            "items": [],
+            "taxonomy": {
+              "categories": {
+                "cluster_unavailable": 0,
+                "fault_expected": 0,
+                "none": 1,
+                "recovery_error": 0,
+                "timeout": 0,
+                "unknown": 0,
+                "workload_error": 0
+              },
+              "status": "MEASURED",
+              "total": 0
+            }
+          },
+          "long_run_stability_claim": false,
+          "sample_count": 6,
+          "status": "MEASURED",
+          "workload": {
+            "attempted_operations": 12,
+            "completed_operations": 12,
+            "error_count": 0,
+            "latency_ms": {
+              "max": 56.306958,
+              "min": 42.950792,
+              "p50": 51.049895,
+              "p95": 55.585931,
+              "p99": 56.162753,
+              "sample_count": 12,
+              "unit": "ms"
+            }
+          }
+        },
+        "steady": {
+          "bounded": true,
+          "errors": {
+            "items": [],
+            "taxonomy": {
+              "categories": {
+                "cluster_unavailable": 0,
+                "fault_expected": 0,
+                "none": 1,
+                "recovery_error": 0,
+                "timeout": 0,
+                "unknown": 0,
+                "workload_error": 0
+              },
+              "status": "MEASURED",
+              "total": 0
+            }
+          },
+          "long_run_stability_claim": false,
+          "sample_count": 6,
+          "status": "MEASURED",
+          "workload": {
+            "attempted_operations": 12,
+            "completed_operations": 12,
+            "error_count": 0,
+            "latency_ms": {
+              "max": 59.768875,
+              "min": 48.361125,
+              "p50": 53.967605,
+              "p95": 59.593884,
+              "p99": 59.733877,
+              "sample_count": 12,
+              "unit": "ms"
+            }
+          }
+        }
+      }
+    },
+    {
+      "artifact_type": "stability_soak_profile",
+      "bounded": true,
+      "created_at": "2026-07-01T03:11:57.785786Z",
+      "evidence_class": "resource_aware_profile",
+      "evidence_layer": "30",
+      "long_run_stability_claim": false,
+      "metric_records": [
+        {
+          "evidence_layer": "30",
+          "name": "resource_aware_profile.status",
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+          "source_pointer": "$.can_run",
+          "status": "SKIPPED_WITH_REASON",
+          "surface": "stability",
+          "unit": "status",
+          "value": null
+        }
+      ],
+      "node_count": 30,
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "producer": {
+        "name": "scripts/audit_stability_soak_metrics.py",
+        "version": "v1"
+      },
+      "real_valkey_coverage": false,
+      "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+      "resource_aware": true,
+      "run_id": "P12_SCALE_LADDER_10_30-stability-resource-aware-30-20260701",
+      "schema_version": "v1",
+      "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+      "source_artifacts": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+        "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
+      ],
+      "source_hashes": [
+        {
+          "exists": true,
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+          "sha256": "8acb354c3c6cd1d948ec4fa630abaebb7b821914937e8fe25c3f732e11bbe89d"
+        },
+        {
+          "exists": true,
+          "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json",
+          "sha256": "31e1255e9cf58eaed5637de1e3eaec5399bbcd236cb379a97c3b492fca0336ef"
+        }
+      ],
+      "status": "SKIPPED_WITH_REASON",
+      "windows": {
+        "baseline": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "fault": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "post_recovery": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "recovery": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "steady": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        }
+      }
+    },
+    {
+      "artifact_type": "stability_soak_profile",
+      "bounded": true,
+      "created_at": "2026-07-01T03:11:57.786018Z",
+      "evidence_class": "resource_aware_profile",
+      "evidence_layer": "50",
+      "long_run_stability_claim": false,
+      "metric_records": [
+        {
+          "evidence_layer": "50",
+          "name": "resource_aware_profile.status",
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+          "source_pointer": "$.can_run",
+          "status": "SKIPPED_WITH_REASON",
+          "surface": "stability",
+          "unit": "status",
+          "value": null
+        }
+      ],
+      "node_count": 50,
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "producer": {
+        "name": "scripts/audit_stability_soak_metrics.py",
+        "version": "v1"
+      },
+      "real_valkey_coverage": false,
+      "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+      "resource_aware": true,
+      "run_id": "P13_SCALE_LADDER_50_100-stability-resource-aware-50-20260701",
+      "schema_version": "v1",
+      "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+      "source_artifacts": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+        "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
+      ],
+      "source_hashes": [
+        {
+          "exists": true,
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+          "sha256": "ec3b330d8c39f76fefe962789c89cad2b8ace0fa182d04862942a1b644ca73c5"
+        },
+        {
+          "exists": true,
+          "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json",
+          "sha256": "31e1255e9cf58eaed5637de1e3eaec5399bbcd236cb379a97c3b492fca0336ef"
+        }
+      ],
+      "status": "SKIPPED_WITH_REASON",
+      "windows": {
+        "baseline": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "fault": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "post_recovery": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "recovery": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "steady": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        }
+      }
+    },
+    {
+      "artifact_type": "stability_soak_profile",
+      "bounded": true,
+      "created_at": "2026-07-01T03:11:57.786239Z",
+      "evidence_class": "resource_aware_profile",
+      "evidence_layer": "100",
+      "long_run_stability_claim": false,
+      "metric_records": [
+        {
+          "evidence_layer": "100",
+          "name": "resource_aware_profile.status",
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+          "source_pointer": "$.can_run",
+          "status": "SKIPPED_WITH_REASON",
+          "surface": "stability",
+          "unit": "status",
+          "value": null
+        }
+      ],
+      "node_count": 100,
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "producer": {
+        "name": "scripts/audit_stability_soak_metrics.py",
+        "version": "v1"
+      },
+      "real_valkey_coverage": false,
+      "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+      "resource_aware": true,
+      "run_id": "P13_SCALE_LADDER_50_100-stability-resource-aware-100-20260701",
+      "schema_version": "v1",
+      "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+      "source_artifacts": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+        "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
+      ],
+      "source_hashes": [
+        {
+          "exists": true,
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+          "sha256": "270389fb0c89ebba805129e9f6963f48c9a1a531fe31d0c8de69df484446100c"
+        },
+        {
+          "exists": true,
+          "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json",
+          "sha256": "31e1255e9cf58eaed5637de1e3eaec5399bbcd236cb379a97c3b492fca0336ef"
+        }
+      ],
+      "status": "SKIPPED_WITH_REASON",
+      "windows": {
+        "baseline": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "fault": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "post_recovery": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "recovery": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "steady": {
+          "bounded": true,
+          "long_run_stability_claim": false,
+          "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+          "skip_category": "MEASUREMENT_DEFERRED_WITH_REVIEWED_REASON",
+          "status": "SKIPPED_WITH_REASON"
+        }
+      }
+    }
+  ],
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": {
+    "blocking_findings_count": 0,
+    "measured_profile_count": 1,
+    "missing_metric_count": 5,
+    "profile_count": 4,
+    "required_node_counts": [
+      6,
+      30,
+      50,
+      100
+    ],
+    "resource_aware_profile_count": 4,
+    "windows": [
+      "baseline",
+      "steady",
+      "fault",
+      "recovery",
+      "post_recovery"
+    ]
+  }
+}

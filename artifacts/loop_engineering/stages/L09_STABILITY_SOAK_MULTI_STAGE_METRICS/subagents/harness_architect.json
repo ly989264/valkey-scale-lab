@@ -1,0 +1,148 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "agent_role": "harness_architect",
+  "created_at": "2026-07-01T03:00:00Z",
+  "context_files_read": [
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L09 stage requirements.",
+      "key_findings": [
+        "L09 must model baseline, steady, fault, recovery, and post-recovery windows.",
+        "Required metrics include latency percentiles, memory growth/leak summaries, restart delta, error taxonomy, and baseline comparison.",
+        "Large profiles must be bounded or resource-aware."
+      ]
+    },
+    {
+      "path": "tests/stability/test_stability_soak.py",
+      "purpose": "Existing stability test coverage.",
+      "key_findings": [
+        "Current tests validate bounded P11 smoke, baseline NO_BASELINE_YET, restart delta, and memory missing semantics.",
+        "They do not validate the five-window L09 model or 30/50/100 profiles."
+      ]
+    },
+    {
+      "path": "schemas/artifact/stability_report.schema.json",
+      "purpose": "Existing stability report schema.",
+      "key_findings": [
+        "The schema is permissive and does not require L09 windows, source paths, or missing semantics."
+      ]
+    },
+    {
+      "path": "scripts/build_metric_coverage_matrix.py",
+      "purpose": "Coverage and metric catalog builder.",
+      "key_findings": [
+        "Current stability catalog reads P11 only.",
+        "It does not catalog stability window trends or 30/50/100 bounded profiles."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "HA-L09-001",
+      "severity": "high",
+      "description": "Current stability smoke artifacts do not encode the required L09 multi-stage model.",
+      "evidence": [
+        "P11 samples include metrics.interval but no baseline, steady, fault, recovery, or post_recovery window label.",
+        "P11 report has one summary block, not per-window summaries."
+      ]
+    },
+    {
+      "id": "HA-L09-002",
+      "severity": "high",
+      "description": "Current stability schema is too permissive to prevent skeleton or fabricated L09 reports.",
+      "evidence": [
+        "stability_report.schema.json allows additionalProperties and requires only generic top-level fields."
+      ]
+    },
+    {
+      "id": "HA-L09-003",
+      "severity": "medium",
+      "description": "30/50/100 scale evidence exists, but there is no bounded stability soak profile audit tying those node counts to soak time series and resource preflight.",
+      "evidence": [
+        "P12/P13 have resource preflight and scale/fault artifacts but no stability_soak_profile artifacts."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "Strict stability report and timeseries schemas",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Schemas require soak_profile, metrics_timeseries_path, baseline_comparison_path, summary.windows for all five windows, latency p50/p95/p99, memory growth/leak status, restart delta, error taxonomy, and explicit missing reasons."
+    },
+    {
+      "name": "Fake deterministic multi-stage soak timeline tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Fake timeline tests validate ordered JSONL samples, window summaries, percentile ordering, memory growth, restart deltas, and error taxonomy."
+    },
+    {
+      "name": "Stability soak artifact audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Audit reads JSON and JSONL artifacts only, emits stability_soak_metrics.json, rejects invented long-run claims, validates P14 boundary, and checks source paths and node counts."
+    },
+    {
+      "name": "30/50/100 bounded or resource-aware profile checks",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "For node counts 30, 50, and 100, audit requires bounded measured profiles with JSONL and resource preflight, or SKIPPED_WITH_REASON profiles tied to resource preflight blockers."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define strict artifact contracts before implementation.",
+      "files": [
+        "schemas/artifact/stability_report.schema.json",
+        "schemas/artifact/stability_baseline_comparison.schema.json",
+        "schemas/artifact/stability_soak_rollup.schema.json",
+        "schemas/artifact/stability_timeseries_sample.schema.json"
+      ],
+      "rationale": "L09 needs schema-first protection against permissive reports that omit windows, missing semantics, or source links."
+    },
+    {
+      "step": "Add deterministic fake timeline harness.",
+      "files": [
+        "tests/stability/test_stability_soak_multistage.py"
+      ],
+      "rationale": "Fake tests lock down timeline ordering, window summaries, percentile math, memory growth, restart delta, and error taxonomy without requiring Docker."
+    },
+    {
+      "step": "Add the artifact audit script and CI guard.",
+      "files": [
+        "scripts/audit_stability_soak_metrics.py",
+        "tests/stability/test_stability_soak_artifact_audit.py",
+        "tests/ci/test_stability_soak_metrics_gate.py"
+      ],
+      "rationale": "The audit validates machine-readable artifacts, cross-artifact consistency, bounded profile semantics, and resource-aware skips."
+    }
+  ],
+  "acceptance_criteria": [
+    "Every stability profile emits JSONL time series validated line-by-line from machine-readable artifacts.",
+    "P11 small-real evidence includes real_valkey true, Valkey 9.1.x, observed nodes >= 6, data-path proof, cleanup PASS, and schema validation PASS.",
+    "The L09 model includes baseline, steady, fault, recovery, and post_recovery windows in report summary and time series.",
+    "30/50/100 profiles are bounded measured profiles or explicit SKIPPED_WITH_REASON profiles tied to resource preflight blockers.",
+    "Metric catalog, coverage matrix, provenance graph, and rendered reports trace stability metrics back to JSON/JSONL artifacts."
+  ],
+  "risks": [
+    "Running 50/100 real bounded soaks can be resource-expensive.",
+    "A short smoke window may be misrepresented as long-run stability.",
+    "Fault/recovery windows could be fabricated without safe owned-container fault evidence.",
+    "Report builders might accidentally read rendered CSV/HTML as input."
+  ],
+  "forbidden_shortcuts": [
+    "Do not use P14 or 1000-node real artifacts as L09 evidence.",
+    "Do not mark 30/50/100 profiles PASS without resource preflight and either measured JSONL or explicit SKIPPED_WITH_REASON.",
+    "Do not infer metrics from Markdown, HTML, SVG, or CSV report views.",
+    "Do not weaken schemas by making required L09 fields optional to pass old artifacts."
+  ],
+  "commands_to_run": [
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/codex_gate.py precheck --all",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 -m pytest -q -p no:cacheprovider tests/stability",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/audit_stability_soak_metrics.py --root . --out artifacts/loop_engineering/reports/stability_soak_metrics.json --require-node-counts 6,30,50,100",
+    "PYTHONDONTWRITEBYTECODE=1 PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Harness design is approved for main-agent stage design. The core guardrail is a new stability soak artifact audit backed by stricter schemas and deterministic fake timeline tests."
+}

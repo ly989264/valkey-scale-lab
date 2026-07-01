@@ -125,7 +125,7 @@
     },
     {
       "path": "schemas/artifact/stability_report.schema.json",
-      "sha256": "6bf8f2558b20a3f87b0aa6159e3a1d6f7d165a77c55437769a231698af2559c6"
+      "sha256": "673c28b45ba95056b86fb8acf271c7ff58b245bd354a827fe64755d9a0963f38"
     },
     {
       "path": "schemas/artifact/valkey_e2e_evidence.schema.json",

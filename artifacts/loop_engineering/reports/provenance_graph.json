@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "artifact_type": "provenance_graph",
-  "created_at": "2026-07-01T02:20:24.856059Z",
+  "created_at": "2026-07-01T03:11:57.865266Z",
   "producer": {
     "name": "scripts/build_provenance_graph.py",
     "version": "v1"
   },
   "status": "PASS",
-  "root_commit_sha": "5542161fa84a35fb853e1a6268ebcf4081ea8fe9",
+  "root_commit_sha": "3c79ec4aecb552702efb489a358e5af2f49bc3d4",
   "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
   "scope": {
     "target_phase_ids": [
@@ -37,14 +37,14 @@
     ]
   },
   "summary": {
-    "node_count": 114,
-    "edge_count": 88,
-    "source_of_truth_node_count": 108,
+    "node_count": 117,
+    "edge_count": 99,
+    "source_of_truth_node_count": 111,
     "report_view_node_count": 6,
     "blocking_findings_count": 0,
     "missing_source_count": 0,
     "hash_mismatch_count": 0,
-    "missing_metadata_count": 11,
+    "missing_metadata_count": 14,
     "invalid_source_schema_count": 0
   },
   "report_view_policy": {
@@ -208,6 +208,94 @@
         },
         "producer": {
           "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "exists": true,
+      "sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "hash_status": "PRESENT",
+      "artifact_role": "stability_soak_metrics",
+      "source_of_truth": true,
+      "artifact_type": "stability_soak_metrics",
+      "phase_id": null,
+      "run_id": null,
+      "producer": {
+        "name": "scripts/audit_stability_soak_metrics.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": null,
+      "schema_sha256": null,
+      "schema_valid": null,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "SKIPPED_WITH_REASON",
+          "reason": "No artifact schema is defined for historical artifact_type=stability_soak_metrics."
+        },
+        "phase_id": {
+          "status": "MISSING",
+          "reason": "phase_id is absent from this source artifact."
+        },
+        "run_id": {
+          "status": "MISSING",
+          "reason": "run_id is absent from this source artifact."
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json",
+      "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json",
+      "exists": true,
+      "sha256": "31e1255e9cf58eaed5637de1e3eaec5399bbcd236cb379a97c3b492fca0336ef",
+      "hash_status": "PRESENT",
+      "artifact_role": "l09_resource_aware_profile_deferral",
+      "source_of_truth": true,
+      "artifact_type": "l09_resource_aware_profile_deferral",
+      "phase_id": null,
+      "run_id": null,
+      "producer": null,
+      "status": "APPROVED_DEFERRAL",
+      "schema_path": null,
+      "schema_sha256": null,
+      "schema_valid": null,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "SKIPPED_WITH_REASON",
+          "reason": "No artifact schema is defined for historical artifact_type=l09_resource_aware_profile_deferral."
+        },
+        "phase_id": {
+          "status": "MISSING",
+          "reason": "phase_id is absent from this source artifact."
+        },
+        "run_id": {
+          "status": "MISSING",
+          "reason": "run_id is absent from this source artifact."
+        },
+        "producer": {
+          "status": "MISSING",
+          "reason": "producer is absent from this source artifact."
         },
         "status": {
           "status": "PRESENT"
@@ -2469,7 +2557,49 @@
       "id": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
       "path": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
       "exists": true,
-      "sha256": "3a99f319f6d8513bb23a17dd9041842335725c80b1bd20dc5fc1b451bbd7b929",
+      "sha256": "471abc06fe4992da3411b4fce0f16dddaca12442fbd9c1ef8206b552fe1c5551",
+      "hash_status": "PRESENT",
+      "artifact_role": "cleanup",
+      "source_of_truth": true,
+      "artifact_type": "cleanup_report",
+      "phase_id": "P11_STABILITY_SOAK",
+      "run_id": "P11_STABILITY_SOAK-stability_soak_smoke-20260628",
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_sha256": "d79a8bdb0569fb51921721a4b95478d80e4cd751c180004b409a0a3d52760ba2",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report_stability_soak_smoke.json",
+      "path": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report_stability_soak_smoke.json",
+      "exists": true,
+      "sha256": "471abc06fe4992da3411b4fce0f16dddaca12442fbd9c1ef8206b552fe1c5551",
       "hash_status": "PRESENT",
       "artifact_role": "cleanup",
       "source_of_truth": true,
@@ -2553,7 +2683,7 @@
       "id": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
       "path": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
       "exists": true,
-      "sha256": "c1d693f3f3d9fea6ba21ec3e986b5f3c3dcd55503b92892d1c34f42dd9465bc7",
+      "sha256": "b606ee94ce842aa9243f5e3aec5bb2ce5eb307bdc38d747ee02c8c881a1e9c64",
       "hash_status": "PRESENT",
       "artifact_role": "stability_baseline_comparison",
       "source_of_truth": true,
@@ -2596,7 +2726,7 @@
       "id": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
       "path": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
       "exists": true,
-      "sha256": "81ac533f008573df8ba8576be56ac2223cf06065c946022c1bd5c52e6eb180a3",
+      "sha256": "a82649bc4ebe6ced654291fc1d180b56e2462fdff2e176fb0e73a33b22710f26",
       "hash_status": "PRESENT",
       "artifact_role": "metric_sample",
       "source_of_truth": true,
@@ -2637,7 +2767,7 @@
       "id": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
       "path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
       "exists": true,
-      "sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "sha256": "b7cb60f9a4ac7a65cd4e3bcf216de5dd8089ca1562cbc27ce2ef75859d903140",
       "hash_status": "PRESENT",
       "artifact_role": "stability_report",
       "source_of_truth": true,
@@ -2650,7 +2780,7 @@
       },
       "status": "PASS",
       "schema_path": "schemas/artifact/stability_report.schema.json",
-      "schema_sha256": "6bf8f2558b20a3f87b0aa6159e3a1d6f7d165a77c55437769a231698af2559c6",
+      "schema_sha256": "673c28b45ba95056b86fb8acf271c7ff58b245bd354a827fe64755d9a0963f38",
       "schema_valid": true,
       "metadata_status": {
         "artifact_type": {
@@ -2679,7 +2809,7 @@
       "id": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
       "path": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
       "exists": true,
-      "sha256": "a869914311a15cfe595eed1d708591fbb36c7766c924ccd27a5e6ac52e18ff6f",
+      "sha256": "b228e61454a00a9211975d097f45462969c0495e7ad555204e9c54418f1b4e4e",
       "hash_status": "PRESENT",
       "artifact_role": "real_evidence",
       "source_of_truth": true,
@@ -5281,8 +5411,8 @@
       "required": true,
       "status": "PASS",
       "hash_status": "NOT_DECLARED",
-      "source_sha256": "81ac533f008573df8ba8576be56ac2223cf06065c946022c1bd5c52e6eb180a3",
-      "target_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_sha256": "a82649bc4ebe6ced654291fc1d180b56e2462fdff2e176fb0e73a33b22710f26",
+      "target_sha256": "b7cb60f9a4ac7a65cd4e3bcf216de5dd8089ca1562cbc27ce2ef75859d903140",
       "declared_source_sha256": null,
       "declared_target_sha256": null,
       "finding_ids": []
@@ -5296,8 +5426,8 @@
       "required": true,
       "status": "PASS",
       "hash_status": "NOT_DECLARED",
-      "source_sha256": "c1d693f3f3d9fea6ba21ec3e986b5f3c3dcd55503b92892d1c34f42dd9465bc7",
-      "target_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_sha256": "b606ee94ce842aa9243f5e3aec5bb2ce5eb307bdc38d747ee02c8c881a1e9c64",
+      "target_sha256": "b7cb60f9a4ac7a65cd4e3bcf216de5dd8089ca1562cbc27ce2ef75859d903140",
       "declared_source_sha256": null,
       "declared_target_sha256": null,
       "finding_ids": []
@@ -5311,8 +5441,8 @@
       "required": true,
       "status": "PASS",
       "hash_status": "NOT_DECLARED",
-      "source_sha256": "a869914311a15cfe595eed1d708591fbb36c7766c924ccd27a5e6ac52e18ff6f",
-      "target_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_sha256": "b228e61454a00a9211975d097f45462969c0495e7ad555204e9c54418f1b4e4e",
+      "target_sha256": "b7cb60f9a4ac7a65cd4e3bcf216de5dd8089ca1562cbc27ce2ef75859d903140",
       "declared_source_sha256": null,
       "declared_target_sha256": null,
       "finding_ids": []
@@ -5326,8 +5456,8 @@
       "required": true,
       "status": "PASS",
       "hash_status": "NOT_DECLARED",
-      "source_sha256": "3a99f319f6d8513bb23a17dd9041842335725c80b1bd20dc5fc1b451bbd7b929",
-      "target_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "source_sha256": "471abc06fe4992da3411b4fce0f16dddaca12442fbd9c1ef8206b552fe1c5551",
+      "target_sha256": "b7cb60f9a4ac7a65cd4e3bcf216de5dd8089ca1562cbc27ce2ef75859d903140",
       "declared_source_sha256": null,
       "declared_target_sha256": null,
       "finding_ids": []
@@ -5342,7 +5472,172 @@
       "status": "PASS",
       "hash_status": "NOT_DECLARED",
       "source_sha256": "da4f38aa80be58917fa53ac700c26886f56309948cea95a3ef9909e06c22765c",
-      "target_sha256": "21ec60c195410d37f423af471a388ed0aad9b78369d23eb3ceb0fd65a5623f7b",
+      "target_sha256": "b7cb60f9a4ac7a65cd4e3bcf216de5dd8089ca1562cbc27ce2ef75859d903140",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_6",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[0]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "b7cb60f9a4ac7a65cd4e3bcf216de5dd8089ca1562cbc27ce2ef75859d903140",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_6",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[0]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "a82649bc4ebe6ced654291fc1d180b56e2462fdff2e176fb0e73a33b22710f26",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_6",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[0]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "b606ee94ce842aa9243f5e3aec5bb2ce5eb307bdc38d747ee02c8c881a1e9c64",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P11_STABILITY_SOAK/valkey_e2e_evidence.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_6",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[0]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "b228e61454a00a9211975d097f45462969c0495e7ad555204e9c54418f1b4e4e",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P11_STABILITY_SOAK/cleanup_report_stability_soak_smoke.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_6",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[0]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "471abc06fe4992da3411b4fce0f16dddaca12442fbd9c1ef8206b552fe1c5551",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_30",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[1]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "8acb354c3c6cd1d948ec4fa630abaebb7b821914937e8fe25c3f732e11bbe89d",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_30",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[1]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "31e1255e9cf58eaed5637de1e3eaec5399bbcd236cb379a97c3b492fca0336ef",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_50",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[2]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "ec3b330d8c39f76fefe962789c89cad2b8ace0fa182d04862942a1b644ca73c5",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_50",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[2]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "31e1255e9cf58eaed5637de1e3eaec5399bbcd236cb379a97c3b492fca0336ef",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_100",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[3]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "270389fb0c89ebba805129e9f6963f48c9a1a531fe31d0c8de69df484446100c",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "declared_source_sha256": null,
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json",
+      "target_path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "relation": "stability_soak_source",
+      "discovered_by": "profile_100",
+      "evidence_pointer": "artifacts/loop_engineering/reports/stability_soak_metrics.json.profiles[3]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "NOT_DECLARED",
+      "source_sha256": "31e1255e9cf58eaed5637de1e3eaec5399bbcd236cb379a97c3b492fca0336ef",
+      "target_sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
       "declared_source_sha256": null,
       "declared_target_sha256": null,
       "finding_ids": []
@@ -6512,6 +6807,45 @@
       ],
       "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
       "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/state_failover.json"
+    },
+    {
+      "id": "PV-0014",
+      "severity": "medium",
+      "category": "missing_metadata",
+      "blocking": false,
+      "description": "Provenance source metadata is missing: phase_id",
+      "evidence": [
+        "field=phase_id",
+        "phase_id is absent from this source artifact.",
+        "source=artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
+      ],
+      "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
+    },
+    {
+      "id": "PV-0015",
+      "severity": "medium",
+      "category": "missing_metadata",
+      "blocking": false,
+      "description": "Provenance source metadata is missing: run_id",
+      "evidence": [
+        "field=run_id",
+        "run_id is absent from this source artifact.",
+        "source=artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
+      ],
+      "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
+    },
+    {
+      "id": "PV-0016",
+      "severity": "medium",
+      "category": "missing_metadata",
+      "blocking": false,
+      "description": "Provenance source metadata is missing: producer",
+      "evidence": [
+        "field=producer",
+        "producer is absent from this source artifact.",
+        "source=artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
+      ],
+      "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/resource_aware_profile_deferral.json"
     }
   ]
 }

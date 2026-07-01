@@ -1,0 +1,66 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "status": "PASS",
+  "completed_at": "2026-07-01T02:31:56.052630Z",
+  "environment_notes": [
+    "Previous harness baseline ran with PYTHONDONTWRITEBYTECODE=1.",
+    "Commands used PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache to avoid repository bytecode churn.",
+    "Pytest commands used -p no:cacheprovider to avoid .pytest_cache recreation.",
+    "No P14 opt-in dry-run command, 1000-node command, real fault wrapper, or real soak wrapper was executed during the previous harness baseline."
+  ],
+  "commands_log": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/commands.jsonl",
+  "commands": [
+    {
+      "name": "precheck_all",
+      "command": "python3 scripts/codex_gate.py precheck --all",
+      "status": "PASS"
+    },
+    {
+      "name": "safety_scan",
+      "command": "python3 scripts/safety_scan.py",
+      "status": "PASS"
+    },
+    {
+      "name": "compileall",
+      "command": "python3 -m compileall -q src scripts tests",
+      "status": "PASS"
+    },
+    {
+      "name": "postcheck_compatibility",
+      "command": "python -m pytest -q tests/ci/test_postcheck_compatibility.py",
+      "status": "PASS"
+    },
+    {
+      "name": "unit_cli_contract",
+      "command": "python -m pytest -q tests/unit tests/ci/test_github_coverage_gates.py",
+      "status": "PASS"
+    },
+    {
+      "name": "config_planner",
+      "command": "python -m pytest -q tests/config tests/planner",
+      "status": "PASS"
+    },
+    {
+      "name": "runtime_fault_failover_orchestrator",
+      "command": "python -m pytest -q tests/integration tests/fault tests/failover tests/orchestrator",
+      "status": "PASS"
+    },
+    {
+      "name": "analysis_report_stability_scale",
+      "command": "python -m pytest -q tests/analysis tests/report tests/stability tests/scale",
+      "status": "PASS"
+    },
+    {
+      "name": "loop_engineering_validator",
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+      "status": "PASS"
+    },
+    {
+      "name": "loop_engineering_tests",
+      "command": "python -m pytest -q tests/loop_engineering tests/ci/test_loop_engineering_pack.py",
+      "status": "PASS"
+    }
+  ],
+  "all_required_baseline_commands_passed": true
+}

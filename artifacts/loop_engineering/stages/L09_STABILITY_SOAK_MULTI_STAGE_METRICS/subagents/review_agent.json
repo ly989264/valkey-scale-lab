@@ -1,0 +1,60 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L09_STABILITY_SOAK_MULTI_STAGE_METRICS",
+  "agent_role": "review_agent",
+  "created_at": "2026-07-01T00:00:00+08:00",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Review controlling safety and artifact discipline requirements.",
+      "key_findings": [
+        "Missing metrics must be explicit MISSING or SKIPPED_WITH_REASON and never fabricated.",
+        "Harness schema and script changes must strengthen requirements."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L09_STABILITY_SOAK_MULTI_STAGE_METRICS/stage_design.md",
+      "purpose": "Review L09 acceptance requirements.",
+      "key_findings": [
+        "All five stability windows are required.",
+        "Per-window p50, p95, p99 and missing metric semantics must be explicit with reasons."
+      ]
+    },
+    {
+      "path": "schemas/artifact/stability_report.schema.json",
+      "purpose": "Verify source artifact strictness.",
+      "key_findings": [
+        "Each measured window requires workload counters and p50/p95/p99 latency metrics as numeric values or explicit missing/skipped objects with reasons."
+      ]
+    },
+    {
+      "path": "scripts/audit_stability_soak_metrics.py",
+      "purpose": "Verify audit-side blocking behavior.",
+      "key_findings": [
+        "The audit blocks absent or unreasoned workload counters and latency percentiles with missing_window_metric findings."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [],
+  "implementation_plan": [],
+  "acceptance_criteria": [
+    "Measured windows require p50, p95, and p99 latency values as numeric or explicit MISSING/SKIPPED_WITH_REASON objects with non-empty reasons.",
+    "Measured windows require attempted_operations, completed_operations, and error_count as numeric or explicit MISSING/SKIPPED_WITH_REASON objects with non-empty reasons.",
+    "Audit blocks missing or unreasoned measured window metrics."
+  ],
+  "risks": [
+    "The rollup metric_records expose latency percentiles and error_count, while attempted_operations and completed_operations are enforced in the source report and audit."
+  ],
+  "forbidden_shortcuts": [
+    "Do not treat absent counters or percentiles as zero.",
+    "Do not count report-rendered views as metric sources.",
+    "Do not accept MISSING or SKIPPED_WITH_REASON without a non-empty reason."
+  ],
+  "commands_to_run": [
+    "python3 scripts/audit_stability_soak_metrics.py --root . --out /private/tmp/vslab_stability_soak_metrics_review.json --require-node-counts 6,30,50,100 -> PASS",
+    "manual temporary fixture replacing steady p95 and attempted_operations with unreasoned missing objects -> FAIL with missing_window_metric findings"
+  ],
+  "verdict": "APPROVED",
+  "notes": "The previous missing-metric blocker is fixed for source artifacts and audit behavior."
+}

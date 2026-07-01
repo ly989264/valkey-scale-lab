@@ -65,6 +65,8 @@ def test_renderer_emits_required_outputs_and_schema_valid_index(tmp_path: Path) 
     assert "artifacts/loop_engineering/reports/coverage_matrix.json" in html
     assert "P14 opt-in dry-run" in html
     assert "p13_timing_waterfall.svg" in html
+    assert "Stability soak profiles" in html
+    assert "artifacts/loop_engineering/reports/stability_soak_metrics.json" in html
 
 
 def test_coverage_matrix_csv_matches_source_entries(tmp_path: Path) -> None:

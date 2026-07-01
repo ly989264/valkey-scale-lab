@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "coverage_matrix",
-  "created_at": "2026-07-01T02:14:04.715354Z",
+  "created_at": "2026-07-01T03:15:06.477157Z",
   "producer": {
     "name": "scripts/build_metric_coverage_matrix.py",
     "version": "v1"
@@ -375,7 +375,7 @@
       "surface": "stability",
       "status": "COVERED",
       "evidence_class": "real_valkey",
-      "metric_count": 9,
+      "metric_count": 34,
       "metric_names": [
         "stability.baseline.error_count",
         "stability.baseline.max_memory_growth_bytes",
@@ -385,7 +385,32 @@
         "stability.nodes_observed",
         "stability.real_evidence.cluster_state_observed",
         "stability.real_evidence.data_path_result",
-        "stability.real_evidence.nodes_observed"
+        "stability.real_evidence.nodes_observed",
+        "stability_soak.baseline.error_count",
+        "stability_soak.baseline.max_memory_growth_bytes",
+        "stability_soak.duration_seconds",
+        "stability_soak.nodes_observed",
+        "stability_soak.restart_delta_total",
+        "stability_soak.window.baseline.error_count",
+        "stability_soak.window.baseline.latency_ms.p50",
+        "stability_soak.window.baseline.latency_ms.p95",
+        "stability_soak.window.baseline.latency_ms.p99",
+        "stability_soak.window.fault.error_count",
+        "stability_soak.window.fault.latency_ms.p50",
+        "stability_soak.window.fault.latency_ms.p95",
+        "stability_soak.window.fault.latency_ms.p99",
+        "stability_soak.window.post_recovery.error_count",
+        "stability_soak.window.post_recovery.latency_ms.p50",
+        "stability_soak.window.post_recovery.latency_ms.p95",
+        "stability_soak.window.post_recovery.latency_ms.p99",
+        "stability_soak.window.recovery.error_count",
+        "stability_soak.window.recovery.latency_ms.p50",
+        "stability_soak.window.recovery.latency_ms.p95",
+        "stability_soak.window.recovery.latency_ms.p99",
+        "stability_soak.window.steady.error_count",
+        "stability_soak.window.steady.latency_ms.p50",
+        "stability_soak.window.steady.latency_ms.p95",
+        "stability_soak.window.steady.latency_ms.p99"
       ],
       "source_artifacts": [
         "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
@@ -643,14 +668,20 @@
       "layer": "30",
       "surface": "stability",
       "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "evidence_class": "source_artifact",
+      "metric_count": 2,
+      "metric_names": [
+        "stability_soak.profile.resource_aware_status",
+        "stability_soak.resource_aware_profile.status"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json"
+      ],
       "node_count_scope": "30",
       "real_valkey_coverage": false,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for stability in 30 layer."
+      "reason": "All metrics in this cell are explicitly skipped with reason."
     },
     {
       "layer": "30",
@@ -862,14 +893,20 @@
       "layer": "50",
       "surface": "stability",
       "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "evidence_class": "source_artifact",
+      "metric_count": 2,
+      "metric_names": [
+        "stability_soak.profile.resource_aware_status",
+        "stability_soak.resource_aware_profile.status"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json"
+      ],
       "node_count_scope": "50",
       "real_valkey_coverage": false,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for stability in 50 layer."
+      "reason": "All metrics in this cell are explicitly skipped with reason."
     },
     {
       "layer": "50",
@@ -1096,14 +1133,20 @@
       "layer": "100",
       "surface": "stability",
       "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "evidence_class": "source_artifact",
+      "metric_count": 2,
+      "metric_names": [
+        "stability_soak.profile.resource_aware_status",
+        "stability_soak.resource_aware_profile.status"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json"
+      ],
       "node_count_scope": "100",
       "real_valkey_coverage": false,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for stability in 100 layer."
+      "reason": "All metrics in this cell are explicitly skipped with reason."
     },
     {
       "layer": "100",
