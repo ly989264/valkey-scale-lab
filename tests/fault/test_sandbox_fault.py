@@ -129,3 +129,71 @@ def test_node_stop_stops_owned_container(tmp_path: Path, monkeypatch: pytest.Mon
     )
     assert report["status"] == "PASS"
     assert calls == [["stop", "-t", "5", "owned"]]
+
+
+def test_node_stop_process_runtime_targets_logical_pid_not_shared_nodehost(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    data = {
+        "schema_version": "v1",
+        "cluster_id": "test",
+        "phase_id": "P13_SCALE_LADDER_50_100",
+        "runtime": {"run_id": "test-run", "sandbox_network": True, "type": "docker_process"},
+        "nodes": [
+            {
+                "logical_id": "shard-0000-primary",
+                "az_id": "az-a",
+                "container_name": "shared-nodehost",
+                "nodehost_container_name": "shared-nodehost",
+                "config_file": "/tmp/test-run/shard-0000-primary/valkey.conf",
+                "pid": 101,
+            },
+            {
+                "logical_id": "shard-0001-primary",
+                "az_id": "az-b",
+                "container_name": "shared-nodehost",
+                "nodehost_container_name": "shared-nodehost",
+                "pid": 202,
+            },
+        ],
+    }
+    state = tmp_path / "state.json"
+    state.write_text(json.dumps(data), encoding="utf-8")
+    spec = tmp_path / "fault.json"
+    spec.write_text(
+        json.dumps(
+            {
+                "fault_id": "fault-primary-stop",
+                "type": "node_stop",
+                "scope": "owned_container_or_process",
+                "forbid_host_network_mutation": True,
+            }
+        ),
+        encoding="utf-8",
+    )
+    calls: list[list[str]] = []
+
+    class Result:
+        returncode = 0
+        stderr = ""
+        stdout = ""
+
+    def fake_run_docker(args: list[str], **kwargs: object) -> Result:
+        calls.append(args)
+        return Result()
+
+    monkeypatch.setattr("valkey_scale_lab.fault.sandbox.run_docker", fake_run_docker)
+    report = apply_fault(
+        state_path=state,
+        target_logical_id="shard-0000-primary",
+        fault_json=spec,
+        out_path=tmp_path / "fault_apply.json",
+    )
+    assert report["status"] == "PASS"
+    assert calls == [["exec", "shared-nodehost", "sh", "-c", "kill -TERM 101"]]
+
+    clear_report = clear_fault(state_path=state, fault_id="fault-primary-stop", out_path=tmp_path / "fault_clear.json")
+    assert clear_report["status"] == "PASS"
+    assert clear_report["observed_impact"]["action"] == "process_restart"
+    assert calls == [
+        ["exec", "shared-nodehost", "sh", "-c", "kill -TERM 101"],
+        ["exec", "shared-nodehost", "sh", "-c", "valkey-server /tmp/test-run/shard-0000-primary/valkey.conf"],
+    ]

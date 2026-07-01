@@ -51,6 +51,8 @@ def test_renderer_includes_scale_build_metrics_source(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
     index = json.loads((tmp_path / "report_index.json").read_text(encoding="utf-8"))
     assert any(source["path"].endswith("scale_build_metrics.json") for source in index["source_artifacts"])
+    assert any(source["path"].endswith("fault_failover_scale.json") for source in index["source_artifacts"])
     html = (tmp_path / "index.html").read_text(encoding="utf-8")
     assert "Scale build rungs" in html
     assert "Measured build metrics" in html
+    assert "Fault/failover rungs" in html

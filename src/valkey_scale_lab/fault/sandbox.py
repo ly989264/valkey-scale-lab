@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 from pathlib import Path
 from typing import Any
 
@@ -48,16 +49,31 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
         "status": "PASS",
     }
     if fault_type == "node_stop":
-        container_name = target.get("container_name")
-        if not container_name:
-            raise FaultError("node_stop requires target container_name in state")
-        result = run_docker(["stop", "-t", "5", str(container_name)], timeout=30, check=False)
+        nodehost_container = target.get("nodehost_container_name")
+        pid = target.get("pid")
+        if nodehost_container and pid:
+            try:
+                pid_text = str(int(pid))
+            except (TypeError, ValueError) as exc:
+                raise FaultError(f"node_stop requires numeric target pid in state: {pid!r}") from exc
+            result = run_docker(["exec", str(nodehost_container), "sh", "-c", f"kill -TERM {pid_text}"], timeout=30, check=False)
+            action = "process_stop"
+            target_fields = {"nodehost_container_name": nodehost_container, "pid": int(pid_text)}
+            failure_target = f"logical process pid={pid_text} in owned container {nodehost_container}"
+        else:
+            container_name = target.get("container_name")
+            if not container_name:
+                raise FaultError("node_stop requires target container_name or nodehost_container_name/pid in state")
+            result = run_docker(["stop", "-t", "5", str(container_name)], timeout=30, check=False)
+            action = "container_stop"
+            target_fields = {"container_name": container_name}
+            failure_target = f"owned container {container_name}"
         if result.returncode != 0:
-            raise FaultError(f"node_stop failed for owned container {container_name}: {result.stderr.strip()}")
+            raise FaultError(f"node_stop failed for {failure_target}: {result.stderr.strip()}")
         record["observed_impact"] = {
             "status": "PASS",
-            "action": "container_stop",
-            "container_name": container_name,
+            "action": action,
+            **target_fields,
             "stderr": result.stderr.strip(),
         }
     else:
@@ -92,15 +108,13 @@ def clear_fault(*, state_path: str | Path, fault_id: str, out_path: str | Path) 
     run_id = state.get("runtime", {}).get("run_id", f"{phase}-fault-sandbox")
     fault_state = _fault_state_path(state_path, fault_id)
     existing = _load_json(fault_state) if fault_state.exists() else {}
+    clear_impact = _clear_observed_impact(existing)
     cleared = dict(existing)
     cleared.update(
         {
             "cleared_at": "2026-06-28T00:00:00Z",
             "clear_status": "PASS",
-            "observed_impact": {
-                "status": "SKIPPED_WITH_REASON",
-                "reason": "P07 safety gate validates sandbox lifecycle and post-clear cluster health; no host-level network impairment is applied.",
-            },
+            "observed_impact": clear_impact,
         }
     )
     if fault_state.exists():
@@ -115,6 +129,7 @@ def clear_fault(*, state_path: str | Path, fault_id: str, out_path: str | Path) 
         "status": "PASS",
         "fault_id": fault_id,
         "cleared": True,
+        "observed_impact": clear_impact,
         "safety_checks": {
             "host_network_mutated": False,
             "global_firewall_mutated": False,
@@ -124,6 +139,51 @@ def clear_fault(*, state_path: str | Path, fault_id: str, out_path: str | Path) 
     _write_json(out_path, report)
     _write_fault_report(Path(out_path).parent / "fault_report.json", phase, run_id, [cleared], "PASS")
     return report
+
+
+def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
+    if existing.get("fault_type") != "node_stop":
+        return {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Sandbox lifecycle record cleared; non-node-stop fault does not require process/container restoration.",
+        }
+    target = existing.get("target") if isinstance(existing.get("target"), dict) else {}
+    observed = existing.get("observed_impact") if isinstance(existing.get("observed_impact"), dict) else {}
+    if observed.get("action") == "process_stop":
+        nodehost = target.get("nodehost_container_name")
+        config_file = target.get("config_file")
+        if not nodehost or not config_file:
+            raise FaultError("node_stop process clear requires nodehost_container_name and config_file in fault state")
+        command = f"valkey-server {shlex.quote(str(config_file))}"
+        result = run_docker(["exec", str(nodehost), "sh", "-c", command], timeout=30, check=False)
+        if result.returncode != 0:
+            raise FaultError(f"node_stop process restart failed for {target.get('logical_id')}: {result.stderr.strip()}")
+        return {
+            "status": "PASS",
+            "action": "process_restart",
+            "nodehost_container_name": nodehost,
+            "config_file": config_file,
+            "stdout": result.stdout.strip(),
+            "stderr": result.stderr.strip(),
+        }
+    if observed.get("action") == "container_stop":
+        container_name = target.get("container_name") or observed.get("container_name")
+        if not container_name:
+            raise FaultError("node_stop container clear requires container_name in fault state")
+        result = run_docker(["start", str(container_name)], timeout=30, check=False)
+        if result.returncode != 0:
+            raise FaultError(f"node_stop container restart failed for {container_name}: {result.stderr.strip()}")
+        return {
+            "status": "PASS",
+            "action": "container_start",
+            "container_name": container_name,
+            "stdout": result.stdout.strip(),
+            "stderr": result.stderr.strip(),
+        }
+    return {
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "Fault state had no destructive node_stop impact to restore.",
+    }
 
 
 def _write_fault_report(path: Path, phase: str, run_id: str, faults: list[dict[str, Any]], status: str) -> None:

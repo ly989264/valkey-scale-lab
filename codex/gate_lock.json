@@ -29,7 +29,7 @@
     },
     {
       "path": "scripts/fault_failover_gate.py",
-      "sha256": "b7400b98e0c1a351c705351d436c551ce5aab3313201d9089eddfebdb9a0d51e"
+      "sha256": "4b0fe80f1c66fa20ad5ee7413c017a2b52793831e379f791de469af202c72b7c"
     },
     {
       "path": "scripts/fault_safety_gate.py",

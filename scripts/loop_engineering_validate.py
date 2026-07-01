@@ -262,13 +262,15 @@ def split_diff_by_file(diff_text: str) -> dict[str, list[str]]:
 
 def detect_anti_regression_findings(diff_text: str, changed_files: list[str]) -> list[str]:
     findings: list[str] = []
+    diff_by_file = split_diff_by_file(diff_text)
+    deleted_paths = {path for path, lines in diff_by_file.items() if any(line.startswith("deleted file mode") for line in lines)}
     for path in changed_files:
         if path.endswith(".DS_Store") and path.startswith(CONTROLLED_PATH_PREFIXES):
             findings.append(f"{path}: .DS_Store must not be staged or tracked under controlled paths")
-        if path.endswith((".pyc", ".pyo")) and path.startswith(CONTROLLED_PATH_PREFIXES):
+        if path.endswith((".pyc", ".pyo")) and path.startswith(CONTROLLED_PATH_PREFIXES) and path not in deleted_paths:
             findings.append(f"{path}: generated Python bytecode must not be staged or tracked under controlled paths")
 
-    for path, lines in split_diff_by_file(diff_text).items():
+    for path, lines in diff_by_file.items():
         text = "\n".join(lines)
         removed = "\n".join(line for line in lines if line.startswith("-") and not line.startswith("---"))
         added = "\n".join(line for line in lines if line.startswith("+") and not line.startswith("+++"))

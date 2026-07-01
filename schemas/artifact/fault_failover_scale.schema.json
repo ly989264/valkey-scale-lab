@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "fault_failover_scale",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "created_at",
+    "producer",
+    "status",
+    "summary",
+    "canonical_rungs",
+    "p14_boundary",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "fault_failover_scale"},
+    "created_at": {"type": "string", "minLength": 1},
+    "producer": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED"]},
+    "summary": {
+      "type": "object",
+      "required": [
+        "canonical_node_counts",
+        "rung_count",
+        "blocking_findings_count",
+        "real_valkey_rung_count",
+        "measured_metric_count",
+        "missing_metric_count"
+      ],
+      "properties": {
+        "canonical_node_counts": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {"type": "integer", "enum": [30, 50, 100]}
+        },
+        "rung_count": {"type": "integer", "minimum": 0},
+        "blocking_findings_count": {"type": "integer", "minimum": 0},
+        "real_valkey_rung_count": {"type": "integer", "minimum": 0},
+        "measured_metric_count": {"type": "integer", "minimum": 0},
+        "missing_metric_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": true
+    },
+    "canonical_rungs": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": [
+          "node_count",
+          "status",
+          "scenario",
+          "real_valkey",
+          "source_artifacts",
+          "metric_records",
+          "findings"
+        ],
+        "properties": {
+          "node_count": {"type": "integer", "enum": [30, 50, 100]},
+          "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED"]},
+          "scenario": {"type": "string", "minLength": 1},
+          "real_valkey": {"type": "boolean"},
+          "source_artifacts": {"type": "array", "items": {"type": "object"}},
+          "metric_records": {"type": "array", "items": {"type": "object"}},
+          "findings": {"type": "array", "items": {"type": "object"}}
+        },
+        "additionalProperties": true
+      }
+    },
+    "p14_boundary": {
+      "type": "object",
+      "required": ["status", "dry_run_only", "real_valkey_coverage", "real_evidence_count"],
+      "properties": {
+        "status": {"type": "string", "enum": ["SKIPPED_WITH_REASON", "FAIL"]},
+        "dry_run_only": {"type": "boolean"},
+        "real_valkey_coverage": {"type": "boolean"},
+        "real_evidence_count": {"type": "integer", "minimum": 0},
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "findings": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,124 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "agent_role": "validation_agent",
+  "created_at": "2026-07-01T02:20:00Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Validate repository safety and real Valkey evidence requirements.",
+      "key_findings": [
+        "Real proof from P03 onward must come from wrapper scripts and include live Valkey evidence.",
+        "P14_SCALE_1000_OPTIN_DRYRUN is non-automatic and must not be run without explicit opt-in.",
+        "Fault injection must be scoped to owned containers/processes or sandbox layers."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Validate phase-loop and P14 boundary instructions.",
+      "key_findings": [
+        "Automatic completion stops through P13; P14 requires VSLAB_ALLOW_1000_DRYRUN.",
+        "Machine-readable artifacts under artifacts/ are source of truth."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/START_MAIN_LOOP.md",
+      "purpose": "Validate loop-stage completion expectations.",
+      "key_findings": [
+        "Stage completion requires previous harness, current harness, validation, anti-regression, stage_result PASS, commit, and push.",
+        "Real Valkey resource failure must block rather than pass a real stage."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/05_VALIDATION_COMMANDS.md",
+      "purpose": "Validate required baseline, report, schema, and real-gate command families.",
+      "key_findings": [
+        "Baseline validation includes precheck, safety scan, compileall, and test suites.",
+        "Real 30/50/100 scale gates require preflight and wrapper-produced evidence.",
+        "1000-node checks are dry-run only and must not count as real Valkey coverage."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "Ensure this response matches the required validation_agent schema.",
+      "key_findings": [
+        "Required agent_role value is validation_agent.",
+        "Required verdict values are APPROVED, CHANGES_REQUESTED, or BLOCKED."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/commands.jsonl",
+      "purpose": "Validate command history and latest rerun status.",
+      "key_findings": [
+        "127 command records are PASS and 2 early intentional red-state harness records are FAIL.",
+        "No command records after 2026-07-01T02:05:00Z have non-PASS status.",
+        "Latest real fault/failover 30, 50, and 100 gates all exited 0 and printed PASS."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "purpose": "Validate canonical L08 report and source-artifact summary.",
+      "key_findings": [
+        "Status is PASS with canonical_node_counts [30, 50, 100].",
+        "real_valkey_rung_count is 3 and blocking_findings_count is 0.",
+        "P14 boundary is SKIPPED_WITH_REASON, dry_run_only true, real_valkey_coverage false, real_evidence_count 0."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/stage_state.json",
+      "purpose": "Validate remaining stage-state issues.",
+      "key_findings": [
+        "blockers is empty.",
+        "status remains IN_PROGRESS with phase REVIEW, which is consistent with pending final validation/anti-regression completion."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [
+    {
+      "name": "No additional validation harness required",
+      "type": "artifact",
+      "expected_to_fail_before_impl": false,
+      "acceptance": "Existing L08 harness, schemas, reports, and latest rerun evidence are sufficient for validation approval."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "No implementation changes requested by validation.",
+      "files": [],
+      "rationale": "Latest real gates, schemas, tests, reports, cleanup proof, and P14 boundary checks all pass."
+    }
+  ],
+  "acceptance_criteria": [
+    "30-node real fault/failover gate passed with wrapper-produced Valkey 9.1.0 evidence.",
+    "50-node real fault/failover gate passed with wrapper-produced Valkey 9.1.0 evidence.",
+    "100-node real fault/failover gate passed with wrapper-produced Valkey 9.1.0 evidence.",
+    "Latest post-rerun schema validations, report generation, safety scan, compileall, and test suites passed.",
+    "P14 stayed SKIPPED_WITH_REASON, dry-run-only, with zero real Valkey evidence.",
+    "Cleanup reports for 30, 50, and 100 are PASS with empty resources_remaining.",
+    "stage_state has no blockers."
+  ],
+  "risks": [
+    "commands.jsonl retains two early FAIL records from expected initial harness red-state validation; consumers must distinguish them from the latest rerun.",
+    "stage_state remains IN_PROGRESS/REVIEW until the controller records final stage completion."
+  ],
+  "forbidden_shortcuts": [
+    "Do not count P14 or 1000-node dry-run artifacts as real Valkey coverage.",
+    "Do not treat fake, small-real, or P08 evidence as 30/50/100 L08 coverage.",
+    "Do not mark missing metrics with invented values; keep explicit MISSING or SKIPPED_WITH_REASON semantics.",
+    "Do not use host-level network, firewall, routing, interface, sudo, or unrelated process mutations."
+  ],
+  "commands_to_run": [
+    "python3 scripts/fault_failover_gate.py --phase P12_SCALE_LADDER_10_30 --scenario scale_30_fault_failover --config templates/configs/scale_30.yaml --out artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json --fault-report artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json --failover-report artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json --workload-window-report artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json --cleanup-report artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json --min-nodes 30 --wait-after-fault 120 --failover-node-timeout-ms 15000 --require-data-path",
+    "python3 scripts/fault_failover_gate.py --phase P13_SCALE_LADDER_50_100 --scenario scale_50_fault_failover --config templates/configs/scale_50.yaml --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json --fault-report artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json --failover-report artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json --workload-window-report artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json --cleanup-report artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json --min-nodes 50 --wait-after-fault 180 --failover-node-timeout-ms 15000 --require-data-path",
+    "python3 scripts/fault_failover_gate.py --phase P13_SCALE_LADDER_50_100 --scenario scale_100_fault_failover --config templates/configs/scale_100.yaml --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json --fault-report artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json --failover-report artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json --workload-window-report artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json --cleanup-report artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json --min-nodes 100 --wait-after-fault 240 --failover-node-timeout-ms 15000 --require-data-path",
+    "python3 scripts/audit_fault_failover_scale.py --out artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "python3 scripts/schema_validator.py --schema schemas/artifact/fault_failover_scale.schema.json --file artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports",
+    "python3 scripts/codex_gate.py precheck --all",
+    "python3 scripts/safety_scan.py",
+    "python3 -m compileall -q src scripts tests"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Validated current L08 evidence and reports. Latest rerun shows PASS for enforced 30/50/100 real fault/failover gates, schema/report regeneration, safety/compile/test baselines, and cleanup proof. P14 remains skipped/dry-run-only with no real evidence. stage_state has no blockers; it remains IN_PROGRESS/REVIEW pending final controller completion."
+}

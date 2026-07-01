@@ -1,0 +1,135 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "agent_role": "review_agent",
+  "created_at": "2026-07-01T02:40:00Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "controlling repository instructions",
+      "key_findings": [
+        "Safety rules forbid host network/global firewall/routing/interface mutation and default 1000-node execution.",
+        "Real Valkey evidence must come from wrapper gates and missing data must be explicit."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "phase and P14 boundary contract",
+      "key_findings": [
+        "P14 remains opt-in dry-run only and must not be run without explicit opt-in."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/START_MAIN_LOOP.md",
+      "purpose": "stage loop control",
+      "key_findings": [
+        "Stages must be artifact-first, auditable, and preserve prior harness behavior."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/01_STAGE_LOOP_PROTOCOL.md",
+      "purpose": "review-agent responsibilities",
+      "key_findings": [
+        "Review agent checks design consistency, artifact-first reporting, schema/CLI behavior, and safety boundaries."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L08 acceptance requirements",
+      "key_findings": [
+        "L08 requires 30/50/100 real fault/failover gates, workload windows, failover metrics, safety guard, cleanup artifacts, and no automatic 1000-node real fault injection."
+      ]
+    },
+    {
+      "path": "schemas/loop_engineering/subagent_response.schema.json",
+      "purpose": "response schema",
+      "key_findings": [
+        "The review response must be a v1 subagent_response JSON object with agent_role review_agent."
+      ]
+    },
+    {
+      "path": "tests/ci/test_fault_failover_scale_gate.py",
+      "purpose": "verify cache/scratch pollution regression test and command-log checks",
+      "key_findings": [
+        "test_l08_worktree_has_no_cache_or_scratch_pollution now rejects __pycache__, .pytest_cache, _fault_failover_work_*, and .pyc files under the repository.",
+        "Existing tests verify latest real fault_failover_gate.py rows require --require-data-path and have positive duration."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/commands.jsonl",
+      "purpose": "verify post-fix validation and command provenance",
+      "key_findings": [
+        "Rows 130-134 record PASS for audit_fault_failover_scale, fault_failover_scale schema validation, build_provenance_graph, pytest 33 passed with -p no:cacheprovider, and git diff --check.",
+        "Latest PASS 30/50/100 real fault_failover_gate.py rows include --require-data-path and have positive elapsed time.",
+        "No L08 command contains VSLAB_ALLOW_1000_DRYRUN, scale_1000, or P14_SCALE_1000_OPTIN_DRYRUN."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "purpose": "verify L08 aggregate artifact",
+      "key_findings": [
+        "Report status is PASS with blocking_findings_count 0.",
+        "Canonical rungs 30, 50, and 100 are PASS and real_valkey true.",
+        "P14 boundary is SKIPPED_WITH_REASON with real_evidence_count 0."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "purpose": "verify provenance after cleanup",
+      "key_findings": [
+        "Graph status is PASS with blocking_findings_count 0.",
+        "The graph contains 18 fault_failover_source edges into artifacts/loop_engineering/reports/fault_failover_scale.json."
+      ]
+    },
+    {
+      "path": "repository worktree scan",
+      "purpose": "verify prior cache/scratch finding is fixed",
+      "key_findings": [
+        "find . for __pycache__, .pytest_cache, _fault_failover_work_* returned empty.",
+        "find . -name '*.pyc' returned empty.",
+        "git status shows tracked scripts/__pycache__/*.pyc deletions, consistent with intentional cleanup."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [
+    {
+      "name": "test_l08_worktree_has_no_cache_or_scratch_pollution",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Passes only when repository-local __pycache__, .pytest_cache, _fault_failover_work_*, and .pyc files are absent."
+    }
+  ],
+  "implementation_plan": [],
+  "acceptance_criteria": [
+    "Repository-local cache/scratch pollution is absent.",
+    "L08 command log has no P14/1000 opt-in execution and latest 30/50/100 PASS real fault/failover rows include --require-data-path with positive duration.",
+    "scripts/fault_failover_gate.py enforces --require-data-path and scripts/audit_fault_failover_scale.py rejects non-PASS data_path_result.",
+    "fault_failover_scale.json is PASS with 30/50/100 real Valkey rungs and P14 skipped as dry-run-only.",
+    "provenance_graph.json is PASS and links canonical L08 source artifacts to fault_failover_scale.json.",
+    "Post-fix validation recorded PASS for audit, schema validation, provenance graph, pytest, and git diff --check."
+  ],
+  "risks": [
+    "Tracked .pyc deletions must be committed so cache files do not remain in the repository history at this stage boundary.",
+    "Future pytest/compileall runs should keep PYTHONDONTWRITEBYTECODE, PYTHONPYCACHEPREFIX, and -p no:cacheprovider where needed to avoid recreating repository-local caches."
+  ],
+  "forbidden_shortcuts": [
+    "Do not restore tracked pyc files.",
+    "Do not weaken cache/scratch pollution checks.",
+    "Do not remove --require-data-path from the latest 30/50/100 real fault/failover gates.",
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN or create 1000-node real fault/failover evidence.",
+    "Do not weaken provenance or data_path_result enforcement."
+  ],
+  "commands_to_run": [
+    "find . -type d \\( -name '__pycache__' -o -name '.pytest_cache' -o -name '_fault_failover_work_*' \\) -print",
+    "find . -name '*.pyc' -print",
+    "git status --short",
+    "python3 scripts/audit_fault_failover_scale.py --out artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/fault_failover_scale.schema.json --instance artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+    "/private/tmp/valkey-scale-lab-l00-venv/bin/python -m pytest -q -p no:cacheprovider tests/ci/test_fault_failover_scale_gate.py tests/failover/test_fault_failover_scale_audit.py tests/fault/test_sandbox_fault.py tests/provenance/test_provenance_graph.py",
+    "git diff --check"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Re-check confirms the previous CHANGES_REQUESTED item is fixed. The repository scan is clean for cache/scratch pollution, the new CI test covers the invariant, and the post-cache validation commands are recorded as PASS. No remaining L08 review blockers found."
+}

@@ -1,0 +1,147 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "agent_role": "anti_regression_guardian",
+  "created_at": "2026-07-01T02:25:00Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety and harness integrity rules.",
+      "key_findings": [
+        "Locked harness files may only change through a strengthening harness exception.",
+        "P14/1000 is opt-in only.",
+        "Real Valkey evidence must come from wrapper gates and must not be fake-only."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Phase-loop and P14 boundary contract.",
+      "key_findings": [
+        "Automatic work stops through P13.",
+        "P14 requires explicit opt-in and VSLAB_ALLOW_1000_DRYRUN."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/START_MAIN_LOOP.md",
+      "purpose": "Stage-loop completion and review requirements.",
+      "key_findings": [
+        "Anti-regression guardian approval is required before a stage is complete.",
+        "A completed stage must preserve previous harness behavior."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/03_HARNESS_POLICY.md",
+      "purpose": "Anti-regression checklist.",
+      "key_findings": [
+        "Required checks include no required-to-optional downgrades, no real_valkey_required downgrade, no min-node lowering, no fake evidence, no PASS by artifact editing, and no 1000 real automatic execution."
+      ]
+    },
+    {
+      "path": "codex/gate_lock.json",
+      "purpose": "Verify locked wrapper SHA update.",
+      "key_findings": [
+        "scripts/fault_failover_gate.py lock remains updated to 4b0fe80f1c66fa20ad5ee7413c017a2b52793831e379f791de469af202c72b7c.",
+        "The lock update is paired with the L08 harness exception."
+      ]
+    },
+    {
+      "path": "artifacts/harness_exception/L08_30_50_100_FAULT_FAILOVER_SCENARIOS.md",
+      "purpose": "Review justification for locked wrapper change.",
+      "key_findings": [
+        "Exception documents the prior wrapper defects and states the change strengthens scale failover evidence, expected-replica promotion, after-clear membership, isolated work dirs, and --require-data-path enforcement.",
+        "Exception records the final wrapper SHA matching the lock."
+      ]
+    },
+    {
+      "path": "tests/ci/test_fault_failover_scale_gate.py",
+      "purpose": "Verify cache/scratch regression test was added.",
+      "key_findings": [
+        "test_l08_worktree_has_no_cache_or_scratch_pollution rejects __pycache__, .pytest_cache, _fault_failover_work_* directories, and .pyc files.",
+        "Existing tests still verify no P14 command execution and latest 30/50/100 real wrapper runs require --require-data-path."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/commands.jsonl",
+      "purpose": "Verify post-cache validation evidence.",
+      "key_findings": [
+        "audit_fault_failover_scale PASS, fault_failover_scale schema validation PASS, build_provenance_graph PASS, pytest 33 passed, and git diff --check PASS were appended.",
+        "The validation commands used PYTHONDONTWRITEBYTECODE=1, PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache, and pytest -p no:cacheprovider."
+      ]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [
+    {
+      "name": "fault_failover_scale_audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Rejects missing L08 artifacts, fake evidence, missing data_path_result, unsafe fault scope, lowered node counts, and P14 real fault/failover artifacts."
+    },
+    {
+      "name": "fault_failover_wrapper_contract",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "30/50/100 wrapper runs use --min-nodes 30/50/100 and --require-data-path, and emit PASS evidence only with real Valkey 9.1.x, cleanup PASS, promotion, and SET/GET proof."
+    },
+    {
+      "name": "l08_no_cache_or_scratch_pollution",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The worktree contains no __pycache__, .pyc, .pytest_cache, or _fault_failover_work_* entries."
+    },
+    {
+      "name": "provenance_l08_sources",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Provenance graph includes required hash-matched L08 source artifact edges into fault_failover_scale.json."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Keep the locked wrapper change and gate_lock update.",
+      "files": [
+        "scripts/fault_failover_gate.py",
+        "codex/gate_lock.json",
+        "artifacts/harness_exception/L08_30_50_100_FAULT_FAILOVER_SCENARIOS.md"
+      ],
+      "rationale": "The wrapper change is documented as strengthening and current SHA matches the lock."
+    },
+    {
+      "step": "Keep cache/scratch cleanup and CI regression test.",
+      "files": [
+        "tests/ci/test_fault_failover_scale_gate.py",
+        "scripts/__pycache__/*.pyc"
+      ],
+      "rationale": "The previous anti-regression finding is resolved; tracked pyc deletions remove repository-local pollution rather than weakening harness behavior."
+    }
+  ],
+  "acceptance_criteria": [
+    "scripts/fault_failover_gate.py SHA remains 4b0fe80f1c66fa20ad5ee7413c017a2b52793831e379f791de469af202c72b7c.",
+    "L08 30/50/100 evidence remains real_valkey true with Valkey 9.1.x versions, exact before/after-clear node counts, data_path_result PASS, cleanup PASS, and no errors.",
+    "Latest 30/50/100 real wrapper commands include --require-data-path and min nodes 30, 50, and 100.",
+    "fault_failover_scale.json remains PASS with real_valkey_rung_count 3 and P14 real_evidence_count 0.",
+    "provenance_graph.json retains all required L08 source edges with hash_status MATCH.",
+    "No repository-local __pycache__, .pyc, .pytest_cache, or scratch workdir pollution remains."
+  ],
+  "risks": [
+    "The wrapper change touches a locked script, so the harness exception and gate lock SHA must stay synchronized.",
+    "Earlier command-log rows show initial real wrapper runs without --require-data-path before later corrected runs; latest runs are compliant and guarded by test_l08_latest_real_fault_failover_runs_require_data_path."
+  ],
+  "forbidden_shortcuts": [
+    "Do not lower --min-nodes below 30, 50, or 100 for L08.",
+    "Do not mark data_path_result PASS without measured failed-primary-slot SET/GET proof.",
+    "Do not treat P14 or 1000-node real fault/failover artifacts as L08 coverage.",
+    "Do not remove required schema fields, loosen enums, or downgrade required gates to optional.",
+    "Do not reintroduce pycache, .pyc, .pytest_cache, or scratch workdir artifacts."
+  ],
+  "commands_to_run": [
+    "python3 scripts/audit_fault_failover_scale.py --out artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/fault_failover_scale.schema.json --instance artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+    "/private/tmp/valkey-scale-lab-l00-venv/bin/python -m pytest -q -p no:cacheprovider tests/ci/test_fault_failover_scale_gate.py tests/failover/test_fault_failover_scale_audit.py tests/fault/test_sandbox_fault.py tests/provenance/test_provenance_graph.py",
+    "git diff --check",
+    "find . -name '__pycache__' -o -name '*.pyc' -o -path './.pytest_cache*' -o -name '_fault_failover_work_*'"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Re-check confirms the cache/scratch finding is resolved: the find command returns empty, the new no-pollution CI test is present, post-cache validation passed, and tracked scripts/__pycache__/*.pyc deletions are intentional cleanup. No harness weakening, lowered node counts, fake evidence, missing data-path proof, P14/1000 execution, or L08 provenance gap was found."
+}

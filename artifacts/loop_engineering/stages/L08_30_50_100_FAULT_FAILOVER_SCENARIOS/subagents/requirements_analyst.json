@@ -1,0 +1,229 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "agent_role": "requirements_analyst",
+  "created_at": "2026-06-30T15:12:00Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository rules.",
+      "key_findings": [
+        "Default development phases are capped at 100 nodes; P14/1000 is not automatic.",
+        "Host network, firewall, routing, PF, nftables, iptables, interfaces, and unrelated processes must not be modified.",
+        "Real Valkey proof from P03 onward must come from wrapper scripts, not project tests alone.",
+        "Missing metrics must be encoded as MISSING or SKIPPED_WITH_REASON."
+      ]
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Automatic phase and P14 boundary contract.",
+      "key_findings": [
+        "Automatic loop ends at P13_SCALE_LADDER_50_100.",
+        "P14 may only run after explicit opt-in and VSLAB_ALLOW_1000_DRYRUN is set to the required value.",
+        "The package and CLI contracts include gate scenario, gate cleanup, fault apply, and fault clear."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L08 stage requirements.",
+      "key_findings": [
+        "L08 must cover 30, 50, and 100 real fault/failover scenarios.",
+        "At minimum, each rung needs primary stop failover.",
+        "Each rung must produce fault_report_N, failover_report_N, workload_window_report_N, valkey_e2e_evidence_fault_N, and cleanup_report_fault_N."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/read_context.md",
+      "purpose": "Current L08 read-context summary.",
+      "key_findings": [
+        "L08 is in design after previous harness baseline.",
+        "Resource insufficiency for 30/50/100 must become a blocker, not a PASS.",
+        "Existing reports currently have no committed 30/50/100 fault or failover coverage."
+      ]
+    },
+    {
+      "path": "scripts/fault_failover_gate.py",
+      "purpose": "Existing real failover wrapper.",
+      "key_findings": [
+        "Currently implements independent primary-stop failover proof for P08 with scenario failover_setup.",
+        "It does not currently emit workload_window_report, per-rung fault_report_N, cleanup_report_fault_N, before/during/after metric windows, or 30/50/100 scenario selection."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/fault/sandbox.py",
+      "purpose": "Fault apply/clear implementation.",
+      "key_findings": [
+        "Fault specs must set forbid_host_network_mutation true.",
+        "node_stop uses docker stop on an owned container_name from state.",
+        "Large scale scenarios use docker_process runtime and need process-scoped primary stop."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "purpose": "Current coverage state.",
+      "key_findings": [
+        "Fault and failover are covered only in the small-real layer.",
+        "30, 50, and 100 fault/failover cells are currently SKIPPED_WITH_REASON with no source artifacts.",
+        "1000-dry-run has real_valkey_coverage false and dry_run_only true."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L08-REQ-001",
+      "severity": "high",
+      "description": "There is no committed 30/50/100 fault or failover evidence yet.",
+      "evidence": [
+        "coverage_matrix.json marks 30/50/100 fault and failover entries with real_valkey_coverage false.",
+        "L08 manifest requires real gates for 30, 50, and 100."
+      ]
+    },
+    {
+      "id": "L08-REQ-002",
+      "severity": "high",
+      "description": "Existing fault_failover_gate.py is small-P08-oriented and does not yet produce the full L08 per-rung artifact set or workload windows.",
+      "evidence": [
+        "scripts/fault_failover_gate.py writes valkey_e2e_evidence and failover_report only.",
+        "L08 requires fault_report_N, failover_report_N, workload_window_report_N, valkey_e2e_evidence_fault_N, and cleanup_report_fault_N."
+      ]
+    },
+    {
+      "id": "L08-REQ-003",
+      "severity": "high",
+      "description": "Large scale scenarios use docker_process runtime, so primary stop must be scoped to owned nodehost/container process state without killing unrelated host processes.",
+      "evidence": [
+        "src/valkey_scale_lab/runtime/docker_runtime.py uses docker_process runtime for P12/P13 scale scenarios.",
+        "AGENTS.md forbids killing unrelated host processes and host network mutation."
+      ]
+    },
+    {
+      "id": "L08-REQ-004",
+      "severity": "medium",
+      "description": "Current fault_report and failover_report schemas are permissive and do not enforce L08 required metrics.",
+      "evidence": [
+        "schemas/artifact/fault_report.schema.json has unconstrained faults and safety_checks objects.",
+        "schemas/artifact/failover_report.schema.json has unconstrained failovers and summary objects."
+      ]
+    },
+    {
+      "id": "L08-REQ-005",
+      "severity": "high",
+      "description": "P14/1000 must remain outside L08 automatic execution and cannot be counted as real fault or failover coverage.",
+      "evidence": [
+        "AGENTS.md states P14_SCALE_1000_OPTIN_DRYRUN is not automatic.",
+        "CODEX_START_HERE.md requires explicit opt-in plus VSLAB_ALLOW_1000_DRYRUN for P14."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "large_fault_failover_artifact_schema_tests",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Validate each 30/50/100 fault_report, failover_report, workload_window_report, valkey_e2e_evidence_fault, and cleanup_report_fault artifact against strict L08 checks."
+    },
+    {
+      "name": "deterministic_fake_fault_failover_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Use deterministic fake probes/timelines to prove before/during/after windows, promotion detection, availability window, split-brain missing semantics, and cleanup residual count."
+    },
+    {
+      "name": "large_failover_wrapper_contract_tests",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "The wrapper accepts 30/50/100 scale scenarios, writes rung-specific artifacts with deterministic names, and exits nonzero on resource, setup, failover, cleanup, or schema failure."
+    },
+    {
+      "name": "real_30_50_100_fault_failover_gates",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "After resource preflight passes, real Valkey gates prove primary stop failover for 30, 50, and 100 nodes through wrapper-produced evidence."
+    },
+    {
+      "name": "coverage_matrix_large_fault_failover_regression",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Coverage matrix marks 30/50/100 fault and failover as real_valkey covered only from L08 real wrapper artifacts; 1000-dry-run remains dry_run_only."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define strict L08 artifact contracts.",
+      "files": [
+        "schemas/artifact/fault_failover_scale.schema.json",
+        "schemas/artifact/workload_window_report.schema.json",
+        "tests/failover/test_fault_failover_scale_audit.py"
+      ],
+      "rationale": "L08 acceptance depends on machine-readable metrics, not permissive report shapes."
+    },
+    {
+      "step": "Extend or add a large-rung fault/failover wrapper around real Valkey probes.",
+      "files": [
+        "scripts/fault_failover_gate.py",
+        "scripts/audit_fault_failover_scale.py",
+        "src/valkey_scale_lab/runtime/docker_runtime.py"
+      ],
+      "rationale": "Real proof must come from a wrapper that independently probes live Valkey endpoints and can drive scale_30, scale_50, and scale_100 scenarios safely."
+    },
+    {
+      "step": "Implement process-runtime-safe primary stop.",
+      "files": [
+        "src/valkey_scale_lab/fault/sandbox.py",
+        "tests/fault/test_sandbox_fault.py"
+      ],
+      "rationale": "Scale rungs run many Valkey processes inside owned nodehost containers; stopping one logical primary must target only the owned pid/container namespace recorded in state."
+    },
+    {
+      "step": "Collect before/during/after workload and cluster windows.",
+      "files": [
+        "scripts/fault_failover_gate.py",
+        "schemas/artifact/workload_window_report.schema.json"
+      ],
+      "rationale": "L08 requires availability and workload errors/timeouts around the fault from timestamped operation windows."
+    },
+    {
+      "step": "Add L08 large-rung audit and coverage integration.",
+      "files": [
+        "scripts/build_metric_coverage_matrix.py",
+        "scripts/render_audit_report.py",
+        "tests/coverage/test_fault_failover_scale_coverage.py",
+        "tests/report/test_loop_report_rendering.py"
+      ],
+      "rationale": "30/50/100 fault and failover cells must become covered only when backed by real L08 artifacts; P14 must remain dry-run-only."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS after L08 changes.",
+    "For each node count 30, 50, and 100, resource preflight either passes and the real fault/failover gate runs, or the stage records a BLOCKED result with the failing preflight artifact and does not claim PASS.",
+    "Each successful 30/50/100 rung emits fault_report_N.json, failover_report_N.json, workload_window_report_N.json, valkey_e2e_evidence_fault_N.json, and cleanup_report_fault_N.json.",
+    "Each valkey_e2e_evidence_fault_N artifact has real_valkey true, Valkey version prefix 9.1., wrapper producer identity, errors empty, and cleanup PASS.",
+    "Coverage matrix and metric catalog mark 30/50/100 fault and failover as real coverage only from L08 real artifacts.",
+    "P14/1000 remains opt-in dry-run/resource/planner only; no 1000-node real fault/failover gate is executed or counted."
+  ],
+  "risks": [
+    "30/50/100 primary-stop failover gates may exceed local Docker CPU, memory, port, or timeout limits.",
+    "docker_process runtime has multiple logical Valkey processes in owned nodehost containers; unsafe implementation could stop an entire nodehost.",
+    "Workload windows can be misleading if generated from aggregate workload_report values rather than timestamped operations.",
+    "Split-brain metrics may not be safely measurable with primary stop alone; explicit MISSING is acceptable only with a precise reason."
+  ],
+  "forbidden_shortcuts": [
+    "Do not run or count P14_SCALE_1000_OPTIN_DRYRUN, 1000-node real gates, or any 1000-node fault/failover scenario without explicit user opt-in and the required environment variable.",
+    "Do not mutate host network configuration, routing, firewall, PF, nftables, iptables, interfaces, or OS network services.",
+    "Do not kill host processes, host interfaces, unrelated containers, or all processes in a nodehost when only one logical Valkey node is targeted.",
+    "Do not claim project tests, generated logs, fake probes, or static artifacts as real Valkey evidence.",
+    "Do not fabricate missing metrics; use MISSING or SKIPPED_WITH_REASON with a reason.",
+    "Do not weaken harness controls, delete required schema fields, or edit gate_lock.json to hide changes."
+  ],
+  "commands_to_run": [
+    "python3 scripts/codex_gate.py precheck --all",
+    "python3 scripts/safety_scan.py",
+    "python3 -m compileall -q src scripts tests",
+    "python3 -m pytest -q tests/integration tests/fault tests/failover tests/orchestrator",
+    "python3 scripts/audit_fault_failover_scale.py --out artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Requirements are clear enough to proceed to harness design. The main open design point is how to stop one logical primary safely in docker_process scale scenarios."
+}

@@ -1,0 +1,208 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "agent_role": "risk_auditor",
+  "created_at": "2026-06-30T15:05:00Z",
+  "context_files_read": [
+    {
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety and evidence contract.",
+      "key_findings": [
+        "Host network, firewall, routing, interface, sudo, and unrelated-process mutation are forbidden.",
+        "Fault injection must stay scoped to owned Docker/container namespaces, owned containers, or sandbox proxy layers.",
+        "Real Valkey proof must come from wrapper scripts, and missing metrics must be explicit."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L08 stage requirements.",
+      "key_findings": [
+        "L08 requires fake deterministic tests plus 30/50/100 real fault/failover gates.",
+        "Each rung must produce fault, failover, workload-window, real evidence, and cleanup artifacts."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/fault/sandbox.py",
+      "purpose": "Fault apply and clear implementation.",
+      "key_findings": [
+        "Fault specs must set forbid_host_network_mutation true.",
+        "node_stop currently runs docker stop on target.container_name.",
+        "For docker_process scale rungs, multiple logical nodes share one nodehost container, so docker stop is too broad for primary-stop semantics."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/runtime/docker_runtime.py",
+      "purpose": "Docker/process runtime, ownership, and cleanup behavior.",
+      "key_findings": [
+        "30/50/100 scale rungs use docker_process runtime with one owned nodehost container per virtual AZ.",
+        "State records per-node pid and shared nodehost_container_name, enabling process-scoped stops if implemented carefully."
+      ]
+    },
+    {
+      "path": "scripts/fault_failover_gate.py",
+      "purpose": "Existing real failover wrapper.",
+      "key_findings": [
+        "Wrapper independently probes live Valkey endpoints and checks 9.1.x versions.",
+        "It is hard-coded to scenario failover_setup and currently matches P08 small-real behavior.",
+        "It does not yet emit per-rung L08 artifact names or workload before/during/after windows."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "purpose": "Current coverage gaps.",
+      "key_findings": [
+        "30/50/100 layers currently show no committed metric artifacts for fault and failover surfaces.",
+        "P14 is represented as dry-run only and not real coverage."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L08-RISK-001",
+      "severity": "high",
+      "description": "Reusing current node_stop for 30/50/100 process-runtime clusters would stop a shared nodehost container, not one primary.",
+      "evidence": [
+        "src/valkey_scale_lab/fault/sandbox.py uses docker stop on container_name for node_stop.",
+        "P13 state has many logical nodes sharing a small number of nodehost containers."
+      ]
+    },
+    {
+      "id": "L08-RISK-002",
+      "severity": "high",
+      "description": "Current real failover wrapper is small-real/P08-shaped and does not yet address 30/50/100 scenario selection, per-rung artifact naming, or workload windows.",
+      "evidence": [
+        "scripts/fault_failover_gate.py hard-codes --scenario failover_setup.",
+        "L08 manifest requires fault_report_N, failover_report_N, workload_window_report_N, valkey_e2e_evidence_fault_N, and cleanup_report_fault_N."
+      ]
+    },
+    {
+      "id": "L08-RISK-003",
+      "severity": "high",
+      "description": "Permissive fault/failover schemas can allow required L08 metrics to be absent while schema validation still passes.",
+      "evidence": [
+        "fault_report.schema.json leaves faults items as generic object.",
+        "failover_report.schema.json leaves failovers and summary as generic objects."
+      ]
+    },
+    {
+      "id": "L08-RISK-004",
+      "severity": "high",
+      "description": "30/50/100 real gates can exceed local Docker CPU, memory, port, or time budgets. Treating resource failure as skipped PASS would violate the stage contract.",
+      "evidence": [
+        "read_context.md states resource insufficiency is a blocker, not a pass.",
+        "L08 requires three real fault/failover rungs."
+      ]
+    },
+    {
+      "id": "L08-RISK-005",
+      "severity": "high",
+      "description": "Fake or small-real evidence could be accidentally counted as 30/50/100 L08 real fault coverage unless validators require exact rung node counts, wrapper producers, artifact paths, and Valkey 9.1 probes.",
+      "evidence": [
+        "coverage_matrix.json currently has fault/failover coverage only in fake and small-real layers.",
+        "P08 valkey_e2e_evidence.json is real but only observes the six-node small cluster."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "process_runtime_primary_stop_scope_unit",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "For docker_process states with shared nodehost containers, node_stop must target the selected logical node PID via owned nodehost container exec and must not docker stop the nodehost container."
+    },
+    {
+      "name": "l08_static_safety_and_p14_guard",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Safety scan plus L08 command-log scan must fail on host-network mutation, broad process killing, P14, VSLAB_ALLOW_1000_DRYRUN, scale_1000 configs, or real 1000-node wrapper commands."
+    },
+    {
+      "name": "l08_fault_failover_artifact_schema_guard",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Validators must require per-rung artifacts and all required L08 metrics with MISSING or SKIPPED_WITH_REASON allowed only with reasons."
+    },
+    {
+      "name": "l08_real_fault_failover_30_50_100",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Runs real 30/50/100 fault/failover gates through wrapper code after resource preflight and blocks on resource insufficiency."
+    },
+    {
+      "name": "l08_coverage_matrix_fault_failover_30_50_100",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Coverage and report artifacts must show measured or explicit-missing fault/failover metrics for 30, 50, and 100 layers while keeping 1000 dry-run only."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Add hard guards before real execution.",
+      "files": [
+        "scripts/audit_fault_failover_scale.py",
+        "tests/ci/test_fault_failover_scale_gate.py"
+      ],
+      "rationale": "Prevent host-network mutation, P14 shortcuts, and broad process/container actions from entering L08."
+    },
+    {
+      "step": "Make process-runtime fault targeting logical-node scoped.",
+      "files": [
+        "src/valkey_scale_lab/fault/sandbox.py",
+        "tests/fault/test_sandbox_fault.py"
+      ],
+      "rationale": "Primary-stop in 30/50/100 must stop only the selected Valkey PID inside the owned nodehost container."
+    },
+    {
+      "step": "Extend real failover wrapper for scale rungs.",
+      "files": [
+        "scripts/fault_failover_gate.py",
+        "src/valkey_scale_lab/runtime/docker_runtime.py"
+      ],
+      "rationale": "L08 needs wrapper-produced 30/50/100 real evidence with exact scenario/rung naming and cleanup."
+    },
+    {
+      "step": "Define strict L08 artifact validation.",
+      "files": [
+        "schemas/artifact/fault_failover_scale.schema.json",
+        "schemas/artifact/workload_window_report.schema.json",
+        "scripts/audit_fault_failover_scale.py"
+      ],
+      "rationale": "Top-level schemas are too permissive for L08 metrics; add a dedicated artifact validator."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness baseline remains PASS.",
+    "No command in L08 runs P14, scale_1000, or VSLAB_ALLOW_1000_DRYRUN.",
+    "No implementation uses host firewall, routing, PF, nftables, iptables, host interface mutation, sudo, killall, pkill -f, or broad docker cleanup outside owned labels.",
+    "30/50/100 real fault/failover gates are wrapper-produced and independently probe live Valkey 9.1.x endpoints.",
+    "For docker_process rungs, primary stop is logical-node scoped by PID and verified not to stop unrelated logical nodes in the same nodehost container.",
+    "Each required L08 artifact exists per rung and validates against schema plus L08-specific metric checks.",
+    "Resource preflight failure for any required real rung yields BLOCKED/FAIL evidence, not PASS or skipped coverage."
+  ],
+  "risks": [
+    "High risk: process-runtime primary stop can accidentally become AZ/nodehost outage if implemented with docker stop on shared nodehost containers.",
+    "High risk: local Docker may not sustain repeated 30/50/100 setup, fault, workload, recovery, and cleanup within available resources.",
+    "High risk: fake tests or P08 six-node real artifacts may be counted as large-rung evidence unless artifact paths, node counts, producer, and probe counts are enforced.",
+    "Medium risk: workload windows can be inferred from summaries unless timestamped samples are required.",
+    "Medium risk: split-brain duration can be overclaimed without direct conflicting-primary or write-side evidence."
+  ],
+  "forbidden_shortcuts": [
+    "Do not edit historical P08/P13 artifacts to fabricate 30/50/100 fault evidence.",
+    "Do not count unit tests, fake artifacts, or static files as real Valkey proof.",
+    "Do not count P08 six-node failover as 30/50/100 coverage.",
+    "Do not run P14, scale_1000 configs, or any 1000-node real gate.",
+    "Do not stop shared nodehost containers to claim single-primary-stop evidence in docker_process rungs.",
+    "Do not use sudo, host PF, iptables, nftables, route mutation, ifconfig, networksetup, or host interface changes.",
+    "Do not report PASS when resource preflight fails.",
+    "Do not invent split-brain, workload, availability, or latency values."
+  ],
+  "commands_to_run": [
+    "python3 scripts/safety_scan.py",
+    "python3 -m pytest -q tests/fault tests/failover tests/real_valkey/test_small_real_gate_contract.py",
+    "python3 -m pytest -q tests/coverage tests/report tests/ci/test_metric_coverage_gate.py",
+    "python3 scripts/audit_fault_failover_scale.py --out artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "python3 scripts/loop_engineering_validate.py --anti-regression --base-ref 5542161fa84a35fb853e1a6268ebcf4081ea8fe9 --head-ref WORKTREE --report artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/anti_regression_check.json"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Approved to proceed with L08 harness design only if high-risk conditions are treated as blocking acceptance criteria. The current implementation is not sufficient for L08 real 30/50/100 fault/failover evidence."
+}

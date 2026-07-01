@@ -1,0 +1,89 @@
+{
+  "artifact_type": "resource_preflight",
+  "can_run": true,
+  "checks": [
+    {
+      "details": {
+        "errors": []
+      },
+      "name": "config_semantics",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "default_cap": 100,
+        "node_count": 50
+      },
+      "name": "node_count_limit",
+      "status": "PASS"
+    },
+    {
+      "details": {},
+      "name": "docker_available",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "cpu_count": 10
+      },
+      "name": "cpu_count",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "node_memory_limit_mb": 64,
+        "required_memory_mb": 3200,
+        "status_note": "host-visible estimate"
+      },
+      "name": "memory_budget",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "free_mb": 165255,
+        "required_free_mb": 1024
+      },
+      "name": "disk_free",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "base": 7400,
+        "count": 50,
+        "unavailable": []
+      },
+      "name": "client_ports",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "base": 17400,
+        "count": 50,
+        "unavailable": []
+      },
+      "name": "cluster_bus_ports",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "leftovers": [],
+        "node_count": 50,
+        "run_id": "P13_SCALE_LADDER_50_100-scale_50-20260628"
+      },
+      "name": "previous_cleanup_state",
+      "status": "PASS"
+    }
+  ],
+  "config_path": "templates/configs/scale_50.yaml",
+  "created_at": "2026-06-28T00:00:00Z",
+  "dry_run": false,
+  "node_count": 50,
+  "phase_id": "P13_SCALE_LADDER_50_100",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P13_SCALE_LADDER_50_100-resource-preflight-50-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

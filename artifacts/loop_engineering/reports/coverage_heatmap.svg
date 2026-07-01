@@ -59,17 +59,17 @@
 <text x="156" y="169" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="242" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="management" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
 <text x="248" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="334" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="workload" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
-<text x="340" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="334" y="150" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="30" data-surface="workload" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="340" y="169" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="426" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="observability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
 <text x="432" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="518" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="fault" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
-<text x="524" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="610" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="failover" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
-<text x="616" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="518" y="150" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="30" data-surface="fault" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="524" y="169" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="610" y="150" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="30" data-surface="failover" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="616" y="169" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="702" y="150" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="30" data-surface="stability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
 <text x="708" y="169" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="794" y="150" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="30" data-surface="cleanup" data-status="COVERED" data-evidence-class="source_artifact" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<rect class="coverage-cell" x="794" y="150" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="30" data-surface="cleanup" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
 <text x="800" y="169" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="886" y="150" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="30" data-surface="scale" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
 <text x="892" y="169" font-size="10" fill="#ffffff">COVERED</text>
@@ -80,17 +80,17 @@
 <text x="156" y="203" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="242" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="management" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
 <text x="248" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="334" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="workload" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
-<text x="340" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="334" y="184" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="50" data-surface="workload" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="340" y="203" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="426" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="observability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
 <text x="432" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="518" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="fault" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
-<text x="524" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="610" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="failover" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
-<text x="616" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="518" y="184" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="50" data-surface="fault" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="524" y="203" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="610" y="184" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="50" data-surface="failover" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="616" y="203" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="702" y="184" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="50" data-surface="stability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
 <text x="708" y="203" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="794" y="184" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="50" data-surface="cleanup" data-status="COVERED" data-evidence-class="source_artifact" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<rect class="coverage-cell" x="794" y="184" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="50" data-surface="cleanup" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
 <text x="800" y="203" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="886" y="184" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="50" data-surface="scale" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
 <text x="892" y="203" font-size="10" fill="#ffffff">COVERED</text>
@@ -101,17 +101,17 @@
 <text x="156" y="237" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="242" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="management" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
 <text x="248" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="334" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="workload" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
-<text x="340" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="334" y="218" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="100" data-surface="workload" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="340" y="237" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="426" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="observability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
 <text x="432" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="518" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="fault" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
-<text x="524" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="610" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="failover" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
-<text x="616" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
+<rect class="coverage-cell" x="518" y="218" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="100" data-surface="fault" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="524" y="237" font-size="10" fill="#ffffff">COVERED</text>
+<rect class="coverage-cell" x="610" y="218" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="100" data-surface="failover" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
+<text x="616" y="237" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="702" y="218" width="86" height="28" rx="3" fill="#5f6b7a" data-layer="100" data-surface="stability" data-status="SKIPPED_WITH_REASON" data-evidence-class="none" data-real-valkey-coverage="false" data-dry-run-only="false"/>
 <text x="708" y="237" font-size="10" fill="#ffffff">SKIPPED_</text>
-<rect class="coverage-cell" x="794" y="218" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="100" data-surface="cleanup" data-status="COVERED" data-evidence-class="source_artifact" data-real-valkey-coverage="false" data-dry-run-only="false"/>
+<rect class="coverage-cell" x="794" y="218" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="100" data-surface="cleanup" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
 <text x="800" y="237" font-size="10" fill="#ffffff">COVERED</text>
 <rect class="coverage-cell" x="886" y="218" width="86" height="28" rx="3" fill="#2f6f4e" data-layer="100" data-surface="scale" data-status="COVERED" data-evidence-class="real_valkey" data-real-valkey-coverage="true" data-dry-run-only="false"/>
 <text x="892" y="237" font-size="10" fill="#ffffff">COVERED</text>

@@ -1,0 +1,843 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "fault_failover_scale",
+  "created_at": "2026-07-01T02:20:24.717604Z",
+  "producer": {
+    "name": "scripts/audit_fault_failover_scale.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": {
+    "canonical_node_counts": [
+      30,
+      50,
+      100
+    ],
+    "rung_count": 3,
+    "blocking_findings_count": 0,
+    "real_valkey_rung_count": 3,
+    "measured_metric_count": 60,
+    "missing_metric_count": 3
+  },
+  "canonical_rungs": [
+    {
+      "node_count": 30,
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "scenario": "scale_30_fault_failover",
+      "status": "PASS",
+      "real_valkey": true,
+      "source_artifacts": [
+        {
+          "role": "resource_preflight",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_fault_30.json",
+          "exists": true,
+          "sha256": "879a66daac248506e291f01e3f362121afda1310f844ddae367c9ad37f8eb0e0",
+          "artifact_type": "resource_preflight",
+          "status": "PASS"
+        },
+        {
+          "role": "fault_report",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json",
+          "exists": true,
+          "sha256": "022b96f3ddb663b4b1a6e15b54c0bc909c472cd7e86fa2686be7778ce9a08193",
+          "artifact_type": "fault_report",
+          "status": "PASS"
+        },
+        {
+          "role": "failover_report",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+          "exists": true,
+          "sha256": "a87362f250e9607dccbaaf9f9cd337a474a3d3884f5fbc6229271828191def0e",
+          "artifact_type": "failover_report",
+          "status": "PASS"
+        },
+        {
+          "role": "workload_window_report",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "exists": true,
+          "sha256": "d36a96c9ea7d5a8dacae5c27ebece2e3f611e715cf4c5c05e125ce8f3aa5babd",
+          "artifact_type": "workload_window_report",
+          "status": "PASS"
+        },
+        {
+          "role": "valkey_e2e_evidence",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+          "exists": true,
+          "sha256": "adb53d916bd42f3c4ebf7ddca7bc1ace2bbe29a5424eabd2b9a6b513af1ed3f4",
+          "artifact_type": "valkey_e2e_evidence",
+          "status": "PASS"
+        },
+        {
+          "role": "cleanup_report",
+          "path": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json",
+          "exists": true,
+          "sha256": "c63dc1eea38653e11d9284552bfd64cc4f9ba8bc5c07a2e6c252faea8797005d",
+          "artifact_type": "cleanup_report",
+          "status": "PASS"
+        }
+      ],
+      "metric_records": [
+        {
+          "name": "workload.before_fault.availability_percent",
+          "surface": "workload",
+          "unit": "percent",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.0.availability_percent",
+          "status": "MEASURED",
+          "value": 100.0,
+          "reason": ""
+        },
+        {
+          "name": "workload.before_fault.errors_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.0.errors_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.before_fault.timeouts_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.0.timeouts_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.before_fault.operation_count",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.0.operation_count",
+          "status": "MEASURED",
+          "value": 16,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.availability_percent",
+          "surface": "workload",
+          "unit": "percent",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.1.availability_percent",
+          "status": "MEASURED",
+          "value": 25.0,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.errors_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.1.errors_total",
+          "status": "MEASURED",
+          "value": 12,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.timeouts_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.1.timeouts_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.operation_count",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.1.operation_count",
+          "status": "MEASURED",
+          "value": 16,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.availability_percent",
+          "surface": "workload",
+          "unit": "percent",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.2.availability_percent",
+          "status": "MEASURED",
+          "value": 100.0,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.errors_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.2.errors_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.timeouts_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.2.timeouts_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.operation_count",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+          "source_pointer": "$.windows.2.operation_count",
+          "status": "MEASURED",
+          "value": 16,
+          "reason": ""
+        },
+        {
+          "name": "fault.apply_latency_ms",
+          "surface": "fault",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json",
+          "source_pointer": "$.faults.0.fault_apply_latency_ms",
+          "status": "MEASURED",
+          "value": 142.126,
+          "reason": ""
+        },
+        {
+          "name": "fault.clear_latency_ms",
+          "surface": "fault",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json",
+          "source_pointer": "$.faults.0.fault_clear_latency_ms",
+          "status": "MEASURED",
+          "value": 151.99,
+          "reason": ""
+        },
+        {
+          "name": "fault.cleanup_residual_count",
+          "surface": "cleanup",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json",
+          "source_pointer": "$.resources_remaining",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "failover.promotion_observed",
+          "surface": "failover",
+          "unit": "boolean",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+          "source_pointer": "$.summary.promotion_observed",
+          "status": "MEASURED",
+          "value": true,
+          "reason": ""
+        },
+        {
+          "name": "failover.failover_latency_ms",
+          "surface": "failover",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+          "source_pointer": "$.failovers.0.failover_latency_ms",
+          "status": "MEASURED",
+          "value": 24327.136,
+          "reason": ""
+        },
+        {
+          "name": "failover.nodes_observed_before",
+          "surface": "failover",
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+          "source_pointer": "$.nodes_observed_before",
+          "status": "MEASURED",
+          "value": 30,
+          "reason": ""
+        },
+        {
+          "name": "failover.nodes_observed_after",
+          "surface": "failover",
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+          "source_pointer": "$.nodes_observed",
+          "status": "MEASURED",
+          "value": 29,
+          "reason": ""
+        },
+        {
+          "name": "failover.nodes_observed_after_clear",
+          "surface": "failover",
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+          "source_pointer": "$.nodes_observed_after_clear",
+          "status": "MEASURED",
+          "value": 30,
+          "reason": ""
+        },
+        {
+          "name": "failover.split_brain_duration_ms",
+          "surface": "failover",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+          "source_pointer": "$.summary.split_brain_duration_ms",
+          "status": "MISSING",
+          "value": null,
+          "reason": "primary_stop_gate_did_not_observe_conflicting_primaries"
+        }
+      ],
+      "findings": []
+    },
+    {
+      "node_count": 50,
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "scenario": "scale_50_fault_failover",
+      "status": "PASS",
+      "real_valkey": true,
+      "source_artifacts": [
+        {
+          "role": "resource_preflight",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_fault_50.json",
+          "exists": true,
+          "sha256": "08c532caebd0ba59b0c99bb51e3ca116f3ab31f4cc24fca09a4f3986c6141017",
+          "artifact_type": "resource_preflight",
+          "status": "PASS"
+        },
+        {
+          "role": "fault_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+          "exists": true,
+          "sha256": "a06e1b8720d5e2f95a784611f13f2db3413d140de3f90d0d1e8c6284f11e025d",
+          "artifact_type": "fault_report",
+          "status": "PASS"
+        },
+        {
+          "role": "failover_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+          "exists": true,
+          "sha256": "6fa1d1f47a920f813f9dc46781e88efbb97febd8c249f5c002e70496f87ff39b",
+          "artifact_type": "failover_report",
+          "status": "PASS"
+        },
+        {
+          "role": "workload_window_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "exists": true,
+          "sha256": "5d91f9a17882641f4ee1260f7707b25bf699ce312887274935d1ec5951a1983c",
+          "artifact_type": "workload_window_report",
+          "status": "PASS"
+        },
+        {
+          "role": "valkey_e2e_evidence",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+          "exists": true,
+          "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6",
+          "artifact_type": "valkey_e2e_evidence",
+          "status": "PASS"
+        },
+        {
+          "role": "cleanup_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+          "exists": true,
+          "sha256": "f0ef8710dfb7e2c3b1cd3f35728e950a07ce5820ed973fbf8a4ea8736cf63f7d",
+          "artifact_type": "cleanup_report",
+          "status": "PASS"
+        }
+      ],
+      "metric_records": [
+        {
+          "name": "workload.before_fault.availability_percent",
+          "surface": "workload",
+          "unit": "percent",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.0.availability_percent",
+          "status": "MEASURED",
+          "value": 100.0,
+          "reason": ""
+        },
+        {
+          "name": "workload.before_fault.errors_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.0.errors_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.before_fault.timeouts_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.0.timeouts_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.before_fault.operation_count",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.0.operation_count",
+          "status": "MEASURED",
+          "value": 16,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.availability_percent",
+          "surface": "workload",
+          "unit": "percent",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.1.availability_percent",
+          "status": "MEASURED",
+          "value": 12.5,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.errors_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.1.errors_total",
+          "status": "MEASURED",
+          "value": 14,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.timeouts_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.1.timeouts_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.operation_count",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.1.operation_count",
+          "status": "MEASURED",
+          "value": 16,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.availability_percent",
+          "surface": "workload",
+          "unit": "percent",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.2.availability_percent",
+          "status": "MEASURED",
+          "value": 100.0,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.errors_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.2.errors_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.timeouts_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.2.timeouts_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.operation_count",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "source_pointer": "$.windows.2.operation_count",
+          "status": "MEASURED",
+          "value": 16,
+          "reason": ""
+        },
+        {
+          "name": "fault.apply_latency_ms",
+          "surface": "fault",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+          "source_pointer": "$.faults.0.fault_apply_latency_ms",
+          "status": "MEASURED",
+          "value": 120.4,
+          "reason": ""
+        },
+        {
+          "name": "fault.clear_latency_ms",
+          "surface": "fault",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+          "source_pointer": "$.faults.0.fault_clear_latency_ms",
+          "status": "MEASURED",
+          "value": 138.968,
+          "reason": ""
+        },
+        {
+          "name": "fault.cleanup_residual_count",
+          "surface": "cleanup",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+          "source_pointer": "$.resources_remaining",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "failover.promotion_observed",
+          "surface": "failover",
+          "unit": "boolean",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+          "source_pointer": "$.summary.promotion_observed",
+          "status": "MEASURED",
+          "value": true,
+          "reason": ""
+        },
+        {
+          "name": "failover.failover_latency_ms",
+          "surface": "failover",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+          "source_pointer": "$.failovers.0.failover_latency_ms",
+          "status": "MEASURED",
+          "value": 24755.155,
+          "reason": ""
+        },
+        {
+          "name": "failover.nodes_observed_before",
+          "surface": "failover",
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+          "source_pointer": "$.nodes_observed_before",
+          "status": "MEASURED",
+          "value": 50,
+          "reason": ""
+        },
+        {
+          "name": "failover.nodes_observed_after",
+          "surface": "failover",
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+          "source_pointer": "$.nodes_observed",
+          "status": "MEASURED",
+          "value": 49,
+          "reason": ""
+        },
+        {
+          "name": "failover.nodes_observed_after_clear",
+          "surface": "failover",
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+          "source_pointer": "$.nodes_observed_after_clear",
+          "status": "MEASURED",
+          "value": 50,
+          "reason": ""
+        },
+        {
+          "name": "failover.split_brain_duration_ms",
+          "surface": "failover",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+          "source_pointer": "$.summary.split_brain_duration_ms",
+          "status": "MISSING",
+          "value": null,
+          "reason": "primary_stop_gate_did_not_observe_conflicting_primaries"
+        }
+      ],
+      "findings": []
+    },
+    {
+      "node_count": 100,
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "scenario": "scale_100_fault_failover",
+      "status": "PASS",
+      "real_valkey": true,
+      "source_artifacts": [
+        {
+          "role": "resource_preflight",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_fault_100.json",
+          "exists": true,
+          "sha256": "75e0a10d77e8cf19fc57890f2c9436ec847433c039047f323ee211aa5766db3b",
+          "artifact_type": "resource_preflight",
+          "status": "PASS"
+        },
+        {
+          "role": "fault_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+          "exists": true,
+          "sha256": "52a0941316cdbe31887d26ab0dcf287802cf5096b0980a9888b35e75ef28ce20",
+          "artifact_type": "fault_report",
+          "status": "PASS"
+        },
+        {
+          "role": "failover_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+          "exists": true,
+          "sha256": "fd12a55e0cb3f9a46a84a0603efadd75167b4f45f7cc674986ddcf450861e5cd",
+          "artifact_type": "failover_report",
+          "status": "PASS"
+        },
+        {
+          "role": "workload_window_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "exists": true,
+          "sha256": "5bb4af8939bb253928d31cc9ab2db8323db526e5556df05bd811f1e934c35abf",
+          "artifact_type": "workload_window_report",
+          "status": "PASS"
+        },
+        {
+          "role": "valkey_e2e_evidence",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "exists": true,
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec",
+          "artifact_type": "valkey_e2e_evidence",
+          "status": "PASS"
+        },
+        {
+          "role": "cleanup_report",
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+          "exists": true,
+          "sha256": "609c0fc9b4501758ff50143877195f2077a8f19c7be463c10ae4a17148e21722",
+          "artifact_type": "cleanup_report",
+          "status": "PASS"
+        }
+      ],
+      "metric_records": [
+        {
+          "name": "workload.before_fault.availability_percent",
+          "surface": "workload",
+          "unit": "percent",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.0.availability_percent",
+          "status": "MEASURED",
+          "value": 100.0,
+          "reason": ""
+        },
+        {
+          "name": "workload.before_fault.errors_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.0.errors_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.before_fault.timeouts_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.0.timeouts_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.before_fault.operation_count",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.0.operation_count",
+          "status": "MEASURED",
+          "value": 16,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.availability_percent",
+          "surface": "workload",
+          "unit": "percent",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.1.availability_percent",
+          "status": "MEASURED",
+          "value": 25.0,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.errors_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.1.errors_total",
+          "status": "MEASURED",
+          "value": 12,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.timeouts_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.1.timeouts_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.during_fault.operation_count",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.1.operation_count",
+          "status": "MEASURED",
+          "value": 16,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.availability_percent",
+          "surface": "workload",
+          "unit": "percent",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.2.availability_percent",
+          "status": "MEASURED",
+          "value": 100.0,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.errors_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.2.errors_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.timeouts_total",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.2.timeouts_total",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "workload.after_recovery.operation_count",
+          "surface": "workload",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "source_pointer": "$.windows.2.operation_count",
+          "status": "MEASURED",
+          "value": 16,
+          "reason": ""
+        },
+        {
+          "name": "fault.apply_latency_ms",
+          "surface": "fault",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+          "source_pointer": "$.faults.0.fault_apply_latency_ms",
+          "status": "MEASURED",
+          "value": 123.367,
+          "reason": ""
+        },
+        {
+          "name": "fault.clear_latency_ms",
+          "surface": "fault",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+          "source_pointer": "$.faults.0.fault_clear_latency_ms",
+          "status": "MEASURED",
+          "value": 125.306,
+          "reason": ""
+        },
+        {
+          "name": "fault.cleanup_residual_count",
+          "surface": "cleanup",
+          "unit": "count",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+          "source_pointer": "$.resources_remaining",
+          "status": "MEASURED",
+          "value": 0,
+          "reason": ""
+        },
+        {
+          "name": "failover.promotion_observed",
+          "surface": "failover",
+          "unit": "boolean",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+          "source_pointer": "$.summary.promotion_observed",
+          "status": "MEASURED",
+          "value": true,
+          "reason": ""
+        },
+        {
+          "name": "failover.failover_latency_ms",
+          "surface": "failover",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+          "source_pointer": "$.failovers.0.failover_latency_ms",
+          "status": "MEASURED",
+          "value": 23585.219,
+          "reason": ""
+        },
+        {
+          "name": "failover.nodes_observed_before",
+          "surface": "failover",
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "source_pointer": "$.nodes_observed_before",
+          "status": "MEASURED",
+          "value": 100,
+          "reason": ""
+        },
+        {
+          "name": "failover.nodes_observed_after",
+          "surface": "failover",
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "source_pointer": "$.nodes_observed",
+          "status": "MEASURED",
+          "value": 99,
+          "reason": ""
+        },
+        {
+          "name": "failover.nodes_observed_after_clear",
+          "surface": "failover",
+          "unit": "nodes",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "source_pointer": "$.nodes_observed_after_clear",
+          "status": "MEASURED",
+          "value": 100,
+          "reason": ""
+        },
+        {
+          "name": "failover.split_brain_duration_ms",
+          "surface": "failover",
+          "unit": "ms",
+          "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+          "source_pointer": "$.summary.split_brain_duration_ms",
+          "status": "MISSING",
+          "value": null,
+          "reason": "primary_stop_gate_did_not_observe_conflicting_primaries"
+        }
+      ],
+      "findings": []
+    }
+  ],
+  "p14_boundary": {
+    "phase_id": "P14_SCALE_1000_OPTIN_DRYRUN",
+    "status": "SKIPPED_WITH_REASON",
+    "dry_run_only": true,
+    "real_valkey_coverage": false,
+    "real_evidence_count": 0,
+    "reason": "P14 remains opt-in dry-run/resource/planner only and L08 did not run 1000-node fault/failover gates."
+  },
+  "findings": []
+}

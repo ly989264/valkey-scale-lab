@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "coverage_matrix",
-  "created_at": "2026-06-30T11:56:24.821651Z",
+  "created_at": "2026-07-01T02:14:04.715354Z",
   "producer": {
     "name": "scripts/build_metric_coverage_matrix.py",
     "version": "v1"
@@ -9,8 +9,8 @@
   "status": "PASS",
   "summary": {
     "entry_count": 60,
-    "covered_entry_count": 20,
-    "real_coverage_entry_count": 15,
+    "covered_entry_count": 29,
+    "real_coverage_entry_count": 27,
     "dry_run_entry_count": 10,
     "blocking_findings_count": 0
   },
@@ -401,7 +401,7 @@
       "surface": "cleanup",
       "status": "COVERED",
       "evidence_class": "source_artifact",
-      "metric_count": 46,
+      "metric_count": 52,
       "metric_names": [
         "cleanup.action_count",
         "cleanup.resources_remaining"
@@ -426,10 +426,13 @@
         "artifacts/phases/P11_STABILITY_SOAK/cleanup_report.json",
         "artifacts/phases/P11_STABILITY_SOAK/cleanup_report_stability_soak_smoke.json",
         "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json",
         "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_10.json",
         "artifacts/phases/P13O_CLUSTER_CREATE_AB/cleanup_report.json",
         "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/cleanup_report.json",
-        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json"
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json"
       ],
       "node_count_scope": "small-real",
       "real_valkey_coverage": false,
@@ -441,7 +444,7 @@
       "surface": "scale",
       "status": "COVERED",
       "evidence_class": "real_valkey",
-      "metric_count": 10,
+      "metric_count": 19,
       "metric_names": [
         "scale.management.cluster_known_nodes_max",
         "scale.metrics.avg_used_memory",
@@ -456,7 +459,10 @@
       ],
       "source_artifacts": [
         "artifacts/phases/P12_SCALE_LADDER_10_30/scale_rung_10.json",
-        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_10.json"
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_10.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json"
       ],
       "node_count_scope": "small-real",
       "real_valkey_coverage": true,
@@ -553,15 +559,30 @@
     {
       "layer": "30",
       "surface": "workload",
-      "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 12,
+      "metric_names": [
+        "fault_failover_scale.workload.after_recovery.availability_percent",
+        "fault_failover_scale.workload.after_recovery.errors_total",
+        "fault_failover_scale.workload.after_recovery.operation_count",
+        "fault_failover_scale.workload.after_recovery.timeouts_total",
+        "fault_failover_scale.workload.before_fault.availability_percent",
+        "fault_failover_scale.workload.before_fault.errors_total",
+        "fault_failover_scale.workload.before_fault.operation_count",
+        "fault_failover_scale.workload.before_fault.timeouts_total",
+        "fault_failover_scale.workload.during_fault.availability_percent",
+        "fault_failover_scale.workload.during_fault.errors_total",
+        "fault_failover_scale.workload.during_fault.operation_count",
+        "fault_failover_scale.workload.during_fault.timeouts_total"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json"
+      ],
       "node_count_scope": "30",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for workload in 30 layer."
+      "reason": ""
     },
     {
       "layer": "30",
@@ -579,28 +600,44 @@
     {
       "layer": "30",
       "surface": "fault",
-      "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 2,
+      "metric_names": [
+        "fault_failover_scale.fault.apply_latency_ms",
+        "fault_failover_scale.fault.clear_latency_ms"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json"
+      ],
       "node_count_scope": "30",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for fault in 30 layer."
+      "reason": ""
     },
     {
       "layer": "30",
       "surface": "failover",
-      "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 6,
+      "metric_names": [
+        "fault_failover_scale.failover.failover_latency_ms",
+        "fault_failover_scale.failover.nodes_observed_after",
+        "fault_failover_scale.failover.nodes_observed_after_clear",
+        "fault_failover_scale.failover.nodes_observed_before",
+        "fault_failover_scale.failover.promotion_observed",
+        "fault_failover_scale.failover.split_brain_duration_ms"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json"
+      ],
       "node_count_scope": "30",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for failover in 30 layer."
+      "reason": ""
     },
     {
       "layer": "30",
@@ -619,17 +656,19 @@
       "layer": "30",
       "surface": "cleanup",
       "status": "COVERED",
-      "evidence_class": "source_artifact",
-      "metric_count": 2,
+      "evidence_class": "real_valkey",
+      "metric_count": 3,
       "metric_names": [
         "cleanup.action_count",
-        "cleanup.resources_remaining"
+        "cleanup.resources_remaining",
+        "fault_failover_scale.fault.cleanup_residual_count"
       ],
       "source_artifacts": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json",
         "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json"
       ],
       "node_count_scope": "30",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
       "reason": ""
     },
@@ -739,15 +778,30 @@
     {
       "layer": "50",
       "surface": "workload",
-      "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 12,
+      "metric_names": [
+        "fault_failover_scale.workload.after_recovery.availability_percent",
+        "fault_failover_scale.workload.after_recovery.errors_total",
+        "fault_failover_scale.workload.after_recovery.operation_count",
+        "fault_failover_scale.workload.after_recovery.timeouts_total",
+        "fault_failover_scale.workload.before_fault.availability_percent",
+        "fault_failover_scale.workload.before_fault.errors_total",
+        "fault_failover_scale.workload.before_fault.operation_count",
+        "fault_failover_scale.workload.before_fault.timeouts_total",
+        "fault_failover_scale.workload.during_fault.availability_percent",
+        "fault_failover_scale.workload.during_fault.errors_total",
+        "fault_failover_scale.workload.during_fault.operation_count",
+        "fault_failover_scale.workload.during_fault.timeouts_total"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json"
+      ],
       "node_count_scope": "50",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for workload in 50 layer."
+      "reason": ""
     },
     {
       "layer": "50",
@@ -765,28 +819,44 @@
     {
       "layer": "50",
       "surface": "fault",
-      "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 2,
+      "metric_names": [
+        "fault_failover_scale.fault.apply_latency_ms",
+        "fault_failover_scale.fault.clear_latency_ms"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json"
+      ],
       "node_count_scope": "50",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for fault in 50 layer."
+      "reason": ""
     },
     {
       "layer": "50",
       "surface": "failover",
-      "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 6,
+      "metric_names": [
+        "fault_failover_scale.failover.failover_latency_ms",
+        "fault_failover_scale.failover.nodes_observed_after",
+        "fault_failover_scale.failover.nodes_observed_after_clear",
+        "fault_failover_scale.failover.nodes_observed_before",
+        "fault_failover_scale.failover.promotion_observed",
+        "fault_failover_scale.failover.split_brain_duration_ms"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json"
+      ],
       "node_count_scope": "50",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for failover in 50 layer."
+      "reason": ""
     },
     {
       "layer": "50",
@@ -805,19 +875,21 @@
       "layer": "50",
       "surface": "cleanup",
       "status": "COVERED",
-      "evidence_class": "source_artifact",
-      "metric_count": 6,
+      "evidence_class": "real_valkey",
+      "metric_count": 7,
       "metric_names": [
         "cleanup.action_count",
-        "cleanup.resources_remaining"
+        "cleanup.resources_remaining",
+        "fault_failover_scale.fault.cleanup_residual_count"
       ],
       "source_artifacts": [
         "artifacts/phases/P13O_CLUSTER_CREATE_AB/cleanup_report_scale_50.json",
         "artifacts/phases/P13O_REPLICA_REPLICATE_BREAKDOWN/cleanup_report_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json"
       ],
       "node_count_scope": "50",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
       "reason": ""
     },
@@ -940,15 +1012,30 @@
     {
       "layer": "100",
       "surface": "workload",
-      "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 12,
+      "metric_names": [
+        "fault_failover_scale.workload.after_recovery.availability_percent",
+        "fault_failover_scale.workload.after_recovery.errors_total",
+        "fault_failover_scale.workload.after_recovery.operation_count",
+        "fault_failover_scale.workload.after_recovery.timeouts_total",
+        "fault_failover_scale.workload.before_fault.availability_percent",
+        "fault_failover_scale.workload.before_fault.errors_total",
+        "fault_failover_scale.workload.before_fault.operation_count",
+        "fault_failover_scale.workload.before_fault.timeouts_total",
+        "fault_failover_scale.workload.during_fault.availability_percent",
+        "fault_failover_scale.workload.during_fault.errors_total",
+        "fault_failover_scale.workload.during_fault.operation_count",
+        "fault_failover_scale.workload.during_fault.timeouts_total"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json"
+      ],
       "node_count_scope": "100",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for workload in 100 layer."
+      "reason": ""
     },
     {
       "layer": "100",
@@ -966,28 +1053,44 @@
     {
       "layer": "100",
       "surface": "fault",
-      "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 2,
+      "metric_names": [
+        "fault_failover_scale.fault.apply_latency_ms",
+        "fault_failover_scale.fault.clear_latency_ms"
+      ],
+      "source_artifacts": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json"
+      ],
       "node_count_scope": "100",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for fault in 100 layer."
+      "reason": ""
     },
     {
       "layer": "100",
       "surface": "failover",
-      "status": "SKIPPED_WITH_REASON",
-      "evidence_class": "none",
-      "metric_count": 0,
-      "metric_names": [],
-      "source_artifacts": [],
+      "status": "COVERED",
+      "evidence_class": "real_valkey",
+      "metric_count": 6,
+      "metric_names": [
+        "fault_failover_scale.failover.failover_latency_ms",
+        "fault_failover_scale.failover.nodes_observed_after",
+        "fault_failover_scale.failover.nodes_observed_after_clear",
+        "fault_failover_scale.failover.nodes_observed_before",
+        "fault_failover_scale.failover.promotion_observed",
+        "fault_failover_scale.failover.split_brain_duration_ms"
+      ],
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json"
+      ],
       "node_count_scope": "100",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
-      "reason": "No committed metric artifacts for failover in 100 layer."
+      "reason": ""
     },
     {
       "layer": "100",
@@ -1006,17 +1109,19 @@
       "layer": "100",
       "surface": "cleanup",
       "status": "COVERED",
-      "evidence_class": "source_artifact",
-      "metric_count": 2,
+      "evidence_class": "real_valkey",
+      "metric_count": 3,
       "metric_names": [
         "cleanup.action_count",
-        "cleanup.resources_remaining"
+        "cleanup.resources_remaining",
+        "fault_failover_scale.fault.cleanup_residual_count"
       ],
       "source_artifacts": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
         "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json"
       ],
       "node_count_scope": "100",
-      "real_valkey_coverage": false,
+      "real_valkey_coverage": true,
       "dry_run_only": false,
       "reason": ""
     },

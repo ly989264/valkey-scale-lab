@@ -1,0 +1,78 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "agent_role": "implementation_worker",
+  "created_at": "2026-06-30T16:52:00Z",
+  "context_files_read": [
+    {
+      "path": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/stage_design.md",
+      "purpose": "Confirm L08 implementation scope.",
+      "key_findings": ["Stage requires real 30/50/100 fault/failover evidence and P14 boundary protection."]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/current_harness_plan.json",
+      "purpose": "Confirm harness and artifact acceptance criteria.",
+      "key_findings": ["Harness covers L08 audit, schemas, runtime scope, CI order, coverage, and reports."]
+    },
+    {
+      "path": "scripts/fault_failover_gate.py",
+      "purpose": "Review wrapper changes.",
+      "key_findings": ["Wrapper supports named L08 outputs, expected replica promotion, scenario-local timeout adjustment, and isolated intermediates."]
+    },
+    {
+      "path": "scripts/audit_fault_failover_scale.py",
+      "purpose": "Review L08 artifact audit and P14 boundary.",
+      "key_findings": ["Audit passes real 30/50/100 bundles and allows P14 dry-run/resource metadata while rejecting P14 real fault/failover artifacts."]
+    }
+  ],
+  "findings": [],
+  "proposed_harness": [
+    {
+      "name": "focused_l08_tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Focused L08 tests pass after implementation."
+    },
+    {
+      "name": "fault_failover_scale_audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Audit passes and validates against fault_failover_scale schema."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Review final L08 implementation and blocker fixes.",
+      "files": [
+        "scripts/fault_failover_gate.py",
+        "scripts/audit_fault_failover_scale.py",
+        "src/valkey_scale_lab/fault/sandbox.py",
+        "scripts/build_metric_coverage_matrix.py",
+        "scripts/render_audit_report.py"
+      ],
+      "rationale": "Ensure L08 implementation matches artifact-first design and real/fake/P14 boundaries."
+    }
+  ],
+  "acceptance_criteria": [
+    "Process-runtime node_stop targets only the selected logical PID inside the owned nodehost container.",
+    "P14 dry-run/resource metadata is allowed, but P14 real fault/failover artifacts are rejected.",
+    "Promotion is counted only when the expected replica becomes primary.",
+    "L08 audit, schema validation, coverage, and report rendering pass."
+  ],
+  "risks": [],
+  "forbidden_shortcuts": [
+    "Do not run 1000-node real fault/failover gates.",
+    "Do not count fake or P08-only evidence as 30/50/100 L08 coverage.",
+    "Do not overwrite shared scale-build artifacts with L08 setup intermediates."
+  ],
+  "commands_to_run": [
+    "python3 -m compileall -q <focused scripts/modules> # PASS",
+    "/private/tmp/valkey-scale-lab-l00-venv/bin/python -m pytest -q <focused L08 tests> # PASS: 17 passed",
+    "python3 scripts/audit_fault_failover_scale.py --out /private/tmp/fault_failover_scale_rereview.json # PASS",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/fault_failover_scale.schema.json --instance /private/tmp/fault_failover_scale_rereview.json # PASS",
+    "python3 scripts/build_metric_coverage_matrix.py --out-dir /private/tmp/l08_rereview_reports # PASS",
+    "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir /private/tmp/l08_rereview_report_render # PASS"
+  ],
+  "verdict": "APPROVED",
+  "notes": "Implementation worker re-review approved after P14 boundary, exact promotion detection, timeout, and artifact isolation fixes."
+}

@@ -1,0 +1,105 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "new_tests": [
+    {
+      "path": "tests/failover/test_fault_failover_scale_audit.py",
+      "purpose": "Validate deterministic 30/50/100 fault/failover artifact bundles, missing semantics, unsafe scope rejection, P14 real-evidence rejection, and cross-artifact consistency.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/fault/test_sandbox_fault.py",
+      "purpose": "Add process-runtime primary-stop scope tests proving shared nodehost containers are not stopped for one logical Valkey primary.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/coverage/test_scale_build_metric_coverage.py",
+      "purpose": "Verify 30/50/100 fault, failover, workload, and cleanup coverage is sourced from L08 machine-readable artifacts while scale-build coverage remains intact.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/report/test_scale_build_metrics_report.py",
+      "purpose": "Verify rendered report indexes include fault_failover_scale.json as a source artifact and expose L08 summary text.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/ci/test_fault_failover_scale_gate.py",
+      "purpose": "CI guard for L08 audit command, schema validation, workflow ordering, command-log P14 boundary, and safety invariants.",
+      "expected_to_fail_before_impl": true
+    },
+    {
+      "path": "tests/provenance/test_provenance_graph.py",
+      "purpose": "Verify provenance graph includes L08 fault/failover rollup and canonical source artifact edges.",
+      "expected_to_fail_before_impl": true
+    }
+  ],
+  "new_schemas": [
+    "schemas/artifact/workload_window_report.schema.json",
+    "schemas/artifact/fault_failover_scale.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "name": "fault_failover_scale_audit",
+      "command": "python3 scripts/audit_fault_failover_scale.py --out artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "real_valkey": false
+    },
+    {
+      "name": "real_fault_failover_30",
+      "command": "python3 scripts/fault_failover_gate.py --phase P12_SCALE_LADDER_10_30 --config templates/configs/scale_30.yaml --scenario scale_30_fault_failover --out artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json --fault-report artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json --failover-report artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json --workload-window-report artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json --cleanup-report artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json --min-nodes 30 --require-data-path",
+      "real_valkey": true
+    },
+    {
+      "name": "real_fault_failover_50",
+      "command": "python3 scripts/fault_failover_gate.py --phase P13_SCALE_LADDER_50_100 --config templates/configs/scale_50.yaml --scenario scale_50_fault_failover --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json --fault-report artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json --failover-report artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json --workload-window-report artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json --cleanup-report artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json --min-nodes 50 --require-data-path",
+      "real_valkey": true
+    },
+    {
+      "name": "real_fault_failover_100",
+      "command": "python3 scripts/fault_failover_gate.py --phase P13_SCALE_LADDER_50_100 --config templates/configs/scale_100.yaml --scenario scale_100_fault_failover --out artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json --fault-report artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json --failover-report artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json --workload-window-report artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json --cleanup-report artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json --min-nodes 100 --require-data-path",
+      "real_valkey": true
+    }
+  ],
+  "new_artifact_checks": [
+    "All 30/50/100 L08 source artifacts exist and are JSON-valid.",
+    "Each source artifact records producer, run_id, phase_id, node_count, status, and source path consistency.",
+    "Real evidence requires producer scripts/fault_failover_gate.py, real_valkey true, Valkey 9.1.x versions, exact before-fault node count, expected during-fault node count semantics, promotion observed, and cleanup PASS.",
+    "Fault reports require safety checks with host_network_mutated false, global_firewall_mutated false, sandbox_only true, fault_apply_latency_ms, fault_clear_latency_ms, and owned target scope.",
+    "Workload windows require before_fault, during_fault, and after_recovery entries with operation counts, availability, errors, timeouts, and latency summaries or explicit missing markers.",
+    "Split-brain metrics require direct indicators or explicit MISSING reason.",
+    "P14/1000 real fault/failover artifacts are blocking findings and cannot count as coverage.",
+    "L08 command log latest real gate rows require --require-data-path and positive elapsed duration.",
+    "Repository-local cache and scratch artifacts (__pycache__, .pyc, .pytest_cache, _fault_failover_work_*) are absent."
+  ],
+  "expected_initial_failures": [
+    {
+      "name": "missing_fault_failover_scale_audit",
+      "reason": "scripts/audit_fault_failover_scale.py and artifacts/loop_engineering/reports/fault_failover_scale.json do not exist yet."
+    },
+    {
+      "name": "missing_workload_window_schema",
+      "reason": "schemas/artifact/workload_window_report.schema.json does not exist yet."
+    },
+    {
+      "name": "wrapper_contract_gap",
+      "reason": "scripts/fault_failover_gate.py does not accept --scenario, --fault-report, --workload-window-report, or --cleanup-report for L08 scale artifacts."
+    },
+    {
+      "name": "unsafe_process_runtime_node_stop",
+      "reason": "Current node_stop path would docker stop a shared nodehost container for docker_process rungs."
+    },
+    {
+      "name": "coverage_gap",
+      "reason": "30/50/100 fault, failover, and workload layers lack L08 source artifacts."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness baseline remains PASS.",
+    "The L08 deterministic harness catches missing artifacts, unsafe scope, fake evidence, P14 real evidence, missing workload windows, and invented metrics.",
+    "The real wrapper produces canonical 30/50/100 artifact bundles or the stage records a genuine BLOCKED resource-preflight result and does not mark PASS.",
+    "Process-runtime primary stop targets only the selected logical Valkey PID inside an owned nodehost container.",
+    "All missing or skipped metrics are explicit and reasoned.",
+    "Coverage and report views are generated from machine-readable source artifacts only.",
+    "P14 remains dry-run-only with no real 1000-node fault/failover execution.",
+    "Review, validation, and anti-regression agents approve before commit."
+  ]
+}

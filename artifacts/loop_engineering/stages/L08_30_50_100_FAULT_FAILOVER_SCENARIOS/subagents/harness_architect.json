@@ -1,0 +1,233 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "agent_role": "harness_architect",
+  "created_at": "2026-06-30T15:10:00Z",
+  "context_files_read": [
+    {
+      "path": "CODEX_START_HERE.md",
+      "purpose": "Confirm phase-loop and P14 boundary before designing L08.",
+      "key_findings": [
+        "Automatic execution stops after P13_SCALE_LADDER_50_100.",
+        "P14 is opt-in only and requires VSLAB_ALLOW_1000_DRYRUN.",
+        "Scale phases must use real 10/30/50/100 gates; 1000-node behavior is dry-run/resource-check only."
+      ]
+    },
+    {
+      "path": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/read_context.md",
+      "purpose": "Use current-stage read context and constraints.",
+      "key_findings": [
+        "L08 must produce fault, failover, workload-window, real evidence, and cleanup artifacts for 30, 50, and 100 nodes.",
+        "Resource insufficiency for real 30/50/100 gates is a blocker, not a pass condition.",
+        "P14 must not be run."
+      ]
+    },
+    {
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "Read exact L08 stage manifest.",
+      "key_findings": [
+        "L08 must add deterministic fake tests, 30/50/100 real fault/failover gates, safety guards, failover schema, and before/during/after workload windows.",
+        "Each real rung must emit fault_report_N, failover_report_N, workload_window_report_N, valkey_e2e_evidence_fault_N, and cleanup_report_fault_N."
+      ]
+    },
+    {
+      "path": "scripts/fault_failover_gate.py",
+      "purpose": "Inspect current failover wrapper.",
+      "key_findings": [
+        "Current wrapper supports min-nodes and primary-stop promotion proof.",
+        "It writes valkey_e2e_evidence and failover_report but not named fault_report_N, workload_window_report_N, or cleanup_report_fault_N outputs."
+      ]
+    },
+    {
+      "path": "src/valkey_scale_lab/fault/sandbox.py",
+      "purpose": "Inspect fault apply/clear implementation boundaries.",
+      "key_findings": [
+        "Fault specs must set forbid_host_network_mutation=true.",
+        "Supported node_stop stops an owned container by container_name.",
+        "clear_fault currently clears fault state but does not prove post-clear node restoration for node_stop."
+      ]
+    },
+    {
+      "path": "scripts/build_metric_coverage_matrix.py",
+      "purpose": "Review current metric coverage extraction.",
+      "key_findings": [
+        "Coverage layers include 30, 50, 100, and 1000-dry-run.",
+        "Current coverage matrix marks 30/50/100 fault, failover, and workload surfaces as SKIPPED_WITH_REASON.",
+        "L08 must add metrics sourced from machine-readable artifacts, not rendered reports."
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "L08-HA-001",
+      "severity": "high",
+      "description": "Committed coverage currently has no 30/50/100 fault or failover real evidence.",
+      "evidence": [
+        "coverage_matrix.json marks fault and failover for layers 30, 50, and 100 as SKIPPED_WITH_REASON.",
+        "metric_catalog.json has zero fault/failover metrics for evidence layers 30, 50, and 100."
+      ]
+    },
+    {
+      "id": "L08-HA-002",
+      "severity": "high",
+      "description": "scripts/fault_failover_gate.py is insufficient for L08 artifact contract as written.",
+      "evidence": [
+        "The wrapper accepts --out and --failover-report, but not --fault-report, --workload-window-report, or --cleanup-report.",
+        "The wrapper writes cleanup_report.json, not cleanup_report_fault_<N>.json."
+      ]
+    },
+    {
+      "id": "L08-HA-003",
+      "severity": "medium",
+      "description": "Existing schemas are intentionally permissive and cannot alone enforce L08 metrics.",
+      "evidence": [
+        "fault_report.schema.json and failover_report.schema.json allow additionalProperties and generic object arrays.",
+        "workload_report.schema.json has aggregate workload fields but no before/during/after windows."
+      ]
+    },
+    {
+      "id": "L08-HA-004",
+      "severity": "high",
+      "description": "Fault clear semantics for node_stop need explicit validation before large-rung PASS can be trusted.",
+      "evidence": [
+        "clear_fault clears state but does not prove the stopped node rejoined or encode a measured restore path.",
+        "L08 requires fault clear latency and cluster/node observations before/during/after."
+      ]
+    },
+    {
+      "id": "L08-HA-005",
+      "severity": "high",
+      "description": "P14 real fault/failover execution must be blocked by harness, not just by convention.",
+      "evidence": [
+        "CODEX_START_HERE.md states P14 may only run with explicit opt-in and environment token.",
+        "Coverage builder already has a 1000-dry-run layer, so L08 must prevent accidental real_valkey_coverage=true for 1000 fault/failover artifacts."
+      ]
+    }
+  ],
+  "proposed_harness": [
+    {
+      "name": "workload_window_report.schema.json",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add a strict schema for artifact_type=workload_window_report requiring node_count in [30,50,100], windows named before_fault, during_fault, after_fault, availability, errors, timeouts, latency percentiles, source evidence paths, and explicit missing semantics."
+    },
+    {
+      "name": "fault_failover_scale.schema.json",
+      "type": "schema",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add a scale-level audit schema for artifacts/loop_engineering/reports/fault_failover_scale.json with canonical_rungs [30,50,100], source_artifacts with sha256, safety checks, before/during/after cluster observations, workload references, cleanup residual counts, and p14_boundary real_valkey_coverage=false."
+    },
+    {
+      "name": "deterministic fake artifact tests",
+      "type": "unit",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Create tests that build synthetic 30/50/100 fault/failover artifact bundles and verify the audit accepts complete measured artifacts and rejects missing windows, unsafe scopes, bad node counts, and invented split-brain values."
+    },
+    {
+      "name": "fault_failover_gate artifact contract",
+      "type": "cli",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Extend scripts/fault_failover_gate.py to accept --fault-report, --workload-window-report, --cleanup-report, --scenario, and --min-nodes; write the canonical per-rung artifact names; and fail nonzero if any required output is absent or invalid."
+    },
+    {
+      "name": "30_50_100 real fault/failover gates",
+      "type": "real_valkey",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Run resource preflight and then wrapper-produced real primary-stop failover evidence for 30, 50, and 100 nodes."
+    },
+    {
+      "name": "fault_failover_scale artifact audit",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add scripts/audit_fault_failover_scale.py that reads only JSON/JSONL source artifacts, validates all 30/50/100 outputs, checks cross-artifact consistency, emits fault_failover_scale.json, and exits nonzero on blocking findings."
+    },
+    {
+      "name": "metric coverage integration",
+      "type": "artifact",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Extend build_metric_coverage_matrix.py to add measured 30/50/100 metrics for fault, failover, and workload from fault_failover_scale.json while keeping 1000-dry-run real_valkey_coverage=false."
+    },
+    {
+      "name": "CI coverage gate",
+      "type": "ci",
+      "expected_to_fail_before_impl": true,
+      "acceptance": "Add CI tests that run schema validation, audit_fault_failover_scale.py, metric coverage checks, P14 boundary assertions, and safety_scan.py without requiring live Valkey in ordinary CI."
+    }
+  ],
+  "implementation_plan": [
+    {
+      "step": "Define L08 source artifact contracts without weakening existing P07/P08 schemas.",
+      "files": [
+        "schemas/artifact/workload_window_report.schema.json",
+        "schemas/artifact/fault_failover_scale.schema.json",
+        "tests/failover/test_fault_failover_scale_schema.py"
+      ],
+      "rationale": "Existing schemas are permissive for backward compatibility; L08 needs strict scale-specific audit artifacts."
+    },
+    {
+      "step": "Build deterministic fake harness first.",
+      "files": [
+        "tests/failover/test_fault_failover_scale_audit.py",
+        "tests/fault/test_sandbox_fault.py",
+        "scripts/audit_fault_failover_scale.py"
+      ],
+      "rationale": "Fake tmp_path artifacts should prove the validator catches missing windows, unsafe scopes, bad node counts, invented values, and missing reasons before real Valkey runs."
+    },
+    {
+      "step": "Extend the failover wrapper to produce the L08 artifact bundle.",
+      "files": [
+        "scripts/fault_failover_gate.py",
+        "src/valkey_scale_lab/fault/sandbox.py",
+        "tests/failover/test_failover_contract.py",
+        "tests/fault/test_sandbox_fault.py"
+      ],
+      "rationale": "The real wrapper must create named outputs, measure latencies, observe before/during/after cluster state, and stay inside owned Docker/container boundaries."
+    },
+    {
+      "step": "Integrate L08 metrics into coverage and reports.",
+      "files": [
+        "scripts/build_metric_coverage_matrix.py",
+        "scripts/render_audit_report.py",
+        "tests/coverage/test_fault_failover_scale_coverage.py",
+        "tests/report/test_loop_report_rendering.py"
+      ],
+      "rationale": "Coverage matrix and views must show 30/50/100 fault/failover/workload coverage while preserving P14 boundaries."
+    }
+  ],
+  "acceptance_criteria": [
+    "For each N in 30, 50, and 100, the canonical artifact bundle exists.",
+    "Each real evidence artifact is produced by scripts/fault_failover_gate.py, has real_valkey=true, status=PASS, probe_result=PASS, Valkey versions matching 9.1.x, and nodes_observed consistent with expected semantics.",
+    "Each rung records numeric fault_apply_latency_ms, fault_clear_latency_ms, promotion_observed=true, failover_latency_ms, workload errors/timeouts before/during/after, and cleanup residual count.",
+    "Cluster observations include cluster_state and nodes_observed before_fault, during_fault, after_promotion, and after_clear.",
+    "Split-brain indicators are measured when available; otherwise they are encoded as MISSING with value=null and a nonempty reason.",
+    "P14 remains dry-run/planner/resource only; no 1000-node fault/failover real evidence exists."
+  ],
+  "risks": [
+    "100-node primary-stop plus workload windows may exceed local Docker CPU or memory.",
+    "Node-stop clear may require restoring an owned stopped container; if restoration is not implemented, after_clear semantics must fail or block.",
+    "Workload windows can be misleading if summarized after the fact.",
+    "Strengthening existing schemas directly could break historical P07/P08 artifacts; prefer L08-specific strict audit schemas plus backward-compatible base schemas."
+  ],
+  "forbidden_shortcuts": [
+    "Do not handwrite PASS into gate results or evidence artifacts.",
+    "Do not count fake deterministic tests as real Valkey proof.",
+    "Do not reuse P07/P08 small-real artifacts as 30/50/100 coverage.",
+    "Do not run P14 or any 1000-node real fault/failover gate in this stage.",
+    "Do not use sudo, host routing, host firewall, PF, nftables, iptables, ifconfig, networksetup, or host network mode.",
+    "Do not mark resource insufficiency as PASS or SKIPPED_WITH_REASON.",
+    "Do not use rendered HTML, Markdown, CSV, or SVG reports as metric sources."
+  ],
+  "commands_to_run": [
+    "python3 scripts/codex_gate.py precheck --all",
+    "python3 scripts/safety_scan.py",
+    "python3 -m compileall -q src scripts tests",
+    "python3 -m pytest -q tests/fault tests/failover",
+    "python3 -m pytest -q tests/coverage tests/metrics tests/report",
+    "python3 -m pytest -q tests/ci/test_fault_failover_scale_gate.py",
+    "python3 scripts/audit_fault_failover_scale.py --out artifacts/loop_engineering/reports/fault_failover_scale.json",
+    "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering"
+  ],
+  "verdict": "APPROVED",
+  "notes": "No files were edited. The harness should be implemented before real L08 gate runs; current repository state lacks the required 30/50/100 fault/failover artifact bundle and should fail the proposed checks until implementation and real wrapper evidence are added."
+}

@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "artifact_type": "provenance_graph",
-  "created_at": "2026-06-30T11:17:41.824996Z",
+  "created_at": "2026-07-01T02:20:24.856059Z",
   "producer": {
     "name": "scripts/build_provenance_graph.py",
     "version": "v1"
   },
   "status": "PASS",
-  "root_commit_sha": "d6e49b7bda1e90e4b916ffd78b4315798b05feef",
+  "root_commit_sha": "5542161fa84a35fb853e1a6268ebcf4081ea8fe9",
   "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
   "scope": {
     "target_phase_ids": [
@@ -37,9 +37,9 @@
     ]
   },
   "summary": {
-    "node_count": 95,
-    "edge_count": 70,
-    "source_of_truth_node_count": 89,
+    "node_count": 114,
+    "edge_count": 88,
+    "source_of_truth_node_count": 108,
     "report_view_node_count": 6,
     "blocking_findings_count": 0,
     "missing_source_count": 0,
@@ -172,6 +172,50 @@
     }
   ],
   "nodes": [
+    {
+      "id": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "exists": true,
+      "sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "hash_status": "PRESENT",
+      "artifact_role": "fault_failover_scale",
+      "source_of_truth": true,
+      "artifact_type": "fault_failover_scale",
+      "phase_id": null,
+      "run_id": null,
+      "producer": {
+        "name": "scripts/audit_fault_failover_scale.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/fault_failover_scale.schema.json",
+      "schema_sha256": "6ccb5e7e191166daad58d1f31ff47838a910099c0e304a8c9e7678f714db759a",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "MISSING",
+          "reason": "phase_id is absent from this source artifact."
+        },
+        "run_id": {
+          "status": "MISSING",
+          "reason": "run_id is absent from this source artifact."
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
     {
       "id": "artifacts/phases/P00_REPO_CONTRACT/env_info.json",
       "path": "artifacts/phases/P00_REPO_CONTRACT/env_info.json",
@@ -2716,6 +2760,48 @@
       "real_valkey_coverage": false
     },
     {
+      "id": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json",
+      "exists": true,
+      "sha256": "c63dc1eea38653e11d9284552bfd64cc4f9ba8bc5c07a2e6c252faea8797005d",
+      "hash_status": "PRESENT",
+      "artifact_role": "cleanup",
+      "source_of_truth": true,
+      "artifact_type": "cleanup_report",
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "run_id": "P12_SCALE_LADDER_10_30-scale_30-20260628",
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_sha256": "d79a8bdb0569fb51921721a4b95478d80e4cd751c180004b409a0a3d52760ba2",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
       "id": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_10.json",
       "path": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_10.json",
       "exists": true,
@@ -2775,6 +2861,90 @@
       "status": "PASS",
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_sha256": "d79a8bdb0569fb51921721a4b95478d80e4cd751c180004b409a0a3d52760ba2",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+      "exists": true,
+      "sha256": "a87362f250e9607dccbaaf9f9cd337a474a3d3884f5fbc6229271828191def0e",
+      "hash_status": "PRESENT",
+      "artifact_role": "failover_report",
+      "source_of_truth": true,
+      "artifact_type": "failover_report",
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "run_id": "phase-P12_SCALE_LADDER_10_30-scale_30_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/failover_report.schema.json",
+      "schema_sha256": "e6b388ce1d18d3f27bdd546666727ea3b8fc8ac923f43ad25031faad871ce934",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json",
+      "exists": true,
+      "sha256": "022b96f3ddb663b4b1a6e15b54c0bc909c472cd7e86fa2686be7778ce9a08193",
+      "hash_status": "PRESENT",
+      "artifact_role": "fault_report",
+      "source_of_truth": true,
+      "artifact_type": "fault_report",
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "run_id": "phase-P12_SCALE_LADDER_10_30-scale_30_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/fault_report.schema.json",
+      "schema_sha256": "9b029e27aa07db1ae685326b56a3381d525338dfde7188c32b0da3a075b93efb",
       "schema_valid": true,
       "metadata_status": {
         "artifact_type": {
@@ -2888,6 +3058,48 @@
       "path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
       "exists": true,
       "sha256": "8acb354c3c6cd1d948ec4fa630abaebb7b821914937e8fe25c3f732e11bbe89d",
+      "hash_status": "PRESENT",
+      "artifact_role": "resource_preflight",
+      "source_of_truth": true,
+      "artifact_type": "resource_preflight",
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "run_id": "P12_SCALE_LADDER_10_30-resource-preflight-30-20260628",
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/resource_preflight.schema.json",
+      "schema_sha256": "efcc334f86d76ca61ee2a3202a0ce923c5ac6e03604e75f25bd0181fdddd532b",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_fault_30.json",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_fault_30.json",
+      "exists": true,
+      "sha256": "879a66daac248506e291f01e3f362121afda1310f844ddae367c9ad37f8eb0e0",
       "hash_status": "PRESENT",
       "artifact_role": "resource_preflight",
       "source_of_truth": true,
@@ -3138,6 +3350,90 @@
       "real_valkey_coverage": true
     },
     {
+      "id": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+      "exists": true,
+      "sha256": "adb53d916bd42f3c4ebf7ddca7bc1ace2bbe29a5424eabd2b9a6b513af1ed3f4",
+      "hash_status": "PRESENT",
+      "artifact_role": "real_evidence",
+      "source_of_truth": true,
+      "artifact_type": "valkey_e2e_evidence",
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "run_id": "phase-P12_SCALE_LADDER_10_30-scale_30_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_sha256": "d17580f410f16e8875c67c6844cecfabf148f7ffdedddca703186984ef79e1aa",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": true
+    },
+    {
+      "id": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+      "path": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+      "exists": true,
+      "sha256": "d36a96c9ea7d5a8dacae5c27ebece2e3f611e715cf4c5c05e125ce8f3aa5babd",
+      "hash_status": "PRESENT",
+      "artifact_role": "workload_window_report",
+      "source_of_truth": true,
+      "artifact_type": "workload_window_report",
+      "phase_id": "P12_SCALE_LADDER_10_30",
+      "run_id": "phase-P12_SCALE_LADDER_10_30-scale_30_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/workload_window_report.schema.json",
+      "schema_sha256": "bbb3d7b868910444265856765ea5b68fc6dfdcd4f3d04c1bf303886cff50e7e2",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
       "id": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
       "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
       "exists": true,
@@ -3148,6 +3444,90 @@
       "artifact_type": "cleanup_report",
       "phase_id": "P13_SCALE_LADDER_50_100",
       "run_id": "P13_SCALE_LADDER_50_100-scale_100-20260628",
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_sha256": "d79a8bdb0569fb51921721a4b95478d80e4cd751c180004b409a0a3d52760ba2",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+      "exists": true,
+      "sha256": "609c0fc9b4501758ff50143877195f2077a8f19c7be463c10ae4a17148e21722",
+      "hash_status": "PRESENT",
+      "artifact_role": "cleanup",
+      "source_of_truth": true,
+      "artifact_type": "cleanup_report",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "P13_SCALE_LADDER_50_100-scale_100-20260628",
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/cleanup_report.schema.json",
+      "schema_sha256": "d79a8bdb0569fb51921721a4b95478d80e4cd751c180004b409a0a3d52760ba2",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+      "exists": true,
+      "sha256": "f0ef8710dfb7e2c3b1cd3f35728e950a07ce5820ed973fbf8a4ea8736cf63f7d",
+      "hash_status": "PRESENT",
+      "artifact_role": "cleanup",
+      "source_of_truth": true,
+      "artifact_type": "cleanup_report",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "P13_SCALE_LADDER_50_100-scale_50-20260628",
       "producer": {
         "name": "valkey-scale-lab",
         "version": "0.0.0"
@@ -3239,6 +3619,174 @@
       "status": "PASS",
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_sha256": "d79a8bdb0569fb51921721a4b95478d80e4cd751c180004b409a0a3d52760ba2",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+      "exists": true,
+      "sha256": "fd12a55e0cb3f9a46a84a0603efadd75167b4f45f7cc674986ddcf450861e5cd",
+      "hash_status": "PRESENT",
+      "artifact_role": "failover_report",
+      "source_of_truth": true,
+      "artifact_type": "failover_report",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "phase-P13_SCALE_LADDER_50_100-scale_100_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/failover_report.schema.json",
+      "schema_sha256": "e6b388ce1d18d3f27bdd546666727ea3b8fc8ac923f43ad25031faad871ce934",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+      "exists": true,
+      "sha256": "6fa1d1f47a920f813f9dc46781e88efbb97febd8c249f5c002e70496f87ff39b",
+      "hash_status": "PRESENT",
+      "artifact_role": "failover_report",
+      "source_of_truth": true,
+      "artifact_type": "failover_report",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "phase-P13_SCALE_LADDER_50_100-scale_50_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/failover_report.schema.json",
+      "schema_sha256": "e6b388ce1d18d3f27bdd546666727ea3b8fc8ac923f43ad25031faad871ce934",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+      "exists": true,
+      "sha256": "52a0941316cdbe31887d26ab0dcf287802cf5096b0980a9888b35e75ef28ce20",
+      "hash_status": "PRESENT",
+      "artifact_role": "fault_report",
+      "source_of_truth": true,
+      "artifact_type": "fault_report",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "phase-P13_SCALE_LADDER_50_100-scale_100_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/fault_report.schema.json",
+      "schema_sha256": "9b029e27aa07db1ae685326b56a3381d525338dfde7188c32b0da3a075b93efb",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+      "exists": true,
+      "sha256": "a06e1b8720d5e2f95a784611f13f2db3413d140de3f90d0d1e8c6284f11e025d",
+      "hash_status": "PRESENT",
+      "artifact_role": "fault_report",
+      "source_of_truth": true,
+      "artifact_type": "fault_report",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "phase-P13_SCALE_LADDER_50_100-scale_50_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/fault_report.schema.json",
+      "schema_sha256": "9b029e27aa07db1ae685326b56a3381d525338dfde7188c32b0da3a075b93efb",
       "schema_valid": true,
       "metadata_status": {
         "artifact_type": {
@@ -3436,6 +3984,90 @@
       "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
       "exists": true,
       "sha256": "ec3b330d8c39f76fefe962789c89cad2b8ace0fa182d04862942a1b644ca73c5",
+      "hash_status": "PRESENT",
+      "artifact_role": "resource_preflight",
+      "source_of_truth": true,
+      "artifact_type": "resource_preflight",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "P13_SCALE_LADDER_50_100-resource-preflight-50-20260628",
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/resource_preflight.schema.json",
+      "schema_sha256": "efcc334f86d76ca61ee2a3202a0ce923c5ac6e03604e75f25bd0181fdddd532b",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_fault_100.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_fault_100.json",
+      "exists": true,
+      "sha256": "75e0a10d77e8cf19fc57890f2c9436ec847433c039047f323ee211aa5766db3b",
+      "hash_status": "PRESENT",
+      "artifact_role": "resource_preflight",
+      "source_of_truth": true,
+      "artifact_type": "resource_preflight",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "P13_SCALE_LADDER_50_100-resource-preflight-100-20260628",
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/resource_preflight.schema.json",
+      "schema_sha256": "efcc334f86d76ca61ee2a3202a0ce923c5ac6e03604e75f25bd0181fdddd532b",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_fault_50.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_fault_50.json",
+      "exists": true,
+      "sha256": "08c532caebd0ba59b0c99bb51e3ca116f3ab31f4cc24fca09a4f3986c6141017",
       "hash_status": "PRESENT",
       "artifact_role": "resource_preflight",
       "source_of_truth": true,
@@ -4214,6 +4846,174 @@
       },
       "dry_run_only": false,
       "real_valkey_coverage": true
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+      "exists": true,
+      "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec",
+      "hash_status": "PRESENT",
+      "artifact_role": "real_evidence",
+      "source_of_truth": true,
+      "artifact_type": "valkey_e2e_evidence",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "phase-P13_SCALE_LADDER_50_100-scale_100_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_sha256": "d17580f410f16e8875c67c6844cecfabf148f7ffdedddca703186984ef79e1aa",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": true
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+      "exists": true,
+      "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6",
+      "hash_status": "PRESENT",
+      "artifact_role": "real_evidence",
+      "source_of_truth": true,
+      "artifact_type": "valkey_e2e_evidence",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "phase-P13_SCALE_LADDER_50_100-scale_50_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
+      "schema_sha256": "d17580f410f16e8875c67c6844cecfabf148f7ffdedddca703186984ef79e1aa",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": true
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+      "exists": true,
+      "sha256": "5bb4af8939bb253928d31cc9ab2db8323db526e5556df05bd811f1e934c35abf",
+      "hash_status": "PRESENT",
+      "artifact_role": "workload_window_report",
+      "source_of_truth": true,
+      "artifact_type": "workload_window_report",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "phase-P13_SCALE_LADDER_50_100-scale_100_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/workload_window_report.schema.json",
+      "schema_sha256": "bbb3d7b868910444265856765ea5b68fc6dfdcd4f3d04c1bf303886cff50e7e2",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
+    },
+    {
+      "id": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+      "exists": true,
+      "sha256": "5d91f9a17882641f4ee1260f7707b25bf699ce312887274935d1ec5951a1983c",
+      "hash_status": "PRESENT",
+      "artifact_role": "workload_window_report",
+      "source_of_truth": true,
+      "artifact_type": "workload_window_report",
+      "phase_id": "P13_SCALE_LADDER_50_100",
+      "run_id": "phase-P13_SCALE_LADDER_50_100-scale_50_fault_failover-primary-stop",
+      "producer": {
+        "name": "scripts/fault_failover_gate.py",
+        "version": "v1"
+      },
+      "status": "PASS",
+      "schema_path": "schemas/artifact/workload_window_report.schema.json",
+      "schema_sha256": "bbb3d7b868910444265856765ea5b68fc6dfdcd4f3d04c1bf303886cff50e7e2",
+      "schema_valid": true,
+      "metadata_status": {
+        "artifact_type": {
+          "status": "PRESENT"
+        },
+        "schema": {
+          "status": "VALID"
+        },
+        "phase_id": {
+          "status": "PRESENT"
+        },
+        "run_id": {
+          "status": "PRESENT"
+        },
+        "producer": {
+          "status": "PRESENT"
+        },
+        "status": {
+          "status": "PRESENT"
+        }
+      },
+      "dry_run_only": false,
+      "real_valkey_coverage": false
     }
   ],
   "edges": [
@@ -5264,6 +6064,276 @@
       "source_sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de",
       "target_sha256": "ab91709c8dd235479eb70751da7ffd75e7461a0407945a7818f431e4cce2b96c",
       "declared_source_sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_fault_30.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[0].source_artifacts[0]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "879a66daac248506e291f01e3f362121afda1310f844ddae367c9ad37f8eb0e0",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "879a66daac248506e291f01e3f362121afda1310f844ddae367c9ad37f8eb0e0",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[0].source_artifacts[1]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "022b96f3ddb663b4b1a6e15b54c0bc909c472cd7e86fa2686be7778ce9a08193",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "022b96f3ddb663b4b1a6e15b54c0bc909c472cd7e86fa2686be7778ce9a08193",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[0].source_artifacts[2]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "a87362f250e9607dccbaaf9f9cd337a474a3d3884f5fbc6229271828191def0e",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "a87362f250e9607dccbaaf9f9cd337a474a3d3884f5fbc6229271828191def0e",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[0].source_artifacts[3]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "d36a96c9ea7d5a8dacae5c27ebece2e3f611e715cf4c5c05e125ce8f3aa5babd",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "d36a96c9ea7d5a8dacae5c27ebece2e3f611e715cf4c5c05e125ce8f3aa5babd",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[0].source_artifacts[4]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "adb53d916bd42f3c4ebf7ddca7bc1ace2bbe29a5424eabd2b9a6b513af1ed3f4",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "adb53d916bd42f3c4ebf7ddca7bc1ace2bbe29a5424eabd2b9a6b513af1ed3f4",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[0].source_artifacts[5]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "c63dc1eea38653e11d9284552bfd64cc4f9ba8bc5c07a2e6c252faea8797005d",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "c63dc1eea38653e11d9284552bfd64cc4f9ba8bc5c07a2e6c252faea8797005d",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_fault_50.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[1].source_artifacts[0]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "08c532caebd0ba59b0c99bb51e3ca116f3ab31f4cc24fca09a4f3986c6141017",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "08c532caebd0ba59b0c99bb51e3ca116f3ab31f4cc24fca09a4f3986c6141017",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[1].source_artifacts[1]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "a06e1b8720d5e2f95a784611f13f2db3413d140de3f90d0d1e8c6284f11e025d",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "a06e1b8720d5e2f95a784611f13f2db3413d140de3f90d0d1e8c6284f11e025d",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[1].source_artifacts[2]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "6fa1d1f47a920f813f9dc46781e88efbb97febd8c249f5c002e70496f87ff39b",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "6fa1d1f47a920f813f9dc46781e88efbb97febd8c249f5c002e70496f87ff39b",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[1].source_artifacts[3]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "5d91f9a17882641f4ee1260f7707b25bf699ce312887274935d1ec5951a1983c",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "5d91f9a17882641f4ee1260f7707b25bf699ce312887274935d1ec5951a1983c",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[1].source_artifacts[4]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[1].source_artifacts[5]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "f0ef8710dfb7e2c3b1cd3f35728e950a07ce5820ed973fbf8a4ea8736cf63f7d",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "f0ef8710dfb7e2c3b1cd3f35728e950a07ce5820ed973fbf8a4ea8736cf63f7d",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_fault_100.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[2].source_artifacts[0]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "75e0a10d77e8cf19fc57890f2c9436ec847433c039047f323ee211aa5766db3b",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "75e0a10d77e8cf19fc57890f2c9436ec847433c039047f323ee211aa5766db3b",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[2].source_artifacts[1]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "52a0941316cdbe31887d26ab0dcf287802cf5096b0980a9888b35e75ef28ce20",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "52a0941316cdbe31887d26ab0dcf287802cf5096b0980a9888b35e75ef28ce20",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[2].source_artifacts[2]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "fd12a55e0cb3f9a46a84a0603efadd75167b4f45f7cc674986ddcf450861e5cd",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "fd12a55e0cb3f9a46a84a0603efadd75167b4f45f7cc674986ddcf450861e5cd",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[2].source_artifacts[3]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "5bb4af8939bb253928d31cc9ab2db8323db526e5556df05bd811f1e934c35abf",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "5bb4af8939bb253928d31cc9ab2db8323db526e5556df05bd811f1e934c35abf",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[2].source_artifacts[4]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec",
+      "declared_target_sha256": null,
+      "finding_ids": []
+    },
+    {
+      "source_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+      "target_path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "relation": "fault_failover_source",
+      "discovered_by": "fault_failover_scale.rungs.source_artifacts",
+      "evidence_pointer": "artifacts/loop_engineering/reports/fault_failover_scale.json.canonical_rungs[2].source_artifacts[5]",
+      "required": true,
+      "status": "PASS",
+      "hash_status": "MATCH",
+      "source_sha256": "609c0fc9b4501758ff50143877195f2077a8f19c7be463c10ae4a17148e21722",
+      "target_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "declared_source_sha256": "609c0fc9b4501758ff50143877195f2077a8f19c7be463c10ae4a17148e21722",
       "declared_target_sha256": null,
       "finding_ids": []
     }

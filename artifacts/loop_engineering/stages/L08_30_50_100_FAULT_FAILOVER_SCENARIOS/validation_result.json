@@ -1,0 +1,77 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L08_30_50_100_FAULT_FAILOVER_SCENARIOS",
+  "status": "PASS",
+  "completed_at": "2026-07-01T02:26:38.906145Z",
+  "commands_log": "artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/commands.jsonl",
+  "commands": [
+    {
+      "name": "real_fault_failover_30",
+      "command": "python3 scripts/fault_failover_gate.py ... --min-nodes 30 --require-data-path",
+      "status": "PASS"
+    },
+    {
+      "name": "real_fault_failover_50",
+      "command": "python3 scripts/fault_failover_gate.py ... --min-nodes 50 --require-data-path",
+      "status": "PASS"
+    },
+    {
+      "name": "real_fault_failover_100",
+      "command": "python3 scripts/fault_failover_gate.py ... --min-nodes 100 --require-data-path",
+      "status": "PASS"
+    },
+    {
+      "name": "fault_failover_scale_audit",
+      "command": "python3 scripts/audit_fault_failover_scale.py --out artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "status": "PASS"
+    },
+    {
+      "name": "fault_failover_scale_schema",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/fault_failover_scale.schema.json --instance artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "status": "PASS"
+    },
+    {
+      "name": "workload_window_schemas",
+      "command": "python3 scripts/schema_validator.py --schema schemas/artifact/workload_window_report.schema.json --file workload_window_report_{30,50,100}.json",
+      "status": "PASS"
+    },
+    {
+      "name": "provenance_graph",
+      "command": "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json",
+      "status": "PASS"
+    },
+    {
+      "name": "focused_l08_pytest",
+      "command": "python -m pytest -q -p no:cacheprovider tests/ci/test_fault_failover_scale_gate.py tests/failover/test_fault_failover_scale_audit.py tests/fault/test_sandbox_fault.py tests/provenance/test_provenance_graph.py",
+      "status": "PASS"
+    },
+    {
+      "name": "baseline_precheck_safety_compile_tests",
+      "command": "precheck, safety_scan, compileall, and repository test groups",
+      "status": "PASS"
+    },
+    {
+      "name": "subagent_schema_validation",
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/loop_engineering/subagent_response.schema.json --instance subagents/*.json",
+      "status": "PASS"
+    },
+    {
+      "name": "anti_regression",
+      "command": "python3 scripts/loop_engineering_validate.py --anti-regression --base-ref 5542161fa84a35fb853e1a6268ebcf4081ea8fe9 --head-ref WORKTREE --report artifacts/loop_engineering/stages/L08_30_50_100_FAULT_FAILOVER_SCENARIOS/anti_regression_check.json",
+      "status": "PASS"
+    },
+    {
+      "name": "cache_scratch_cleanliness",
+      "command": "find . for __pycache__, .pyc, .pytest_cache, _fault_failover_work_*",
+      "status": "PASS"
+    },
+    {
+      "name": "diff_check",
+      "command": "git diff --check",
+      "status": "PASS"
+    }
+  ],
+  "current_harness_passed": true,
+  "previous_harness_passed": true,
+  "notes": "30/50/100 real Valkey fault/failover gates were rerun with --require-data-path and passed. P14 remained unexecuted/dry-run-only. Cache/scratch pollution was removed and guarded."
+}

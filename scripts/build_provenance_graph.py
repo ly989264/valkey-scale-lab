@@ -36,6 +36,7 @@ PROVENANCE_SOURCE_RELATIONS = {
     "rung_preflight",
     "timing_source",
     "setup_timeline_source",
+    "fault_failover_source",
 }
 
 
@@ -636,6 +637,28 @@ class ProvenanceGraph:
                 self.add_edge(source, timing, relation="timing_source", discovered_by=f"p13_timing_{rung}", evidence_pointer=timing)
         self.process_explicit_sources()
 
+    def build_l08_fault_failover(self) -> None:
+        report = "artifacts/loop_engineering/reports/fault_failover_scale.json"
+        if not (self.root / report).exists():
+            return
+        self.add_node(report)
+        payload = self.node_payloads.get(report)
+        if isinstance(payload, dict):
+            for idx, item in enumerate(payload.get("canonical_rungs", []) or []):
+                if not isinstance(item, dict):
+                    continue
+                for source_idx, source in enumerate(item.get("source_artifacts", []) or []):
+                    if isinstance(source, dict) and source.get("path"):
+                        self.add_edge(
+                            source["path"],
+                            report,
+                            relation="fault_failover_source",
+                            discovered_by="fault_failover_scale.rungs.source_artifacts",
+                            evidence_pointer=f"{report}.canonical_rungs[{idx}].source_artifacts[{source_idx}]",
+                            expected_source_sha256=source.get("sha256"),
+                        )
+        self.process_explicit_sources()
+
     def metadata_entry(self, status: str, reason: str | None = None) -> dict[str, str]:
         entry = {"status": status}
         if reason:
@@ -730,6 +753,7 @@ class ProvenanceGraph:
         self.build_scale_phase("P12_SCALE_LADDER_10_30", [10, 30])
         self.build_scale_phase("P13_SCALE_LADDER_50_100", [50, 100])
         self.build_p13_timing()
+        self.build_l08_fault_failover()
         dryrun = "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json"
         if (self.root / dryrun).exists():
             self.add_node(dryrun, self.schema_by_path.get(dryrun))

@@ -132,6 +132,32 @@ def test_current_repo_provenance_covers_p09_p11_p12_p13() -> None:
     assert report["p14_boundary"]["real_valkey_coverage"] is False
 
 
+def test_current_repo_provenance_covers_l08_fault_failover_sources() -> None:
+    report = build_provenance_graph.build_graph(REPO_ROOT)
+    rollup = "artifacts/loop_engineering/reports/fault_failover_scale.json"
+
+    assert report["status"] == "PASS"
+    assert node(report, rollup)["artifact_type"] == "fault_failover_scale"
+    for source in [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/workload_window_report_30.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/fault_report_30.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/failover_report_30.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+    ]:
+        assert has_edge(report, source, rollup, "fault_failover_source")
+
+
 def test_current_repo_provenance_edges_are_unique() -> None:
     report = build_provenance_graph.build_graph(REPO_ROOT)
 
