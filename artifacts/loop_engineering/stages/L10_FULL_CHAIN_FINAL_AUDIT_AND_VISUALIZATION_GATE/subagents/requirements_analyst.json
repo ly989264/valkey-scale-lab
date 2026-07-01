@@ -1,0 +1,33 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+  "agent_role": "requirements_analyst",
+  "created_at": "2026-07-01T04:10:00Z",
+  "context_files_read": [
+    {"path": "AGENTS.md", "purpose": "Controlling safety and evidence boundaries.", "key_findings": ["Machine-readable artifacts are the product.", "P14 must not run without explicit opt-in."]},
+    {"path": "codex/loop_engineering/04_STAGE_MANIFEST.md", "purpose": "L10 requirements.", "key_findings": ["L10 requires scripts/final_audit_gate.py and tests/final_audit.", "Missing metrics need reason and impact."]},
+    {"path": "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/previous_harness_result.json", "purpose": "Previous harness evidence.", "key_findings": ["Previous harness is PASS.", "P14 was not executed."]},
+    {"path": "scripts/build_metric_coverage_matrix.py", "purpose": "Existing coverage builder.", "key_findings": ["Existing layers and surfaces are available.", "Impact was missing before L10."]},
+    {"path": "scripts/render_audit_report.py", "purpose": "Existing report renderer.", "key_findings": ["Report views are derived artifacts.", "Root commit SHA needed visible HTML exposure."]}
+  ],
+  "findings": [
+    {"id": "REQ-L10-001", "severity": "high", "description": "The required L10 final gate did not exist at design time.", "evidence": ["scripts/final_audit_gate.py absent", "tests/final_audit absent"]},
+    {"id": "REQ-L10-002", "severity": "high", "description": "Missing metric impact was not enforced at design time.", "evidence": ["metric_catalog missing-like records had reasons but no impact"]}
+  ],
+  "proposed_harness": [
+    {"name": "scripts/final_audit_gate.py", "type": "cli", "expected_to_fail_before_impl": true, "acceptance": "Writes schema-valid final_audit_report.json and fails on blocking full-chain invariant violations."},
+    {"name": "schemas/artifact/final_audit_report.schema.json", "type": "schema", "expected_to_fail_before_impl": true, "acceptance": "Validates final audit source artifacts, reports, invariants, P14 boundary, and missing metric impacts."},
+    {"name": "tests/final_audit", "type": "artifact", "expected_to_fail_before_impl": true, "acceptance": "Covers PASS path and dry-run-real, missing-impact, and report-source regressions."}
+  ],
+  "implementation_plan": [
+    {"step": "Add final audit schema and gate.", "files": ["schemas/artifact/final_audit_report.schema.json", "scripts/final_audit_gate.py"], "rationale": "Create one composed L10 decision artifact."},
+    {"step": "Add final audit tests and CI hook.", "files": ["tests/final_audit/test_final_audit_gate.py", "tests/ci/test_final_audit_gate.py", ".github/workflows/github-coverage-gates.yml"], "rationale": "Make final audit persistent in CI."},
+    {"step": "Add missing impact and commit visibility.", "files": ["scripts/build_metric_coverage_matrix.py", "scripts/render_audit_report.py"], "rationale": "Satisfy L10 reason/impact and commit discoverability requirements."}
+  ],
+  "acceptance_criteria": ["Final audit gate PASS.", "Final audit report schema-valid.", "P14 not run or counted as real.", "Every missing-like metric has reason and impact.", "Final HTML exposes root commit SHA and source artifacts."],
+  "risks": ["A superficial final gate could miss cross-artifact inconsistencies.", "P14 dry-run artifacts could be mistaken for real coverage."],
+  "forbidden_shortcuts": ["Do not run P14.", "Do not set VSLAB_ALLOW_1000_DRYRUN.", "Do not use rendered reports as metric source truth.", "Do not invent missing values."],
+  "commands_to_run": ["python3 scripts/final_audit_gate.py --out-dir artifacts/loop_engineering/final_audit", "python3 -m pytest -q -p no:cacheprovider tests/final_audit tests/ci/test_final_audit_gate.py"],
+  "verdict": "APPROVED",
+  "notes": "Requirements are clear; final gate, schema, tests, impact propagation, and commit visibility are required."
+}

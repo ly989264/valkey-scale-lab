@@ -13,56 +13,56 @@
   "source_artifacts": [
     {
       "path": "artifacts/loop_engineering/reports/audit_report.json",
-      "sha256": "e35c35465a9081d371d93d130423d3f210369749ddaab5737ba5483fd79f5afa",
+      "sha256": "32af431483b2c156af56dd87eab86ddff3458fb7b8ac80627e46f12c993a6370",
       "artifact_type": "audit_report",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/provenance_graph.json",
-      "sha256": "57c51afc28281bb2b05049946c569e9d569e98beb747d4dec5bfc8174d8886b7",
+      "sha256": "e4eb04e3b689cffcbe575938979e84e7f53701ce8a6e05a57b510b4b728e80c7",
       "artifact_type": "provenance_graph",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/metric_catalog.json",
-      "sha256": "045024bc353fddca7a6796b00e2ab3e01846f5769bfebefaa052479c226b17c7",
+      "sha256": "896eac1db2457c89d7d297c91c823889eb5711c5eafb363e19c4cc67b5a6c1d0",
       "artifact_type": "metric_catalog",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
-      "sha256": "06309851eae00204e0d28d4389b172150f2785f0bd7f8157db32277f60a7f24c",
+      "sha256": "02de6937fa32cddeb815fa35a215d0bffcbe8906f1bbb6d74a8db85168c118d5",
       "artifact_type": "coverage_matrix",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
-      "sha256": "8a5863b8461a655d5f74e666a8f101a9872fa370fef1dad84c5230379758481e",
+      "sha256": "cf828ccb272f20ab40ca6075ab1b90f0cda4d82fcec7a2e659a4e8e2a50386b0",
       "artifact_type": "p13_p14_scale_audit",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/small_real_parity_audit.json",
-      "sha256": "5ff0b2e2a6bb3bf5c90bca35ef9b70fe72c4bb6625258cb7569f022801c9ceb5",
+      "sha256": "126eb526a986fb18dc22d1e21208358121c71a217dd92ac43f2112039dd53cb9",
       "artifact_type": "small_real_parity_audit",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "sha256": "ff42023cd5de75563bc720edf772a3053580dc171435d58285bb4ff9562aaa3a",
+      "sha256": "e410abca3faff8023c55ead75472a2700a48ed2b402e3f3f212e411f04e1001a",
       "artifact_type": "scale_build_metrics",
       "status": "PASS",
       "source_of_truth": true
     },
     {
       "path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
-      "sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "sha256": "e41de72d45c647dfdab4056dc69f01d0414e35f6ec7c70332d85ec1fba236805",
       "artifact_type": "fault_failover_scale",
       "status": "PASS",
       "source_of_truth": true
@@ -199,7 +199,7 @@
     },
     {
       "path": "artifacts/loop_engineering/reports/index.html",
-      "sha256": "1e8900965a3fb3af59b772efc262aa5934244d6c1ec6b1bbc4086de10df0145a",
+      "sha256": "b2def68982e371d464d0f0d4d2571c63ad29bd53f891b225cd7062a4a02898e1",
       "role": "html_report",
       "source_of_truth": false,
       "source_artifacts": [

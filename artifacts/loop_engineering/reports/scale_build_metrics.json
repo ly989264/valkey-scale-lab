@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "scale_build_metrics",
-  "created_at": "2026-07-01T02:14:04.550471Z",
+  "created_at": "2026-07-01T03:48:34.864938Z",
   "producer": {
     "name": "scripts/audit_scale_build_metrics.py",
     "version": "v1"

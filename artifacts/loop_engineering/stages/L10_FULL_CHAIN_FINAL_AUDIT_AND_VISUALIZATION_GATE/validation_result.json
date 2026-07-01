@@ -1,0 +1,64 @@
+{
+  "commands": [
+    {
+      "command": "python3 scripts/codex_gate.py precheck --all",
+      "name": "precheck_all",
+      "status": "PASS"
+    },
+    {
+      "command": "python3 scripts/safety_scan.py",
+      "name": "safety_scan",
+      "status": "PASS"
+    },
+    {
+      "command": "python3 -m compileall -q src scripts tests",
+      "name": "compileall",
+      "status": "PASS"
+    },
+    {
+      "command": "python3 scripts/final_audit_gate.py --out-dir artifacts/loop_engineering/final_audit",
+      "name": "final_audit_gate",
+      "status": "PASS"
+    },
+    {
+      "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/final_audit_report.schema.json --instance artifacts/loop_engineering/final_audit/final_audit_report.json",
+      "name": "final_audit_report_schema",
+      "status": "PASS"
+    },
+    {
+      "command": "python -m pytest -q -p no:cacheprovider tests/final_audit tests/ci/test_final_audit_workflow_gate.py tests/ci/test_github_coverage_gates.py",
+      "name": "focused_l10_pytest",
+      "result": "9 passed",
+      "status": "PASS"
+    },
+    {
+      "command": "python -m pytest -q -p no:cacheprovider previous and affected harness groups",
+      "name": "broad_l10_groups",
+      "result": "27 + 20 + 69 + 46 + 21 + 15 + 14 + 26 + 15 passed",
+      "status": "PASS"
+    },
+    {
+      "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+      "name": "loop_engineering_validate",
+      "status": "PASS"
+    },
+    {
+      "command": "git diff --check",
+      "name": "diff_check",
+      "status": "PASS"
+    },
+    {
+      "command": "find . cache pollution guard",
+      "name": "cache_pollution_guard",
+      "status": "PASS"
+    }
+  ],
+  "commands_log": "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/commands.jsonl",
+  "completed_at": "2026-07-01T04:20:00Z",
+  "current_harness_passed": true,
+  "notes": "P14 was not run and VSLAB_ALLOW_1000_DRYRUN was not set. Final audit PASS is based on machine-readable JSON/JSONL source artifacts; rendered reports remain source_of_truth=false.",
+  "previous_harness_passed": true,
+  "schema_version": "v1",
+  "stage_id": "L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+  "status": "PASS"
+}

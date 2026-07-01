@@ -172,9 +172,18 @@ class MetricCoverageBuilder:
             return "30"
         return "small-real" if real_valkey or count else "small-real"
 
-    def missing_semantics(self, status: str, reason: str = "") -> dict[str, str]:
+    def missing_impact(self, *, status: str, surface: str, layer: str, source_artifact: str) -> str:
+        if status == "NO_BASELINE_YET":
+            return f"Trend and regression comparison for {surface} on {layer} cannot be evaluated until a prior baseline artifact exists."
+        if status == "SKIPPED_WITH_REASON":
+            return f"{surface} coverage for {layer} is intentionally excluded from real Valkey conclusions; see {source_artifact}."
+        if status == "MISSING":
+            return f"{surface} coverage for {layer} is incomplete and must not be inferred from reports or default values."
+        return ""
+
+    def missing_semantics(self, status: str, reason: str = "", impact: str = "") -> dict[str, str]:
         if status in {"MISSING", "SKIPPED_WITH_REASON", "NO_BASELINE_YET"}:
-            return {"status": status, "reason": reason or status}
+            return {"status": status, "reason": reason or status, "impact": impact or status}
         return {"status": "PRESENT", "reason": ""}
 
     def add_metric(
@@ -228,6 +237,7 @@ class MetricCoverageBuilder:
                 description="Missing or skipped metric lacks reason",
                 evidence=[name, source_artifact, value_status],
             )
+        impact = self.missing_impact(status=value_status, surface=surface, layer=layer, source_artifact=source_artifact)
         self.metrics.append(
             {
                 "name": name,
@@ -248,7 +258,8 @@ class MetricCoverageBuilder:
                 "dry_run_only": dry,
                 "value_status": value_status,
                 "value": value,
-                "missing_semantics": self.missing_semantics(value_status, reason),
+                "missing_semantics": self.missing_semantics(value_status, reason, impact),
+                "impact": impact,
             }
         )
 

@@ -87,6 +87,12 @@ jobs:
         run: python3 scripts/validate_json_schema.py --schema schemas/artifact/loop_report_index.schema.json --instance artifacts/loop_engineering/reports/report_index.json
       - name: Loop report tests
         run: python3 -m pytest -q tests/report tests/visualization tests/ci/test_loop_report_gate.py
+      - name: Final audit gate
+        run: python3 scripts/final_audit_gate.py --out-dir artifacts/loop_engineering/final_audit
+      - name: Final audit schema
+        run: python3 scripts/validate_json_schema.py --schema schemas/artifact/final_audit_report.schema.json --instance artifacts/loop_engineering/final_audit/final_audit_report.json
+      - name: Final audit tests
+        run: python3 -m pytest -q tests/final_audit tests/ci/test_final_audit_workflow_gate.py
       - name: Small real parity audit tests
         run: python3 -m pytest -q tests/audit/test_small_real_scenario_parity.py tests/coverage/test_small_real_metric_parity.py tests/report/test_small_real_parity_report.py tests/real_valkey/test_small_real_gate_contract.py tests/ci/test_small_real_parity_gate.py
       - name: Scale build metrics tests

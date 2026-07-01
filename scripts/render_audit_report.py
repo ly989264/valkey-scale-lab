@@ -184,7 +184,7 @@ def write_missing_metrics_csv(path: Path, catalog: dict[str, Any]) -> Path:
                     "metric": metric.get("name", "MISSING"),
                     "status": metric.get("value_status", "MISSING"),
                     "reason": missing_reason(metric),
-                    "impact": metric.get("impact", ""),
+                    "impact": metric.get("impact") or metric.get("missing_semantics", {}).get("impact", ""),
                     "source_artifact": metric.get("source_artifact", ""),
                     "source_pointer": metric.get("source_pointer", ""),
                     "evidence_layer": metric.get("evidence_layer", ""),
@@ -346,6 +346,8 @@ def write_index_html(path: Path, sources: dict[str, dict[str, Any]], reports: li
     scale_build = sources.get("scale_build_metrics", {})
     fault_failover = sources.get("fault_failover_scale", {})
     stability_soak = sources.get("stability_soak_metrics", {})
+    provenance = sources.get("provenance_graph", {})
+    root_commit_sha = str(provenance.get("root_commit_sha", "MISSING"))
     source_rows = "\n".join(
         f"<tr><td><code>{escape(record['path'])}</code></td><td>{escape(record['artifact_type'])}</td><td>{escape(record['status'])}</td><td><code>{escape(record['sha256'][:12])}</code></td></tr>"
         for record in sources["source_records"]
@@ -366,6 +368,7 @@ def write_index_html(path: Path, sources: dict[str, dict[str, Any]], reports: li
 </head>
 <body>
   <h1>Valkey Scale Lab Audit Report</h1>
+  <p>Root commit SHA: <code>{escape(root_commit_sha)}</code></p>
   <p>Status: <code>{escape(audit.get("status"))}</code>. Metrics: <code>{escape(catalog.get("summary", {}).get("metric_count"))}</code>. Coverage cells: <code>{escape(coverage.get("summary", {}).get("entry_count"))}</code>.</p>
   <p>P13 real rungs: <code>{escape(p13.get("summary", {}).get("p13_real_evidence_count"))}</code>. P14 opt-in dry-run: <code>{escape(p13.get("summary", {}).get("p14_dry_run_only"))}</code>.</p>
   <p>Small-real parity surfaces: <code>{escape(small_real.get("summary", {}).get("surface_count", "MISSING"))}</code>. Missing metrics: <code>{escape(small_real.get("summary", {}).get("missing_count", "MISSING"))}</code>. Skipped metrics: <code>{escape(small_real.get("summary", {}).get("skipped_count", "MISSING"))}</code>.</p>

@@ -1,13 +1,13 @@
 {
   "schema_version": "v1",
   "artifact_type": "provenance_graph",
-  "created_at": "2026-07-01T03:11:57.865266Z",
+  "created_at": "2026-07-01T03:30:32.427432Z",
   "producer": {
     "name": "scripts/build_provenance_graph.py",
     "version": "v1"
   },
   "status": "PASS",
-  "root_commit_sha": "3c79ec4aecb552702efb489a358e5af2f49bc3d4",
+  "root_commit_sha": "4ff3e726f911bd5146ffd18381985d6b58785ee0",
   "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
   "scope": {
     "target_phase_ids": [

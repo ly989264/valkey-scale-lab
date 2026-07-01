@@ -1,0 +1,87 @@
+{
+  "acceptance_criteria": [
+    "Required Phase F artifacts review_agent.json, validation_agent.json, and anti_regression_guardian.json exist and validate.",
+    "L10 command log records final_audit_gate, final audit schema validation, focused tests, broad tests, loop validation, diff check, and cache guard.",
+    "L10 validation_result.json, anti_regression_check.json, anti_regression_report.md, and stage_result.json exist and validate.",
+    "P14 remains dry-run-only and no rendered report is treated as source of truth.",
+    "Commit SHA placeholders are replaced immediately after the first L10 commit."
+  ],
+  "agent_role": "review_agent",
+  "commands_to_run": [
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering",
+    "python3 scripts/validate_json_schema.py --schema schemas/loop_engineering/subagent_response.schema.json --instance artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/subagents/review_agent.json",
+    "python3 scripts/validate_json_schema.py --schema schemas/loop_engineering/subagent_response.schema.json --instance artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/subagents/anti_regression_guardian.json",
+    "git status --short"
+  ],
+  "context_files_read": [
+    {
+      "key_findings": [
+        "P14 must not run automatically.",
+        "Machine-readable artifacts are the product and reports are views only.",
+        "No phase may pass without required artifacts, validation, gate logs, and audit decision."
+      ],
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository instructions and safety boundaries."
+    },
+    {
+      "key_findings": [
+        "Phase F requires review_agent, validation_agent, and anti_regression_guardian outputs.",
+        "Phase G requires validation_result.json, anti_regression_report.md, and stage_result.json.",
+        "Phase H requires commit and push before final global state truth."
+      ],
+      "path": "codex/loop_engineering/01_STAGE_LOOP_PROTOCOL.md",
+      "purpose": "Required L-stage execution protocol."
+    },
+    {
+      "key_findings": [
+        "L10 must add final_audit_gate.py and tests/final_audit.",
+        "Coverage matrix must not count dry-run as real.",
+        "Final HTML must locate source artifacts and commit SHA."
+      ],
+      "path": "codex/loop_engineering/04_STAGE_MANIFEST.md",
+      "purpose": "L10 acceptance criteria."
+    },
+    {
+      "key_findings": [
+        "Stage artifacts now include command-log evidence, validation result, anti-regression check/report, and stage result.",
+        "Review and anti-regression artifacts are now persisted for Phase F."
+      ],
+      "path": "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+      "purpose": "Stage-local remediation state and artifacts."
+    }
+  ],
+  "created_at": "2026-07-01T04:45:00Z",
+  "findings": [],
+  "forbidden_shortcuts": [
+    "Do not mark a pushed final state with PENDING_COMMIT.",
+    "Do not list nonexistent artifacts in stage_result.json.",
+    "Do not run P14 real 1000-node evidence as part of L10.",
+    "Do not treat HTML, SVG, or CSV reports as source-of-truth artifacts."
+  ],
+  "implementation_plan": [
+    {
+      "files": [
+        "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/subagents/review_agent.json",
+        "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/subagents/anti_regression_guardian.json"
+      ],
+      "rationale": "The stage cannot claim Phase F completion without the required subagent records.",
+      "step": "Persist final Phase F subagent artifacts."
+    },
+    {
+      "files": [
+        "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/stage_result.json",
+        "artifacts/loop_engineering/global_loop_state.json"
+      ],
+      "rationale": "The final state must record the real commit SHA after commit and push.",
+      "step": "Replace PENDING_COMMIT after the first L10 commit."
+    }
+  ],
+  "notes": "Earlier review findings about missing Phase F/G artifacts and command-log evidence were remediated. PENDING_COMMIT remains a temporary pre-commit placeholder and must be replaced in the final completion commit.",
+  "proposed_harness": [],
+  "risks": [
+    "A second completion commit is required to replace PENDING_COMMIT with the real L10 implementation commit SHA."
+  ],
+  "schema_version": "v1",
+  "stage_id": "L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+  "verdict": "APPROVED"
+}

@@ -1,0 +1,106 @@
+{
+  "acceptance_criteria": [
+    "Final audit gate validates schema/status for source JSON artifacts.",
+    "P14 remains dry-run-only, opt-in-only, and not counted as real Valkey coverage.",
+    "Rendered HTML, SVG, and CSV outputs are source_of_truth=false and link to hashed JSON source artifacts.",
+    "All missing-like metric statuses include reason and impact.",
+    "CI runs the final audit gate and schema validation without P14 opt-in or real wrapper invocations."
+  ],
+  "agent_role": "implementation_worker",
+  "commands_to_run": [
+    "python3 scripts/final_audit_gate.py --out-dir artifacts/loop_engineering/final_audit",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/final_audit_report.schema.json --instance artifacts/loop_engineering/final_audit/final_audit_report.json",
+    "python -m pytest -q -p no:cacheprovider tests/final_audit tests/ci/test_final_audit_workflow_gate.py"
+  ],
+  "context_files_read": [
+    {
+      "key_findings": [
+        "P14 is not automatic and requires explicit opt-in.",
+        "Machine-readable artifacts are the product.",
+        "Missing metrics must be encoded explicitly."
+      ],
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository and safety instructions."
+    },
+    {
+      "key_findings": [
+        "L10 requires a final full-chain audit gate, schema, CI coverage, and artifact-first rendered reports."
+      ],
+      "path": "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/stage_design.md",
+      "purpose": "L10 design contract."
+    },
+    {
+      "key_findings": [
+        "The implemented gate checks source schemas/status, coverage shape, P14 boundary, missing metric impacts, and report provenance."
+      ],
+      "path": "scripts/final_audit_gate.py",
+      "purpose": "Final audit gate implementation."
+    },
+    {
+      "key_findings": [
+        "The schema requires source_artifacts, generated_reports, invariant_results, missing_metric_impacts, and p14_boundary."
+      ],
+      "path": "schemas/artifact/final_audit_report.schema.json",
+      "purpose": "Final audit artifact contract."
+    }
+  ],
+  "created_at": "2026-07-01T04:15:00Z",
+  "findings": [],
+  "forbidden_shortcuts": [
+    "Do not run P14_SCALE_1000_OPTIN_DRYRUN automatically.",
+    "Do not set VSLAB_ALLOW_1000_DRYRUN in CI or final audit.",
+    "Do not count 1000-dry-run as real Valkey coverage.",
+    "Do not use rendered HTML, SVG, CSV, or markdown views as measured metric sources."
+  ],
+  "implementation_plan": [
+    {
+      "files": [
+        "scripts/final_audit_gate.py",
+        "schemas/artifact/final_audit_report.schema.json"
+      ],
+      "rationale": "The gate validates final full-chain artifact integrity and writes a schema-checked final audit report.",
+      "step": "Keep final audit as an artifact validation gate."
+    },
+    {
+      "files": [
+        "scripts/build_metric_coverage_matrix.py",
+        "scripts/render_audit_report.py"
+      ],
+      "rationale": "Metric sources remain JSON artifacts, missing-like metrics carry reason and impact, and rendered outputs remain views.",
+      "step": "Keep metric and report changes artifact-first."
+    }
+  ],
+  "notes": "Read-only implementation review approved the current L10 implementation. P14 was represented only through existing dry-run audit evidence and was not executed.",
+  "proposed_harness": [
+    {
+      "acceptance": "python3 scripts/final_audit_gate.py --out-dir artifacts/loop_engineering/final_audit exits 0 and writes PASS final_audit_report.json.",
+      "expected_to_fail_before_impl": true,
+      "name": "final_audit_gate",
+      "type": "cli"
+    },
+    {
+      "acceptance": "final_audit_report.json validates against schemas/artifact/final_audit_report.schema.json.",
+      "expected_to_fail_before_impl": true,
+      "name": "final_audit_report_schema",
+      "type": "schema"
+    },
+    {
+      "acceptance": "tests/final_audit cover PASS and required failure modes.",
+      "expected_to_fail_before_impl": true,
+      "name": "final_audit_unit_tests",
+      "type": "unit"
+    },
+    {
+      "acceptance": "CI runs final audit and schema validation without P14 opt-in or real wrapper calls.",
+      "expected_to_fail_before_impl": true,
+      "name": "final_audit_workflow_gate",
+      "type": "ci"
+    }
+  ],
+  "risks": [
+    "Final integration must still rerun the full validation suite after generated artifacts are refreshed."
+  ],
+  "schema_version": "v1",
+  "stage_id": "L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+  "verdict": "APPROVED"
+}

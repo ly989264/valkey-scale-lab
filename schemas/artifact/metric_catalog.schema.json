@@ -99,10 +99,12 @@
             "required": ["status", "reason"],
             "properties": {
               "status": {"type": "string", "enum": ["PRESENT", "MISSING", "SKIPPED_WITH_REASON", "NO_BASELINE_YET"]},
-              "reason": {"type": "string"}
+              "reason": {"type": "string"},
+              "impact": {"type": "string"}
             },
             "additionalProperties": true
-          }
+          },
+          "impact": {"type": "string"}
         },
         "additionalProperties": true
       }

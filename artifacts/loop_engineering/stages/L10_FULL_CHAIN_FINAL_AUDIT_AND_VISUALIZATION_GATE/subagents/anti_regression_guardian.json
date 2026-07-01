@@ -1,0 +1,95 @@
+{
+  "acceptance_criteria": [
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering returns PASS after subagent artifacts are present.",
+    "No __pycache__, .pyc, or .pytest_cache pollution remains.",
+    "anti_regression_check.json remains PASS with empty findings.",
+    "P14 remains unexecuted, opt-in-only, dry-run-only, and not counted as real Valkey coverage.",
+    "Generated HTML, CSV, and SVG reports remain source_of_truth=false."
+  ],
+  "agent_role": "anti_regression_guardian",
+  "commands_to_run": [
+    "find . -path ./.git -prune -o ( -name __pycache__ -o -name '*.pyc' -o -name .pytest_cache ) -print => empty",
+    "git diff --check => PASS",
+    "python3 scripts/validate_json_schema.py --schema schemas/artifact/final_audit_report.schema.json --instance artifacts/loop_engineering/final_audit/final_audit_report.json => PASS",
+    "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering => PASS after final subagent artifacts are added"
+  ],
+  "context_files_read": [
+    {
+      "key_findings": [
+        "P14 must not run by default.",
+        "Rendered reports are views over machine-readable artifacts.",
+        "No phase may pass without required artifacts and validation."
+      ],
+      "path": "AGENTS.md",
+      "purpose": "Controlling repository safety and harness-integrity instructions."
+    },
+    {
+      "key_findings": [
+        "Each subagent output must be persisted under the stage subagents directory.",
+        "Commit requires review_agent, validation_agent, and anti_regression_guardian approval artifacts."
+      ],
+      "path": "codex/loop_engineering/02_AGENT_PROTOCOL.md",
+      "purpose": "Subagent artifact contract."
+    },
+    {
+      "key_findings": [
+        "Command-log evidence is present for final_audit_gate, schema validation, focused tests, broad tests, loop validation, diff check, and cache guard."
+      ],
+      "path": "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/commands.jsonl",
+      "purpose": "Command-log evidence inspection."
+    },
+    {
+      "key_findings": [
+        "status is PASS.",
+        "findings is empty."
+      ],
+      "path": "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/anti_regression_check.json",
+      "purpose": "Anti-regression check status."
+    },
+    {
+      "key_findings": [
+        "P14 dry-run-only and zero-real-evidence invariants are enforced.",
+        "Rendered report entries are required to be source_of_truth=false.",
+        "Missing-like metrics require reason and impact."
+      ],
+      "path": "scripts/final_audit_gate.py",
+      "purpose": "Final audit implementation review."
+    },
+    {
+      "key_findings": [
+        "status is PASS.",
+        "P14 is SKIPPED_WITH_REASON, dry_run_only=true, real_valkey_coverage=false, real_evidence_count=0.",
+        "All generated reports are source_of_truth=false."
+      ],
+      "path": "artifacts/loop_engineering/final_audit/final_audit_report.json",
+      "purpose": "Generated final audit report inspection."
+    }
+  ],
+  "created_at": "2026-07-01T04:45:00Z",
+  "findings": [],
+  "forbidden_shortcuts": [
+    "Do not delete required artifact references to hide failures.",
+    "Do not weaken loop_engineering_validate.py.",
+    "Do not mark P14 as real coverage.",
+    "Do not set VSLAB_ALLOW_1000_DRYRUN.",
+    "Do not treat rendered reports as source of truth."
+  ],
+  "implementation_plan": [
+    {
+      "files": [
+        "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/subagents/review_agent.json",
+        "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/subagents/anti_regression_guardian.json"
+      ],
+      "rationale": "A PASS stage_result must not reference missing required artifacts.",
+      "step": "Persist missing final subagent artifacts, then rerun loop validation."
+    }
+  ],
+  "notes": "Cache pollution was removed, command-log evidence is present, anti_regression_check.json is PASS, and P14/report boundaries are intact. The earlier missing-artifact blocker is resolved by this persisted artifact pair.",
+  "proposed_harness": [],
+  "risks": [
+    "PENDING_COMMIT must be replaced after the first L10 commit before final push state is considered complete."
+  ],
+  "schema_version": "v1",
+  "stage_id": "L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+  "verdict": "APPROVED"
+}

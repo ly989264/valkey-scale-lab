@@ -1,0 +1,34 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+  "status": "PASS",
+  "completed_at": "2026-07-01T03:45:00Z",
+  "environment_notes": [
+    "Baseline commands ran with PYTHONDONTWRITEBYTECODE=1 and PYTHONPYCACHEPREFIX=/private/tmp/valkey-scale-lab-pycache.",
+    "Pytest commands used -p no:cacheprovider.",
+    "P14 was not executed and VSLAB_ALLOW_1000_DRYRUN was not set."
+  ],
+  "commands_log": "artifacts/loop_engineering/stages/L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE/commands.jsonl",
+  "all_required_baseline_commands_passed": true,
+  "commands": [
+    {"name": "precheck_all", "command": "python3 scripts/codex_gate.py precheck --all", "status": "PASS"},
+    {"name": "safety_scan", "command": "python3 scripts/safety_scan.py", "status": "PASS"},
+    {"name": "compileall", "command": "python3 -m compileall -q src scripts tests", "status": "PASS"},
+    {"name": "postcheck_compatibility", "command": "python -m pytest -q -p no:cacheprovider tests/ci/test_postcheck_compatibility.py", "status": "PASS"},
+    {"name": "unit_and_github_coverage", "command": "python -m pytest -q -p no:cacheprovider tests/unit tests/ci/test_github_coverage_gates.py", "status": "PASS"},
+    {"name": "config_planner", "command": "python -m pytest -q -p no:cacheprovider tests/config tests/planner", "status": "PASS"},
+    {"name": "runtime_fault_failover_orchestrator", "command": "python -m pytest -q -p no:cacheprovider tests/integration tests/fault tests/failover tests/orchestrator", "status": "PASS"},
+    {"name": "analysis_report_stability_scale", "command": "python -m pytest -q -p no:cacheprovider tests/analysis tests/report tests/stability tests/scale", "status": "PASS"},
+    {"name": "loop_engineering_validate", "command": "python3 scripts/loop_engineering_validate.py --root artifacts/loop_engineering", "status": "PASS"},
+    {"name": "loop_engineering_tests", "command": "python -m pytest -q -p no:cacheprovider tests/loop_engineering tests/ci/test_loop_engineering_pack.py", "status": "PASS"},
+    {"name": "committed_artifact_audit", "command": "python3 scripts/audit_committed_artifacts.py --out artifacts/loop_engineering/reports/audit_report.json && python -m pytest -q -p no:cacheprovider tests/audit tests/ci/test_committed_artifact_audit_gate.py", "status": "PASS"},
+    {"name": "provenance", "command": "python3 scripts/build_provenance_graph.py --out artifacts/loop_engineering/reports/provenance_graph.json && python -m pytest -q -p no:cacheprovider tests/provenance tests/ci/test_provenance_graph_gate.py", "status": "PASS"},
+    {"name": "scale_build_metrics", "command": "python3 scripts/audit_scale_build_metrics.py --root . --out artifacts/loop_engineering/reports/scale_build_metrics.json && python -m pytest -q -p no:cacheprovider tests/scale/test_scale_build_metrics_audit.py tests/coverage/test_scale_build_metric_coverage.py tests/report/test_scale_build_metrics_report.py tests/ci/test_scale_build_metrics_gate.py", "status": "PASS"},
+    {"name": "fault_failover_scale", "command": "python3 scripts/audit_fault_failover_scale.py --out artifacts/loop_engineering/reports/fault_failover_scale.json && python -m pytest -q -p no:cacheprovider tests/failover/test_fault_failover_scale_audit.py tests/fault/test_sandbox_fault.py tests/ci/test_fault_failover_scale_gate.py", "status": "PASS"},
+    {"name": "metric_coverage", "command": "python3 scripts/build_metric_coverage_matrix.py --out-dir artifacts/loop_engineering/reports && python -m pytest -q -p no:cacheprovider tests/metrics tests/coverage tests/ci/test_metric_coverage_gate.py", "status": "PASS"},
+    {"name": "p13_p14_scale_audit", "command": "python3 scripts/audit_p13_p14_scale.py --out artifacts/loop_engineering/reports/p13_p14_scale_audit.json && python -m pytest -q -p no:cacheprovider tests/scale/test_p13_p14_scale_audit.py tests/ci/test_p13_p14_scale_audit_gate.py", "status": "PASS"},
+    {"name": "small_real_parity", "command": "python3 scripts/audit_small_real_scenario_parity.py --root . --out artifacts/loop_engineering/reports/small_real_parity_audit.json --require-fake --require-real --validate-report-views && python -m pytest -q -p no:cacheprovider tests/audit/test_small_real_scenario_parity.py tests/coverage/test_small_real_metric_parity.py tests/report/test_small_real_parity_report.py tests/real_valkey/test_small_real_gate_contract.py tests/ci/test_small_real_parity_gate.py", "status": "PASS"},
+    {"name": "report_rendering", "command": "python3 scripts/render_audit_report.py --input-dir artifacts/loop_engineering/reports --out-dir artifacts/loop_engineering/reports && python -m pytest -q -p no:cacheprovider tests/report tests/visualization tests/ci/test_loop_report_gate.py", "status": "PASS"},
+    {"name": "stability_soak_l09", "command": "python -m pytest -q -p no:cacheprovider tests/stability/test_stability_soak_multistage.py tests/stability/test_stability_soak_artifact_audit.py tests/ci/test_stability_soak_metrics_gate.py", "status": "PASS"}
+  ]
+}

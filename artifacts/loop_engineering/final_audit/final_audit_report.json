@@ -1,0 +1,788 @@
+{
+  "artifact_type": "final_audit_report",
+  "created_at": "2026-07-01T03:47:39.367725Z",
+  "findings": [],
+  "generated_reports": [
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.csv",
+      "role": "csv_view",
+      "sha256": "495b0811a313608ce0c3f3f00f7c37962ee26df101dca507ab354280a2203011",
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/audit_report.json",
+        "artifacts/loop_engineering/reports/provenance_graph.json",
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+        "artifacts/loop_engineering/reports/scale_build_metrics.json",
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
+      ],
+      "source_of_truth": false
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/missing_metrics.csv",
+      "role": "csv_view",
+      "sha256": "d4a1a412ed1864f789f4e832bb973a19c91579577aa9e940404ad1c9fee47ad9",
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/audit_report.json",
+        "artifacts/loop_engineering/reports/provenance_graph.json",
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+        "artifacts/loop_engineering/reports/scale_build_metrics.json",
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
+      ],
+      "source_of_truth": false
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/coverage_heatmap.svg",
+      "role": "visualization",
+      "sha256": "63a9e43afec1f13ce980c35f419d9305f8e61af86a686d3a89f6a6d054771960",
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/audit_report.json",
+        "artifacts/loop_engineering/reports/provenance_graph.json",
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+        "artifacts/loop_engineering/reports/scale_build_metrics.json",
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
+      ],
+      "source_of_truth": false
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/scale_ladder.svg",
+      "role": "visualization",
+      "sha256": "d64b839156bd278283b407073d54af97e616d9f498cde2e347e55cbca3893074",
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/audit_report.json",
+        "artifacts/loop_engineering/reports/provenance_graph.json",
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+        "artifacts/loop_engineering/reports/scale_build_metrics.json",
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
+      ],
+      "source_of_truth": false
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/p13_timing_waterfall.svg",
+      "role": "visualization",
+      "sha256": "7a23bb75a0fe45033bdce9b4c032b75a1eeea954683b6f3a11c09cba4bcb25be",
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/audit_report.json",
+        "artifacts/loop_engineering/reports/provenance_graph.json",
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+        "artifacts/loop_engineering/reports/scale_build_metrics.json",
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
+      ],
+      "source_of_truth": false
+    },
+    {
+      "path": "artifacts/loop_engineering/reports/index.html",
+      "role": "html_report",
+      "sha256": "b2def68982e371d464d0f0d4d2571c63ad29bd53f891b225cd7062a4a02898e1",
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/audit_report.json",
+        "artifacts/loop_engineering/reports/provenance_graph.json",
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+        "artifacts/loop_engineering/reports/scale_build_metrics.json",
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
+        "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json"
+      ],
+      "source_of_truth": false
+    },
+    {
+      "path": "artifacts/loop_engineering/final_audit/index.html",
+      "role": "html_report",
+      "sha256": "3a0eabebe420aad2585dc0f92df1a0c417e15239cf3bfb74e60d16382b0bf224",
+      "source_artifacts": [
+        "artifacts/loop_engineering/reports/audit_report.json",
+        "artifacts/loop_engineering/reports/provenance_graph.json",
+        "artifacts/loop_engineering/reports/metric_catalog.json",
+        "artifacts/loop_engineering/reports/coverage_matrix.json",
+        "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+        "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+        "artifacts/loop_engineering/reports/scale_build_metrics.json",
+        "artifacts/loop_engineering/reports/fault_failover_scale.json",
+        "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+        "artifacts/loop_engineering/reports/report_index.json"
+      ],
+      "source_of_truth": false
+    }
+  ],
+  "invariant_results": [
+    {
+      "description": "All final source artifacts are schema-valid PASS JSON artifacts.",
+      "name": "source_artifacts_schema_status",
+      "status": "PASS"
+    },
+    {
+      "description": "Coverage has fake/small-real/30/50/100/1000-dry-run layers across all required surfaces.",
+      "name": "coverage_matrix_layers_surfaces",
+      "status": "PASS"
+    },
+    {
+      "description": "P14 remains opt-in dry-run/resource/planner only.",
+      "name": "p14_not_real_coverage",
+      "status": "PASS"
+    },
+    {
+      "description": "Every missing-like metric has reason and impact.",
+      "name": "missing_metric_reason_impact",
+      "status": "PASS"
+    },
+    {
+      "description": "Rendered reports are traceable views and expose commit/source context.",
+      "name": "report_views_are_views",
+      "status": "PASS"
+    }
+  ],
+  "missing_metric_impacts": [
+    {
+      "dry_run_only": false,
+      "evidence_layer": "100",
+      "impact": "failover coverage for 100 is incomplete and must not be inferred from reports or default values.",
+      "metric": "fault_failover_scale.failover.split_brain_duration_ms",
+      "reason": "primary_stop_gate_did_not_observe_conflicting_primaries",
+      "source_artifact": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "source_pointer": "$.canonical_rungs.2.metric_records.20",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "100",
+      "impact": "stability coverage for 100 is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/reports/stability_soak_metrics.json.",
+      "metric": "stability_soak.profile.resource_aware_status",
+      "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+      "source_artifact": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "source_pointer": "$.profiles.3.status",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "100",
+      "impact": "stability coverage for 100 is intentionally excluded from real Valkey conclusions; see artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json.",
+      "metric": "stability_soak.resource_aware_profile.status",
+      "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+      "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
+      "source_pointer": "$.can_run",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.cleanup.cleanup_remove_containers_seconds",
+      "reason": "30-node historical cleanup report predates cleanup_timing fields",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.21",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.cleanup.cleanup_remove_networks_seconds",
+      "reason": "30-node historical cleanup report predates cleanup_timing fields",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.22",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.cleanup.cleanup_residual_scan_seconds",
+      "reason": "30-node historical cleanup report predates cleanup_timing fields",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.23",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.cleanup.cleanup_terminate_processes_seconds",
+      "reason": "30-node historical cleanup report predates cleanup_timing fields",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.18",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.cleanup.cleanup_verify_nodehost_empty_seconds",
+      "reason": "30-node historical cleanup report predates cleanup_timing fields",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.20",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.cleanup.cleanup_verify_process_exit_seconds",
+      "reason": "30-node historical cleanup report predates cleanup_timing fields",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.19",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.cluster_create.primary_cluster_create_seconds",
+      "reason": "30-node historical evidence predates P13 timing breakdown",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.6",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.cluster_create.replica_meet_seconds",
+      "reason": "30-node historical evidence predates P13 timing breakdown",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.7",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.process_startup.nodehost_start_seconds",
+      "reason": "30-node historical evidence predates P13 timing breakdown",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.2",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.process_startup.process_config_prepare_seconds",
+      "reason": "30-node historical evidence predates P13 timing breakdown",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.3",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.process_startup.process_ready_wait_seconds",
+      "reason": "30-node historical evidence predates P13 timing breakdown",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.5",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.process_startup.process_start_seconds",
+      "reason": "30-node historical evidence predates P13 timing breakdown",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.4",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.role_convergence.replica_replicate_seconds",
+      "reason": "30-node historical evidence predates P13 timing breakdown",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.8",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.runtime.cluster_create_duration_seconds",
+      "reason": "30-node historical evidence predates runtime_timing_breakdown artifact",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.27",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.setup_timeline.setup_command_wall_seconds",
+      "reason": "30-node historical evidence predates setup_timeline artifact",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.25",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "cluster_build.setup_timeline.total_seconds",
+      "reason": "30-node historical evidence predates setup_timeline artifact",
+      "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.26",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "failover coverage for 30 is incomplete and must not be inferred from reports or default values.",
+      "metric": "fault_failover_scale.failover.split_brain_duration_ms",
+      "reason": "primary_stop_gate_did_not_observe_conflicting_primaries",
+      "source_artifact": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "source_pointer": "$.canonical_rungs.0.metric_records.20",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "stability coverage for 30 is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/reports/stability_soak_metrics.json.",
+      "metric": "stability_soak.profile.resource_aware_status",
+      "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+      "source_artifact": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "source_pointer": "$.profiles.1.status",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "30",
+      "impact": "stability coverage for 30 is intentionally excluded from real Valkey conclusions; see artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json.",
+      "metric": "stability_soak.resource_aware_profile.status",
+      "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+      "source_artifact": "artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json",
+      "source_pointer": "$.can_run",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "50",
+      "impact": "failover coverage for 50 is incomplete and must not be inferred from reports or default values.",
+      "metric": "fault_failover_scale.failover.split_brain_duration_ms",
+      "reason": "primary_stop_gate_did_not_observe_conflicting_primaries",
+      "source_artifact": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "source_pointer": "$.canonical_rungs.1.metric_records.20",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "50",
+      "impact": "stability coverage for 50 is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/reports/stability_soak_metrics.json.",
+      "metric": "stability_soak.profile.resource_aware_status",
+      "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+      "source_artifact": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "source_pointer": "$.profiles.2.status",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "50",
+      "impact": "stability coverage for 50 is intentionally excluded from real Valkey conclusions; see artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json.",
+      "metric": "stability_soak.resource_aware_profile.status",
+      "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+      "source_artifact": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json",
+      "source_pointer": "$.can_run",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "cleanup coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.cleanup.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.cleanup",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "cluster_build coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.cluster_build.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.cluster_build",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "failover coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.failover.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.failover",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "fault coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.fault.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.fault",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "management coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.management.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.management",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "observability coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.observability.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.observability",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "report_visualization coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.report_visualization.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.report_visualization",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "scale coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.scale.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.scale",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "stability coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.stability.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.stability",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "fake",
+      "impact": "workload coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json.",
+      "metric": "fake.workload.coverage_placeholder",
+      "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+      "source_artifact": "artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json",
+      "source_pointer": "$.L03.required_layers.fake.workload",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "failover coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json.",
+      "metric": "failover.real_evidence.data_path_result",
+      "reason": "Wrapper evidence skipped the data-path probe while live Valkey liveness and cluster probes passed.",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
+      "source_pointer": "$.data_path_result",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "failover coverage for small-real is incomplete and must not be inferred from reports or default values.",
+      "metric": "failover.split_brain_duration_ms",
+      "reason": "not_measured_by_primary_stop_gate",
+      "source_artifact": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
+      "source_pointer": "$.summary.split_brain_duration_ms",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "fault coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json.",
+      "metric": "fault.network_delay.observed_impact",
+      "reason": "P07 safety gate validates sandbox lifecycle and post-clear cluster health; no host-level network impairment is applied.",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
+      "source_pointer": "$.faults.0.observed_impact",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "fault coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json.",
+      "metric": "fault.real_evidence.data_path_result",
+      "reason": "Wrapper evidence skipped the data-path probe while live Valkey liveness and cluster probes passed.",
+      "source_artifact": "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
+      "source_pointer": "$.data_path_result",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json.",
+      "metric": "management.operation.rebalance.duration_seconds",
+      "reason": "Valkey cluster rebalance orchestration is deferred until management expansion.",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_pointer": "$.operations.8.duration_seconds",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json.",
+      "metric": "management.operation.remove_node.duration_seconds",
+      "reason": "P04 records taxonomy only; destructive removal is deferred until a dedicated lifecycle phase.",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_pointer": "$.operations.6.duration_seconds",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json.",
+      "metric": "management.operation.reshard.duration_seconds",
+      "reason": "P04 smoke cluster keeps slot ownership stable for wrapper data-path proof.",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_pointer": "$.operations.7.duration_seconds",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json.",
+      "metric": "management.operation.rolling_restart.duration_seconds",
+      "reason": "Restart orchestration is deferred to later stability/fault phases.",
+      "source_artifact": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "source_pointer": "$.operations.9.duration_seconds",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "report_visualization coverage for small-real is incomplete and must not be inferred from reports or default values.",
+      "metric": "report_visualization.analysis.split_brain_duration_ms",
+      "reason": "not_measured_by_primary_stop_gate",
+      "source_artifact": "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+      "source_pointer": "$.metrics.2",
+      "status": "MISSING"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists.",
+      "metric": "stability.baseline.error_count",
+      "reason": "No previous stability baseline artifact exists.",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_pointer": "$.summary.baseline.comparisons.0",
+      "status": "NO_BASELINE_YET"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists.",
+      "metric": "stability.baseline.max_memory_growth_bytes",
+      "reason": "No previous stability baseline artifact exists.",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_pointer": "$.summary.baseline.comparisons.1",
+      "status": "NO_BASELINE_YET"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists.",
+      "metric": "stability_soak.baseline.error_count",
+      "reason": "No previous stability baseline artifact exists.",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_pointer": "$.summary.baseline.comparisons.0",
+      "status": "NO_BASELINE_YET"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists.",
+      "metric": "stability_soak.baseline.max_memory_growth_bytes",
+      "reason": "No previous stability baseline artifact exists.",
+      "source_artifact": "artifacts/phases/P11_STABILITY_SOAK/stability_report.json",
+      "source_pointer": "$.summary.baseline.comparisons.1",
+      "status": "NO_BASELINE_YET"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "workload coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json.",
+      "metric": "workload.timing_window.after_recovery.duration_seconds",
+      "reason": "P05 workload_smoke has no recovery window.",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "source_pointer": "$.timing_windows.3.duration_seconds",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "workload coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json.",
+      "metric": "workload.timing_window.before_fault.duration_seconds",
+      "reason": "P05 workload_smoke has no fault window.",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "source_pointer": "$.timing_windows.1.duration_seconds",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "dry_run_only": false,
+      "evidence_layer": "small-real",
+      "impact": "workload coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json.",
+      "metric": "workload.timing_window.during_fault.duration_seconds",
+      "reason": "P05 workload_smoke has no fault window.",
+      "source_artifact": "artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json",
+      "source_pointer": "$.timing_windows.2.duration_seconds",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "p14_boundary": {
+    "automatic": false,
+    "default_gate_result_present": false,
+    "dry_run_artifacts": [
+      "artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json"
+    ],
+    "dry_run_only": true,
+    "finding_ids": [],
+    "max_nodes": 1000,
+    "opt_in_required": true,
+    "phase_id": "P14_SCALE_1000_OPTIN_DRYRUN",
+    "real_evidence_count": 0,
+    "real_valkey_coverage": false,
+    "real_valkey_required": false,
+    "reason": "P14 is opt-in dry-run/resource/planner only and was not executed by L04.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "producer": {
+    "name": "scripts/final_audit_gate.py",
+    "version": "v1"
+  },
+  "root_commit_sha": "4ff3e726f911bd5146ffd18381985d6b58785ee0",
+  "schema_version": "v1",
+  "source_artifacts": [
+    {
+      "artifact_type": "audit_report",
+      "path": "artifacts/loop_engineering/reports/audit_report.json",
+      "sha256": "32af431483b2c156af56dd87eab86ddff3458fb7b8ac80627e46f12c993a6370",
+      "source_of_truth": true,
+      "status": "PASS"
+    },
+    {
+      "artifact_type": "provenance_graph",
+      "path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "sha256": "e4eb04e3b689cffcbe575938979e84e7f53701ce8a6e05a57b510b4b728e80c7",
+      "source_of_truth": true,
+      "status": "PASS"
+    },
+    {
+      "artifact_type": "metric_catalog",
+      "path": "artifacts/loop_engineering/reports/metric_catalog.json",
+      "sha256": "5be795e283b9591e75952b54f94dd695670ec604a106cbf39e5777730db6c9fa",
+      "source_of_truth": true,
+      "status": "PASS"
+    },
+    {
+      "artifact_type": "coverage_matrix",
+      "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
+      "sha256": "696ea31a9f5c1491c6260755f1c20dc1195f0f1f19e981947aba551a99a68778",
+      "source_of_truth": true,
+      "status": "PASS"
+    },
+    {
+      "artifact_type": "p13_p14_scale_audit",
+      "path": "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
+      "sha256": "cf828ccb272f20ab40ca6075ab1b90f0cda4d82fcec7a2e659a4e8e2a50386b0",
+      "source_of_truth": true,
+      "status": "PASS"
+    },
+    {
+      "artifact_type": "small_real_parity_audit",
+      "path": "artifacts/loop_engineering/reports/small_real_parity_audit.json",
+      "sha256": "126eb526a986fb18dc22d1e21208358121c71a217dd92ac43f2112039dd53cb9",
+      "source_of_truth": true,
+      "status": "PASS"
+    },
+    {
+      "artifact_type": "scale_build_metrics",
+      "path": "artifacts/loop_engineering/reports/scale_build_metrics.json",
+      "sha256": "1c7c04f6244d0b6d65eb5f407bb31287ffa7a185b665cecee3e188c295c831fe",
+      "source_of_truth": true,
+      "status": "PASS"
+    },
+    {
+      "artifact_type": "fault_failover_scale",
+      "path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
+      "sha256": "e41de72d45c647dfdab4056dc69f01d0414e35f6ec7c70332d85ec1fba236805",
+      "source_of_truth": true,
+      "status": "PASS"
+    },
+    {
+      "artifact_type": "stability_soak_metrics",
+      "path": "artifacts/loop_engineering/reports/stability_soak_metrics.json",
+      "sha256": "2253cfb49fc3a90427e3b691436321c9a52d5a012f028da3212314c9f26fc694",
+      "source_of_truth": true,
+      "status": "PASS"
+    },
+    {
+      "artifact_type": "loop_report_index",
+      "path": "artifacts/loop_engineering/reports/report_index.json",
+      "sha256": "e1694bc0a4ced7b6ba883b32943dedbd592cd94f0ddf27dba417e97a0fca9178",
+      "source_of_truth": true,
+      "status": "PASS"
+    }
+  ],
+  "stage_id": "L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+  "status": "PASS",
+  "summary": {
+    "blocking_findings_count": 0,
+    "generated_report_count": 7,
+    "invariant_count": 5,
+    "missing_metric_impact_count": 51,
+    "source_artifact_count": 10
+  }
+}

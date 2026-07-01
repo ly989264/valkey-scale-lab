@@ -1,0 +1,32 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+  "agent_role": "risk_auditor",
+  "created_at": "2026-07-01T03:34:34Z",
+  "context_files_read": [
+    {"path": "AGENTS.md", "purpose": "Safety and evidence policy.", "key_findings": ["P14 must not be automatic.", "Missing metrics must be explicit."]},
+    {"path": "codex/loop_engineering/03_HARNESS_POLICY.md", "purpose": "Anti-regression policy.", "key_findings": ["Dry-run counted as real is blocked.", "Reports are not source truth."]},
+    {"path": "artifacts/loop_engineering/reports/coverage_matrix.json", "purpose": "Dry-run boundary review.", "key_findings": ["1000-dry-run entries were not real coverage."]},
+    {"path": "artifacts/loop_engineering/reports/metric_catalog.json", "purpose": "Missing metric review.", "key_findings": ["Reasons existed; impacts were absent before L10."]},
+    {"path": "artifacts/loop_engineering/reports/index.html", "purpose": "Commit visibility review.", "key_findings": ["Full commit SHA was not visible before L10."]}
+  ],
+  "findings": [
+    {"id": "L10-RISK-001", "severity": "medium", "description": "Final audit gate was absent at design time.", "evidence": ["No scripts/final_audit_gate.py", "No tests/final_audit"]},
+    {"id": "L10-RISK-002", "severity": "medium", "description": "Missing/skipped metrics had no explicit impact.", "evidence": ["metric_catalog missing-like records lacked impact"]},
+    {"id": "L10-RISK-003", "severity": "medium", "description": "Final report views did not clearly expose a full commit SHA.", "evidence": ["index.html lacked root_commit_sha"]}
+  ],
+  "proposed_harness": [
+    {"name": "final_audit_gate", "type": "artifact", "expected_to_fail_before_impl": true, "acceptance": "Validates P14, coverage, missing impacts, provenance, reports, and source hashes."},
+    {"name": "final_audit_tests", "type": "unit", "expected_to_fail_before_impl": true, "acceptance": "Covers dry-run real regression, missing impact, and report source-truth failure."}
+  ],
+  "implementation_plan": [
+    {"step": "Add read-only final audit validator.", "files": ["scripts/final_audit_gate.py"], "rationale": "Avoid report backflow and P14 execution."},
+    {"step": "Add impact and commit visibility.", "files": ["scripts/build_metric_coverage_matrix.py", "scripts/render_audit_report.py"], "rationale": "Close L10 acceptance gaps."}
+  ],
+  "acceptance_criteria": ["No dry-run or fake entry is real coverage.", "Every missing-like metric has reason and impact.", "Final HTML/report exposes commit SHA and source artifacts.", "No P14 execution."],
+  "risks": ["Report HTML could be validated instead of JSON sources.", "P02 1000-node planner could be counted as real coverage.", "Cache pollution could reappear."],
+  "forbidden_shortcuts": ["Do not run P14.", "Do not set VSLAB_ALLOW_1000_DRYRUN.", "Do not infer metrics from HTML/CSV/SVG.", "Do not weaken schemas/tests."],
+  "commands_to_run": ["python3 scripts/final_audit_gate.py --out-dir artifacts/loop_engineering/final_audit", "python3 -m pytest -q -p no:cacheprovider tests/final_audit"],
+  "verdict": "APPROVED",
+  "notes": "Risk review approved the design direction; L10 must close impact and commit visibility gaps before PASS."
+}

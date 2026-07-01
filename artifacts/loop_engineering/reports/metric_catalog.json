@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "metric_catalog",
-  "created_at": "2026-07-01T03:15:06.476827Z",
+  "created_at": "2026-07-01T03:48:35.064160Z",
   "producer": {
     "name": "scripts/build_metric_coverage_matrix.py",
     "version": "v1"
@@ -58,7 +58,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -82,7 +83,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.fault.cleanup_residual_count",
@@ -106,7 +108,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_remove_containers_seconds",
@@ -130,7 +133,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_remove_networks_seconds",
@@ -154,7 +158,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_residual_scan_seconds",
@@ -178,7 +183,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_terminate_processes_seconds",
@@ -202,7 +208,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_verify_nodehost_empty_seconds",
@@ -226,7 +233,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_verify_process_exit_seconds",
@@ -250,7 +258,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.resources_remaining_count",
@@ -274,7 +283,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cluster_create.primary_cluster_create_seconds",
@@ -298,7 +308,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cluster_create.replica_meet_seconds",
@@ -322,7 +333,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.data_path.probe_count",
@@ -346,7 +358,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.data_path.result",
@@ -370,7 +383,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.membership_convergence.fail_count",
@@ -394,7 +408,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.membership_convergence.handshake_count",
@@ -418,7 +433,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.membership_convergence.known_nodes",
@@ -442,7 +458,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.process_startup.nodehost_start_seconds",
@@ -466,7 +483,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.process_startup.process_config_prepare_seconds",
@@ -490,7 +508,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.process_startup.process_ready_wait_seconds",
@@ -514,7 +533,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.process_startup.process_start_seconds",
@@ -538,7 +558,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.resource_preflight.can_run",
@@ -562,7 +583,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.resource_preflight.status",
@@ -586,7 +608,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.role_convergence.primary_count",
@@ -610,7 +633,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.role_convergence.replica_count",
@@ -634,7 +658,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.role_convergence.replica_replicate_seconds",
@@ -658,7 +683,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.runtime.cluster_create_duration_seconds",
@@ -682,7 +708,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.setup_timeline.setup_command_wall_seconds",
@@ -706,7 +733,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.setup_timeline.total_seconds",
@@ -730,7 +758,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.slot_assignment.slots_assigned",
@@ -754,7 +783,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.slot_assignment.slots_ok",
@@ -778,7 +808,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.failover_latency_ms",
@@ -802,7 +833,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.nodes_observed_after",
@@ -826,7 +858,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.nodes_observed_after_clear",
@@ -850,7 +883,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.nodes_observed_before",
@@ -874,7 +908,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.promotion_observed",
@@ -898,14 +933,15 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.split_brain_duration_ms",
       "surface": "failover",
       "unit": "ms",
       "source_artifact": "artifacts/loop_engineering/reports/fault_failover_scale.json",
-      "source_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "source_sha256": "e41de72d45c647dfdab4056dc69f01d0414e35f6ec7c70332d85ec1fba236805",
       "source_artifact_type": "fault_failover_scale",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.2.metric_records.20",
@@ -921,8 +957,10 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "primary_stop_gate_did_not_observe_conflicting_primaries"
-      }
+        "reason": "primary_stop_gate_did_not_observe_conflicting_primaries",
+        "impact": "failover coverage for 100 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "failover coverage for 100 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "fault_failover_scale.fault.apply_latency_ms",
@@ -946,7 +984,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.fault.clear_latency_ms",
@@ -970,7 +1009,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.management.cluster_known_nodes_max",
@@ -994,7 +1034,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.avg_used_memory",
@@ -1018,7 +1059,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_commands_processed",
@@ -1042,7 +1084,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_used_memory",
@@ -1066,7 +1109,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.node_count",
@@ -1090,7 +1134,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.primary_count",
@@ -1114,7 +1159,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.cluster_state_observed",
@@ -1138,7 +1184,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.data_path_result",
@@ -1162,7 +1209,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.nodes_observed",
@@ -1186,7 +1234,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.replica_count",
@@ -1210,7 +1259,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.nodehost_start.duration_seconds",
@@ -1234,7 +1284,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.primary_cluster_create.duration_seconds",
@@ -1258,7 +1309,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.process_config_prepare.duration_seconds",
@@ -1282,7 +1334,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.process_ready_wait.duration_seconds",
@@ -1306,7 +1359,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.process_start.duration_seconds",
@@ -1330,7 +1384,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.replica_meet.duration_seconds",
@@ -1354,7 +1409,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.replica_replicate.duration_seconds",
@@ -1378,7 +1434,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.runtime_representative_probe.duration_seconds",
@@ -1402,7 +1459,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.profile.resource_aware_status",
@@ -1425,8 +1483,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true."
-      }
+        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+        "impact": "stability coverage for 100 is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/reports/stability_soak_metrics.json."
+      },
+      "impact": "stability coverage for 100 is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/reports/stability_soak_metrics.json."
     },
     {
       "name": "stability_soak.resource_aware_profile.status",
@@ -1449,8 +1509,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true."
-      }
+        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+        "impact": "stability coverage for 100 is intentionally excluded from real Valkey conclusions; see artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json."
+      },
+      "impact": "stability coverage for 100 is intentionally excluded from real Valkey conclusions; see artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json."
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.availability_percent",
@@ -1474,7 +1536,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.errors_total",
@@ -1498,7 +1561,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.operation_count",
@@ -1522,7 +1586,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.timeouts_total",
@@ -1546,7 +1611,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.availability_percent",
@@ -1570,7 +1636,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.errors_total",
@@ -1594,7 +1661,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.operation_count",
@@ -1618,7 +1686,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.timeouts_total",
@@ -1642,7 +1711,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.availability_percent",
@@ -1666,7 +1736,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.errors_total",
@@ -1690,7 +1761,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.operation_count",
@@ -1714,7 +1786,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.timeouts_total",
@@ -1738,7 +1811,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.dryrun_1000.planned_node_count",
@@ -1762,7 +1836,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -1786,7 +1861,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -1810,7 +1886,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.fault.cleanup_residual_count",
@@ -1834,14 +1911,15 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_remove_containers_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.21",
@@ -1857,15 +1935,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical cleanup report predates cleanup_timing fields"
-      }
+        "reason": "30-node historical cleanup report predates cleanup_timing fields",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.cleanup.cleanup_remove_networks_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.22",
@@ -1881,15 +1961,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical cleanup report predates cleanup_timing fields"
-      }
+        "reason": "30-node historical cleanup report predates cleanup_timing fields",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.cleanup.cleanup_residual_scan_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.23",
@@ -1905,15 +1987,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical cleanup report predates cleanup_timing fields"
-      }
+        "reason": "30-node historical cleanup report predates cleanup_timing fields",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.cleanup.cleanup_terminate_processes_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.18",
@@ -1929,15 +2013,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical cleanup report predates cleanup_timing fields"
-      }
+        "reason": "30-node historical cleanup report predates cleanup_timing fields",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.cleanup.cleanup_verify_nodehost_empty_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.20",
@@ -1953,15 +2039,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical cleanup report predates cleanup_timing fields"
-      }
+        "reason": "30-node historical cleanup report predates cleanup_timing fields",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.cleanup.cleanup_verify_process_exit_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.19",
@@ -1977,8 +2065,10 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical cleanup report predates cleanup_timing fields"
-      }
+        "reason": "30-node historical cleanup report predates cleanup_timing fields",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.cleanup.resources_remaining_count",
@@ -2002,14 +2092,15 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cluster_create.primary_cluster_create_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.6",
@@ -2025,15 +2116,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates P13 timing breakdown"
-      }
+        "reason": "30-node historical evidence predates P13 timing breakdown",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.cluster_create.replica_meet_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.7",
@@ -2049,8 +2142,10 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates P13 timing breakdown"
-      }
+        "reason": "30-node historical evidence predates P13 timing breakdown",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.data_path.probe_count",
@@ -2074,7 +2169,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.data_path.result",
@@ -2098,7 +2194,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.membership_convergence.fail_count",
@@ -2122,7 +2219,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.membership_convergence.handshake_count",
@@ -2146,7 +2244,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.membership_convergence.known_nodes",
@@ -2170,14 +2269,15 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.process_startup.nodehost_start_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.2",
@@ -2193,15 +2293,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates P13 timing breakdown"
-      }
+        "reason": "30-node historical evidence predates P13 timing breakdown",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.process_startup.process_config_prepare_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.3",
@@ -2217,15 +2319,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates P13 timing breakdown"
-      }
+        "reason": "30-node historical evidence predates P13 timing breakdown",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.process_startup.process_ready_wait_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.5",
@@ -2241,15 +2345,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates P13 timing breakdown"
-      }
+        "reason": "30-node historical evidence predates P13 timing breakdown",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.process_startup.process_start_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.4",
@@ -2265,8 +2371,10 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates P13 timing breakdown"
-      }
+        "reason": "30-node historical evidence predates P13 timing breakdown",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.resource_preflight.can_run",
@@ -2290,7 +2398,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.resource_preflight.status",
@@ -2314,7 +2423,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.role_convergence.primary_count",
@@ -2338,7 +2448,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.role_convergence.replica_count",
@@ -2362,14 +2473,15 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.role_convergence.replica_replicate_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.8",
@@ -2385,15 +2497,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates P13 timing breakdown"
-      }
+        "reason": "30-node historical evidence predates P13 timing breakdown",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.runtime.cluster_create_duration_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.27",
@@ -2409,15 +2523,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates runtime_timing_breakdown artifact"
-      }
+        "reason": "30-node historical evidence predates runtime_timing_breakdown artifact",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.setup_timeline.setup_command_wall_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.25",
@@ -2433,15 +2549,17 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates setup_timeline artifact"
-      }
+        "reason": "30-node historical evidence predates setup_timeline artifact",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.setup_timeline.total_seconds",
       "surface": "cluster_build",
       "unit": "seconds",
       "source_artifact": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "source_sha256": "560a5180ccda6446a4395743aa986b2c80d35f252546ee710d1efc9c97ab3289",
+      "source_sha256": "4bc28e0a528a472a78a168f3c37b29af88cbb13ed242fc7840a526deb30fec56",
       "source_artifact_type": "scale_build_metrics",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.26",
@@ -2457,8 +2575,10 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "30-node historical evidence predates setup_timeline artifact"
-      }
+        "reason": "30-node historical evidence predates setup_timeline artifact",
+        "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "cluster_build coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "cluster_build.slot_assignment.slots_assigned",
@@ -2482,7 +2602,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.slot_assignment.slots_ok",
@@ -2506,7 +2627,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.failover_latency_ms",
@@ -2530,7 +2652,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.nodes_observed_after",
@@ -2554,7 +2677,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.nodes_observed_after_clear",
@@ -2578,7 +2702,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.nodes_observed_before",
@@ -2602,7 +2727,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.promotion_observed",
@@ -2626,14 +2752,15 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.split_brain_duration_ms",
       "surface": "failover",
       "unit": "ms",
       "source_artifact": "artifacts/loop_engineering/reports/fault_failover_scale.json",
-      "source_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "source_sha256": "e41de72d45c647dfdab4056dc69f01d0414e35f6ec7c70332d85ec1fba236805",
       "source_artifact_type": "fault_failover_scale",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.0.metric_records.20",
@@ -2649,8 +2776,10 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "primary_stop_gate_did_not_observe_conflicting_primaries"
-      }
+        "reason": "primary_stop_gate_did_not_observe_conflicting_primaries",
+        "impact": "failover coverage for 30 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "failover coverage for 30 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "fault_failover_scale.fault.apply_latency_ms",
@@ -2674,7 +2803,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.fault.clear_latency_ms",
@@ -2698,7 +2828,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.management.cluster_known_nodes_max",
@@ -2722,7 +2853,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.avg_used_memory",
@@ -2746,7 +2878,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_commands_processed",
@@ -2770,7 +2903,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_used_memory",
@@ -2794,7 +2928,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.node_count",
@@ -2818,7 +2953,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.primary_count",
@@ -2842,7 +2978,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.cluster_state_observed",
@@ -2866,7 +3003,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.data_path_result",
@@ -2890,7 +3028,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.nodes_observed",
@@ -2914,7 +3053,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.replica_count",
@@ -2938,7 +3078,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.profile.resource_aware_status",
@@ -2961,8 +3102,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true."
-      }
+        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+        "impact": "stability coverage for 30 is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/reports/stability_soak_metrics.json."
+      },
+      "impact": "stability coverage for 30 is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/reports/stability_soak_metrics.json."
     },
     {
       "name": "stability_soak.resource_aware_profile.status",
@@ -2985,8 +3128,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true."
-      }
+        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+        "impact": "stability coverage for 30 is intentionally excluded from real Valkey conclusions; see artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json."
+      },
+      "impact": "stability coverage for 30 is intentionally excluded from real Valkey conclusions; see artifacts/phases/P12_SCALE_LADDER_10_30/resource_preflight_30.json."
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.availability_percent",
@@ -3010,7 +3155,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.errors_total",
@@ -3034,7 +3180,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.operation_count",
@@ -3058,7 +3205,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.timeouts_total",
@@ -3082,7 +3230,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.availability_percent",
@@ -3106,7 +3255,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.errors_total",
@@ -3130,7 +3280,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.operation_count",
@@ -3154,7 +3305,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.timeouts_total",
@@ -3178,7 +3330,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.availability_percent",
@@ -3202,7 +3355,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.errors_total",
@@ -3226,7 +3380,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.operation_count",
@@ -3250,7 +3405,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.timeouts_total",
@@ -3274,7 +3430,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -3298,7 +3455,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -3322,7 +3480,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -3346,7 +3505,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -3370,7 +3530,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -3394,7 +3555,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -3418,7 +3580,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.fault.cleanup_residual_count",
@@ -3442,7 +3605,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_remove_containers_seconds",
@@ -3466,7 +3630,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_remove_networks_seconds",
@@ -3490,7 +3655,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_residual_scan_seconds",
@@ -3514,7 +3680,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_terminate_processes_seconds",
@@ -3538,7 +3705,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_verify_nodehost_empty_seconds",
@@ -3562,7 +3730,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.cleanup_verify_process_exit_seconds",
@@ -3586,7 +3755,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cleanup.resources_remaining_count",
@@ -3610,7 +3780,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cluster_create.primary_cluster_create_seconds",
@@ -3634,7 +3805,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.cluster_create.replica_meet_seconds",
@@ -3658,7 +3830,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.data_path.probe_count",
@@ -3682,7 +3855,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.data_path.result",
@@ -3706,7 +3880,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.membership_convergence.fail_count",
@@ -3730,7 +3905,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.membership_convergence.handshake_count",
@@ -3754,7 +3930,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.membership_convergence.known_nodes",
@@ -3778,7 +3955,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.process_startup.nodehost_start_seconds",
@@ -3802,7 +3980,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.process_startup.process_config_prepare_seconds",
@@ -3826,7 +4005,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.process_startup.process_ready_wait_seconds",
@@ -3850,7 +4030,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.process_startup.process_start_seconds",
@@ -3874,7 +4055,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.resource_preflight.can_run",
@@ -3898,7 +4080,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.resource_preflight.status",
@@ -3922,7 +4105,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.role_convergence.primary_count",
@@ -3946,7 +4130,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.role_convergence.replica_count",
@@ -3970,7 +4155,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.role_convergence.replica_replicate_seconds",
@@ -3994,7 +4180,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.runtime.cluster_create_duration_seconds",
@@ -4018,7 +4205,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.setup_timeline.setup_command_wall_seconds",
@@ -4042,7 +4230,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.setup_timeline.total_seconds",
@@ -4066,7 +4255,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.slot_assignment.slots_assigned",
@@ -4090,7 +4280,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.slot_assignment.slots_ok",
@@ -4114,7 +4305,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.failover_latency_ms",
@@ -4138,7 +4330,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.nodes_observed_after",
@@ -4162,7 +4355,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.nodes_observed_after_clear",
@@ -4186,7 +4380,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.nodes_observed_before",
@@ -4210,7 +4405,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.promotion_observed",
@@ -4234,14 +4430,15 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.failover.split_brain_duration_ms",
       "surface": "failover",
       "unit": "ms",
       "source_artifact": "artifacts/loop_engineering/reports/fault_failover_scale.json",
-      "source_sha256": "831070b17de0337efcc32b0b9245c3a0ba1fa7dd2c6c87d11c606150d046ad3c",
+      "source_sha256": "e41de72d45c647dfdab4056dc69f01d0414e35f6ec7c70332d85ec1fba236805",
       "source_artifact_type": "fault_failover_scale",
       "source_kind": "source_artifact",
       "source_pointer": "$.canonical_rungs.1.metric_records.20",
@@ -4257,8 +4454,10 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "primary_stop_gate_did_not_observe_conflicting_primaries"
-      }
+        "reason": "primary_stop_gate_did_not_observe_conflicting_primaries",
+        "impact": "failover coverage for 50 is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "failover coverage for 50 is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "fault_failover_scale.fault.apply_latency_ms",
@@ -4282,7 +4481,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.fault.clear_latency_ms",
@@ -4306,7 +4506,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.management.cluster_known_nodes_max",
@@ -4330,7 +4531,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.management.cluster_known_nodes_max",
@@ -4354,7 +4556,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.management.cluster_known_nodes_max",
@@ -4378,7 +4581,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.avg_used_memory",
@@ -4402,7 +4606,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.avg_used_memory",
@@ -4426,7 +4631,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.avg_used_memory",
@@ -4450,7 +4656,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_commands_processed",
@@ -4474,7 +4681,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_commands_processed",
@@ -4498,7 +4706,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_commands_processed",
@@ -4522,7 +4731,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_used_memory",
@@ -4546,7 +4756,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_used_memory",
@@ -4570,7 +4781,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_used_memory",
@@ -4594,7 +4806,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.node_count",
@@ -4618,7 +4831,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.node_count",
@@ -4642,7 +4856,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.node_count",
@@ -4666,7 +4881,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.primary_count",
@@ -4690,7 +4906,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.primary_count",
@@ -4714,7 +4931,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.primary_count",
@@ -4738,7 +4956,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.cluster_state_observed",
@@ -4762,7 +4981,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.cluster_state_observed",
@@ -4786,7 +5006,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.cluster_state_observed",
@@ -4810,7 +5031,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.data_path_result",
@@ -4834,7 +5056,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.data_path_result",
@@ -4858,7 +5081,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.data_path_result",
@@ -4882,7 +5106,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.nodes_observed",
@@ -4906,7 +5131,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.nodes_observed",
@@ -4930,7 +5156,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.nodes_observed",
@@ -4954,7 +5181,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.replica_count",
@@ -4978,7 +5206,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.replica_count",
@@ -5002,7 +5231,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.replica_count",
@@ -5026,7 +5256,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.nodehost_start.duration_seconds",
@@ -5050,7 +5281,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.primary_cluster_create.duration_seconds",
@@ -5074,7 +5306,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.process_config_prepare.duration_seconds",
@@ -5098,7 +5331,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.process_ready_wait.duration_seconds",
@@ -5122,7 +5356,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.process_start.duration_seconds",
@@ -5146,7 +5381,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.replica_meet.duration_seconds",
@@ -5170,7 +5406,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.replica_replicate.duration_seconds",
@@ -5194,7 +5431,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.timing.runtime_representative_probe.duration_seconds",
@@ -5218,7 +5456,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.profile.resource_aware_status",
@@ -5241,8 +5480,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true."
-      }
+        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+        "impact": "stability coverage for 50 is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/reports/stability_soak_metrics.json."
+      },
+      "impact": "stability coverage for 50 is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/reports/stability_soak_metrics.json."
     },
     {
       "name": "stability_soak.resource_aware_profile.status",
@@ -5265,8 +5506,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true."
-      }
+        "reason": "Resource preflight passed for 30/50/100, but automatic L09 records resource-aware bounded profile coverage without claiming real stability coverage for large rungs. A future measured large-rung stability soak must emit bounded JSONL, real Valkey evidence, and cleanup PASS before real_valkey_coverage can become true.",
+        "impact": "stability coverage for 50 is intentionally excluded from real Valkey conclusions; see artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json."
+      },
+      "impact": "stability coverage for 50 is intentionally excluded from real Valkey conclusions; see artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_50.json."
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.availability_percent",
@@ -5290,7 +5533,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.errors_total",
@@ -5314,7 +5558,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.operation_count",
@@ -5338,7 +5583,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.after_recovery.timeouts_total",
@@ -5362,7 +5608,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.availability_percent",
@@ -5386,7 +5633,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.errors_total",
@@ -5410,7 +5658,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.operation_count",
@@ -5434,7 +5683,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.before_fault.timeouts_total",
@@ -5458,7 +5708,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.availability_percent",
@@ -5482,7 +5733,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.errors_total",
@@ -5506,7 +5758,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.operation_count",
@@ -5530,7 +5783,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault_failover_scale.workload.during_fault.timeouts_total",
@@ -5554,7 +5808,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fake.cleanup.coverage_placeholder",
@@ -5577,8 +5832,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "cleanup coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "cleanup coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "fake.cluster_build.coverage_placeholder",
@@ -5601,8 +5858,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "cluster_build coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "cluster_build coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "fake.failover.coverage_placeholder",
@@ -5625,8 +5884,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "failover coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "failover coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "fake.fault.coverage_placeholder",
@@ -5649,8 +5910,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "fault coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "fault coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "fake.management.coverage_placeholder",
@@ -5673,8 +5936,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "management coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "management coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "fake.observability.coverage_placeholder",
@@ -5697,8 +5962,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "observability coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "observability coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "fake.report_visualization.coverage_placeholder",
@@ -5721,8 +5988,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "report_visualization coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "report_visualization coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "fake.scale.coverage_placeholder",
@@ -5745,8 +6014,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "scale coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "scale coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "fake.stability.coverage_placeholder",
@@ -5769,8 +6040,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "stability coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "stability coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "fake.workload.coverage_placeholder",
@@ -5793,8 +6066,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence."
-      }
+        "reason": "Fake coverage is represented by deterministic tests and is not committed as real artifact evidence.",
+        "impact": "workload coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
+      },
+      "impact": "workload coverage for fake is intentionally excluded from real Valkey conclusions; see artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json."
     },
     {
       "name": "cleanup.action_count",
@@ -5818,7 +6093,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -5842,7 +6118,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -5866,7 +6143,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -5890,7 +6168,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -5914,7 +6193,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -5938,7 +6218,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -5962,7 +6243,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -5986,7 +6268,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6010,7 +6293,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6034,7 +6318,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6058,7 +6343,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6082,7 +6368,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6106,7 +6393,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6130,7 +6418,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6154,7 +6443,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6178,7 +6468,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6202,7 +6493,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6226,7 +6518,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6250,7 +6543,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6274,7 +6568,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6298,7 +6593,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6322,7 +6618,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6346,7 +6643,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6370,7 +6668,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6394,7 +6693,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.action_count",
@@ -6418,7 +6718,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6442,7 +6743,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6466,7 +6768,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6490,7 +6793,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6514,7 +6818,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6538,7 +6843,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6562,7 +6868,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6586,7 +6893,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6610,7 +6918,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6634,7 +6943,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6658,7 +6968,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6682,7 +6993,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6706,7 +7018,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6730,7 +7043,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6754,7 +7068,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6778,7 +7093,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6802,7 +7118,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6826,7 +7143,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6850,7 +7168,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6874,7 +7193,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6898,7 +7218,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6922,7 +7243,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6946,7 +7268,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6970,7 +7293,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -6994,7 +7318,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -7018,7 +7343,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cleanup.resources_remaining",
@@ -7042,7 +7368,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.real_evidence.cluster_state_observed",
@@ -7066,7 +7393,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.real_evidence.cluster_state_observed",
@@ -7090,7 +7418,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.real_evidence.data_path_result",
@@ -7114,7 +7443,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.real_evidence.data_path_result",
@@ -7138,7 +7468,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.real_evidence.nodes_observed",
@@ -7162,7 +7493,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "cluster_build.real_evidence.nodes_observed",
@@ -7186,7 +7518,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "failover.failover_latency_ms",
@@ -7210,7 +7543,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "failover.real_evidence.cluster_state_observed",
@@ -7234,7 +7568,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "failover.real_evidence.data_path_result",
@@ -7257,8 +7592,10 @@
       "value": "SKIPPED_WITH_REASON",
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Wrapper evidence skipped the data-path probe while live Valkey liveness and cluster probes passed."
-      }
+        "reason": "Wrapper evidence skipped the data-path probe while live Valkey liveness and cluster probes passed.",
+        "impact": "failover coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json."
+      },
+      "impact": "failover coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json."
     },
     {
       "name": "failover.real_evidence.nodes_observed",
@@ -7282,7 +7619,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "failover.split_brain_duration_ms",
@@ -7305,8 +7643,10 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "not_measured_by_primary_stop_gate"
-      }
+        "reason": "not_measured_by_primary_stop_gate",
+        "impact": "failover coverage for small-real is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "failover coverage for small-real is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "fault.network_delay.observed_impact",
@@ -7329,8 +7669,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "P07 safety gate validates sandbox lifecycle and post-clear cluster health; no host-level network impairment is applied."
-      }
+        "reason": "P07 safety gate validates sandbox lifecycle and post-clear cluster health; no host-level network impairment is applied.",
+        "impact": "fault coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json."
+      },
+      "impact": "fault coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json."
     },
     {
       "name": "fault.real_evidence.cluster_state_observed",
@@ -7354,7 +7696,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault.real_evidence.data_path_result",
@@ -7377,8 +7720,10 @@
       "value": "SKIPPED_WITH_REASON",
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Wrapper evidence skipped the data-path probe while live Valkey liveness and cluster probes passed."
-      }
+        "reason": "Wrapper evidence skipped the data-path probe while live Valkey liveness and cluster probes passed.",
+        "impact": "fault coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json."
+      },
+      "impact": "fault coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json."
     },
     {
       "name": "fault.real_evidence.nodes_observed",
@@ -7402,7 +7747,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault.safety.fault_state_cleared",
@@ -7426,7 +7772,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault.safety.global_firewall_mutated",
@@ -7450,7 +7797,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault.safety.host_network_mutated",
@@ -7474,7 +7822,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "fault.safety.sandbox_only",
@@ -7498,7 +7847,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "management.operation.add_replica.duration_seconds",
@@ -7522,7 +7872,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "management.operation.add_slots.duration_seconds",
@@ -7546,7 +7897,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "management.operation.cluster_info.duration_seconds",
@@ -7570,7 +7922,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "management.operation.cluster_nodes.duration_seconds",
@@ -7594,7 +7947,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "management.operation.convergence_check.duration_seconds",
@@ -7618,7 +7972,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "management.operation.meet.duration_seconds",
@@ -7642,7 +7997,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "management.operation.rebalance.duration_seconds",
@@ -7665,8 +8021,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Valkey cluster rebalance orchestration is deferred until management expansion."
-      }
+        "reason": "Valkey cluster rebalance orchestration is deferred until management expansion.",
+        "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json."
+      },
+      "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json."
     },
     {
       "name": "management.operation.remove_node.duration_seconds",
@@ -7689,8 +8047,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "P04 records taxonomy only; destructive removal is deferred until a dedicated lifecycle phase."
-      }
+        "reason": "P04 records taxonomy only; destructive removal is deferred until a dedicated lifecycle phase.",
+        "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json."
+      },
+      "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json."
     },
     {
       "name": "management.operation.reshard.duration_seconds",
@@ -7713,8 +8073,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "P04 smoke cluster keeps slot ownership stable for wrapper data-path proof."
-      }
+        "reason": "P04 smoke cluster keeps slot ownership stable for wrapper data-path proof.",
+        "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json."
+      },
+      "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json."
     },
     {
       "name": "management.operation.rolling_restart.duration_seconds",
@@ -7737,8 +8099,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "Restart orchestration is deferred to later stability/fault phases."
-      }
+        "reason": "Restart orchestration is deferred to later stability/fault phases.",
+        "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json."
+      },
+      "impact": "management coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json."
     },
     {
       "name": "management.real_evidence.cluster_state_observed",
@@ -7762,7 +8126,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "management.real_evidence.data_path_result",
@@ -7786,7 +8151,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "management.real_evidence.nodes_observed",
@@ -7810,7 +8176,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.cluster.cluster_known_nodes",
@@ -7834,7 +8201,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.cluster.cluster_nodes_line_count",
@@ -7858,7 +8226,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.cluster.cluster_slots_assigned",
@@ -7882,7 +8251,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.cluster.cluster_state",
@@ -7906,7 +8276,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.docker.block_io",
@@ -7930,7 +8301,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.docker.cpu_percent",
@@ -7954,7 +8326,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.docker.memory_percent",
@@ -7978,7 +8351,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.docker.memory_usage",
@@ -8002,7 +8376,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.docker.net_io",
@@ -8026,7 +8401,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.docker.pids",
@@ -8050,7 +8426,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.docker.status",
@@ -8074,7 +8451,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.logs.path",
@@ -8098,7 +8476,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.logs.status",
@@ -8122,7 +8501,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.real_evidence.cluster_state_observed",
@@ -8146,7 +8526,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.real_evidence.data_path_result",
@@ -8170,7 +8551,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.real_evidence.nodes_observed",
@@ -8194,7 +8576,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.valkey.connected_clients",
@@ -8218,7 +8601,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.valkey.total_commands_processed",
@@ -8242,7 +8626,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.valkey.uptime_in_seconds",
@@ -8266,7 +8651,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "observability.valkey.used_memory",
@@ -8290,7 +8676,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "report_visualization.analysis.cleanup_resources_remaining",
@@ -8314,7 +8701,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "report_visualization.analysis.failover_latency_ms",
@@ -8338,7 +8726,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "report_visualization.analysis.nodes_observed_after_fault",
@@ -8362,7 +8751,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "report_visualization.analysis.split_brain_duration_ms",
@@ -8385,8 +8775,10 @@
       "value": null,
       "missing_semantics": {
         "status": "MISSING",
-        "reason": "not_measured_by_primary_stop_gate"
-      }
+        "reason": "not_measured_by_primary_stop_gate",
+        "impact": "report_visualization coverage for small-real is incomplete and must not be inferred from reports or default values."
+      },
+      "impact": "report_visualization coverage for small-real is incomplete and must not be inferred from reports or default values."
     },
     {
       "name": "report_visualization.real_evidence.cluster_state_observed",
@@ -8410,7 +8802,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "report_visualization.real_evidence.data_path_result",
@@ -8434,7 +8827,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "report_visualization.real_evidence.nodes_observed",
@@ -8458,7 +8852,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "report_visualization.rendered_view_count",
@@ -8482,7 +8877,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.management.cluster_known_nodes_max",
@@ -8506,7 +8902,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.avg_used_memory",
@@ -8530,7 +8927,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_commands_processed",
@@ -8554,7 +8952,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.metrics.total_used_memory",
@@ -8578,7 +8977,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.node_count",
@@ -8602,7 +9002,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.primary_count",
@@ -8626,7 +9027,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.cluster_state_observed",
@@ -8650,7 +9052,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.cluster_state_observed",
@@ -8674,7 +9077,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.cluster_state_observed",
@@ -8698,7 +9102,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.cluster_state_observed",
@@ -8722,7 +9127,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.data_path_result",
@@ -8746,7 +9152,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.data_path_result",
@@ -8770,7 +9177,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.data_path_result",
@@ -8794,7 +9202,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.data_path_result",
@@ -8818,7 +9227,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.nodes_observed",
@@ -8842,7 +9252,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.nodes_observed",
@@ -8866,7 +9277,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.nodes_observed",
@@ -8890,7 +9302,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.real_evidence.nodes_observed",
@@ -8914,7 +9327,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "scale.replica_count",
@@ -8938,7 +9352,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability.baseline.error_count",
@@ -8961,8 +9376,10 @@
       "value": null,
       "missing_semantics": {
         "status": "NO_BASELINE_YET",
-        "reason": "No previous stability baseline artifact exists."
-      }
+        "reason": "No previous stability baseline artifact exists.",
+        "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists."
+      },
+      "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists."
     },
     {
       "name": "stability.baseline.max_memory_growth_bytes",
@@ -8985,8 +9402,10 @@
       "value": null,
       "missing_semantics": {
         "status": "NO_BASELINE_YET",
-        "reason": "No previous stability baseline artifact exists."
-      }
+        "reason": "No previous stability baseline artifact exists.",
+        "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists."
+      },
+      "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists."
     },
     {
       "name": "stability.duration_seconds",
@@ -9010,7 +9429,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability.leaks.max_growth_bytes",
@@ -9034,7 +9454,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability.metrics.sample_count",
@@ -9058,7 +9479,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability.nodes_observed",
@@ -9082,7 +9504,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability.real_evidence.cluster_state_observed",
@@ -9106,7 +9529,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability.real_evidence.data_path_result",
@@ -9130,7 +9554,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability.real_evidence.nodes_observed",
@@ -9154,7 +9579,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.baseline.error_count",
@@ -9177,8 +9603,10 @@
       "value": null,
       "missing_semantics": {
         "status": "NO_BASELINE_YET",
-        "reason": "No previous stability baseline artifact exists."
-      }
+        "reason": "No previous stability baseline artifact exists.",
+        "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists."
+      },
+      "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists."
     },
     {
       "name": "stability_soak.baseline.max_memory_growth_bytes",
@@ -9201,8 +9629,10 @@
       "value": null,
       "missing_semantics": {
         "status": "NO_BASELINE_YET",
-        "reason": "No previous stability baseline artifact exists."
-      }
+        "reason": "No previous stability baseline artifact exists.",
+        "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists."
+      },
+      "impact": "Trend and regression comparison for stability on small-real cannot be evaluated until a prior baseline artifact exists."
     },
     {
       "name": "stability_soak.duration_seconds",
@@ -9226,7 +9656,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.nodes_observed",
@@ -9250,7 +9681,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.restart_delta_total",
@@ -9274,7 +9706,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.baseline.error_count",
@@ -9298,7 +9731,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.baseline.latency_ms.p50",
@@ -9322,7 +9756,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.baseline.latency_ms.p95",
@@ -9346,7 +9781,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.baseline.latency_ms.p99",
@@ -9370,7 +9806,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.fault.error_count",
@@ -9394,7 +9831,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.fault.latency_ms.p50",
@@ -9418,7 +9856,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.fault.latency_ms.p95",
@@ -9442,7 +9881,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.fault.latency_ms.p99",
@@ -9466,7 +9906,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.post_recovery.error_count",
@@ -9490,7 +9931,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.post_recovery.latency_ms.p50",
@@ -9514,7 +9956,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.post_recovery.latency_ms.p95",
@@ -9538,7 +9981,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.post_recovery.latency_ms.p99",
@@ -9562,7 +10006,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.recovery.error_count",
@@ -9586,7 +10031,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.recovery.latency_ms.p50",
@@ -9610,7 +10056,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.recovery.latency_ms.p95",
@@ -9634,7 +10081,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.recovery.latency_ms.p99",
@@ -9658,7 +10106,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.steady.error_count",
@@ -9682,7 +10131,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.steady.latency_ms.p50",
@@ -9706,7 +10156,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.steady.latency_ms.p95",
@@ -9730,7 +10181,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "stability_soak.window.steady.latency_ms.p99",
@@ -9754,7 +10206,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.achieved_qps",
@@ -9778,7 +10231,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.errors.total",
@@ -9802,7 +10256,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.latency.p50",
@@ -9826,7 +10281,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.latency.p95",
@@ -9850,7 +10306,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.latency.p99",
@@ -9874,7 +10331,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.operations.completed_total",
@@ -9898,7 +10356,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.real_evidence.cluster_state_observed",
@@ -9922,7 +10381,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.real_evidence.data_path_result",
@@ -9946,7 +10406,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.real_evidence.nodes_observed",
@@ -9970,7 +10431,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.requested_qps",
@@ -9994,7 +10456,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.timing_window.after_recovery.duration_seconds",
@@ -10017,8 +10480,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "P05 workload_smoke has no recovery window."
-      }
+        "reason": "P05 workload_smoke has no recovery window.",
+        "impact": "workload coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json."
+      },
+      "impact": "workload coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json."
     },
     {
       "name": "workload.timing_window.all_run.duration_seconds",
@@ -10042,7 +10507,8 @@
       "missing_semantics": {
         "status": "PRESENT",
         "reason": ""
-      }
+      },
+      "impact": ""
     },
     {
       "name": "workload.timing_window.before_fault.duration_seconds",
@@ -10065,8 +10531,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "P05 workload_smoke has no fault window."
-      }
+        "reason": "P05 workload_smoke has no fault window.",
+        "impact": "workload coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json."
+      },
+      "impact": "workload coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json."
     },
     {
       "name": "workload.timing_window.during_fault.duration_seconds",
@@ -10089,8 +10557,10 @@
       "value": null,
       "missing_semantics": {
         "status": "SKIPPED_WITH_REASON",
-        "reason": "P05 workload_smoke has no fault window."
-      }
+        "reason": "P05 workload_smoke has no fault window.",
+        "impact": "workload coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json."
+      },
+      "impact": "workload coverage for small-real is intentionally excluded from real Valkey conclusions; see artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json."
     }
   ],
   "findings": []

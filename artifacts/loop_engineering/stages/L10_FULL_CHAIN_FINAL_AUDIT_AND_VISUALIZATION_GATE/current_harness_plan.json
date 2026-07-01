@@ -1,0 +1,61 @@
+{
+  "schema_version": "v1",
+  "stage_id": "L10_FULL_CHAIN_FINAL_AUDIT_AND_VISUALIZATION_GATE",
+  "new_tests": [
+    {
+      "path": "tests/final_audit/test_final_audit_gate.py",
+      "purpose": "Validate final audit PASS path and failure fixtures.",
+      "expected": "PASS"
+    },
+    {
+      "path": "tests/ci/test_final_audit_workflow_gate.py",
+      "purpose": "Validate CI runs final audit without P14 opt-in or real gate wrappers.",
+      "expected": "PASS"
+    }
+  ],
+  "new_schemas": [
+    "schemas/artifact/final_audit_report.schema.json"
+  ],
+  "new_cli_gates": [
+    {
+      "name": "final_audit_gate",
+      "command": "python3 scripts/final_audit_gate.py --out-dir artifacts/loop_engineering/final_audit",
+      "expected": "PASS"
+    }
+  ],
+  "new_artifact_checks": [
+    "final_audit_report schema validation",
+    "coverage matrix dry-run/real boundary",
+    "missing metric reason plus impact",
+    "rendered report source_of_truth=false",
+    "root commit SHA visible in final HTML",
+    "P14 non-execution boundary"
+  ],
+  "expected_initial_failures": [
+    {
+      "name": "missing_final_audit_gate",
+      "reason": "scripts/final_audit_gate.py was absent before L10 implementation."
+    },
+    {
+      "name": "missing_final_audit_tests",
+      "reason": "tests/final_audit was absent before L10 implementation."
+    },
+    {
+      "name": "missing_metric_impact",
+      "reason": "Missing-like metric records had reasons but no impact before L10 implementation."
+    },
+    {
+      "name": "html_missing_root_commit_sha",
+      "reason": "The rendered index did not expose root_commit_sha before L10 implementation."
+    }
+  ],
+  "acceptance_criteria": [
+    "Previous harness remains PASS.",
+    "Final audit gate exits 0 and writes schema-valid final_audit_report.json.",
+    "tests/final_audit and tests/ci/test_final_audit_gate.py pass.",
+    "CI runs the final audit gate after report rendering.",
+    "P14 remains unexecuted and not real coverage.",
+    "All missing-like metrics have reason and impact.",
+    "Final HTML exposes commit SHA and source artifact paths/hashes."
+  ]
+}
