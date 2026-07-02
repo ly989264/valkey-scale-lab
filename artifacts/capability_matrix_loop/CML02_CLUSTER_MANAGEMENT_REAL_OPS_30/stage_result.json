@@ -1,0 +1,46 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_result",
+  "stage_id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:40:57.206742Z",
+  "summary": "CML02 completed fresh real 30-node cluster-management observation chain.",
+  "artifacts": [
+    {
+      "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/capability_matrix.json",
+      "sha256": "603f9cddf49441d54ebeb30b308fe3a60242348d60260d2f2038741a79aa77ea"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
+      "sha256": "0588d8554506d4ba1c2cf42c5d88dcc78c7777843f3207d198a10c228aadd319"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report_index.json",
+      "sha256": "9063a68b2545705833f36d3e327e215df4642892be04045b51bd4b0d1cbc5422"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/operation_event.jsonl",
+      "sha256": "10d7a43fd04caabcad0184f4214b5a1b15ab9c92d67899b1d45655064004d07d"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/metrics_window.jsonl",
+      "sha256": "04a1378b21bab7cbae88ddbd0d32cd7a23a0c136bbdc72406efb8633d443739f"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/workload_window.jsonl",
+      "sha256": "af77140420fb6074f5cd8c9a2433264ddb6658da353093ae3bd38762d61c47c4"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
+      "sha256": "e7bc0bd44c5fa3f728de2365e7e78bc7397eb06438b7e102b7333673fac1444a"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/state_scale_30.json",
+      "sha256": "bd504f4dea2e52b45f4d6ba73cd554e21780a24ea8b513da8bc8d1e3ec76d457"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/cleanup_report_scale_30.json",
+      "sha256": "ea0a1604a5c4aac8ac26df5aae460bee65729347c3fb48689b21604de85f004b"
+    }
+  ]
+}

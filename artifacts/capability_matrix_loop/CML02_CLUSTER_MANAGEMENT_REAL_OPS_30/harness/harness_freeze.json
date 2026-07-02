@@ -1,0 +1,47 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+  "created_at": "2026-07-02T04:40:57.206742Z",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "sha256": "e292f9a7b8815917a73d95d7cf25a3828ffe71a08f69dc050edb63ff25e97d0e"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "594a722aa7c6558109668dd12838766d9be7061eb967d74b8bf37cdb47b354d4"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "sha256": "fb7d2f1b05eb851833c3d0b2aa9af0e46665ee3c8b01999ce9975dbf77d6e4ab"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_matrix.schema.json",
+      "sha256": "7e42b5e451688c78a5a85a537332d5a3603b2038c1580c1ef304a15a131c0b24"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/operation_event.schema.json",
+      "sha256": "579943071e8247142b54d79193c7056a3b9b899e728ab08820993de2fcf24c27"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/fault_event.schema.json",
+      "sha256": "01502ce552f3b7ee7c0229bd7763ea6deca2bfd6959eb29ef1b669f7f396fb1d"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/metrics_window.schema.json",
+      "sha256": "47db3fda2bf557177d8f1cfba8da3dbb5fdcef71aa7dde9640fa1e032fa2e2f0"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/workload_window.schema.json",
+      "sha256": "c65989d6e8e711a64b9d0d65952805bb06626368c76d7b285cf920a2f4654925"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json",
+      "sha256": "df399f21b642aa87108be1869f3d5e6671b335ce18103ba676cf618127758719"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_report_index.schema.json",
+      "sha256": "aac2356ad3e5861dba1430e9142b8bd88599558229bb2f0a388749b2a8c815dc"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_audit_decision",
+  "stage_id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+  "status": "PASS",
+  "decision": "PASS",
+  "created_at": "2026-07-02T04:40:57.206742Z",
+  "reviewer": "fresh-context-cml-auditor",
+  "findings": [],
+  "evidence_paths": [
+    "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
+    "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/state_scale_30.json",
+    "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/validation/current_stage_gate_result.json"
+  ]
+}

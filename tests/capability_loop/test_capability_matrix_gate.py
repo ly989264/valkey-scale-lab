@@ -121,3 +121,22 @@ def test_stage_manifest_requires_cml01_observation_artifacts():
         "old artifact reuse fails",
         "fake real_valkey evidence fails",
     }.issubset(set(cml01["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml02_management_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml02 = next(stage for stage in manifest["stages"] if stage["id"] == "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30")
+    required = {artifact["path"] for artifact in cml02["required_artifacts"]}
+    assert cml02["max_real_nodes"] == 30
+    assert cml02["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/state_scale_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/cleanup_report_scale_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/operation_event.jsonl" in required
+    assert "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/management_ops.csv" in required
+    assert {
+        "wrong node count fails",
+        "missing required management operation fails",
+        "cleanup residue fails",
+        "empty workload windows fail",
+    }.issubset(set(cml02["negative_requirements"]))

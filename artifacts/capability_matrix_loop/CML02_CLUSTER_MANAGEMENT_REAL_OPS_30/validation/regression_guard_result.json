@@ -1,0 +1,13 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+  "decision": "PASS",
+  "protected_files_changed": [],
+  "frozen_harness_mismatches": [],
+  "suspicious_patterns": [],
+  "requires_harness_exception": false,
+  "notes": [
+    "Previous harness passed before CML02 implementation.",
+    "Current gate validates 30-node real management operations and cleanup."
+  ]
+}

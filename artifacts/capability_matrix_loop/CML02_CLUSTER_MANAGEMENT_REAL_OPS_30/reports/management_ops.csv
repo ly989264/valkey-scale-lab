@@ -1,0 +1,6 @@
+operation,status,duration_seconds,window_id
+tree_fanout_meet_primaries,PASS,1.021712,operation_or_fault_apply
+parallel_add_slots,PASS,28.298304,during
+tree_fanout_meet_replicas,PASS,22.241692,during
+parallel_add_replicas,PASS,0.071062,clear_or_recovery_start
+final_cluster_check,PASS,2.088558,after_recovery

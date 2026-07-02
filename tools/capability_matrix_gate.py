@@ -338,6 +338,22 @@ def cml01_paths(stage_id: str) -> dict[str, Path]:
     }
 
 
+def cml02_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "operation": stage_root / "samples" / "operation_event.jsonl",
+        "fault": stage_root / "samples" / "fault_event.jsonl",
+        "metrics": stage_root / "samples" / "metrics_window.jsonl",
+        "workload": stage_root / "samples" / "workload_window.jsonl",
+        "evidence": stage_root / "samples" / "real_valkey_evidence_30.json",
+        "state": stage_root / "samples" / "state_scale_30.json",
+        "cleanup": stage_root / "samples" / "cleanup_report_scale_30.json",
+        "matrix": stage_root / "capability_matrix.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -500,6 +516,91 @@ def make_cml01_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     return results
 
 
+def validate_cml02_management_ops(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml02_paths(stage_id)
+    errors: list[str] = []
+    errors.extend(validate_observation_model(stage_id, {**cml01_paths(stage_id), **{k: v for k, v in paths.items() if k in cml01_paths(stage_id)}}))
+    if errors:
+        return errors
+    evidence = load_json(paths["evidence"])
+    if int(evidence.get("nodes_observed", 0)) != 30:
+        errors.append(f"CML02 evidence nodes_observed must be 30, got {evidence.get('nodes_observed')}")
+    cleanup = load_json(paths["cleanup"])
+    if cleanup.get("status") != "PASS" or cleanup.get("resources_remaining") not in ([], None):
+        errors.append("CML02 cleanup must PASS with no resources_remaining")
+    state = load_json(paths["state"])
+    operations = state.get("runtime", {}).get("operations", [])
+    required_ops = {
+        "tree_fanout_meet_primaries",
+        "parallel_add_slots",
+        "tree_fanout_meet_replicas",
+        "parallel_add_replicas",
+        "final_cluster_check",
+    }
+    observed_ops = {str(op.get("operation")) for op in operations if op.get("status") == "PASS"}
+    missing = sorted(required_ops - observed_ops)
+    if missing:
+        errors.append(f"CML02 missing PASS management operations: {missing}")
+    for op in operations:
+        if op.get("operation") in required_ops and not isinstance(op.get("duration_seconds"), (int, float)):
+            errors.append(f"CML02 operation missing numeric duration: {op.get('operation')}")
+    operation_rows = load_jsonl(paths["operation"])
+    operation_ids = {row.get("operation_id") for row in operation_rows if row.get("status") == "PASS"}
+    missing_rows = sorted(required_ops - operation_ids)
+    if missing_rows:
+        errors.append(f"CML02 operation_event missing required operations: {missing_rows}")
+    workload_rows = load_jsonl(paths["workload"])
+    required_windows = {"before", "operation_or_fault_apply", "during", "clear_or_recovery_start", "after_recovery", "all_run"}
+    pass_windows = {row.get("window_id") for row in workload_rows if row.get("status") == "PASS"}
+    if pass_windows != required_windows:
+        errors.append(f"CML02 workload windows must all PASS: {sorted(pass_windows)}")
+    return errors
+
+
+def make_cml02_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml02_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+
+    bad_evidence = validation_dir / "negative_wrong_node_count_evidence.json"
+    evidence = load_json(paths["evidence"])
+    evidence["nodes_observed"] = 29
+    write_json(bad_evidence, evidence)
+    cases.append(("wrong_node_count", {"evidence": bad_evidence}, "nodes_observed must be 30"))
+
+    missing_ops_state = validation_dir / "negative_missing_management_op_state.json"
+    state = load_json(paths["state"])
+    state["runtime"]["operations"] = [op for op in state.get("runtime", {}).get("operations", []) if op.get("operation") != "parallel_add_replicas"]
+    write_json(missing_ops_state, state)
+    cases.append(("missing_management_operation", {"state": missing_ops_state}, "missing PASS management operations"))
+
+    bad_cleanup = validation_dir / "negative_cleanup_not_clean.json"
+    cleanup = load_json(paths["cleanup"])
+    cleanup["resources_remaining"] = [{"type": "container", "id": "leaked"}]
+    write_json(bad_cleanup, cleanup)
+    cases.append(("cleanup_residue", {"cleanup": bad_cleanup}, "cleanup must PASS"))
+
+    empty_workload = validation_dir / "negative_empty_workload.jsonl"
+    empty_workload.write_text("", encoding="utf-8")
+    cases.append(("empty_workload_windows", {"workload": empty_workload}, "has no JSONL records"))
+
+    results: list[dict[str, Any]] = []
+    for name, overrides, expected in cases:
+        candidate_paths = dict(paths)
+        candidate_paths.update(overrides)
+        observed = validate_cml02_management_ops(stage_id, candidate_paths)
+        results.append(
+            {
+                "name": name,
+                "status": "PASS" if any(expected in error for error in observed) else "FAIL",
+                "expected_error_fragment": expected,
+                "observed_errors": observed,
+            }
+        )
+    return results
+
+
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
@@ -597,6 +698,11 @@ def command_run(args: argparse.Namespace) -> int:
         observation_errors = validate_observation_model(args.stage)
         add_check("observation_model", observation_errors)
         negative_cases = make_cml01_negative_cases(args.stage) if not observation_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage == "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30":
+        management_errors = validate_cml02_management_ops(args.stage)
+        add_check("management_ops_30", management_errors)
+        negative_cases = make_cml02_negative_cases(args.stage) if not management_errors else []
         add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     else:
         baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"

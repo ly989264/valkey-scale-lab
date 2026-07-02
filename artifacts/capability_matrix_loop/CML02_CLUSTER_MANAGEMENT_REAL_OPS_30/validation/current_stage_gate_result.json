@@ -1,0 +1,73 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:41:38.917551Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "management_ops_30",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "wrong_node_count",
+      "status": "PASS",
+      "expected_error_fragment": "nodes_observed must be 30",
+      "observed_errors": [
+        "CML02 evidence nodes_observed must be 30, got 29"
+      ]
+    },
+    {
+      "name": "missing_management_operation",
+      "status": "PASS",
+      "expected_error_fragment": "missing PASS management operations",
+      "observed_errors": [
+        "CML02 missing PASS management operations: ['parallel_add_replicas']"
+      ]
+    },
+    {
+      "name": "cleanup_residue",
+      "status": "PASS",
+      "expected_error_fragment": "cleanup must PASS",
+      "observed_errors": [
+        "CML02 cleanup must PASS with no resources_remaining"
+      ]
+    },
+    {
+      "name": "empty_workload_windows",
+      "status": "PASS",
+      "expected_error_fragment": "has no JSONL records",
+      "observed_errors": [
+        "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/validation/negative_empty_workload.jsonl has no JSONL records"
+      ]
+    }
+  ]
+}
