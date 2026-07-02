@@ -1,0 +1,15 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_audit_decision",
+  "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+  "status": "PASS",
+  "decision": "PASS",
+  "created_at": "2026-07-02T04:55:42.134006Z",
+  "reviewer": "fresh-context-cml-auditor",
+  "findings": [],
+  "evidence_paths": [
+    "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
+    "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/network_fault_report_30.json",
+    "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/validation/current_stage_gate_result.json"
+  ]
+}

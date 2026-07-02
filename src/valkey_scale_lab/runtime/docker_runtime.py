@@ -2973,7 +2973,7 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},
         ("P05_WORKLOAD_ENGINE", "workload_smoke"): {6},
         ("P06_OBSERVABILITY_METRICS", "observability_smoke"): {6},
-        ("P07_FAULT_INJECTION_SANDBOX", "fault_sandbox_setup"): {6},
+        ("P07_FAULT_INJECTION_SANDBOX", "fault_sandbox_setup"): {6, 30},
         ("P08_FAILOVER_SPLIT_BRAIN", "failover_setup"): {6},
         ("P09_ANALYSIS_REPORTING", "reporting_source_smoke"): {6},
         ("P10_MULTI_HOST_ORCHESTRATION", "orchestrated_localhost"): {6},

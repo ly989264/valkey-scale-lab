@@ -1,0 +1,2 @@
+fault_id,fault_type,scope,apply_status,clear_status,nodes_observed
+fault-sandbox-smoke,network_delay,container_namespace_or_sandbox_proxy,PASS,PASS,30

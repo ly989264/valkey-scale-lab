@@ -1,0 +1,11 @@
+{
+  "fault_id": "fault-sandbox-smoke",
+  "type": "network_delay",
+  "scope": "container_namespace_or_sandbox_proxy",
+  "target_selector": {
+    "az_id": "az-a"
+  },
+  "delay_ms": 50,
+  "duration_seconds": 3,
+  "forbid_host_network_mutation": true
+}

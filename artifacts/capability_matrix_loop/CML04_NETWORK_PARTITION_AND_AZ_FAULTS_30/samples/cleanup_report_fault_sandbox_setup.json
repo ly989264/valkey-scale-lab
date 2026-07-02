@@ -1,0 +1,451 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples",
+  "cleanup_actions": [
+    {
+      "action": "stop",
+      "id": "f0781576a75c",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "f0781576a75c",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "6d6b04a5f9db",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "6d6b04a5f9db",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "e78ffca4cc28",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "e78ffca4cc28",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "169235c9b7ec",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "169235c9b7ec",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "09d68829300c",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "09d68829300c",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "15f20dc5026f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "15f20dc5026f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "1b83915d49d5",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "1b83915d49d5",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "02447655b964",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "02447655b964",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "2e1bb7bbf993",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "2e1bb7bbf993",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "b799ac49cf78",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "b799ac49cf78",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "29d28598d05a",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "29d28598d05a",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "cddc68eadf45",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "cddc68eadf45",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "190b1b2f60d5",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "190b1b2f60d5",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "c8c7eb03a4f5",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "c8c7eb03a4f5",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "407dffe1c633",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "407dffe1c633",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "15a680c52c2a",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "15a680c52c2a",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "797e9ff09f06",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "797e9ff09f06",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "0eb5466d3558",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "0eb5466d3558",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "d00e81338f1f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "d00e81338f1f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "73e3b63b1434",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "73e3b63b1434",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "a2a12b7107d4",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "a2a12b7107d4",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "179bd54d8a88",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "179bd54d8a88",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "d6d1da507bcb",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "d6d1da507bcb",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "aa8a3299e739",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "aa8a3299e739",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "3fe8788d4d5f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "3fe8788d4d5f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "aae8b2cd0499",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "aae8b2cd0499",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "d58947c374a9",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "d58947c374a9",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "b5192d5cff74",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "b5192d5cff74",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "f99b027e9bfe",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "f99b027e9bfe",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "cd27f1619c87",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "cd27f1619c87",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "f2b3f066167a",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "cleanup_remove_containers_seconds": 1.706784,
+    "cleanup_remove_networks_seconds": 0.079793,
+    "cleanup_residual_scan_seconds": 0.033016,
+    "cleanup_terminate_processes_seconds": 0.0,
+    "cleanup_verify_nodehost_empty_seconds": 0.0,
+    "cleanup_verify_process_exit_seconds": 0.0
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P07_FAULT_INJECTION_SANDBOX-fault_sandbox_setup-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

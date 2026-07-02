@@ -1,0 +1,26 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML04 contract",
+      "kind": "manifest"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML04 gate",
+      "kind": "runner"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML04 test",
+      "kind": "test"
+    },
+    {
+      "path": "src/valkey_scale_lab/runtime/docker_runtime.py",
+      "purpose": "Allow P07 30-node fault setup",
+      "kind": "runner"
+    }
+  ]
+}

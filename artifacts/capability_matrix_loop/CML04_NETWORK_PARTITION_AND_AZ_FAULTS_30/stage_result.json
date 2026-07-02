@@ -1,0 +1,50 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_result",
+  "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:55:42.134006Z",
+  "summary": "CML04 completed 30-node sandbox network/AZ fault evidence.",
+  "artifacts": [
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/capability_matrix.json",
+      "sha256": "aa2590e35efcb7128ac0fa13a1ca069884cc063cc5d200e1f9f50b9581172638"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
+      "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report_index.json",
+      "sha256": "35bcae4e83bfc3d9a37963095218a51986bcda2ec265c404159b2b433bb5635b"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/operation_event.jsonl",
+      "sha256": "340d1c2a4034a9dfdfbee3d1c8568138e67168e31ae24dfbd8ad946ac4897b6a"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/fault_event.jsonl",
+      "sha256": "bf9928f157f222e733059088c02cf9b9b73a96d6aa571d3486a29d86ac8581d5"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/metrics_window.jsonl",
+      "sha256": "fdebc4a20cf69c5ff86cb3f589e7a573112853097f29272c8264318f644701d7"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/workload_window.jsonl",
+      "sha256": "81fc70e47e2d2fa2cbb6e4ebcfb89e2bbe225c25b0b9104fe0b91afe94b714f3"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
+      "sha256": "44a745234a8bffdf4029023a64df76998e26b7d113b3410c19042f31e08eb6be"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/network_fault_report_30.json",
+      "sha256": "250859c474df119d78a5d2c34f54dac64b6644630ec6bba5d65bd4ccf66ecf77"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/cleanup_report.json",
+      "sha256": "f516c69a902312e44a4613a1cd537919ebf9a347a8ac4da33244104174068fd7"
+    }
+  ]
+}

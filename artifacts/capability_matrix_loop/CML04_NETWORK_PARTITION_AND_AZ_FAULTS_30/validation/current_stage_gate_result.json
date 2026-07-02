@@ -1,0 +1,65 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:56:17.509017Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "network_az_faults_30",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "host_network_scope",
+      "status": "PASS",
+      "expected_error_fragment": "container_namespace_or_sandbox_proxy",
+      "observed_errors": [
+        "CML04 fault scope must be container_namespace_or_sandbox_proxy"
+      ]
+    },
+    {
+      "name": "wrong_node_count",
+      "status": "PASS",
+      "expected_error_fragment": "nodes_observed must be 30",
+      "observed_errors": [
+        "CML04 evidence nodes_observed must be 30"
+      ]
+    },
+    {
+      "name": "host_network_mutated",
+      "status": "PASS",
+      "expected_error_fragment": "sandbox-only network fault",
+      "observed_errors": [
+        "CML04 safety checks must prove sandbox-only network fault"
+      ]
+    }
+  ]
+}

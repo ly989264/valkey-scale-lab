@@ -1,0 +1,23 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+  "created_at": "2026-07-02T04:55:42.134006Z",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "sha256": "3344476c5f7f91f2b01381f95f8f53d6aae97b5625c636edcfa2da5c28f97d6d"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "bc6a2222d9601712e78cc7f35fb4fb7be4b275d1452747cb75c2c6877864fd12"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "sha256": "605cdcc5caa1a486c7f8ba6aa59ffb1270bd4eb1e2ccbdd3377b5f783a310f79"
+    },
+    {
+      "path": "src/valkey_scale_lab/runtime/docker_runtime.py",
+      "sha256": "7812af2c56be2110b3db2eb25b44ab2e2c27850d4c52178f7c20eb759dc0edd5"
+    }
+  ]
+}

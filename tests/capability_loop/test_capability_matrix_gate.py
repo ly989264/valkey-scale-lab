@@ -158,3 +158,19 @@ def test_stage_manifest_requires_cml03_fault_artifacts():
         "missing after-recovery workload window fails",
         "cleanup residue fails",
     }.issubset(set(cml03["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml04_network_fault_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml04 = next(stage for stage in manifest["stages"] if stage["id"] == "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30")
+    required = {artifact["path"] for artifact in cml04["required_artifacts"]}
+    assert cml04["max_real_nodes"] == 30
+    assert cml04["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/network_fault_report_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/cleanup_report.json" in required
+    assert {
+        "host network scope fails",
+        "wrong node count fails",
+        "host network mutation fails",
+    }.issubset(set(cml04["negative_requirements"]))

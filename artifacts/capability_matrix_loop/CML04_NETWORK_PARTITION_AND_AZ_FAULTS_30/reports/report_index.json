@@ -1,0 +1,73 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_report_index",
+  "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:55:42.134006Z",
+  "reports": [
+    {
+      "kind": "csv",
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/network_faults.csv",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/fault_event.jsonl",
+          "sha256": "bf9928f157f222e733059088c02cf9b9b73a96d6aa571d3486a29d86ac8581d5"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
+          "sha256": "44a745234a8bffdf4029023a64df76998e26b7d113b3410c19042f31e08eb6be"
+        }
+      ]
+    },
+    {
+      "kind": "markdown",
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report.md",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
+          "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
+          "sha256": "44a745234a8bffdf4029023a64df76998e26b7d113b3410c19042f31e08eb6be"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/network_fault_report_30.json",
+          "sha256": "250859c474df119d78a5d2c34f54dac64b6644630ec6bba5d65bd4ccf66ecf77"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/cleanup_report.json",
+          "sha256": "f516c69a902312e44a4613a1cd537919ebf9a347a8ac4da33244104174068fd7"
+        }
+      ]
+    },
+    {
+      "kind": "html",
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/index.html",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
+          "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/network_timeline.svg",
+          "sha256": "504f6531a872a4b4c91aead6046f5c242f9ee269baad23f3d6dfff89bd789756"
+        }
+      ]
+    },
+    {
+      "kind": "chart",
+      "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/network_timeline.svg",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/fault_event.jsonl",
+          "sha256": "bf9928f157f222e733059088c02cf9b9b73a96d6aa571d3486a29d86ac8581d5"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
+          "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+        }
+      ]
+    }
+  ]
+}

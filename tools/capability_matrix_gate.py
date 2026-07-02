@@ -372,6 +372,22 @@ def cml03_paths(stage_id: str) -> dict[str, Path]:
     }
 
 
+def cml04_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "operation": stage_root / "samples" / "operation_event.jsonl",
+        "fault": stage_root / "samples" / "fault_event.jsonl",
+        "metrics": stage_root / "samples" / "metrics_window.jsonl",
+        "workload": stage_root / "samples" / "workload_window.jsonl",
+        "evidence": stage_root / "samples" / "real_valkey_evidence_network_30.json",
+        "fault_report": stage_root / "samples" / "network_fault_report_30.json",
+        "cleanup": stage_root / "samples" / "cleanup_report.json",
+        "matrix": stage_root / "capability_matrix.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -703,6 +719,81 @@ def make_cml03_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     return results
 
 
+def validate_cml04_network_faults(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml04_paths(stage_id)
+    errors: list[str] = []
+    for key, schema in [
+        ("operation", "schemas/capability_matrix_loop/operation_event.schema.json"),
+        ("fault", "schemas/capability_matrix_loop/fault_event.schema.json"),
+        ("metrics", "schemas/capability_matrix_loop/metrics_window.schema.json"),
+        ("workload", "schemas/capability_matrix_loop/workload_window.schema.json"),
+    ]:
+        errors.extend(jsonl_schema_errors(paths[key], schema))
+    errors.extend(schema_errors(paths["matrix"], "schemas/capability_matrix_loop/capability_matrix.schema.json"))
+    errors.extend(schema_errors(paths["analysis"], "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"))
+    errors.extend(schema_errors(paths["report_index"], "schemas/capability_matrix_loop/capability_report_index.schema.json"))
+    if errors:
+        return errors
+    evidence = load_json(paths["evidence"])
+    if evidence.get("real_valkey") is not True or evidence.get("probe_result") != "PASS":
+        errors.append("CML04 evidence must be real Valkey with PASS probe_result")
+    if int(evidence.get("nodes_observed", 0)) != 30:
+        errors.append("CML04 evidence nodes_observed must be 30")
+    if evidence.get("data_path_result") != "SKIPPED_WITH_REASON":
+        errors.append("CML04 network safety evidence must explicitly skip data path with reason")
+    fault_report = load_json(paths["fault_report"])
+    fault = (fault_report.get("faults") or [{}])[0]
+    if fault.get("fault_type") not in {"network_delay", "network_partition"}:
+        errors.append("CML04 fault type must be network_delay or network_partition")
+    if fault.get("scope") != "container_namespace_or_sandbox_proxy":
+        errors.append("CML04 fault scope must be container_namespace_or_sandbox_proxy")
+    if fault.get("apply_status") != "PASS" or fault.get("clear_status") != "PASS":
+        errors.append("CML04 network fault apply and clear must PASS")
+    safety = fault_report.get("safety_checks", {})
+    if safety.get("host_network_mutated") is not False or safety.get("global_firewall_mutated") is not False or safety.get("sandbox_only") is not True:
+        errors.append("CML04 safety checks must prove sandbox-only network fault")
+    cleanup = load_json(paths["cleanup"])
+    if cleanup.get("status") != "PASS" or cleanup.get("resources_remaining") not in ([], None):
+        errors.append("CML04 cleanup must PASS with no resources_remaining")
+    for row in load_jsonl(paths["metrics"]) + load_jsonl(paths["workload"]):
+        if row.get("source_stage") != stage_id or row.get("current_stage") != stage_id:
+            errors.append(f"CML04 old artifact reused in {row.get('artifact_type')} {row.get('window_id')}")
+        errors.extend(source_checksum_errors(row.get("source_artifacts", []), f"CML04 {row.get('artifact_type')} {row.get('window_id')}"))
+    report_index = load_json(paths["report_index"])
+    for report in report_index.get("reports", []):
+        errors.extend(source_checksum_errors(report.get("source_artifacts", []), f"CML04 report {report.get('kind')}"))
+    return errors
+
+
+def make_cml04_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml04_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+    bad_scope = validation_dir / "negative_host_network_scope.json"
+    report = load_json(paths["fault_report"])
+    report["faults"][0]["scope"] = "host_network"
+    write_json(bad_scope, report)
+    cases.append(("host_network_scope", {"fault_report": bad_scope}, "container_namespace_or_sandbox_proxy"))
+    bad_nodes = validation_dir / "negative_wrong_node_count.json"
+    evidence = load_json(paths["evidence"])
+    evidence["nodes_observed"] = 29
+    write_json(bad_nodes, evidence)
+    cases.append(("wrong_node_count", {"evidence": bad_nodes}, "nodes_observed must be 30"))
+    bad_safety = validation_dir / "negative_host_network_mutated.json"
+    safety_report = load_json(paths["fault_report"])
+    safety_report["safety_checks"]["host_network_mutated"] = True
+    write_json(bad_safety, safety_report)
+    cases.append(("host_network_mutated", {"fault_report": bad_safety}, "sandbox-only network fault"))
+    results: list[dict[str, Any]] = []
+    for name, overrides, expected in cases:
+        candidate = dict(paths)
+        candidate.update(overrides)
+        observed = validate_cml04_network_faults(stage_id, candidate)
+        results.append({"name": name, "status": "PASS" if any(expected in e for e in observed) else "FAIL", "expected_error_fragment": expected, "observed_errors": observed})
+    return results
+
+
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
@@ -810,6 +901,11 @@ def command_run(args: argparse.Namespace) -> int:
         fault_errors = validate_cml03_faults(args.stage)
         add_check("process_nodehost_faults_30", fault_errors)
         negative_cases = make_cml03_negative_cases(args.stage) if not fault_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage == "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30":
+        network_errors = validate_cml04_network_faults(args.stage)
+        add_check("network_az_faults_30", network_errors)
+        negative_cases = make_cml04_negative_cases(args.stage) if not network_errors else []
         add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     else:
         baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"
