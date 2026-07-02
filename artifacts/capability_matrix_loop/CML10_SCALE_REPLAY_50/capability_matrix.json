@@ -1,0 +1,118 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_matrix",
+  "stage_id": "CML10_SCALE_REPLAY_50",
+  "status": "PARTIAL",
+  "created_at": "2026-07-02T08:05:29.205470Z",
+  "capabilities": [
+    {
+      "capability_id": "cluster_management_scale_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "real_valkey_required": true,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "windows": [
+        "all_run"
+      ],
+      "evidence_chain": {
+        "operation_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/operation_event.jsonl",
+        "fault_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/metrics_window.jsonl",
+        "workload_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/reports/report_index.json"
+      }
+    },
+    {
+      "capability_id": "process_nodehost_faults_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "real_valkey_required": true,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "windows": [
+        "all_run"
+      ],
+      "evidence_chain": {
+        "operation_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/operation_event.jsonl",
+        "fault_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/metrics_window.jsonl",
+        "workload_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/reports/report_index.json"
+      }
+    },
+    {
+      "capability_id": "failover_latency_recovery_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "real_valkey_required": true,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "windows": [
+        "all_run"
+      ],
+      "evidence_chain": {
+        "operation_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/operation_event.jsonl",
+        "fault_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/metrics_window.jsonl",
+        "workload_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/reports/report_index.json"
+      }
+    },
+    {
+      "capability_id": "split_brain_indicators_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "real_valkey_required": true,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "windows": [
+        "all_run"
+      ],
+      "evidence_chain": {
+        "operation_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/operation_event.jsonl",
+        "fault_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/metrics_window.jsonl",
+        "workload_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/reports/report_index.json"
+      }
+    },
+    {
+      "capability_id": "workload_fault_windows_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "real_valkey_required": true,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "windows": [
+        "all_run"
+      ],
+      "evidence_chain": {
+        "operation_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/operation_event.jsonl",
+        "fault_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/metrics_window.jsonl",
+        "workload_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/reports/report_index.json"
+      }
+    },
+    {
+      "capability_id": "network_az_faults_50",
+      "status": "UNSUPPORTED_WITH_EVIDENCE",
+      "scale_nodes": 50,
+      "real_valkey_required": true,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "windows": [
+        "all_run"
+      ],
+      "evidence_chain": {
+        "operation_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/operation_event.jsonl",
+        "fault_events": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/metrics_window.jsonl",
+        "workload_windows": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/reports/report_index.json"
+      },
+      "reason": "50-node network partition evidence is not present in P13 wrapper outputs; retained as unsupported instead of promoted to PASS."
+    }
+  ]
+}

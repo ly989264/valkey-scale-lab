@@ -1,0 +1,73 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML10_SCALE_REPLAY_50",
+  "status": "PASS",
+  "created_at": "2026-07-02T08:07:31.636051Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "scale_replay_50",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "wrong_node_count",
+      "status": "PASS",
+      "expected_error_fragment": "nodes_observed must be 50",
+      "observed_errors": [
+        "CML10 aggregate evidence nodes_observed must be 50"
+      ]
+    },
+    {
+      "name": "fake_real_valkey",
+      "status": "PASS",
+      "expected_error_fragment": "real_valkey",
+      "observed_errors": [
+        "CML01 real sample is not real_valkey evidence"
+      ]
+    },
+    {
+      "name": "reused_30_node_evidence",
+      "status": "PASS",
+      "expected_error_fragment": "must not reuse 30-node",
+      "observed_errors": [
+        "CML10 capability cluster_management_scale_50 must not reuse 30-node CML09 evidence"
+      ]
+    },
+    {
+      "name": "network_pass_without_evidence",
+      "status": "PASS",
+      "expected_error_fragment": "must be UNSUPPORTED_WITH_EVIDENCE",
+      "observed_errors": [
+        "CML10 network_az_faults_50 must be UNSUPPORTED_WITH_EVIDENCE"
+      ]
+    }
+  ]
+}

@@ -26,3 +26,12 @@
 {"schema_version": "v1", "stage_id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30", "state": "CURRENT_STAGE_VALIDATION", "status": "PASS", "timestamp": "2026-07-02T07:52:55.512610Z"}
 {"schema_version": "v1", "stage_id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30", "state": "FRESH_CONTEXT_REVIEW_AGENT", "status": "PASS", "timestamp": "2026-07-02T07:52:55.512610Z"}
 {"schema_version": "v1", "stage_id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30", "state": "STAGE_RESULT_AND_NEXT_CONTEXT", "status": "PASS", "timestamp": "2026-07-02T07:52:55.512610Z"}
+{"schema_version": "v1", "stage_id": "CML10_SCALE_REPLAY_50", "state": "CONTEXT_REFRESH", "status": "PASS", "timestamp": "2026-07-02T08:05:29.205470Z"}
+{"schema_version": "v1", "stage_id": "CML10_SCALE_REPLAY_50", "state": "PREVIOUS_HARNESS_VERIFICATION", "status": "PASS", "timestamp": "2026-07-02T08:05:29.205470Z"}
+{"schema_version": "v1", "stage_id": "CML10_SCALE_REPLAY_50", "state": "REQUIREMENTS_AND_HARNESS_DESIGN_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:05:29.205470Z"}
+{"schema_version": "v1", "stage_id": "CML10_SCALE_REPLAY_50", "state": "HARNESS_IMPLEMENT_AND_FREEZE", "status": "PASS", "timestamp": "2026-07-02T08:05:29.205470Z"}
+{"schema_version": "v1", "stage_id": "CML10_SCALE_REPLAY_50", "state": "WORKER_IMPLEMENTATION_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:05:29.205470Z"}
+{"schema_version": "v1", "stage_id": "CML10_SCALE_REPLAY_50", "state": "REGRESSION_GUARD_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:05:29.205470Z"}
+{"schema_version": "v1", "stage_id": "CML10_SCALE_REPLAY_50", "state": "CURRENT_STAGE_VALIDATION", "status": "PASS", "timestamp": "2026-07-02T08:05:29.205470Z"}
+{"schema_version": "v1", "stage_id": "CML10_SCALE_REPLAY_50", "state": "FRESH_CONTEXT_REVIEW_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:05:29.205470Z"}
+{"schema_version": "v1", "stage_id": "CML10_SCALE_REPLAY_50", "state": "STAGE_RESULT_AND_NEXT_CONTEXT", "status": "PASS", "timestamp": "2026-07-02T08:05:29.205470Z"}

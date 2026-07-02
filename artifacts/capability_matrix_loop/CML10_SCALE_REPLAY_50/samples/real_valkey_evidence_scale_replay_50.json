@@ -1,0 +1,58 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "cml10_scale_replay_evidence",
+  "stage_id": "CML10_SCALE_REPLAY_50",
+  "created_at": "2026-07-02T08:05:29.205470Z",
+  "status": "PASS",
+  "real_valkey": true,
+  "probe_result": "PASS",
+  "nodes_observed": 50,
+  "data_path_result": "PASS",
+  "valkey_versions": [
+    "9.1.0"
+  ],
+  "source_phase": "P13_SCALE_LADDER_50_100",
+  "source_scenarios": [
+    "scale_50",
+    "scale_50_fault_failover"
+  ],
+  "cleanup": {
+    "scale_cleanup_status": "PASS",
+    "fault_cleanup_status": "PASS",
+    "resources_remaining": []
+  },
+  "source_artifacts": [
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "sha256": "6fd65c120e88d47c08a8c4aa003363c0cbdf0fd47175e59b02d7a4ca2cbf2be0"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+      "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json",
+      "sha256": "93215fcae42f2a738a85db3f0274d60603d81ccb22fa8e298d2b17e13c2cde9a"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+      "sha256": "a06e1b8720d5e2f95a784611f13f2db3413d140de3f90d0d1e8c6284f11e025d"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+      "sha256": "6fa1d1f47a920f813f9dc46781e88efbb97febd8c249f5c002e70496f87ff39b"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+      "sha256": "5d91f9a17882641f4ee1260f7707b25bf699ce312887274935d1ec5951a1983c"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+      "sha256": "ea991a8f05f076853c0835784e2c55943bf464efbb5ffb27d3f362fca2562e09"
+    },
+    {
+      "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+      "sha256": "f0ef8710dfb7e2c3b1cd3f35728e950a07ce5820ed973fbf8a4ea8736cf63f7d"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_analysis_summary",
+  "stage_id": "CML10_SCALE_REPLAY_50",
+  "status": "PARTIAL",
+  "created_at": "2026-07-02T08:05:29.205470Z",
+  "summary": {
+    "capability_count": 6,
+    "pass_count": 5,
+    "unsupported_with_evidence_count": 1,
+    "scale_nodes": 50,
+    "failover_latency_ms": 24755.155,
+    "qps_drop_ratio": "MISSING P13 workload report does not provide steady-state QPS denominator",
+    "latency_delta": "MISSING heterogeneous sampled fault windows only",
+    "unavailable_ms": "MISSING unavailable window not directly measured",
+    "sample_coverage": 0.8333333333333334,
+    "delta": "50-node replay from P13 wrapper evidence; 5 PASS capabilities and 1 unsupported network gap.",
+    "error_rate": 0.0
+  }
+}

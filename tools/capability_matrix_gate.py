@@ -475,6 +475,21 @@ def cml09_paths(stage_id: str) -> dict[str, Path]:
     }
 
 
+def cml10_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "operation": stage_root / "samples" / "operation_event.jsonl",
+        "fault": stage_root / "samples" / "fault_event.jsonl",
+        "metrics": stage_root / "samples" / "metrics_window.jsonl",
+        "workload": stage_root / "samples" / "workload_window.jsonl",
+        "evidence": stage_root / "samples" / "real_valkey_evidence_scale_replay_50.json",
+        "evidence_index": stage_root / "samples" / "evidence_index_50.json",
+        "matrix": stage_root / "capability_matrix.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -1221,6 +1236,194 @@ def make_cml09_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     return results
 
 
+def validate_cml10_scale_replay_50(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml10_paths(stage_id)
+    errors: list[str] = []
+    observation_paths = {**cml01_paths(stage_id), **{k: v for k, v in paths.items() if k in cml01_paths(stage_id)}}
+    errors.extend(validate_observation_model(stage_id, observation_paths))
+    if errors:
+        return errors
+
+    source_paths = {
+        "scale_evidence": ROOT / "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+        "fault_evidence": ROOT / "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+        "scale_rung": ROOT / "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json",
+        "fault_report": ROOT / "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+        "failover_report": ROOT / "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+        "workload_report": ROOT / "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+        "scale_cleanup": ROOT / "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+        "fault_cleanup": ROOT / "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+    }
+    for name, path in source_paths.items():
+        if not path.exists():
+            errors.append(f"CML10 source {name} missing: {rel(path)}")
+    if errors:
+        return errors
+
+    evidence = load_json(paths["evidence"])
+    if evidence.get("real_valkey") is not True or evidence.get("probe_result") != "PASS":
+        errors.append("CML10 aggregate evidence must be real Valkey PASS")
+    if int(evidence.get("nodes_observed", 0)) != 50:
+        errors.append("CML10 aggregate evidence nodes_observed must be 50")
+    if evidence.get("data_path_result") != "PASS":
+        errors.append("CML10 aggregate evidence data_path_result must be PASS")
+    errors.extend(source_checksum_errors(evidence.get("source_artifacts", []), "CML10 aggregate evidence"))
+
+    scale_evidence = load_json(source_paths["scale_evidence"])
+    if scale_evidence.get("status") != "PASS" or scale_evidence.get("real_valkey") is not True or scale_evidence.get("probe_result") != "PASS":
+        errors.append("CML10 scale evidence must be real Valkey PASS")
+    if int(scale_evidence.get("nodes_observed", 0)) != 50:
+        errors.append("CML10 scale evidence nodes_observed must be 50")
+    if scale_evidence.get("data_path_result") != "PASS":
+        errors.append("CML10 scale evidence data_path_result must be PASS")
+    versions = scale_evidence.get("valkey_versions", [])
+    if not versions or any(not str(version).startswith("9.1.") for version in versions):
+        errors.append("CML10 scale evidence must record Valkey 9.1.x versions")
+
+    fault_evidence = load_json(source_paths["fault_evidence"])
+    if fault_evidence.get("status") != "PASS" or fault_evidence.get("real_valkey") is not True or fault_evidence.get("probe_result") != "PASS":
+        errors.append("CML10 fault evidence must be real Valkey PASS")
+    if int(fault_evidence.get("nodes_observed_before", 0)) != 50 or int(fault_evidence.get("nodes_observed_after_clear", 0)) != 50:
+        errors.append("CML10 fault evidence must observe 50 nodes before fault and after clear")
+    if int(fault_evidence.get("nodes_observed", 0)) > 50:
+        errors.append("CML10 fault evidence nodes_observed cannot exceed 50")
+    if fault_evidence.get("data_path_result") != "PASS":
+        errors.append("CML10 fault evidence data_path_result must be PASS")
+    if not isinstance(fault_evidence.get("failover_latency_ms"), (int, float)) or fault_evidence.get("failover_latency_ms", 0) <= 0:
+        errors.append("CML10 failover_latency_ms must be positive numeric")
+
+    scale_rung = load_json(source_paths["scale_rung"])
+    if scale_rung.get("status") != "PASS" or int(scale_rung.get("node_count", 0)) != 50:
+        errors.append("CML10 scale rung must PASS with node_count 50")
+    if scale_rung.get("management", {}).get("slots_assigned") != 16384:
+        errors.append("CML10 scale rung must assign all 16384 slots")
+
+    fault_report = load_json(source_paths["fault_report"])
+    faults = fault_report.get("faults", [])
+    if fault_report.get("status") != "PASS" or not faults:
+        errors.append("CML10 fault report must PASS with faults")
+    else:
+        fault = faults[0]
+        if fault.get("fault_type") != "node_stop" or fault.get("scope") != "owned_container_or_process":
+            errors.append("CML10 fault report must prove owned node_stop fault")
+        if fault.get("apply_status") != "PASS" or fault.get("clear_status") != "PASS":
+            errors.append("CML10 fault apply and clear must PASS")
+    safety = fault_report.get("safety_checks", {})
+    if safety.get("sandbox_only") is not True or safety.get("host_network_mutated") is not False or safety.get("global_firewall_mutated") is not False:
+        errors.append("CML10 fault safety must prove sandbox-only execution")
+
+    failover = load_json(source_paths["failover_report"])
+    summary = failover.get("summary", {})
+    if failover.get("status") != "PASS" or not failover.get("failovers"):
+        errors.append("CML10 failover report must PASS with failovers")
+    if summary.get("promotion_observed") is not True:
+        errors.append("CML10 failover summary must observe promotion")
+    split_brain = summary.get("split_brain_duration_ms", {})
+    if split_brain.get("status") != "MISSING" or "conflicting" not in str(split_brain.get("reason", "")):
+        errors.append("CML10 split-brain indicator must be explicit MISSING evidence")
+
+    workload = load_json(source_paths["workload_report"])
+    if workload.get("status") != "PASS" or int(workload.get("node_count", 0)) != 50:
+        errors.append("CML10 workload report must PASS with node_count 50")
+    windows = {window.get("name"): window for window in workload.get("windows", [])}
+    for required in ["before_fault", "during_fault", "after_recovery"]:
+        window = windows.get(required)
+        if not window:
+            errors.append(f"CML10 workload missing {required}")
+            continue
+        if window.get("status") != "MEASURED":
+            errors.append(f"CML10 workload {required} must be MEASURED")
+        if int(window.get("operation_count", 0)) <= 0 or not window.get("samples"):
+            errors.append(f"CML10 workload {required} must include operations and samples")
+        if not isinstance(window.get("availability_percent"), (int, float)):
+            errors.append(f"CML10 workload {required} availability_percent must be numeric")
+
+    for cleanup_name in ["scale_cleanup", "fault_cleanup"]:
+        cleanup = load_json(source_paths[cleanup_name])
+        if cleanup.get("status") != "PASS" or cleanup.get("resources_remaining") != []:
+            errors.append(f"CML10 {cleanup_name} must PASS with no resources_remaining")
+
+    index = load_json(paths["evidence_index"])
+    required_pass = {
+        "cluster_management_scale_50",
+        "process_nodehost_faults_50",
+        "failover_latency_recovery_50",
+        "split_brain_indicators_50",
+        "workload_fault_windows_50",
+    }
+    entries = {entry.get("capability_id"): entry for entry in index.get("capabilities", [])}
+    missing = required_pass - set(entries)
+    if missing:
+        errors.append(f"CML10 evidence index missing capabilities: {sorted(missing)}")
+    for capability_id in sorted(required_pass & set(entries)):
+        entry = entries[capability_id]
+        if entry.get("status") != "PASS":
+            errors.append(f"CML10 capability {capability_id} must be PASS")
+        if int(entry.get("scale_nodes", 0)) != 50:
+            errors.append(f"CML10 capability {capability_id} scale_nodes must be 50")
+        if str(entry.get("real_valkey_evidence", "")).startswith("artifacts/capability_matrix_loop/CML09"):
+            errors.append(f"CML10 capability {capability_id} must not reuse 30-node CML09 evidence")
+        errors.extend(source_checksum_errors(entry.get("source_artifacts", []), f"CML10 capability {capability_id}"))
+    network = entries.get("network_az_faults_50")
+    if not network or network.get("status") != "UNSUPPORTED_WITH_EVIDENCE":
+        errors.append("CML10 network_az_faults_50 must be UNSUPPORTED_WITH_EVIDENCE")
+    elif "50-node network partition evidence" not in str(network.get("reason", "")):
+        errors.append("CML10 network unsupported reason must cite missing 50-node network partition evidence")
+
+    matrix = load_json(paths["matrix"])
+    capability_statuses = {row.get("capability_id"): row.get("status") for row in matrix.get("capabilities", [])}
+    if required_pass - set(capability_statuses):
+        errors.append("CML10 capability matrix must include every required 50-node PASS capability")
+    if any(capability_statuses.get(capability_id) != "PASS" for capability_id in required_pass):
+        errors.append("CML10 capability matrix required statuses must be PASS")
+    if capability_statuses.get("network_az_faults_50") != "UNSUPPORTED_WITH_EVIDENCE":
+        errors.append("CML10 capability matrix must preserve network unsupported status")
+    return errors
+
+
+def make_cml10_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml10_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+
+    wrong_nodes = validation_dir / "negative_wrong_node_count.json"
+    evidence = load_json(paths["evidence"])
+    evidence["nodes_observed"] = 30
+    write_json(wrong_nodes, evidence)
+    cases.append(("wrong_node_count", {"evidence": wrong_nodes}, "nodes_observed must be 50"))
+
+    fake = validation_dir / "negative_fake_real_valkey.json"
+    evidence2 = load_json(paths["evidence"])
+    evidence2["real_valkey"] = False
+    write_json(fake, evidence2)
+    cases.append(("fake_real_valkey", {"evidence": fake}, "real_valkey"))
+
+    reused = validation_dir / "negative_reused_30_node_evidence_index.json"
+    index = load_json(paths["evidence_index"])
+    for entry in index.get("capabilities", []):
+        if entry.get("capability_id") == "cluster_management_scale_50":
+            entry["real_valkey_evidence"] = "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/real_valkey_evidence_reporting_close_30.json"
+    write_json(reused, index)
+    cases.append(("reused_30_node_evidence", {"evidence_index": reused}, "must not reuse 30-node"))
+
+    network_pass = validation_dir / "negative_network_pass_without_evidence.json"
+    index2 = load_json(paths["evidence_index"])
+    for entry in index2.get("capabilities", []):
+        if entry.get("capability_id") == "network_az_faults_50":
+            entry["status"] = "PASS"
+    write_json(network_pass, index2)
+    cases.append(("network_pass_without_evidence", {"evidence_index": network_pass}, "must be UNSUPPORTED_WITH_EVIDENCE"))
+
+    results = []
+    for name, overrides, expected in cases:
+        candidate = dict(paths)
+        candidate.update(overrides)
+        observed = validate_cml10_scale_replay_50(stage_id, candidate)
+        results.append({"name": name, "status": "PASS" if any(expected in e for e in observed) else "FAIL", "expected_error_fragment": expected, "observed_errors": observed})
+    return results
+
+
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
@@ -1358,6 +1561,11 @@ def command_run(args: argparse.Namespace) -> int:
         reporting_errors = validate_cml09_reporting_close(args.stage)
         add_check("reporting_capability_matrix_close_30", reporting_errors)
         negative_cases = make_cml09_negative_cases(args.stage) if not reporting_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage == "CML10_SCALE_REPLAY_50":
+        replay_errors = validate_cml10_scale_replay_50(args.stage)
+        add_check("scale_replay_50", replay_errors)
+        negative_cases = make_cml10_negative_cases(args.stage) if not replay_errors else []
         add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     else:
         baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"

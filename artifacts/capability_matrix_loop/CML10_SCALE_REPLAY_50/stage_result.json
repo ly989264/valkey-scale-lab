@@ -1,0 +1,10 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_result",
+  "stage_id": "CML10_SCALE_REPLAY_50",
+  "status": "PASS",
+  "created_at": "2026-07-02T08:05:29.205470Z",
+  "gate_result": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/validation/current_stage_gate_result.json",
+  "audit_decision": "audit/capability_matrix_loop/CML10_SCALE_REPLAY_50/audit_decision.json",
+  "summary": "CML10 replayed 50-node real Valkey scale/fault/failover/workload evidence and preserved network gap as unsupported with evidence."
+}
