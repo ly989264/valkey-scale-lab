@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
   "status": "PASS",
-  "created_at": "2026-07-02T08:18:28.297160Z",
+  "created_at": "2026-07-02T09:46:04.974910Z",
   "checks": [
     {
       "name": "manifest",

@@ -15,7 +15,9 @@
       "value": null,
       "status": "MISSING",
       "reason": "primary_stop_gate_did_not_observe_conflicting_primaries"
-    }
+    },
+    "pass_absence_observed_count": 1,
+    "split_brain_actual_pass_count": 0
   },
   "source_artifacts": [
     {

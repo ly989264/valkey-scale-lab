@@ -41,7 +41,7 @@
     },
     {
       "capability_id": "lifecycle_ops_30",
-      "status": "PARTIAL",
+      "status": "PASS",
       "scale_nodes": 30,
       "real_valkey_required": true,
       "windows": [
@@ -65,37 +65,9 @@
         "sha256": "e7bc0bd44c5fa3f728de2365e7e78bc7397eb06438b7e102b7333673fac1444a"
       },
       "operation_scope": "lifecycle",
-      "partial_reasons": [
-        {
-          "capability": "remove_node",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "remove_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "add_node",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "add_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "reshard",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "reshard was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "rebalance",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "rebalance was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "rolling_restart",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "rolling_restart was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        }
+      "partial_reasons": [],
+      "executed_operations": [
+        "reshard"
       ]
     }
   ],

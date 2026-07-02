@@ -242,7 +242,7 @@
         }
       ],
       "source_stage": "CML06_SPLIT_BRAIN_INDICATORS_30",
-      "status": "PASS_ABSENCE_OBSERVED",
+      "status": "PASS",
       "absence_observed": {
         "indicator": "conflicting_primaries",
         "observed": false,

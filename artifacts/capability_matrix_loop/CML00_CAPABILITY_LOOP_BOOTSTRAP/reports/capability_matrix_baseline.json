@@ -6,7 +6,22 @@
   "created_at": "2026-07-02T03:55:59.445774Z",
   "capabilities": [
     {
-      "capability": "cluster_management_scale_30",
+      "capability": "cluster_create_ops_30",
+      "scale_nodes": 30,
+      "status": "PASS",
+      "real_valkey_required": true,
+      "cleanup_required": true,
+      "evidence_paths": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json"
+      ],
+      "cleanup_evidence_paths": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json"
+      ],
+      "missing_or_partial": [],
+      "report_artifacts": []
+    },
+    {
+      "capability": "lifecycle_ops_30",
       "scale_nodes": 30,
       "status": "PARTIAL",
       "real_valkey_required": true,
@@ -22,9 +37,41 @@
         "add_node",
         "reshard",
         "rebalance",
-        "rolling_restart workload windows require CML02 closure"
+        "rolling_restart"
       ],
-      "report_artifacts": []
+      "report_artifacts": [],
+      "partial_reasons": [
+        {
+          "capability": "remove_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "remove_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "add_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "add_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "reshard",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "reshard was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rebalance",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rebalance was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rolling_restart",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rolling_restart was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        }
+      ]
     },
     {
       "capability": "fault_failover_scale_30",

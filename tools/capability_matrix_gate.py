@@ -28,6 +28,16 @@ def utc_now() -> str:
 
 
 NEGATIVE_CASE_CREATED_AT = "2026-07-02T00:00:00Z"
+PASS_ABSENCE_OBSERVED = "PASS_ABSENCE_OBSERVED"
+NON_EXECUTED_STATUSES = {"MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_EVIDENCE"}
+LIFECYCLE_OPS = {"remove_node", "add_node", "reshard", "rebalance", "rolling_restart"}
+CLUSTER_CREATE_OPS = {
+    "tree_fanout_meet_primaries",
+    "parallel_add_slots",
+    "tree_fanout_meet_replicas",
+    "parallel_add_replicas",
+    "final_cluster_check",
+}
 
 
 def rel(path: Path) -> str:
@@ -559,6 +569,145 @@ def source_checksum_errors(source_artifacts: list[dict[str, Any]], owner: str) -
     return errors
 
 
+def capability_entries_by_id(artifact: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {str(entry.get("capability_id")): entry for entry in artifact.get("capabilities", [])}
+
+
+def partial_reason_errors(owner: str, item: dict[str, Any]) -> list[str]:
+    if item.get("status") != "PARTIAL":
+        return []
+    errors: list[str] = []
+    reasons = item.get("partial_reasons")
+    if not isinstance(reasons, list) or not reasons:
+        return [f"{owner} PARTIAL status requires non-empty machine-readable partial_reasons"]
+    for idx, reason in enumerate(reasons):
+        if not isinstance(reason, dict):
+            errors.append(f"{owner} partial_reasons[{idx}] must be an object")
+            continue
+        for key in ["capability", "reason_code", "evidence_status", "reason"]:
+            value = reason.get(key)
+            if not isinstance(value, str) or not value:
+                errors.append(f"{owner} partial_reasons[{idx}] missing string {key}")
+        if reason.get("evidence_status") not in NON_EXECUTED_STATUSES:
+            errors.append(f"{owner} partial_reasons[{idx}] evidence_status must be non-executed evidence state")
+    return errors
+
+
+def unsupported_reason_errors(owner: str, item: dict[str, Any]) -> list[str]:
+    if item.get("status") != "UNSUPPORTED_WITH_EVIDENCE":
+        return []
+    reasons = item.get("unsupported_reasons")
+    if isinstance(reasons, list) and reasons:
+        for idx, reason in enumerate(reasons):
+            if not isinstance(reason, dict):
+                return [f"{owner} unsupported_reasons[{idx}] must be an object"]
+            for key in ["capability", "reason_code", "evidence_status", "reason"]:
+                if not isinstance(reason.get(key), str) or not reason.get(key):
+                    return [f"{owner} unsupported_reasons[{idx}] missing string {key}"]
+        return []
+    if isinstance(item.get("reason"), str) and item.get("reason"):
+        return []
+    return [f"{owner} UNSUPPORTED_WITH_EVIDENCE requires machine-readable unsupported_reasons or reason"]
+
+
+def validate_status_semantics(artifact: dict[str, Any], owner: str) -> list[str]:
+    errors: list[str] = []
+    errors.extend(partial_reason_errors(owner, artifact))
+    for row in artifact.get("capabilities", []):
+        capability_id = str(row.get("capability_id", ""))
+        row_owner = f"{owner} capability {capability_id}"
+        errors.extend(partial_reason_errors(row_owner, row))
+        errors.extend(unsupported_reason_errors(row_owner, row))
+        if row.get("status") == "PASS" and capability_id.startswith("split_brain_indicators_"):
+            errors.append(f"{row_owner} must not use PASS for absence-only split-brain evidence")
+        if row.get("status") == "PASS" and capability_id.startswith("network_az_faults_") and "network_partition" not in set(row.get("fault_types_observed", [])):
+            errors.append(f"{row_owner} must not use PASS without explicit network_partition evidence")
+        if row.get("status") == "PASS" and (
+            capability_id.startswith("cluster_management_scale_")
+            or capability_id.startswith("cluster_management_real_ops_")
+            or capability_id.startswith("lifecycle_ops_")
+        ):
+            errors.append(f"{row_owner} must not use PASS to cover lifecycle operations with cluster-create evidence")
+    return errors
+
+
+def validate_cluster_management_split(entries: dict[str, dict[str, Any]], scale: int, owner: str) -> list[str]:
+    errors: list[str] = []
+    old_ids = [f"cluster_management_scale_{scale}", f"cluster_management_real_ops_{scale}"]
+    for old_id in old_ids:
+        if old_id in entries:
+            errors.append(f"{owner} must split {old_id} into cluster_create_ops_{scale} and lifecycle_ops_{scale}")
+    create = entries.get(f"cluster_create_ops_{scale}")
+    lifecycle = entries.get(f"lifecycle_ops_{scale}")
+    if not create:
+        errors.append(f"{owner} missing cluster_create_ops_{scale}")
+    elif create.get("status") != "PASS":
+        errors.append(f"{owner} cluster_create_ops_{scale} must be PASS")
+    else:
+        observed = set(create.get("executed_operations", create.get("management_operations", [])))
+        missing = sorted(CLUSTER_CREATE_OPS - observed)
+        if missing:
+            errors.append(f"{owner} cluster_create_ops_{scale} missing executed cluster-create operations: {missing}")
+    if not lifecycle:
+        errors.append(f"{owner} missing lifecycle_ops_{scale}")
+    else:
+        if lifecycle.get("status") != "PARTIAL":
+            errors.append(f"{owner} lifecycle_ops_{scale} must be PARTIAL unless lifecycle operations actually run")
+        errors.extend(partial_reason_errors(f"{owner} lifecycle_ops_{scale}", lifecycle))
+        reasons = lifecycle.get("partial_reasons", [])
+        reason_capabilities = {reason.get("capability") for reason in reasons if isinstance(reason, dict)}
+        missing_reasons = sorted(LIFECYCLE_OPS - reason_capabilities)
+        if missing_reasons:
+            errors.append(f"{owner} lifecycle_ops_{scale} missing machine-readable partial reasons: {missing_reasons}")
+        if any(reason.get("evidence_status") == "PASS" for reason in reasons if isinstance(reason, dict)):
+            errors.append(f"{owner} lifecycle_ops_{scale} cannot mark missing lifecycle operations as PASS")
+    return errors
+
+
+def validate_split_brain_absence_entry(entry: dict[str, Any] | None, scale: int, owner: str) -> list[str]:
+    if not entry:
+        return [f"{owner} missing split_brain_indicators_{scale}"]
+    errors: list[str] = []
+    status = entry.get("status")
+    if status == "PASS":
+        errors.append(f"{owner} split_brain_indicators_{scale} must be {PASS_ABSENCE_OBSERVED} or UNSUPPORTED_WITH_EVIDENCE, not PASS")
+    if status not in {PASS_ABSENCE_OBSERVED, "UNSUPPORTED_WITH_EVIDENCE"}:
+        errors.append(f"{owner} split_brain_indicators_{scale} status must be absence-observed or unsupported")
+    if status == PASS_ABSENCE_OBSERVED:
+        absence = entry.get("absence_observed")
+        if not isinstance(absence, dict):
+            errors.append(f"{owner} split_brain_indicators_{scale} requires absence_observed object")
+        else:
+            if absence.get("indicator") != "conflicting_primaries":
+                errors.append(f"{owner} split_brain_indicators_{scale} absence indicator must be conflicting_primaries")
+            if absence.get("observed") is not False:
+                errors.append(f"{owner} split_brain_indicators_{scale} absence observed must be false")
+            if not isinstance(absence.get("reason_code"), str) or not absence.get("reason_code"):
+                errors.append(f"{owner} split_brain_indicators_{scale} absence requires reason_code")
+    return errors
+
+
+def validate_network_entries(entries: dict[str, dict[str, Any]], scale: int, owner: str, *, observed_fault_type: str | None = None) -> list[str]:
+    errors: list[str] = []
+    delay = entries.get(f"network_delay_faults_{scale}")
+    network = entries.get(f"network_az_faults_{scale}")
+    if observed_fault_type == "network_delay":
+        if not delay:
+            errors.append(f"{owner} missing network_delay_faults_{scale} for observed network_delay evidence")
+        elif delay.get("status") != "PASS" or "network_delay" not in set(delay.get("fault_types_observed", [])):
+            errors.append(f"{owner} network_delay_faults_{scale} must PASS with network_delay evidence")
+        if not network:
+            errors.append(f"{owner} missing network_az_faults_{scale}")
+        elif network.get("status") == "PASS":
+            errors.append(f"{owner} network_delay evidence cannot satisfy network_az_faults_{scale} PASS")
+    if network:
+        if network.get("status") == "PASS" and "network_partition" not in set(network.get("fault_types_observed", [])):
+            errors.append(f"{owner} network_az_faults_{scale} PASS requires network_partition evidence")
+        if network.get("status") == "UNSUPPORTED_WITH_EVIDENCE":
+            errors.extend(unsupported_reason_errors(f"{owner} network_az_faults_{scale}", network))
+    return errors
+
+
 def validate_observation_model(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
     paths = paths or cml01_paths(stage_id)
     errors: list[str] = []
@@ -628,6 +777,7 @@ def validate_observation_model(stage_id: str, paths: dict[str, Path] | None = No
         errors.extend(source_checksum_errors(report.get("source_artifacts", []), f"report {report.get('kind')}"))
 
     matrix = load_json(paths["matrix"])
+    errors.extend(validate_status_semantics(matrix, f"{stage_id} capability matrix"))
     for row in matrix.get("capabilities", []):
         chain = row.get("evidence_chain", {})
         for key, path_text in chain.items():
@@ -728,6 +878,8 @@ def validate_cml02_management_ops(stage_id: str, paths: dict[str, Path] | None =
     pass_windows = {row.get("window_id") for row in workload_rows if row.get("status") == "PASS"}
     if pass_windows != required_windows:
         errors.append(f"CML02 workload windows must all PASS: {sorted(pass_windows)}")
+    matrix = load_json(paths["matrix"])
+    errors.extend(validate_cluster_management_split(capability_entries_by_id(matrix), 30, "CML02 capability matrix"))
     return errors
 
 
@@ -758,6 +910,34 @@ def make_cml02_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     empty_workload = validation_dir / "negative_empty_workload.jsonl"
     empty_workload.write_text("", encoding="utf-8")
     cases.append(("empty_workload_windows", {"workload": empty_workload}, "has no JSONL records"))
+
+    cluster_create_as_reshard = validation_dir / "negative_cluster_create_as_reshard_pass.json"
+    matrix = load_json(paths["matrix"])
+    rows = capability_entries_by_id(matrix)
+    lifecycle = rows.get("lifecycle_ops_30")
+    if lifecycle:
+        lifecycle["status"] = "PASS"
+        lifecycle["partial_reasons"] = []
+        lifecycle["executed_operations"] = ["reshard"]
+    else:
+        matrix.setdefault("capabilities", []).append(
+            {
+                "capability_id": "cluster_management_scale_30",
+                "status": "PASS",
+                "scale_nodes": 30,
+                "real_valkey_required": True,
+                "evidence_chain": {
+                    "operation_events": rel(paths["operation"]),
+                    "fault_events": rel(paths["fault"]),
+                    "metrics_windows": rel(paths["metrics"]),
+                    "workload_windows": rel(paths["workload"]),
+                    "analysis_summary": rel(paths["analysis"]),
+                    "report_index": rel(paths["report_index"]),
+                },
+            }
+        )
+    write_json(cluster_create_as_reshard, matrix)
+    cases.append(("cluster_create_as_reshard_pass", {"matrix": cluster_create_as_reshard}, "must not use PASS to cover lifecycle operations"))
 
     results: list[dict[str, Any]] = []
     for name, overrides, expected in cases:
@@ -899,6 +1079,8 @@ def validate_cml04_network_faults(stage_id: str, paths: dict[str, Path] | None =
         if row.get("source_stage") != stage_id or row.get("current_stage") != stage_id:
             errors.append(f"CML04 old artifact reused in {row.get('artifact_type')} {row.get('window_id')}")
         errors.extend(source_checksum_errors(row.get("source_artifacts", []), f"CML04 {row.get('artifact_type')} {row.get('window_id')}"))
+    matrix = load_json(paths["matrix"])
+    errors.extend(validate_network_entries(capability_entries_by_id(matrix), 30, "CML04 capability matrix", observed_fault_type=str(fault.get("fault_type"))))
     report_index = load_json(paths["report_index"])
     for report in report_index.get("reports", []):
         errors.extend(source_checksum_errors(report.get("source_artifacts", []), f"CML04 report {report.get('kind')}"))
@@ -925,6 +1107,14 @@ def make_cml04_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     safety_report["safety_checks"]["host_network_mutated"] = True
     write_json(bad_safety, safety_report)
     cases.append(("host_network_mutated", {"fault_report": bad_safety}, "sandbox-only network fault"))
+    delay_as_partition = validation_dir / "negative_network_delay_as_partition_pass.json"
+    matrix = load_json(paths["matrix"])
+    for row in matrix.get("capabilities", []):
+        if row.get("capability_id") == "network_az_faults_30":
+            row["status"] = "PASS"
+            row["fault_types_observed"] = ["network_delay"]
+    write_json(delay_as_partition, matrix)
+    cases.append(("network_delay_as_partition_pass", {"matrix": delay_as_partition}, "network_delay evidence cannot satisfy network_az_faults_30 PASS"))
     results: list[dict[str, Any]] = []
     for name, overrides, expected in cases:
         candidate = dict(paths)
@@ -1015,6 +1205,8 @@ def validate_cml06_split_brain(stage_id: str, paths: dict[str, Path] | None = No
     cleanup = load_json(paths["cleanup"])
     if cleanup.get("status") != "PASS" or cleanup.get("resources_remaining") not in ([], None):
         errors.append("CML06 cleanup must PASS with no resources_remaining")
+    matrix = load_json(paths["matrix"])
+    errors.extend(validate_split_brain_absence_entry(capability_entries_by_id(matrix).get("split_brain_indicators_30"), 30, "CML06 capability matrix"))
     return errors
 
 
@@ -1033,6 +1225,13 @@ def make_cml06_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     failover2["summary"]["split_brain_duration_ms"]["reason"] = "missing"
     write_json(no_reason, failover2)
     cases.append(("missing_conflicting_primary_reason", {"failover_report": no_reason}, "conflicting primaries"))
+    missing_as_pass = validation_dir / "negative_split_brain_missing_as_pass.json"
+    matrix = load_json(paths["matrix"])
+    for row in matrix.get("capabilities", []):
+        if row.get("capability_id") == "split_brain_indicators_30":
+            row["status"] = "PASS"
+    write_json(missing_as_pass, matrix)
+    cases.append(("split_brain_missing_as_pass", {"matrix": missing_as_pass}, "must not use PASS for absence-only split-brain evidence"))
     results = []
     for name, overrides, expected in cases:
         candidate = dict(paths)
@@ -1194,27 +1393,35 @@ def validate_cml09_reporting_close(stage_id: str, paths: dict[str, Path] | None 
     if int(evidence.get("nodes_observed", 0)) != 30:
         errors.append("CML09 aggregate evidence nodes_observed must be 30")
     index = load_json(paths["evidence_index"])
-    required_capabilities = {
-        "cluster_management_scale_30",
-        "process_nodehost_faults_30",
-        "network_az_faults_30",
-        "failover_latency_recovery_30",
-        "split_brain_indicators_30",
-        "workload_fault_windows_30",
-        "bounded_soak_30_60_minutes",
+    expected_statuses = {
+        "cluster_create_ops_30": "PASS",
+        "lifecycle_ops_30": "PARTIAL",
+        "process_nodehost_faults_30": "PASS",
+        "network_delay_faults_30": "PASS",
+        "network_az_faults_30": "UNSUPPORTED_WITH_EVIDENCE",
+        "failover_latency_recovery_30": "PASS",
+        "split_brain_indicators_30": PASS_ABSENCE_OBSERVED,
+        "workload_fault_windows_30": "PASS",
+        "bounded_soak_30_60_minutes": "PASS",
     }
     entries = {entry.get("capability_id"): entry for entry in index.get("capabilities", [])}
-    missing = required_capabilities - set(entries)
+    missing = set(expected_statuses) - set(entries)
     if missing:
         errors.append(f"CML09 evidence index missing capabilities: {sorted(missing)}")
-    for capability_id in sorted(required_capabilities & set(entries)):
+    errors.extend(partial_reason_errors("CML09 evidence index", index))
+    errors.extend(validate_cluster_management_split(entries, 30, "CML09 evidence index"))
+    errors.extend(validate_split_brain_absence_entry(entries.get("split_brain_indicators_30"), 30, "CML09 evidence index"))
+    errors.extend(validate_network_entries(entries, 30, "CML09 evidence index", observed_fault_type="network_delay"))
+    for capability_id in sorted(set(expected_statuses) & set(entries)):
         entry = entries[capability_id]
-        if entry.get("status") != "PASS":
-            errors.append(f"CML09 capability {capability_id} must be PASS")
+        if entry.get("status") != expected_statuses[capability_id]:
+            errors.append(f"CML09 capability {capability_id} must be {expected_statuses[capability_id]}")
         if int(entry.get("scale_nodes", 0)) != 30:
             errors.append(f"CML09 capability {capability_id} scale_nodes must be 30")
         for source in entry.get("source_artifacts", []):
             errors.extend(source_checksum_errors([source], f"CML09 capability {capability_id}"))
+        if entry.get("status") in {"PARTIAL", "UNSUPPORTED_WITH_EVIDENCE"}:
+            continue
         evidence_path = ROOT / str(entry.get("real_valkey_evidence", ""))
         if not evidence_path.exists():
             errors.append(f"CML09 capability {capability_id} missing real evidence")
@@ -1237,11 +1444,18 @@ def validate_cml09_reporting_close(stage_id: str, paths: dict[str, Path] | None 
         if not observed_values or max(observed_values) < 30:
             errors.append(f"CML09 capability {capability_id} evidence must observe at least 30 nodes")
     matrix = load_json(paths["matrix"])
+    errors.extend(validate_status_semantics(matrix, "CML09 capability matrix"))
+    errors.extend(validate_cluster_management_split(capability_entries_by_id(matrix), 30, "CML09 capability matrix"))
+    errors.extend(validate_split_brain_absence_entry(capability_entries_by_id(matrix).get("split_brain_indicators_30"), 30, "CML09 capability matrix"))
+    errors.extend(validate_network_entries(capability_entries_by_id(matrix), 30, "CML09 capability matrix", observed_fault_type="network_delay"))
     capability_statuses = {row.get("capability_id"): row.get("status") for row in matrix.get("capabilities", [])}
-    if required_capabilities - set(capability_statuses):
+    if set(expected_statuses) - set(capability_statuses):
         errors.append("CML09 capability matrix must include every required 30-node capability")
-    if any(status != "PASS" for status in capability_statuses.values()):
-        errors.append("CML09 capability matrix statuses must all be PASS")
+    for capability_id, expected_status in expected_statuses.items():
+        if capability_statuses.get(capability_id) != expected_status:
+            errors.append(f"CML09 capability matrix {capability_id} must be {expected_status}")
+    if matrix.get("status") != "PARTIAL":
+        errors.append("CML09 capability matrix top-level status must be PARTIAL")
     return errors
 
 
@@ -1265,6 +1479,13 @@ def make_cml09_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     evidence2["nodes_observed"] = 29
     write_json(wrong_nodes, evidence2)
     cases.append(("wrong_node_count", {"evidence": wrong_nodes}, "nodes_observed must be 30"))
+    split_pass = validation_dir / "negative_split_brain_missing_as_pass.json"
+    index3 = load_json(paths["evidence_index"])
+    for entry in index3.get("capabilities", []):
+        if entry.get("capability_id") == "split_brain_indicators_30":
+            entry["status"] = "PASS"
+    write_json(split_pass, index3)
+    cases.append(("split_brain_missing_as_pass", {"evidence_index": split_pass}, "must be PASS_ABSENCE_OBSERVED"))
     results = []
     for name, overrides, expected in cases:
         candidate = dict(paths)
@@ -1382,24 +1603,30 @@ def validate_cml10_scale_replay_50(stage_id: str, paths: dict[str, Path] | None 
             errors.append(f"CML10 {cleanup_name} must PASS with no resources_remaining")
 
     index = load_json(paths["evidence_index"])
-    required_pass = {
-        "cluster_management_scale_50",
-        "process_nodehost_faults_50",
-        "failover_latency_recovery_50",
-        "split_brain_indicators_50",
-        "workload_fault_windows_50",
+    expected_statuses = {
+        "cluster_create_ops_50": "PASS",
+        "lifecycle_ops_50": "PARTIAL",
+        "process_nodehost_faults_50": "PASS",
+        "failover_latency_recovery_50": "PASS",
+        "split_brain_indicators_50": PASS_ABSENCE_OBSERVED,
+        "workload_fault_windows_50": "PASS",
+        "network_az_faults_50": "UNSUPPORTED_WITH_EVIDENCE",
     }
     entries = {entry.get("capability_id"): entry for entry in index.get("capabilities", [])}
-    missing = required_pass - set(entries)
+    missing = set(expected_statuses) - set(entries)
     if missing:
         errors.append(f"CML10 evidence index missing capabilities: {sorted(missing)}")
-    for capability_id in sorted(required_pass & set(entries)):
+    errors.extend(partial_reason_errors("CML10 evidence index", index))
+    errors.extend(validate_cluster_management_split(entries, 50, "CML10 evidence index"))
+    errors.extend(validate_split_brain_absence_entry(entries.get("split_brain_indicators_50"), 50, "CML10 evidence index"))
+    errors.extend(validate_network_entries(entries, 50, "CML10 evidence index"))
+    for capability_id in sorted(set(expected_statuses) & set(entries)):
         entry = entries[capability_id]
-        if entry.get("status") != "PASS":
-            errors.append(f"CML10 capability {capability_id} must be PASS")
+        if entry.get("status") != expected_statuses[capability_id]:
+            errors.append(f"CML10 capability {capability_id} must be {expected_statuses[capability_id]}")
         if int(entry.get("scale_nodes", 0)) != 50:
             errors.append(f"CML10 capability {capability_id} scale_nodes must be 50")
-        if str(entry.get("real_valkey_evidence", "")).startswith("artifacts/capability_matrix_loop/CML09"):
+        if entry.get("status") == "PASS" and str(entry.get("real_valkey_evidence", "")).startswith("artifacts/capability_matrix_loop/CML09"):
             errors.append(f"CML10 capability {capability_id} must not reuse 30-node CML09 evidence")
         errors.extend(source_checksum_errors(entry.get("source_artifacts", []), f"CML10 capability {capability_id}"))
     network = entries.get("network_az_faults_50")
@@ -1409,11 +1636,19 @@ def validate_cml10_scale_replay_50(stage_id: str, paths: dict[str, Path] | None 
         errors.append("CML10 network unsupported reason must cite missing 50-node network partition evidence")
 
     matrix = load_json(paths["matrix"])
+    errors.extend(validate_status_semantics(matrix, "CML10 capability matrix"))
+    errors.extend(validate_cluster_management_split(capability_entries_by_id(matrix), 50, "CML10 capability matrix"))
+    errors.extend(validate_split_brain_absence_entry(capability_entries_by_id(matrix).get("split_brain_indicators_50"), 50, "CML10 capability matrix"))
+    errors.extend(validate_network_entries(capability_entries_by_id(matrix), 50, "CML10 capability matrix"))
     capability_statuses = {row.get("capability_id"): row.get("status") for row in matrix.get("capabilities", [])}
-    if required_pass - set(capability_statuses):
+    required_pass = {capability_id for capability_id, status in expected_statuses.items() if status == "PASS"}
+    if set(expected_statuses) - set(capability_statuses):
         errors.append("CML10 capability matrix must include every required 50-node PASS capability")
     if any(capability_statuses.get(capability_id) != "PASS" for capability_id in required_pass):
         errors.append("CML10 capability matrix required statuses must be PASS")
+    for capability_id, expected_status in expected_statuses.items():
+        if capability_statuses.get(capability_id) != expected_status:
+            errors.append(f"CML10 capability matrix {capability_id} must be {expected_status}")
     if capability_statuses.get("network_az_faults_50") != "UNSUPPORTED_WITH_EVIDENCE":
         errors.append("CML10 capability matrix must preserve network unsupported status")
     return errors
@@ -1440,7 +1675,7 @@ def make_cml10_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     reused = validation_dir / "negative_reused_30_node_evidence_index.json"
     index = load_json(paths["evidence_index"])
     for entry in index.get("capabilities", []):
-        if entry.get("capability_id") == "cluster_management_scale_50":
+        if entry.get("capability_id") == "cluster_create_ops_50":
             entry["real_valkey_evidence"] = "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/real_valkey_evidence_reporting_close_30.json"
     write_json(reused, index)
     cases.append(("reused_30_node_evidence", {"evidence_index": reused}, "must not reuse 30-node"))
@@ -1452,6 +1687,15 @@ def make_cml10_negative_cases(stage_id: str) -> list[dict[str, Any]]:
             entry["status"] = "PASS"
     write_json(network_pass, index2)
     cases.append(("network_pass_without_evidence", {"evidence_index": network_pass}, "must be UNSUPPORTED_WITH_EVIDENCE"))
+
+    cluster_create_as_reshard = validation_dir / "negative_cluster_create_as_reshard_pass.json"
+    index3 = load_json(paths["evidence_index"])
+    for entry in index3.get("capabilities", []):
+        if entry.get("capability_id") == "lifecycle_ops_50":
+            entry["status"] = "PASS"
+            entry["partial_reasons"] = []
+    write_json(cluster_create_as_reshard, index3)
+    cases.append(("cluster_create_as_reshard_pass", {"evidence_index": cluster_create_as_reshard}, "lifecycle_ops_50 must be PARTIAL"))
 
     results = []
     for name, overrides, expected in cases:
@@ -1570,25 +1814,31 @@ def validate_cml11_scale_replay_100(stage_id: str, paths: dict[str, Path] | None
             errors.append(f"CML11 {cleanup_name} must PASS with no resources_remaining")
 
     index = load_json(paths["evidence_index"])
-    required_pass = {
-        "cluster_management_scale_100",
-        "process_nodehost_faults_100",
-        "failover_latency_recovery_100",
-        "split_brain_indicators_100",
-        "workload_fault_windows_100",
+    expected_statuses = {
+        "cluster_create_ops_100": "PASS",
+        "lifecycle_ops_100": "PARTIAL",
+        "process_nodehost_faults_100": "PASS",
+        "failover_latency_recovery_100": "PASS",
+        "split_brain_indicators_100": PASS_ABSENCE_OBSERVED,
+        "workload_fault_windows_100": "PASS",
+        "network_az_faults_100": "UNSUPPORTED_WITH_EVIDENCE",
     }
     entries = {entry.get("capability_id"): entry for entry in index.get("capabilities", [])}
-    missing = required_pass - set(entries)
+    missing = set(expected_statuses) - set(entries)
     if missing:
         errors.append(f"CML11 evidence index missing capabilities: {sorted(missing)}")
-    for capability_id in sorted(required_pass & set(entries)):
+    errors.extend(partial_reason_errors("CML11 evidence index", index))
+    errors.extend(validate_cluster_management_split(entries, 100, "CML11 evidence index"))
+    errors.extend(validate_split_brain_absence_entry(entries.get("split_brain_indicators_100"), 100, "CML11 evidence index"))
+    errors.extend(validate_network_entries(entries, 100, "CML11 evidence index"))
+    for capability_id in sorted(set(expected_statuses) & set(entries)):
         entry = entries[capability_id]
-        if entry.get("status") != "PASS":
-            errors.append(f"CML11 capability {capability_id} must be PASS")
+        if entry.get("status") != expected_statuses[capability_id]:
+            errors.append(f"CML11 capability {capability_id} must be {expected_statuses[capability_id]}")
         if int(entry.get("scale_nodes", 0)) != 100:
             errors.append(f"CML11 capability {capability_id} scale_nodes must be 100")
         evidence_path = str(entry.get("real_valkey_evidence", ""))
-        if "CML09" in evidence_path or "CML10" in evidence_path or evidence_path.endswith("_50.json"):
+        if entry.get("status") == "PASS" and ("CML09" in evidence_path or "CML10" in evidence_path or evidence_path.endswith("_50.json")):
             errors.append(f"CML11 capability {capability_id} must not reuse 30-node or 50-node evidence")
         errors.extend(source_checksum_errors(entry.get("source_artifacts", []), f"CML11 capability {capability_id}"))
     network = entries.get("network_az_faults_100")
@@ -1598,11 +1848,19 @@ def validate_cml11_scale_replay_100(stage_id: str, paths: dict[str, Path] | None
         errors.append("CML11 network unsupported reason must cite missing 100-node network partition evidence")
 
     matrix = load_json(paths["matrix"])
+    errors.extend(validate_status_semantics(matrix, "CML11 capability matrix"))
+    errors.extend(validate_cluster_management_split(capability_entries_by_id(matrix), 100, "CML11 capability matrix"))
+    errors.extend(validate_split_brain_absence_entry(capability_entries_by_id(matrix).get("split_brain_indicators_100"), 100, "CML11 capability matrix"))
+    errors.extend(validate_network_entries(capability_entries_by_id(matrix), 100, "CML11 capability matrix"))
     capability_statuses = {row.get("capability_id"): row.get("status") for row in matrix.get("capabilities", [])}
-    if required_pass - set(capability_statuses):
+    required_pass = {capability_id for capability_id, status in expected_statuses.items() if status == "PASS"}
+    if set(expected_statuses) - set(capability_statuses):
         errors.append("CML11 capability matrix must include every required 100-node PASS capability")
     if any(capability_statuses.get(capability_id) != "PASS" for capability_id in required_pass):
         errors.append("CML11 capability matrix required statuses must be PASS")
+    for capability_id, expected_status in expected_statuses.items():
+        if capability_statuses.get(capability_id) != expected_status:
+            errors.append(f"CML11 capability matrix {capability_id} must be {expected_status}")
     if capability_statuses.get("network_az_faults_100") != "UNSUPPORTED_WITH_EVIDENCE":
         errors.append("CML11 capability matrix must preserve network unsupported status")
     return errors
@@ -1629,7 +1887,7 @@ def make_cml11_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     reused = validation_dir / "negative_reused_lower_scale_evidence_index.json"
     index = load_json(paths["evidence_index"])
     for entry in index.get("capabilities", []):
-        if entry.get("capability_id") == "cluster_management_scale_100":
+        if entry.get("capability_id") == "cluster_create_ops_100":
             entry["real_valkey_evidence"] = "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/real_valkey_evidence_scale_replay_50.json"
     write_json(reused, index)
     cases.append(("reused_lower_scale_evidence", {"evidence_index": reused}, "must not reuse 30-node or 50-node"))
@@ -1641,6 +1899,15 @@ def make_cml11_negative_cases(stage_id: str) -> list[dict[str, Any]]:
             entry["status"] = "PASS"
     write_json(network_pass, index2)
     cases.append(("network_pass_without_evidence", {"evidence_index": network_pass}, "must be UNSUPPORTED_WITH_EVIDENCE"))
+
+    cluster_create_as_reshard = validation_dir / "negative_cluster_create_as_reshard_pass.json"
+    index3 = load_json(paths["evidence_index"])
+    for entry in index3.get("capabilities", []):
+        if entry.get("capability_id") == "lifecycle_ops_100":
+            entry["status"] = "PASS"
+            entry["partial_reasons"] = []
+    write_json(cluster_create_as_reshard, index3)
+    cases.append(("cluster_create_as_reshard_pass", {"evidence_index": cluster_create_as_reshard}, "lifecycle_ops_100 must be PARTIAL"))
 
     results = []
     for name, overrides, expected in cases:
@@ -1793,29 +2060,50 @@ def validate_cml13_final_audit(stage_id: str, paths: dict[str, Path] | None = No
         errors.append("CML13 future coverage must forbid real execution above 100")
 
     evidence_index = load_json(paths["final_evidence_index"])
-    if evidence_index.get("status") != "PASS":
-        errors.append("CML13 final evidence index must PASS")
+    if evidence_index.get("status") not in {"PASS", "PARTIAL"}:
+        errors.append("CML13 final evidence index must PASS or PARTIAL")
+    errors.extend(partial_reason_errors("CML13 final evidence index", evidence_index))
     entries = {entry.get("capability_id"): entry for entry in evidence_index.get("capabilities", [])}
     required = {
-        "cluster_management_scale_30",
+        "cluster_create_ops_30",
+        "lifecycle_ops_30",
         "bounded_soak_30_60_minutes",
-        "cluster_management_scale_50",
-        "cluster_management_scale_100",
+        "cluster_create_ops_50",
+        "lifecycle_ops_50",
+        "cluster_create_ops_100",
+        "lifecycle_ops_100",
+        "network_az_faults_30",
+        "split_brain_indicators_30",
+        "network_az_faults_50",
+        "split_brain_indicators_50",
+        "network_az_faults_100",
+        "split_brain_indicators_100",
         "future_scale_1000_support",
     }
     missing = required - set(entries)
     if missing:
         errors.append(f"CML13 final evidence index missing capabilities: {sorted(missing)}")
+    for scale in [30, 50, 100]:
+        errors.extend(validate_cluster_management_split(entries, scale, "CML13 final evidence index"))
+        errors.extend(validate_split_brain_absence_entry(entries.get(f"split_brain_indicators_{scale}"), scale, "CML13 final evidence index"))
+        errors.extend(validate_network_entries(entries, scale, "CML13 final evidence index", observed_fault_type="network_delay" if scale == 30 else None))
     for capability_id, entry in entries.items():
         if int(entry.get("scale_nodes", 0)) > 100 and entry.get("status") == "PASS":
             errors.append(f"CML13 capability {capability_id} must not PASS above 100 real nodes")
+        if entry.get("status") == "PARTIAL":
+            errors.extend(partial_reason_errors(f"CML13 capability {capability_id}", entry))
         errors.extend(source_checksum_errors(entry.get("source_artifacts", []), f"CML13 capability {capability_id}"))
 
     matrix = load_json(paths["final_matrix"])
+    errors.extend(validate_status_semantics(matrix, "CML13 final matrix"))
     matrix_rows = {row.get("capability_id"): row for row in matrix.get("capabilities", [])}
     for capability_id in required:
         if capability_id not in matrix_rows:
             errors.append(f"CML13 final matrix missing {capability_id}")
+    for scale in [30, 50, 100]:
+        errors.extend(validate_cluster_management_split(matrix_rows, scale, "CML13 final matrix"))
+        errors.extend(validate_split_brain_absence_entry(matrix_rows.get(f"split_brain_indicators_{scale}"), scale, "CML13 final matrix"))
+        errors.extend(validate_network_entries(matrix_rows, scale, "CML13 final matrix", observed_fault_type="network_delay" if scale == 30 else None))
     if any(row.get("status") == "FAIL" for row in matrix.get("capabilities", [])):
         errors.append("CML13 final matrix must not contain FAIL rows")
     for report in load_json(paths["report_index"]).get("reports", []):
@@ -1852,6 +2140,14 @@ def make_cml13_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     write_json(future_pass, index)
     cases.append(("future_real_pass", {"final_evidence_index": future_pass}, "must not PASS above 100"))
 
+    split_pass = validation_dir / "negative_split_brain_missing_as_pass.json"
+    index2 = load_json(paths["final_evidence_index"])
+    for entry in index2.get("capabilities", []):
+        if entry.get("capability_id") == "split_brain_indicators_100":
+            entry["status"] = "PASS"
+    write_json(split_pass, index2)
+    cases.append(("split_brain_missing_as_pass", {"final_evidence_index": split_pass}, "must be PASS_ABSENCE_OBSERVED"))
+
     fake_coverage = validation_dir / "negative_fake_100_coverage.json"
     audit3 = load_json(paths["full_chain_audit"])
     audit3["scale_coverage"]["100"]["real_valkey"] = False
@@ -1870,14 +2166,32 @@ def make_cml13_negative_cases(stage_id: str) -> list[dict[str, Any]]:
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
-            "capability": "cluster_management_scale_30",
+            "capability": "cluster_create_ops_30",
+            "scale_nodes": 30,
+            "status": "PASS",
+            "real_valkey_required": True,
+            "cleanup_required": True,
+            "evidence_paths": ["artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json"],
+            "cleanup_evidence_paths": ["artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json"],
+            "missing_or_partial": [],
+            "report_artifacts": [],
+        },
+        {
+            "capability": "lifecycle_ops_30",
             "scale_nodes": 30,
             "status": "PARTIAL",
             "real_valkey_required": True,
             "cleanup_required": True,
             "evidence_paths": ["artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json"],
             "cleanup_evidence_paths": ["artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json"],
-            "missing_or_partial": ["remove_node", "add_node", "reshard", "rebalance", "rolling_restart workload windows require CML02 closure"],
+            "missing_or_partial": ["remove_node", "add_node", "reshard", "rebalance", "rolling_restart"],
+            "partial_reasons": [
+                {"capability": "remove_node", "reason_code": "not_executed_in_cluster_create_gate", "evidence_status": "MISSING", "reason": "No remove-node lifecycle operation evidence is present."},
+                {"capability": "add_node", "reason_code": "not_executed_in_cluster_create_gate", "evidence_status": "MISSING", "reason": "No add-node lifecycle operation evidence is present."},
+                {"capability": "reshard", "reason_code": "not_executed_in_cluster_create_gate", "evidence_status": "MISSING", "reason": "No reshard lifecycle operation evidence is present."},
+                {"capability": "rebalance", "reason_code": "not_executed_in_cluster_create_gate", "evidence_status": "MISSING", "reason": "No rebalance lifecycle operation evidence is present."},
+                {"capability": "rolling_restart", "reason_code": "not_executed_in_cluster_create_gate", "evidence_status": "MISSING", "reason": "No rolling restart lifecycle operation evidence is present."},
+            ],
             "report_artifacts": [],
         },
         {

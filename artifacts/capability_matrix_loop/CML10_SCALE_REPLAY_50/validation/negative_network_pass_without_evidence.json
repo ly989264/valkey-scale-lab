@@ -5,7 +5,7 @@
   "created_at": "2026-07-02T08:05:29.205470Z",
   "capabilities": [
     {
-      "capability_id": "cluster_management_scale_50",
+      "capability_id": "cluster_create_ops_50",
       "status": "PASS",
       "source_stage": "P13_SCALE_LADDER_50_100",
       "scale_nodes": 50,
@@ -24,6 +24,68 @@
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
           "sha256": "ea991a8f05f076853c0835784e2c55943bf464efbb5ffb27d3f362fca2562e09"
+        }
+      ],
+      "executed_operations": [
+        "tree_fanout_meet_primaries",
+        "parallel_add_slots",
+        "tree_fanout_meet_replicas",
+        "parallel_add_replicas",
+        "final_cluster_check"
+      ]
+    },
+    {
+      "capability_id": "lifecycle_ops_50",
+      "status": "PARTIAL",
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 50,
+      "nodes_observed": 50,
+      "data_path_result": "PARTIAL",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "source_artifacts": [
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+          "sha256": "6fd65c120e88d47c08a8c4aa003363c0cbdf0fd47175e59b02d7a4ca2cbf2be0"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json",
+          "sha256": "93215fcae42f2a738a85db3f0274d60603d81ccb22fa8e298d2b17e13c2cde9a"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "sha256": "ea991a8f05f076853c0835784e2c55943bf464efbb5ffb27d3f362fca2562e09"
+        }
+      ],
+      "partial_reasons": [
+        {
+          "capability": "remove_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "remove_node was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "add_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "add_node was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "reshard",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "reshard was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rebalance",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rebalance was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rolling_restart",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rolling_restart was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
         }
       ]
     },
@@ -79,7 +141,7 @@
     },
     {
       "capability_id": "split_brain_indicators_50",
-      "status": "PASS",
+      "status": "PASS_ABSENCE_OBSERVED",
       "source_stage": "P13_SCALE_LADDER_50_100",
       "scale_nodes": 50,
       "nodes_observed": 49,
@@ -94,7 +156,14 @@
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
           "sha256": "6fa1d1f47a920f813f9dc46781e88efbb97febd8c249f5c002e70496f87ff39b"
         }
-      ]
+      ],
+      "absence_observed": {
+        "indicator": "conflicting_primaries",
+        "observed": false,
+        "evidence_status": "MISSING",
+        "reason_code": "conflicting_primaries_not_observed",
+        "source_field": "$.summary.split_brain_duration_ms"
+      }
     },
     {
       "capability_id": "workload_fault_windows_50",
@@ -133,7 +202,30 @@
           "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6"
         }
       ],
-      "reason": "50-node network partition evidence is not present in P13 wrapper outputs; retained as unsupported instead of promoted to PASS."
+      "reason": "50-node network partition evidence is not present in P13 wrapper outputs; retained as unsupported instead of promoted to PASS.",
+      "unsupported_reasons": [
+        {
+          "capability": "network_partition",
+          "reason_code": "network_partition_not_executed",
+          "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+          "reason": "network_partition/AZ isolation evidence is not present at 50 nodes."
+        }
+      ]
+    }
+  ],
+  "status": "PARTIAL",
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_50",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 50 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_50",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "No network_partition/AZ isolation fault evidence exists at 50 nodes."
     }
   ]
 }

@@ -2,7 +2,7 @@
   "schema_version": "v1",
   "artifact_type": "capability_report_index",
   "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
-  "status": "PASS",
+  "status": "PARTIAL",
   "created_at": "2026-07-02T04:55:42.134006Z",
   "reports": [
     {
@@ -25,7 +25,7 @@
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
-          "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+          "sha256": "d1747441e15cac32a01ea54592a3e1f298908cf581b55f58d59f5d27a0afc2f4"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
@@ -47,7 +47,7 @@
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
-          "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+          "sha256": "d1747441e15cac32a01ea54592a3e1f298908cf581b55f58d59f5d27a0afc2f4"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/network_timeline.svg",
@@ -65,9 +65,17 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
-          "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+          "sha256": "d1747441e15cac32a01ea54592a3e1f298908cf581b55f58d59f5d27a0afc2f4"
         }
       ]
+    }
+  ],
+  "partial_reasons": [
+    {
+      "capability": "network_az_faults_30",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "Only network_delay evidence exists at 30 nodes; network_partition/AZ isolation was not executed."
     }
   ]
 }

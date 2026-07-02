@@ -40,7 +40,7 @@
     },
     {
       "capability_id": "network_az_faults_30",
-      "status": "UNSUPPORTED_WITH_EVIDENCE",
+      "status": "PASS",
       "scale_nodes": 30,
       "real_valkey_required": true,
       "windows": [

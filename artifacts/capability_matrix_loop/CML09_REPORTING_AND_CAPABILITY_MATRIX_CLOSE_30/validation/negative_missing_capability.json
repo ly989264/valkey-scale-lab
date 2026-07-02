@@ -2,7 +2,7 @@
   "artifact_type": "cml09_evidence_index",
   "capabilities": [
     {
-      "capability_id": "cluster_management_scale_30",
+      "capability_id": "cluster_create_ops_30",
       "data_path_result": "PASS",
       "nodes_observed": 30,
       "real_valkey_evidence": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
@@ -14,19 +14,85 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/capability_matrix.json",
-          "sha256": "603f9cddf49441d54ebeb30b308fe3a60242348d60260d2f2038741a79aa77ea"
+          "sha256": "f2ef88cba167576a88e9827e7006bbb39ede16ab0ce76c4a09600e9c43be7d82"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
-          "sha256": "0588d8554506d4ba1c2cf42c5d88dcc78c7777843f3207d198a10c228aadd319"
+          "sha256": "a86dada29b2d27b7984aa8c0ccb7cf622864b53ae1dc99cb6dea80a3eb7645e4"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report_index.json",
-          "sha256": "9063a68b2545705833f36d3e327e215df4642892be04045b51bd4b0d1cbc5422"
+          "sha256": "592fadf454ee90a1a0dced03f35e808ce7eaaedc56920297e05d7878933da93d"
         }
       ],
       "source_stage": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
-      "status": "PASS"
+      "status": "PASS",
+      "executed_operations": [
+        "tree_fanout_meet_primaries",
+        "parallel_add_slots",
+        "tree_fanout_meet_replicas",
+        "parallel_add_replicas",
+        "final_cluster_check"
+      ]
+    },
+    {
+      "capability_id": "lifecycle_ops_30",
+      "data_path_result": "PARTIAL",
+      "nodes_observed": 30,
+      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
+      "scale_nodes": 30,
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
+          "sha256": "e7bc0bd44c5fa3f728de2365e7e78bc7397eb06438b7e102b7333673fac1444a"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/capability_matrix.json",
+          "sha256": "f2ef88cba167576a88e9827e7006bbb39ede16ab0ce76c4a09600e9c43be7d82"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
+          "sha256": "a86dada29b2d27b7984aa8c0ccb7cf622864b53ae1dc99cb6dea80a3eb7645e4"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report_index.json",
+          "sha256": "592fadf454ee90a1a0dced03f35e808ce7eaaedc56920297e05d7878933da93d"
+        }
+      ],
+      "source_stage": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+      "status": "PARTIAL",
+      "partial_reasons": [
+        {
+          "capability": "remove_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "remove_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "add_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "add_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "reshard",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "reshard was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rebalance",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rebalance was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rolling_restart",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rolling_restart was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        }
+      ]
     },
     {
       "capability_id": "process_nodehost_faults_30",
@@ -56,7 +122,7 @@
       "status": "PASS"
     },
     {
-      "capability_id": "network_az_faults_30",
+      "capability_id": "network_delay_faults_30",
       "data_path_result": "SKIPPED_WITH_REASON",
       "nodes_observed": 30,
       "real_valkey_evidence": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
@@ -68,19 +134,61 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/capability_matrix.json",
-          "sha256": "aa2590e35efcb7128ac0fa13a1ca069884cc063cc5d200e1f9f50b9581172638"
+          "sha256": "81cba88c716213e9929a0f5d00d5bbf7d86f0627c5595767a9e7676bbbd15413"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
-          "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+          "sha256": "d1747441e15cac32a01ea54592a3e1f298908cf581b55f58d59f5d27a0afc2f4"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report_index.json",
-          "sha256": "35bcae4e83bfc3d9a37963095218a51986bcda2ec265c404159b2b433bb5635b"
+          "sha256": "f2a53056128298e4a9d0c22e866d5553dfd285502652a759703028d3698f55cd"
         }
       ],
       "source_stage": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
-      "status": "PASS"
+      "status": "PASS",
+      "fault_types_observed": [
+        "network_delay"
+      ]
+    },
+    {
+      "capability_id": "network_az_faults_30",
+      "data_path_result": "UNSUPPORTED_WITH_EVIDENCE",
+      "nodes_observed": 30,
+      "real_valkey_evidence": "",
+      "scale_nodes": 30,
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
+          "sha256": "44a745234a8bffdf4029023a64df76998e26b7d113b3410c19042f31e08eb6be"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/capability_matrix.json",
+          "sha256": "81cba88c716213e9929a0f5d00d5bbf7d86f0627c5595767a9e7676bbbd15413"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
+          "sha256": "d1747441e15cac32a01ea54592a3e1f298908cf581b55f58d59f5d27a0afc2f4"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report_index.json",
+          "sha256": "f2a53056128298e4a9d0c22e866d5553dfd285502652a759703028d3698f55cd"
+        }
+      ],
+      "source_stage": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+      "status": "UNSUPPORTED_WITH_EVIDENCE",
+      "fault_types_observed": [
+        "network_delay"
+      ],
+      "unsupported_reasons": [
+        {
+          "capability": "network_partition",
+          "reason_code": "network_partition_not_executed",
+          "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+          "reason": "Only network_delay was observed; network_partition/AZ isolation evidence is not present at 30 nodes."
+        }
+      ],
+      "reason": "Only network_delay evidence exists; network_partition/AZ isolation was not executed."
     },
     {
       "capability_id": "failover_latency_recovery_30",
@@ -122,19 +230,26 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/capability_matrix.json",
-          "sha256": "06267ef9bba6911bcca3ec868ce0a443ef255ee68e983ac9a767cb1b0c405555"
+          "sha256": "df7aba4e3cd8ef1df382a8973d35e4f1a64271e60b7e66554a614e3d52587aba"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/analysis_summary.json",
-          "sha256": "459500a4e764fed2a29cd9fb01dcdbf4405c6e878ab648c05abed5ae66ec12c9"
+          "sha256": "77f3aafd794d39caeccb97b381053b5ee037427d3cb6fbc8080cef90d539e2e3"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/reports/report_index.json",
-          "sha256": "016582088b7d1da2e7d7c3ee81bde49ec564c8b2f70f9a255a483bd48bdcc8ee"
+          "sha256": "a28102db7c5b8281af18e9c03f0a05c1b26538bf687bf218f4ce76ddbf793e5e"
         }
       ],
       "source_stage": "CML06_SPLIT_BRAIN_INDICATORS_30",
-      "status": "PASS"
+      "status": "PASS_ABSENCE_OBSERVED",
+      "absence_observed": {
+        "indicator": "conflicting_primaries",
+        "observed": false,
+        "evidence_status": "MISSING",
+        "reason_code": "conflicting_primaries_not_observed",
+        "source_field": "$.summary.split_brain_duration_ms"
+      }
     },
     {
       "capability_id": "workload_fault_windows_30",
@@ -167,5 +282,19 @@
   "created_at": "2026-07-02T07:52:55.512610Z",
   "schema_version": "v1",
   "stage_id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30",
-  "status": "PASS"
+  "status": "PARTIAL",
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_30",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 30 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_30",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "Only network_delay evidence exists at 30 nodes; network_partition/AZ isolation was not executed."
+    }
+  ]
 }

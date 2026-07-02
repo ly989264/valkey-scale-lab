@@ -23,7 +23,7 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/analysis_summary.json",
-          "sha256": "ae84b4171b2978080baa90f33b2f7b0367c1e27dd4e6040ee639f58a65c29d35"
+          "sha256": "b0f949944cf752f7e563fe47eb559d03499d5c97650260c05921f4a69249cfc3"
         }
       ]
     },
@@ -45,7 +45,7 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/analysis_summary.json",
-          "sha256": "ae84b4171b2978080baa90f33b2f7b0367c1e27dd4e6040ee639f58a65c29d35"
+          "sha256": "b0f949944cf752f7e563fe47eb559d03499d5c97650260c05921f4a69249cfc3"
         }
       ]
     },
@@ -67,7 +67,7 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/analysis_summary.json",
-          "sha256": "ae84b4171b2978080baa90f33b2f7b0367c1e27dd4e6040ee639f58a65c29d35"
+          "sha256": "b0f949944cf752f7e563fe47eb559d03499d5c97650260c05921f4a69249cfc3"
         }
       ]
     },
@@ -89,9 +89,17 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/analysis_summary.json",
-          "sha256": "ae84b4171b2978080baa90f33b2f7b0367c1e27dd4e6040ee639f58a65c29d35"
+          "sha256": "b0f949944cf752f7e563fe47eb559d03499d5c97650260c05921f4a69249cfc3"
         }
       ]
+    }
+  ],
+  "partial_reasons": [
+    {
+      "capability": "future_scale_200_500_1000_support",
+      "reason_code": "future_scales_not_default_real_execution",
+      "evidence_status": "SKIPPED_WITH_REASON",
+      "reason": "Future scales above 100 remain dry-run or unsupported by policy."
     }
   ]
 }

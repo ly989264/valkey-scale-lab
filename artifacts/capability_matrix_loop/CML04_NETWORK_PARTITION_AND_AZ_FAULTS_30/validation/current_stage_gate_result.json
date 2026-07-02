@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
   "status": "PASS",
-  "created_at": "2026-07-02T04:56:17.509017Z",
+  "created_at": "2026-07-02T09:45:51.891026Z",
   "checks": [
     {
       "name": "manifest",
@@ -59,6 +59,15 @@
       "expected_error_fragment": "sandbox-only network fault",
       "observed_errors": [
         "CML04 safety checks must prove sandbox-only network fault"
+      ]
+    },
+    {
+      "name": "network_delay_as_partition_pass",
+      "status": "PASS",
+      "expected_error_fragment": "network_delay evidence cannot satisfy network_az_faults_30 PASS",
+      "observed_errors": [
+        "CML04 capability matrix network_delay evidence cannot satisfy network_az_faults_30 PASS",
+        "CML04 capability matrix network_az_faults_30 PASS requires network_partition evidence"
       ]
     }
   ]

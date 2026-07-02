@@ -137,6 +137,7 @@ def test_stage_manifest_requires_cml02_management_artifacts():
     assert {
         "wrong node count fails",
         "missing required management operation fails",
+        "cluster create as reshard PASS fails",
         "cleanup residue fails",
         "empty workload windows fail",
     }.issubset(set(cml02["negative_requirements"]))
@@ -173,6 +174,7 @@ def test_stage_manifest_requires_cml04_network_fault_artifacts():
         "host network scope fails",
         "wrong node count fails",
         "host network mutation fails",
+        "network delay as partition PASS fails",
     }.issubset(set(cml04["negative_requirements"]))
 
 
@@ -203,6 +205,7 @@ def test_stage_manifest_requires_cml06_split_brain_artifacts():
     assert {
         "zero-filled split-brain absence fails",
         "missing conflicting-primary reason fails",
+        "split-brain missing as PASS fails",
     }.issubset(set(cml06["negative_requirements"]))
 
 
@@ -250,6 +253,7 @@ def test_stage_manifest_requires_cml09_reporting_close_artifacts():
         "missing capability evidence fails",
         "fake aggregate evidence fails",
         "wrong node count fails",
+        "split-brain missing as PASS fails",
     }.issubset(set(cml09["negative_requirements"]))
 
 
@@ -267,6 +271,7 @@ def test_stage_manifest_requires_cml10_scale_replay_50_artifacts():
         "fake real Valkey evidence fails",
         "30-node evidence reuse fails",
         "network PASS without 50-node evidence fails",
+        "cluster create as reshard PASS fails",
     }.issubset(set(cml10["negative_requirements"]))
 
 
@@ -284,6 +289,7 @@ def test_stage_manifest_requires_cml11_scale_replay_100_artifacts():
         "fake real Valkey evidence fails",
         "lower-scale evidence reuse fails",
         "network PASS without 100-node evidence fails",
+        "cluster create as reshard PASS fails",
     }.issubset(set(cml11["negative_requirements"]))
 
 
@@ -320,4 +326,15 @@ def test_stage_manifest_requires_cml13_final_audit_artifacts():
         "failed stage result fails",
         "future real PASS above 100 fails",
         "fake 100-node coverage fails",
+        "split-brain missing as PASS fails",
     }.issubset(set(cml13["negative_requirements"]))
+
+
+def test_strict_status_negative_cases_cover_false_pass_regressions():
+    gate = load_gate_module()
+    cml02_cases = {case["name"]: case for case in gate.make_cml02_negative_cases("CML02_CLUSTER_MANAGEMENT_REAL_OPS_30")}
+    cml04_cases = {case["name"]: case for case in gate.make_cml04_negative_cases("CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30")}
+    cml06_cases = {case["name"]: case for case in gate.make_cml06_negative_cases("CML06_SPLIT_BRAIN_INDICATORS_30")}
+    assert cml02_cases["cluster_create_as_reshard_pass"]["status"] == "PASS"
+    assert cml04_cases["network_delay_as_partition_pass"]["status"] == "PASS"
+    assert cml06_cases["split_brain_missing_as_pass"]["status"] == "PASS"

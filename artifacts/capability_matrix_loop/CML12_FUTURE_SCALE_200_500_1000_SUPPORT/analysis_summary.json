@@ -16,5 +16,13 @@
       500,
       1000
     ]
-  }
+  },
+  "partial_reasons": [
+    {
+      "capability": "future_scale_200_500_1000_support",
+      "reason_code": "future_scales_not_default_real_execution",
+      "evidence_status": "SKIPPED_WITH_REASON",
+      "reason": "Future scales above 100 remain dry-run or unsupported by policy."
+    }
+  ]
 }

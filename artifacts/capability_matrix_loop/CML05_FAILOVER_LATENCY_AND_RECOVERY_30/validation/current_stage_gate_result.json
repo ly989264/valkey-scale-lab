@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
   "status": "PASS",
-  "created_at": "2026-07-02T05:02:25.920855Z",
+  "created_at": "2026-07-02T09:46:42.157736Z",
   "checks": [
     {
       "name": "manifest",

@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML08_BOUNDED_SOAK_30_60_MINUTES",
   "status": "PASS",
-  "created_at": "2026-07-02T07:48:48.608127Z",
+  "created_at": "2026-07-02T09:46:42.126762Z",
   "checks": [
     {
       "name": "manifest",

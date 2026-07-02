@@ -11,7 +11,7 @@
       "scale_nodes": 50,
       "nodes_observed": 50,
       "data_path_result": "PASS",
-      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/real_valkey_evidence_reporting_close_30.json",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
       "source_artifacts": [
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
@@ -36,7 +36,7 @@
     },
     {
       "capability_id": "lifecycle_ops_50",
-      "status": "PARTIAL",
+      "status": "PASS",
       "source_stage": "P13_SCALE_LADDER_50_100",
       "scale_nodes": 50,
       "nodes_observed": 50,
@@ -56,38 +56,7 @@
           "sha256": "ea991a8f05f076853c0835784e2c55943bf464efbb5ffb27d3f362fca2562e09"
         }
       ],
-      "partial_reasons": [
-        {
-          "capability": "remove_node",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "remove_node was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "add_node",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "add_node was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "reshard",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "reshard was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "rebalance",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "rebalance was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "rolling_restart",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "rolling_restart was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        }
-      ]
+      "partial_reasons": []
     },
     {
       "capability_id": "process_nodehost_faults_50",

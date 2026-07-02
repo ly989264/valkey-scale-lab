@@ -5,16 +5,32 @@
   "status": "PARTIAL",
   "created_at": "2026-07-02T08:13:14.192305Z",
   "summary": {
-    "delta": "100-node replay from P13 wrapper evidence; 5 PASS capabilities and 1 unsupported network gap.",
+    "delta": "100-node replay distinguishes cluster create PASS from lifecycle, split-brain absence, and network partition gaps.",
     "error_rate": 0.0,
-    "capability_count": 6,
-    "pass_count": 5,
+    "capability_count": 7,
+    "pass_count": 4,
     "unsupported_with_evidence_count": 1,
     "scale_nodes": 100,
     "failover_latency_ms": 23585.219,
     "qps_drop_ratio": "MISSING P13 workload report does not provide steady-state QPS denominator",
     "latency_delta": "MISSING heterogeneous sampled fault windows only",
     "unavailable_ms": "MISSING unavailable window not directly measured",
-    "sample_coverage": 0.8333333333333334
-  }
+    "sample_coverage": 0.8333333333333334,
+    "partial_count": 1,
+    "pass_absence_observed_count": 1
+  },
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_100",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 100 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_100",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "No network_partition/AZ isolation fault evidence exists at 100 nodes."
+    }
+  ]
 }

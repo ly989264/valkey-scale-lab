@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML11_SCALE_REPLAY_100",
   "status": "PASS",
-  "created_at": "2026-07-02T08:13:56.694214Z",
+  "created_at": "2026-07-02T09:46:05.383111Z",
   "checks": [
     {
       "name": "manifest",
@@ -58,7 +58,7 @@
       "status": "PASS",
       "expected_error_fragment": "must not reuse 30-node or 50-node",
       "observed_errors": [
-        "CML11 capability cluster_management_scale_100 must not reuse 30-node or 50-node evidence"
+        "CML11 capability cluster_create_ops_100 must not reuse 30-node or 50-node evidence"
       ]
     },
     {
@@ -66,7 +66,19 @@
       "status": "PASS",
       "expected_error_fragment": "must be UNSUPPORTED_WITH_EVIDENCE",
       "observed_errors": [
+        "CML11 evidence index network_az_faults_100 PASS requires network_partition evidence",
+        "CML11 capability network_az_faults_100 must be UNSUPPORTED_WITH_EVIDENCE",
         "CML11 network_az_faults_100 must be UNSUPPORTED_WITH_EVIDENCE"
+      ]
+    },
+    {
+      "name": "cluster_create_as_reshard_pass",
+      "status": "PASS",
+      "expected_error_fragment": "lifecycle_ops_100 must be PARTIAL",
+      "observed_errors": [
+        "CML11 evidence index lifecycle_ops_100 must be PARTIAL unless lifecycle operations actually run",
+        "CML11 evidence index lifecycle_ops_100 missing machine-readable partial reasons: ['add_node', 'rebalance', 'remove_node', 'reshard', 'rolling_restart']",
+        "CML11 capability lifecycle_ops_100 must be PARTIAL"
       ]
     }
   ]

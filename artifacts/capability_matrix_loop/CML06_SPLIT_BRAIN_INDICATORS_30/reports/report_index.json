@@ -25,7 +25,7 @@
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/analysis_summary.json",
-          "sha256": "459500a4e764fed2a29cd9fb01dcdbf4405c6e878ab648c05abed5ae66ec12c9"
+          "sha256": "77f3aafd794d39caeccb97b381053b5ee037427d3cb6fbc8080cef90d539e2e3"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/real_valkey_evidence_split_brain_30.json",
@@ -55,7 +55,7 @@
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/analysis_summary.json",
-          "sha256": "459500a4e764fed2a29cd9fb01dcdbf4405c6e878ab648c05abed5ae66ec12c9"
+          "sha256": "77f3aafd794d39caeccb97b381053b5ee037427d3cb6fbc8080cef90d539e2e3"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/reports/split_brain_timeline.svg",
@@ -73,7 +73,7 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/analysis_summary.json",
-          "sha256": "459500a4e764fed2a29cd9fb01dcdbf4405c6e878ab648c05abed5ae66ec12c9"
+          "sha256": "77f3aafd794d39caeccb97b381053b5ee037427d3cb6fbc8080cef90d539e2e3"
         }
       ]
     }

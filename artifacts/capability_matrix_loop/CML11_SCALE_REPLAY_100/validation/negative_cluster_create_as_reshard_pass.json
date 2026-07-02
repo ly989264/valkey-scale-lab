@@ -36,7 +36,7 @@
     },
     {
       "capability_id": "lifecycle_ops_100",
-      "status": "PARTIAL",
+      "status": "PASS",
       "source_stage": "P13_SCALE_LADDER_50_100",
       "scale_nodes": 100,
       "nodes_observed": 100,
@@ -56,38 +56,7 @@
           "sha256": "b998333f71ee9be2e28d9a9072129d92824a1272858fc1cfb29ba038b9ce5434"
         }
       ],
-      "partial_reasons": [
-        {
-          "capability": "remove_node",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "remove_node was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "add_node",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "add_node was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "reshard",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "reshard was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "rebalance",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "rebalance was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        },
-        {
-          "capability": "rolling_restart",
-          "reason_code": "not_executed_by_cluster_create_evidence",
-          "evidence_status": "MISSING",
-          "reason": "rolling_restart was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
-        }
-      ]
+      "partial_reasons": []
     },
     {
       "capability_id": "process_nodehost_faults_100",
@@ -186,7 +155,7 @@
     },
     {
       "capability_id": "network_az_faults_100",
-      "status": "PASS",
+      "status": "UNSUPPORTED_WITH_EVIDENCE",
       "source_stage": "P13_SCALE_LADDER_50_100",
       "scale_nodes": 100,
       "nodes_observed": 100,

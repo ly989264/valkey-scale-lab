@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
   "status": "PASS",
-  "created_at": "2026-07-02T04:34:08.555983Z",
+  "created_at": "2026-07-02T09:46:42.114051Z",
   "checks": [
     {
       "name": "manifest",

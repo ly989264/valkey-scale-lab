@@ -2,7 +2,7 @@
   "schema_version": "v1",
   "artifact_type": "capability_report_index",
   "stage_id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
-  "status": "PASS",
+  "status": "PARTIAL",
   "created_at": "2026-07-02T04:40:57.206742Z",
   "reports": [
     {
@@ -21,7 +21,7 @@
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
-          "sha256": "0588d8554506d4ba1c2cf42c5d88dcc78c7777843f3207d198a10c228aadd319"
+          "sha256": "a86dada29b2d27b7984aa8c0ccb7cf622864b53ae1dc99cb6dea80a3eb7645e4"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
@@ -43,7 +43,7 @@
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
-          "sha256": "0588d8554506d4ba1c2cf42c5d88dcc78c7777843f3207d198a10c228aadd319"
+          "sha256": "a86dada29b2d27b7984aa8c0ccb7cf622864b53ae1dc99cb6dea80a3eb7645e4"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/management_timeline.svg",
@@ -61,9 +61,23 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
-          "sha256": "0588d8554506d4ba1c2cf42c5d88dcc78c7777843f3207d198a10c228aadd319"
+          "sha256": "a86dada29b2d27b7984aa8c0ccb7cf622864b53ae1dc99cb6dea80a3eb7645e4"
         }
       ]
+    }
+  ],
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_30",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 30 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_30",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "No network_partition/AZ isolation fault evidence exists at 30 nodes."
     }
   ]
 }

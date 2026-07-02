@@ -17,9 +17,23 @@
         "properties": {
           "capability": {"type": "string", "minLength": 1},
           "scale_nodes": {"type": "integer", "minimum": 0},
-          "status": {"type": "string", "enum": ["PASS", "PARTIAL", "MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_EVIDENCE", "ABSENT_OBSERVED"]},
+          "status": {"type": "string", "enum": ["PASS", "PARTIAL", "MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_EVIDENCE", "ABSENT_OBSERVED", "PASS_ABSENCE_OBSERVED"]},
           "evidence_paths": {"type": "array", "items": {"type": "string"}},
-          "missing_or_partial": {"type": "array", "items": {"type": "string"}}
+          "missing_or_partial": {"type": "array", "items": {"type": "string"}},
+          "partial_reasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["capability", "reason_code", "evidence_status", "reason"],
+              "properties": {
+                "capability": {"type": "string", "minLength": 1},
+                "reason_code": {"type": "string", "minLength": 1},
+                "evidence_status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_EVIDENCE"]},
+                "reason": {"type": "string", "minLength": 1}
+              },
+              "additionalProperties": true
+            }
+          }
         },
         "additionalProperties": true
       }

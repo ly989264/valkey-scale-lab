@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
   "status": "PASS",
-  "created_at": "2026-07-02T04:19:30.862263Z",
+  "created_at": "2026-07-02T09:45:51.885892Z",
   "checks": [
     {
       "name": "manifest",

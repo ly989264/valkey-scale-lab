@@ -2,7 +2,7 @@
   "schema_version": "v1",
   "artifact_type": "capability_analysis_summary",
   "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
-  "status": "PASS",
+  "status": "PARTIAL",
   "created_at": "2026-07-02T04:55:42.134006Z",
   "summary": {
     "delta": 0,
@@ -10,7 +10,16 @@
     "qps_drop_ratio": "UNSUPPORTED_WITH_EVIDENCE",
     "latency_delta": "UNSUPPORTED_WITH_EVIDENCE",
     "unavailable_ms": "UNSUPPORTED_WITH_EVIDENCE",
-    "sample_coverage": 1.0
+    "sample_coverage": 1.0,
+    "capability_count": 2,
+    "pass_count": 1,
+    "unsupported_with_evidence_count": 1,
+    "observed_fault_types": [
+      "network_delay"
+    ],
+    "missing_fault_types": [
+      "network_partition"
+    ]
   },
   "source_artifacts": [
     {
@@ -40,6 +49,14 @@
     {
       "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/cleanup_report.json",
       "sha256": "f516c69a902312e44a4613a1cd537919ebf9a347a8ac4da33244104174068fd7"
+    }
+  ],
+  "partial_reasons": [
+    {
+      "capability": "network_az_faults_30",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "Only network_delay evidence exists at 30 nodes; network_partition/AZ isolation was not executed."
     }
   ]
 }

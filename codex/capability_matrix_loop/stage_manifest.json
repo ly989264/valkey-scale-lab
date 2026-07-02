@@ -348,6 +348,7 @@
       "negative_requirements": [
         "wrong node count fails",
         "missing required management operation fails",
+        "cluster create as reshard PASS fails",
         "cleanup residue fails",
         "empty workload windows fail"
       ]
@@ -608,7 +609,8 @@
       "negative_requirements": [
         "host network scope fails",
         "wrong node count fails",
-        "host network mutation fails"
+        "host network mutation fails",
+        "network delay as partition PASS fails"
       ]
     },
     {
@@ -841,7 +843,8 @@
       ],
       "negative_requirements": [
         "zero-filled split-brain absence fails",
-        "missing conflicting-primary reason fails"
+        "missing conflicting-primary reason fails",
+        "split-brain missing as PASS fails"
       ]
     },
     {
@@ -1231,7 +1234,8 @@
       "negative_requirements": [
         "missing capability evidence fails",
         "fake aggregate evidence fails",
-        "wrong node count fails"
+        "wrong node count fails",
+        "split-brain missing as PASS fails"
       ]
     },
     {
@@ -1358,7 +1362,8 @@
         "wrong 50-node count fails",
         "fake real Valkey evidence fails",
         "30-node evidence reuse fails",
-        "network PASS without 50-node evidence fails"
+        "network PASS without 50-node evidence fails",
+        "cluster create as reshard PASS fails"
       ]
     },
     {
@@ -1485,7 +1490,8 @@
         "wrong 100-node count fails",
         "fake real Valkey evidence fails",
         "lower-scale evidence reuse fails",
-        "network PASS without 100-node evidence fails"
+        "network PASS without 100-node evidence fails",
+        "cluster create as reshard PASS fails"
       ]
     },
     {
@@ -1718,7 +1724,8 @@
         "missing completed stage fails",
         "failed stage result fails",
         "future real PASS above 100 fails",
-        "fake 100-node coverage fails"
+        "fake 100-node coverage fails",
+        "split-brain missing as PASS fails"
       ]
     }
   ]

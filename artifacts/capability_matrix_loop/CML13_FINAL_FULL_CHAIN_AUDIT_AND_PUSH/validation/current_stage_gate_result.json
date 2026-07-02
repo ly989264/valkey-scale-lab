@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
   "status": "PASS",
-  "created_at": "2026-07-02T08:23:30.042276Z",
+  "created_at": "2026-07-02T09:48:22.442715Z",
   "checks": [
     {
       "name": "manifest",
@@ -59,6 +59,15 @@
       "expected_error_fragment": "must not PASS above 100",
       "observed_errors": [
         "CML13 capability future_scale_1000_support must not PASS above 100 real nodes"
+      ]
+    },
+    {
+      "name": "split_brain_missing_as_pass",
+      "status": "PASS",
+      "expected_error_fragment": "must be PASS_ABSENCE_OBSERVED",
+      "observed_errors": [
+        "CML13 final evidence index split_brain_indicators_100 must be PASS_ABSENCE_OBSERVED or UNSUPPORTED_WITH_EVIDENCE, not PASS",
+        "CML13 final evidence index split_brain_indicators_100 status must be absence-observed or unsupported"
       ]
     },
     {

@@ -16,10 +16,24 @@
         "required": ["capability_id", "status", "scale_nodes", "real_valkey_required", "evidence_chain"],
         "properties": {
           "capability_id": {"type": "string", "minLength": 1},
-          "status": {"type": "string", "enum": ["PASS", "FAIL", "PARTIAL", "MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_EVIDENCE", "ABSENT_OBSERVED"]},
+          "status": {"type": "string", "enum": ["PASS", "FAIL", "PARTIAL", "MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_EVIDENCE", "ABSENT_OBSERVED", "PASS_ABSENCE_OBSERVED"]},
           "scale_nodes": {"type": "integer", "minimum": 0, "maximum": 100},
           "real_valkey_required": {"type": "boolean"},
           "windows": {"type": "array", "items": {"type": "string"}},
+          "partial_reasons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["capability", "reason_code", "evidence_status", "reason"],
+              "properties": {
+                "capability": {"type": "string", "minLength": 1},
+                "reason_code": {"type": "string", "minLength": 1},
+                "evidence_status": {"type": "string", "enum": ["MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_EVIDENCE"]},
+                "reason": {"type": "string", "minLength": 1}
+              },
+              "additionalProperties": true
+            }
+          },
           "evidence_chain": {
             "type": "object",
             "required": ["operation_events", "fault_events", "metrics_windows", "workload_windows", "analysis_summary", "report_index"],

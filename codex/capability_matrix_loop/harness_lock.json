@@ -8,7 +8,7 @@
     },
     {
       "path": "codex/capability_matrix_loop/stage_manifest.json",
-      "sha256": "df691eb4806e593b5c87146cf93386016181512c5a506de145da99dd8557573a"
+      "sha256": "262ff75baaed76cff020f5b39c7b0ab3ee68d4b8d83e9c850503fdff6322621d"
     },
     {
       "path": "schemas/capability_matrix_loop/prompt_pack_location.schema.json",
@@ -36,7 +36,7 @@
     },
     {
       "path": "schemas/capability_matrix_loop/capability_matrix_baseline.schema.json",
-      "sha256": "b7c4080009ec437ff10be7cc2837e6c92f27502350bc94a25b6c5752762848d5"
+      "sha256": "6e4210428e8577858ca1d017dc2c4c60eeacccbaf51857c642b1a3daa03c7014"
     },
     {
       "path": "schemas/capability_matrix_loop/capability_audit_decision.schema.json",
@@ -48,7 +48,7 @@
     },
     {
       "path": "schemas/capability_matrix_loop/capability_matrix.schema.json",
-      "sha256": "7e42b5e451688c78a5a85a537332d5a3603b2038c1580c1ef304a15a131c0b24"
+      "sha256": "414b4cbc3f25575a5a71ca291593ed2b553eed96695c80ed26058f02a5a04be7"
     },
     {
       "path": "schemas/capability_matrix_loop/operation_event.schema.json",
@@ -76,11 +76,11 @@
     },
     {
       "path": "tools/capability_matrix_gate.py",
-      "sha256": "d7c9b87d2cf1bafd5e344702b3dbd551cec5db3df4eb472f47c83b7e3e87089f"
+      "sha256": "2e0f748ef0536c994493b59dc976fde3b745e0cb6ae2235dc7bee24e0a7c1e8c"
     },
     {
       "path": "tests/capability_loop/test_capability_matrix_gate.py",
-      "sha256": "e1b9bc60afc6147e5266a25e68382b2bd528e42171ddd49606c9749099440248"
+      "sha256": "d936591597975eddee488834ac7df3fd34676b73aee512a0e931069afffab6d1"
     },
     {
       "path": "tools/cml08_bounded_soak_runner.py",

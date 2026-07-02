@@ -734,7 +734,7 @@
     },
     {
       "capability_id": "split_brain_indicators_100",
-      "status": "PASS_ABSENCE_OBSERVED",
+      "status": "PASS",
       "source_stage": "P13_SCALE_LADDER_50_100",
       "scale_nodes": 100,
       "nodes_observed": 99,

@@ -27,11 +27,11 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/analysis_summary.json",
-          "sha256": "c801aa0587c5f21328e318f7fb63b7432779244ce700f476ae148abccf8c971e"
+          "sha256": "33a0a2937b017156c3047e06bb2c8a0c43dffe16e742149378004bc0406d57b0"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json",
@@ -61,11 +61,11 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/analysis_summary.json",
-          "sha256": "c801aa0587c5f21328e318f7fb63b7432779244ce700f476ae148abccf8c971e"
+          "sha256": "33a0a2937b017156c3047e06bb2c8a0c43dffe16e742149378004bc0406d57b0"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json",
@@ -95,11 +95,11 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/analysis_summary.json",
-          "sha256": "c801aa0587c5f21328e318f7fb63b7432779244ce700f476ae148abccf8c971e"
+          "sha256": "33a0a2937b017156c3047e06bb2c8a0c43dffe16e742149378004bc0406d57b0"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json",
@@ -129,17 +129,31 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/analysis_summary.json",
-          "sha256": "c801aa0587c5f21328e318f7fb63b7432779244ce700f476ae148abccf8c971e"
+          "sha256": "33a0a2937b017156c3047e06bb2c8a0c43dffe16e742149378004bc0406d57b0"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json",
           "sha256": "49fd51f8b3e7d348be8f59c96a21b27aa352c614f10851b0d597d2082df206b3"
         }
       ]
+    }
+  ],
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_100",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 100 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_100",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "No network_partition/AZ isolation fault evidence exists at 100 nodes."
     }
   ]
 }

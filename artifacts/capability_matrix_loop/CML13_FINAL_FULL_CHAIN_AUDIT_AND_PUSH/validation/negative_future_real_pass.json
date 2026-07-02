@@ -3,17 +3,18 @@
   "artifact_type": "final_evidence_index",
   "stage_id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
   "created_at": "2026-07-02T08:22:41.449749Z",
-  "status": "PASS",
+  "status": "PARTIAL",
   "capabilities": [
     {
-      "capability_id": "cluster_management_scale_30",
-      "status": "PASS",
+      "capability_id": "cluster_create_ops_30",
+      "data_path_result": "PASS",
+      "nodes_observed": 30,
+      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
       "scale_nodes": 30,
-      "source_stage": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
-          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+          "sha256": "c6c367891fbf951ed2f0c38c3e163f79d15b04c9911c3c694826d86db05b8a79"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
@@ -21,27 +22,100 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/capability_matrix.json",
-          "sha256": "603f9cddf49441d54ebeb30b308fe3a60242348d60260d2f2038741a79aa77ea"
+          "sha256": "f2ef88cba167576a88e9827e7006bbb39ede16ab0ce76c4a09600e9c43be7d82"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
-          "sha256": "0588d8554506d4ba1c2cf42c5d88dcc78c7777843f3207d198a10c228aadd319"
+          "sha256": "a86dada29b2d27b7984aa8c0ccb7cf622864b53ae1dc99cb6dea80a3eb7645e4"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report_index.json",
-          "sha256": "9063a68b2545705833f36d3e327e215df4642892be04045b51bd4b0d1cbc5422"
+          "sha256": "592fadf454ee90a1a0dced03f35e808ce7eaaedc56920297e05d7878933da93d"
+        }
+      ],
+      "source_stage": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+      "status": "PASS",
+      "executed_operations": [
+        "tree_fanout_meet_primaries",
+        "parallel_add_slots",
+        "tree_fanout_meet_replicas",
+        "parallel_add_replicas",
+        "final_cluster_check"
+      ]
+    },
+    {
+      "capability_id": "lifecycle_ops_30",
+      "data_path_result": "PARTIAL",
+      "nodes_observed": 30,
+      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
+      "scale_nodes": 30,
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
+          "sha256": "c6c367891fbf951ed2f0c38c3e163f79d15b04c9911c3c694826d86db05b8a79"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
+          "sha256": "e7bc0bd44c5fa3f728de2365e7e78bc7397eb06438b7e102b7333673fac1444a"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/capability_matrix.json",
+          "sha256": "f2ef88cba167576a88e9827e7006bbb39ede16ab0ce76c4a09600e9c43be7d82"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
+          "sha256": "a86dada29b2d27b7984aa8c0ccb7cf622864b53ae1dc99cb6dea80a3eb7645e4"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report_index.json",
+          "sha256": "592fadf454ee90a1a0dced03f35e808ce7eaaedc56920297e05d7878933da93d"
+        }
+      ],
+      "source_stage": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+      "status": "PARTIAL",
+      "partial_reasons": [
+        {
+          "capability": "remove_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "remove_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "add_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "add_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "reshard",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "reshard was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rebalance",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rebalance was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rolling_restart",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rolling_restart was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
         }
       ]
     },
     {
       "capability_id": "process_nodehost_faults_30",
-      "status": "PASS",
+      "data_path_result": "PASS",
+      "nodes_observed": 29,
+      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/real_valkey_evidence_fault_30.json",
       "scale_nodes": 30,
-      "source_stage": "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
-          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+          "sha256": "c6c367891fbf951ed2f0c38c3e163f79d15b04c9911c3c694826d86db05b8a79"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/real_valkey_evidence_fault_30.json",
@@ -59,17 +133,20 @@
           "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/report_index.json",
           "sha256": "6f7945fe0f9f4ab1bd6fbfc2b668ca4cc6e5e22379c2ab172d054e0e4c0b50c3"
         }
-      ]
+      ],
+      "source_stage": "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
+      "status": "PASS"
     },
     {
-      "capability_id": "network_az_faults_30",
-      "status": "PASS",
+      "capability_id": "network_delay_faults_30",
+      "data_path_result": "SKIPPED_WITH_REASON",
+      "nodes_observed": 30,
+      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
       "scale_nodes": 30,
-      "source_stage": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
-          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+          "sha256": "c6c367891fbf951ed2f0c38c3e163f79d15b04c9911c3c694826d86db05b8a79"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
@@ -77,27 +154,76 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/capability_matrix.json",
-          "sha256": "aa2590e35efcb7128ac0fa13a1ca069884cc063cc5d200e1f9f50b9581172638"
+          "sha256": "81cba88c716213e9929a0f5d00d5bbf7d86f0627c5595767a9e7676bbbd15413"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
-          "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+          "sha256": "d1747441e15cac32a01ea54592a3e1f298908cf581b55f58d59f5d27a0afc2f4"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report_index.json",
-          "sha256": "35bcae4e83bfc3d9a37963095218a51986bcda2ec265c404159b2b433bb5635b"
+          "sha256": "f2a53056128298e4a9d0c22e866d5553dfd285502652a759703028d3698f55cd"
         }
+      ],
+      "source_stage": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+      "status": "PASS",
+      "fault_types_observed": [
+        "network_delay"
       ]
     },
     {
-      "capability_id": "failover_latency_recovery_30",
-      "status": "PASS",
+      "capability_id": "network_az_faults_30",
+      "data_path_result": "UNSUPPORTED_WITH_EVIDENCE",
+      "nodes_observed": 30,
+      "real_valkey_evidence": "",
       "scale_nodes": 30,
-      "source_stage": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
-          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+          "sha256": "c6c367891fbf951ed2f0c38c3e163f79d15b04c9911c3c694826d86db05b8a79"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
+          "sha256": "44a745234a8bffdf4029023a64df76998e26b7d113b3410c19042f31e08eb6be"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/capability_matrix.json",
+          "sha256": "81cba88c716213e9929a0f5d00d5bbf7d86f0627c5595767a9e7676bbbd15413"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
+          "sha256": "d1747441e15cac32a01ea54592a3e1f298908cf581b55f58d59f5d27a0afc2f4"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report_index.json",
+          "sha256": "f2a53056128298e4a9d0c22e866d5553dfd285502652a759703028d3698f55cd"
+        }
+      ],
+      "source_stage": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+      "status": "UNSUPPORTED_WITH_EVIDENCE",
+      "fault_types_observed": [
+        "network_delay"
+      ],
+      "unsupported_reasons": [
+        {
+          "capability": "network_partition",
+          "reason_code": "network_partition_not_executed",
+          "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+          "reason": "Only network_delay was observed; network_partition/AZ isolation evidence is not present at 30 nodes."
+        }
+      ],
+      "reason": "Only network_delay evidence exists; network_partition/AZ isolation was not executed."
+    },
+    {
+      "capability_id": "failover_latency_recovery_30",
+      "data_path_result": "PASS",
+      "nodes_observed": 29,
+      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/real_valkey_evidence_failover_30.json",
+      "scale_nodes": 30,
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
+          "sha256": "c6c367891fbf951ed2f0c38c3e163f79d15b04c9911c3c694826d86db05b8a79"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/real_valkey_evidence_failover_30.json",
@@ -115,17 +241,20 @@
           "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/report_index.json",
           "sha256": "833e4049ab665cc78ed57c2fa6034a2dc3e9f6b48c7dc6a847f7fafc337d3154"
         }
-      ]
+      ],
+      "source_stage": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
+      "status": "PASS"
     },
     {
       "capability_id": "split_brain_indicators_30",
-      "status": "PASS",
+      "data_path_result": "PASS",
+      "nodes_observed": 29,
+      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/real_valkey_evidence_split_brain_30.json",
       "scale_nodes": 30,
-      "source_stage": "CML06_SPLIT_BRAIN_INDICATORS_30",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
-          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+          "sha256": "c6c367891fbf951ed2f0c38c3e163f79d15b04c9911c3c694826d86db05b8a79"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/real_valkey_evidence_split_brain_30.json",
@@ -133,27 +262,37 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/capability_matrix.json",
-          "sha256": "06267ef9bba6911bcca3ec868ce0a443ef255ee68e983ac9a767cb1b0c405555"
+          "sha256": "df7aba4e3cd8ef1df382a8973d35e4f1a64271e60b7e66554a614e3d52587aba"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/analysis_summary.json",
-          "sha256": "459500a4e764fed2a29cd9fb01dcdbf4405c6e878ab648c05abed5ae66ec12c9"
+          "sha256": "77f3aafd794d39caeccb97b381053b5ee037427d3cb6fbc8080cef90d539e2e3"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/reports/report_index.json",
-          "sha256": "016582088b7d1da2e7d7c3ee81bde49ec564c8b2f70f9a255a483bd48bdcc8ee"
+          "sha256": "a28102db7c5b8281af18e9c03f0a05c1b26538bf687bf218f4ce76ddbf793e5e"
         }
-      ]
+      ],
+      "source_stage": "CML06_SPLIT_BRAIN_INDICATORS_30",
+      "status": "PASS_ABSENCE_OBSERVED",
+      "absence_observed": {
+        "indicator": "conflicting_primaries",
+        "observed": false,
+        "evidence_status": "MISSING",
+        "reason_code": "conflicting_primaries_not_observed",
+        "source_field": "$.summary.split_brain_duration_ms"
+      }
     },
     {
       "capability_id": "workload_fault_windows_30",
-      "status": "PASS",
+      "data_path_result": "PASS",
+      "nodes_observed": 29,
+      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json",
       "scale_nodes": 30,
-      "source_stage": "CML07_WORKLOAD_FAULT_WINDOWS_30",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
-          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+          "sha256": "c6c367891fbf951ed2f0c38c3e163f79d15b04c9911c3c694826d86db05b8a79"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json",
@@ -171,17 +310,20 @@
           "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/report_index.json",
           "sha256": "1822f02e30914af08a686ce2227354b853219a0bcebeb4cc76c729155a1e2273"
         }
-      ]
+      ],
+      "source_stage": "CML07_WORKLOAD_FAULT_WINDOWS_30",
+      "status": "PASS"
     },
     {
       "capability_id": "bounded_soak_30_60_minutes",
-      "status": "PASS",
+      "data_path_result": "PASS",
+      "nodes_observed": 30,
+      "real_valkey_evidence": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/real_valkey_evidence_bounded_soak_30.json",
       "scale_nodes": 30,
-      "source_stage": "CML08_BOUNDED_SOAK_30_60_MINUTES",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
-          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+          "sha256": "c6c367891fbf951ed2f0c38c3e163f79d15b04c9911c3c694826d86db05b8a79"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/real_valkey_evidence_bounded_soak_30.json",
@@ -199,17 +341,22 @@
           "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/reports/report_index.json",
           "sha256": "9be5cc14459e935b08c4cfe1333f788bc16a1418b2347d7d7fe818a9adaa9494"
         }
-      ]
+      ],
+      "source_stage": "CML08_BOUNDED_SOAK_30_60_MINUTES",
+      "status": "PASS"
     },
     {
-      "capability_id": "cluster_management_scale_50",
+      "capability_id": "cluster_create_ops_50",
       "status": "PASS",
-      "scale_nodes": 50,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 50,
+      "nodes_observed": 50,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
-          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+          "sha256": "80c8646f19cc3b772c71d372a03c92ce53c16747abedc017a55dd1abc29508f5"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
@@ -223,17 +370,86 @@
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
           "sha256": "ea991a8f05f076853c0835784e2c55943bf464efbb5ffb27d3f362fca2562e09"
         }
+      ],
+      "executed_operations": [
+        "tree_fanout_meet_primaries",
+        "parallel_add_slots",
+        "tree_fanout_meet_replicas",
+        "parallel_add_replicas",
+        "final_cluster_check"
+      ]
+    },
+    {
+      "capability_id": "lifecycle_ops_50",
+      "status": "PARTIAL",
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 50,
+      "nodes_observed": 50,
+      "data_path_result": "PARTIAL",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
+          "sha256": "80c8646f19cc3b772c71d372a03c92ce53c16747abedc017a55dd1abc29508f5"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+          "sha256": "6fd65c120e88d47c08a8c4aa003363c0cbdf0fd47175e59b02d7a4ca2cbf2be0"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json",
+          "sha256": "93215fcae42f2a738a85db3f0274d60603d81ccb22fa8e298d2b17e13c2cde9a"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "sha256": "ea991a8f05f076853c0835784e2c55943bf464efbb5ffb27d3f362fca2562e09"
+        }
+      ],
+      "partial_reasons": [
+        {
+          "capability": "remove_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "remove_node was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "add_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "add_node was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "reshard",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "reshard was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rebalance",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rebalance was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rolling_restart",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rolling_restart was not executed at 50 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        }
       ]
     },
     {
       "capability_id": "process_nodehost_faults_50",
       "status": "PASS",
-      "scale_nodes": 50,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 50,
+      "nodes_observed": 49,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
-          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+          "sha256": "80c8646f19cc3b772c71d372a03c92ce53c16747abedc017a55dd1abc29508f5"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
@@ -252,12 +468,15 @@
     {
       "capability_id": "failover_latency_recovery_50",
       "status": "PASS",
-      "scale_nodes": 50,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 50,
+      "nodes_observed": 49,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
-          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+          "sha256": "80c8646f19cc3b772c71d372a03c92ce53c16747abedc017a55dd1abc29508f5"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
@@ -279,13 +498,16 @@
     },
     {
       "capability_id": "split_brain_indicators_50",
-      "status": "PASS",
-      "scale_nodes": 50,
+      "status": "PASS_ABSENCE_OBSERVED",
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 50,
+      "nodes_observed": 49,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
-          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+          "sha256": "80c8646f19cc3b772c71d372a03c92ce53c16747abedc017a55dd1abc29508f5"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
@@ -295,17 +517,27 @@
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
           "sha256": "6fa1d1f47a920f813f9dc46781e88efbb97febd8c249f5c002e70496f87ff39b"
         }
-      ]
+      ],
+      "absence_observed": {
+        "indicator": "conflicting_primaries",
+        "observed": false,
+        "evidence_status": "MISSING",
+        "reason_code": "conflicting_primaries_not_observed",
+        "source_field": "$.summary.split_brain_duration_ms"
+      }
     },
     {
       "capability_id": "workload_fault_windows_50",
       "status": "PASS",
-      "scale_nodes": 50,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 50,
+      "nodes_observed": 50,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
-          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+          "sha256": "80c8646f19cc3b772c71d372a03c92ce53c16747abedc017a55dd1abc29508f5"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
@@ -320,12 +552,15 @@
     {
       "capability_id": "network_az_faults_50",
       "status": "UNSUPPORTED_WITH_EVIDENCE",
-      "scale_nodes": 50,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 50,
+      "nodes_observed": 50,
+      "data_path_result": "UNSUPPORTED_WITH_EVIDENCE",
+      "real_valkey_evidence": "",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
-          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+          "sha256": "80c8646f19cc3b772c71d372a03c92ce53c16747abedc017a55dd1abc29508f5"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
@@ -335,17 +570,29 @@
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
           "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6"
         }
+      ],
+      "reason": "50-node network partition evidence is not present in P13 wrapper outputs; retained as unsupported instead of promoted to PASS.",
+      "unsupported_reasons": [
+        {
+          "capability": "network_partition",
+          "reason_code": "network_partition_not_executed",
+          "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+          "reason": "network_partition/AZ isolation evidence is not present at 50 nodes."
+        }
       ]
     },
     {
-      "capability_id": "cluster_management_scale_100",
+      "capability_id": "cluster_create_ops_100",
       "status": "PASS",
-      "scale_nodes": 100,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 100,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
@@ -359,17 +606,86 @@
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
           "sha256": "b998333f71ee9be2e28d9a9072129d92824a1272858fc1cfb29ba038b9ce5434"
         }
+      ],
+      "executed_operations": [
+        "tree_fanout_meet_primaries",
+        "parallel_add_slots",
+        "tree_fanout_meet_replicas",
+        "parallel_add_replicas",
+        "final_cluster_check"
+      ]
+    },
+    {
+      "capability_id": "lifecycle_ops_100",
+      "status": "PARTIAL",
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 100,
+      "data_path_result": "PARTIAL",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "sha256": "5d3ae8cda007539b7fcbc05093353ae2b9e284bdf8267d3e4bebd58c2f27fb0e"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_100.json",
+          "sha256": "7981a0e5df5fc91a8ae74d0d2e4e9dc072960ebcec7a9113c14ae5c5b8a7916e"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "sha256": "b998333f71ee9be2e28d9a9072129d92824a1272858fc1cfb29ba038b9ce5434"
+        }
+      ],
+      "partial_reasons": [
+        {
+          "capability": "remove_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "remove_node was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "add_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "add_node was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "reshard",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "reshard was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rebalance",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rebalance was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rolling_restart",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rolling_restart was not executed at 100 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        }
       ]
     },
     {
       "capability_id": "process_nodehost_faults_100",
       "status": "PASS",
-      "scale_nodes": 100,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 99,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
@@ -388,12 +704,15 @@
     {
       "capability_id": "failover_latency_recovery_100",
       "status": "PASS",
-      "scale_nodes": 100,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 99,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
@@ -415,13 +734,16 @@
     },
     {
       "capability_id": "split_brain_indicators_100",
-      "status": "PASS",
-      "scale_nodes": 100,
+      "status": "PASS_ABSENCE_OBSERVED",
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 99,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
@@ -431,17 +753,27 @@
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
           "sha256": "fd12a55e0cb3f9a46a84a0603efadd75167b4f45f7cc674986ddcf450861e5cd"
         }
-      ]
+      ],
+      "absence_observed": {
+        "indicator": "conflicting_primaries",
+        "observed": false,
+        "evidence_status": "MISSING",
+        "reason_code": "conflicting_primaries_not_observed",
+        "source_field": "$.summary.split_brain_duration_ms"
+      }
     },
     {
       "capability_id": "workload_fault_windows_100",
       "status": "PASS",
-      "scale_nodes": 100,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 100,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
@@ -456,12 +788,15 @@
     {
       "capability_id": "network_az_faults_100",
       "status": "UNSUPPORTED_WITH_EVIDENCE",
-      "scale_nodes": 100,
       "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 100,
+      "data_path_result": "UNSUPPORTED_WITH_EVIDENCE",
+      "real_valkey_evidence": "",
       "source_artifacts": [
         {
           "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
-          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+          "sha256": "60427f1bde855b22a7b31ef49a620243d3e9ff5ff8431752d9fec20a2e05406a"
         },
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
@@ -470,6 +805,15 @@
         {
           "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
           "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        }
+      ],
+      "reason": "100-node network partition evidence is not present in P13 wrapper outputs; retained as unsupported instead of promoted to PASS.",
+      "unsupported_reasons": [
+        {
+          "capability": "network_partition",
+          "reason_code": "network_partition_not_executed",
+          "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+          "reason": "network_partition/AZ isolation evidence is not present at 100 nodes."
         }
       ]
     },
@@ -510,7 +854,54 @@
           "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json",
           "sha256": "011752f4f66d64667d27b92bc2e368f9a9969f3369ff93a9c76b62adc66a82a9"
         }
-      ]
+      ],
+      "unsupported_reasons": [
+        {
+          "capability": "future_scale_1000_support",
+          "reason_code": "requires_explicit_1000_dryrun_opt_in",
+          "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+          "reason": "1000-node execution remains opt-in dry-run only and is not default real Valkey evidence."
+        }
+      ],
+      "reason": "1000-node execution remains opt-in dry-run only and is not default real Valkey evidence."
+    }
+  ],
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_30",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 30 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_30",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "Only network_delay evidence exists at 30 nodes; network_partition/AZ isolation was not executed."
+    },
+    {
+      "capability": "lifecycle_ops_50",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 50 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_50",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "No network_partition/AZ isolation fault evidence exists at 50 nodes."
+    },
+    {
+      "capability": "lifecycle_ops_100",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 100 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_100",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "No network_partition/AZ isolation fault evidence exists at 100 nodes."
     }
   ]
 }

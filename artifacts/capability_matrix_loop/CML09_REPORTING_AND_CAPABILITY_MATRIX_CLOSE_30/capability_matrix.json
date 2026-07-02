@@ -2,134 +2,245 @@
   "artifact_type": "capability_matrix",
   "capabilities": [
     {
-      "capability_id": "cluster_management_scale_30",
+      "capability_id": "cluster_create_ops_30",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "real_valkey_required": true,
+      "windows": [
+        "full_chain"
+      ],
+      "source_stage": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
       "evidence_chain": {
-        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
         "fault_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/fault_event.jsonl",
         "metrics_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/metrics_window.jsonl",
-        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
-        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json",
-        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl"
+        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json"
       },
-      "real_valkey_required": true,
+      "executed_operations": [
+        "tree_fanout_meet_primaries",
+        "parallel_add_slots",
+        "tree_fanout_meet_replicas",
+        "parallel_add_replicas",
+        "final_cluster_check"
+      ]
+    },
+    {
+      "capability_id": "lifecycle_ops_30",
+      "status": "PARTIAL",
       "scale_nodes": 30,
-      "source_stage": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
-      "status": "PASS",
+      "real_valkey_required": true,
       "windows": [
-        "all_run"
+        "full_chain"
+      ],
+      "source_stage": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+      "evidence_chain": {
+        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
+        "fault_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/metrics_window.jsonl",
+        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json"
+      },
+      "partial_reasons": [
+        {
+          "capability": "remove_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "remove_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "add_node",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "add_node was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "reshard",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "reshard was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rebalance",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rebalance was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        },
+        {
+          "capability": "rolling_restart",
+          "reason_code": "not_executed_by_cluster_create_evidence",
+          "evidence_status": "MISSING",
+          "reason": "rolling_restart was not executed at 30 nodes; cluster-create evidence cannot cover lifecycle operation semantics."
+        }
       ]
     },
     {
       "capability_id": "process_nodehost_faults_30",
       "evidence_chain": {
-        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
         "fault_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/fault_event.jsonl",
         "metrics_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/metrics_window.jsonl",
-        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
-        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json",
-        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl"
+        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json"
       },
       "real_valkey_required": true,
       "scale_nodes": 30,
       "source_stage": "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
       "status": "PASS",
       "windows": [
-        "all_run"
+        "full_chain"
+      ]
+    },
+    {
+      "capability_id": "network_delay_faults_30",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "real_valkey_required": true,
+      "windows": [
+        "full_chain"
+      ],
+      "source_stage": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+      "evidence_chain": {
+        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
+        "fault_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/metrics_window.jsonl",
+        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json"
+      },
+      "fault_types_observed": [
+        "network_delay"
       ]
     },
     {
       "capability_id": "network_az_faults_30",
       "evidence_chain": {
-        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
         "fault_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/fault_event.jsonl",
         "metrics_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/metrics_window.jsonl",
-        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
-        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json",
-        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl"
+        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json"
       },
       "real_valkey_required": true,
       "scale_nodes": 30,
       "source_stage": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
-      "status": "PASS",
+      "status": "UNSUPPORTED_WITH_EVIDENCE",
       "windows": [
-        "all_run"
-      ]
+        "full_chain"
+      ],
+      "fault_types_observed": [
+        "network_delay"
+      ],
+      "unsupported_reasons": [
+        {
+          "capability": "network_partition",
+          "reason_code": "network_partition_not_executed",
+          "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+          "reason": "Only network_delay was observed; network_partition/AZ isolation evidence is not present at 30 nodes."
+        }
+      ],
+      "reason": "Only network_delay evidence exists; network_partition/AZ isolation was not executed."
     },
     {
       "capability_id": "failover_latency_recovery_30",
       "evidence_chain": {
-        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
         "fault_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/fault_event.jsonl",
         "metrics_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/metrics_window.jsonl",
-        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
-        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json",
-        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl"
+        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json"
       },
       "real_valkey_required": true,
       "scale_nodes": 30,
       "source_stage": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
       "status": "PASS",
       "windows": [
-        "all_run"
+        "full_chain"
       ]
     },
     {
       "capability_id": "split_brain_indicators_30",
       "evidence_chain": {
-        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
         "fault_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/fault_event.jsonl",
         "metrics_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/metrics_window.jsonl",
-        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
-        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json",
-        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl"
+        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json"
       },
       "real_valkey_required": true,
       "scale_nodes": 30,
       "source_stage": "CML06_SPLIT_BRAIN_INDICATORS_30",
-      "status": "PASS",
+      "status": "PASS_ABSENCE_OBSERVED",
       "windows": [
-        "all_run"
-      ]
+        "full_chain"
+      ],
+      "absence_observed": {
+        "indicator": "conflicting_primaries",
+        "observed": false,
+        "evidence_status": "MISSING",
+        "reason_code": "conflicting_primaries_not_observed",
+        "source_field": "$.summary.split_brain_duration_ms"
+      }
     },
     {
       "capability_id": "workload_fault_windows_30",
       "evidence_chain": {
-        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
         "fault_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/fault_event.jsonl",
         "metrics_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/metrics_window.jsonl",
-        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
-        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json",
-        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl"
+        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json"
       },
       "real_valkey_required": true,
       "scale_nodes": 30,
       "source_stage": "CML07_WORKLOAD_FAULT_WINDOWS_30",
       "status": "PASS",
       "windows": [
-        "all_run"
+        "full_chain"
       ]
     },
     {
       "capability_id": "bounded_soak_30_60_minutes",
       "evidence_chain": {
-        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
         "fault_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/fault_event.jsonl",
         "metrics_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/metrics_window.jsonl",
-        "operation_events": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/operation_event.jsonl",
-        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json",
-        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl"
+        "workload_windows": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/reports/report_index.json"
       },
       "real_valkey_required": true,
       "scale_nodes": 30,
       "source_stage": "CML08_BOUNDED_SOAK_30_60_MINUTES",
       "status": "PASS",
       "windows": [
-        "all_run"
+        "full_chain"
       ]
     }
   ],
   "created_at": "2026-07-02T07:52:55.512610Z",
   "schema_version": "v1",
   "stage_id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30",
-  "status": "PASS"
+  "status": "PARTIAL",
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_30",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 30 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_30",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "Only network_delay evidence exists at 30 nodes; network_partition/AZ isolation was not executed."
+    }
+  ]
 }

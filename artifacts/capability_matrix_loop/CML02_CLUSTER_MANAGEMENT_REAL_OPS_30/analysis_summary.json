@@ -2,7 +2,7 @@
   "schema_version": "v1",
   "artifact_type": "capability_analysis_summary",
   "stage_id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
-  "status": "PASS",
+  "status": "PARTIAL",
   "created_at": "2026-07-02T04:40:57.206742Z",
   "summary": {
     "delta": 53.721328,
@@ -11,7 +11,12 @@
     "latency_delta": "UNSUPPORTED_WITH_EVIDENCE",
     "unavailable_ms": 0,
     "sample_coverage": 1.0,
-    "management_operation_count": 5
+    "management_operation_count": 5,
+    "capability_count": 2,
+    "pass_count": 1,
+    "partial_count": 1,
+    "cluster_create_operation_count": 5,
+    "lifecycle_operation_count": 5
   },
   "source_artifacts": [
     {
@@ -41,6 +46,20 @@
     {
       "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/cleanup_report_scale_30.json",
       "sha256": "ea0a1604a5c4aac8ac26df5aae460bee65729347c3fb48689b21604de85f004b"
+    }
+  ],
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_30",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 30 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_30",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "No network_partition/AZ isolation fault evidence exists at 30 nodes."
     }
   ]
 }

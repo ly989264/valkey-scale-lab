@@ -3,16 +3,33 @@
   "created_at": "2026-07-02T07:52:55.512610Z",
   "schema_version": "v1",
   "stage_id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30",
-  "status": "PASS",
+  "status": "PARTIAL",
   "summary": {
-    "capability_count": 7,
-    "delta": "30-node capability matrix closed from CML02-CML08 evidence",
+    "capability_count": 9,
+    "delta": "30-node capability matrix now distinguishes executed PASS capabilities from lifecycle, split-brain absence, and network partition gaps.",
     "error_rate": 0.0,
     "latency_delta": "MISSING aggregate across heterogeneous stages",
-    "pass_count": 7,
+    "pass_count": 6,
     "qps_drop_ratio": "MISSING aggregate reporting stage has no single QPS denominator",
     "sample_coverage": 1.0,
     "source_stage_count": 7,
-    "unavailable_ms": "MISSING aggregate unavailable windows recorded in source stages"
-  }
+    "unavailable_ms": "MISSING aggregate unavailable windows recorded in source stages",
+    "partial_count": 1,
+    "unsupported_with_evidence_count": 1,
+    "pass_absence_observed_count": 1
+  },
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_30",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 30 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_30",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "Only network_delay evidence exists at 30 nodes; network_partition/AZ isolation was not executed."
+    }
+  ]
 }

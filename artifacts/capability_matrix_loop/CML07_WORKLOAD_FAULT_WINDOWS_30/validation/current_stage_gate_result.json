@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML07_WORKLOAD_FAULT_WINDOWS_30",
   "status": "PASS",
-  "created_at": "2026-07-02T05:17:58.331228Z",
+  "created_at": "2026-07-02T09:46:42.148213Z",
   "checks": [
     {
       "name": "manifest",

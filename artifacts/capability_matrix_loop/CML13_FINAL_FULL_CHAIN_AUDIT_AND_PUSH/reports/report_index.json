@@ -2,7 +2,7 @@
   "schema_version": "v1",
   "artifact_type": "capability_report_index",
   "stage_id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
-  "status": "PASS",
+  "status": "PARTIAL",
   "created_at": "2026-07-02T08:22:41.449749Z",
   "reports": [
     {
@@ -15,15 +15,15 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
-          "sha256": "aed7a2c7d4dba20040885fb971efa24d8f5d33dbc5ae78b05fcb9c9cc87df952"
+          "sha256": "1cb1fbc891dcad698d9533eda866e3e2e9750ff81937a2e821a9a1d25b2638ec"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
-          "sha256": "bff0e5a7e0045a84eacb349e1f40d85f55b0770880286a02246af012a80cce31"
+          "sha256": "73c66c0db9bcbba8708288c54045027b26ce45af63d0189c3add080778cfb1d8"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/analysis_summary.json",
-          "sha256": "20f66bd2fe8739aee7099c8e664c09336cfff92833dc44aa275940cd05879fbc"
+          "sha256": "246954f0a37eaaf749ff8ceb380aa2100642903e196b82c84682b6a27498ccc4"
         }
       ]
     },
@@ -37,15 +37,15 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
-          "sha256": "aed7a2c7d4dba20040885fb971efa24d8f5d33dbc5ae78b05fcb9c9cc87df952"
+          "sha256": "1cb1fbc891dcad698d9533eda866e3e2e9750ff81937a2e821a9a1d25b2638ec"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
-          "sha256": "bff0e5a7e0045a84eacb349e1f40d85f55b0770880286a02246af012a80cce31"
+          "sha256": "73c66c0db9bcbba8708288c54045027b26ce45af63d0189c3add080778cfb1d8"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/analysis_summary.json",
-          "sha256": "20f66bd2fe8739aee7099c8e664c09336cfff92833dc44aa275940cd05879fbc"
+          "sha256": "246954f0a37eaaf749ff8ceb380aa2100642903e196b82c84682b6a27498ccc4"
         }
       ]
     },
@@ -59,15 +59,15 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
-          "sha256": "aed7a2c7d4dba20040885fb971efa24d8f5d33dbc5ae78b05fcb9c9cc87df952"
+          "sha256": "1cb1fbc891dcad698d9533eda866e3e2e9750ff81937a2e821a9a1d25b2638ec"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
-          "sha256": "bff0e5a7e0045a84eacb349e1f40d85f55b0770880286a02246af012a80cce31"
+          "sha256": "73c66c0db9bcbba8708288c54045027b26ce45af63d0189c3add080778cfb1d8"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/analysis_summary.json",
-          "sha256": "20f66bd2fe8739aee7099c8e664c09336cfff92833dc44aa275940cd05879fbc"
+          "sha256": "246954f0a37eaaf749ff8ceb380aa2100642903e196b82c84682b6a27498ccc4"
         }
       ]
     },
@@ -81,17 +81,55 @@
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
-          "sha256": "aed7a2c7d4dba20040885fb971efa24d8f5d33dbc5ae78b05fcb9c9cc87df952"
+          "sha256": "1cb1fbc891dcad698d9533eda866e3e2e9750ff81937a2e821a9a1d25b2638ec"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
-          "sha256": "bff0e5a7e0045a84eacb349e1f40d85f55b0770880286a02246af012a80cce31"
+          "sha256": "73c66c0db9bcbba8708288c54045027b26ce45af63d0189c3add080778cfb1d8"
         },
         {
           "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/analysis_summary.json",
-          "sha256": "20f66bd2fe8739aee7099c8e664c09336cfff92833dc44aa275940cd05879fbc"
+          "sha256": "246954f0a37eaaf749ff8ceb380aa2100642903e196b82c84682b6a27498ccc4"
         }
       ]
+    }
+  ],
+  "partial_reasons": [
+    {
+      "capability": "lifecycle_ops_30",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 30 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_30",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "Only network_delay evidence exists at 30 nodes; network_partition/AZ isolation was not executed."
+    },
+    {
+      "capability": "lifecycle_ops_50",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 50 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_50",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "No network_partition/AZ isolation fault evidence exists at 50 nodes."
+    },
+    {
+      "capability": "lifecycle_ops_100",
+      "reason_code": "lifecycle_operations_not_executed",
+      "evidence_status": "MISSING",
+      "reason": "Lifecycle operations at 100 nodes have structured missing evidence and are not covered by cluster-create evidence."
+    },
+    {
+      "capability": "network_az_faults_100",
+      "reason_code": "network_partition_not_executed",
+      "evidence_status": "UNSUPPORTED_WITH_EVIDENCE",
+      "reason": "No network_partition/AZ isolation fault evidence exists at 100 nodes."
     }
   ]
 }

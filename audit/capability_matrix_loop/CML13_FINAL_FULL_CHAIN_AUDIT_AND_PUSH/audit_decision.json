@@ -10,6 +10,19 @@
   "evidence": [
     "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/full_chain_audit.json",
     "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
-    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/report_index.json"
-  ]
+    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
+    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/report_index.json",
+    "artifacts/harness_exception/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH.md"
+  ],
+  "fresh_context": true,
+  "gate_result_path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/validation/current_stage_gate_result.json",
+  "gate_result_sha256": "c4350ed671cb1e178e8be55559b507d9dacb61aca1f009c10bf59b1458a69c44",
+  "artifact_paths": [
+    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/full_chain_audit.json",
+    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
+    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
+    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/report_index.json",
+    "artifacts/harness_exception/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH.md"
+  ],
+  "blocking_findings": []
 }

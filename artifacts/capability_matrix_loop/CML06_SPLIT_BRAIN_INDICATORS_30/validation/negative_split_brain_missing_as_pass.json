@@ -7,7 +7,7 @@
   "capabilities": [
     {
       "capability_id": "split_brain_indicators_30",
-      "status": "PASS_ABSENCE_OBSERVED",
+      "status": "PASS",
       "scale_nodes": 30,
       "real_valkey_required": true,
       "windows": [
