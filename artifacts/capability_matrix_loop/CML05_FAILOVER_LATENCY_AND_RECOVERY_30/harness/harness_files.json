@@ -1,0 +1,21 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML05 contract",
+      "kind": "manifest"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML05 gate",
+      "kind": "runner"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML05 test",
+      "kind": "test"
+    }
+  ]
+}

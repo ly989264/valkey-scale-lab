@@ -1,0 +1,9 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
+  "decision": "PASS",
+  "protected_files_changed": [],
+  "frozen_harness_mismatches": [],
+  "suspicious_patterns": [],
+  "requires_harness_exception": false
+}

@@ -1,0 +1,2 @@
+fault_id,failover_latency_ms,promoted_node_id,nodes_after_clear
+fault-primary-stop,25801.802,712668afd8802780ef02446836d7ac93e148f953,30

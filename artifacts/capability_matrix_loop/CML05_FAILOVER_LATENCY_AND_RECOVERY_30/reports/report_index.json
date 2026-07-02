@@ -1,0 +1,81 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_report_index",
+  "stage_id": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T05:01:29.363341Z",
+  "reports": [
+    {
+      "kind": "csv",
+      "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/failover_latency.csv",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/operation_event.jsonl",
+          "sha256": "4fa7715a366f9792cd347f3a6aca773745ba9d7744fbfb148ef998d3f023c1b7"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/failover_report_30.json",
+          "sha256": "a3691ed7a4e12b5393f9db2c10b458b9cff47abc3eb3d9ae86ca1a80f2099a79"
+        }
+      ]
+    },
+    {
+      "kind": "markdown",
+      "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/report.md",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/analysis_summary.json",
+          "sha256": "6a49ccc2d7f75c226104e225358acea590d549110cf0102aaf257f4d1c9a1f93"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/real_valkey_evidence_failover_30.json",
+          "sha256": "b861aa20ca3430f742fa1816a3b6d633cb0372a569051071ac1de92eac6872d2"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/fault_report_30.json",
+          "sha256": "8f4b2ef05bdfdd210124572ae069643ea54e43890beccb992511b605e1caeb63"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/failover_report_30.json",
+          "sha256": "a3691ed7a4e12b5393f9db2c10b458b9cff47abc3eb3d9ae86ca1a80f2099a79"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/workload_window_report_30.json",
+          "sha256": "ccc04f6375d2dd6c539361deb655cd12e9a4235bf43db803847704c5fba94549"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/cleanup_report_failover_30.json",
+          "sha256": "1a3f05cc39c4f42f84214185fda2c077b0cc5877310a4a4c3428b521e19b2e72"
+        }
+      ]
+    },
+    {
+      "kind": "html",
+      "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/index.html",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/analysis_summary.json",
+          "sha256": "6a49ccc2d7f75c226104e225358acea590d549110cf0102aaf257f4d1c9a1f93"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/failover_timeline.svg",
+          "sha256": "c9cf7c0379c621bf68df6097e458362cfffeb1dbfea31ddd8279fb1bd173fabb"
+        }
+      ]
+    },
+    {
+      "kind": "chart",
+      "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/failover_timeline.svg",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/operation_event.jsonl",
+          "sha256": "4fa7715a366f9792cd347f3a6aca773745ba9d7744fbfb148ef998d3f023c1b7"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/analysis_summary.json",
+          "sha256": "6a49ccc2d7f75c226104e225358acea590d549110cf0102aaf257f4d1c9a1f93"
+        }
+      ]
+    }
+  ]
+}

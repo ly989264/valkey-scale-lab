@@ -174,3 +174,19 @@ def test_stage_manifest_requires_cml04_network_fault_artifacts():
         "wrong node count fails",
         "host network mutation fails",
     }.issubset(set(cml04["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml05_failover_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml05 = next(stage for stage in manifest["stages"] if stage["id"] == "CML05_FAILOVER_LATENCY_AND_RECOVERY_30")
+    required = {artifact["path"] for artifact in cml05["required_artifacts"]}
+    assert cml05["max_real_nodes"] == 30
+    assert cml05["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/real_valkey_evidence_failover_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/failover_report_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/workload_window_report_30.json" in required
+    assert {
+        "missing failover latency fails",
+        "missing promotion fails",
+        "cleanup residue fails",
+    }.issubset(set(cml05["negative_requirements"]))

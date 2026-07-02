@@ -1,0 +1,35 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_matrix",
+  "stage_id": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T05:01:29.363341Z",
+  "capabilities": [
+    {
+      "capability_id": "failover_latency_recovery_30",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "real_valkey_required": true,
+      "windows": [
+        "before",
+        "operation_or_fault_apply",
+        "during",
+        "clear_or_recovery_start",
+        "after_recovery",
+        "all_run"
+      ],
+      "evidence_chain": {
+        "operation_events": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/operation_event.jsonl",
+        "fault_events": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/metrics_window.jsonl",
+        "workload_windows": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/workload_window.jsonl",
+        "analysis_summary": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/analysis_summary.json",
+        "report_index": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/report_index.json"
+      },
+      "real_valkey_evidence": {
+        "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/real_valkey_evidence_failover_30.json",
+        "sha256": "b861aa20ca3430f742fa1816a3b6d633cb0372a569051071ac1de92eac6872d2"
+      }
+    }
+  ]
+}

@@ -388,6 +388,24 @@ def cml04_paths(stage_id: str) -> dict[str, Path]:
     }
 
 
+def cml05_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "operation": stage_root / "samples" / "operation_event.jsonl",
+        "fault": stage_root / "samples" / "fault_event.jsonl",
+        "metrics": stage_root / "samples" / "metrics_window.jsonl",
+        "workload": stage_root / "samples" / "workload_window.jsonl",
+        "evidence": stage_root / "samples" / "real_valkey_evidence_failover_30.json",
+        "fault_report": stage_root / "samples" / "fault_report_30.json",
+        "failover_report": stage_root / "samples" / "failover_report_30.json",
+        "workload_report": stage_root / "samples" / "workload_window_report_30.json",
+        "cleanup": stage_root / "samples" / "cleanup_report_failover_30.json",
+        "matrix": stage_root / "capability_matrix.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -794,6 +812,65 @@ def make_cml04_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     return results
 
 
+def validate_cml05_failover(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml05_paths(stage_id)
+    errors: list[str] = []
+    observation_paths = {**cml01_paths(stage_id), **{k: v for k, v in paths.items() if k in cml01_paths(stage_id)}}
+    errors.extend(validate_observation_model(stage_id, observation_paths))
+    if errors:
+        return errors
+    evidence = load_json(paths["evidence"])
+    if int(evidence.get("nodes_observed_before", 0)) != 30 or int(evidence.get("nodes_observed_after_clear", 0)) != 30:
+        errors.append("CML05 must observe 30 nodes before fault and after clear")
+    if evidence.get("data_path_result") != "PASS":
+        errors.append("CML05 data path must PASS")
+    latency = evidence.get("failover_latency_ms")
+    if not isinstance(latency, (int, float)) or latency <= 0:
+        errors.append("CML05 failover_latency_ms must be positive numeric")
+    failover = load_json(paths["failover_report"])
+    summary = failover.get("summary", {})
+    if summary.get("promotion_observed") is not True:
+        errors.append("CML05 promotion_observed must be true")
+    cleanup = load_json(paths["cleanup"])
+    if cleanup.get("status") != "PASS" or cleanup.get("resources_remaining") not in ([], None):
+        errors.append("CML05 cleanup must PASS with no resources_remaining")
+    workload = load_json(paths["workload_report"])
+    names = {window.get("name") for window in workload.get("windows", [])}
+    for required in {"before_fault", "during_fault", "after_recovery"}:
+        if required not in names:
+            errors.append(f"CML05 workload missing {required}")
+    return errors
+
+
+def make_cml05_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml05_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+    bad_latency = validation_dir / "negative_missing_latency.json"
+    evidence = load_json(paths["evidence"])
+    evidence["failover_latency_ms"] = "MISSING"
+    write_json(bad_latency, evidence)
+    cases.append(("missing_latency", {"evidence": bad_latency}, "failover_latency_ms"))
+    bad_promotion = validation_dir / "negative_no_promotion.json"
+    failover = load_json(paths["failover_report"])
+    failover["summary"]["promotion_observed"] = False
+    write_json(bad_promotion, failover)
+    cases.append(("no_promotion", {"failover_report": bad_promotion}, "promotion_observed"))
+    bad_cleanup = validation_dir / "negative_cleanup_residue.json"
+    cleanup = load_json(paths["cleanup"])
+    cleanup["resources_remaining"] = [{"type": "process", "id": "leaked"}]
+    write_json(bad_cleanup, cleanup)
+    cases.append(("cleanup_residue", {"cleanup": bad_cleanup}, "cleanup must PASS"))
+    results: list[dict[str, Any]] = []
+    for name, overrides, expected in cases:
+        candidate = dict(paths)
+        candidate.update(overrides)
+        observed = validate_cml05_failover(stage_id, candidate)
+        results.append({"name": name, "status": "PASS" if any(expected in e for e in observed) else "FAIL", "expected_error_fragment": expected, "observed_errors": observed})
+    return results
+
+
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
@@ -906,6 +983,11 @@ def command_run(args: argparse.Namespace) -> int:
         network_errors = validate_cml04_network_faults(args.stage)
         add_check("network_az_faults_30", network_errors)
         negative_cases = make_cml04_negative_cases(args.stage) if not network_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage == "CML05_FAILOVER_LATENCY_AND_RECOVERY_30":
+        failover_errors = validate_cml05_failover(args.stage)
+        add_check("failover_latency_recovery_30", failover_errors)
+        negative_cases = make_cml05_negative_cases(args.stage) if not failover_errors else []
         add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     else:
         baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"
