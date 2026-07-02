@@ -219,3 +219,19 @@ def test_stage_manifest_requires_cml07_workload_window_artifacts():
         "empty after-recovery samples fail",
         "missing data-path proof fails",
     }.issubset(set(cml07["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml08_bounded_soak_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml08 = next(stage for stage in manifest["stages"] if stage["id"] == "CML08_BOUNDED_SOAK_30_60_MINUTES")
+    required = {artifact["path"] for artifact in cml08["required_artifacts"]}
+    assert cml08["max_real_nodes"] == 30
+    assert cml08["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/real_valkey_evidence_bounded_soak_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/bounded_soak_report_30_60.json" in required
+    assert "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/soak_metrics_30_60.jsonl" in required
+    assert {
+        "short soak duration fails",
+        "missing 60-minute checkpoint fails",
+        "wrong node count fails",
+    }.issubset(set(cml08["negative_requirements"]))

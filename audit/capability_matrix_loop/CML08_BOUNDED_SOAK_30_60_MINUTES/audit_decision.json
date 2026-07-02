@@ -1,0 +1,17 @@
+{
+  "artifact_type": "capability_audit_decision",
+  "created_at": "2026-07-02T07:46:17.871640Z",
+  "decision": "PASS",
+  "evidence": [
+    "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/real_valkey_evidence_bounded_soak_30.json",
+    "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/bounded_soak_report_30_60.json",
+    "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/soak_metrics_30_60.jsonl",
+    "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/cleanup_report_bounded_soak_30.json",
+    "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/reports/report_index.json"
+  ],
+  "findings": [],
+  "reviewer": "fresh-context-audit",
+  "schema_version": "v1",
+  "stage_id": "CML08_BOUNDED_SOAK_30_60_MINUTES",
+  "status": "PASS"
+}

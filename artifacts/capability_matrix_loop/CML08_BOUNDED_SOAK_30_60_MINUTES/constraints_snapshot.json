@@ -1,0 +1,21 @@
+{
+  "active_constraints": [
+    "CML08 must use real 30-node Valkey evidence.",
+    "30-minute and 60-minute checkpoints must be measured, not inferred.",
+    "Cleanup must be deterministic and PASS with no resources remaining."
+  ],
+  "read_files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "422aae779284c0b871da2bcb78ab362b2890254134c1a67d726d88871cebf6f3",
+      "summary": "Safety and phase-loop constraints."
+    },
+    {
+      "path": "codex/capability_loop_prompt/MAIN_LOOP_PROMPT.md",
+      "sha256": "d3c04bdfccbcc1094ed58701a773080a1ab37a1be0093126179d90f95442489b",
+      "summary": "Loop-engineering protocol."
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML08_BOUNDED_SOAK_30_60_MINUTES"
+}

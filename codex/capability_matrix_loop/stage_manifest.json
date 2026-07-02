@@ -983,8 +983,130 @@
       "profile": "real-30-soak",
       "max_real_nodes": 30,
       "real_valkey_required": true,
-      "required_artifacts": [],
-      "commands": []
+      "required_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/real_valkey_evidence_bounded_soak_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/state_bounded_soak_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/bounded_soak_report_30_60.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/soak_metrics_30_60.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/cleanup_report_bounded_soak_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/operation_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/fault_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/metrics_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/workload_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/reports/bounded_soak.csv"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/reports/bounded_soak_timeline.svg"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/reports/report.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/reports/index.html"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/next_stage_context.md"
+        }
+      ],
+      "commands": [
+        {
+          "name": "capability_bounded_soak_30_60_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML08_BOUNDED_SOAK_30_60_MINUTES",
+          "required": true,
+          "timeout_seconds": 180
+        }
+      ],
+      "negative_requirements": [
+        "short soak duration fails",
+        "missing 60-minute checkpoint fails",
+        "wrong node count fails"
+      ]
     },
     {
       "id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30",

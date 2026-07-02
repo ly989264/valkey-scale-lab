@@ -8,7 +8,7 @@
     },
     {
       "path": "codex/capability_matrix_loop/stage_manifest.json",
-      "sha256": "21880c4d299acffa7747c02c5860ae6540804eae6f1f82c9c4f98b808fc435aa"
+      "sha256": "6f26c516dd78c60b1877753a69a48233500d460d1a88acf9a84152101823d3ad"
     },
     {
       "path": "schemas/capability_matrix_loop/prompt_pack_location.schema.json",
@@ -76,11 +76,15 @@
     },
     {
       "path": "tools/capability_matrix_gate.py",
-      "sha256": "a1e9bf75daad4e0eba44f0901210b0d881de22099b65ffe2cc9509808e4f2237"
+      "sha256": "9a79f6d96ea34aeda2d1f2200ee8e28612c947895b81accc36cdfac35501dc14"
     },
     {
       "path": "tests/capability_loop/test_capability_matrix_gate.py",
-      "sha256": "9d9fa4c8694ed8cdee90fbd6abbc6ec91b2d71f6a9facde340fda5fad5a6373d"
+      "sha256": "727fee456514d7ddd388cf4b23039f44244ebb46efcb3356c6105d80c2da77c6"
+    },
+    {
+      "path": "tools/cml08_bounded_soak_runner.py",
+      "sha256": "ec66494d464e77b3e97cc001d4a5ff9936c446502ddb351dc4205d7dec87c5ab"
     }
   ]
 }

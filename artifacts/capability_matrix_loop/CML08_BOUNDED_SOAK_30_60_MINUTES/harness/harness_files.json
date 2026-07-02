@@ -1,0 +1,26 @@
+{
+  "files": [
+    {
+      "kind": "manifest",
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML08 contract"
+    },
+    {
+      "kind": "runner",
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML08 validator"
+    },
+    {
+      "kind": "runner",
+      "path": "tools/cml08_bounded_soak_runner.py",
+      "purpose": "CML08 real bounded soak runner"
+    },
+    {
+      "kind": "test",
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML08 manifest test"
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML08_BOUNDED_SOAK_30_60_MINUTES"
+}

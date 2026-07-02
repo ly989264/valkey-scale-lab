@@ -1,0 +1,51 @@
+{
+  "artifact_type": "cml08_bounded_soak_report",
+  "checkpoints": [
+    {
+      "checkpoint_seconds": 1800,
+      "nodes_observed": 30,
+      "observed_elapsed_seconds": 1801.487,
+      "probe_pass_count": 30,
+      "reasons": [],
+      "status": "PASS",
+      "workload_status": "PASS"
+    },
+    {
+      "checkpoint_seconds": 3600,
+      "nodes_observed": 30,
+      "observed_elapsed_seconds": 3600.049,
+      "probe_pass_count": 30,
+      "reasons": [],
+      "status": "PASS",
+      "workload_status": "PASS"
+    }
+  ],
+  "created_at": "2026-07-02T07:44:11.864759Z",
+  "data_path_result": "PASS",
+  "duration_seconds": 3600.133,
+  "final_probe_summary": {
+    "cluster_ok_count": 30,
+    "nodes_observed": 30,
+    "probe_pass_count": 30,
+    "valkey_versions": [
+      "9.1.0"
+    ]
+  },
+  "initial_probe_summary": {
+    "cluster_ok_count": 30,
+    "nodes_observed": 30,
+    "probe_pass_count": 30,
+    "valkey_versions": [
+      "9.1.0"
+    ]
+  },
+  "metrics_path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/soak_metrics_30_60.jsonl",
+  "node_count": 30,
+  "phase_id": "P12_SCALE_LADDER_10_30",
+  "run_id": "phase-P12_SCALE_LADDER_10_30-scale_30-cml08-bounded-soak",
+  "sample_count": 61,
+  "sample_interval_seconds": 60,
+  "scenario": "scale_30",
+  "schema_version": "v1",
+  "status": "PASS"
+}

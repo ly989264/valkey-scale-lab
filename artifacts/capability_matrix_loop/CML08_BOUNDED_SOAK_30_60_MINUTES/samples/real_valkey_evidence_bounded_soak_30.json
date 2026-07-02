@@ -1,0 +1,25 @@
+{
+  "artifact_type": "valkey_e2e_evidence",
+  "cluster_state_observed": "ok",
+  "created_at": "2026-07-02T07:44:11.865290Z",
+  "data_path_result": "PASS",
+  "finished_at": "2026-07-02T07:44:11.865300Z",
+  "nodes_observed": 30,
+  "phase_id": "P12_SCALE_LADDER_10_30",
+  "probe_result": "PASS",
+  "producer": {
+    "name": "tools/cml08_bounded_soak_runner.py",
+    "version": "v1"
+  },
+  "real_valkey": true,
+  "run_id": "phase-P12_SCALE_LADDER_10_30-scale_30-cml08-bounded-soak",
+  "scenario": "scale_30",
+  "schema_version": "v1",
+  "soak_report_path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/bounded_soak_report_30_60.json",
+  "started_at": "2026-07-02T06:43:24.911306Z",
+  "status": "PASS",
+  "valkey_version_prefix_required": "9.1.",
+  "valkey_versions": [
+    "9.1.0"
+  ]
+}
