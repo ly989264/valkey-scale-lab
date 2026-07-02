@@ -460,6 +460,21 @@ def cml08_paths(stage_id: str) -> dict[str, Path]:
     }
 
 
+def cml09_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "operation": stage_root / "samples" / "operation_event.jsonl",
+        "fault": stage_root / "samples" / "fault_event.jsonl",
+        "metrics": stage_root / "samples" / "metrics_window.jsonl",
+        "workload": stage_root / "samples" / "workload_window.jsonl",
+        "evidence": stage_root / "samples" / "real_valkey_evidence_reporting_close_30.json",
+        "evidence_index": stage_root / "samples" / "evidence_index_30.json",
+        "matrix": stage_root / "capability_matrix.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -1113,6 +1128,99 @@ def make_cml08_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     return results
 
 
+def validate_cml09_reporting_close(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml09_paths(stage_id)
+    errors: list[str] = []
+    observation_paths = {**cml01_paths(stage_id), **{k: v for k, v in paths.items() if k in cml01_paths(stage_id)}}
+    errors.extend(validate_observation_model(stage_id, observation_paths))
+    if errors:
+        return errors
+    evidence = load_json(paths["evidence"])
+    if evidence.get("real_valkey") is not True or evidence.get("probe_result") != "PASS":
+        errors.append("CML09 aggregate evidence must be real Valkey PASS")
+    if int(evidence.get("nodes_observed", 0)) != 30:
+        errors.append("CML09 aggregate evidence nodes_observed must be 30")
+    index = load_json(paths["evidence_index"])
+    required_capabilities = {
+        "cluster_management_scale_30",
+        "process_nodehost_faults_30",
+        "network_az_faults_30",
+        "failover_latency_recovery_30",
+        "split_brain_indicators_30",
+        "workload_fault_windows_30",
+        "bounded_soak_30_60_minutes",
+    }
+    entries = {entry.get("capability_id"): entry for entry in index.get("capabilities", [])}
+    missing = required_capabilities - set(entries)
+    if missing:
+        errors.append(f"CML09 evidence index missing capabilities: {sorted(missing)}")
+    for capability_id in sorted(required_capabilities & set(entries)):
+        entry = entries[capability_id]
+        if entry.get("status") != "PASS":
+            errors.append(f"CML09 capability {capability_id} must be PASS")
+        if int(entry.get("scale_nodes", 0)) != 30:
+            errors.append(f"CML09 capability {capability_id} scale_nodes must be 30")
+        for source in entry.get("source_artifacts", []):
+            errors.extend(source_checksum_errors([source], f"CML09 capability {capability_id}"))
+        evidence_path = ROOT / str(entry.get("real_valkey_evidence", ""))
+        if not evidence_path.exists():
+            errors.append(f"CML09 capability {capability_id} missing real evidence")
+            continue
+        real = load_json(evidence_path)
+        if real.get("real_valkey") is not True:
+            errors.append(f"CML09 capability {capability_id} evidence is not real_valkey")
+        observed_values: list[int] = []
+        for observed_key in [
+            "nodes_observed",
+            "nodes_observed_before",
+            "nodes_observed_after_clear",
+            "node_count",
+        ]:
+            observed_value = real.get(observed_key)
+            if isinstance(observed_value, int):
+                observed_values.append(observed_value)
+            elif isinstance(observed_value, str) and observed_value.isdigit():
+                observed_values.append(int(observed_value))
+        if not observed_values or max(observed_values) < 30:
+            errors.append(f"CML09 capability {capability_id} evidence must observe at least 30 nodes")
+    matrix = load_json(paths["matrix"])
+    capability_statuses = {row.get("capability_id"): row.get("status") for row in matrix.get("capabilities", [])}
+    if required_capabilities - set(capability_statuses):
+        errors.append("CML09 capability matrix must include every required 30-node capability")
+    if any(status != "PASS" for status in capability_statuses.values()):
+        errors.append("CML09 capability matrix statuses must all be PASS")
+    return errors
+
+
+def make_cml09_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml09_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+    missing_capability = validation_dir / "negative_missing_capability.json"
+    index = load_json(paths["evidence_index"])
+    index["capabilities"] = [entry for entry in index.get("capabilities", []) if entry.get("capability_id") != "bounded_soak_30_60_minutes"]
+    write_json(missing_capability, index)
+    cases.append(("missing_capability", {"evidence_index": missing_capability}, "missing capabilities"))
+    fake_evidence = validation_dir / "negative_fake_aggregate_evidence.json"
+    evidence = load_json(paths["evidence"])
+    evidence["real_valkey"] = False
+    write_json(fake_evidence, evidence)
+    cases.append(("fake_aggregate_evidence", {"evidence": fake_evidence}, "real_valkey"))
+    wrong_nodes = validation_dir / "negative_wrong_node_count.json"
+    evidence2 = load_json(paths["evidence"])
+    evidence2["nodes_observed"] = 29
+    write_json(wrong_nodes, evidence2)
+    cases.append(("wrong_node_count", {"evidence": wrong_nodes}, "nodes_observed must be 30"))
+    results = []
+    for name, overrides, expected in cases:
+        candidate = dict(paths)
+        candidate.update(overrides)
+        observed = validate_cml09_reporting_close(stage_id, candidate)
+        results.append({"name": name, "status": "PASS" if any(expected in e for e in observed) else "FAIL", "expected_error_fragment": expected, "observed_errors": observed})
+    return results
+
+
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
@@ -1245,6 +1353,11 @@ def command_run(args: argparse.Namespace) -> int:
         soak_errors = validate_cml08_bounded_soak(args.stage)
         add_check("bounded_soak_30_60_minutes", soak_errors)
         negative_cases = make_cml08_negative_cases(args.stage) if not soak_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage == "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30":
+        reporting_errors = validate_cml09_reporting_close(args.stage)
+        add_check("reporting_capability_matrix_close_30", reporting_errors)
+        negative_cases = make_cml09_negative_cases(args.stage) if not reporting_errors else []
         add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     else:
         baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"

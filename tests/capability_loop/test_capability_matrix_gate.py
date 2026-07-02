@@ -235,3 +235,19 @@ def test_stage_manifest_requires_cml08_bounded_soak_artifacts():
         "missing 60-minute checkpoint fails",
         "wrong node count fails",
     }.issubset(set(cml08["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml09_reporting_close_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml09 = next(stage for stage in manifest["stages"] if stage["id"] == "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30")
+    required = {artifact["path"] for artifact in cml09["required_artifacts"]}
+    assert cml09["max_real_nodes"] == 30
+    assert cml09["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/real_valkey_evidence_reporting_close_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/capability_matrix.json" in required
+    assert {
+        "missing capability evidence fails",
+        "fake aggregate evidence fails",
+        "wrong node count fails",
+    }.issubset(set(cml09["negative_requirements"]))

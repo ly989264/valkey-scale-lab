@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="272">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="30" font-family="monospace" font-size="16">CML09 30-node capability matrix</text>
+<circle cx="30" cy="65" r="7" fill="#2e7d32"/><text x="50" y="70" font-family="monospace" font-size="12">cluster_management_scale_30: PASS (CML02_CLUSTER_MANAGEMENT_REAL_OPS_30)</text>
+<circle cx="30" cy="91" r="7" fill="#2e7d32"/><text x="50" y="96" font-family="monospace" font-size="12">process_nodehost_faults_30: PASS (CML03_PROCESS_AND_NODEHOST_FAULTS_30)</text>
+<circle cx="30" cy="117" r="7" fill="#2e7d32"/><text x="50" y="122" font-family="monospace" font-size="12">network_az_faults_30: PASS (CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30)</text>
+<circle cx="30" cy="143" r="7" fill="#2e7d32"/><text x="50" y="148" font-family="monospace" font-size="12">failover_latency_recovery_30: PASS (CML05_FAILOVER_LATENCY_AND_RECOVERY_30)</text>
+<circle cx="30" cy="169" r="7" fill="#2e7d32"/><text x="50" y="174" font-family="monospace" font-size="12">split_brain_indicators_30: PASS (CML06_SPLIT_BRAIN_INDICATORS_30)</text>
+<circle cx="30" cy="195" r="7" fill="#2e7d32"/><text x="50" y="200" font-family="monospace" font-size="12">workload_fault_windows_30: PASS (CML07_WORKLOAD_FAULT_WINDOWS_30)</text>
+<circle cx="30" cy="221" r="7" fill="#2e7d32"/><text x="50" y="226" font-family="monospace" font-size="12">bounded_soak_30_60_minutes: PASS (CML08_BOUNDED_SOAK_30_60_MINUTES)</text>
+</svg>

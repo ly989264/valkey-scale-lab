@@ -1,0 +1,21 @@
+{
+  "files": [
+    {
+      "kind": "manifest",
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML09 contract"
+    },
+    {
+      "kind": "runner",
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML09 validator"
+    },
+    {
+      "kind": "test",
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML09 manifest test"
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30"
+}
