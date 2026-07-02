@@ -424,6 +424,24 @@ def cml06_paths(stage_id: str) -> dict[str, Path]:
     }
 
 
+def cml07_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "operation": stage_root / "samples" / "operation_event.jsonl",
+        "fault": stage_root / "samples" / "fault_event.jsonl",
+        "metrics": stage_root / "samples" / "metrics_window.jsonl",
+        "workload": stage_root / "samples" / "workload_window.jsonl",
+        "evidence": stage_root / "samples" / "real_valkey_evidence_workload_windows_30.json",
+        "fault_report": stage_root / "samples" / "fault_report_30.json",
+        "failover_report": stage_root / "samples" / "failover_report_30.json",
+        "workload_report": stage_root / "samples" / "workload_window_report_30.json",
+        "cleanup": stage_root / "samples" / "cleanup_report_workload_windows_30.json",
+        "matrix": stage_root / "capability_matrix.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -938,6 +956,81 @@ def make_cml06_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     return results
 
 
+def validate_cml07_workload_windows(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml07_paths(stage_id)
+    errors: list[str] = []
+    observation_paths = {**cml01_paths(stage_id), **{k: v for k, v in paths.items() if k in cml01_paths(stage_id)}}
+    errors.extend(validate_observation_model(stage_id, observation_paths))
+    if errors:
+        return errors
+    evidence = load_json(paths["evidence"])
+    if int(evidence.get("nodes_observed_before", 0)) != 30 or int(evidence.get("nodes_observed_after_clear", 0)) != 30:
+        errors.append("CML07 must observe 30 nodes before fault and after clear")
+    if evidence.get("data_path_result") != "PASS":
+        errors.append("CML07 data path must PASS")
+    failover = load_json(paths["failover_report"])
+    if failover.get("summary", {}).get("promotion_observed") is not True:
+        errors.append("CML07 promotion_observed must be true")
+    workload = load_json(paths["workload_report"])
+    if workload.get("status") != "PASS" or int(workload.get("node_count", 0)) != 30:
+        errors.append("CML07 workload report must PASS with node_count 30")
+    windows = {window.get("name"): window for window in workload.get("windows", [])}
+    required_order = ["before_fault", "during_fault", "after_recovery"]
+    if [window.get("name") for window in workload.get("windows", [])] != required_order:
+        errors.append("CML07 workload windows must be ordered before_fault, during_fault, after_recovery")
+    for name in required_order:
+        window = windows.get(name)
+        if not isinstance(window, dict):
+            errors.append(f"CML07 workload missing {name}")
+            continue
+        if window.get("status") != "MEASURED":
+            errors.append(f"CML07 workload {name} must be MEASURED")
+        if int(window.get("operation_count", 0)) <= 0 or not window.get("samples"):
+            errors.append(f"CML07 workload {name} must include operations and samples")
+        availability = window.get("availability_percent")
+        if not isinstance(availability, (int, float)):
+            errors.append(f"CML07 workload {name} availability_percent must be numeric")
+        latency = window.get("latency_ms", {})
+        if not all(isinstance(latency.get(key), (int, float)) for key in ["p50", "p95", "p99"]):
+            errors.append(f"CML07 workload {name} latency percentiles must be numeric")
+    cleanup = load_json(paths["cleanup"])
+    if cleanup.get("status") != "PASS" or cleanup.get("resources_remaining") not in ([], None):
+        errors.append("CML07 cleanup must PASS with no resources_remaining")
+    return errors
+
+
+def make_cml07_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml07_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+    missing_window = validation_dir / "negative_missing_during_window.json"
+    workload = load_json(paths["workload_report"])
+    workload["windows"] = [window for window in workload.get("windows", []) if window.get("name") != "during_fault"]
+    write_json(missing_window, workload)
+    cases.append(("missing_during_window", {"workload_report": missing_window}, "before_fault, during_fault, after_recovery"))
+    empty_samples = validation_dir / "negative_empty_after_samples.json"
+    workload2 = load_json(paths["workload_report"])
+    for window in workload2.get("windows", []):
+        if window.get("name") == "after_recovery":
+            window["operation_count"] = 0
+            window["samples"] = []
+    write_json(empty_samples, workload2)
+    cases.append(("empty_after_samples", {"workload_report": empty_samples}, "operations and samples"))
+    bad_data_path = validation_dir / "negative_data_path_missing.json"
+    evidence = load_json(paths["evidence"])
+    evidence["data_path_result"] = "MISSING"
+    write_json(bad_data_path, evidence)
+    cases.append(("data_path_missing", {"evidence": bad_data_path}, "data_path_result is not PASS"))
+    results = []
+    for name, overrides, expected in cases:
+        candidate = dict(paths)
+        candidate.update(overrides)
+        observed = validate_cml07_workload_windows(stage_id, candidate)
+        results.append({"name": name, "status": "PASS" if any(expected in e for e in observed) else "FAIL", "expected_error_fragment": expected, "observed_errors": observed})
+    return results
+
+
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
@@ -1060,6 +1153,11 @@ def command_run(args: argparse.Namespace) -> int:
         split_errors = validate_cml06_split_brain(args.stage)
         add_check("split_brain_indicators_30", split_errors)
         negative_cases = make_cml06_negative_cases(args.stage) if not split_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage == "CML07_WORKLOAD_FAULT_WINDOWS_30":
+        workload_errors = validate_cml07_workload_windows(args.stage)
+        add_check("workload_fault_windows_30", workload_errors)
+        negative_cases = make_cml07_negative_cases(args.stage) if not workload_errors else []
         add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     else:
         baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"

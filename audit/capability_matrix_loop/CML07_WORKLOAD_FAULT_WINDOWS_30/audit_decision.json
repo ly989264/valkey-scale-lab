@@ -1,0 +1,15 @@
+{
+  "artifact_type": "capability_audit_decision",
+  "created_at": "2026-07-02T05:16:39.245999Z",
+  "decision": "PASS",
+  "evidence": [
+    "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json",
+    "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window_report_30.json",
+    "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/report_index.json"
+  ],
+  "findings": [],
+  "reviewer": "fresh-context-audit",
+  "schema_version": "v1",
+  "stage_id": "CML07_WORKLOAD_FAULT_WINDOWS_30",
+  "status": "PASS"
+}

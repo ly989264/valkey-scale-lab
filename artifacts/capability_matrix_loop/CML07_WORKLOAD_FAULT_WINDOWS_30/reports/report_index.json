@@ -1,0 +1,145 @@
+{
+  "artifact_type": "capability_report_index",
+  "created_at": "2026-07-02T05:16:39.245999Z",
+  "reports": [
+    {
+      "kind": "csv",
+      "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/workload_fault_windows.csv",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/operation_event.jsonl",
+          "sha256": "27912fa7a78805468f8378faa687ce6073ed9c200b612b9462879f7060684573"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/fault_event.jsonl",
+          "sha256": "3757a0e3ba6114a318d29ca1433146cb32cb8f76127b7c1e64d35133c7f9cb16"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/metrics_window.jsonl",
+          "sha256": "a957ab9842b8e67159c6652fca08598451a2422eeac53e6d248e27d715d319db"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window.jsonl",
+          "sha256": "48b6029e2260709552ce01fba2fbf0bf7dcfcfd9c382d91371fc4e37069f00de"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/analysis_summary.json",
+          "sha256": "061b36a602171761f52914393144498faefb2fbeb751cf8d32a985ddcb36bb57"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window_report_30.json",
+          "sha256": "5bc5883a4ecb0eb599828fc605af4841f391779bfccfaa1bf6456b8b6928f7e2"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json",
+          "sha256": "00d46546d378686739b2d808925cdaf4462645aa4bd41c0c71b24e8dbfd974b3"
+        }
+      ]
+    },
+    {
+      "kind": "markdown",
+      "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/report.md",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/operation_event.jsonl",
+          "sha256": "27912fa7a78805468f8378faa687ce6073ed9c200b612b9462879f7060684573"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/fault_event.jsonl",
+          "sha256": "3757a0e3ba6114a318d29ca1433146cb32cb8f76127b7c1e64d35133c7f9cb16"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/metrics_window.jsonl",
+          "sha256": "a957ab9842b8e67159c6652fca08598451a2422eeac53e6d248e27d715d319db"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window.jsonl",
+          "sha256": "48b6029e2260709552ce01fba2fbf0bf7dcfcfd9c382d91371fc4e37069f00de"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/analysis_summary.json",
+          "sha256": "061b36a602171761f52914393144498faefb2fbeb751cf8d32a985ddcb36bb57"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window_report_30.json",
+          "sha256": "5bc5883a4ecb0eb599828fc605af4841f391779bfccfaa1bf6456b8b6928f7e2"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json",
+          "sha256": "00d46546d378686739b2d808925cdaf4462645aa4bd41c0c71b24e8dbfd974b3"
+        }
+      ]
+    },
+    {
+      "kind": "html",
+      "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/index.html",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/operation_event.jsonl",
+          "sha256": "27912fa7a78805468f8378faa687ce6073ed9c200b612b9462879f7060684573"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/fault_event.jsonl",
+          "sha256": "3757a0e3ba6114a318d29ca1433146cb32cb8f76127b7c1e64d35133c7f9cb16"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/metrics_window.jsonl",
+          "sha256": "a957ab9842b8e67159c6652fca08598451a2422eeac53e6d248e27d715d319db"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window.jsonl",
+          "sha256": "48b6029e2260709552ce01fba2fbf0bf7dcfcfd9c382d91371fc4e37069f00de"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/analysis_summary.json",
+          "sha256": "061b36a602171761f52914393144498faefb2fbeb751cf8d32a985ddcb36bb57"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window_report_30.json",
+          "sha256": "5bc5883a4ecb0eb599828fc605af4841f391779bfccfaa1bf6456b8b6928f7e2"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json",
+          "sha256": "00d46546d378686739b2d808925cdaf4462645aa4bd41c0c71b24e8dbfd974b3"
+        }
+      ]
+    },
+    {
+      "kind": "chart",
+      "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/workload_fault_timeline.svg",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/operation_event.jsonl",
+          "sha256": "27912fa7a78805468f8378faa687ce6073ed9c200b612b9462879f7060684573"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/fault_event.jsonl",
+          "sha256": "3757a0e3ba6114a318d29ca1433146cb32cb8f76127b7c1e64d35133c7f9cb16"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/metrics_window.jsonl",
+          "sha256": "a957ab9842b8e67159c6652fca08598451a2422eeac53e6d248e27d715d319db"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window.jsonl",
+          "sha256": "48b6029e2260709552ce01fba2fbf0bf7dcfcfd9c382d91371fc4e37069f00de"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/analysis_summary.json",
+          "sha256": "061b36a602171761f52914393144498faefb2fbeb751cf8d32a985ddcb36bb57"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window_report_30.json",
+          "sha256": "5bc5883a4ecb0eb599828fc605af4841f391779bfccfaa1bf6456b8b6928f7e2"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json",
+          "sha256": "00d46546d378686739b2d808925cdaf4462645aa4bd41c0c71b24e8dbfd974b3"
+        }
+      ]
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML07_WORKLOAD_FAULT_WINDOWS_30",
+  "status": "PASS"
+}

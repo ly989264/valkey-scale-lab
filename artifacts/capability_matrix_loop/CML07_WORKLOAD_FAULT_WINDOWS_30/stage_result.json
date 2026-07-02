@@ -1,0 +1,10 @@
+{
+  "artifact_type": "capability_stage_result",
+  "audit_decision": "audit/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/audit_decision.json",
+  "created_at": "2026-07-02T05:16:39.245999Z",
+  "gate_result": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/validation/current_stage_gate_result.json",
+  "schema_version": "v1",
+  "stage_id": "CML07_WORKLOAD_FAULT_WINDOWS_30",
+  "status": "PASS",
+  "summary": "CML07 closed ordered before/during/after workload windows on fresh 30-node real Valkey fault/failover evidence."
+}

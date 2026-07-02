@@ -1,0 +1,4 @@
+window,status,operation_count,roundtrip_successes,roundtrip_failures,availability_percent,p95_latency_ms
+before_fault,MEASURED,16,8,0,100.0,1.45
+during_fault,MEASURED,16,8,0,100.0,2.552
+after_recovery,MEASURED,16,8,0,100.0,2.218

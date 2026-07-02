@@ -1,0 +1,66 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML07_WORKLOAD_FAULT_WINDOWS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T05:17:58.331228Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "workload_fault_windows_30",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "missing_during_window",
+      "status": "PASS",
+      "expected_error_fragment": "before_fault, during_fault, after_recovery",
+      "observed_errors": [
+        "CML07 workload windows must be ordered before_fault, during_fault, after_recovery",
+        "CML07 workload missing during_fault"
+      ]
+    },
+    {
+      "name": "empty_after_samples",
+      "status": "PASS",
+      "expected_error_fragment": "operations and samples",
+      "observed_errors": [
+        "CML07 workload after_recovery must include operations and samples"
+      ]
+    },
+    {
+      "name": "data_path_missing",
+      "status": "PASS",
+      "expected_error_fragment": "data_path_result is not PASS",
+      "observed_errors": [
+        "CML01 real sample data_path_result is not PASS"
+      ]
+    }
+  ]
+}

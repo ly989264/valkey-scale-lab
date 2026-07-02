@@ -1,0 +1,19 @@
+{
+  "created_at": "2026-07-02T05:17:18.880704Z",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "sha256": "21880c4d299acffa7747c02c5860ae6540804eae6f1f82c9c4f98b808fc435aa"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "a1e9bf75daad4e0eba44f0901210b0d881de22099b65ffe2cc9509808e4f2237"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "sha256": "9d9fa4c8694ed8cdee90fbd6abbc6ec91b2d71f6a9facde340fda5fad5a6373d"
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML07_WORKLOAD_FAULT_WINDOWS_30"
+}

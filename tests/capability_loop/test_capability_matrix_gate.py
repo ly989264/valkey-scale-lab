@@ -204,3 +204,18 @@ def test_stage_manifest_requires_cml06_split_brain_artifacts():
         "zero-filled split-brain absence fails",
         "missing conflicting-primary reason fails",
     }.issubset(set(cml06["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml07_workload_window_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml07 = next(stage for stage in manifest["stages"] if stage["id"] == "CML07_WORKLOAD_FAULT_WINDOWS_30")
+    required = {artifact["path"] for artifact in cml07["required_artifacts"]}
+    assert cml07["max_real_nodes"] == 30
+    assert cml07["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window_report_30.json" in required
+    assert {
+        "missing during workload window fails",
+        "empty after-recovery samples fail",
+        "missing data-path proof fails",
+    }.issubset(set(cml07["negative_requirements"]))

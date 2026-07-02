@@ -1,0 +1,21 @@
+{
+  "files": [
+    {
+      "kind": "manifest",
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML07 contract"
+    },
+    {
+      "kind": "runner",
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML07 gate"
+    },
+    {
+      "kind": "test",
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML07 test"
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML07_WORKLOAD_FAULT_WINDOWS_30"
+}

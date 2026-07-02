@@ -2,7 +2,11 @@
   "schema_version": "v1",
   "loop_id": "capability_matrix_loop",
   "default_max_real_nodes": 100,
-  "forbidden_default_real_scales": [200, 500, 1000],
+  "forbidden_default_real_scales": [
+    200,
+    500,
+    1000
+  ],
   "automatic_stop_after": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
   "stages": [
     {
@@ -13,25 +17,71 @@
       "max_real_nodes": 0,
       "real_valkey_required": false,
       "required_artifacts": [
-        {"path": "artifacts/capability_matrix_loop/prompt_pack_location.json", "schema": "schemas/capability_matrix_loop/prompt_pack_location.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/session_context.md"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/context_refresh.md"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/constraints_snapshot.json", "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/stage_objective.md"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/commands.md"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/agents/requirements_harness_design.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/agents/worker.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/agents/regression_guard.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_plan.md"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_files.json", "schema": "schemas/capability_matrix_loop/harness_files.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_freeze.json", "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/previous_harness.log"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/regression_guard_result.json", "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/reports/capability_matrix_baseline.json", "schema": "schemas/capability_matrix_loop/capability_matrix_baseline.schema.json"},
-        {"path": "audit/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/AUDIT.md"},
-        {"path": "audit/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/audit_decision.json", "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/stage_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/next_stage_context.md"}
+        {
+          "path": "artifacts/capability_matrix_loop/prompt_pack_location.json",
+          "schema": "schemas/capability_matrix_loop/prompt_pack_location.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/session_context.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/reports/capability_matrix_baseline.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix_baseline.schema.json"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/next_stage_context.md"
+        }
       ],
       "commands": [
         {
@@ -58,36 +108,106 @@
       "max_real_nodes": 6,
       "real_valkey_required": true,
       "required_artifacts": [
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/context_refresh.md"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/constraints_snapshot.json", "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/stage_objective.md"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/commands.md"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/agents/requirements_harness_design.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/agents/worker.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/agents/regression_guard.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/harness/harness_plan.md"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/harness/harness_files.json", "schema": "schemas/capability_matrix_loop/harness_files.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/harness/harness_freeze.json", "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/previous_harness.log"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/regression_guard_result.json", "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/current_stage_gate_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/config_6node.yaml"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/real_valkey_evidence.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/operation_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/fault_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/metrics_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/workload_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/capability_matrix.json", "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/analysis_summary.json", "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/report_index.json", "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/window_summary.csv"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/window_timeline.svg"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/report.md"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/index.html"},
-        {"path": "audit/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/AUDIT.md"},
-        {"path": "audit/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/audit_decision.json", "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/stage_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/next_stage_context.md"}
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/config_6node.yaml"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/real_valkey_evidence.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/operation_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/fault_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/metrics_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/workload_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/window_summary.csv"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/window_timeline.svg"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/report.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/index.html"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/next_stage_context.md"
+        }
       ],
       "commands": [
         {
@@ -113,37 +233,109 @@
       "max_real_nodes": 30,
       "real_valkey_required": true,
       "required_artifacts": [
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/context_refresh.md"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/constraints_snapshot.json", "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/stage_objective.md"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/commands.md"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/agents/requirements_harness_design.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/agents/worker.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/agents/regression_guard.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/harness/harness_plan.md"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/harness/harness_files.json", "schema": "schemas/capability_matrix_loop/harness_files.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/harness/harness_freeze.json", "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/validation/previous_harness.log"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/validation/regression_guard_result.json", "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/validation/current_stage_gate_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/state_scale_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/cleanup_report_scale_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/operation_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/fault_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/metrics_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/workload_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/capability_matrix.json", "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json", "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report_index.json", "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/management_ops.csv"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/management_timeline.svg"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report.md"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/index.html"},
-        {"path": "audit/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/AUDIT.md"},
-        {"path": "audit/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/audit_decision.json", "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/stage_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/next_stage_context.md"}
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/state_scale_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/cleanup_report_scale_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/operation_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/fault_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/metrics_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/workload_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/management_ops.csv"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/management_timeline.svg"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/index.html"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/next_stage_context.md"
+        }
       ],
       "commands": [
         {
@@ -168,39 +360,115 @@
       "max_real_nodes": 30,
       "real_valkey_required": true,
       "required_artifacts": [
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/context_refresh.md"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/constraints_snapshot.json", "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/stage_objective.md"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/commands.md"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/agents/requirements_harness_design.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/agents/worker.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/agents/regression_guard.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/harness/harness_plan.md"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/harness/harness_files.json", "schema": "schemas/capability_matrix_loop/harness_files.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/harness/harness_freeze.json", "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/validation/previous_harness.log"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/validation/regression_guard_result.json", "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/validation/current_stage_gate_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/real_valkey_evidence_fault_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/fault_report_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/failover_report_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/workload_window_report_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/cleanup_report_fault_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/operation_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/fault_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/metrics_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/workload_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/capability_matrix.json", "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/analysis_summary.json", "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/report_index.json", "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/fault_windows.csv"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/fault_timeline.svg"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/report.md"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/index.html"},
-        {"path": "audit/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/AUDIT.md"},
-        {"path": "audit/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/audit_decision.json", "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/stage_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/next_stage_context.md"}
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/real_valkey_evidence_fault_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/fault_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/failover_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/workload_window_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/cleanup_report_fault_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/operation_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/fault_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/metrics_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/workload_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/fault_windows.csv"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/fault_timeline.svg"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/report.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/index.html"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/next_stage_context.md"
+        }
       ],
       "commands": [
         {
@@ -225,40 +493,117 @@
       "max_real_nodes": 30,
       "real_valkey_required": true,
       "required_artifacts": [
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/context_refresh.md"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/constraints_snapshot.json", "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/stage_objective.md"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/commands.md"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/agents/requirements_harness_design.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/agents/worker.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/agents/regression_guard.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/harness/harness_plan.md"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/harness/harness_files.json", "schema": "schemas/capability_matrix_loop/harness_files.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/harness/harness_freeze.json", "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/validation/previous_harness.log"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/validation/regression_guard_result.json", "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/validation/current_stage_gate_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/network_fault_report_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/cleanup_report.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/operation_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/fault_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/metrics_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/workload_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/capability_matrix.json", "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json", "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report_index.json", "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/network_faults.csv"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/network_timeline.svg"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report.md"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/index.html"},
-        {"path": "audit/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/AUDIT.md"},
-        {"path": "audit/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/audit_decision.json", "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/stage_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/next_stage_context.md"}
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/network_fault_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/cleanup_report.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/operation_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/fault_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/metrics_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/workload_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/network_faults.csv"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/network_timeline.svg"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/index.html"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/next_stage_context.md"
+        }
       ],
       "commands": [
-        {"name": "capability_network_az_faults_30_gate", "command": "python3 tools/capability_matrix_gate.py run --stage CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30", "required": true, "timeout_seconds": 180}
+        {
+          "name": "capability_network_az_faults_30_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+          "required": true,
+          "timeout_seconds": 180
+        }
       ],
       "negative_requirements": [
         "host network scope fails",
@@ -274,38 +619,111 @@
       "max_real_nodes": 30,
       "real_valkey_required": true,
       "required_artifacts": [
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/context_refresh.md"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/constraints_snapshot.json", "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/stage_objective.md"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/commands.md"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/agents/requirements_harness_design.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/agents/worker.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/agents/regression_guard.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/harness/harness_plan.md"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/harness/harness_files.json", "schema": "schemas/capability_matrix_loop/harness_files.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/harness/harness_freeze.json", "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/validation/previous_harness.log"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/validation/regression_guard_result.json", "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/validation/current_stage_gate_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/real_valkey_evidence_failover_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/fault_report_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/failover_report_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/workload_window_report_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/cleanup_report_failover_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/operation_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/fault_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/metrics_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/workload_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/capability_matrix.json", "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/analysis_summary.json", "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/report_index.json", "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"},
-        {"path": "audit/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/AUDIT.md"},
-        {"path": "audit/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/audit_decision.json", "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/stage_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/next_stage_context.md"}
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/real_valkey_evidence_failover_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/fault_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/failover_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/workload_window_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/cleanup_report_failover_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/operation_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/fault_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/metrics_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/workload_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/next_stage_context.md"
+        }
       ],
       "commands": [
-        {"name": "capability_failover_latency_recovery_30_gate", "command": "python3 tools/capability_matrix_gate.py run --stage CML05_FAILOVER_LATENCY_AND_RECOVERY_30", "required": true, "timeout_seconds": 180}
+        {
+          "name": "capability_failover_latency_recovery_30_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
+          "required": true,
+          "timeout_seconds": 180
+        }
       ],
       "negative_requirements": [
         "missing failover latency fails",
@@ -321,48 +739,302 @@
       "max_real_nodes": 30,
       "real_valkey_required": true,
       "required_artifacts": [
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/context_refresh.md"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/constraints_snapshot.json", "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/stage_objective.md"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/commands.md"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/agents/requirements_harness_design.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/agents/worker.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/agents/regression_guard.response.md"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/harness/harness_plan.md"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/harness/harness_files.json", "schema": "schemas/capability_matrix_loop/harness_files.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/harness/harness_freeze.json", "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/validation/previous_harness.log"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/validation/regression_guard_result.json", "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/validation/current_stage_gate_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/real_valkey_evidence_split_brain_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/failover_report_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/cleanup_report_split_brain_30.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/operation_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/fault_event.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/metrics_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/workload_window.jsonl"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/capability_matrix.json", "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/analysis_summary.json", "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/reports/report_index.json", "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"},
-        {"path": "audit/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/AUDIT.md"},
-        {"path": "audit/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/audit_decision.json", "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/stage_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"},
-        {"path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/next_stage_context.md"}
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/real_valkey_evidence_split_brain_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/failover_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/cleanup_report_split_brain_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/operation_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/fault_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/metrics_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/workload_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/next_stage_context.md"
+        }
       ],
       "commands": [
-        {"name": "capability_split_brain_indicators_30_gate", "command": "python3 tools/capability_matrix_gate.py run --stage CML06_SPLIT_BRAIN_INDICATORS_30", "required": true, "timeout_seconds": 180}
+        {
+          "name": "capability_split_brain_indicators_30_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML06_SPLIT_BRAIN_INDICATORS_30",
+          "required": true,
+          "timeout_seconds": 180
+        }
       ],
       "negative_requirements": [
         "zero-filled split-brain absence fails",
         "missing conflicting-primary reason fails"
       ]
     },
-    {"id": "CML07_WORKLOAD_FAULT_WINDOWS_30", "objective": "Close before/during/after workload windows for management and fault scenarios.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
-    {"id": "CML08_BOUNDED_SOAK_30_60_MINUTES", "objective": "Run 30 and 60 minute bounded soak with metrics and cleanup.", "automatic": true, "profile": "real-30-soak", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
-    {"id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30", "objective": "Close the 30-node capability matrix and reports.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
-    {"id": "CML10_SCALE_REPLAY_50", "objective": "Replay the capability suite on 50 real nodes.", "automatic": true, "profile": "real-50", "max_real_nodes": 50, "real_valkey_required": true, "required_artifacts": [], "commands": []},
-    {"id": "CML11_SCALE_REPLAY_100", "objective": "Replay the capability suite on 100 real nodes.", "automatic": true, "profile": "real-100", "max_real_nodes": 100, "real_valkey_required": true, "required_artifacts": [], "commands": []},
-    {"id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "objective": "Parameterize future 200/500/1000 dry-run support without default real execution.", "automatic": true, "profile": "dryrun-future", "max_real_nodes": 0, "real_valkey_required": false, "required_artifacts": [], "commands": []},
-    {"id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH", "objective": "Audit the full CML00-CML12 chain and final capability matrix.", "automatic": true, "profile": "audit", "max_real_nodes": 100, "real_valkey_required": true, "required_artifacts": [], "commands": []}
+    {
+      "id": "CML07_WORKLOAD_FAULT_WINDOWS_30",
+      "objective": "Close before/during/after workload windows for management and fault scenarios.",
+      "automatic": true,
+      "profile": "real-30",
+      "max_real_nodes": 30,
+      "real_valkey_required": true,
+      "required_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/fault_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/failover_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window_report_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/cleanup_report_workload_windows_30.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/operation_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/fault_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/metrics_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/workload_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/workload_fault_windows.csv"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/workload_fault_timeline.svg"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/report.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/index.html"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/next_stage_context.md"
+        }
+      ],
+      "commands": [
+        {
+          "name": "capability_workload_fault_windows_30_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML07_WORKLOAD_FAULT_WINDOWS_30",
+          "required": true,
+          "timeout_seconds": 180
+        }
+      ],
+      "negative_requirements": [
+        "missing during workload window fails",
+        "empty after-recovery samples fail",
+        "missing data-path proof fails"
+      ]
+    },
+    {
+      "id": "CML08_BOUNDED_SOAK_30_60_MINUTES",
+      "objective": "Run 30 and 60 minute bounded soak with metrics and cleanup.",
+      "automatic": true,
+      "profile": "real-30-soak",
+      "max_real_nodes": 30,
+      "real_valkey_required": true,
+      "required_artifacts": [],
+      "commands": []
+    },
+    {
+      "id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30",
+      "objective": "Close the 30-node capability matrix and reports.",
+      "automatic": true,
+      "profile": "real-30",
+      "max_real_nodes": 30,
+      "real_valkey_required": true,
+      "required_artifacts": [],
+      "commands": []
+    },
+    {
+      "id": "CML10_SCALE_REPLAY_50",
+      "objective": "Replay the capability suite on 50 real nodes.",
+      "automatic": true,
+      "profile": "real-50",
+      "max_real_nodes": 50,
+      "real_valkey_required": true,
+      "required_artifacts": [],
+      "commands": []
+    },
+    {
+      "id": "CML11_SCALE_REPLAY_100",
+      "objective": "Replay the capability suite on 100 real nodes.",
+      "automatic": true,
+      "profile": "real-100",
+      "max_real_nodes": 100,
+      "real_valkey_required": true,
+      "required_artifacts": [],
+      "commands": []
+    },
+    {
+      "id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+      "objective": "Parameterize future 200/500/1000 dry-run support without default real execution.",
+      "automatic": true,
+      "profile": "dryrun-future",
+      "max_real_nodes": 0,
+      "real_valkey_required": false,
+      "required_artifacts": [],
+      "commands": []
+    },
+    {
+      "id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
+      "objective": "Audit the full CML00-CML12 chain and final capability matrix.",
+      "automatic": true,
+      "profile": "audit",
+      "max_real_nodes": 100,
+      "real_valkey_required": true,
+      "required_artifacts": [],
+      "commands": []
+    }
   ]
 }
