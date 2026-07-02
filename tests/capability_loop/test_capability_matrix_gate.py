@@ -268,3 +268,20 @@ def test_stage_manifest_requires_cml10_scale_replay_50_artifacts():
         "30-node evidence reuse fails",
         "network PASS without 50-node evidence fails",
     }.issubset(set(cml10["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml11_scale_replay_100_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml11 = next(stage for stage in manifest["stages"] if stage["id"] == "CML11_SCALE_REPLAY_100")
+    required = {artifact["path"] for artifact in cml11["required_artifacts"]}
+    assert cml11["max_real_nodes"] == 100
+    assert cml11["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json" in required
+    assert "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json" in required
+    assert "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/capability_matrix.json" in required
+    assert {
+        "wrong 100-node count fails",
+        "fake real Valkey evidence fails",
+        "lower-scale evidence reuse fails",
+        "network PASS without 100-node evidence fails",
+    }.issubset(set(cml11["negative_requirements"]))

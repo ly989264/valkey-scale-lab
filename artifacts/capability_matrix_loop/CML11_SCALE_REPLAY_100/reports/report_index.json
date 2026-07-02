@@ -1,0 +1,145 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_report_index",
+  "stage_id": "CML11_SCALE_REPLAY_100",
+  "status": "PARTIAL",
+  "created_at": "2026-07-02T08:13:14.192305Z",
+  "reports": [
+    {
+      "kind": "csv",
+      "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/reports/capability_matrix_100.csv",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/operation_event.jsonl",
+          "sha256": "65e1f44009e1ecc73df4e54d08a4e3b0988bb10c4df2e162848fe49554ef81ba"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/fault_event.jsonl",
+          "sha256": "83acddca743337c687b1a4aa15d1044e074306a45181c9f4441f826cff3a7e84"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/metrics_window.jsonl",
+          "sha256": "8fc94401ffd8b5806a45b23a84dfff555bb7ba5402a8e71a4886d20d524e96a4"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/workload_window.jsonl",
+          "sha256": "7b2dea0ce31590fd27836ae2e5e89dd402e58ab858343611413a5be1c15b0797"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/analysis_summary.json",
+          "sha256": "c801aa0587c5f21328e318f7fb63b7432779244ce700f476ae148abccf8c971e"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json",
+          "sha256": "49fd51f8b3e7d348be8f59c96a21b27aa352c614f10851b0d597d2082df206b3"
+        }
+      ]
+    },
+    {
+      "kind": "markdown",
+      "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/reports/report.md",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/operation_event.jsonl",
+          "sha256": "65e1f44009e1ecc73df4e54d08a4e3b0988bb10c4df2e162848fe49554ef81ba"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/fault_event.jsonl",
+          "sha256": "83acddca743337c687b1a4aa15d1044e074306a45181c9f4441f826cff3a7e84"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/metrics_window.jsonl",
+          "sha256": "8fc94401ffd8b5806a45b23a84dfff555bb7ba5402a8e71a4886d20d524e96a4"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/workload_window.jsonl",
+          "sha256": "7b2dea0ce31590fd27836ae2e5e89dd402e58ab858343611413a5be1c15b0797"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/analysis_summary.json",
+          "sha256": "c801aa0587c5f21328e318f7fb63b7432779244ce700f476ae148abccf8c971e"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json",
+          "sha256": "49fd51f8b3e7d348be8f59c96a21b27aa352c614f10851b0d597d2082df206b3"
+        }
+      ]
+    },
+    {
+      "kind": "html",
+      "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/reports/index.html",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/operation_event.jsonl",
+          "sha256": "65e1f44009e1ecc73df4e54d08a4e3b0988bb10c4df2e162848fe49554ef81ba"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/fault_event.jsonl",
+          "sha256": "83acddca743337c687b1a4aa15d1044e074306a45181c9f4441f826cff3a7e84"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/metrics_window.jsonl",
+          "sha256": "8fc94401ffd8b5806a45b23a84dfff555bb7ba5402a8e71a4886d20d524e96a4"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/workload_window.jsonl",
+          "sha256": "7b2dea0ce31590fd27836ae2e5e89dd402e58ab858343611413a5be1c15b0797"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/analysis_summary.json",
+          "sha256": "c801aa0587c5f21328e318f7fb63b7432779244ce700f476ae148abccf8c971e"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json",
+          "sha256": "49fd51f8b3e7d348be8f59c96a21b27aa352c614f10851b0d597d2082df206b3"
+        }
+      ]
+    },
+    {
+      "kind": "chart",
+      "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/reports/capability_matrix_100.svg",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/operation_event.jsonl",
+          "sha256": "65e1f44009e1ecc73df4e54d08a4e3b0988bb10c4df2e162848fe49554ef81ba"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/fault_event.jsonl",
+          "sha256": "83acddca743337c687b1a4aa15d1044e074306a45181c9f4441f826cff3a7e84"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/metrics_window.jsonl",
+          "sha256": "8fc94401ffd8b5806a45b23a84dfff555bb7ba5402a8e71a4886d20d524e96a4"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/workload_window.jsonl",
+          "sha256": "7b2dea0ce31590fd27836ae2e5e89dd402e58ab858343611413a5be1c15b0797"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/analysis_summary.json",
+          "sha256": "c801aa0587c5f21328e318f7fb63b7432779244ce700f476ae148abccf8c971e"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json",
+          "sha256": "49fd51f8b3e7d348be8f59c96a21b27aa352c614f10851b0d597d2082df206b3"
+        }
+      ]
+    }
+  ]
+}

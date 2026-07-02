@@ -1,0 +1,26 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML11_SCALE_REPLAY_100",
+  "read_files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "422aae779284c0b871da2bcb78ab362b2890254134c1a67d726d88871cebf6f3",
+      "summary": "Safety and phase-loop constraints."
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "sha256": "01ad5f448161debb8914d212fb9754916817dce7c9b28781ffc93b26147f4e75",
+      "summary": "Autonomous build entry point."
+    },
+    {
+      "path": "codex/capability_loop_prompt/MAIN_LOOP_PROMPT.md",
+      "sha256": "d3c04bdfccbcc1094ed58701a773080a1ab37a1be0093126179d90f95442489b",
+      "summary": "Loop-engineering protocol."
+    }
+  ],
+  "active_constraints": [
+    "CML11 must replay 100-node capability evidence from real Valkey wrappers.",
+    "No 30-node or 50-node evidence may satisfy a 100-node PASS row.",
+    "Missing 100-node network partition evidence must stay UNSUPPORTED_WITH_EVIDENCE."
+  ]
+}

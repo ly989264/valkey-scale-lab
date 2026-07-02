@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML11_SCALE_REPLAY_100",
+  "created_at": "2026-07-02T08:13:14.192305Z",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "sha256": "ed669c65d442f0edf50f599da809d54c09d1c185f125e35c8d54f5c387fbe2f2"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "54960c5bdad5d77977e50127ce1dca254857fd9015e9d1ca9491d295636fab43"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "sha256": "b3489d7f98a8ffc646cbba59356daacf0e31365f38691dbcb6485f38daf1d872"
+    }
+  ]
+}

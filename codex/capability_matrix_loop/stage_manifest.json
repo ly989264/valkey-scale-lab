@@ -1368,8 +1368,125 @@
       "profile": "real-100",
       "max_real_nodes": 100,
       "real_valkey_required": true,
-      "required_artifacts": [],
-      "commands": []
+      "required_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/operation_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/fault_event.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/metrics_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/workload_window.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/reports/capability_matrix_100.csv"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/reports/capability_matrix_100.svg"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/reports/report.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/reports/index.html"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML11_SCALE_REPLAY_100/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML11_SCALE_REPLAY_100/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/state_transitions.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/next_stage_context.md"
+        }
+      ],
+      "commands": [
+        {
+          "name": "capability_scale_replay_100_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML11_SCALE_REPLAY_100",
+          "required": true,
+          "timeout_seconds": 180
+        }
+      ],
+      "negative_requirements": [
+        "wrong 100-node count fails",
+        "fake real Valkey evidence fails",
+        "lower-scale evidence reuse fails",
+        "network PASS without 100-node evidence fails"
+      ]
     },
     {
       "id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",

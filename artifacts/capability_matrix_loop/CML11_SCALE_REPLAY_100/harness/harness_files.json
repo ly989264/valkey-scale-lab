@@ -1,0 +1,21 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML11_SCALE_REPLAY_100",
+  "files": [
+    {
+      "kind": "manifest",
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML11 contract"
+    },
+    {
+      "kind": "runner",
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML11 validator"
+    },
+    {
+      "kind": "test",
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML11 manifest test"
+    }
+  ]
+}

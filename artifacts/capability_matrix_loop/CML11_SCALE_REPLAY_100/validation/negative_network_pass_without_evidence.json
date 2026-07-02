@@ -1,0 +1,139 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "cml11_evidence_index",
+  "stage_id": "CML11_SCALE_REPLAY_100",
+  "created_at": "2026-07-02T08:13:14.192305Z",
+  "capabilities": [
+    {
+      "capability_id": "cluster_management_scale_100",
+      "status": "PASS",
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 100,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+      "source_artifacts": [
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "sha256": "5d3ae8cda007539b7fcbc05093353ae2b9e284bdf8267d3e4bebd58c2f27fb0e"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_100.json",
+          "sha256": "7981a0e5df5fc91a8ae74d0d2e4e9dc072960ebcec7a9113c14ae5c5b8a7916e"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "sha256": "b998333f71ee9be2e28d9a9072129d92824a1272858fc1cfb29ba038b9ce5434"
+        }
+      ]
+    },
+    {
+      "capability_id": "process_nodehost_faults_100",
+      "status": "PASS",
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 99,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+      "source_artifacts": [
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+          "sha256": "52a0941316cdbe31887d26ab0dcf287802cf5096b0980a9888b35e75ef28ce20"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+          "sha256": "609c0fc9b4501758ff50143877195f2077a8f19c7be463c10ae4a17148e21722"
+        }
+      ]
+    },
+    {
+      "capability_id": "failover_latency_recovery_100",
+      "status": "PASS",
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 99,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+      "source_artifacts": [
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+          "sha256": "fd12a55e0cb3f9a46a84a0603efadd75167b4f45f7cc674986ddcf450861e5cd"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "sha256": "5bb4af8939bb253928d31cc9ab2db8323db526e5556df05bd811f1e934c35abf"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+          "sha256": "609c0fc9b4501758ff50143877195f2077a8f19c7be463c10ae4a17148e21722"
+        }
+      ]
+    },
+    {
+      "capability_id": "split_brain_indicators_100",
+      "status": "PASS",
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 99,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+      "source_artifacts": [
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+          "sha256": "fd12a55e0cb3f9a46a84a0603efadd75167b4f45f7cc674986ddcf450861e5cd"
+        }
+      ]
+    },
+    {
+      "capability_id": "workload_fault_windows_100",
+      "status": "PASS",
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 100,
+      "data_path_result": "PASS",
+      "real_valkey_evidence": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+      "source_artifacts": [
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "sha256": "5bb4af8939bb253928d31cc9ab2db8323db526e5556df05bd811f1e934c35abf"
+        }
+      ]
+    },
+    {
+      "capability_id": "network_az_faults_100",
+      "status": "PASS",
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "scale_nodes": 100,
+      "nodes_observed": 100,
+      "data_path_result": "UNSUPPORTED_WITH_EVIDENCE",
+      "real_valkey_evidence": "",
+      "source_artifacts": [
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "sha256": "5d3ae8cda007539b7fcbc05093353ae2b9e284bdf8267d3e4bebd58c2f27fb0e"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        }
+      ],
+      "reason": "100-node network partition evidence is not present in P13 wrapper outputs; retained as unsupported instead of promoted to PASS."
+    }
+  ]
+}

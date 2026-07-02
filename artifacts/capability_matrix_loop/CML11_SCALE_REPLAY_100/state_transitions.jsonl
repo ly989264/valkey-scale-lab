@@ -1,0 +1,9 @@
+{"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "CONTEXT_REFRESH", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
+{"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "PREVIOUS_HARNESS_VERIFICATION", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
+{"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "REQUIREMENTS_AND_HARNESS_DESIGN_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
+{"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "HARNESS_IMPLEMENT_AND_FREEZE", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
+{"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "WORKER_IMPLEMENTATION_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
+{"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "REGRESSION_GUARD_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
+{"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "CURRENT_STAGE_VALIDATION", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
+{"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "FRESH_CONTEXT_REVIEW_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
+{"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "STAGE_RESULT_AND_NEXT_CONTEXT", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
