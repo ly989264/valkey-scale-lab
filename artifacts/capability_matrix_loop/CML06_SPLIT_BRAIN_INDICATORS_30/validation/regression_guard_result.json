@@ -1,0 +1,9 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML06_SPLIT_BRAIN_INDICATORS_30",
+  "decision": "PASS",
+  "protected_files_changed": [],
+  "frozen_harness_mismatches": [],
+  "suspicious_patterns": [],
+  "requires_harness_exception": false
+}

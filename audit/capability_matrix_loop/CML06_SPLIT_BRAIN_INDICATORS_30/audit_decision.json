@@ -1,0 +1,15 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_audit_decision",
+  "stage_id": "CML06_SPLIT_BRAIN_INDICATORS_30",
+  "status": "PASS",
+  "decision": "PASS",
+  "created_at": "2026-07-02T05:07:14.551021Z",
+  "reviewer": "fresh-context-cml-auditor",
+  "findings": [],
+  "evidence_paths": [
+    "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/real_valkey_evidence_split_brain_30.json",
+    "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/failover_report_30.json",
+    "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/validation/current_stage_gate_result.json"
+  ]
+}

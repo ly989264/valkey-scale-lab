@@ -1,0 +1,21 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML06_SPLIT_BRAIN_INDICATORS_30",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML06 contract",
+      "kind": "manifest"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML06 gate",
+      "kind": "runner"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML06 test",
+      "kind": "test"
+    }
+  ]
+}

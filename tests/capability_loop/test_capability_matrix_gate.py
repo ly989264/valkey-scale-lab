@@ -190,3 +190,17 @@ def test_stage_manifest_requires_cml05_failover_artifacts():
         "missing promotion fails",
         "cleanup residue fails",
     }.issubset(set(cml05["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml06_split_brain_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml06 = next(stage for stage in manifest["stages"] if stage["id"] == "CML06_SPLIT_BRAIN_INDICATORS_30")
+    required = {artifact["path"] for artifact in cml06["required_artifacts"]}
+    assert cml06["max_real_nodes"] == 30
+    assert cml06["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/real_valkey_evidence_split_brain_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/failover_report_30.json" in required
+    assert {
+        "zero-filled split-brain absence fails",
+        "missing conflicting-primary reason fails",
+    }.issubset(set(cml06["negative_requirements"]))

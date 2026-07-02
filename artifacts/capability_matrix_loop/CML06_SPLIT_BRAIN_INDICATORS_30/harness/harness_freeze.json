@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML06_SPLIT_BRAIN_INDICATORS_30",
+  "created_at": "2026-07-02T05:07:14.551021Z",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "sha256": "39f58f7aa57873eaf6ea8f5eb4ca2bd9cb17d612ac4919cbec20ddfb05a4c06a"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "03eb4d0f9964a8c6fa5502f8ae6afb898d5ac32199709ca56a62581dace19756"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "sha256": "c45a016eaffa8d5578f2f7f4b0473533d9cefdab43e7e206418daf2e88c459de"
+    }
+  ]
+}

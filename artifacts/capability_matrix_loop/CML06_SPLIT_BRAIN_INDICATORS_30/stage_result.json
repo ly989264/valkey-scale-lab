@@ -1,0 +1,58 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_result",
+  "stage_id": "CML06_SPLIT_BRAIN_INDICATORS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T05:07:14.551021Z",
+  "summary": "CML06 completed split-brain indicators.",
+  "artifacts": [
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/capability_matrix.json",
+      "sha256": "06267ef9bba6911bcca3ec868ce0a443ef255ee68e983ac9a767cb1b0c405555"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/analysis_summary.json",
+      "sha256": "459500a4e764fed2a29cd9fb01dcdbf4405c6e878ab648c05abed5ae66ec12c9"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/reports/report_index.json",
+      "sha256": "016582088b7d1da2e7d7c3ee81bde49ec564c8b2f70f9a255a483bd48bdcc8ee"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/operation_event.jsonl",
+      "sha256": "5bbca1fc329bd7cb0c3686f07bbfd022274fc64f980a7416b04273810b921526"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/fault_event.jsonl",
+      "sha256": "d3248cac5e5ae3e6c5c9c6eccdea5c6bed09eec01dab388659fada72899f861e"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/metrics_window.jsonl",
+      "sha256": "2631e14c451085c89150fd1dcc753ec01bfbf4fd0c2efcc0fcaf691163b3ffc9"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/workload_window.jsonl",
+      "sha256": "7e0665ac4211160b36397feedb387346d8bac8d5a0f6f0f14af6850562f248d7"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/real_valkey_evidence_split_brain_30.json",
+      "sha256": "aa52565b88b63be1a41ca0cc9f07ad87257b1b5d4f79e6a5968a1ed64b68efe5"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/fault_report_30.json",
+      "sha256": "0e9a3ebdb7c0e64e9141261503cee4512d34637dd5466d8c63752fcee4823b1c"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/failover_report_30.json",
+      "sha256": "84bd00b33befa2904f365020bb49d8d4643b0b75d22aadf1a00706e33b6f1a75"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/workload_window_report_30.json",
+      "sha256": "82fc3e337bc23a23a93d6b77b413688439910eecdd623b2861b1be0e4dab654a"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/cleanup_report_split_brain_30.json",
+      "sha256": "008d49c21f39d7c30446fa4d052c02a60f976b879cda80b81944020d80d3d1b1"
+    }
+  ]
+}

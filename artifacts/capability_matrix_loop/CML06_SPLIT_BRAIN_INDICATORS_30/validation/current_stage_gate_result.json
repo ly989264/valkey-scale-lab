@@ -1,0 +1,57 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML06_SPLIT_BRAIN_INDICATORS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T05:08:41.313860Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "split_brain_indicators_30",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "zero_filled_split_brain",
+      "status": "PASS",
+      "expected_error_fragment": "explicit MISSING",
+      "observed_errors": [
+        "CML06 split_brain_duration_ms must be explicit MISSING evidence"
+      ]
+    },
+    {
+      "name": "missing_conflicting_primary_reason",
+      "status": "PASS",
+      "expected_error_fragment": "conflicting primaries",
+      "observed_errors": [
+        "CML06 split-brain reason must mention conflicting primaries not observed"
+      ]
+    }
+  ]
+}
