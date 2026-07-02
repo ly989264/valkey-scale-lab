@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -32,17 +33,24 @@ def test_l08_stage_command_log_does_not_execute_p14() -> None:
 
 
 def test_l08_worktree_has_no_cache_or_scratch_pollution() -> None:
+    completed = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
     polluted = []
-    for path in REPO_ROOT.rglob("*"):
-        relative = path.relative_to(REPO_ROOT)
-        if relative.parts and relative.parts[0] == ".git":
+    for tracked_path in completed.stdout.split("\0"):
+        if not tracked_path:
             continue
-        if path.is_dir() and path.name in {"__pycache__", ".pytest_cache"}:
-            polluted.append(relative.as_posix())
-        elif path.is_dir() and path.name.startswith("_fault_failover_work_"):
-            polluted.append(relative.as_posix())
-        elif path.is_file() and path.suffix == ".pyc":
-            polluted.append(relative.as_posix())
+        path = Path(tracked_path)
+        if any(part in {"__pycache__", ".pytest_cache"} for part in path.parts):
+            polluted.append(tracked_path)
+        elif any(part.startswith("_fault_failover_work_") for part in path.parts):
+            polluted.append(tracked_path)
+        elif path.suffix == ".pyc":
+            polluted.append(tracked_path)
     assert polluted == []
 
 
