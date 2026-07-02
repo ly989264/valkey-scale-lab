@@ -7,6 +7,7 @@ import shutil
 import socket
 import subprocess
 import time
+import binascii
 from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError, as_completed
 from dataclasses import dataclass
@@ -143,6 +144,7 @@ def create_scenario(
         ("P13_SCALE_LADDER_50_100", "scale_100"),
         ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"),
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
+        ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
@@ -241,6 +243,8 @@ def create_scenario(
             write_goal_loop_quant_telemetry_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         if phase == "P17_MANAGEMENT_REMOVE_NODE":
             write_p17_management_remove_node_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        if phase == "P18_MANAGEMENT_RESHARD_REBALANCE":
+            write_p18_management_reshard_rebalance_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         _write_state(Path(state_out), state)
         return state
     except Exception as exc:
@@ -2992,6 +2996,7 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
         ("P13_SCALE_LADDER_50_100", "scale_100"): {100},
         ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"): {6},
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"): {6},
+        ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"): {6},
     }
     return node_count in expected.get((phase, scenario), set())
 
@@ -4874,6 +4879,638 @@ def _p17_cleanup_summary(operation_id: str, cleanup_report: dict[str, Any]) -> d
         "status": cleanup_report.get("status", MISSING),
         "resources_remaining": cleanup_report.get("resources_remaining", MISSING),
         "cleanup_action_count": len(cleanup_report.get("cleanup_actions", [])),
+    }
+
+
+P18_REQUIRED_ROWS = [
+    ("reshard_slot_range", 6),
+    ("reshard_slot_range", 10),
+    ("reshard_with_keys", 6),
+    ("reshard_with_keys", 10),
+    ("rebalance_after_imbalance", 6),
+    ("rebalance_after_imbalance", 10),
+]
+
+
+def write_p18_management_reshard_rebalance_artifacts(
+    artifacts: Path,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    config: dict[str, Any],
+    nodes: list[dict[str, Any]],
+) -> None:
+    artifacts.mkdir(parents=True, exist_ok=True)
+    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id)
+    events = [
+        telemetry.event(
+            "management_matrix_started",
+            subject_type="management_matrix",
+            subject_id=scenario,
+            message="P18 reshard/rebalance management matrix started.",
+            metadata={"required_rows": [{"operation_name": op, "node_count": count} for op, count in P18_REQUIRED_ROWS]},
+        )
+    ]
+    metric_rows: list[dict[str, Any]] = []
+    workload_windows: list[dict[str, Any]] = []
+    operation_rows: list[dict[str, Any]] = []
+    matrix_rows: list[dict[str, Any]] = []
+    topology_rows: list[dict[str, Any]] = []
+    command_log: list[dict[str, Any]] = []
+    slot_movements: list[dict[str, Any]] = []
+    rebalance_rows: list[dict[str, Any]] = []
+    cleanup_summaries: list[dict[str, Any]] = []
+
+    for row_index, (operation_name, node_count) in enumerate(P18_REQUIRED_ROWS):
+        operation_id = f"{operation_name}-{node_count:02d}"
+        row_result, row_events, row_metrics, row_windows, row_topology, row_commands, row_movements, row_rebalance, row_cleanup = _p18_run_management_row(
+            phase=phase,
+            parent_scenario=scenario,
+            parent_run_id=run_id,
+            artifacts=artifacts,
+            config=_p18_config_for_node_count(config, node_count, row_index),
+            operation_name=operation_name,
+            operation_id=operation_id,
+            node_count=node_count,
+            row_index=row_index,
+            telemetry=telemetry,
+        )
+        operation_rows.append(row_result)
+        matrix_rows.append(
+            {
+                "operation_name": operation_name,
+                "node_count": node_count,
+                "operation_status": row_result["operation_status"],
+                "workload_window_ref": row_result["workload_window_ref"],
+                "operation_id": operation_id,
+                "real_execution_verified": row_result.get("real_execution_verified", False),
+                "slots_moved": row_result.get("slots_moved", MISSING),
+            }
+        )
+        events.extend(row_events)
+        metric_rows.extend(row_metrics)
+        workload_windows.extend(row_windows)
+        topology_rows.extend(row_topology)
+        command_log.extend(row_commands)
+        slot_movements.extend(row_movements)
+        if row_rebalance:
+            rebalance_rows.append(row_rebalance)
+        cleanup_summaries.append(row_cleanup)
+
+    events.append(
+        telemetry.event(
+            "management_matrix_finished",
+            subject_type="management_matrix",
+            subject_id=scenario,
+            message="P18 reshard/rebalance management matrix finished.",
+            metadata={"operation_count": len(operation_rows), "slot_movement_count": len(slot_movements)},
+        )
+    )
+    write_jsonl(artifacts / "events.jsonl", events)
+    write_jsonl(artifacts / "metrics_timeseries.jsonl", metric_rows)
+    write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
+    write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
+    write_jsonl(artifacts / "management_command_log.jsonl", command_log)
+    write_jsonl(artifacts / "reshard_slot_movements.jsonl", slot_movements)
+
+    workload_artifact = {
+        "schema_version": "v1",
+        "artifact_type": "workload_windows",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "scenario_name": scenario,
+        "status": "PASS" if all(window.get("status") == "PASS" for window in workload_windows) else "FAIL",
+        "windows": workload_windows,
+    }
+    (artifacts / "workload_windows.json").write_text(json.dumps(workload_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    matrix = {
+        "schema_version": "v1",
+        "artifact_type": "management_ops_matrix",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if all(row["operation_status"] == "PASS" for row in operation_rows) else "FAIL",
+        "operations": matrix_rows,
+        "required_rows": [{"operation_name": op, "node_count": count} for op, count in P18_REQUIRED_ROWS],
+    }
+    (artifacts / "management_ops_matrix.json").write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    impact = {
+        "schema_version": "v1",
+        "artifact_type": "workload_impact_report",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": workload_artifact["status"],
+        "windows": _p17_aggregate_workload_windows(workload_windows),
+        "comparisons": _p17_workload_comparisons(workload_windows),
+    }
+    (artifacts / "management_workload_impact.json").write_text(json.dumps(impact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    rebalance_summary = _p18_rebalance_summary(phase, run_id, rebalance_rows, slot_movements)
+    (artifacts / "rebalance_summary.json").write_text(json.dumps(rebalance_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    quant_summary = {
+        "schema_version": "v1",
+        "artifact_type": "quant_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if matrix["status"] == "PASS" and workload_artifact["status"] == "PASS" and rebalance_summary["status"] == "PASS" else "FAIL",
+        "summary": "P18 executed real reshard and rebalance operations on 6-node and 10-node Valkey clusters with slot movement, key verification, workload, topology, command, and cleanup evidence.",
+        "artifact_refs": [
+            f"artifacts/phases/{phase}/events.jsonl",
+            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
+            f"artifacts/phases/{phase}/workload_windows.json",
+            f"artifacts/phases/{phase}/management_ops_matrix.json",
+            f"artifacts/phases/{phase}/management_operation_results.jsonl",
+            f"artifacts/phases/{phase}/management_workload_impact.json",
+            f"artifacts/phases/{phase}/management_topology_snapshots.jsonl",
+            f"artifacts/phases/{phase}/management_command_log.jsonl",
+            f"artifacts/phases/{phase}/reshard_slot_movements.jsonl",
+            f"artifacts/phases/{phase}/rebalance_summary.json",
+        ],
+        "missing_data": [],
+        "runtime_claims": {"real_valkey_claimed": True, "management_runtime_claimed": True, "fault_runtime_claimed": False},
+        "counts": {
+            "main_gate_node_count": len(nodes),
+            "operation_count": len(operation_rows),
+            "six_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 6),
+            "ten_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 10),
+            "slot_movement_count": len(slot_movements),
+            "rebalance_operation_count": len(rebalance_rows),
+            "event_count": len(events),
+            "metric_count": len(metric_rows),
+            "workload_window_count": len(workload_windows),
+            "topology_snapshot_count": len(topology_rows),
+            "command_log_count": len(command_log),
+        },
+        "cleanup_summaries": cleanup_summaries,
+    }
+    (artifacts / "quant_summary.json").write_text(json.dumps(quant_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    phase_summary = {
+        "schema_version": "v1",
+        "artifact_type": "phase_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": quant_summary["status"],
+        "summary": "P18 implemented real reshard and rebalance management rows with positive slot movement, moved-key verification, imbalance reduction, workload impact, and cleanup evidence.",
+        "required_artifacts": [f"artifacts/phases/{phase}/{name}" for name in [
+            "phase_summary.json", "valkey_e2e_evidence.json", "cleanup_report.json", "events.jsonl", "metrics_timeseries.jsonl",
+            "workload_windows.json", "quant_summary.json", "management_ops_matrix.json", "management_operation_results.jsonl",
+            "management_workload_impact.json", "management_topology_snapshots.jsonl", "management_command_log.jsonl",
+            "reshard_slot_movements.jsonl", "rebalance_summary.json",
+        ]],
+        "missing_metrics": [],
+        "risks": [{"risk": "P18 uses bounded sidecar slot movement batches to keep local real gates deterministic.", "severity": "low", "required_before_next_phase": False}],
+    }
+    (artifacts / "phase_summary.json").write_text(json.dumps(phase_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _p18_config_for_node_count(base_config: dict[str, Any], node_count: int, row_index: int) -> dict[str, Any]:
+    config = json.loads(json.dumps(base_config)) if node_count == 6 else normalize_config(parse_config_file(Path("templates/configs/scale_10.yaml")))
+    if int(config["cluster"]["shards"]) * (1 + int(config["cluster"]["replicas_per_shard"])) != node_count:
+        raise DockerRuntimeError(f"P18 config did not produce expected node_count={node_count}")
+    port_base = 7600 + row_index * 40
+    config["cluster"]["port_base"] = port_base
+    config["cluster"]["cluster_bus_port_base"] = port_base + 10000
+    config["cluster"]["node_memory_limit_mb"] = min(int(config["cluster"].get("node_memory_limit_mb") or 128), 128)
+    config["profile_name"] = f"p18_{node_count}_node_row_{row_index}"
+    return config
+
+
+def _p18_run_management_row(
+    *,
+    phase: str,
+    parent_scenario: str,
+    parent_run_id: str,
+    artifacts: Path,
+    config: dict[str, Any],
+    operation_name: str,
+    operation_id: str,
+    node_count: int,
+    row_index: int,
+    telemetry: TelemetryRun,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any] | None, dict[str, Any]]:
+    side_scenario = f"{parent_scenario}_{operation_name}_{node_count}"
+    side_run_id = f"{parent_run_id}-{operation_name}-{node_count}"
+    nodes = _node_specs(config, phase, side_scenario, side_run_id)
+    network_name = _network_name(phase, side_scenario)
+    state_path = artifacts / f"sidecar_state_{operation_id}.json"
+    cleanup_path = artifacts / f"sidecar_cleanup_{operation_id}.json"
+    events: list[dict[str, Any]] = []
+    metrics: list[dict[str, Any]] = []
+    topology: list[dict[str, Any]] = []
+    commands: list[dict[str, Any]] = []
+    movements: list[dict[str, Any]] = []
+    started_ms = telemetry.now_unix_ms()
+    started_mono = time.monotonic()
+    state: dict[str, Any] | None = None
+    try:
+        _check_ports_free([node["client_port"] for node in nodes])
+        cleanup_by_label(phase=phase, run_id=side_run_id)
+        run_docker(["network", "create", "--label", f"{LABEL_PREFIX}.project={PROJECT}", "--label", f"{LABEL_PREFIX}.phase={phase}", "--label", f"{LABEL_PREFIX}.run_id={side_run_id}", network_name], timeout=120)
+        for node in nodes:
+            cid = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, side_scenario, side_run_id)
+            node["container_id"] = cid
+            node["pid"] = _container_pid(cid)
+            node["container_ip"] = _container_ip(cid, network_name)
+        state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, nodes)
+        _write_state(state_path, state)
+        _configure_cluster(nodes)
+        _p17_wait_clean_cluster(nodes, timeout=120.0)
+        topology.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "before", nodes, nodes))
+        result, row_events, row_metrics, windows, during_topology, row_movements, rebalance = _p18_run_operation_with_workload(
+            telemetry=telemetry,
+            phase=phase,
+            parent_run_id=parent_run_id,
+            operation_name=operation_name,
+            operation_id=operation_id,
+            node_count=node_count,
+            nodes=nodes,
+            command_log=commands,
+        )
+        events.extend(row_events)
+        metrics.extend(row_metrics)
+        topology.extend(during_topology)
+        movements.extend(row_movements)
+        topology.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "after", nodes, nodes))
+        cleanup_report = cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
+        result["sidecar_cleanup_status"] = cleanup_report.get("status", MISSING)
+        result["sidecar_cleanup_report"] = cleanup_path.as_posix()
+        result["started_at_unix_ms"] = started_ms
+        result["ended_at_unix_ms"] = telemetry.now_unix_ms()
+        result["wall_ms"] = round(max(time.monotonic() - started_mono, 0.0) * 1000.0, 6)
+        return result, events, metrics, windows, topology, commands, movements, rebalance, _p17_cleanup_summary(operation_id, cleanup_report)
+    except Exception:
+        if state is None:
+            state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, [node for node in nodes if "container_id" in node])
+            _write_state(state_path, state)
+        cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
+        raise
+
+
+def _p18_run_operation_with_workload(
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    parent_run_id: str,
+    operation_name: str,
+    operation_id: str,
+    node_count: int,
+    nodes: list[dict[str, Any]],
+    command_log: list[dict[str, Any]],
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any] | None]:
+    events: list[dict[str, Any]] = []
+    metric_rows: list[dict[str, Any]] = []
+    windows: list[dict[str, Any]] = []
+    topology_rows: list[dict[str, Any]] = []
+    movements: list[dict[str, Any]] = []
+    result: dict[str, Any] | None = None
+    rebalance: dict[str, Any] | None = None
+    all_latencies: list[float] = []
+    all_errors: list[str] = []
+    all_started = time.monotonic()
+    all_start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message="All-run workload window started for P18 operation.", metadata={"window_name": "all_run", "operation_id": operation_id})
+    events.append(all_start)
+
+    def cluster_command(*args: Any, timeout: int = 10) -> str:
+        return run_node_cluster_cli(nodes[0], *args, timeout=timeout)
+
+    for window_name in CANONICAL_WINDOWS[:-1]:
+        start_event = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{window_name} workload window started for P18 operation.", metadata={"window_name": window_name, "operation_id": operation_id, "node_count": node_count})
+        events.append(start_event)
+        started = time.monotonic()
+        latencies: list[float] = []
+        errors: list[str] = []
+        for op_index in range(4):
+            if window_name == "event" and op_index == 1 and result is None:
+                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_before_command", nodes, nodes))
+                op_started = time.monotonic()
+                result, movements, rebalance = _p18_execute_operation(
+                    telemetry=telemetry,
+                    phase=phase,
+                    run_id=parent_run_id,
+                    operation_name=operation_name,
+                    operation_id=operation_id,
+                    node_count=node_count,
+                    nodes=nodes,
+                    command_log=command_log,
+                )
+                result["command_ms"] = round(max(time.monotonic() - op_started, 0.0) * 1000.0, 6)
+                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_after_command", nodes, nodes))
+            key = f"{{vslab-p18-workload-{operation_id}-{window_name}-{op_index % 3}}}:k"
+            value = f"value-{operation_id}-{window_name}-{op_index}"
+            op_started = time.monotonic()
+            try:
+                if op_index % 3 == 0:
+                    response = cluster_command("SET", key, value, timeout=10)
+                    if str(response).upper() != "OK":
+                        errors.append(f"SET unexpected result {response!r}")
+                    else:
+                        latencies.append((time.monotonic() - op_started) * 1000.0)
+                else:
+                    _ = cluster_command("GET", key, timeout=10)
+                    latencies.append((time.monotonic() - op_started) * 1000.0)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(repr(exc))
+        metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - started, 0.000001), latencies_ms=latencies, error_texts=errors)
+        end_event = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{window_name} workload window finished for P18 operation.", metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": metrics["sample_count"]})
+        events.append(end_event)
+        windows.append({"window_name": window_name, "start_event_id": start_event["event_id"], "end_event_id": end_event["event_id"], "status": "PASS" if not errors else "FAIL", "operation_id": operation_id, "node_count": node_count, "metrics": metrics})
+        metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, window_name, metrics))
+        all_latencies.extend(latencies)
+        all_errors.extend(errors)
+    if result is None:
+        result, movements, rebalance = _p18_execute_operation(telemetry=telemetry, phase=phase, run_id=parent_run_id, operation_name=operation_name, operation_id=operation_id, node_count=node_count, nodes=nodes, command_log=command_log)
+    all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
+    all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message="All-run workload window finished for P18 operation.", metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]})
+    events.append(all_end)
+    windows.append({"window_name": "all_run", "start_event_id": all_start["event_id"], "end_event_id": all_end["event_id"], "status": "PASS" if not all_errors else "FAIL", "operation_id": operation_id, "node_count": node_count, "metrics": all_metrics})
+    metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
+    result["workload_window_ref"] = f"{operation_id}:event"
+    return result, events, metric_rows, windows, topology_rows, movements, rebalance
+
+
+def _p18_execute_operation(
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    run_id: str,
+    operation_name: str,
+    operation_id: str,
+    node_count: int,
+    nodes: list[dict[str, Any]],
+    command_log: list[dict[str, Any]],
+) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any] | None]:
+    before = _p17_cluster_health(nodes)
+    if before["cluster_state"] != "ok" or before["slots_assigned"] != 16384:
+        raise DockerRuntimeError(f"P18 operation requires clean cluster before movement: {before}")
+    started = time.monotonic()
+    primaries = [node for node in nodes if node["role"] == "primary"]
+    source = primaries[0]
+    target = primaries[1]
+    source_id = _node_command(source, "CLUSTER", "MYID", timeout=30).strip()
+    target_id = _node_command(target, "CLUSTER", "MYID", timeout=30).strip()
+    source_range = _slot_ranges(len(primaries))[0]
+    moved_slots: list[int] = []
+    movements: list[dict[str, Any]] = []
+    rebalance: dict[str, Any] | None = None
+    seeded_keys: list[str] = []
+    imbalance_before: float | str = MISSING
+    imbalance_after: float | str = MISSING
+    counts_before = _p18_primary_slot_counts(nodes)
+
+    if operation_name == "reshard_slot_range":
+        selected_slots = list(range(source_range[0], source_range[0] + 4))
+        moved_slots, seeded_keys, movements = _p18_move_slots(telemetry, phase, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=False, movement_kind="reshard_slot_range")
+    elif operation_name == "reshard_with_keys":
+        selected_slots = list(range(source_range[0] + 12, source_range[0] + 16))
+        moved_slots, seeded_keys, movements = _p18_move_slots(telemetry, phase, run_id, operation_id, nodes, source, target, source_id, target_id, selected_slots, command_log, seed_keys=True, movement_kind="reshard_with_keys")
+    elif operation_name == "rebalance_after_imbalance":
+        setup_source = primaries[1]
+        setup_target = primaries[0]
+        setup_source_id = _node_command(setup_source, "CLUSTER", "MYID", timeout=30).strip()
+        setup_target_id = _node_command(setup_target, "CLUSTER", "MYID", timeout=30).strip()
+        setup_range = _slot_ranges(len(primaries))[1]
+        _p18_move_slots(telemetry, phase, run_id, f"{operation_id}-setup", nodes, setup_source, setup_target, setup_source_id, setup_target_id, list(range(setup_range[0], setup_range[0] + 10)), command_log, seed_keys=False, movement_kind="create_imbalance")
+        counts_imbalanced = _p18_primary_slot_counts(nodes)
+        imbalance_before = _p18_imbalance(counts_imbalanced)
+        selected_slots = list(range(setup_range[0], setup_range[0] + 5))
+        moved_slots, seeded_keys, movements = _p18_move_slots(telemetry, phase, run_id, operation_id, nodes, setup_target, setup_source, setup_target_id, setup_source_id, selected_slots, command_log, seed_keys=False, movement_kind="rebalance_after_imbalance")
+        counts_after_rebalance = _p18_primary_slot_counts(nodes)
+        imbalance_after = _p18_imbalance(counts_after_rebalance)
+        rebalance = {
+            "operation_id": operation_id,
+            "node_count": node_count,
+            "imbalance_before": imbalance_before,
+            "imbalance_after": imbalance_after,
+            "slot_counts_before": counts_imbalanced,
+            "slot_counts_after": counts_after_rebalance,
+            "movement_ids": [row["movement_id"] for row in movements],
+        }
+    else:
+        raise DockerRuntimeError(f"unsupported P18 operation {operation_name}")
+
+    after = _p17_cluster_health(nodes)
+    counts_after = _p18_primary_slot_counts(nodes)
+    errors_by_type = _p17_errors_by_type(command_log, operation_id)
+    readable = _p18_verify_keys_readable(nodes[0], seeded_keys)
+    writable = all(_p18_verify_slot_writable(nodes[0], slot, operation_id) for slot in moved_slots[: min(3, len(moved_slots))])
+    slot_coverage_complete = after["cluster_state"] == "ok" and after["slots_assigned"] == 16384 and after["slots_ok"] == 16384 and after["slots_fail"] == 0
+    pass_status = bool(
+        moved_slots
+        and not any(errors_by_type.values())
+        and slot_coverage_complete
+        and before["cluster_state"] == "ok"
+        and before["slots_assigned"] == 16384
+        and after["cluster_state"] == "ok"
+        and after["slots_assigned"] == 16384
+        and readable
+        and writable
+        and (operation_name != "reshard_with_keys" or len(seeded_keys) > 0)
+        and (operation_name != "rebalance_after_imbalance" or (isinstance(imbalance_before, (int, float)) and isinstance(imbalance_after, (int, float)) and imbalance_before > imbalance_after))
+    )
+    return {
+        "schema_version": "v1",
+        "phase_id": phase,
+        "operation_name": operation_name,
+        "operation_id": operation_id,
+        "node_count": node_count,
+        "operation_status": "PASS" if pass_status else "FAIL",
+        "started_at_unix_ms": telemetry.now_unix_ms(),
+        "ended_at_unix_ms": telemetry.now_unix_ms(),
+        "wall_ms": MISSING,
+        "command_ms": MISSING,
+        "convergence_ms": round(max(time.monotonic() - started, 0.0) * 1000.0, 6),
+        "cluster_state_before": before["cluster_state"],
+        "cluster_state_after": after["cluster_state"],
+        "slots_before": before["slots_assigned"],
+        "slots_after": after["slots_assigned"],
+        "workload_window_ref": f"{operation_id}:event",
+        "errors_by_type": errors_by_type,
+        "missing_fields": [{"field": "bytes_migrated", "status": MISSING, "reason": "Valkey MIGRATE byte count is not exposed by the command path."}],
+        "real_execution_verified": pass_status,
+        "slots_moved": len(moved_slots),
+        "slot_start": min(moved_slots),
+        "slot_end": max(moved_slots),
+        "source_node_id": source_id if operation_name != "rebalance_after_imbalance" else setup_target_id,
+        "target_node_id": target_id if operation_name != "rebalance_after_imbalance" else setup_source_id,
+        "slot_coverage_complete": slot_coverage_complete,
+        "keys_moved": len(seeded_keys),
+        "moved_keys_readable": readable,
+        "post_move_writable": writable,
+        "owner_before": "source",
+        "owner_after": "target",
+        "imbalance_before": imbalance_before,
+        "imbalance_after": imbalance_after,
+        "slot_counts_before": counts_before,
+        "slot_counts_after": counts_after,
+        "movement_ids": [row["movement_id"] for row in movements],
+    }, movements, rebalance
+
+
+def _p18_move_slots(
+    telemetry: TelemetryRun,
+    phase: str,
+    run_id: str,
+    operation_id: str,
+    nodes: list[dict[str, Any]],
+    source: dict[str, Any],
+    target: dict[str, Any],
+    source_id: str,
+    target_id: str,
+    slots: list[int],
+    command_log: list[dict[str, Any]],
+    *,
+    seed_keys: bool,
+    movement_kind: str,
+) -> tuple[list[int], list[str], list[dict[str, Any]]]:
+    moved: list[int] = []
+    seeded_keys: list[str] = []
+    rows: list[dict[str, Any]] = []
+    for slot in slots:
+        keys: list[str] = []
+        if seed_keys:
+            key = _p18_key_for_slot(source, slot, operation_id)
+            response = run_node_cluster_cli(source, "SET", key, f"value-{operation_id}-{slot}", timeout=10)
+            if str(response).upper() != "OK":
+                raise DockerRuntimeError(f"P18 seed key failed slot={slot}: {response}")
+            keys.append(key)
+            seeded_keys.append(key)
+        _p18_log_slot_command(command_log, telemetry, phase, run_id, operation_id, "cluster_setslot_importing", target, ["CLUSTER", "SETSLOT", slot, "IMPORTING", source_id])
+        _p18_log_slot_command(command_log, telemetry, phase, run_id, operation_id, "cluster_setslot_migrating", source, ["CLUSTER", "SETSLOT", slot, "MIGRATING", target_id])
+        if keys:
+            _p18_log_slot_command(command_log, telemetry, phase, run_id, operation_id, "cluster_migrate_keys", source, ["MIGRATE", target["container_ip"], "6379", "", "0", "5000", "KEYS", *keys], timeout=30)
+        for node in [item for item in nodes if item["role"] == "primary"]:
+            _p18_log_slot_command(command_log, telemetry, phase, run_id, operation_id, "cluster_setslot_node", node, ["CLUSTER", "SETSLOT", slot, "NODE", target_id])
+        _p17_wait_clean_cluster(nodes, timeout=60.0)
+        if not _p18_node_owns_slot(target, target_id, slot):
+            raise DockerRuntimeError(f"P18 target did not own moved slot {slot}")
+        moved.append(slot)
+    if moved:
+        rows.append(
+            {
+                "schema_version": "v1",
+                "phase_id": phase,
+                "run_id": run_id,
+                "movement_id": f"{operation_id}-{movement_kind}-{min(moved)}-{max(moved)}",
+                "operation_id": operation_id,
+                "movement_kind": movement_kind,
+                "source_node_id": source_id,
+                "target_node_id": target_id,
+                "slot_start": min(moved),
+                "slot_end": max(moved),
+                "slot_count": len(moved),
+                "keys_moved": len(seeded_keys),
+                "bytes_migrated": MISSING,
+                "missing_reasons": {"bytes_migrated": "Valkey MIGRATE command did not report migrated bytes."},
+                "status": "PASS",
+            }
+        )
+    return moved, seeded_keys, rows
+
+
+def _p18_log_slot_command(command_log: list[dict[str, Any]], telemetry: TelemetryRun, phase: str, run_id: str, operation_id: str, command_kind: str, target: dict[str, Any], args: list[Any], timeout: int = 30) -> None:
+    _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, command_kind=command_kind, target=target, args=args, timeout=timeout)
+
+
+def _p18_key_for_slot(node: dict[str, Any], slot: int, operation_id: str) -> str:
+    for idx in range(200000):
+        key = f"{{p18-{operation_id}-{slot}-{idx}}}:value"
+        if _p18_key_slot(key) == slot:
+            return key
+    raise DockerRuntimeError(f"could not find key for slot {slot}")
+
+
+def _p18_key_slot(key: str) -> int:
+    encoded = key.encode("utf-8")
+    left = key.find("{")
+    if left >= 0:
+        right = key.find("}", left + 1)
+        if right > left + 1:
+            encoded = key[left + 1 : right].encode("utf-8")
+    return binascii.crc_hqx(encoded, 0) % 16384
+
+
+def _p18_verify_keys_readable(node: dict[str, Any], keys: list[str]) -> bool:
+    for key in keys:
+        value = run_node_cluster_cli(node, "GET", key, timeout=10)
+        if value is None or value == "":
+            return False
+    return True
+
+
+def _p18_verify_slot_writable(node: dict[str, Any], slot: int, operation_id: str) -> bool:
+    key = _p18_key_for_slot(node, slot, f"{operation_id}-post")
+    return str(run_node_cluster_cli(node, "SET", key, f"post-{slot}", timeout=10)).upper() == "OK"
+
+
+def _p18_node_owns_slot(node: dict[str, Any], node_id: str, slot: int) -> bool:
+    text = _node_command(node, "CLUSTER", "NODES", timeout=5)
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 9 or parts[0] != node_id:
+            continue
+        return any(_p18_slot_spec_contains(spec, slot) for spec in parts[8:] if not spec.startswith("["))
+    return False
+
+
+def _p18_slot_spec_contains(spec: str, slot: int) -> bool:
+    if "-" in spec:
+        start, end = spec.split("-", 1)
+        return int(start) <= slot <= int(end)
+    return int(spec) == slot
+
+
+def _p18_primary_slot_counts(nodes: list[dict[str, Any]]) -> dict[str, int]:
+    first = nodes[0]
+    text = _node_command(first, "CLUSTER", "NODES", timeout=5)
+    counts: dict[str, int] = {}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 8 or "master" not in parts[2].split(","):
+            continue
+        count = 0
+        for spec in parts[8:]:
+            if spec.startswith("["):
+                continue
+            if "-" in spec:
+                start, end = spec.split("-", 1)
+                count += int(end) - int(start) + 1
+            else:
+                count += 1
+        counts[parts[0]] = count
+    return counts
+
+
+def _p18_imbalance(counts: dict[str, int]) -> float:
+    values = list(counts.values())
+    return float(max(values) - min(values)) if values else 0.0
+
+
+def _p18_rebalance_summary(phase: str, run_id: str, rows: list[dict[str, Any]], movements: list[dict[str, Any]]) -> dict[str, Any]:
+    before_values = [row["imbalance_before"] for row in rows if isinstance(row.get("imbalance_before"), (int, float))]
+    after_values = [row["imbalance_after"] for row in rows if isinstance(row.get("imbalance_after"), (int, float))]
+    status = "PASS" if rows and all(float(row["imbalance_before"]) > float(row["imbalance_after"]) for row in rows) else "FAIL"
+    return {
+        "schema_version": "v1",
+        "artifact_type": "rebalance_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": status,
+        "imbalance_before": max(before_values) if before_values else MISSING,
+        "imbalance_after": min(after_values) if after_values else MISSING,
+        "workload_impact_ref": f"artifacts/phases/{phase}/management_workload_impact.json",
+        "rows": rows,
+        "movement_ids": [row["movement_id"] for row in movements if row.get("movement_kind") == "rebalance_after_imbalance"],
     }
 
 

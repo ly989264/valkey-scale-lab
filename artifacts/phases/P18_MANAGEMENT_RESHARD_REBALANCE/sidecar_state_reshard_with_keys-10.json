@@ -1,0 +1,152 @@
+{
+  "cluster_id": "P18_MANAGEMENT_RESHARD_REBALANCE-management_reshard_rebalance-20260628-reshard_with_keys-10",
+  "nodes": [
+    {
+      "az_id": "az-a",
+      "client_port": 7720,
+      "container_id": "09c6f676a756e9eb97b241df1f605d3e994a06092b32db972d5549c2cc8e6e01",
+      "container_ip": "172.19.0.2",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 9837,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7721,
+      "container_id": "6d50959634c43f072972daceb14867fada9e48ed55bbd5baa432ec43abf1dd68",
+      "container_ip": "172.19.0.3",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 9914,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7722,
+      "container_id": "bb1f83dece9fdb046b709b9d567a42bf23f8634077bfe058730c1c47a7a85cb1",
+      "container_ip": "172.19.0.4",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 9989,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7723,
+      "container_id": "5eedab15605db7325e26191b060c8f31bb7ad790cd5e0965870a37e7e317cc0b",
+      "container_ip": "172.19.0.5",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0003-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0003-primary",
+      "pid": 10062,
+      "role": "primary",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7724,
+      "container_id": "3ce110dbfda60f751271aebd2ab113a37072e3dbaf53f7c7c421cac1d022e6be",
+      "container_ip": "172.19.0.6",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0004-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0004-primary",
+      "pid": 10138,
+      "role": "primary",
+      "shard_id": "shard-0004"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7725,
+      "container_id": "fe073d171dece5be33eface248740815c437aaec350a5f2cd2cefc25f5f6fcc0",
+      "container_ip": "172.19.0.7",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 10212,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7726,
+      "container_id": "53c8dd7498502e885f2b944a2f6acc8ed2d9f04a1512df79828fced9a11afee7",
+      "container_ip": "172.19.0.8",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 10286,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7727,
+      "container_id": "e6204f0f426f6dc7a97692e2d90c4dca20d208669a2605d53e4733cba88a0043",
+      "container_ip": "172.19.0.9",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 10363,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7728,
+      "container_id": "0d15d3f84085fabee6e757daf713abe676d257ee0042b2288a1185c7db64b29f",
+      "container_ip": "172.19.0.10",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0003-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0003-replica-00",
+      "pid": 10439,
+      "role": "replica",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7729,
+      "container_id": "3365cf018d3dc5407991d7a9f70ca3ea20f51388c2567a4403f768bc7c3a7617",
+      "container_ip": "172.19.0.11",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-reshard-with-keys-10-shard-0004-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0004-replica-00",
+      "pid": 10515,
+      "role": "replica",
+      "shard_id": "shard-0004"
+    }
+  ],
+  "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p18-management-reshard-rebalance-management_reshard_rebalance_reshard_with_keys_10",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P18_MANAGEMENT_RESHARD_REBALANCE-management_reshard_rebalance-20260628-reshard_with_keys-10",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "management_reshard_rebalance_reshard_with_keys_10",
+  "schema_version": "v1"
+}

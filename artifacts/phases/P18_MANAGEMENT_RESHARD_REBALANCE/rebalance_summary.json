@@ -1,0 +1,63 @@
+{
+  "artifact_type": "rebalance_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "imbalance_after": 9.0,
+  "imbalance_before": 20.0,
+  "movement_ids": [
+    "rebalance_after_imbalance-06-rebalance_after_imbalance-10922-10926",
+    "rebalance_after_imbalance-10-rebalance_after_imbalance-9830-9834"
+  ],
+  "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "rows": [
+    {
+      "imbalance_after": 9.0,
+      "imbalance_before": 19.0,
+      "movement_ids": [
+        "rebalance_after_imbalance-06-rebalance_after_imbalance-10922-10926"
+      ],
+      "node_count": 6,
+      "operation_id": "rebalance_after_imbalance-06",
+      "slot_counts_after": {
+        "5d18afc16664d086691fa7b4ea58ec1a49205f7d": 5457,
+        "c2422f360169deca334d90f0623b063a01d1e25f": 5466,
+        "c2a7855b5d25c9c411f39de35d7575739b5ac954": 5461
+      },
+      "slot_counts_before": {
+        "5d18afc16664d086691fa7b4ea58ec1a49205f7d": 5452,
+        "c2422f360169deca334d90f0623b063a01d1e25f": 5471,
+        "c2a7855b5d25c9c411f39de35d7575739b5ac954": 5461
+      }
+    },
+    {
+      "imbalance_after": 10.0,
+      "imbalance_before": 20.0,
+      "movement_ids": [
+        "rebalance_after_imbalance-10-rebalance_after_imbalance-9830-9834"
+      ],
+      "node_count": 10,
+      "operation_id": "rebalance_after_imbalance-10",
+      "slot_counts_after": {
+        "1d5364b1cc768bf9911153fff823434a64c618da": 3282,
+        "55bc19e9269557baf557c82d95a84a0044f5ed99": 3277,
+        "8ece8ffe633a1244cb2eae3189b6a0c1ad8b3cc3": 3272,
+        "bdcee53a5d2ca86150dacc00b932bf9f5925b15c": 3277,
+        "e192265c99de26c1bfffe8d4a00bb2be40205221": 3276
+      },
+      "slot_counts_before": {
+        "1d5364b1cc768bf9911153fff823434a64c618da": 3287,
+        "55bc19e9269557baf557c82d95a84a0044f5ed99": 3277,
+        "8ece8ffe633a1244cb2eae3189b6a0c1ad8b3cc3": 3267,
+        "bdcee53a5d2ca86150dacc00b932bf9f5925b15c": 3277,
+        "e192265c99de26c1bfffe8d4a00bb2be40205221": 3276
+      }
+    }
+  ],
+  "run_id": "P18_MANAGEMENT_RESHARD_REBALANCE-management_reshard_rebalance-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "workload_impact_ref": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_workload_impact.json"
+}

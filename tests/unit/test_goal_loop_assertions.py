@@ -286,12 +286,13 @@ def p17_management_row(operation_name: str, node_count: int) -> dict:
 
 
 def write_p17_management_artifacts(base: Path, rows: list[dict]) -> None:
+    phase = rows[0].get("phase_id", "P17_MANAGEMENT_REMOVE_NODE") if rows else "P17_MANAGEMENT_REMOVE_NODE"
     write_json(
         base / "management_ops_matrix.json",
         {
             "schema_version": "v1",
             "artifact_type": "management_ops_matrix",
-            "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+            "phase_id": phase,
             "run_id": "run",
             "operations": [
                 {
@@ -307,14 +308,47 @@ def write_p17_management_artifacts(base: Path, rows: list[dict]) -> None:
     write_jsonl(base / "management_operation_results.jsonl", rows)
 
 
-def run_management_assertion(tmp_path: Path, monkeypatch, rows: list[dict]) -> int:
+def run_management_assertion(tmp_path: Path, monkeypatch, rows: list[dict], phase: str = "P17_MANAGEMENT_REMOVE_NODE") -> int:
     assertion = load_script("assert_management_ops_coverage")
-    phase_dir = tmp_path / "artifacts" / "phases" / "P17_MANAGEMENT_REMOVE_NODE"
+    phase_dir = tmp_path / "artifacts" / "phases" / phase
     phase_dir.mkdir(parents=True)
     write_p17_management_artifacts(phase_dir, rows)
+    if phase == "P18_MANAGEMENT_RESHARD_REBALANCE":
+        write_jsonl(
+            phase_dir / "reshard_slot_movements.jsonl",
+            [
+                {
+                    "schema_version": "v1",
+                    "phase_id": phase,
+                    "run_id": "run",
+                    "movement_id": f"{row['operation_id']}-move",
+                    "operation_id": row["operation_id"],
+                    "source_node_id": "source",
+                    "target_node_id": "target",
+                    "slot_start": 1,
+                    "slot_end": 2,
+                    "slot_count": 2,
+                    "status": "PASS",
+                }
+                for row in rows
+            ],
+        )
+        write_json(
+            phase_dir / "rebalance_summary.json",
+            {
+                "schema_version": "v1",
+                "artifact_type": "rebalance_summary",
+                "phase_id": phase,
+                "run_id": "run",
+                "status": "PASS",
+                "imbalance_before": 10.0,
+                "imbalance_after": 5.0,
+                "workload_impact_ref": "management_workload_impact.json",
+            },
+        )
     monkeypatch.setattr(assertion, "ROOT", tmp_path)
     monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(sys, "argv", ["assert_management_ops_coverage.py", "--phase", "P17_MANAGEMENT_REMOVE_NODE"])
+    monkeypatch.setattr(sys, "argv", ["assert_management_ops_coverage.py", "--phase", phase])
     return assertion.main()
 
 
@@ -336,3 +370,60 @@ def test_p17_management_assertion_accepts_exact_required_rows(tmp_path: Path, mo
     ]
 
     assert run_management_assertion(tmp_path, monkeypatch, rows) == 0
+
+
+def p18_management_row(operation_name: str, node_count: int) -> dict:
+    row = p17_management_row(operation_name, node_count)
+    operation_id = f"{operation_name}-{node_count:02d}"
+    row.update(
+        {
+            "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+            "operation_id": operation_id,
+            "workload_window_ref": f"{operation_id}:event",
+            "slots_moved": 2,
+            "slot_coverage_complete": True,
+            "keys_moved": 1 if operation_name == "reshard_with_keys" else 0,
+            "moved_keys_readable": True,
+            "post_move_writable": True,
+            "source_node_id": "source",
+            "target_node_id": "target",
+            "movement_ids": [f"{operation_id}-move"],
+            "imbalance_before": 10.0 if operation_name == "rebalance_after_imbalance" else MISSING,
+            "imbalance_after": 5.0 if operation_name == "rebalance_after_imbalance" else MISSING,
+        }
+    )
+    return row
+
+
+def test_p18_management_assertion_requires_exact_6_and_10_rows(tmp_path: Path, monkeypatch) -> None:
+    rows = [
+        p18_management_row("reshard_slot_range", 6),
+        p18_management_row("reshard_with_keys", 6),
+        p18_management_row("rebalance_after_imbalance", 6),
+    ]
+
+    assert run_management_assertion(tmp_path, monkeypatch, rows, phase="P18_MANAGEMENT_RESHARD_REBALANCE") == 1
+
+
+def test_p18_management_assertion_rejects_noop_slot_movement(tmp_path: Path, monkeypatch) -> None:
+    rows = [
+        p18_management_row(operation, count)
+        for operation in ["reshard_slot_range", "reshard_with_keys", "rebalance_after_imbalance"]
+        for count in [6, 10]
+    ]
+    rows[0]["slots_moved"] = 0
+
+    assert run_management_assertion(tmp_path, monkeypatch, rows, phase="P18_MANAGEMENT_RESHARD_REBALANCE") == 1
+
+
+def test_p18_management_assertion_rejects_noop_rebalance(tmp_path: Path, monkeypatch) -> None:
+    rows = [
+        p18_management_row(operation, count)
+        for operation in ["reshard_slot_range", "reshard_with_keys", "rebalance_after_imbalance"]
+        for count in [6, 10]
+    ]
+    for row in rows:
+        if row["operation_name"] == "rebalance_after_imbalance":
+            row["imbalance_after"] = row["imbalance_before"]
+
+    assert run_management_assertion(tmp_path, monkeypatch, rows, phase="P18_MANAGEMENT_RESHARD_REBALANCE") == 1

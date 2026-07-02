@@ -1,0 +1,36 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-07-02T17:20:00Z",
+  "gate_result_path": "artifacts/gates/P18_MANAGEMENT_RESHARD_REBALANCE/gate_result.json",
+  "gate_result_sha256": "c405ed4f5356dbf91b16a1cc023c4b55de98787019e0fc84f276420d3f794e2d",
+  "artifact_paths": [
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/phase_summary.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/valkey_e2e_evidence.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/cleanup_report.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/events.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/metrics_timeseries.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/workload_windows.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/quant_summary.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_ops_matrix.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_operation_results.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_workload_impact.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_topology_snapshots.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_command_log.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/reshard_slot_movements.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/rebalance_summary.json"
+  ],
+  "risks": [
+    {
+      "risk": "P18 proves bounded small-batch slot movement and rebalance, not large reshard throughput.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "Acceptable for P18 because required 6-node and 10-node rows, live Valkey proof, workload telemetry, topology snapshots, command logs, and cleanup all pass."
+    }
+  ],
+  "rationale": "P18 passes the manifest gate, includes fresh-context reviewer PASS, records real Valkey 9.1.0 reshard and rebalance execution for all required 6-node and 10-node rows, proves positive slot movement and keyed data-path checks, reduces rebalance imbalance, validates workload and quantitative artifacts, and cleans all owned resources."
+}

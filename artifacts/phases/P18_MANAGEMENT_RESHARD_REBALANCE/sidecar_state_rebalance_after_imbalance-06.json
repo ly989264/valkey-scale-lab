@@ -1,0 +1,100 @@
+{
+  "cluster_id": "P18_MANAGEMENT_RESHARD_REBALANCE-management_reshard_rebalance-20260628-rebalance_after_imbalance-6",
+  "nodes": [
+    {
+      "az_id": "az-a",
+      "client_port": 7760,
+      "container_id": "c1f521fef13a9aae14f9e2bc363a8c4eb742390f800c6c015b3f016431600892",
+      "container_ip": "172.19.0.2",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-rebalance-after-imbalance-6-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 11564,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7761,
+      "container_id": "18f3df9337c597cb00d5d6b5876e6ea6ff6478020d905238afb8c82e8aa27bec",
+      "container_ip": "172.19.0.3",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-rebalance-after-imbalance-6-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 11637,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7762,
+      "container_id": "bb68a5aae6938dfe8fa840dd6f8ec8596d7682d1048b38f33973cbaa51586420",
+      "container_ip": "172.19.0.4",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-rebalance-after-imbalance-6-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 11712,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7763,
+      "container_id": "1c8a799aa4cc0da58e33887751be974a29fac9410e24ee25210843a7759cb7bb",
+      "container_ip": "172.19.0.5",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-rebalance-after-imbalance-6-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 11789,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7764,
+      "container_id": "7e6165d553781c30ce52dc774ce8d8529db3938a199cb9617aa2f2a8f2ac7744",
+      "container_ip": "172.19.0.6",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-rebalance-after-imbalance-6-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 11864,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7765,
+      "container_id": "d2f6ba12d0e23feeca29ed6a3f5d34037cb52a05b20e7e7acc0b7b38087eafae",
+      "container_ip": "172.19.0.7",
+      "container_name": "vslab-p18-management-reshard-rebalance-management-reshard-rebalance-20260628-rebalance-after-imbalance-6-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 11937,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p18-management-reshard-rebalance-management_reshard_rebalance_rebalance_after_imbalance_6",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P18_MANAGEMENT_RESHARD_REBALANCE-management_reshard_rebalance-20260628-rebalance_after_imbalance-6",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "management_reshard_rebalance_rebalance_after_imbalance_6",
+  "schema_version": "v1"
+}

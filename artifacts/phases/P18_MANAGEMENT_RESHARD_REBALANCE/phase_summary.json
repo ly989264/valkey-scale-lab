@@ -1,0 +1,37 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [],
+  "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/phase_summary.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/valkey_e2e_evidence.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/cleanup_report.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/events.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/metrics_timeseries.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/workload_windows.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/quant_summary.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_ops_matrix.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_operation_results.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_workload_impact.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_topology_snapshots.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_command_log.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/reshard_slot_movements.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/rebalance_summary.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "P18 uses bounded sidecar slot movement batches to keep local real gates deterministic.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P18_MANAGEMENT_RESHARD_REBALANCE-management_reshard_rebalance-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P18 implemented real reshard and rebalance management rows with positive slot movement, moved-key verification, imbalance reduction, workload impact, and cleanup evidence."
+}

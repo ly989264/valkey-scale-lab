@@ -1,0 +1,82 @@
+{
+  "artifact_refs": [
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/events.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/metrics_timeseries.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/workload_windows.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_ops_matrix.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_operation_results.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_workload_impact.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_topology_snapshots.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_command_log.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/reshard_slot_movements.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/rebalance_summary.json"
+  ],
+  "artifact_type": "quant_summary",
+  "cleanup_summaries": [
+    {
+      "cleanup_action_count": 13,
+      "operation_id": "reshard_slot_range-06",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 21,
+      "operation_id": "reshard_slot_range-10",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 13,
+      "operation_id": "reshard_with_keys-06",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 21,
+      "operation_id": "reshard_with_keys-10",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 13,
+      "operation_id": "rebalance_after_imbalance-06",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 21,
+      "operation_id": "rebalance_after_imbalance-10",
+      "resources_remaining": [],
+      "status": "PASS"
+    }
+  ],
+  "counts": {
+    "command_log_count": 284,
+    "event_count": 74,
+    "main_gate_node_count": 6,
+    "metric_count": 720,
+    "operation_count": 6,
+    "rebalance_operation_count": 2,
+    "six_node_operation_count": 3,
+    "slot_movement_count": 6,
+    "ten_node_operation_count": 3,
+    "topology_snapshot_count": 24,
+    "workload_window_count": 36
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_data": [],
+  "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P18_MANAGEMENT_RESHARD_REBALANCE-management_reshard_rebalance-20260628",
+  "runtime_claims": {
+    "fault_runtime_claimed": false,
+    "management_runtime_claimed": true,
+    "real_valkey_claimed": true
+  },
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P18 executed real reshard and rebalance operations on 6-node and 10-node Valkey clusters with slot movement, key verification, workload, topology, command, and cleanup evidence."
+}
