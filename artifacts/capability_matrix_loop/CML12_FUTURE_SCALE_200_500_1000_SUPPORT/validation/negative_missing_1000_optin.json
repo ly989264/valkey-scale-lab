@@ -1,0 +1,36 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "future_scale_plan",
+  "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+  "created_at": "2026-07-02T08:17:46.502942Z",
+  "status": "PASS",
+  "scales": [
+    {
+      "scale_nodes": 200,
+      "status": "SKIPPED_WITH_REASON",
+      "default_real_execution": false,
+      "real_valkey": false,
+      "probe_result": "SKIPPED_WITH_REASON",
+      "requires_explicit_opt_in": false,
+      "reason": "above automatic real execution cap; dry-run/resource-check planning only"
+    },
+    {
+      "scale_nodes": 500,
+      "status": "SKIPPED_WITH_REASON",
+      "default_real_execution": false,
+      "real_valkey": false,
+      "probe_result": "SKIPPED_WITH_REASON",
+      "requires_explicit_opt_in": false,
+      "reason": "above automatic real execution cap; dry-run/resource-check planning only"
+    },
+    {
+      "scale_nodes": 1000,
+      "status": "UNSUPPORTED_WITH_EVIDENCE",
+      "default_real_execution": false,
+      "real_valkey": false,
+      "probe_result": "SKIPPED_WITH_REASON",
+      "requires_explicit_opt_in": false,
+      "reason": "above automatic real execution cap; dry-run/resource-check planning only"
+    }
+  ]
+}

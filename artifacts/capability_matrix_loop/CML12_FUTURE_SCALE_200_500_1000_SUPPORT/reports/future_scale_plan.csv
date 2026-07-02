@@ -1,0 +1,4 @@
+scale_nodes,status,default_real_execution,requires_explicit_opt_in,reason
+200,SKIPPED_WITH_REASON,False,False,above automatic real execution cap; dry-run/resource-check planning only
+500,SKIPPED_WITH_REASON,False,False,above automatic real execution cap; dry-run/resource-check planning only
+1000,UNSUPPORTED_WITH_EVIDENCE,False,True,above automatic real execution cap; dry-run/resource-check planning only

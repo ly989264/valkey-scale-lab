@@ -44,3 +44,12 @@
 {"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "CURRENT_STAGE_VALIDATION", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
 {"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "FRESH_CONTEXT_REVIEW_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
 {"schema_version": "v1", "stage_id": "CML11_SCALE_REPLAY_100", "state": "STAGE_RESULT_AND_NEXT_CONTEXT", "status": "PASS", "timestamp": "2026-07-02T08:13:14.192305Z"}
+{"schema_version": "v1", "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "state": "CONTEXT_REFRESH", "status": "PASS", "timestamp": "2026-07-02T08:17:46.502942Z"}
+{"schema_version": "v1", "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "state": "PREVIOUS_HARNESS_VERIFICATION", "status": "PASS", "timestamp": "2026-07-02T08:17:46.502942Z"}
+{"schema_version": "v1", "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "state": "REQUIREMENTS_AND_HARNESS_DESIGN_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:17:46.502942Z"}
+{"schema_version": "v1", "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "state": "HARNESS_IMPLEMENT_AND_FREEZE", "status": "PASS", "timestamp": "2026-07-02T08:17:46.502942Z"}
+{"schema_version": "v1", "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "state": "WORKER_IMPLEMENTATION_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:17:46.502942Z"}
+{"schema_version": "v1", "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "state": "REGRESSION_GUARD_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:17:46.502942Z"}
+{"schema_version": "v1", "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "state": "CURRENT_STAGE_VALIDATION", "status": "PASS", "timestamp": "2026-07-02T08:17:46.502942Z"}
+{"schema_version": "v1", "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "state": "FRESH_CONTEXT_REVIEW_AGENT", "status": "PASS", "timestamp": "2026-07-02T08:17:46.502942Z"}
+{"schema_version": "v1", "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "state": "STAGE_RESULT_AND_NEXT_CONTEXT", "status": "PASS", "timestamp": "2026-07-02T08:17:46.502942Z"}

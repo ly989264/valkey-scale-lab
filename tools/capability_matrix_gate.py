@@ -505,6 +505,18 @@ def cml11_paths(stage_id: str) -> dict[str, Path]:
     }
 
 
+def cml12_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "future_plan": stage_root / "samples" / "future_scale_plan_200_500_1000.json",
+        "dryrun_checks": stage_root / "samples" / "dryrun_resource_checks_200_500_1000.json",
+        "optin_policy": stage_root / "samples" / "optin_policy_1000.json",
+        "matrix": stage_root / "capability_matrix.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -1628,6 +1640,118 @@ def make_cml11_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     return results
 
 
+def validate_cml12_future_scale_support(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml12_paths(stage_id)
+    errors: list[str] = []
+    stage = stage_by_id(stage_id)
+    if stage.get("profile") != "dryrun-future":
+        errors.append("CML12 profile must be dryrun-future")
+    if int(stage.get("max_real_nodes", -1)) != 0:
+        errors.append("CML12 max_real_nodes must be 0")
+    if stage.get("real_valkey_required") is not False:
+        errors.append("CML12 must not require real Valkey")
+    errors.extend(schema_errors(paths["matrix"], "schemas/capability_matrix_loop/capability_matrix.schema.json"))
+    errors.extend(schema_errors(paths["analysis"], "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"))
+    errors.extend(schema_errors(paths["report_index"], "schemas/capability_matrix_loop/capability_report_index.schema.json"))
+    if errors:
+        return errors
+
+    future_plan = load_json(paths["future_plan"])
+    dryrun = load_json(paths["dryrun_checks"])
+    optin = load_json(paths["optin_policy"])
+    if future_plan.get("artifact_type") != "future_scale_plan" or future_plan.get("stage_id") != stage_id:
+        errors.append("CML12 future plan artifact identity mismatch")
+    scales = {int(entry.get("scale_nodes", 0)): entry for entry in future_plan.get("scales", [])}
+    if set(scales) != {200, 500, 1000}:
+        errors.append("CML12 future plan must include exactly 200, 500, 1000")
+    for scale, entry in scales.items():
+        if entry.get("default_real_execution") is not False:
+            errors.append(f"CML12 scale {scale} default_real_execution must be false")
+        if entry.get("status") not in {"SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_EVIDENCE"}:
+            errors.append(f"CML12 scale {scale} status must be skipped or unsupported")
+        if entry.get("real_valkey") is True or entry.get("probe_result") == "PASS":
+            errors.append(f"CML12 scale {scale} must not claim real Valkey PASS")
+        if scale >= 1000 and entry.get("requires_explicit_opt_in") is not True:
+            errors.append("CML12 scale 1000 must require explicit opt-in")
+
+    checks = {int(entry.get("scale_nodes", 0)): entry for entry in dryrun.get("checks", [])}
+    if set(checks) != {200, 500, 1000}:
+        errors.append("CML12 dryrun checks must include exactly 200, 500, 1000")
+    for scale, entry in checks.items():
+        if entry.get("mode") != "dry-run":
+            errors.append(f"CML12 scale {scale} check mode must be dry-run")
+        if entry.get("real_execution_attempted") is not False:
+            errors.append(f"CML12 scale {scale} must not attempt real execution")
+        if entry.get("status") != "PASS":
+            errors.append(f"CML12 scale {scale} dry-run resource check must PASS")
+
+    if optin.get("env_var") != "VSLAB_ALLOW_1000_DRYRUN":
+        errors.append("CML12 1000 opt-in env var mismatch")
+    if optin.get("required_value") != "I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE":
+        errors.append("CML12 1000 opt-in required value mismatch")
+    if optin.get("default_real_execution_allowed") is not False:
+        errors.append("CML12 opt-in policy must forbid default real execution")
+
+    matrix = load_json(paths["matrix"])
+    matrix_rows = {row.get("capability_id"): row for row in matrix.get("capabilities", [])}
+    for scale in [200, 500, 1000]:
+        row = matrix_rows.get(f"future_scale_{scale}_support")
+        if not row:
+            errors.append(f"CML12 matrix missing future_scale_{scale}_support")
+            continue
+        if row.get("status") not in {"SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_EVIDENCE"}:
+            errors.append(f"CML12 matrix future_scale_{scale}_support must not be PASS")
+        if row.get("real_valkey_required") is not False:
+            errors.append(f"CML12 matrix future_scale_{scale}_support must not require real Valkey")
+    report_index = load_json(paths["report_index"])
+    for report in report_index.get("reports", []):
+        report_path = ROOT / str(report.get("path", ""))
+        if not report_path.exists():
+            errors.append(f"CML12 report path missing: {report.get('path')}")
+        errors.extend(source_checksum_errors(report.get("source_artifacts", []), f"CML12 report {report.get('kind')}"))
+    return errors
+
+
+def make_cml12_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml12_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+
+    real_default = validation_dir / "negative_real_default_200.json"
+    plan = load_json(paths["future_plan"])
+    plan["scales"][0]["default_real_execution"] = True
+    write_json(real_default, plan)
+    cases.append(("real_default_200", {"future_plan": real_default}, "default_real_execution must be false"))
+
+    fake_real = validation_dir / "negative_fake_real_pass_500.json"
+    plan2 = load_json(paths["future_plan"])
+    plan2["scales"][1]["real_valkey"] = True
+    plan2["scales"][1]["probe_result"] = "PASS"
+    write_json(fake_real, plan2)
+    cases.append(("fake_real_pass_500", {"future_plan": fake_real}, "must not claim real Valkey PASS"))
+
+    no_optin = validation_dir / "negative_missing_1000_optin.json"
+    plan3 = load_json(paths["future_plan"])
+    plan3["scales"][2]["requires_explicit_opt_in"] = False
+    write_json(no_optin, plan3)
+    cases.append(("missing_1000_optin", {"future_plan": no_optin}, "scale 1000 must require explicit opt-in"))
+
+    matrix_pass = validation_dir / "negative_future_matrix_pass.json"
+    matrix = load_json(paths["matrix"])
+    matrix["capabilities"][0]["status"] = "PASS"
+    write_json(matrix_pass, matrix)
+    cases.append(("future_matrix_pass", {"matrix": matrix_pass}, "must not be PASS"))
+
+    results = []
+    for name, overrides, expected in cases:
+        candidate = dict(paths)
+        candidate.update(overrides)
+        observed = validate_cml12_future_scale_support(stage_id, candidate)
+        results.append({"name": name, "status": "PASS" if any(expected in e for e in observed) else "FAIL", "expected_error_fragment": expected, "observed_errors": observed})
+    return results
+
+
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
@@ -1775,6 +1899,11 @@ def command_run(args: argparse.Namespace) -> int:
         replay_errors = validate_cml11_scale_replay_100(args.stage)
         add_check("scale_replay_100", replay_errors)
         negative_cases = make_cml11_negative_cases(args.stage) if not replay_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage == "CML12_FUTURE_SCALE_200_500_1000_SUPPORT":
+        future_errors = validate_cml12_future_scale_support(args.stage)
+        add_check("future_scale_200_500_1000_support", future_errors)
+        negative_cases = make_cml12_negative_cases(args.stage) if not future_errors else []
         add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     else:
         baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"

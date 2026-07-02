@@ -285,3 +285,21 @@ def test_stage_manifest_requires_cml11_scale_replay_100_artifacts():
         "lower-scale evidence reuse fails",
         "network PASS without 100-node evidence fails",
     }.issubset(set(cml11["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml12_future_scale_dryrun_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml12 = next(stage for stage in manifest["stages"] if stage["id"] == "CML12_FUTURE_SCALE_200_500_1000_SUPPORT")
+    required = {artifact["path"] for artifact in cml12["required_artifacts"]}
+    assert cml12["profile"] == "dryrun-future"
+    assert cml12["max_real_nodes"] == 0
+    assert cml12["real_valkey_required"] is False
+    assert "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json" in required
+    assert "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/dryrun_resource_checks_200_500_1000.json" in required
+    assert "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/optin_policy_1000.json" in required
+    assert {
+        "default real execution above 100 fails",
+        "fake future real Valkey PASS fails",
+        "missing 1000 opt-in fails",
+        "future scale PASS without real evidence fails",
+    }.issubset(set(cml12["negative_requirements"]))

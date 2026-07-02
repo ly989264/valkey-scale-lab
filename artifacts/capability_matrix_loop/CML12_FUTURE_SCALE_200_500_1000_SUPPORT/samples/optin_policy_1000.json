@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "optin_policy",
+  "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+  "created_at": "2026-07-02T08:17:46.502942Z",
+  "env_var": "VSLAB_ALLOW_1000_DRYRUN",
+  "required_value": "I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE",
+  "default_real_execution_allowed": false,
+  "real_1000_execution_allowed": false,
+  "dryrun_only": true
+}

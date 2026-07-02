@@ -1,0 +1,78 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "dryrun_resource_checks",
+  "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+  "created_at": "2026-07-02T08:17:46.502942Z",
+  "status": "PASS",
+  "checks": [
+    {
+      "scale_nodes": 200,
+      "mode": "dry-run",
+      "status": "PASS",
+      "real_execution_attempted": false,
+      "checks": [
+        {
+          "name": "node_count_policy",
+          "status": "PASS",
+          "detail": "not automatic real execution"
+        },
+        {
+          "name": "port_plan",
+          "status": "PASS",
+          "detail": "deterministic port ranges reserved for 200 nodes"
+        },
+        {
+          "name": "cleanup_ownership",
+          "status": "PASS",
+          "detail": "owned labels/state files required before future opt-in"
+        }
+      ]
+    },
+    {
+      "scale_nodes": 500,
+      "mode": "dry-run",
+      "status": "PASS",
+      "real_execution_attempted": false,
+      "checks": [
+        {
+          "name": "node_count_policy",
+          "status": "PASS",
+          "detail": "not automatic real execution"
+        },
+        {
+          "name": "port_plan",
+          "status": "PASS",
+          "detail": "deterministic port ranges reserved for 500 nodes"
+        },
+        {
+          "name": "cleanup_ownership",
+          "status": "PASS",
+          "detail": "owned labels/state files required before future opt-in"
+        }
+      ]
+    },
+    {
+      "scale_nodes": 1000,
+      "mode": "dry-run",
+      "status": "PASS",
+      "real_execution_attempted": false,
+      "checks": [
+        {
+          "name": "node_count_policy",
+          "status": "PASS",
+          "detail": "not automatic real execution"
+        },
+        {
+          "name": "port_plan",
+          "status": "PASS",
+          "detail": "deterministic port ranges reserved for 1000 nodes"
+        },
+        {
+          "name": "cleanup_ownership",
+          "status": "PASS",
+          "detail": "owned labels/state files required before future opt-in"
+        }
+      ]
+    }
+  ]
+}

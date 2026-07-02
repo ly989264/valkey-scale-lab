@@ -1,0 +1,73 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+  "status": "PASS",
+  "created_at": "2026-07-02T08:18:28.297160Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "future_scale_200_500_1000_support",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "real_default_200",
+      "status": "PASS",
+      "expected_error_fragment": "default_real_execution must be false",
+      "observed_errors": [
+        "CML12 scale 200 default_real_execution must be false"
+      ]
+    },
+    {
+      "name": "fake_real_pass_500",
+      "status": "PASS",
+      "expected_error_fragment": "must not claim real Valkey PASS",
+      "observed_errors": [
+        "CML12 scale 500 must not claim real Valkey PASS"
+      ]
+    },
+    {
+      "name": "missing_1000_optin",
+      "status": "PASS",
+      "expected_error_fragment": "scale 1000 must require explicit opt-in",
+      "observed_errors": [
+        "CML12 scale 1000 must require explicit opt-in"
+      ]
+    },
+    {
+      "name": "future_matrix_pass",
+      "status": "PASS",
+      "expected_error_fragment": "must not be PASS",
+      "observed_errors": [
+        "CML12 matrix future_scale_200_support must not be PASS"
+      ]
+    }
+  ]
+}

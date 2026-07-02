@@ -1,0 +1,10 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_result",
+  "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+  "status": "PASS",
+  "created_at": "2026-07-02T08:17:46.502942Z",
+  "gate_result": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/validation/current_stage_gate_result.json",
+  "audit_decision": "audit/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/audit_decision.json",
+  "summary": "CML12 parameterized 200/500/1000 future scale support as dry-run/resource-check only with explicit 1000 opt-in policy."
+}

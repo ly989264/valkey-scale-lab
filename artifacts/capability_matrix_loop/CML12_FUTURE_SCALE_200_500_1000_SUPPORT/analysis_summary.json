@@ -1,0 +1,20 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_analysis_summary",
+  "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+  "status": "PARTIAL",
+  "created_at": "2026-07-02T08:17:46.502942Z",
+  "summary": {
+    "delta": "Future 200/500/1000 support parameterized as dry-run/resource-check only; no real execution above 100.",
+    "error_rate": "SKIPPED_WITH_REASON no workload executed",
+    "qps_drop_ratio": "SKIPPED_WITH_REASON future dry-run only",
+    "latency_delta": "SKIPPED_WITH_REASON future dry-run only",
+    "unavailable_ms": "SKIPPED_WITH_REASON future dry-run only",
+    "sample_coverage": 1.0,
+    "future_scales": [
+      200,
+      500,
+      1000
+    ]
+  }
+}

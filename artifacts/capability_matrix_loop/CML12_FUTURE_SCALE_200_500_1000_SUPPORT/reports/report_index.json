@@ -1,0 +1,97 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_report_index",
+  "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+  "status": "PARTIAL",
+  "created_at": "2026-07-02T08:17:46.502942Z",
+  "reports": [
+    {
+      "kind": "csv",
+      "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/reports/future_scale_plan.csv",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json",
+          "sha256": "011752f4f66d64667d27b92bc2e368f9a9969f3369ff93a9c76b62adc66a82a9"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/dryrun_resource_checks_200_500_1000.json",
+          "sha256": "0e9f9600fd6b4588d3737a2def7b587fabba129fbe21112d9a5adc280cc7bcf1"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/optin_policy_1000.json",
+          "sha256": "b459e04efd3f46a5bbf4cab4c14be16953efbfe75cd66cdafa446200dae2c1b6"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/analysis_summary.json",
+          "sha256": "ae84b4171b2978080baa90f33b2f7b0367c1e27dd4e6040ee639f58a65c29d35"
+        }
+      ]
+    },
+    {
+      "kind": "markdown",
+      "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/reports/report.md",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json",
+          "sha256": "011752f4f66d64667d27b92bc2e368f9a9969f3369ff93a9c76b62adc66a82a9"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/dryrun_resource_checks_200_500_1000.json",
+          "sha256": "0e9f9600fd6b4588d3737a2def7b587fabba129fbe21112d9a5adc280cc7bcf1"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/optin_policy_1000.json",
+          "sha256": "b459e04efd3f46a5bbf4cab4c14be16953efbfe75cd66cdafa446200dae2c1b6"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/analysis_summary.json",
+          "sha256": "ae84b4171b2978080baa90f33b2f7b0367c1e27dd4e6040ee639f58a65c29d35"
+        }
+      ]
+    },
+    {
+      "kind": "html",
+      "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/reports/index.html",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json",
+          "sha256": "011752f4f66d64667d27b92bc2e368f9a9969f3369ff93a9c76b62adc66a82a9"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/dryrun_resource_checks_200_500_1000.json",
+          "sha256": "0e9f9600fd6b4588d3737a2def7b587fabba129fbe21112d9a5adc280cc7bcf1"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/optin_policy_1000.json",
+          "sha256": "b459e04efd3f46a5bbf4cab4c14be16953efbfe75cd66cdafa446200dae2c1b6"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/analysis_summary.json",
+          "sha256": "ae84b4171b2978080baa90f33b2f7b0367c1e27dd4e6040ee639f58a65c29d35"
+        }
+      ]
+    },
+    {
+      "kind": "chart",
+      "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/reports/future_scale_plan.svg",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json",
+          "sha256": "011752f4f66d64667d27b92bc2e368f9a9969f3369ff93a9c76b62adc66a82a9"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/dryrun_resource_checks_200_500_1000.json",
+          "sha256": "0e9f9600fd6b4588d3737a2def7b587fabba129fbe21112d9a5adc280cc7bcf1"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/optin_policy_1000.json",
+          "sha256": "b459e04efd3f46a5bbf4cab4c14be16953efbfe75cd66cdafa446200dae2c1b6"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/analysis_summary.json",
+          "sha256": "ae84b4171b2978080baa90f33b2f7b0367c1e27dd4e6040ee639f58a65c29d35"
+        }
+      ]
+    }
+  ]
+}

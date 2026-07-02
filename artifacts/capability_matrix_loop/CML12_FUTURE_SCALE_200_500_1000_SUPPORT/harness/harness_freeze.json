@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+  "created_at": "2026-07-02T08:17:46.502942Z",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "sha256": "e57802afdf376e0d18e4e2998881e9bcbb9b103ce59c8e428f4037d14918b29a"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "3bc77a56d84c34c4991d7a76eae967635d8155a4b1a4792d16a1aab1dba80fa9"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "sha256": "d30ce8231f64fe9acb61306ff2292a1c1e9f96566644a943a70811871d844c17"
+    }
+  ]
+}

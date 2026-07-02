@@ -1495,8 +1495,116 @@
       "profile": "dryrun-future",
       "max_real_nodes": 0,
       "real_valkey_required": false,
-      "required_artifacts": [],
-      "commands": []
+      "required_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/dryrun_resource_checks_200_500_1000.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/optin_policy_1000.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/reports/future_scale_plan.csv"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/reports/future_scale_plan.svg"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/reports/report.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/reports/index.html"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/state_transitions.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/next_stage_context.md"
+        }
+      ],
+      "commands": [
+        {
+          "name": "future_scale_dryrun_support_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+          "required": true,
+          "timeout_seconds": 180
+        }
+      ],
+      "negative_requirements": [
+        "default real execution above 100 fails",
+        "fake future real Valkey PASS fails",
+        "missing 1000 opt-in fails",
+        "future scale PASS without real evidence fails"
+      ]
     },
     {
       "id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
