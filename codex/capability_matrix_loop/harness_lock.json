@@ -8,7 +8,7 @@
     },
     {
       "path": "codex/capability_matrix_loop/stage_manifest.json",
-      "sha256": "d9c2b05a09ae163a1d48d1dd47aa27ac95e63cbaff6c10d5d5ca451b50946caf"
+      "sha256": "bd71785de2ca1c4d5c410e53d2fddf4ced1fc30d7e40ed7c7bb3419fdb575a32"
     },
     {
       "path": "schemas/capability_matrix_loop/prompt_pack_location.schema.json",
@@ -47,12 +47,40 @@
       "sha256": "430961ad5727c07cdeaf9823fd2116fccee1deb4a72927c7c2093b0b1e30bfac"
     },
     {
+      "path": "schemas/capability_matrix_loop/capability_matrix.schema.json",
+      "sha256": "7e42b5e451688c78a5a85a537332d5a3603b2038c1580c1ef304a15a131c0b24"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/operation_event.schema.json",
+      "sha256": "579943071e8247142b54d79193c7056a3b9b899e728ab08820993de2fcf24c27"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/fault_event.schema.json",
+      "sha256": "01502ce552f3b7ee7c0229bd7763ea6deca2bfd6959eb29ef1b669f7f396fb1d"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/metrics_window.schema.json",
+      "sha256": "47db3fda2bf557177d8f1cfba8da3dbb5fdcef71aa7dde9640fa1e032fa2e2f0"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/workload_window.schema.json",
+      "sha256": "c65989d6e8e711a64b9d0d65952805bb06626368c76d7b285cf920a2f4654925"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json",
+      "sha256": "df399f21b642aa87108be1869f3d5e6671b335ce18103ba676cf618127758719"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_report_index.schema.json",
+      "sha256": "aac2356ad3e5861dba1430e9142b8bd88599558229bb2f0a388749b2a8c815dc"
+    },
+    {
       "path": "tools/capability_matrix_gate.py",
-      "sha256": "b8e078d9293e66359d290ee831541a4c029f7a0c06214c12eefcc8074db07709"
+      "sha256": "c1c6e29249b978e534c7f5649b7d95fc8bbe037bf4cccecbc7c36142b343ccdc"
     },
     {
       "path": "tests/capability_loop/test_capability_matrix_gate.py",
-      "sha256": "f3c46e0505442ed63c8ae24528ee4a13f0f003049dad7bfbbe07b167911ae06f"
+      "sha256": "0c658626b80dc3726da4730e10b1cca2a72c687b7a998b81edc8a858821cb60f"
     }
   ]
 }

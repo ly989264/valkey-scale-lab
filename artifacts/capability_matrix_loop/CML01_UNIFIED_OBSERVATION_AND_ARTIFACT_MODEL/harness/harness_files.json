@@ -1,0 +1,56 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML01 stage artifact contract",
+      "kind": "manifest"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML01 observation-model gate and negative cases",
+      "kind": "runner"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML01 manifest regression tests",
+      "kind": "test"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_matrix.schema.json",
+      "purpose": "Capability matrix schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/operation_event.schema.json",
+      "purpose": "Operation event JSONL row schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/fault_event.schema.json",
+      "purpose": "Fault event JSONL row schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/metrics_window.schema.json",
+      "purpose": "Metrics window JSONL row schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/workload_window.schema.json",
+      "purpose": "Workload window JSONL row schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json",
+      "purpose": "Analysis summary schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_report_index.schema.json",
+      "purpose": "Report index schema",
+      "kind": "schema"
+    }
+  ]
+}

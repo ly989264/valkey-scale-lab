@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "stage_id", "status", "created_at", "reports"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "capability_report_index"},
+    "stage_id": {"type": "string", "pattern": "^CML[0-9]{2}_[A-Z0-9_]+$"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "PARTIAL"]},
+    "created_at": {"type": "string", "minLength": 1},
+    "reports": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["kind", "path", "source_artifacts"],
+        "properties": {
+          "kind": {"type": "string", "enum": ["csv", "markdown", "html", "chart"]},
+          "path": {"type": "string", "minLength": 1},
+          "source_artifacts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": {"type": "string", "minLength": 1},
+                "sha256": {"type": "string", "minLength": 16}
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_analysis_summary",
+  "stage_id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:30:04.237644Z",
+  "summary": {
+    "delta": "UNSUPPORTED_WITH_EVIDENCE",
+    "error_rate": 0,
+    "qps_drop_ratio": "UNSUPPORTED_WITH_EVIDENCE",
+    "latency_delta": "UNSUPPORTED_WITH_EVIDENCE",
+    "unavailable_ms": "UNSUPPORTED_WITH_EVIDENCE",
+    "sample_coverage": 0.3333
+  },
+  "source_artifacts": [
+    {
+      "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/operation_event.jsonl",
+      "sha256": "7a2fc34322c49a2300cdbd1cbdf5a45b87765de900d242ec526d7c94c3e52d5d"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/fault_event.jsonl",
+      "sha256": "a5016b60badad08a00c695e7f1eae20bd08617663eb00b8bda26674e3b527b29"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/metrics_window.jsonl",
+      "sha256": "b9a0c81493a1d3391e009bf80aedebb6a00ac2a646c86e5c5b0367385ca7b255"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/workload_window.jsonl",
+      "sha256": "1357e9b76a2070208a3ba70aa02cdf3bf3f4459f0a64a496b5141d0aa7ad938c"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/real_valkey_evidence.json",
+      "sha256": "b8b8c05dcdb50aad473944c7210d448f9f918837cc93b17acf4ccb14ca72db8a"
+    }
+  ]
+}

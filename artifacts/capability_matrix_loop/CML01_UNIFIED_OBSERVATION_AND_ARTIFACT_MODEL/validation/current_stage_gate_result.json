@@ -1,0 +1,83 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:34:08.555983Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "observation_model",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "empty_metrics",
+      "status": "PASS",
+      "expected_error_fragment": "has no JSONL records",
+      "observed_errors": [
+        "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/negative_empty_metrics.jsonl has no JSONL records"
+      ]
+    },
+    {
+      "name": "zero_filled_missing",
+      "status": "PASS",
+      "expected_error_fragment": "zero-filled missing metric",
+      "observed_errors": [
+        "CML01 metrics windows mismatch: ['before']",
+        "metrics_window before zero-filled missing metric: qps"
+      ]
+    },
+    {
+      "name": "report_without_checksum",
+      "status": "PASS",
+      "expected_error_fragment": "missing required key 'sha256'",
+      "observed_errors": [
+        "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/negative_report_no_checksum.json $.reports[0].source_artifacts[0]: missing required key 'sha256'"
+      ]
+    },
+    {
+      "name": "old_artifact_reuse",
+      "status": "PASS",
+      "expected_error_fragment": "old artifact reused",
+      "observed_errors": [
+        "CML01 metrics windows mismatch: ['before']",
+        "metrics_window before old artifact reused as current stage evidence"
+      ]
+    },
+    {
+      "name": "fake_real_valkey_evidence",
+      "status": "PASS",
+      "expected_error_fragment": "not real_valkey evidence",
+      "observed_errors": [
+        "CML01 real sample is not real_valkey evidence"
+      ]
+    }
+  ]
+}

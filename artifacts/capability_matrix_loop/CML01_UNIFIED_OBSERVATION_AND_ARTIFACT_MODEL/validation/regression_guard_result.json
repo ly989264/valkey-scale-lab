@@ -1,0 +1,14 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+  "decision": "PASS",
+  "protected_files_changed": [],
+  "frozen_harness_mismatches": [],
+  "suspicious_patterns": [],
+  "requires_harness_exception": false,
+  "notes": [
+    "CML01 only extends supplemental CML harness files and artifacts.",
+    "Previous harness validation passed before CML01 implementation.",
+    "Current stage gate includes negative cases for empty metrics, zero-filled missing metrics, checksum-free reports, old artifact reuse, and fake real-Valkey evidence."
+  ]
+}

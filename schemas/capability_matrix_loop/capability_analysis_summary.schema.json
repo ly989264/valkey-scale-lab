@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "stage_id", "status", "created_at", "summary"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "capability_analysis_summary"},
+    "stage_id": {"type": "string", "pattern": "^CML[0-9]{2}_[A-Z0-9_]+$"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "PARTIAL"]},
+    "created_at": {"type": "string", "minLength": 1},
+    "summary": {
+      "type": "object",
+      "required": ["delta", "error_rate", "qps_drop_ratio", "latency_delta", "unavailable_ms", "sample_coverage"],
+      "properties": {
+        "delta": {"type": ["number", "string"]},
+        "error_rate": {"type": ["number", "string"]},
+        "qps_drop_ratio": {"type": ["number", "string"]},
+        "latency_delta": {"type": ["number", "string"]},
+        "unavailable_ms": {"type": ["number", "string"]},
+        "sample_coverage": {"type": ["number", "string"]}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

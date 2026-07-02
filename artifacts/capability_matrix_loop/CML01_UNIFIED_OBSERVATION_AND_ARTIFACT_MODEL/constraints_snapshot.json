@@ -1,0 +1,39 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+  "read_files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "422aae779284c0b871da2bcb78ab362b2890254134c1a67d726d88871cebf6f3",
+      "summary": "Controlling repository and safety instructions."
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "sha256": "01ad5f448161debb8914d212fb9754916817dce7c9b28781ffc93b26147f4e75",
+      "summary": "Autonomous build entrypoint and phase loop reminder."
+    },
+    {
+      "path": "codex/capability_loop_prompt/MAIN_LOOP_PROMPT.md",
+      "sha256": "d3c04bdfccbcc1094ed58701a773080a1ab37a1be0093126179d90f95442489b",
+      "summary": "Main CML loop-engineering instruction."
+    },
+    {
+      "path": "codex/capability_loop_prompt/05_METRIC_ARTIFACT_REPORT_CONTRACT.md",
+      "sha256": "a86d8de9625c282afbbe6e6a7f138fb11de2cc2bbedcec920d31fed4e6c9065a",
+      "summary": "Unified evidence chain and report contract."
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/next_stage_context.md",
+      "sha256": "63ec3fdd5a581b65d3e61013aa328f0328261a6e603c29a6563af0099aa91c36",
+      "summary": "Prior stage handoff into CML01."
+    }
+  ],
+  "active_constraints": [
+    "Do not modify or weaken existing P00-P13 harness controls.",
+    "Run previous harness verification before CML01 implementation.",
+    "Use scripts/valkey_e2e_gate.py for the real Valkey proof.",
+    "Missing measurements must use explicit non-numeric statuses rather than zero-filled values.",
+    "Report artifacts must carry source_artifacts with sha256 checksums.",
+    "Old artifacts may be referenced as history but must not be reused as current CML01 evidence."
+  ]
+}

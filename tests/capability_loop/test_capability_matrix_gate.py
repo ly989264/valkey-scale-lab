@@ -101,3 +101,23 @@ def test_stage_manifest_requires_cml00_artifacts():
     assert "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/previous_harness.log" in required
     assert "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_freeze.json" in required
     assert "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/reports/capability_matrix_baseline.json" in required
+
+
+def test_stage_manifest_requires_cml01_observation_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml01 = next(stage for stage in manifest["stages"] if stage["id"] == "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL")
+    required = {artifact["path"] for artifact in cml01["required_artifacts"]}
+    assert cml01["max_real_nodes"] == 6
+    assert cml01["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/operation_event.jsonl" in required
+    assert "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/fault_event.jsonl" in required
+    assert "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/metrics_window.jsonl" in required
+    assert "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/workload_window.jsonl" in required
+    assert "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/report_index.json" in required
+    assert {
+        "empty metrics JSONL fails",
+        "zero-filled missing metrics fail",
+        "chart/report entry without source checksum fails",
+        "old artifact reuse fails",
+        "fake real_valkey evidence fails",
+    }.issubset(set(cml01["negative_requirements"]))

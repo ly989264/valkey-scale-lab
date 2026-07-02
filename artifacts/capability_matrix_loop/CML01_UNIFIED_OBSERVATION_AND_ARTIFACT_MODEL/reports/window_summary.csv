@@ -1,0 +1,7 @@
+window_id,metrics_status,metrics_sample_count,workload_status,workload_sample_count
+before,UNSUPPORTED_WITH_EVIDENCE,0,UNSUPPORTED_WITH_EVIDENCE,0
+operation_or_fault_apply,PASS,6,PASS,1
+during,UNSUPPORTED_WITH_EVIDENCE,0,UNSUPPORTED_WITH_EVIDENCE,0
+clear_or_recovery_start,UNSUPPORTED_WITH_EVIDENCE,0,UNSUPPORTED_WITH_EVIDENCE,0
+after_recovery,UNSUPPORTED_WITH_EVIDENCE,0,UNSUPPORTED_WITH_EVIDENCE,0
+all_run,PASS,6,PASS,1

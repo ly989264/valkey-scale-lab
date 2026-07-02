@@ -1,0 +1,100 @@
+{
+  "cluster_id": "P03_LOCAL_DOCKER_VALKEY-cluster_smoke-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7310,
+      "container_id": "31a8fb43296576997efb67fb5882f63ec33cdd4994c6ce2cdff7131c80e8129d",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p03-local-docker-valkey-cluster-smoke-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 14923,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7311,
+      "container_id": "d05243a50d9f5e2b42d5b2ec5db3b4ac302fc3a2f34e7a3ad0eb8fdc03d3f880",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p03-local-docker-valkey-cluster-smoke-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 15000,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7312,
+      "container_id": "3b3cc9e180786929d501e3b68d4422692cad69de1746e867f2b0dc8135bf876f",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p03-local-docker-valkey-cluster-smoke-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 15079,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7313,
+      "container_id": "8311568b57af6fb503ec1164dc78f61780b78b1434b7fdc74a12a57e51a34a05",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p03-local-docker-valkey-cluster-smoke-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 15152,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7314,
+      "container_id": "61234baa4040e57f2933d1705ceb1186ae8b515da3ea1b937df3c37dfc86ca76",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p03-local-docker-valkey-cluster-smoke-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 15228,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7315,
+      "container_id": "4bc4fc6e556a9e15b6a145b9c0e2fe847e1935ac8d0d310d25c9e42183573b69",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p03-local-docker-valkey-cluster-smoke-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 15304,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p03-local-docker-valkey-cluster_smoke",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P03_LOCAL_DOCKER_VALKEY-cluster_smoke-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "cluster_smoke",
+  "schema_version": "v1"
+}

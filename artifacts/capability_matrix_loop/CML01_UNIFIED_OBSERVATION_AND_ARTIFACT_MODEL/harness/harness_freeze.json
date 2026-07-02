@@ -1,0 +1,47 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+  "created_at": "2026-07-02T04:30:04.237644Z",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "sha256": "bd71785de2ca1c4d5c410e53d2fddf4ced1fc30d7e40ed7c7bb3419fdb575a32"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "c1c6e29249b978e534c7f5649b7d95fc8bbe037bf4cccecbc7c36142b343ccdc"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "sha256": "0c658626b80dc3726da4730e10b1cca2a72c687b7a998b81edc8a858821cb60f"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_matrix.schema.json",
+      "sha256": "7e42b5e451688c78a5a85a537332d5a3603b2038c1580c1ef304a15a131c0b24"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/operation_event.schema.json",
+      "sha256": "579943071e8247142b54d79193c7056a3b9b899e728ab08820993de2fcf24c27"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/fault_event.schema.json",
+      "sha256": "01502ce552f3b7ee7c0229bd7763ea6deca2bfd6959eb29ef1b669f7f396fb1d"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/metrics_window.schema.json",
+      "sha256": "47db3fda2bf557177d8f1cfba8da3dbb5fdcef71aa7dde9640fa1e032fa2e2f0"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/workload_window.schema.json",
+      "sha256": "c65989d6e8e711a64b9d0d65952805bb06626368c76d7b285cf920a2f4654925"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json",
+      "sha256": "df399f21b642aa87108be1869f3d5e6671b335ce18103ba676cf618127758719"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_report_index.schema.json",
+      "sha256": "aac2356ad3e5861dba1430e9142b8bd88599558229bb2f0a388749b2a8c815dc"
+    }
+  ]
+}

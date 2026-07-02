@@ -50,7 +50,61 @@
         "old artifact reuse fails"
       ]
     },
-    {"id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL", "objective": "Unify operation/fault to metrics to analysis to report artifacts.", "automatic": true, "profile": "short-real", "max_real_nodes": 3, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {
+      "id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+      "objective": "Unify operation/fault to metrics to analysis to report artifacts.",
+      "automatic": true,
+      "profile": "short-real",
+      "max_real_nodes": 6,
+      "real_valkey_required": true,
+      "required_artifacts": [
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/context_refresh.md"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/constraints_snapshot.json", "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/stage_objective.md"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/commands.md"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/agents/requirements_harness_design.response.md"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/agents/worker.response.md"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/agents/regression_guard.response.md"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/harness/harness_plan.md"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/harness/harness_files.json", "schema": "schemas/capability_matrix_loop/harness_files.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/harness/harness_freeze.json", "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/previous_harness.log"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/regression_guard_result.json", "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/validation/current_stage_gate_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/config_6node.yaml"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/real_valkey_evidence.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/operation_event.jsonl"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/fault_event.jsonl"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/metrics_window.jsonl"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/samples/workload_window.jsonl"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/capability_matrix.json", "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/analysis_summary.json", "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/report_index.json", "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/window_summary.csv"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/window_timeline.svg"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/report.md"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/reports/index.html"},
+        {"path": "audit/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/AUDIT.md"},
+        {"path": "audit/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/audit_decision.json", "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/stage_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/next_stage_context.md"}
+      ],
+      "commands": [
+        {
+          "name": "capability_observation_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+          "required": true,
+          "timeout_seconds": 180
+        }
+      ],
+      "negative_requirements": [
+        "empty metrics JSONL fails",
+        "zero-filled missing metrics fail",
+        "chart/report entry without source checksum fails",
+        "old artifact reuse fails",
+        "fake real_valkey evidence fails"
+      ]
+    },
     {"id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30", "objective": "Run real cluster management operations on 30 nodes with workload windows.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
     {"id": "CML03_PROCESS_AND_NODEHOST_FAULTS_30", "objective": "Run process and owned nodehost faults on 30 nodes.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
     {"id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30", "objective": "Run container-scoped partition and virtual AZ fault scenarios on 30 nodes.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},

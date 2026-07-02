@@ -27,6 +27,9 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+NEGATIVE_CASE_CREATED_AT = "2026-07-02T00:00:00Z"
+
+
 def rel(path: Path) -> str:
     try:
         return path.resolve().relative_to(ROOT.resolve()).as_posix()
@@ -45,6 +48,12 @@ def sha256_file(path: Path) -> str:
 def write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+
+
+def write_json_if_missing(path: Path, data: Any) -> None:
+    if path.exists():
+        return
+    write_json(path, data)
 
 
 def load_manifest() -> dict[str, Any]:
@@ -71,6 +80,32 @@ def schema_errors(path: Path, schema_path_text: str) -> list[str]:
     except json.JSONDecodeError as exc:
         return [f"{rel(path)} invalid JSON: {exc}"]
     return [f"{rel(path)} {err}" for err in validate(data, load_json(schema_path))]
+
+
+def jsonl_schema_errors(path: Path, schema_path_text: str) -> list[str]:
+    errors: list[str] = []
+    schema_path = ROOT / schema_path_text
+    if not schema_path.exists():
+        return [f"schema missing: {schema_path_text}"]
+    if not path.exists():
+        return [f"jsonl artifact missing: {rel(path)}"]
+    schema = load_json(schema_path)
+    rows = 0
+    with path.open("r", encoding="utf-8") as f:
+        for line_number, line in enumerate(f, start=1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            rows += 1
+            try:
+                data = json.loads(stripped)
+            except json.JSONDecodeError as exc:
+                errors.append(f"{rel(path)} line {line_number} invalid JSON: {exc}")
+                continue
+            errors.extend(f"{rel(path)} line {line_number} {err}" for err in validate(data, schema))
+    if rows == 0:
+        errors.append(f"{rel(path)} has no JSONL records")
+    return errors
 
 
 def check_manifest() -> list[str]:
@@ -100,6 +135,23 @@ def check_manifest() -> list[str]:
                 errors.append("CML00 must declare negative requirements")
             if stage.get("real_valkey_required"):
                 errors.append("CML00 must not require real Valkey")
+        if stage_id == "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL":
+            if int(stage.get("max_real_nodes", 0)) > 6:
+                errors.append("CML01 must remain capped at 6 real nodes")
+            if not stage.get("real_valkey_required"):
+                errors.append("CML01 must require real Valkey evidence")
+            required_paths = {artifact.get("path") for artifact in stage.get("required_artifacts", [])}
+            for suffix in [
+                "samples/operation_event.jsonl",
+                "samples/fault_event.jsonl",
+                "samples/metrics_window.jsonl",
+                "samples/workload_window.jsonl",
+                "capability_matrix.json",
+                "analysis_summary.json",
+                "reports/report_index.json",
+            ]:
+                if not any(str(path).endswith(suffix) for path in required_paths):
+                    errors.append(f"CML01 manifest missing required artifact suffix: {suffix}")
     return errors
 
 
@@ -224,14 +276,14 @@ def make_negative_cases() -> list[dict[str, Any]]:
     ]
     results: list[dict[str, Any]] = []
     fake_path = ROOT / "artifacts" / "capability_matrix_loop" / "CML00_CAPABILITY_LOOP_BOOTSTRAP" / "validation" / "fake_valkey_evidence.json"
-    write_json(
+    write_json_if_missing(
         fake_path,
         {
             "schema_version": "v1",
             "artifact_type": "valkey_e2e_evidence",
             "phase_id": "P12_SCALE_LADDER_10_30",
             "run_id": "fake-negative-case",
-            "created_at": utc_now(),
+            "created_at": NEGATIVE_CASE_CREATED_AT,
             "producer": {"name": "capability_matrix_gate", "version": "negative"},
             "status": "PASS",
             "real_valkey": False,
@@ -249,14 +301,14 @@ def make_negative_cases() -> list[dict[str, Any]]:
             errors = ["required artifact missing: synthetic"]
         else:
             tmp = ROOT / "artifacts" / "capability_matrix_loop" / "CML00_CAPABILITY_LOOP_BOOTSTRAP" / "validation" / f"{name}.baseline.json"
-            write_json(
+            write_json_if_missing(
                 tmp,
                 {
                     "schema_version": "v1",
                     "artifact_type": "capability_matrix_baseline",
                     "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
                     "status": "PASS",
-                    "created_at": utc_now(),
+                    "created_at": NEGATIVE_CASE_CREATED_AT,
                     **payload,
                 },
             )
@@ -267,6 +319,182 @@ def make_negative_cases() -> list[dict[str, Any]]:
                 "status": "PASS" if any(expected in error for error in errors) else "FAIL",
                 "expected_error_fragment": expected,
                 "observed_errors": errors,
+            }
+        )
+    return results
+
+
+def cml01_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "operation": stage_root / "samples" / "operation_event.jsonl",
+        "fault": stage_root / "samples" / "fault_event.jsonl",
+        "metrics": stage_root / "samples" / "metrics_window.jsonl",
+        "workload": stage_root / "samples" / "workload_window.jsonl",
+        "evidence": stage_root / "samples" / "real_valkey_evidence.json",
+        "matrix": stage_root / "capability_matrix.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
+def load_jsonl(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped:
+                rows.append(json.loads(stripped))
+    return rows
+
+
+def source_checksum_errors(source_artifacts: list[dict[str, Any]], owner: str) -> list[str]:
+    errors: list[str] = []
+    for idx, source in enumerate(source_artifacts):
+        path_text = source.get("path")
+        checksum = source.get("sha256")
+        if not path_text:
+            errors.append(f"{owner} source {idx} missing path")
+            continue
+        path = ROOT / path_text
+        if not path.exists():
+            errors.append(f"{owner} source {idx} missing artifact: {path_text}")
+            continue
+        if not checksum:
+            errors.append(f"{owner} source {idx} missing sha256")
+            continue
+        actual = sha256_file(path)
+        if actual != checksum:
+            errors.append(f"{owner} source {idx} sha256 mismatch: {path_text}")
+    return errors
+
+
+def validate_observation_model(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml01_paths(stage_id)
+    errors: list[str] = []
+    schema_pairs = [
+        ("operation", "schemas/capability_matrix_loop/operation_event.schema.json"),
+        ("fault", "schemas/capability_matrix_loop/fault_event.schema.json"),
+        ("metrics", "schemas/capability_matrix_loop/metrics_window.schema.json"),
+        ("workload", "schemas/capability_matrix_loop/workload_window.schema.json"),
+    ]
+    for key, schema in schema_pairs:
+        errors.extend(jsonl_schema_errors(paths[key], schema))
+    errors.extend(schema_errors(paths["matrix"], "schemas/capability_matrix_loop/capability_matrix.schema.json"))
+    errors.extend(schema_errors(paths["analysis"], "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"))
+    errors.extend(schema_errors(paths["report_index"], "schemas/capability_matrix_loop/capability_report_index.schema.json"))
+    if errors:
+        return errors
+
+    evidence = load_json(paths["evidence"])
+    if evidence.get("real_valkey") is not True:
+        errors.append("CML01 real sample is not real_valkey evidence")
+    if evidence.get("probe_result") != "PASS":
+        errors.append("CML01 real sample probe_result is not PASS")
+    if evidence.get("data_path_result") != "PASS":
+        errors.append("CML01 real sample data_path_result is not PASS")
+    if int(evidence.get("nodes_observed", 0)) < 6:
+        errors.append("CML01 real sample must observe at least 6 nodes")
+    versions = evidence.get("valkey_versions", [])
+    if not versions or any(not str(version).startswith("9.1.") for version in versions):
+        errors.append("CML01 real sample must record Valkey 9.1.x versions")
+
+    metrics_rows = load_jsonl(paths["metrics"])
+    workload_rows = load_jsonl(paths["workload"])
+    all_windows = {"before", "operation_or_fault_apply", "during", "clear_or_recovery_start", "after_recovery", "all_run"}
+    metrics_windows = {str(row.get("window_id")) for row in metrics_rows}
+    workload_windows = {str(row.get("window_id")) for row in workload_rows}
+    if metrics_windows != all_windows:
+        errors.append(f"CML01 metrics windows mismatch: {sorted(metrics_windows)}")
+    if workload_windows != all_windows:
+        errors.append(f"CML01 workload windows mismatch: {sorted(workload_windows)}")
+    for row in metrics_rows:
+        owner = f"metrics_window {row.get('window_id')}"
+        if row.get("current_stage") != stage_id or row.get("source_stage") != stage_id:
+            errors.append(f"{owner} old artifact reused as current stage evidence")
+        if row.get("status") == "PASS" and int(row.get("sample_count", 0)) <= 0:
+            errors.append(f"{owner} PASS without samples")
+        metrics = row.get("metrics", {})
+        for key, value in metrics.items():
+            if value == 0 and str(row.get("status")) in {"MISSING", "UNSUPPORTED_WITH_EVIDENCE"}:
+                errors.append(f"{owner} zero-filled missing metric: {key}")
+        errors.extend(source_checksum_errors(row.get("source_artifacts", []), owner))
+    for row in workload_rows:
+        owner = f"workload_window {row.get('window_id')}"
+        if row.get("current_stage") != stage_id or row.get("source_stage") != stage_id:
+            errors.append(f"{owner} old artifact reused as current stage evidence")
+        if row.get("status") == "PASS" and int(row.get("sample_count", 0)) <= 0:
+            errors.append(f"{owner} PASS without samples")
+        errors.extend(source_checksum_errors(row.get("source_artifacts", []), owner))
+
+    report_index = load_json(paths["report_index"])
+    report_kinds = {report.get("kind") for report in report_index.get("reports", [])}
+    if report_kinds != {"csv", "markdown", "html", "chart"}:
+        errors.append(f"CML01 report index must include csv, markdown, html, chart: {sorted(report_kinds)}")
+    for report in report_index.get("reports", []):
+        report_path = ROOT / str(report.get("path", ""))
+        if not report_path.exists():
+            errors.append(f"report path missing: {report.get('path')}")
+        errors.extend(source_checksum_errors(report.get("source_artifacts", []), f"report {report.get('kind')}"))
+
+    matrix = load_json(paths["matrix"])
+    for row in matrix.get("capabilities", []):
+        chain = row.get("evidence_chain", {})
+        for key, path_text in chain.items():
+            if not (ROOT / str(path_text)).exists():
+                errors.append(f"capability matrix chain missing {key}: {path_text}")
+        if row.get("real_valkey_required") is True and row.get("status") == "PASS" and not chain:
+            errors.append("capability matrix PASS without evidence chain")
+    return errors
+
+
+def make_cml01_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml01_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, str, dict[str, Path], str]] = []
+
+    empty_metrics = validation_dir / "negative_empty_metrics.jsonl"
+    empty_metrics.write_text("", encoding="utf-8")
+    cases.append(("empty_metrics", "metrics", {"metrics": empty_metrics}, "has no JSONL records"))
+
+    zero_missing = validation_dir / "negative_zero_filled_missing.jsonl"
+    rows = load_jsonl(paths["metrics"])
+    bad = dict(rows[0])
+    bad["status"] = "MISSING"
+    bad["metrics"] = {"qps": 0}
+    zero_missing.write_text(json.dumps(bad, sort_keys=True) + "\n", encoding="utf-8")
+    cases.append(("zero_filled_missing", "metrics", {"metrics": zero_missing}, "zero-filled missing metric"))
+
+    no_checksum = validation_dir / "negative_report_no_checksum.json"
+    report = load_json(paths["report_index"])
+    report["reports"][0]["source_artifacts"][0].pop("sha256", None)
+    write_json(no_checksum, report)
+    cases.append(("report_without_checksum", "report_index", {"report_index": no_checksum}, "missing required key 'sha256'"))
+
+    old_reuse = validation_dir / "negative_old_artifact_reuse.jsonl"
+    bad_old = dict(rows[0])
+    bad_old["source_stage"] = "P12_SCALE_LADDER_10_30"
+    old_reuse.write_text(json.dumps(bad_old, sort_keys=True) + "\n", encoding="utf-8")
+    cases.append(("old_artifact_reuse", "metrics", {"metrics": old_reuse}, "old artifact reused"))
+
+    fake_evidence = validation_dir / "negative_fake_real_valkey_evidence.json"
+    fake = load_json(paths["evidence"])
+    fake["real_valkey"] = False
+    write_json(fake_evidence, fake)
+    cases.append(("fake_real_valkey_evidence", "evidence", {"evidence": fake_evidence}, "not real_valkey evidence"))
+
+    results: list[dict[str, Any]] = []
+    for name, _, overrides, expected in cases:
+        candidate_paths = dict(paths)
+        candidate_paths.update(overrides)
+        observed = validate_observation_model(stage_id, candidate_paths)
+        results.append(
+            {
+                "name": name,
+                "status": "PASS" if any(expected in error for error in observed) else "FAIL",
+                "expected_error_fragment": expected,
+                "observed_errors": observed,
             }
         )
     return results
@@ -364,12 +592,19 @@ def command_run(args: argparse.Namespace) -> int:
     add_check("state", check_state())
     add_check("harness_lock", check_lock())
     add_check("required_artifacts", validate_required_artifacts(stage))
-    baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"
-    baseline_errors = schema_errors(baseline_path, "schemas/capability_matrix_loop/capability_matrix_baseline.schema.json") if baseline_path.exists() else [f"baseline missing: {rel(baseline_path)}"]
-    baseline_errors.extend(validate_baseline(baseline_path) if baseline_path.exists() else [])
-    add_check("capability_matrix_baseline", baseline_errors)
-    negative_cases = make_negative_cases()
-    add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+
+    if args.stage == "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL":
+        observation_errors = validate_observation_model(args.stage)
+        add_check("observation_model", observation_errors)
+        negative_cases = make_cml01_negative_cases(args.stage) if not observation_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    else:
+        baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"
+        baseline_errors = schema_errors(baseline_path, "schemas/capability_matrix_loop/capability_matrix_baseline.schema.json") if baseline_path.exists() else [f"baseline missing: {rel(baseline_path)}"]
+        baseline_errors.extend(validate_baseline(baseline_path) if baseline_path.exists() else [])
+        add_check("capability_matrix_baseline", baseline_errors)
+        negative_cases = make_negative_cases()
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     status = "PASS" if all(check["status"] == "PASS" for check in checks) else "FAIL"
     result = {
         "schema_version": "v1",
