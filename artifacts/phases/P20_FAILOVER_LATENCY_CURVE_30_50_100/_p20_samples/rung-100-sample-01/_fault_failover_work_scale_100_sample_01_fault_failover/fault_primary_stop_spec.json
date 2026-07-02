@@ -1,0 +1,7 @@
+{
+  "fault_id": "fault-primary-stop",
+  "type": "node_stop",
+  "scope": "owned_container_or_process",
+  "forbid_host_network_mutation": true,
+  "target_logical_id": "shard-0024-primary"
+}

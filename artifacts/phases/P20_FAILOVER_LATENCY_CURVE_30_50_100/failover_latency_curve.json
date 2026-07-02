@@ -1,0 +1,127 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "failover_latency_curve",
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "run_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100-failover-curve-20260628",
+  "created_at": "2026-07-02T18:51:10.426062Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "rungs": [
+    30,
+    50,
+    100
+  ],
+  "sample_refs": [
+    "rung-30-sample-01",
+    "rung-30-sample-02",
+    "rung-30-sample-03",
+    "rung-50-sample-01",
+    "rung-50-sample-02",
+    "rung-50-sample-03",
+    "rung-100-sample-01",
+    "rung-100-sample-02",
+    "rung-100-sample-03"
+  ],
+  "sample_source": "failover_latency_samples.jsonl",
+  "derived_series": [
+    {
+      "rung": 30,
+      "node_count": 30,
+      "metric": "promotion_latency_ms",
+      "unit": "ms",
+      "sample_count": 3,
+      "percentile_method": "nearest_rank_round_index",
+      "sample_refs": [
+        "rung-30-sample-01",
+        "rung-30-sample-02",
+        "rung-30-sample-03"
+      ],
+      "p50_ms": 25653.025,
+      "p95_ms": 30782.052,
+      "max_ms": 30782.052
+    },
+    {
+      "rung": 30,
+      "node_count": 30,
+      "metric": "cluster_recovery_latency_ms",
+      "unit": "ms",
+      "sample_count": 3,
+      "percentile_method": "nearest_rank_round_index",
+      "sample_refs": [
+        "rung-30-sample-01",
+        "rung-30-sample-02",
+        "rung-30-sample-03"
+      ],
+      "p50_ms": 25653.025,
+      "p95_ms": 30782.052,
+      "max_ms": 30782.052
+    },
+    {
+      "rung": 50,
+      "node_count": 50,
+      "metric": "promotion_latency_ms",
+      "unit": "ms",
+      "sample_count": 3,
+      "percentile_method": "nearest_rank_round_index",
+      "sample_refs": [
+        "rung-50-sample-01",
+        "rung-50-sample-02",
+        "rung-50-sample-03"
+      ],
+      "p50_ms": 24367.048,
+      "p95_ms": 28447.429,
+      "max_ms": 28447.429
+    },
+    {
+      "rung": 50,
+      "node_count": 50,
+      "metric": "cluster_recovery_latency_ms",
+      "unit": "ms",
+      "sample_count": 3,
+      "percentile_method": "nearest_rank_round_index",
+      "sample_refs": [
+        "rung-50-sample-01",
+        "rung-50-sample-02",
+        "rung-50-sample-03"
+      ],
+      "p50_ms": 24367.048,
+      "p95_ms": 28447.429,
+      "max_ms": 28447.429
+    },
+    {
+      "rung": 100,
+      "node_count": 100,
+      "metric": "promotion_latency_ms",
+      "unit": "ms",
+      "sample_count": 3,
+      "percentile_method": "nearest_rank_round_index",
+      "sample_refs": [
+        "rung-100-sample-01",
+        "rung-100-sample-02",
+        "rung-100-sample-03"
+      ],
+      "p50_ms": 22059.249,
+      "p95_ms": 23032.674,
+      "max_ms": 23032.674
+    },
+    {
+      "rung": 100,
+      "node_count": 100,
+      "metric": "cluster_recovery_latency_ms",
+      "unit": "ms",
+      "sample_count": 3,
+      "percentile_method": "nearest_rank_round_index",
+      "sample_refs": [
+        "rung-100-sample-01",
+        "rung-100-sample-02",
+        "rung-100-sample-03"
+      ],
+      "p50_ms": 22059.249,
+      "p95_ms": 23032.674,
+      "max_ms": 23032.674
+    }
+  ]
+}

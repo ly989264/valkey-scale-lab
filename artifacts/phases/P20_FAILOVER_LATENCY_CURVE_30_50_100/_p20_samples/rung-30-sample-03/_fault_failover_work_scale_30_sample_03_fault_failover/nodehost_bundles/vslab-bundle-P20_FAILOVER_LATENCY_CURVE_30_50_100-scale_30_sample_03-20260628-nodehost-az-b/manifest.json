@@ -1,0 +1,129 @@
+{
+  "bundle_name": "vslab-bundle-P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628-nodehost-az-b",
+  "node_count": 15,
+  "nodehost_id": "nodehost-az-b",
+  "nodes": [
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0001-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0001-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0001-primary",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0001-primary/valkey.log",
+      "logical_id": "shard-0001-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0001-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0003-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0003-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0003-primary",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0003-primary/valkey.log",
+      "logical_id": "shard-0003-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0003-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0005-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0005-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0005-primary",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0005-primary/valkey.log",
+      "logical_id": "shard-0005-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0005-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0007-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0007-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0007-primary",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0007-primary/valkey.log",
+      "logical_id": "shard-0007-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0007-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0009-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0009-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0009-primary",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0009-primary/valkey.log",
+      "logical_id": "shard-0009-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0009-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0011-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0011-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0011-primary",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0011-primary/valkey.log",
+      "logical_id": "shard-0011-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0011-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0013-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0013-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0013-primary",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0013-primary/valkey.log",
+      "logical_id": "shard-0013-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0013-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0000-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0000-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0000-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0000-replica-00/valkey.log",
+      "logical_id": "shard-0000-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0000-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0002-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0002-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0002-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0002-replica-00/valkey.log",
+      "logical_id": "shard-0002-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0002-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0004-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0004-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0004-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0004-replica-00/valkey.log",
+      "logical_id": "shard-0004-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0004-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0006-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0006-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0006-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0006-replica-00/valkey.log",
+      "logical_id": "shard-0006-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0006-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0008-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0008-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0008-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0008-replica-00/valkey.log",
+      "logical_id": "shard-0008-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0008-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0010-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0010-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0010-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0010-replica-00/valkey.log",
+      "logical_id": "shard-0010-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0010-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0012-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0012-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0012-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0012-replica-00/valkey.log",
+      "logical_id": "shard-0012-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0012-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/_fault_failover_work_scale_30_sample_03_fault_failover/node_configs/shard-0014-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0014-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0014-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0014-replica-00/valkey.log",
+      "logical_id": "shard-0014-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628/shard-0014-replica-00/valkey.pid"
+    }
+  ],
+  "run_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_03-20260628",
+  "schema_version": "v1"
+}

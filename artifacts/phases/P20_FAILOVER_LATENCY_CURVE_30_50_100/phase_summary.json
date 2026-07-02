@@ -1,0 +1,34 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "run_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100-failover-curve-20260628",
+  "created_at": "2026-07-02T18:51:10.496573Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P20 runs real primary-stop failover samples for 30, 50, and 100 node Valkey clusters and derives the latency curve from raw samples.",
+  "required_artifacts": [
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/phase_summary.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/valkey_e2e_evidence.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/cleanup_report.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/events.jsonl",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/metrics_timeseries.jsonl",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_windows.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/quant_summary.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_samples.jsonl",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_curve.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/fault_matrix_report.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json"
+  ],
+  "missing_metrics": [],
+  "risks": [
+    {
+      "risk": "Large local Docker failover runs depend on host resources.",
+      "severity": "medium",
+      "required_before_next_phase": false
+    }
+  ]
+}

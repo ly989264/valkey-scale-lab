@@ -1,0 +1,1 @@
+PASS fault_failover_gate promoted=5b0773e6d149db103afffb5052345d1abf9bbe36 out=artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/_p20_samples/rung-30-sample-03/valkey_e2e_evidence.json

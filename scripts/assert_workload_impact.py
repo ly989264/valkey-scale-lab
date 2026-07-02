@@ -71,6 +71,20 @@ def main() -> int:
                 errors.append(f"{name}: missing metric {field}")
             elif metrics.get(field) == "MISSING" and not metric_missing_reason(metrics, field):
                 errors.append(f"{name}: MISSING {field} requires missing_reasons.{field}")
+    if args.phase == "P20_FAILOVER_LATENCY_CURVE_30_50_100":
+        sample_ids = {row.get("sample_id") for row in rows if row.get("sample_id")}
+        if len(sample_ids) != 9:
+            errors.append(f"P20 workload impact must cover 9 sample IDs, got {len(sample_ids)}")
+        for row in rows:
+            if row.get("rung") not in {30, 50, 100}:
+                errors.append(f"{row.get('window_name', 'unknown')}: invalid P20 rung {row.get('rung')!r}")
+            if not row.get("sample_id"):
+                errors.append(f"{row.get('window_name', 'unknown')}: P20 sample_id required")
+        comparisons = report.get("comparisons", [])
+        comparison_ids = {item.get("sample_id") for item in comparisons if isinstance(item, dict)}
+        missing_comparisons = sorted(sample_ids - comparison_ids)
+        if missing_comparisons:
+            errors.append(f"P20 comparisons missing sample IDs: {missing_comparisons}")
     if errors:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)

@@ -1,0 +1,86 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "failover_report",
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "run_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100-failover-curve-20260628",
+  "created_at": "2026-07-02T18:51:10.486332Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "failovers": [
+    {
+      "fault_id": "rung-30-sample-01-primary-stop",
+      "target_logical_id": "shard-0001-primary",
+      "old_primary_node_id": "461b5f59dbdb49dfd2dc56682919cf55988e58e6",
+      "promoted_node_id": "3ba8434160e5d1309aad8c3b98cff3f9f82575c1",
+      "failover_latency_ms": 25653.025
+    },
+    {
+      "fault_id": "rung-30-sample-02-primary-stop",
+      "target_logical_id": "shard-0001-primary",
+      "old_primary_node_id": "f979995b80686401eefdef56e0aea85dbd798936",
+      "promoted_node_id": "3500882a44448ac8aefea410d8f2930f2c3c0e15",
+      "failover_latency_ms": 30782.052
+    },
+    {
+      "fault_id": "rung-30-sample-03-primary-stop",
+      "target_logical_id": "shard-0004-primary",
+      "old_primary_node_id": "2c3fcbfdbb6c52787cb7cc448e671bb5fbe49ed1",
+      "promoted_node_id": "5b0773e6d149db103afffb5052345d1abf9bbe36",
+      "failover_latency_ms": 24092.871
+    },
+    {
+      "fault_id": "rung-50-sample-01-primary-stop",
+      "target_logical_id": "shard-0018-primary",
+      "old_primary_node_id": "6fe9959ce37d00f2713e2363d3d437058a4c6618",
+      "promoted_node_id": "569467a2e52f8e76a95f2b277626f32db71eae5d",
+      "failover_latency_ms": 24367.048
+    },
+    {
+      "fault_id": "rung-50-sample-02-primary-stop",
+      "target_logical_id": "shard-0021-primary",
+      "old_primary_node_id": "e7ce0d38f135b77437b764d88e47cb12b1723030",
+      "promoted_node_id": "176ab86c703142df4000483b5dc64ebcf71c8c87",
+      "failover_latency_ms": 28447.429
+    },
+    {
+      "fault_id": "rung-50-sample-03-primary-stop",
+      "target_logical_id": "shard-0010-primary",
+      "old_primary_node_id": "d283eee8e582026c33c40f5fd08e75a73b528374",
+      "promoted_node_id": "7916d27e91693d2901eddef03a242cb4a4d3937b",
+      "failover_latency_ms": 22312.206
+    },
+    {
+      "fault_id": "rung-100-sample-01-primary-stop",
+      "target_logical_id": "shard-0024-primary",
+      "old_primary_node_id": "13257f26ac57d93921bbb62f56f0dbfe633f296e",
+      "promoted_node_id": "53809d62f3d96194ecae0e2ea9d63d827a67af4e",
+      "failover_latency_ms": 20878.576
+    },
+    {
+      "fault_id": "rung-100-sample-02-primary-stop",
+      "target_logical_id": "shard-0022-primary",
+      "old_primary_node_id": "c51c36685641c0a54f7c671d8d32466ea03c53cb",
+      "promoted_node_id": "a4ff16ddd0e4a1ca2d9b2c8550bfde2b71fe8cbf",
+      "failover_latency_ms": 23032.674
+    },
+    {
+      "fault_id": "rung-100-sample-03-primary-stop",
+      "target_logical_id": "shard-0020-primary",
+      "old_primary_node_id": "c85f228d2eb68313b40308bb0acc72a87e95e663",
+      "promoted_node_id": "ff728d875bef6e3d5166a673c79d813ad583c6ac",
+      "failover_latency_ms": 22059.249
+    }
+  ],
+  "summary": {
+    "rungs": [
+      30,
+      50,
+      100
+    ],
+    "samples_per_rung": 3,
+    "errors": []
+  }
+}

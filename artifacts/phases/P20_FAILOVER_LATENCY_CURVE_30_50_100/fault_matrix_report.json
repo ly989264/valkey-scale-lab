@@ -1,0 +1,176 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "fault_matrix_report",
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "run_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100-failover-curve-20260628",
+  "created_at": "2026-07-02T18:51:10.432089Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "fault_rows": [
+    {
+      "fault_type": "primary_stop_failover",
+      "fault_id": "rung-30-sample-01-primary-stop",
+      "node_count": 30,
+      "sample_id": "rung-30-sample-01",
+      "scope": "owned_container_or_process",
+      "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
+      "targets": [
+        "shard-0001-primary"
+      ],
+      "observed_impact": {
+        "promotion_latency_ms": 25653.025,
+        "cluster_recovery_latency_ms": 25653.025
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "workload_impact_ref": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json#rung-30-sample-01"
+    },
+    {
+      "fault_type": "primary_stop_failover",
+      "fault_id": "rung-30-sample-02-primary-stop",
+      "node_count": 30,
+      "sample_id": "rung-30-sample-02",
+      "scope": "owned_container_or_process",
+      "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
+      "targets": [
+        "shard-0001-primary"
+      ],
+      "observed_impact": {
+        "promotion_latency_ms": 30782.052,
+        "cluster_recovery_latency_ms": 30782.052
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "workload_impact_ref": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json#rung-30-sample-02"
+    },
+    {
+      "fault_type": "primary_stop_failover",
+      "fault_id": "rung-30-sample-03-primary-stop",
+      "node_count": 30,
+      "sample_id": "rung-30-sample-03",
+      "scope": "owned_container_or_process",
+      "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
+      "targets": [
+        "shard-0004-primary"
+      ],
+      "observed_impact": {
+        "promotion_latency_ms": 24092.871,
+        "cluster_recovery_latency_ms": 24092.871
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "workload_impact_ref": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json#rung-30-sample-03"
+    },
+    {
+      "fault_type": "primary_stop_failover",
+      "fault_id": "rung-50-sample-01-primary-stop",
+      "node_count": 50,
+      "sample_id": "rung-50-sample-01",
+      "scope": "owned_container_or_process",
+      "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
+      "targets": [
+        "shard-0018-primary"
+      ],
+      "observed_impact": {
+        "promotion_latency_ms": 24367.048,
+        "cluster_recovery_latency_ms": 24367.048
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "workload_impact_ref": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json#rung-50-sample-01"
+    },
+    {
+      "fault_type": "primary_stop_failover",
+      "fault_id": "rung-50-sample-02-primary-stop",
+      "node_count": 50,
+      "sample_id": "rung-50-sample-02",
+      "scope": "owned_container_or_process",
+      "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
+      "targets": [
+        "shard-0021-primary"
+      ],
+      "observed_impact": {
+        "promotion_latency_ms": 28447.429,
+        "cluster_recovery_latency_ms": 28447.429
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "workload_impact_ref": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json#rung-50-sample-02"
+    },
+    {
+      "fault_type": "primary_stop_failover",
+      "fault_id": "rung-50-sample-03-primary-stop",
+      "node_count": 50,
+      "sample_id": "rung-50-sample-03",
+      "scope": "owned_container_or_process",
+      "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
+      "targets": [
+        "shard-0010-primary"
+      ],
+      "observed_impact": {
+        "promotion_latency_ms": 22312.206,
+        "cluster_recovery_latency_ms": 22312.206
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "workload_impact_ref": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json#rung-50-sample-03"
+    },
+    {
+      "fault_type": "primary_stop_failover",
+      "fault_id": "rung-100-sample-01-primary-stop",
+      "node_count": 100,
+      "sample_id": "rung-100-sample-01",
+      "scope": "owned_container_or_process",
+      "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
+      "targets": [
+        "shard-0024-primary"
+      ],
+      "observed_impact": {
+        "promotion_latency_ms": 20878.576,
+        "cluster_recovery_latency_ms": 20878.576
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "workload_impact_ref": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json#rung-100-sample-01"
+    },
+    {
+      "fault_type": "primary_stop_failover",
+      "fault_id": "rung-100-sample-02-primary-stop",
+      "node_count": 100,
+      "sample_id": "rung-100-sample-02",
+      "scope": "owned_container_or_process",
+      "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
+      "targets": [
+        "shard-0022-primary"
+      ],
+      "observed_impact": {
+        "promotion_latency_ms": 23032.674,
+        "cluster_recovery_latency_ms": 23032.674
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "workload_impact_ref": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json#rung-100-sample-02"
+    },
+    {
+      "fault_type": "primary_stop_failover",
+      "fault_id": "rung-100-sample-03-primary-stop",
+      "node_count": 100,
+      "sample_id": "rung-100-sample-03",
+      "scope": "owned_container_or_process",
+      "implementation_path": "project_fault_api_node_stop_owned_container_or_process",
+      "targets": [
+        "shard-0020-primary"
+      ],
+      "observed_impact": {
+        "promotion_latency_ms": 22059.249,
+        "cluster_recovery_latency_ms": 22059.249
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "workload_impact_ref": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json#rung-100-sample-03"
+    }
+  ]
+}

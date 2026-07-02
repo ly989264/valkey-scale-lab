@@ -1,0 +1,169 @@
+{
+  "artifact_type": "scale_ladder_report",
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100-scale-ladder-20260628",
+  "rungs": [
+    {
+      "artifact_type": "scale_rung_summary",
+      "az_distribution": {
+        "az-a": 15,
+        "az-b": 15
+      },
+      "client_port_range": {
+        "max": 7329,
+        "min": 7300
+      },
+      "cluster_known_nodes_observed": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "cluster_states": [
+        "ok"
+      ],
+      "config_path": "scale_30",
+      "created_at": "2026-06-28T00:00:00Z",
+      "errors": [],
+      "evidence_path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/valkey_e2e_evidence_30.json",
+      "host_distribution": {
+        "local": 30
+      },
+      "management": {
+        "cluster_known_nodes_expected": 30,
+        "cluster_known_nodes_max": 30,
+        "cluster_known_nodes_min": 30,
+        "slot_ranges": [
+          {
+            "end": 8735,
+            "start": 7644
+          },
+          {
+            "end": 9827,
+            "start": 8736
+          },
+          {
+            "end": 10919,
+            "start": 9828
+          },
+          {
+            "end": 12011,
+            "start": 10920
+          },
+          {
+            "end": 13104,
+            "start": 12012
+          },
+          {
+            "end": 14197,
+            "start": 13105
+          },
+          {
+            "end": 15290,
+            "start": 14198
+          },
+          {
+            "end": 16383,
+            "start": 15291
+          },
+          {
+            "end": 1091,
+            "start": 0
+          },
+          {
+            "end": 2183,
+            "start": 1092
+          },
+          {
+            "end": 3275,
+            "start": 2184
+          },
+          {
+            "end": 4367,
+            "start": 3276
+          },
+          {
+            "end": 5459,
+            "start": 4368
+          },
+          {
+            "end": 6551,
+            "start": 5460
+          },
+          {
+            "end": 7643,
+            "start": 6552
+          }
+        ],
+        "slots_assigned": 16384
+      },
+      "metrics": {
+        "avg_used_memory": 3162619.466667,
+        "total_commands_processed": 1118,
+        "total_used_memory": 94878584
+      },
+      "node_count": 30,
+      "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "primary_count": 15,
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "replica_count": 15,
+      "run_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_02-20260628",
+      "rung": 30,
+      "scenario": "scale_30_sample_02",
+      "schema_version": "v1",
+      "status": "PASS",
+      "valkey_versions": [
+        "9.1.0"
+      ]
+    }
+  ],
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": {
+    "comparison": {
+      "reason": "At least two completed rungs are needed for comparison.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "max_nodes_observed": 30,
+    "real_evidence_paths": [
+      "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/valkey_e2e_evidence_30.json"
+    ],
+    "rung_counts_observed": [
+      30
+    ]
+  }
+}

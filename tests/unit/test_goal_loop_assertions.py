@@ -632,6 +632,143 @@ def test_p19_management_assertion_rejects_overlapping_restart_health_gate(tmp_pa
     assert assertion.main() == 1
 
 
+P20_PHASE = "P20_FAILOVER_LATENCY_CURVE_30_50_100"
+
+
+def p20_sample(rung: int, sample_index: int) -> dict:
+    base = rung * 100000 + sample_index * 1000
+    promotion = 100 + sample_index
+    recovery = 200 + sample_index
+    sample_id = f"rung-{rung}-sample-{sample_index:02d}"
+    return {
+        "schema_version": "v1",
+        "phase_id": P20_PHASE,
+        "run_id": f"{P20_PHASE}-scale-{rung}-sample-{sample_index:02d}",
+        "scenario_name": f"scale_{rung}_sample_{sample_index:02d}_fault_failover",
+        "node_count": rung,
+        "rung": rung,
+        "sample_index": sample_index,
+        "sample_id": sample_id,
+        "status": "PASS",
+        "real_valkey": True,
+        "state_ref": f"artifacts/phases/{P20_PHASE}/_p20_samples/{sample_id}/state.json",
+        "evidence_ref": f"artifacts/phases/{P20_PHASE}/_p20_samples/{sample_id}/valkey_e2e_evidence.json",
+        "cleanup_ref": f"artifacts/phases/{P20_PHASE}/_p20_samples/{sample_id}/cleanup_report.json",
+        "cleanup_status": "PASS",
+        "target_primary_logical_id": f"shard-{sample_index:04d}-primary",
+        "target_primary_node_id": f"node-{rung}-{sample_index}",
+        "target_primary_az_id": "az-a",
+        "target_primary_host_id": "local",
+        "replica_candidates": [f"replica-{rung}-{sample_index}"],
+        "fault_injection_method": "project_fault_api_node_stop_owned_container_or_process",
+        "promotion_detection_method": "live_cluster_nodes_expected_replica_primary",
+        "slot_coverage_detection_method": "live_cluster_info_cluster_state_ok",
+        "fault_injected_at_ms": base,
+        "primary_unreachable_at_ms": base + 1,
+        "replica_promoted_at_ms": base + promotion,
+        "cluster_state_ok_at_ms": base + recovery,
+        "slot_coverage_ok_at_ms": base + recovery,
+        "first_successful_read_at_ms": base + recovery + 1,
+        "first_successful_write_at_ms": base + recovery + 2,
+        "fault_cleared_at_ms": base + recovery + 10,
+        "old_primary_rejoined_at_ms": "MISSING",
+        "promotion_latency_ms": promotion,
+        "cluster_recovery_latency_ms": recovery,
+        "read_unavailability_ms": recovery + 1,
+        "write_unavailability_ms": recovery + 2,
+        "split_brain_window_ms": "MISSING",
+        "workload_impact_ref": f"artifacts/phases/{P20_PHASE}/workload_impact_report.json#{sample_id}",
+    }
+
+
+def write_p20_curve_bundle(base: Path, samples: list[dict]) -> None:
+    base.mkdir(parents=True, exist_ok=True)
+    for rung in [30, 50, 100]:
+        write_json(
+            base / f"resource_preflight_{rung}.json",
+            {
+                "schema_version": "v1",
+                "artifact_type": "resource_preflight",
+                "phase_id": P20_PHASE,
+                "run_id": f"preflight-{rung}",
+                "status": "PASS",
+                "can_run": True,
+                "node_count": rung,
+                "checks": [{"name": "ok", "status": "PASS"}],
+            },
+        )
+    write_jsonl(base / "failover_latency_samples.jsonl", samples)
+    derived = []
+    for rung in [30, 50, 100]:
+        rung_samples = [sample for sample in samples if sample["rung"] == rung]
+        for metric in ["promotion_latency_ms", "cluster_recovery_latency_ms"]:
+            values = sorted(float(sample[metric]) for sample in rung_samples)
+            derived.append(
+                {
+                    "rung": rung,
+                    "node_count": rung,
+                    "metric": metric,
+                    "unit": "ms",
+                    "sample_count": len(values),
+                    "percentile_method": "nearest_rank_round_index",
+                    "sample_refs": [sample["sample_id"] for sample in rung_samples],
+                    "p50_ms": values[1],
+                    "p95_ms": values[2],
+                    "max_ms": values[2],
+                }
+            )
+    write_json(
+        base / "failover_latency_curve.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "failover_latency_curve",
+            "phase_id": P20_PHASE,
+            "run_id": "curve",
+            "rungs": [30, 50, 100],
+            "sample_refs": [sample["sample_id"] for sample in samples],
+            "derived_series": derived,
+        },
+    )
+
+
+def run_p20_curve_assertion(tmp_path: Path, monkeypatch, samples: list[dict]) -> int:
+    assertion = load_script("assert_failover_latency_curve")
+    phase_dir = tmp_path / "artifacts" / "phases" / P20_PHASE
+    write_p20_curve_bundle(phase_dir, samples)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_failover_latency_curve.py", "--phase", P20_PHASE])
+    return assertion.main()
+
+
+def test_p20_failover_curve_assertion_accepts_real_sample_bundle(tmp_path: Path, monkeypatch) -> None:
+    samples = [p20_sample(rung, index) for rung in [30, 50, 100] for index in [1, 2, 3]]
+
+    assert run_p20_curve_assertion(tmp_path, monkeypatch, samples) == 0
+
+
+def test_p20_failover_curve_assertion_rejects_reused_state_ref(tmp_path: Path, monkeypatch) -> None:
+    samples = [p20_sample(rung, index) for rung in [30, 50, 100] for index in [1, 2, 3]]
+    samples[1]["state_ref"] = samples[0]["state_ref"]
+
+    assert run_p20_curve_assertion(tmp_path, monkeypatch, samples) == 1
+
+
+def test_p20_failover_curve_assertion_rejects_non_derived_curve_value(tmp_path: Path, monkeypatch) -> None:
+    samples = [p20_sample(rung, index) for rung in [30, 50, 100] for index in [1, 2, 3]]
+    assertion = load_script("assert_failover_latency_curve")
+    phase_dir = tmp_path / "artifacts" / "phases" / P20_PHASE
+    write_p20_curve_bundle(phase_dir, samples)
+    curve = json.loads((phase_dir / "failover_latency_curve.json").read_text(encoding="utf-8"))
+    curve["derived_series"][0]["p50_ms"] = 999999
+    write_json(phase_dir / "failover_latency_curve.json", curve)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_failover_latency_curve.py", "--phase", P20_PHASE])
+
+    assert assertion.main() == 1
+
+
 def test_p19_management_assertion_rejects_failed_health_gate(tmp_path: Path, monkeypatch) -> None:
     rows = p19_required_rows()
     phase = "P19_MANAGEMENT_ROLLING_RESTART"

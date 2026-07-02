@@ -1,0 +1,33 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-07-02T18:58:49Z",
+  "gate_result_path": "artifacts/gates/P20_FAILOVER_LATENCY_CURVE_30_50_100/gate_result.json",
+  "gate_result_sha256": "06c86ab895b8f3a2810bb7d2506f4067941c17499ebfbaff4f5b4421376a7ccd",
+  "artifact_paths": [
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/phase_summary.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/valkey_e2e_evidence.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/cleanup_report.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/events.jsonl",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/metrics_timeseries.jsonl",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_windows.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/quant_summary.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_samples.jsonl",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_curve.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/fault_matrix_report.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json"
+  ],
+  "risks": [
+    {
+      "risk": "Large local Docker failover runs depend on host resources.",
+      "severity": "medium",
+      "required_before_next_phase": false,
+      "notes": "P20 resource preflights passed for 30, 50, and 100 nodes; P21 has separate 200-node preflight requirements."
+    }
+  ],
+  "rationale": "All manifest gates passed with matching command text and log hashes. Required artifacts validate against schema and P20 semantic assertions. Real Valkey evidence records live Valkey 9.1.0 probes for exact 30/50/100 rungs with three samples per rung, workload impact references, safety-scoped faults, and cleanup with no owned resources remaining. Stale blocked evidence is absent."
+}

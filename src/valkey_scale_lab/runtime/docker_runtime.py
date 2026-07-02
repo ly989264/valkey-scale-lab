@@ -146,7 +146,7 @@ def create_scenario(
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"),
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
-    }:
+    } and _p20_scale_sample_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
         run_id = _run_id(phase, scenario)
@@ -355,12 +355,21 @@ def _runtime_state(
 
 
 def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
-    return (phase, scenario) in {
+    return _p20_scale_sample_node_count(phase, scenario) is not None or (phase, scenario) in {
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
         ("P13_SCALE_LADDER_50_100", "scale_50"),
         ("P13_SCALE_LADDER_50_100", "scale_100"),
     }
+
+
+def _p20_scale_sample_node_count(phase: str, scenario: str) -> int | None:
+    if phase != "P20_FAILOVER_LATENCY_CURVE_30_50_100":
+        return None
+    match = re.fullmatch(r"scale_(30|50|100)_sample_\d+", scenario)
+    if not match:
+        return None
+    return int(match.group(1))
 
 
 def _create_process_scenario(
@@ -2983,6 +2992,9 @@ def _scale_timeout(nodes: list[dict[str, Any]], *, floor: float, per_node: float
 
 
 def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> bool:
+    p20_count = _p20_scale_sample_node_count(phase, scenario)
+    if p20_count is not None:
+        return node_count == p20_count
     expected = {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},

@@ -1,0 +1,1833 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "workload_window_report",
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "run_id": "phase-P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_100_sample_03_fault_failover-primary-stop",
+  "created_at": "2026-07-02T18:51:10.271395Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "node_count": 100,
+  "scenario": "scale_100_sample_03_fault_failover",
+  "windows": [
+    {
+      "name": "before_fault",
+      "status": "MEASURED",
+      "started_at_ms": 1783018216077,
+      "ended_at_ms": 1783018216094,
+      "started_monotonic_ms": 78775.586,
+      "ended_monotonic_ms": 78792.637,
+      "duration_ms": 17,
+      "workload_scope": "failed_primary_slot",
+      "source_logical_id": "shard-0020-primary",
+      "source_node_id": "c85f228d2eb68313b40308bb0acc72a87e95e663",
+      "slot": 6297,
+      "slot_range": [
+        6226,
+        6553
+      ],
+      "operation_count": 16,
+      "successful_operations": 16,
+      "roundtrip_successes": 8,
+      "roundtrip_failures": 0,
+      "availability_percent": 100.0,
+      "errors_total": 0,
+      "timeouts_total": 0,
+      "first_successful_read_at_ms": 1783018216079,
+      "first_successful_write_at_ms": 1783018216078,
+      "latency_ms": {
+        "p50": 0.954,
+        "p95": 2.107,
+        "p99": 2.232
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216078,
+          "latency_ms": 0.954,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216079,
+          "latency_ms": 1.139,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "value-0"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216080,
+          "latency_ms": 1.015,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216081,
+          "latency_ms": 0.893,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "value-1"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216082,
+          "latency_ms": 0.997,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216083,
+          "latency_ms": 1.029,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "value-2"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216084,
+          "latency_ms": 0.927,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216085,
+          "latency_ms": 0.601,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "value-3"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216085,
+          "latency_ms": 0.696,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216087,
+          "latency_ms": 1.57,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "value-4"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216089,
+          "latency_ms": 2.107,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216090,
+          "latency_ms": 0.768,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "value-5"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216091,
+          "latency_ms": 0.77,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216093,
+          "latency_ms": 2.232,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "value-6"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216093,
+          "latency_ms": 0.625,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216094,
+          "latency_ms": 0.663,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0020-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 0,
+          "reply": "value-7"
+        }
+      ]
+    },
+    {
+      "name": "during_fault",
+      "status": "MEASURED",
+      "started_at_ms": 1783018216218,
+      "ended_at_ms": 1783018216250,
+      "started_monotonic_ms": 78916.601,
+      "ended_monotonic_ms": 78948.107,
+      "duration_ms": 32,
+      "workload_scope": "failed_primary_slot",
+      "source_logical_id": "shard-0020-primary",
+      "source_node_id": "c85f228d2eb68313b40308bb0acc72a87e95e663",
+      "slot": 6297,
+      "slot_range": [
+        6226,
+        6553
+      ],
+      "operation_count": 16,
+      "successful_operations": 16,
+      "roundtrip_successes": 8,
+      "roundtrip_failures": 0,
+      "availability_percent": 100.0,
+      "errors_total": 0,
+      "timeouts_total": 0,
+      "first_successful_read_at_ms": 1783018216222,
+      "first_successful_write_at_ms": 1783018216220,
+      "latency_ms": {
+        "p50": 1.88,
+        "p95": 3.158,
+        "p99": 3.809
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216220,
+          "latency_ms": 1.599,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216222,
+          "latency_ms": 1.88,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "value-0"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216223,
+          "latency_ms": 1.288,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216224,
+          "latency_ms": 1.049,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "value-1"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216226,
+          "latency_ms": 1.821,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216228,
+          "latency_ms": 2.246,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "value-2"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216230,
+          "latency_ms": 2.026,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216232,
+          "latency_ms": 1.617,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "value-3"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216234,
+          "latency_ms": 2.094,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216235,
+          "latency_ms": 1.295,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "value-4"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216237,
+          "latency_ms": 2.465,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216240,
+          "latency_ms": 2.08,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "value-5"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216243,
+          "latency_ms": 3.158,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216244,
+          "latency_ms": 1.358,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "value-6"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216248,
+          "latency_ms": 3.809,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018216250,
+          "latency_ms": 1.641,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-primary",
+          "redirects": 1,
+          "reply": "value-7"
+        }
+      ]
+    },
+    {
+      "name": "after_recovery",
+      "status": "MEASURED",
+      "started_at_ms": 1783018238281,
+      "ended_at_ms": 1783018238320,
+      "started_monotonic_ms": 100979.352,
+      "ended_monotonic_ms": 101018.271,
+      "duration_ms": 39,
+      "workload_scope": "failed_primary_slot",
+      "source_logical_id": "shard-0020-primary",
+      "source_node_id": "c85f228d2eb68313b40308bb0acc72a87e95e663",
+      "slot": 6297,
+      "slot_range": [
+        6226,
+        6553
+      ],
+      "operation_count": 16,
+      "successful_operations": 16,
+      "roundtrip_successes": 8,
+      "roundtrip_failures": 0,
+      "availability_percent": 100.0,
+      "errors_total": 0,
+      "timeouts_total": 0,
+      "first_successful_read_at_ms": 1783018238287,
+      "first_successful_write_at_ms": 1783018238284,
+      "latency_ms": {
+        "p50": 2.369,
+        "p95": 3.444,
+        "p99": 3.63
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238284,
+          "latency_ms": 3.087,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238287,
+          "latency_ms": 3.138,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "value-0"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238290,
+          "latency_ms": 2.369,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238292,
+          "latency_ms": 2.075,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "value-1"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238294,
+          "latency_ms": 2.014,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238297,
+          "latency_ms": 3.444,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "value-2"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238300,
+          "latency_ms": 2.611,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238301,
+          "latency_ms": 1.714,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "value-3"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238304,
+          "latency_ms": 2.241,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238305,
+          "latency_ms": 1.776,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "value-4"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238308,
+          "latency_ms": 2.122,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238310,
+          "latency_ms": 2.506,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "value-5"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238313,
+          "latency_ms": 2.817,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238315,
+          "latency_ms": 1.906,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "value-6"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238316,
+          "latency_ms": 1.37,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "OK"
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "completed_at_ms": 1783018238320,
+          "latency_ms": 3.63,
+          "workload_scope": "failed_primary_slot",
+          "source_logical_id": "shard-0020-primary",
+          "slot": 6297,
+          "slot_range": [
+            6226,
+            6553
+          ],
+          "entry_logical_id": "shard-0000-primary",
+          "target_logical_id": "shard-0020-replica-00",
+          "redirects": 1,
+          "reply": "value-7"
+        }
+      ]
+    }
+  ],
+  "timeout_adjustments": [
+    {
+      "logical_id": "shard-0000-primary",
+      "host": "127.0.0.1",
+      "port": 7500,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "host": "127.0.0.1",
+      "port": 7501,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "host": "127.0.0.1",
+      "port": 7502,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0003-primary",
+      "host": "127.0.0.1",
+      "port": 7503,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0004-primary",
+      "host": "127.0.0.1",
+      "port": 7504,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0005-primary",
+      "host": "127.0.0.1",
+      "port": 7505,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0006-primary",
+      "host": "127.0.0.1",
+      "port": 7506,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0007-primary",
+      "host": "127.0.0.1",
+      "port": 7507,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0008-primary",
+      "host": "127.0.0.1",
+      "port": 7508,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0009-primary",
+      "host": "127.0.0.1",
+      "port": 7509,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0010-primary",
+      "host": "127.0.0.1",
+      "port": 7510,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0011-primary",
+      "host": "127.0.0.1",
+      "port": 7511,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0012-primary",
+      "host": "127.0.0.1",
+      "port": 7512,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0013-primary",
+      "host": "127.0.0.1",
+      "port": 7513,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0014-primary",
+      "host": "127.0.0.1",
+      "port": 7514,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0015-primary",
+      "host": "127.0.0.1",
+      "port": 7515,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0016-primary",
+      "host": "127.0.0.1",
+      "port": 7516,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0017-primary",
+      "host": "127.0.0.1",
+      "port": 7517,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0018-primary",
+      "host": "127.0.0.1",
+      "port": 7518,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0019-primary",
+      "host": "127.0.0.1",
+      "port": 7519,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0020-primary",
+      "host": "127.0.0.1",
+      "port": 7520,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0021-primary",
+      "host": "127.0.0.1",
+      "port": 7521,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0022-primary",
+      "host": "127.0.0.1",
+      "port": 7522,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0023-primary",
+      "host": "127.0.0.1",
+      "port": 7523,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0024-primary",
+      "host": "127.0.0.1",
+      "port": 7524,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0025-primary",
+      "host": "127.0.0.1",
+      "port": 7525,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0026-primary",
+      "host": "127.0.0.1",
+      "port": 7526,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0027-primary",
+      "host": "127.0.0.1",
+      "port": 7527,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0028-primary",
+      "host": "127.0.0.1",
+      "port": 7528,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0029-primary",
+      "host": "127.0.0.1",
+      "port": 7529,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0030-primary",
+      "host": "127.0.0.1",
+      "port": 7530,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0031-primary",
+      "host": "127.0.0.1",
+      "port": 7531,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0032-primary",
+      "host": "127.0.0.1",
+      "port": 7532,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0033-primary",
+      "host": "127.0.0.1",
+      "port": 7533,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0034-primary",
+      "host": "127.0.0.1",
+      "port": 7534,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0035-primary",
+      "host": "127.0.0.1",
+      "port": 7535,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0036-primary",
+      "host": "127.0.0.1",
+      "port": 7536,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0037-primary",
+      "host": "127.0.0.1",
+      "port": 7537,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0038-primary",
+      "host": "127.0.0.1",
+      "port": 7538,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0039-primary",
+      "host": "127.0.0.1",
+      "port": 7539,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0040-primary",
+      "host": "127.0.0.1",
+      "port": 7540,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0041-primary",
+      "host": "127.0.0.1",
+      "port": 7541,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0042-primary",
+      "host": "127.0.0.1",
+      "port": 7542,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0043-primary",
+      "host": "127.0.0.1",
+      "port": 7543,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0044-primary",
+      "host": "127.0.0.1",
+      "port": 7544,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0045-primary",
+      "host": "127.0.0.1",
+      "port": 7545,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0046-primary",
+      "host": "127.0.0.1",
+      "port": 7546,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0047-primary",
+      "host": "127.0.0.1",
+      "port": 7547,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0048-primary",
+      "host": "127.0.0.1",
+      "port": 7548,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0049-primary",
+      "host": "127.0.0.1",
+      "port": 7549,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "port": 7550,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "port": 7551,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "port": 7552,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0003-replica-00",
+      "host": "127.0.0.1",
+      "port": 7553,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0004-replica-00",
+      "host": "127.0.0.1",
+      "port": 7554,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0005-replica-00",
+      "host": "127.0.0.1",
+      "port": 7555,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0006-replica-00",
+      "host": "127.0.0.1",
+      "port": 7556,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0007-replica-00",
+      "host": "127.0.0.1",
+      "port": 7557,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0008-replica-00",
+      "host": "127.0.0.1",
+      "port": 7558,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0009-replica-00",
+      "host": "127.0.0.1",
+      "port": 7559,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0010-replica-00",
+      "host": "127.0.0.1",
+      "port": 7560,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0011-replica-00",
+      "host": "127.0.0.1",
+      "port": 7561,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0012-replica-00",
+      "host": "127.0.0.1",
+      "port": 7562,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0013-replica-00",
+      "host": "127.0.0.1",
+      "port": 7563,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0014-replica-00",
+      "host": "127.0.0.1",
+      "port": 7564,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0015-replica-00",
+      "host": "127.0.0.1",
+      "port": 7565,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0016-replica-00",
+      "host": "127.0.0.1",
+      "port": 7566,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0017-replica-00",
+      "host": "127.0.0.1",
+      "port": 7567,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0018-replica-00",
+      "host": "127.0.0.1",
+      "port": 7568,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0019-replica-00",
+      "host": "127.0.0.1",
+      "port": 7569,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0020-replica-00",
+      "host": "127.0.0.1",
+      "port": 7570,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0021-replica-00",
+      "host": "127.0.0.1",
+      "port": 7571,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0022-replica-00",
+      "host": "127.0.0.1",
+      "port": 7572,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0023-replica-00",
+      "host": "127.0.0.1",
+      "port": 7573,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0024-replica-00",
+      "host": "127.0.0.1",
+      "port": 7574,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0025-replica-00",
+      "host": "127.0.0.1",
+      "port": 7575,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0026-replica-00",
+      "host": "127.0.0.1",
+      "port": 7576,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0027-replica-00",
+      "host": "127.0.0.1",
+      "port": 7577,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0028-replica-00",
+      "host": "127.0.0.1",
+      "port": 7578,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0029-replica-00",
+      "host": "127.0.0.1",
+      "port": 7579,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0030-replica-00",
+      "host": "127.0.0.1",
+      "port": 7580,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0031-replica-00",
+      "host": "127.0.0.1",
+      "port": 7581,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0032-replica-00",
+      "host": "127.0.0.1",
+      "port": 7582,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0033-replica-00",
+      "host": "127.0.0.1",
+      "port": 7583,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0034-replica-00",
+      "host": "127.0.0.1",
+      "port": 7584,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0035-replica-00",
+      "host": "127.0.0.1",
+      "port": 7585,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0036-replica-00",
+      "host": "127.0.0.1",
+      "port": 7586,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0037-replica-00",
+      "host": "127.0.0.1",
+      "port": 7587,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0038-replica-00",
+      "host": "127.0.0.1",
+      "port": 7588,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0039-replica-00",
+      "host": "127.0.0.1",
+      "port": 7589,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0040-replica-00",
+      "host": "127.0.0.1",
+      "port": 7590,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0041-replica-00",
+      "host": "127.0.0.1",
+      "port": 7591,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0042-replica-00",
+      "host": "127.0.0.1",
+      "port": 7592,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0043-replica-00",
+      "host": "127.0.0.1",
+      "port": 7593,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0044-replica-00",
+      "host": "127.0.0.1",
+      "port": 7594,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0045-replica-00",
+      "host": "127.0.0.1",
+      "port": 7595,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0046-replica-00",
+      "host": "127.0.0.1",
+      "port": 7596,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0047-replica-00",
+      "host": "127.0.0.1",
+      "port": 7597,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0048-replica-00",
+      "host": "127.0.0.1",
+      "port": 7598,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0049-replica-00",
+      "host": "127.0.0.1",
+      "port": 7599,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    }
+  ]
+}

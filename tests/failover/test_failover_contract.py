@@ -1,7 +1,18 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 from pathlib import Path
+
+
+def load_fault_failover_gate():
+    script = Path(__file__).resolve().parents[2] / "scripts" / "fault_failover_gate.py"
+    spec = importlib.util.spec_from_file_location("fault_failover_gate_contract", script)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_failover_report_shape_allows_measured_or_missing_duration(tmp_path: Path) -> None:
@@ -37,3 +48,10 @@ def test_failover_report_shape_allows_measured_or_missing_duration(tmp_path: Pat
     assert loaded["artifact_type"] == "failover_report"
     assert loaded["summary"]["promotion_observed"] is True
     assert loaded["summary"]["split_brain_duration_ms"]["status"] == "MISSING"
+
+
+def test_p20_sample_scenario_maps_to_unique_scale_setup_alias() -> None:
+    gate = load_fault_failover_gate()
+
+    assert gate.scale_setup_scenario("scale_100_sample_03_fault_failover") == "scale_100_sample_03"
+    assert gate.scale_setup_scenario("scale_30_fault_failover") == "scale_30"

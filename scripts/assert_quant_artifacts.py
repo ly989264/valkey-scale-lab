@@ -183,6 +183,44 @@ def assert_p16_semantics(base: Path, errors: list[str]) -> None:
             errors.append("P16 quant_summary must not claim management or fault runtime behavior")
 
 
+def assert_p20_semantics(base: Path, errors: list[str]) -> None:
+    events = read_jsonl(base / "events.jsonl", errors)
+    metrics = read_jsonl(base / "metrics_timeseries.jsonl", errors)
+    samples = read_jsonl(base / "failover_latency_samples.jsonl", errors)
+    sample_ids = {str(sample.get("sample_id")) for sample in samples if sample.get("sample_id")}
+    if len(sample_ids) != 9:
+        errors.append(f"P20 requires exactly 9 failover sample IDs, got {len(sample_ids)}")
+    event_sample_ids = {str(event.get("sample_id")) for event in events if event.get("sample_id")}
+    metric_sample_ids = {str(metric.get("sample_id")) for metric in metrics if metric.get("sample_id")}
+    missing_events = sorted(sample_ids - event_sample_ids)
+    missing_metrics = sorted(sample_ids - metric_sample_ids)
+    if missing_events:
+        errors.append(f"P20 events.jsonl missing sample IDs: {missing_events}")
+    if missing_metrics:
+        errors.append(f"P20 metrics_timeseries.jsonl missing sample IDs: {missing_metrics}")
+    for idx, event in enumerate(events, start=1):
+        if event.get("phase_id") != "P20_FAILOVER_LATENCY_CURVE_30_50_100":
+            errors.append(f"P20 events.jsonl:{idx}: wrong phase_id {event.get('phase_id')!r}")
+    for idx, metric in enumerate(metrics, start=1):
+        if metric.get("phase_id") != "P20_FAILOVER_LATENCY_CURVE_30_50_100":
+            errors.append(f"P20 metrics_timeseries.jsonl:{idx}: wrong phase_id {metric.get('phase_id')!r}")
+        if metric.get("metric_value") == "MISSING" and not metric.get("missing_reason"):
+            errors.append(f"P20 metrics_timeseries.jsonl:{idx}: MISSING metric_value requires missing_reason")
+    quant_path = base / "quant_summary.json"
+    if quant_path.exists():
+        quant = load_json(quant_path)
+        counts = quant.get("counts", {})
+        if counts.get("event_count") != len(events):
+            errors.append("P20 quant_summary counts.event_count must match events.jsonl line count")
+        if counts.get("metric_count") != len(metrics):
+            errors.append("P20 quant_summary counts.metric_count must match metrics_timeseries.jsonl line count")
+        if counts.get("sample_count") != len(samples):
+            errors.append("P20 quant_summary counts.sample_count must match failover_latency_samples.jsonl line count")
+        claims = quant.get("runtime_claims", {})
+        if claims.get("real_valkey_claimed") is not True or claims.get("fault_runtime_claimed") is not True:
+            errors.append("P20 quant_summary must claim real Valkey fault runtime")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -230,6 +268,8 @@ def main() -> int:
                 errors.append(f"metrics_timeseries.jsonl:{lineno}: MISSING metric_value requires missing_reason")
     if args.phase == "P16_QUANT_TELEMETRY_UNIFICATION":
         assert_p16_semantics(base, errors)
+    if args.phase == "P20_FAILOVER_LATENCY_CURVE_30_50_100":
+        assert_p20_semantics(base, errors)
 
     if errors:
         for error in errors:
