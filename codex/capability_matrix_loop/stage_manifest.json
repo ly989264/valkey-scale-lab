@@ -1613,8 +1613,113 @@
       "profile": "audit",
       "max_real_nodes": 100,
       "real_valkey_required": true,
-      "required_artifacts": [],
-      "commands": []
+      "required_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/context_refresh.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/constraints_snapshot.json",
+          "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/stage_objective.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/commands.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/agents/requirements_harness_design.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/agents/worker.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/agents/regression_guard.response.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/harness/harness_plan.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/harness/harness_files.json",
+          "schema": "schemas/capability_matrix_loop/harness_files.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/harness/harness_freeze.json",
+          "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/validation/previous_harness.log"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/validation/regression_guard_result.json",
+          "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/validation/current_stage_gate_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/full_chain_audit.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
+          "schema": "schemas/capability_matrix_loop/capability_matrix.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/analysis_summary.json",
+          "schema": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/report_index.json",
+          "schema": "schemas/capability_matrix_loop/capability_report_index.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/final_capability_matrix.csv"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/final_capability_matrix.svg"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/report.md"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/index.html"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/AUDIT.md"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/audit_decision.json",
+          "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/stage_result.json",
+          "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/state_transitions.jsonl"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/next_stage_context.md"
+        }
+      ],
+      "commands": [
+        {
+          "name": "final_full_chain_audit_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
+          "required": true,
+          "timeout_seconds": 180
+        }
+      ],
+      "negative_requirements": [
+        "missing completed stage fails",
+        "failed stage result fails",
+        "future real PASS above 100 fails",
+        "fake 100-node coverage fails"
+      ]
     }
   ]
 }

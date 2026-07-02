@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "coverage_matrix",
-  "created_at": "2026-07-02T08:18:11.457521Z",
+  "created_at": "2026-07-02T08:23:10.856666Z",
   "producer": {
     "name": "scripts/build_metric_coverage_matrix.py",
     "version": "v1"

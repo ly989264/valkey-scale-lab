@@ -1,0 +1,97 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_report_index",
+  "stage_id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
+  "status": "PASS",
+  "created_at": "2026-07-02T08:22:41.449749Z",
+  "reports": [
+    {
+      "kind": "csv",
+      "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/final_capability_matrix.csv",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/full_chain_audit.json",
+          "sha256": "a0aaf61d0daca09c9bfc11c65827bb4eca18e29aab4b0aa8619fd0648de8ad58"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
+          "sha256": "aed7a2c7d4dba20040885fb971efa24d8f5d33dbc5ae78b05fcb9c9cc87df952"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
+          "sha256": "bff0e5a7e0045a84eacb349e1f40d85f55b0770880286a02246af012a80cce31"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/analysis_summary.json",
+          "sha256": "20f66bd2fe8739aee7099c8e664c09336cfff92833dc44aa275940cd05879fbc"
+        }
+      ]
+    },
+    {
+      "kind": "markdown",
+      "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/report.md",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/full_chain_audit.json",
+          "sha256": "a0aaf61d0daca09c9bfc11c65827bb4eca18e29aab4b0aa8619fd0648de8ad58"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
+          "sha256": "aed7a2c7d4dba20040885fb971efa24d8f5d33dbc5ae78b05fcb9c9cc87df952"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
+          "sha256": "bff0e5a7e0045a84eacb349e1f40d85f55b0770880286a02246af012a80cce31"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/analysis_summary.json",
+          "sha256": "20f66bd2fe8739aee7099c8e664c09336cfff92833dc44aa275940cd05879fbc"
+        }
+      ]
+    },
+    {
+      "kind": "html",
+      "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/index.html",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/full_chain_audit.json",
+          "sha256": "a0aaf61d0daca09c9bfc11c65827bb4eca18e29aab4b0aa8619fd0648de8ad58"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
+          "sha256": "aed7a2c7d4dba20040885fb971efa24d8f5d33dbc5ae78b05fcb9c9cc87df952"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
+          "sha256": "bff0e5a7e0045a84eacb349e1f40d85f55b0770880286a02246af012a80cce31"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/analysis_summary.json",
+          "sha256": "20f66bd2fe8739aee7099c8e664c09336cfff92833dc44aa275940cd05879fbc"
+        }
+      ]
+    },
+    {
+      "kind": "chart",
+      "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/final_capability_matrix.svg",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/full_chain_audit.json",
+          "sha256": "a0aaf61d0daca09c9bfc11c65827bb4eca18e29aab4b0aa8619fd0648de8ad58"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
+          "sha256": "aed7a2c7d4dba20040885fb971efa24d8f5d33dbc5ae78b05fcb9c9cc87df952"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json",
+          "sha256": "bff0e5a7e0045a84eacb349e1f40d85f55b0770880286a02246af012a80cce31"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/analysis_summary.json",
+          "sha256": "20f66bd2fe8739aee7099c8e664c09336cfff92833dc44aa275940cd05879fbc"
+        }
+      ]
+    }
+  ]
+}

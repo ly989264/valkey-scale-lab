@@ -1,0 +1,10 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_result",
+  "stage_id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
+  "status": "PASS",
+  "created_at": "2026-07-02T08:22:41.449749Z",
+  "gate_result": "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/validation/current_stage_gate_result.json",
+  "audit_decision": "audit/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/audit_decision.json",
+  "summary": "CML13 final full-chain audit passed for CML00-CML12 with real 30/50/100 coverage and future-scale dry-run safety."
+}

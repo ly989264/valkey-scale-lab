@@ -1,0 +1,15 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_audit_decision",
+  "stage_id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
+  "status": "PASS",
+  "decision": "PASS",
+  "created_at": "2026-07-02T08:22:41.449749Z",
+  "reviewer": "fresh-context-audit",
+  "findings": [],
+  "evidence": [
+    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/full_chain_audit.json",
+    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json",
+    "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/reports/report_index.json"
+  ]
+}

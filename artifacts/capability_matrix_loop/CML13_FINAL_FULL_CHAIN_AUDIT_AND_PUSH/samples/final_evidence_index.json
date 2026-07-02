@@ -1,0 +1,516 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "final_evidence_index",
+  "stage_id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
+  "created_at": "2026-07-02T08:22:41.449749Z",
+  "status": "PASS",
+  "capabilities": [
+    {
+      "capability_id": "cluster_management_scale_30",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "source_stage": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
+          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/samples/real_valkey_evidence_30.json",
+          "sha256": "e7bc0bd44c5fa3f728de2365e7e78bc7397eb06438b7e102b7333673fac1444a"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/capability_matrix.json",
+          "sha256": "603f9cddf49441d54ebeb30b308fe3a60242348d60260d2f2038741a79aa77ea"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/analysis_summary.json",
+          "sha256": "0588d8554506d4ba1c2cf42c5d88dcc78c7777843f3207d198a10c228aadd319"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/reports/report_index.json",
+          "sha256": "9063a68b2545705833f36d3e327e215df4642892be04045b51bd4b0d1cbc5422"
+        }
+      ]
+    },
+    {
+      "capability_id": "process_nodehost_faults_30",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "source_stage": "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
+          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/real_valkey_evidence_fault_30.json",
+          "sha256": "ed44ac905cd7ab4b4f9f670733633f629577719125467e365e7e85dbf154f31c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/capability_matrix.json",
+          "sha256": "c5967c5aa7175a2331490f043d98cbf9412f58597918a2feb2a752b220c5e6fc"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/analysis_summary.json",
+          "sha256": "d205c5111af1a89f66ad7a2233d414c776158405dcaff00bcab59155d68b189a"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/reports/report_index.json",
+          "sha256": "6f7945fe0f9f4ab1bd6fbfc2b668ca4cc6e5e22379c2ab172d054e0e4c0b50c3"
+        }
+      ]
+    },
+    {
+      "capability_id": "network_az_faults_30",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "source_stage": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
+          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/samples/real_valkey_evidence_network_30.json",
+          "sha256": "44a745234a8bffdf4029023a64df76998e26b7d113b3410c19042f31e08eb6be"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/capability_matrix.json",
+          "sha256": "aa2590e35efcb7128ac0fa13a1ca069884cc063cc5d200e1f9f50b9581172638"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/analysis_summary.json",
+          "sha256": "e477fff9a99fdccb958a2b11d469844355b722fa32a6e9d9d2e03874b7d1d170"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/reports/report_index.json",
+          "sha256": "35bcae4e83bfc3d9a37963095218a51986bcda2ec265c404159b2b433bb5635b"
+        }
+      ]
+    },
+    {
+      "capability_id": "failover_latency_recovery_30",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "source_stage": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
+          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/samples/real_valkey_evidence_failover_30.json",
+          "sha256": "b861aa20ca3430f742fa1816a3b6d633cb0372a569051071ac1de92eac6872d2"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/capability_matrix.json",
+          "sha256": "8c51d70941335617ca4cb5043fd90765cf08f9be6ca30e50858e7f94940aa799"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/analysis_summary.json",
+          "sha256": "6a49ccc2d7f75c226104e225358acea590d549110cf0102aaf257f4d1c9a1f93"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/reports/report_index.json",
+          "sha256": "833e4049ab665cc78ed57c2fa6034a2dc3e9f6b48c7dc6a847f7fafc337d3154"
+        }
+      ]
+    },
+    {
+      "capability_id": "split_brain_indicators_30",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "source_stage": "CML06_SPLIT_BRAIN_INDICATORS_30",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
+          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/samples/real_valkey_evidence_split_brain_30.json",
+          "sha256": "aa52565b88b63be1a41ca0cc9f07ad87257b1b5d4f79e6a5968a1ed64b68efe5"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/capability_matrix.json",
+          "sha256": "06267ef9bba6911bcca3ec868ce0a443ef255ee68e983ac9a767cb1b0c405555"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/analysis_summary.json",
+          "sha256": "459500a4e764fed2a29cd9fb01dcdbf4405c6e878ab648c05abed5ae66ec12c9"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/reports/report_index.json",
+          "sha256": "016582088b7d1da2e7d7c3ee81bde49ec564c8b2f70f9a255a483bd48bdcc8ee"
+        }
+      ]
+    },
+    {
+      "capability_id": "workload_fault_windows_30",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "source_stage": "CML07_WORKLOAD_FAULT_WINDOWS_30",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
+          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/samples/real_valkey_evidence_workload_windows_30.json",
+          "sha256": "00d46546d378686739b2d808925cdaf4462645aa4bd41c0c71b24e8dbfd974b3"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/capability_matrix.json",
+          "sha256": "b3d2013c39cbe061c1bf423f425cea726951601c9053b7938b7c45ed85d1dbbe"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/analysis_summary.json",
+          "sha256": "061b36a602171761f52914393144498faefb2fbeb751cf8d32a985ddcb36bb57"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/reports/report_index.json",
+          "sha256": "1822f02e30914af08a686ce2227354b853219a0bcebeb4cc76c729155a1e2273"
+        }
+      ]
+    },
+    {
+      "capability_id": "bounded_soak_30_60_minutes",
+      "status": "PASS",
+      "scale_nodes": 30,
+      "source_stage": "CML08_BOUNDED_SOAK_30_60_MINUTES",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/evidence_index_30.json",
+          "sha256": "3f4c62a133b5ccb1c0e3a17d06a7b54d8ae7bd832f1d322cc520f443a3dd4183"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/samples/real_valkey_evidence_bounded_soak_30.json",
+          "sha256": "3b311de84343f1b7424589336cee0b1138b4e2be2f99ac41fd6095026cd485e1"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/capability_matrix.json",
+          "sha256": "307aafd7de0b2b71f720aad96dc764feca9d1a04d153aedc0b79995ef47c5233"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/analysis_summary.json",
+          "sha256": "1846af2a200e4082d9ed80b76f3c2ef3d2c0342af0e8159c206170b5d25309ff"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/reports/report_index.json",
+          "sha256": "9be5cc14459e935b08c4cfe1333f788bc16a1418b2347d7d7fe818a9adaa9494"
+        }
+      ]
+    },
+    {
+      "capability_id": "cluster_management_scale_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
+          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+          "sha256": "6fd65c120e88d47c08a8c4aa003363c0cbdf0fd47175e59b02d7a4ca2cbf2be0"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json",
+          "sha256": "93215fcae42f2a738a85db3f0274d60603d81ccb22fa8e298d2b17e13c2cde9a"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
+          "sha256": "ea991a8f05f076853c0835784e2c55943bf464efbb5ffb27d3f362fca2562e09"
+        }
+      ]
+    },
+    {
+      "capability_id": "process_nodehost_faults_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
+          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+          "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_50.json",
+          "sha256": "a06e1b8720d5e2f95a784611f13f2db3413d140de3f90d0d1e8c6284f11e025d"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+          "sha256": "f0ef8710dfb7e2c3b1cd3f35728e950a07ce5820ed973fbf8a4ea8736cf63f7d"
+        }
+      ]
+    },
+    {
+      "capability_id": "failover_latency_recovery_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
+          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+          "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+          "sha256": "6fa1d1f47a920f813f9dc46781e88efbb97febd8c249f5c002e70496f87ff39b"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "sha256": "5d91f9a17882641f4ee1260f7707b25bf699ce312887274935d1ec5951a1983c"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_50.json",
+          "sha256": "f0ef8710dfb7e2c3b1cd3f35728e950a07ce5820ed973fbf8a4ea8736cf63f7d"
+        }
+      ]
+    },
+    {
+      "capability_id": "split_brain_indicators_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
+          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+          "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_50.json",
+          "sha256": "6fa1d1f47a920f813f9dc46781e88efbb97febd8c249f5c002e70496f87ff39b"
+        }
+      ]
+    },
+    {
+      "capability_id": "workload_fault_windows_50",
+      "status": "PASS",
+      "scale_nodes": 50,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
+          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+          "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_50.json",
+          "sha256": "5d91f9a17882641f4ee1260f7707b25bf699ce312887274935d1ec5951a1983c"
+        }
+      ]
+    },
+    {
+      "capability_id": "network_az_faults_50",
+      "status": "UNSUPPORTED_WITH_EVIDENCE",
+      "scale_nodes": 50,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/evidence_index_50.json",
+          "sha256": "004de556f98a04724091d275eb481609629ad8477ec14e716695d8fcf8c001f2"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
+          "sha256": "6fd65c120e88d47c08a8c4aa003363c0cbdf0fd47175e59b02d7a4ca2cbf2be0"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_50.json",
+          "sha256": "aa28b7af841b00cd58fdc52156d7ad72fd54da29858930ef5c76cceb62a6c7c6"
+        }
+      ]
+    },
+    {
+      "capability_id": "cluster_management_scale_100",
+      "status": "PASS",
+      "scale_nodes": 100,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "sha256": "5d3ae8cda007539b7fcbc05093353ae2b9e284bdf8267d3e4bebd58c2f27fb0e"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_100.json",
+          "sha256": "7981a0e5df5fc91a8ae74d0d2e4e9dc072960ebcec7a9113c14ae5c5b8a7916e"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
+          "sha256": "b998333f71ee9be2e28d9a9072129d92824a1272858fc1cfb29ba038b9ce5434"
+        }
+      ]
+    },
+    {
+      "capability_id": "process_nodehost_faults_100",
+      "status": "PASS",
+      "scale_nodes": 100,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/fault_report_100.json",
+          "sha256": "52a0941316cdbe31887d26ab0dcf287802cf5096b0980a9888b35e75ef28ce20"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+          "sha256": "609c0fc9b4501758ff50143877195f2077a8f19c7be463c10ae4a17148e21722"
+        }
+      ]
+    },
+    {
+      "capability_id": "failover_latency_recovery_100",
+      "status": "PASS",
+      "scale_nodes": 100,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+          "sha256": "fd12a55e0cb3f9a46a84a0603efadd75167b4f45f7cc674986ddcf450861e5cd"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "sha256": "5bb4af8939bb253928d31cc9ab2db8323db526e5556df05bd811f1e934c35abf"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_fault_100.json",
+          "sha256": "609c0fc9b4501758ff50143877195f2077a8f19c7be463c10ae4a17148e21722"
+        }
+      ]
+    },
+    {
+      "capability_id": "split_brain_indicators_100",
+      "status": "PASS",
+      "scale_nodes": 100,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/failover_report_100.json",
+          "sha256": "fd12a55e0cb3f9a46a84a0603efadd75167b4f45f7cc674986ddcf450861e5cd"
+        }
+      ]
+    },
+    {
+      "capability_id": "workload_fault_windows_100",
+      "status": "PASS",
+      "scale_nodes": 100,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/workload_window_report_100.json",
+          "sha256": "5bb4af8939bb253928d31cc9ab2db8323db526e5556df05bd811f1e934c35abf"
+        }
+      ]
+    },
+    {
+      "capability_id": "network_az_faults_100",
+      "status": "UNSUPPORTED_WITH_EVIDENCE",
+      "scale_nodes": 100,
+      "source_stage": "P13_SCALE_LADDER_50_100",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/evidence_index_100.json",
+          "sha256": "bf18deeef65a9f40f0ce30ae2e060341a6173df4dff95aeb0c1c023aaa4605e6"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
+          "sha256": "5d3ae8cda007539b7fcbc05093353ae2b9e284bdf8267d3e4bebd58c2f27fb0e"
+        },
+        {
+          "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_fault_100.json",
+          "sha256": "6a162c7aadd1bc54305fe7b3eb35317f5ee62ad83b2b050fd46ec88bf01f09ec"
+        }
+      ]
+    },
+    {
+      "capability_id": "future_scale_200_support",
+      "status": "SKIPPED_WITH_REASON",
+      "scale_nodes": 0,
+      "target_scale_nodes": 200,
+      "source_stage": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json",
+          "sha256": "011752f4f66d64667d27b92bc2e368f9a9969f3369ff93a9c76b62adc66a82a9"
+        }
+      ]
+    },
+    {
+      "capability_id": "future_scale_500_support",
+      "status": "SKIPPED_WITH_REASON",
+      "scale_nodes": 0,
+      "target_scale_nodes": 500,
+      "source_stage": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json",
+          "sha256": "011752f4f66d64667d27b92bc2e368f9a9969f3369ff93a9c76b62adc66a82a9"
+        }
+      ]
+    },
+    {
+      "capability_id": "future_scale_1000_support",
+      "status": "UNSUPPORTED_WITH_EVIDENCE",
+      "scale_nodes": 0,
+      "target_scale_nodes": 1000,
+      "source_stage": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json",
+          "sha256": "011752f4f66d64667d27b92bc2e368f9a9969f3369ff93a9c76b62adc66a82a9"
+        }
+      ]
+    }
+  ]
+}

@@ -303,3 +303,21 @@ def test_stage_manifest_requires_cml12_future_scale_dryrun_artifacts():
         "missing 1000 opt-in fails",
         "future scale PASS without real evidence fails",
     }.issubset(set(cml12["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml13_final_audit_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml13 = next(stage for stage in manifest["stages"] if stage["id"] == "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH")
+    required = {artifact["path"] for artifact in cml13["required_artifacts"]}
+    assert cml13["profile"] == "audit"
+    assert cml13["max_real_nodes"] == 100
+    assert cml13["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/full_chain_audit.json" in required
+    assert "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/samples/final_evidence_index.json" in required
+    assert "artifacts/capability_matrix_loop/CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH/final_capability_matrix.json" in required
+    assert {
+        "missing completed stage fails",
+        "failed stage result fails",
+        "future real PASS above 100 fails",
+        "fake 100-node coverage fails",
+    }.issubset(set(cml13["negative_requirements"]))

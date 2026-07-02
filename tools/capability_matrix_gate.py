@@ -517,6 +517,17 @@ def cml12_paths(stage_id: str) -> dict[str, Path]:
     }
 
 
+def cml13_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "full_chain_audit": stage_root / "samples" / "full_chain_audit.json",
+        "final_matrix": stage_root / "final_capability_matrix.json",
+        "final_evidence_index": stage_root / "samples" / "final_evidence_index.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -1752,6 +1763,110 @@ def make_cml12_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     return results
 
 
+def validate_cml13_final_audit(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml13_paths(stage_id)
+    errors: list[str] = []
+    errors.extend(schema_errors(paths["analysis"], "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"))
+    errors.extend(schema_errors(paths["report_index"], "schemas/capability_matrix_loop/capability_report_index.schema.json"))
+    errors.extend(schema_errors(paths["final_matrix"], "schemas/capability_matrix_loop/capability_matrix.schema.json"))
+    if errors:
+        return errors
+    audit = load_json(paths["full_chain_audit"])
+    if audit.get("status") != "PASS":
+        errors.append("CML13 full chain audit status must be PASS")
+    expected_completed = [f"CML{i:02d}" for i in range(13)]
+    audited = audit.get("completed_stages", [])
+    for prefix in expected_completed:
+        if not any(str(stage_name).startswith(prefix) for stage_name in audited):
+            errors.append(f"CML13 audit missing completed stage prefix {prefix}")
+    for item in audit.get("stage_results", []):
+        if item.get("status") != "PASS":
+            errors.append(f"CML13 stage result must be PASS: {item.get('stage_id')}")
+        errors.extend(source_checksum_errors(item.get("source_artifacts", []), f"CML13 stage {item.get('stage_id')}"))
+    coverage = audit.get("scale_coverage", {})
+    for scale in ["30", "50", "100"]:
+        entry = coverage.get(scale, {})
+        if entry.get("real_valkey") is not True or entry.get("status") != "PASS":
+            errors.append(f"CML13 scale {scale} coverage must be real Valkey PASS")
+    future = coverage.get("future", {})
+    if future.get("real_execution_above_100") is not False:
+        errors.append("CML13 future coverage must forbid real execution above 100")
+
+    evidence_index = load_json(paths["final_evidence_index"])
+    if evidence_index.get("status") != "PASS":
+        errors.append("CML13 final evidence index must PASS")
+    entries = {entry.get("capability_id"): entry for entry in evidence_index.get("capabilities", [])}
+    required = {
+        "cluster_management_scale_30",
+        "bounded_soak_30_60_minutes",
+        "cluster_management_scale_50",
+        "cluster_management_scale_100",
+        "future_scale_1000_support",
+    }
+    missing = required - set(entries)
+    if missing:
+        errors.append(f"CML13 final evidence index missing capabilities: {sorted(missing)}")
+    for capability_id, entry in entries.items():
+        if int(entry.get("scale_nodes", 0)) > 100 and entry.get("status") == "PASS":
+            errors.append(f"CML13 capability {capability_id} must not PASS above 100 real nodes")
+        errors.extend(source_checksum_errors(entry.get("source_artifacts", []), f"CML13 capability {capability_id}"))
+
+    matrix = load_json(paths["final_matrix"])
+    matrix_rows = {row.get("capability_id"): row for row in matrix.get("capabilities", [])}
+    for capability_id in required:
+        if capability_id not in matrix_rows:
+            errors.append(f"CML13 final matrix missing {capability_id}")
+    if any(row.get("status") == "FAIL" for row in matrix.get("capabilities", [])):
+        errors.append("CML13 final matrix must not contain FAIL rows")
+    for report in load_json(paths["report_index"]).get("reports", []):
+        if not (ROOT / str(report.get("path", ""))).exists():
+            errors.append(f"CML13 report path missing: {report.get('path')}")
+        errors.extend(source_checksum_errors(report.get("source_artifacts", []), f"CML13 report {report.get('kind')}"))
+    return errors
+
+
+def make_cml13_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml13_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+
+    missing_stage = validation_dir / "negative_missing_cml11.json"
+    audit = load_json(paths["full_chain_audit"])
+    audit["completed_stages"] = [stage_name for stage_name in audit.get("completed_stages", []) if not str(stage_name).startswith("CML11")]
+    write_json(missing_stage, audit)
+    cases.append(("missing_cml11", {"full_chain_audit": missing_stage}, "missing completed stage prefix CML11"))
+
+    failed_stage = validation_dir / "negative_failed_stage_result.json"
+    audit2 = load_json(paths["full_chain_audit"])
+    audit2["stage_results"][0]["status"] = "FAIL"
+    write_json(failed_stage, audit2)
+    cases.append(("failed_stage_result", {"full_chain_audit": failed_stage}, "stage result must be PASS"))
+
+    future_pass = validation_dir / "negative_future_real_pass.json"
+    index = load_json(paths["final_evidence_index"])
+    for entry in index.get("capabilities", []):
+        if entry.get("capability_id") == "future_scale_1000_support":
+            entry["status"] = "PASS"
+            entry["scale_nodes"] = 1000
+    write_json(future_pass, index)
+    cases.append(("future_real_pass", {"final_evidence_index": future_pass}, "must not PASS above 100"))
+
+    fake_coverage = validation_dir / "negative_fake_100_coverage.json"
+    audit3 = load_json(paths["full_chain_audit"])
+    audit3["scale_coverage"]["100"]["real_valkey"] = False
+    write_json(fake_coverage, audit3)
+    cases.append(("fake_100_coverage", {"full_chain_audit": fake_coverage}, "scale 100 coverage must be real Valkey PASS"))
+
+    results = []
+    for name, overrides, expected in cases:
+        candidate = dict(paths)
+        candidate.update(overrides)
+        observed = validate_cml13_final_audit(stage_id, candidate)
+        results.append({"name": name, "status": "PASS" if any(expected in e for e in observed) else "FAIL", "expected_error_fragment": expected, "observed_errors": observed})
+    return results
+
+
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
@@ -1904,6 +2019,11 @@ def command_run(args: argparse.Namespace) -> int:
         future_errors = validate_cml12_future_scale_support(args.stage)
         add_check("future_scale_200_500_1000_support", future_errors)
         negative_cases = make_cml12_negative_cases(args.stage) if not future_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage == "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH":
+        final_errors = validate_cml13_final_audit(args.stage)
+        add_check("final_full_chain_audit", final_errors)
+        negative_cases = make_cml13_negative_cases(args.stage) if not final_errors else []
         add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     else:
         baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"

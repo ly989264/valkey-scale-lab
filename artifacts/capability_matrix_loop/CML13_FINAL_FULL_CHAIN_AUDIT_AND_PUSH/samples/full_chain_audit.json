@@ -1,0 +1,241 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "full_chain_audit",
+  "stage_id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
+  "created_at": "2026-07-02T08:22:41.449749Z",
+  "status": "PASS",
+  "completed_stages": [
+    "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+    "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+    "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+    "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
+    "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+    "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
+    "CML06_SPLIT_BRAIN_INDICATORS_30",
+    "CML07_WORKLOAD_FAULT_WINDOWS_30",
+    "CML08_BOUNDED_SOAK_30_60_MINUTES",
+    "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30",
+    "CML10_SCALE_REPLAY_50",
+    "CML11_SCALE_REPLAY_100",
+    "CML12_FUTURE_SCALE_200_500_1000_SUPPORT"
+  ],
+  "stage_results": [
+    {
+      "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/stage_result.json",
+          "sha256": "e0459fca29bfadd0ad769469901509597717e07c4912f395717cb01cf8498459"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/audit_decision.json",
+          "sha256": "973349974c99a1b02495c8b931bb81e7b8d5d978f4d5861712cb56efe02c9671"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/stage_result.json",
+          "sha256": "af6edca5ea7a15155188dfd56e9d65db5fc37e298947f6ab4826cfda8081636b"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL/audit_decision.json",
+          "sha256": "c63bd49391f38ceba43995ead0949b4dd95e3f8e0f721f3ecdff16846418e23c"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/stage_result.json",
+          "sha256": "e90738f3db7e80d47b4418642f82009f0b94dd5776131056287b3ac2c15623a0"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML02_CLUSTER_MANAGEMENT_REAL_OPS_30/audit_decision.json",
+          "sha256": "55d8e0899a1137bb50a65e955d6ed8b4814afdb01e5c99e01577eb27de6a25f3"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/stage_result.json",
+          "sha256": "063814e918cbcd3164e9f00f9b79297addd45f27a321021bff95a5a48b246c1c"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/audit_decision.json",
+          "sha256": "06a1cb539bd3a8280e28e9cff457e854d77f841ebf2a08d8727b35189356672b"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/stage_result.json",
+          "sha256": "15ec623eaf0e3a0707abbdfacb602f7ee7a7b7fa4bd9cc444cab4f0c04423d7a"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30/audit_decision.json",
+          "sha256": "7646e9b9d552db3988fd56b0a203f4eff4fde7031671e75141fcf348f94eea87"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/stage_result.json",
+          "sha256": "ef0739ba0d83e5e872bb83793b547cd55a4acbf3b3df688f556601453152cbbb"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML05_FAILOVER_LATENCY_AND_RECOVERY_30/audit_decision.json",
+          "sha256": "241c8c48b718d7dbed426c573977902bb65cd8027bb2991f56fc069a99cccab3"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML06_SPLIT_BRAIN_INDICATORS_30",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/stage_result.json",
+          "sha256": "1ad9d7d5d09c3e6b852a5814ae6c7a60a2b9e9fc5cd63e0084dc0f4be9e1774f"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML06_SPLIT_BRAIN_INDICATORS_30/audit_decision.json",
+          "sha256": "82a4989004d7da872df81ba0028a7d5dbe8f6edf16a83e7872b50f0f476d231d"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML07_WORKLOAD_FAULT_WINDOWS_30",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/stage_result.json",
+          "sha256": "375b1250bcfd3f8757a72f734508c51144aa9df86864b3b90559eb7cd233d13e"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML07_WORKLOAD_FAULT_WINDOWS_30/audit_decision.json",
+          "sha256": "6386a519ef8ac6d972691bd05700b913dc9ee4e79c80847ece58a5f237a53f2e"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML08_BOUNDED_SOAK_30_60_MINUTES",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/stage_result.json",
+          "sha256": "d2de8708fcdd42435a4f219e292cb44d21356b9432498364ee237dcd2d72d209"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML08_BOUNDED_SOAK_30_60_MINUTES/audit_decision.json",
+          "sha256": "bff0c9fadf4528c829d716bab3d4f3b3ce4167c6c033a2e04ef7911aa8640b3a"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/stage_result.json",
+          "sha256": "74d0a6abff9f7cd21dbb0df414647f4d3f625beff31a718196b9ed0d6dc5fd82"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/audit_decision.json",
+          "sha256": "10c52605591bc1617d47ef8ac50c59d1e6d4768bce48f307149ba04e4526020c"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML10_SCALE_REPLAY_50",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/stage_result.json",
+          "sha256": "3f8106a4e89980096d61aee650048cf51d751e4ade09c095b238e3f6a96fce2a"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML10_SCALE_REPLAY_50/audit_decision.json",
+          "sha256": "6d855b8b452ad5f2df344011613dc5f30ff1a5c4877db0bc8d93dc9573466914"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML11_SCALE_REPLAY_100",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/stage_result.json",
+          "sha256": "d37e758ae6046720f5e5d2b1800e33ececaa4dc47615772ed588132bd4ca7644"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML11_SCALE_REPLAY_100/audit_decision.json",
+          "sha256": "d01c4d0761a0c9527e417af7f3a1952d5721c1f3cb7aaf23c3ccfb72e2e1e3f1"
+        }
+      ]
+    },
+    {
+      "stage_id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT",
+      "status": "PASS",
+      "audit_decision": "PASS",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/stage_result.json",
+          "sha256": "0abe64d628deee227d6cdd23634a3e3bb16623063ad4bf871280babe7dc1c27b"
+        },
+        {
+          "path": "audit/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/audit_decision.json",
+          "sha256": "046c1edc2bb999118ceadd62114afc90b5e769c543c3cfc8a0467ddd1fbc05db"
+        }
+      ]
+    }
+  ],
+  "scale_coverage": {
+    "30": {
+      "status": "PASS",
+      "real_valkey": true,
+      "source": "artifacts/capability_matrix_loop/CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30/samples/real_valkey_evidence_reporting_close_30.json"
+    },
+    "50": {
+      "status": "PASS",
+      "real_valkey": true,
+      "source": "artifacts/capability_matrix_loop/CML10_SCALE_REPLAY_50/samples/real_valkey_evidence_scale_replay_50.json"
+    },
+    "100": {
+      "status": "PASS",
+      "real_valkey": true,
+      "source": "artifacts/capability_matrix_loop/CML11_SCALE_REPLAY_100/samples/real_valkey_evidence_scale_replay_100.json"
+    },
+    "future": {
+      "status": "PASS",
+      "real_execution_above_100": false,
+      "source": "artifacts/capability_matrix_loop/CML12_FUTURE_SCALE_200_500_1000_SUPPORT/samples/future_scale_plan_200_500_1000.json"
+    }
+  }
+}

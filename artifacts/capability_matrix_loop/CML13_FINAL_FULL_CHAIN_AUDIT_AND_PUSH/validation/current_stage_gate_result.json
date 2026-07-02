@@ -1,0 +1,73 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
+  "status": "PASS",
+  "created_at": "2026-07-02T08:23:30.042276Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "final_full_chain_audit",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "missing_cml11",
+      "status": "PASS",
+      "expected_error_fragment": "missing completed stage prefix CML11",
+      "observed_errors": [
+        "CML13 audit missing completed stage prefix CML11"
+      ]
+    },
+    {
+      "name": "failed_stage_result",
+      "status": "PASS",
+      "expected_error_fragment": "stage result must be PASS",
+      "observed_errors": [
+        "CML13 stage result must be PASS: CML00_CAPABILITY_LOOP_BOOTSTRAP"
+      ]
+    },
+    {
+      "name": "future_real_pass",
+      "status": "PASS",
+      "expected_error_fragment": "must not PASS above 100",
+      "observed_errors": [
+        "CML13 capability future_scale_1000_support must not PASS above 100 real nodes"
+      ]
+    },
+    {
+      "name": "fake_100_coverage",
+      "status": "PASS",
+      "expected_error_fragment": "scale 100 coverage must be real Valkey PASS",
+      "observed_errors": [
+        "CML13 scale 100 coverage must be real Valkey PASS"
+      ]
+    }
+  ]
+}
