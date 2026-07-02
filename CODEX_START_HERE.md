@@ -1,54 +1,60 @@
-# CODEX_START_HERE.md — Autonomous Build Entry Point
+# CODEX_START_HERE.md — Goal Loop Entry Point
 
-This file is the start prompt for Codex App. Read `AGENTS.md` first, then execute the automatic phase loop without waiting for human intervention.
+Read `AGENTS.md` first. Then execute the goal-loop stage plan without waiting for human intervention unless a real safety, resource, or gate failure blocks progress.
 
 ## Target repository
 
-Create a production-quality project named `valkey-scale-lab` that can run Valkey 9.1.x cluster experiments locally on Mac/Linux Docker and can later distribute work across multiple Mac/Linux hosts. The system must test and analyze:
+Implement and harden `valkey-scale-lab` so it can run Valkey 9.1.x cluster experiments locally on Mac/Linux Docker and later distribute work across multiple Mac/Linux hosts.
 
-- cluster management performance metrics;
+The system must test and analyze:
+
+- cluster-management performance metrics;
 - management operation matrix behavior;
-- failover effectiveness;
-- split-brain and minority/majority behavior;
+- failover effectiveness and latency curves;
+- split-brain and minority/majority partition behavior;
 - stability and soak behavior;
-- workload impact under normal, failure, and recovery periods;
-- artifact-first analysis and reporting.
+- workload impact under normal, management, failure, and recovery periods;
+- artifact-first quantitative analysis and reporting.
 
 ## First action
 
-Run:
+Run the current harness status command:
 
 ```bash
 python3 scripts/codex_gate.py next
 ```
 
-Then implement the returned phase only.
+Then inspect whether `codex/phase_manifest.json` already contains stages `P15_GOAL_REBASE_HARNESS_EXTENSION` through `P26_FINAL_REPORT_REGRESSION`.
 
-## Completion condition
+- If the new stages are missing, treat `P15_GOAL_REBASE_HARNESS_EXTENSION` as the current bootstrap stage and implement the manifest/gate/doc integration required by `docs/codex/goal-loop/stages/P15_GOAL_REBASE_HARNESS_EXTENSION.md`.
+- If the new stages exist, implement only the next incomplete automatic stage returned by the harness.
+- If an older P00-P13 stage is still incomplete, complete it without weakening the new goal-loop requirements. Do not mark old stages complete through hand-edited status.
 
-The automatic loop is complete when all automatic phases through `P13_SCALE_LADDER_50_100` pass postcheck and are marked complete.
+## Goal-loop completion condition
 
-`P14_SCALE_1000_OPTIN_DRYRUN` is intentionally not automatic. It may only be run when the user explicitly opts in and sets:
+The loop is complete when all automatic stages through `P26_FINAL_REPORT_REGRESSION` pass postcheck, have fresh-context review `Decision: PASS`, are marked complete by the harness, and are committed/pushed.
+
+`P14_SCALE_1000_OPTIN_DRYRUN` remains intentionally not automatic.
+
+## Required command sequence per stage
 
 ```bash
-export VSLAB_ALLOW_1000_DRYRUN=I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE
+python3 scripts/codex_gate.py precheck --phase <STAGE_ID>
+python3 scripts/codex_gate.py run --phase <STAGE_ID>
+# create/verify artifacts, run extra assertions, and run fresh-context review
+python3 scripts/codex_gate.py postcheck --phase <STAGE_ID>
+python3 scripts/codex_gate.py mark-complete --phase <STAGE_ID>
+git status --short
+git add <stage files>
+git commit -m "<STAGE_ID>: <concise summary>"
+git push
 ```
 
-## Required command sequence per phase
-
-```bash
-python3 scripts/codex_gate.py precheck --phase <PHASE_ID>
-python3 scripts/codex_gate.py run --phase <PHASE_ID>
-# create/verify artifacts and run fresh-context audit
-python3 scripts/codex_gate.py postcheck --phase <PHASE_ID>
-python3 scripts/codex_gate.py mark-complete --phase <PHASE_ID>
-```
-
-Do not write `PASS` manually into any gate result. Gate results must be produced by `scripts/codex_gate.py run`.
+Do not write `PASS` manually into any gate result. Gate results must be produced by the harness.
 
 ## Required implementation shape
 
-Use this package and CLI contract:
+Preserve the existing package and CLI shape:
 
 ```text
 src/valkey_scale_lab/
@@ -66,28 +72,20 @@ src/valkey_scale_lab/
   artifacts/
 ```
 
-Expose:
+Goal-loop stages may add subpackages, but must not break existing imports or commands.
 
-```bash
-python3 -m valkey_scale_lab.cli config validate ...
-python3 -m valkey_scale_lab.cli plan ...
-python3 -m valkey_scale_lab.cli gate scenario ...
-python3 -m valkey_scale_lab.cli gate cleanup ...
-python3 -m valkey_scale_lab.cli fault apply ...
-python3 -m valkey_scale_lab.cli fault clear ...
-python3 -m valkey_scale_lab.cli analyze ...
-python3 -m valkey_scale_lab.cli report ...
-```
+## Mandatory document flow
 
-## Development constraints
+At each stage start, reread the goal-loop docs listed in `AGENTS.md` and write a compact reload artifact using `docs/codex/goal-loop/templates/CONTEXT_RELOAD_TEMPLATE.md`.
 
-- P00-P02 may use fakes for bootstrapping but must not claim the project is operational.
-- P03 introduces real Valkey Docker e2e gates.
-- P06 and later require a real Valkey e2e proof for every capability.
-- Scale phases must execute real 10/30/50/100-node gates.
-- 1000-node behavior is opt-in dry-run/resource-check only.
+Then follow `docs/codex/goal-loop/03_MULTI_AGENT_STAGE_PROTOCOL.md` exactly:
 
-## Artifact discipline
+1. design subagent;
+2. worker subagent;
+3. gate run and fixes;
+4. review subagent;
+5. postcheck;
+6. mark complete;
+7. commit and push.
 
-Every run must produce machine-readable artifacts under `artifacts/`. The report layer may read artifacts but must not be the source of truth. Missing data must be encoded explicitly and must never be fabricated.
-
+No stage can be closed based on memory or a previous stage's context.
