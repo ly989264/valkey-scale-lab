@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Failover Latency Curve",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "phase_id", "run_id", "rungs", "sample_refs", "derived_series"],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "failover_latency_curve"},
+    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "rungs": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 1}},
+    "sample_refs": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "derived_series": {"type": "array", "minItems": 1, "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}

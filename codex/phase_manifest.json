@@ -3,7 +3,7 @@
   "project": "valkey-scale-lab",
   "default_max_nodes": 100,
   "valkey_version_required_prefix": "9.1.",
-  "automatic_stop_after": "P13_SCALE_LADDER_50_100",
+  "automatic_stop_after": "P26_FINAL_REPORT_REGRESSION",
   "phases": [
     {
       "id": "P00_REPO_CONTRACT",
@@ -1327,6 +1327,1765 @@
       "audit": {
         "md_path": "audit/P14_SCALE_1000_OPTIN_DRYRUN/AUDIT.md",
         "decision_json_path": "audit/P14_SCALE_1000_OPTIN_DRYRUN/audit_decision.json"
+      }
+    },
+    {
+      "id": "P15_GOAL_REBASE_HARNESS_EXTENSION",
+      "title": "Goal-loop harness extension",
+      "automatic": true,
+      "fake_only_allowed": true,
+      "real_valkey_required": false,
+      "max_nodes": 0,
+      "objectives": [
+        "Append P15-P26 manifest entries",
+        "Add goal-loop schemas and fail-closed assertion scripts",
+        "Produce harness-only P15 artifacts without runtime claims"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P15_GOAL_REBASE_HARNESS_EXTENSION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P15_GOAL_REBASE_HARNESS_EXTENSION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "p15_harness_artifacts",
+          "kind": "artifact",
+          "command": "python3 scripts/goal_loop_harness_artifacts.py --phase P15_GOAL_REBASE_HARNESS_EXTENSION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "p15_quant_artifacts",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P15_GOAL_REBASE_HARNESS_EXTENSION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P15_GOAL_REBASE_HARNESS_EXTENSION/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P15_GOAL_REBASE_HARNESS_EXTENSION/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P15_GOAL_REBASE_HARNESS_EXTENSION/AUDIT.md",
+        "decision_json_path": "audit/P15_GOAL_REBASE_HARNESS_EXTENSION/audit_decision.json"
+      }
+    },
+    {
+      "id": "P16_QUANT_TELEMETRY_UNIFICATION",
+      "title": "Unified quantitative telemetry",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 6,
+      "objectives": [
+        "Implement canonical events, metrics, workload windows, and missing-data policy"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P16_QUANT_TELEMETRY_UNIFICATION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P16_QUANT_TELEMETRY_UNIFICATION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P16_QUANT_TELEMETRY_UNIFICATION --config templates/configs/single_mac_6node.yaml --scenario goal_loop_quant_telemetry --out artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P16_QUANT_TELEMETRY_UNIFICATION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P16_QUANT_TELEMETRY_UNIFICATION/AUDIT.md",
+        "decision_json_path": "audit/P16_QUANT_TELEMETRY_UNIFICATION/audit_decision.json"
+      }
+    },
+    {
+      "id": "P17_MANAGEMENT_REMOVE_NODE",
+      "title": "Management matrix: remove node",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 10,
+      "objectives": [
+        "Implement remove replica, remove primary safe path, failed-node removal, and metrics"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P17_MANAGEMENT_REMOVE_NODE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P17_MANAGEMENT_REMOVE_NODE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P17_MANAGEMENT_REMOVE_NODE --config templates/configs/local_az_3x2.yaml --scenario management_remove_node --out artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P17_MANAGEMENT_REMOVE_NODE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "management_ops_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_management_ops_coverage.py --phase P17_MANAGEMENT_REMOVE_NODE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_impact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_workload_impact.py --phase P17_MANAGEMENT_REMOVE_NODE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_ops_matrix.json",
+          "schema": "schemas/artifact/management_ops_matrix.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_operation_results.jsonl",
+          "schema": "schemas/artifact/management_operation_result.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_workload_impact.json",
+          "schema": "schemas/artifact/workload_impact_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_topology_snapshots.jsonl",
+          "schema": "schemas/artifact/topology_snapshot.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_command_log.jsonl",
+          "schema": "schemas/artifact/command_log_entry.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P17_MANAGEMENT_REMOVE_NODE/AUDIT.md",
+        "decision_json_path": "audit/P17_MANAGEMENT_REMOVE_NODE/audit_decision.json"
+      }
+    },
+    {
+      "id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+      "title": "Management matrix: reshard and rebalance",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 10,
+      "objectives": [
+        "Implement explicit slot movement, data verification, rebalance metrics, and workload impact"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P18_MANAGEMENT_RESHARD_REBALANCE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P18_MANAGEMENT_RESHARD_REBALANCE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P18_MANAGEMENT_RESHARD_REBALANCE --config templates/configs/local_az_3x2.yaml --scenario management_reshard_rebalance --out artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P18_MANAGEMENT_RESHARD_REBALANCE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "management_ops_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_management_ops_coverage.py --phase P18_MANAGEMENT_RESHARD_REBALANCE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_impact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_workload_impact.py --phase P18_MANAGEMENT_RESHARD_REBALANCE",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_ops_matrix.json",
+          "schema": "schemas/artifact/management_ops_matrix.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_operation_results.jsonl",
+          "schema": "schemas/artifact/management_operation_result.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_workload_impact.json",
+          "schema": "schemas/artifact/workload_impact_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_topology_snapshots.jsonl",
+          "schema": "schemas/artifact/topology_snapshot.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_command_log.jsonl",
+          "schema": "schemas/artifact/command_log_entry.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/reshard_slot_movements.jsonl",
+          "schema": "schemas/artifact/slot_movement.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/rebalance_summary.json",
+          "schema": "schemas/artifact/rebalance_summary.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P18_MANAGEMENT_RESHARD_REBALANCE/AUDIT.md",
+        "decision_json_path": "audit/P18_MANAGEMENT_RESHARD_REBALANCE/audit_decision.json"
+      }
+    },
+    {
+      "id": "P19_MANAGEMENT_ROLLING_RESTART",
+      "title": "Management matrix: rolling restart",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 10,
+      "objectives": [
+        "Implement sequential restart plan, health gates, workload measurement, and cleanup"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P19_MANAGEMENT_ROLLING_RESTART",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P19_MANAGEMENT_ROLLING_RESTART",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P19_MANAGEMENT_ROLLING_RESTART --config templates/configs/local_az_3x2.yaml --scenario management_rolling_restart --out artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P19_MANAGEMENT_ROLLING_RESTART",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "management_ops_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_management_ops_coverage.py --phase P19_MANAGEMENT_ROLLING_RESTART",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_impact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_workload_impact.py --phase P19_MANAGEMENT_ROLLING_RESTART",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_ops_matrix.json",
+          "schema": "schemas/artifact/management_ops_matrix.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_operation_results.jsonl",
+          "schema": "schemas/artifact/management_operation_result.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_workload_impact.json",
+          "schema": "schemas/artifact/workload_impact_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_topology_snapshots.jsonl",
+          "schema": "schemas/artifact/topology_snapshot.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_command_log.jsonl",
+          "schema": "schemas/artifact/command_log_entry.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/rolling_restart_plan.json",
+          "schema": "schemas/artifact/rolling_restart_plan.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/rolling_restart_results.jsonl",
+          "schema": "schemas/artifact/rolling_restart_result.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P19_MANAGEMENT_ROLLING_RESTART/AUDIT.md",
+        "decision_json_path": "audit/P19_MANAGEMENT_ROLLING_RESTART/audit_decision.json"
+      }
+    },
+    {
+      "id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "title": "Failover latency curve: 30/50/100",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 100,
+      "objectives": [
+        "Run primary-stop promotion samples for 30, 50, and 100 node rungs"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P20_FAILOVER_LATENCY_CURVE_30_50_100",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P20_FAILOVER_LATENCY_CURVE_30_50_100",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_failover_gate",
+          "kind": "real_valkey",
+          "command": "python3 scripts/fault_failover_gate.py --phase P20_FAILOVER_LATENCY_CURVE_30_50_100 --scenario failover_curve_30_50_100 --config templates/configs/scale_100.yaml --out artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/valkey_e2e_evidence.json --failover-report artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_report.json --fault-report artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/fault_matrix_report.json --workload-window-report artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json --cleanup-report artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/cleanup_report.json --min-nodes 30 --require-data-path",
+          "timeout_seconds": 3600,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P20_FAILOVER_LATENCY_CURVE_30_50_100",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "failover_curve_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_failover_latency_curve.py --phase P20_FAILOVER_LATENCY_CURVE_30_50_100",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_impact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_workload_impact.py --phase P20_FAILOVER_LATENCY_CURVE_30_50_100",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_samples.jsonl",
+          "schema": "schemas/artifact/failover_latency_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_curve.json",
+          "schema": "schemas/artifact/failover_latency_curve.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/fault_matrix_report.json",
+          "schema": "schemas/artifact/fault_matrix_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+          "schema": "schemas/artifact/workload_impact_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P20_FAILOVER_LATENCY_CURVE_30_50_100/AUDIT.md",
+        "decision_json_path": "audit/P20_FAILOVER_LATENCY_CURVE_30_50_100/audit_decision.json"
+      }
+    },
+    {
+      "id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "title": "Failover latency curve: 200",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 200,
+      "objectives": [
+        "Run resource-gated 200-node primary-stop promotion samples without downshifting"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P21_FAILOVER_LATENCY_CURVE_200",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P21_FAILOVER_LATENCY_CURVE_200",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_failover_gate",
+          "kind": "real_valkey",
+          "command": "python3 scripts/fault_failover_gate.py --phase P21_FAILOVER_LATENCY_CURVE_200 --scenario failover_curve_200 --config templates/configs/scale_200.yaml --out artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/valkey_e2e_evidence.json --failover-report artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_report.json --fault-report artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/fault_matrix_report.json --workload-window-report artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json --cleanup-report artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/cleanup_report.json --min-nodes 200 --require-data-path",
+          "timeout_seconds": 3600,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P21_FAILOVER_LATENCY_CURVE_200",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "failover_curve_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_failover_latency_curve.py --phase P21_FAILOVER_LATENCY_CURVE_200",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_impact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_workload_impact.py --phase P21_FAILOVER_LATENCY_CURVE_200",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/resource_preflight_200.json",
+          "schema": "schemas/artifact/resource_preflight.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_samples_200.jsonl",
+          "schema": "schemas/artifact/failover_latency_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_curve_200.json",
+          "schema": "schemas/artifact/failover_latency_curve.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_curve_combined_30_50_100_200.json",
+          "schema": "schemas/artifact/failover_latency_curve.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+          "schema": "schemas/artifact/workload_impact_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P21_FAILOVER_LATENCY_CURVE_200/AUDIT.md",
+        "decision_json_path": "audit/P21_FAILOVER_LATENCY_CURVE_200/audit_decision.json"
+      }
+    },
+    {
+      "id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "title": "Replica, node-host, and AZ stop faults",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 100,
+      "objectives": [
+        "Implement replica stop, logical host stop, and virtual AZ stop faults with metrics"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P22_FAULT_REPLICA_HOST_AZ_STOP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P22_FAULT_REPLICA_HOST_AZ_STOP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_fault_safety_gate",
+          "kind": "real_valkey",
+          "command": "python3 scripts/fault_safety_gate.py --phase P22_FAULT_REPLICA_HOST_AZ_STOP --config templates/configs/scale_100.yaml --out artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/valkey_e2e_evidence.json --fault-report artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_matrix_report.json --min-nodes 6",
+          "timeout_seconds": 1800,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P22_FAULT_REPLICA_HOST_AZ_STOP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "fault_matrix_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_fault_matrix_coverage.py --phase P22_FAULT_REPLICA_HOST_AZ_STOP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_impact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_workload_impact.py --phase P22_FAULT_REPLICA_HOST_AZ_STOP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_matrix_report.json",
+          "schema": "schemas/artifact/fault_matrix_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_results.jsonl",
+          "schema": "schemas/artifact/fault_result.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_topology_snapshots.jsonl",
+          "schema": "schemas/artifact/topology_snapshot.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+          "schema": "schemas/artifact/workload_impact_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P22_FAULT_REPLICA_HOST_AZ_STOP/AUDIT.md",
+        "decision_json_path": "audit/P22_FAULT_REPLICA_HOST_AZ_STOP/audit_decision.json"
+      }
+    },
+    {
+      "id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "title": "Network delay, loss, and flap faults",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 100,
+      "objectives": [
+        "Implement sandboxed network delay, packet loss, and flap faults with workload impact"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_fault_safety_gate",
+          "kind": "real_valkey",
+          "command": "python3 scripts/fault_safety_gate.py --phase P23_FAULT_NETWORK_DELAY_LOSS_FLAP --config templates/configs/scale_100.yaml --out artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/valkey_e2e_evidence.json --fault-report artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/fault_matrix_report.json --min-nodes 6",
+          "timeout_seconds": 1800,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "fault_matrix_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_fault_matrix_coverage.py --phase P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_impact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_workload_impact.py --phase P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_report.json",
+          "schema": "schemas/artifact/network_fault_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/fault_results.jsonl",
+          "schema": "schemas/artifact/fault_result.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+          "schema": "schemas/artifact/workload_impact_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_command_log.jsonl",
+          "schema": "schemas/artifact/command_log_entry.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/AUDIT.md",
+        "decision_json_path": "audit/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/audit_decision.json"
+      }
+    },
+    {
+      "id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "title": "Partition and split-brain matrix",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 100,
+      "objectives": [
+        "Implement minority/majority partitions and split-brain-window measurement"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P24_PARTITION_SPLIT_BRAIN_MATRIX",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P24_PARTITION_SPLIT_BRAIN_MATRIX",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_fault_safety_gate",
+          "kind": "real_valkey",
+          "command": "python3 scripts/fault_safety_gate.py --phase P24_PARTITION_SPLIT_BRAIN_MATRIX --config templates/configs/scale_100.yaml --out artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/valkey_e2e_evidence.json --fault-report artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_matrix_report.json --min-nodes 6",
+          "timeout_seconds": 1800,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P24_PARTITION_SPLIT_BRAIN_MATRIX",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "fault_matrix_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_fault_matrix_coverage.py --phase P24_PARTITION_SPLIT_BRAIN_MATRIX",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "split_brain_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_split_brain_report.py --phase P24_PARTITION_SPLIT_BRAIN_MATRIX",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_impact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_workload_impact.py --phase P24_PARTITION_SPLIT_BRAIN_MATRIX",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json",
+          "schema": "schemas/artifact/partition_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json",
+          "schema": "schemas/artifact/split_brain_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_results.jsonl",
+          "schema": "schemas/artifact/fault_result.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_topology_snapshots.jsonl",
+          "schema": "schemas/artifact/topology_snapshot.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+          "schema": "schemas/artifact/workload_impact_report.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P24_PARTITION_SPLIT_BRAIN_MATRIX/AUDIT.md",
+        "decision_json_path": "audit/P24_PARTITION_SPLIT_BRAIN_MATRIX/audit_decision.json"
+      }
+    },
+    {
+      "id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+      "title": "Fault-period workload impact analysis",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 100,
+      "objectives": [
+        "Consolidate QPS, latency, and error deltas across management and fault stages"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P25_FAULT_WORKLOAD_IMPACT_ANALYSIS --config templates/configs/single_mac_6node.yaml --scenario fault_workload_impact_analysis --out artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_impact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_workload_impact.py --phase P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json",
+          "schema": "schemas/artifact/workload_impact_cross_stage.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/csv_export_index.json",
+          "schema": "schemas/artifact/csv_export_index.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/missing_data_summary.json",
+          "schema": "schemas/artifact/missing_data_summary.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/AUDIT.md",
+        "decision_json_path": "audit/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/audit_decision.json"
+      }
+    },
+    {
+      "id": "P26_FINAL_REPORT_REGRESSION",
+      "title": "Final report and regression hardening",
+      "automatic": true,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 100,
+      "objectives": [
+        "Generate final reports, CSV exports, regression baselines, and CI checks from artifact data only"
+      ],
+      "gates": [
+        {
+          "name": "harness_precheck",
+          "kind": "harness",
+          "command": "python3 scripts/codex_gate.py precheck --phase P26_FINAL_REPORT_REGRESSION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "unit_integration_tests",
+          "kind": "unit",
+          "command": "python3 -m pytest -q tests/unit tests/integration",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "goal_loop_stage_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_goal_loop_stage.py --phase P26_FINAL_REPORT_REGRESSION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "real_valkey_e2e",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P26_FINAL_REPORT_REGRESSION --config templates/configs/single_mac_6node.yaml --scenario final_report_regression_smoke --out artifacts/phases/P26_FINAL_REPORT_REGRESSION/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "quant_artifact_assertion",
+          "kind": "schema",
+          "command": "python3 scripts/assert_quant_artifacts.py --phase P26_FINAL_REPORT_REGRESSION",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_report_check",
+          "kind": "cleanup",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P26_FINAL_REPORT_REGRESSION/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/events.jsonl",
+          "schema": "schemas/artifact/goal_loop_event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+          "schema": "schemas/artifact/final_report_index.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/csv_export_index.json",
+          "schema": "schemas/artifact/csv_export_index.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P26_FINAL_REPORT_REGRESSION/AUDIT.md",
+        "decision_json_path": "audit/P26_FINAL_REPORT_REGRESSION/audit_decision.json"
       }
     }
   ]

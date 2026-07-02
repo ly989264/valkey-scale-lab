@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Goal Loop Workload Windows",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "phase_id", "run_id", "windows"],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "workload_windows"},
+    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "windows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["window_name", "start_event_id", "end_event_id", "metrics"],
+        "properties": {
+          "window_name": {"type": "string", "enum": ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]},
+          "start_event_id": {"type": "string", "minLength": 1},
+          "end_event_id": {"type": "string", "minLength": 1},
+          "metrics": {"type": "object"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

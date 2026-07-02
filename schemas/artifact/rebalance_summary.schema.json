@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Goal Loop Rebalance Summary",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "phase_id", "run_id", "status", "imbalance_before", "imbalance_after", "workload_impact_ref"],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "rebalance_summary"},
+    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON", "PASS_NOOP_VERIFIED"]},
+    "imbalance_before": {"type": ["number", "string"]},
+    "imbalance_after": {"type": ["number", "string"]},
+    "workload_impact_ref": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": true
+}

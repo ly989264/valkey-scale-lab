@@ -1,0 +1,59 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "quant_summary",
+  "phase_id": "P15_GOAL_REBASE_HARNESS_EXTENSION",
+  "run_id": "P15_GOAL_REBASE_HARNESS_EXTENSION-harness-bootstrap",
+  "created_at": "2026-07-02T15:52:09.190541Z",
+  "producer": {
+    "name": "scripts/goal_loop_harness_artifacts.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P15 generated quantitative metadata for harness coverage only. No runtime measurements were collected or claimed.",
+  "artifact_refs": [
+    "artifacts/phases/P15_GOAL_REBASE_HARNESS_EXTENSION/phase_summary.json",
+    "artifacts/phases/P15_GOAL_REBASE_HARNESS_EXTENSION/quant_summary.json"
+  ],
+  "missing_data": [
+    {
+      "field": "events.jsonl",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P15 does not execute a Valkey scenario."
+    },
+    {
+      "field": "metrics_timeseries.jsonl",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P15 does not collect runtime metrics."
+    },
+    {
+      "field": "workload_windows.json",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P15 does not run a workload."
+    }
+  ],
+  "runtime_claims": {
+    "real_valkey_claimed": false,
+    "management_runtime_claimed": false,
+    "fault_runtime_claimed": false
+  },
+  "stage_coverage": {
+    "manifest_entries_added": [
+      "P15",
+      "P16",
+      "P17",
+      "P18",
+      "P19",
+      "P20",
+      "P21",
+      "P22",
+      "P23",
+      "P24",
+      "P25",
+      "P26"
+    ],
+    "automatic_stop_after": "P26_FINAL_REPORT_REGRESSION",
+    "p14_preserved_non_automatic": true,
+    "default_max_nodes": 100,
+    "bounded_200_node_exception": "P21_FAILOVER_LATENCY_CURVE_200"
+  }
+}

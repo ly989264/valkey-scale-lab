@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Split Brain Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "detectors_run",
+    "indicator_observed",
+    "split_brain_window_ms",
+    "conflicting_slots",
+    "conflicting_nodes",
+    "conflicting_write_keys",
+    "missing_detectors_with_reason"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "split_brain_report"},
+    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "detectors_run": {"type": "array", "items": {"type": "string"}},
+    "indicator_observed": {"type": "boolean"},
+    "split_brain_window_ms": {"type": ["number", "string"]},
+    "conflicting_slots": {"type": "array"},
+    "conflicting_nodes": {"type": "array"},
+    "conflicting_write_keys": {"type": "array"},
+    "missing_detectors_with_reason": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}

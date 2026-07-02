@@ -1,0 +1,34 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "P15_GOAL_REBASE_HARNESS_EXTENSION",
+  "run_id": "P15_GOAL_REBASE_HARNESS_EXTENSION-harness-bootstrap",
+  "created_at": "2026-07-02T15:52:09.190541Z",
+  "producer": {
+    "name": "scripts/goal_loop_harness_artifacts.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P15 extended the goal-loop harness scaffolding only; it does not claim management, fault, or real Valkey runtime behavior.",
+  "required_artifacts": [
+    "artifacts/phases/P15_GOAL_REBASE_HARNESS_EXTENSION/phase_summary.json",
+    "artifacts/phases/P15_GOAL_REBASE_HARNESS_EXTENSION/quant_summary.json"
+  ],
+  "missing_metrics": [
+    {
+      "metric": "real_valkey_runtime_evidence",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P15 is a harness-scaffolding stage and is explicitly exempt from real Valkey runtime evidence.",
+      "impact": "Future P16-P26 stages remain real-Valkey-gated in the manifest."
+    }
+  ],
+  "risks": [
+    {
+      "risk": "Future-stage gates are fail-closed placeholders until their runtime implementations are added.",
+      "severity": "medium",
+      "mitigation": "P16-P26 manifest entries require real wrapper gates and assertion scripts before completion."
+    }
+  ],
+  "harness_only": true,
+  "real_valkey_claimed": false
+}

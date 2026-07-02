@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cross Stage Workload Impact",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "phase_id", "run_id", "source_artifacts", "rows"],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "workload_impact_cross_stage"},
+    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "source_artifacts": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "rows": {"type": "array", "minItems": 1, "items": {"type": "object"}}
+  },
+  "additionalProperties": true
+}

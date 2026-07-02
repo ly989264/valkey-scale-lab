@@ -21,11 +21,22 @@ schemas/**/*
 
 The auditor should also inspect relevant source diffs for the phase.
 
+For goal-loop stages P15-P26, the auditor must additionally inspect:
+
+```text
+artifacts/goal_loop/<PHASE_ID>/CONTEXT_RELOAD.md
+artifacts/goal_loop/<PHASE_ID>/DESIGN_BRIEF.md
+artifacts/goal_loop/<PHASE_ID>/WORKER_SUMMARY.md
+artifacts/goal_loop/<PHASE_ID>/REVIEW.md
+docs/codex/goal-loop/stages/<PHASE_ID>.md
+```
+
 ## 3. Required auditor outputs
 
 Create:
 
 ```text
+artifacts/goal_loop/<PHASE_ID>/REVIEW.md
 audit/<PHASE_ID>/AUDIT.md
 audit/<PHASE_ID>/audit_decision.json
 ```
@@ -45,8 +56,8 @@ The auditor must return FAIL if any of these are true:
 - a safety rule is violated;
 - postcheck cannot pass;
 - the auditor did not have fresh context.
+- for P15-P26, `artifacts/goal_loop/<PHASE_ID>/REVIEW.md` is missing or does not contain exact `Decision: PASS`.
 
 ## 5. Fresh-context prompt
 
 Use the exact prompt in `templates/audit/FRESH_CONTEXT_AUDIT_PROMPT.md`, replacing placeholders. The implementation agent must not write the audit on behalf of the fresh-context auditor.
-

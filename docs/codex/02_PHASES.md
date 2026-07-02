@@ -319,3 +319,130 @@ Pass criteria:
 - no containers/processes are started by default;
 - opt-in environment variable is required.
 
+## P15_GOAL_REBASE_HARNESS_EXTENSION — Goal-loop harness extension
+
+Purpose: append the P15-P26 goal-loop stages and harden the harness without claiming new runtime capability.
+
+Must implement:
+
+- P15-P26 manifest entries with `automatic_stop_after` set to `P26_FINAL_REPORT_REGRESSION`;
+- P14 preserved as non-automatic opt-in 1000-node dry-run;
+- schema families for quantitative, management, failover, fault, partition, split-brain, and workload-impact artifacts;
+- fail-closed assertion scripts for future stage coverage;
+- audit/review hooks for goal-loop Markdown artifacts.
+
+Pass criteria:
+
+- P15 produces only harness-scaffolding `phase_summary.json` and `quant_summary.json`;
+- P15 does not claim real Valkey, management, or fault runtime evidence;
+- P16-P26 cannot pass without required schemas, artifacts, assertions, real wrapper gates, cleanup evidence, and review.
+
+## P16_QUANT_TELEMETRY_UNIFICATION — Unified quantitative telemetry
+
+Purpose: implement canonical events, metrics, workload windows, and missing-data policy for the goal loop.
+
+Pass criteria:
+
+- real Valkey evidence proves live Valkey 9.1.x endpoints;
+- `events.jsonl`, `metrics_timeseries.jsonl`, `workload_windows.json`, and `quant_summary.json` validate;
+- missing values are encoded as `MISSING` or `SKIPPED_WITH_REASON` with reasons.
+
+## P17_MANAGEMENT_REMOVE_NODE — Management matrix: remove node
+
+Purpose: implement and quantify remove replica, remove primary through a safe path, and failed-node removal.
+
+Pass criteria:
+
+- required remove-node rows execute against real Valkey at 6 and 10 nodes;
+- timing, convergence, topology before/after, workload impact, errors, and cleanup are recorded;
+- unsupported or missing rows cannot be reported as PASS.
+
+## P18_MANAGEMENT_RESHARD_REBALANCE — Management matrix: reshard and rebalance
+
+Purpose: implement explicit slot movement, data-path verification, and imbalance-reducing rebalance.
+
+Pass criteria:
+
+- reshard and rebalance rows have real operation evidence;
+- slot/key movement and before/after balance are recorded;
+- workload impact and redirection/error telemetry validate.
+
+## P19_MANAGEMENT_ROLLING_RESTART — Management matrix: rolling restart
+
+Purpose: restart nodes sequentially with health gates and workload measurement.
+
+Pass criteria:
+
+- restart order is deterministic and recorded;
+- health gates pass between nodes;
+- replica-first and primary-safe restart rows include unavailability, recovery, workload impact, and cleanup evidence.
+
+## P20_FAILOVER_LATENCY_CURVE_30_50_100 — Failover latency curve: 30/50/100
+
+Purpose: produce real primary-stop failover latency curves for 30, 50, and 100 nodes.
+
+Pass criteria:
+
+- each rung has at least three real samples;
+- promotion, slot coverage recovery, read/write recovery, workload impact, and cleanup are measured;
+- resource insufficiency blocks the stage instead of generating fake curve values.
+
+## P21_FAILOVER_LATENCY_CURVE_200 — Failover latency curve: 200
+
+Purpose: run the user-required bounded 200-node failover curve exception.
+
+Pass criteria:
+
+- resource preflight passes before execution;
+- samples run exactly at 200 nodes and do not downshift to 100;
+- real Valkey evidence, failover samples, combined curve, workload impact, and cleanup validate.
+
+## P22_FAULT_REPLICA_HOST_AZ_STOP — Replica, node-host, and AZ stop faults
+
+Purpose: implement replica stop, logical host stop, and virtual AZ stop fault rows.
+
+Pass criteria:
+
+- all faults use owned runtime/container controls;
+- topology, workload impact, recovery, and cleanup are measured;
+- no unintended promotion or unsafe host mutation is counted as success.
+
+## P23_FAULT_NETWORK_DELAY_LOSS_FLAP — Network delay, loss, and flap faults
+
+Purpose: implement sandboxed delay, packet loss, and flap faults.
+
+Pass criteria:
+
+- implementation path is `container_netns_tc`, `sandbox_proxy`, or an explicitly allowed unsupported-with-reason row;
+- workload QPS, latency, and errors are measured during fault and recovery windows;
+- host firewall, routing, and interface mutation are absent.
+
+## P24_PARTITION_SPLIT_BRAIN_MATRIX — Partition and split-brain matrix
+
+Purpose: implement minority/majority partition scenarios and split-brain-window measurement.
+
+Pass criteria:
+
+- partition groups and traffic policy are explicit;
+- probes compare both sides where feasible;
+- split-brain window is zero only when detectors ran and observed no indicator.
+
+## P25_FAULT_WORKLOAD_IMPACT_ANALYSIS — Fault-period workload impact analysis
+
+Purpose: consolidate management and fault workload impact into report-ready machine-readable tables.
+
+Pass criteria:
+
+- cross-stage workload impact rows derive only from validated artifacts;
+- CSV export indexes and missing-data summaries validate;
+- no fabricated QPS, latency, error, or recovery values appear.
+
+## P26_FINAL_REPORT_REGRESSION — Final report and regression hardening
+
+Purpose: generate final reports, curves, tables, exports, and regression checks from versioned artifacts.
+
+Pass criteria:
+
+- final report index cites source artifacts;
+- Markdown/HTML/CSV outputs derive from JSON/JSONL inputs;
+- regression gates preserve artifact schemas, review evidence, cleanup checks, and real Valkey provenance.

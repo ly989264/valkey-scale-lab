@@ -20,6 +20,11 @@ MANIFEST = ROOT / "codex" / "phase_manifest.json"
 LOCK = ROOT / "codex" / "gate_lock.json"
 STATE = ROOT / "codex" / "status" / "phase_state.json"
 
+GOAL_LOOP_FIRST = "P15_GOAL_REBASE_HARNESS_EXTENSION"
+GOAL_LOOP_LAST = "P26_FINAL_REPORT_REGRESSION"
+HARNESS_ONLY_NO_REAL_VALKEY = {"P15_GOAL_REBASE_HARNESS_EXTENSION"}
+BOUNDED_SCALE_EXCEPTIONS = {"P21_FAILOVER_LATENCY_CURVE_200": 200}
+
 sys.path.insert(0, str(ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
 
@@ -112,11 +117,18 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
         if pid in ids:
             errors.append(f"duplicate phase id: {pid}")
         ids.append(pid)
-        if phase.get("max_nodes", 0) > 100 and phase.get("automatic", True):
-            errors.append(f"automatic phase {pid} exceeds default 100-node cap")
+        max_nodes = int(phase.get("max_nodes", 0))
+        if max_nodes > 100 and phase.get("automatic", True):
+            if BOUNDED_SCALE_EXCEPTIONS.get(pid) != max_nodes:
+                errors.append(f"automatic phase {pid} exceeds default 100-node cap")
         if pid.startswith("P14") and phase.get("automatic", True):
             errors.append("P14 must not be automatic")
-        if pid >= "P03" and phase.get("automatic", True) and not phase.get("real_valkey_required"):
+        if (
+            pid >= "P03"
+            and phase.get("automatic", True)
+            and pid not in HARNESS_ONLY_NO_REAL_VALKEY
+            and not phase.get("real_valkey_required")
+        ):
             errors.append(f"{pid} must require real Valkey")
         gate_names = set()
         for gate in phase.get("gates", []):
@@ -129,6 +141,8 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             cmd = gate.get("command", "")
             if not cmd or not isinstance(cmd, str):
                 errors.append(f"{pid}/{name}: gate command missing")
+            if "scripts/codex_gate.py run" in cmd or "scripts/codex_gate.py postcheck" in cmd:
+                errors.append(f"{pid}/{name}: recursive codex_gate run/postcheck is not allowed in manifest gates")
             if "echo PASS" in cmd or "printf PASS" in cmd:
                 errors.append(f"{pid}/{name}: suspicious PASS-only gate command")
             if gate.get("real_valkey") and "scripts/valkey_e2e_gate.py" not in cmd and "scripts/fault_" not in cmd:
@@ -140,8 +154,8 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             schema = artifact.get("schema")
             if schema and not (ROOT / schema).exists():
                 errors.append(f"{pid}: artifact schema missing: {schema}")
-    if manifest.get("automatic_stop_after") != "P13_SCALE_LADDER_50_100":
-        errors.append("automatic_stop_after must be P13_SCALE_LADDER_50_100")
+    if manifest.get("automatic_stop_after") != GOAL_LOOP_LAST:
+        errors.append(f"automatic_stop_after must be {GOAL_LOOP_LAST}")
     return errors
 
 
@@ -184,6 +198,7 @@ def run_gate_command(phase_id: str, gate: dict[str, Any], gate_root: Path) -> di
     env["PYTHONPATH"] = f"{ROOT / 'src'}{os.pathsep}{ROOT}{os.pathsep}" + env.get("PYTHONPATH", "")
     env["VSLAB_PHASE_ID"] = phase_id
     env["VSLAB_ARTIFACT_DIR"] = str(ROOT / "artifacts" / "phases" / phase_id)
+    env.setdefault("PYTHONPYCACHEPREFIX", str(ROOT / ".pycache"))
     command = gate["command"]
     started = utc_now()
     t0 = time.monotonic()
@@ -397,6 +412,38 @@ def check_audit(phase: dict[str, Any], gate_result_path: Path) -> list[str]:
     return errors
 
 
+def is_goal_loop_stage(phase_id: str) -> bool:
+    try:
+        number = int(phase_id[1:3])
+    except ValueError:
+        return False
+    return 15 <= number <= 26
+
+
+def check_goal_loop_review(phase: dict[str, Any], gate_result_path: Path) -> list[str]:
+    errors: list[str] = []
+    phase_id = phase["id"]
+    if not is_goal_loop_stage(phase_id):
+        return errors
+    review_path = ROOT / "artifacts" / "goal_loop" / phase_id / "REVIEW.md"
+    if not review_path.exists():
+        return [f"goal-loop review missing: {rel(review_path)}"]
+    text = review_path.read_text(encoding="utf-8")
+    gate_sha = sha256_file(gate_result_path)
+    required_strings = [
+        "Decision: PASS",
+        rel(gate_result_path),
+        gate_sha,
+    ]
+    for item in required_strings:
+        if item not in text:
+            errors.append(f"goal-loop review missing required text: {item}")
+    for artifact in phase.get("required_artifacts", []):
+        if artifact.get("required", True) and artifact["path"] not in text:
+            errors.append(f"goal-loop review does not cite artifact: {artifact['path']}")
+    return errors
+
+
 def postcheck(args: argparse.Namespace) -> int:
     manifest = load_manifest()
     phase = phase_by_id(manifest, args.phase)
@@ -416,6 +463,7 @@ def postcheck(args: argparse.Namespace) -> int:
     errors.extend(check_real_evidence(phase))
     if gate_result_path.exists():
         errors.extend(check_audit(phase, gate_result_path))
+        errors.extend(check_goal_loop_review(phase, gate_result_path))
     if errors:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)

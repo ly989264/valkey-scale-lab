@@ -17,6 +17,8 @@ jobs:
         run: python3 -m compileall -q scripts
       - name: Harness precheck
         run: python3 scripts/codex_gate.py precheck --all
+      - name: Goal-loop manifest assertion
+        run: python3 scripts/assert_goal_loop_stage.py --phase P15_GOAL_REBASE_HARNESS_EXTENSION
       - name: Safety scan
         run: python3 scripts/safety_scan.py
 
