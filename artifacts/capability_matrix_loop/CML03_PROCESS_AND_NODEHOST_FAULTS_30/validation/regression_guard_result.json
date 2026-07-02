@@ -1,0 +1,13 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
+  "decision": "PASS",
+  "protected_files_changed": [],
+  "frozen_harness_mismatches": [],
+  "suspicious_patterns": [],
+  "requires_harness_exception": false,
+  "notes": [
+    "Previous harness passed before CML03 implementation.",
+    "Current gate validates process/nodehost fault evidence and negative cases."
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_audit_decision",
+  "stage_id": "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
+  "status": "PASS",
+  "decision": "PASS",
+  "created_at": "2026-07-02T04:48:20.071652Z",
+  "reviewer": "fresh-context-cml-auditor",
+  "findings": [],
+  "evidence_paths": [
+    "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/real_valkey_evidence_fault_30.json",
+    "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/fault_report_30.json",
+    "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/workload_window_report_30.json",
+    "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/validation/current_stage_gate_result.json"
+  ]
+}

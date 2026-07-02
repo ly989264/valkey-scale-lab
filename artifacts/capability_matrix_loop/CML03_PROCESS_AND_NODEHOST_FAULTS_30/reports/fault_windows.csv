@@ -1,0 +1,4 @@
+window,status,roundtrip_successes,roundtrip_failures,availability_percent
+before_fault,MEASURED,8,0,100.0
+during_fault,MEASURED,8,0,100.0
+after_recovery,MEASURED,8,0,100.0

@@ -8,7 +8,7 @@
     },
     {
       "path": "codex/capability_matrix_loop/stage_manifest.json",
-      "sha256": "e292f9a7b8815917a73d95d7cf25a3828ffe71a08f69dc050edb63ff25e97d0e"
+      "sha256": "3ca2542c216acd2cc2077df3d0468f77dbbf78415573644b2ef127fee4d963d1"
     },
     {
       "path": "schemas/capability_matrix_loop/prompt_pack_location.schema.json",
@@ -76,11 +76,11 @@
     },
     {
       "path": "tools/capability_matrix_gate.py",
-      "sha256": "594a722aa7c6558109668dd12838766d9be7061eb967d74b8bf37cdb47b354d4"
+      "sha256": "153638809c0397856a76552681306f41d8da8438a99f461208664b6620375643"
     },
     {
       "path": "tests/capability_loop/test_capability_matrix_gate.py",
-      "sha256": "fb7d2f1b05eb851833c3d0b2aa9af0e46665ee3c8b01999ce9975dbf77d6e4ab"
+      "sha256": "555a1f127e22f2be7ea87a07610df407a2456a3e3823248c4fe645eacbf99d69"
     }
   ]
 }

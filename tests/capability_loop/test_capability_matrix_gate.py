@@ -140,3 +140,21 @@ def test_stage_manifest_requires_cml02_management_artifacts():
         "cleanup residue fails",
         "empty workload windows fail",
     }.issubset(set(cml02["negative_requirements"]))
+
+
+def test_stage_manifest_requires_cml03_fault_artifacts():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    cml03 = next(stage for stage in manifest["stages"] if stage["id"] == "CML03_PROCESS_AND_NODEHOST_FAULTS_30")
+    required = {artifact["path"] for artifact in cml03["required_artifacts"]}
+    assert cml03["max_real_nodes"] == 30
+    assert cml03["real_valkey_required"] is True
+    assert "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/real_valkey_evidence_fault_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/fault_report_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/failover_report_30.json" in required
+    assert "artifacts/capability_matrix_loop/CML03_PROCESS_AND_NODEHOST_FAULTS_30/samples/workload_window_report_30.json" in required
+    assert {
+        "wrong fault scope fails",
+        "missing after-clear recovery fails",
+        "missing after-recovery workload window fails",
+        "cleanup residue fails",
+    }.issubset(set(cml03["negative_requirements"]))

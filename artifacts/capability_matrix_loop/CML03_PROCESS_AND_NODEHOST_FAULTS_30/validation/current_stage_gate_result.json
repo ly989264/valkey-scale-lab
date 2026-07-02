@@ -1,0 +1,73 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:50:29.607143Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "process_nodehost_faults_30",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "wrong_fault_scope",
+      "status": "PASS",
+      "expected_error_fragment": "owned_container_or_process",
+      "observed_errors": [
+        "CML03 fault scope must be owned_container_or_process"
+      ]
+    },
+    {
+      "name": "missing_after_clear_recovery",
+      "status": "PASS",
+      "expected_error_fragment": "recover to 30",
+      "observed_errors": [
+        "CML03 evidence must recover to 30 nodes after clear"
+      ]
+    },
+    {
+      "name": "missing_after_recovery_workload",
+      "status": "PASS",
+      "expected_error_fragment": "missing after_recovery",
+      "observed_errors": [
+        "CML03 workload report missing after_recovery"
+      ]
+    },
+    {
+      "name": "cleanup_residue",
+      "status": "PASS",
+      "expected_error_fragment": "cleanup must PASS",
+      "observed_errors": [
+        "CML03 cleanup must PASS with no resources_remaining"
+      ]
+    }
+  ]
+}

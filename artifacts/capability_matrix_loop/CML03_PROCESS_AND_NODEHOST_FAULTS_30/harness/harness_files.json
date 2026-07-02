@@ -1,0 +1,56 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML03_PROCESS_AND_NODEHOST_FAULTS_30",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML03 artifact contract",
+      "kind": "manifest"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML03 fault gate",
+      "kind": "runner"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML03 manifest test",
+      "kind": "test"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_matrix.schema.json",
+      "purpose": "Capability matrix schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/operation_event.schema.json",
+      "purpose": "Operation event schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/fault_event.schema.json",
+      "purpose": "Fault event schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/metrics_window.schema.json",
+      "purpose": "Metrics schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/workload_window.schema.json",
+      "purpose": "Workload schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_analysis_summary.schema.json",
+      "purpose": "Analysis schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_report_index.schema.json",
+      "purpose": "Report schema",
+      "kind": "schema"
+    }
+  ]
+}
