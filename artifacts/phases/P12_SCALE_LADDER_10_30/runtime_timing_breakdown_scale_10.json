@@ -1,0 +1,468 @@
+{
+  "artifact_type": "p13_timing_breakdown",
+  "created_at": "2026-06-28T00:00:00Z",
+  "node_count": 10,
+  "phase_id": "P12_SCALE_LADDER_10_30",
+  "producer": {
+    "name": "valkey-scale-lab-runtime",
+    "version": "0.0.0"
+  },
+  "run_id": "P12_SCALE_LADDER_10_30-scale_10-20260628",
+  "scenario": "scale_10",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": {
+    "cluster_create_duration_seconds": "MISSING",
+    "diagnostic_full_probe_duration_seconds": "MISSING",
+    "final_full_probe_duration_seconds": "MISSING",
+    "replica_config_duration_seconds": "MISSING",
+    "wrapper_probe_duration_seconds": "MISSING"
+  },
+  "timings": [
+    {
+      "count": 1,
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      },
+      "duration_seconds": 0.219295,
+      "name": "nodehost_start",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "bundle_records": [
+          {
+            "bundle_artifact_dir": "artifacts/phases/P12_SCALE_LADDER_10_30/nodehost_bundles/vslab-bundle-P12_SCALE_LADDER_10_30-scale_10-20260628-nodehost-az-a",
+            "node_count": 5,
+            "nodehost_id": "nodehost-az-a",
+            "remote_bundle_dir": "/tmp/vslab-bundle-P12_SCALE_LADDER_10_30-scale_10-20260628-nodehost-az-a"
+          },
+          {
+            "bundle_artifact_dir": "artifacts/phases/P12_SCALE_LADDER_10_30/nodehost_bundles/vslab-bundle-P12_SCALE_LADDER_10_30-scale_10-20260628-nodehost-az-b",
+            "node_count": 5,
+            "nodehost_id": "nodehost-az-b",
+            "remote_bundle_dir": "/tmp/vslab-bundle-P12_SCALE_LADDER_10_30-scale_10-20260628-nodehost-az-b"
+          }
+        ],
+        "config_local_generate_seconds": 0.003668,
+        "config_remote_install_seconds": 0.074879,
+        "docker_cp_bundle_seconds": 0.023873,
+        "docker_cp_count_before_after": {
+          "after": 2,
+          "after_basis": "one config bundle docker cp per nodehost",
+          "before": 10,
+          "before_basis": "legacy per-node config docker cp",
+          "stage": "config_remote_install"
+        },
+        "docker_exec_count_before_after": {
+          "after": 2,
+          "after_basis": "one install.sh exec per nodehost",
+          "before": 10,
+          "before_basis": "legacy per-node mkdir",
+          "stage": "config_remote_install"
+        },
+        "node_config_local_generate_seconds": 0.001772,
+        "node_count": 10,
+        "nodehost_bulk_install_used": true,
+        "nodehost_bundle_install_seconds": 0.051006,
+        "nodehost_bundle_write_seconds": 0.001896,
+        "nodehost_count": 2,
+        "parallelism": 8,
+        "process_bootstrap_batching": {
+          "config_local_generate_seconds": 0.003668,
+          "config_remote_install_seconds": 0.074879,
+          "docker_cp_count_before_after": {
+            "after": 2,
+            "basis": "deterministic setup command plan for config transfer",
+            "before": 10,
+            "reduction": 8,
+            "stages": {
+              "config_remote_install": {
+                "after": 2,
+                "after_basis": "one config bundle docker cp per nodehost",
+                "before": 10,
+                "before_basis": "legacy per-node config docker cp",
+                "stage": "config_remote_install"
+              }
+            }
+          },
+          "docker_exec_count_before_after": {
+            "after": 6,
+            "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+            "before": 30,
+            "reduction": 24,
+            "stages": {
+              "config_remote_install": {
+                "after": 2,
+                "after_basis": "one install.sh exec per nodehost",
+                "before": 10,
+                "before_basis": "legacy per-node mkdir",
+                "stage": "config_remote_install"
+              },
+              "process_start_and_pidfile_collect": {
+                "after": 4,
+                "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                "before": 20,
+                "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                "stage": "process_start_and_pidfile_collect"
+              }
+            }
+          },
+          "node_count": 10,
+          "nodehost_bulk_install_used": true,
+          "nodehost_bulk_start_used": true,
+          "nodehost_count": 2,
+          "per_logical_node_evidence": [
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0000-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-primary/valkey.log",
+              "logical_id": "shard-0000-primary",
+              "pid": 31,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0001-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-primary/valkey.log",
+              "logical_id": "shard-0001-primary",
+              "pid": 32,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0002-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-primary/valkey.log",
+              "logical_id": "shard-0002-primary",
+              "pid": 34,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0003-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-primary/valkey.log",
+              "logical_id": "shard-0003-primary",
+              "pid": 41,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0004-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-primary/valkey.log",
+              "logical_id": "shard-0004-primary",
+              "pid": 49,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0000-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-replica-00/valkey.log",
+              "logical_id": "shard-0000-replica-00",
+              "pid": 50,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0001-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-replica-00/valkey.log",
+              "logical_id": "shard-0001-replica-00",
+              "pid": 58,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0002-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-replica-00/valkey.log",
+              "logical_id": "shard-0002-replica-00",
+              "pid": 59,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0003-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-replica-00/valkey.log",
+              "logical_id": "shard-0003-replica-00",
+              "pid": 61,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0004-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-replica-00/valkey.log",
+              "logical_id": "shard-0004-replica-00",
+              "pid": 62,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-replica-00/valkey.pid"
+            }
+          ],
+          "pidfile_collect_seconds": 0.040712,
+          "process_start_command_seconds": 0.070526
+        }
+      },
+      "duration_seconds": 0.078585,
+      "name": "process_config_prepare",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "docker_exec_count_before_after": {
+          "after": 4,
+          "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+          "before": 20,
+          "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+          "stage": "process_start_and_pidfile_collect"
+        },
+        "node_count": 10,
+        "nodehost_bulk_start_used": true,
+        "nodehost_count": 2,
+        "parallelism": 8,
+        "pidfile_collect_seconds": 0.040712,
+        "process_bootstrap_batching": {
+          "config_local_generate_seconds": 0.003668,
+          "config_remote_install_seconds": 0.074879,
+          "docker_cp_count_before_after": {
+            "after": 2,
+            "basis": "deterministic setup command plan for config transfer",
+            "before": 10,
+            "reduction": 8,
+            "stages": {
+              "config_remote_install": {
+                "after": 2,
+                "after_basis": "one config bundle docker cp per nodehost",
+                "before": 10,
+                "before_basis": "legacy per-node config docker cp",
+                "stage": "config_remote_install"
+              }
+            }
+          },
+          "docker_exec_count_before_after": {
+            "after": 6,
+            "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+            "before": 30,
+            "reduction": 24,
+            "stages": {
+              "config_remote_install": {
+                "after": 2,
+                "after_basis": "one install.sh exec per nodehost",
+                "before": 10,
+                "before_basis": "legacy per-node mkdir",
+                "stage": "config_remote_install"
+              },
+              "process_start_and_pidfile_collect": {
+                "after": 4,
+                "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                "before": 20,
+                "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                "stage": "process_start_and_pidfile_collect"
+              }
+            }
+          },
+          "node_count": 10,
+          "nodehost_bulk_install_used": true,
+          "nodehost_bulk_start_used": true,
+          "nodehost_count": 2,
+          "per_logical_node_evidence": [
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0000-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-primary/valkey.log",
+              "logical_id": "shard-0000-primary",
+              "pid": 31,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0001-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-primary/valkey.log",
+              "logical_id": "shard-0001-primary",
+              "pid": 32,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0002-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-primary/valkey.log",
+              "logical_id": "shard-0002-primary",
+              "pid": 34,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0003-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-primary/valkey.log",
+              "logical_id": "shard-0003-primary",
+              "pid": 41,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0004-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-primary",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-primary/valkey.log",
+              "logical_id": "shard-0004-primary",
+              "pid": 49,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0000-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-replica-00/valkey.log",
+              "logical_id": "shard-0000-replica-00",
+              "pid": 50,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0000-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0001-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-replica-00/valkey.log",
+              "logical_id": "shard-0001-replica-00",
+              "pid": 58,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0001-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0002-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-replica-00/valkey.log",
+              "logical_id": "shard-0002-replica-00",
+              "pid": 59,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0002-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0003-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-replica-00/valkey.log",
+              "logical_id": "shard-0003-replica-00",
+              "pid": 61,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0003-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P12_SCALE_LADDER_10_30/node_configs/shard-0004-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-replica-00/valkey.log",
+              "logical_id": "shard-0004-replica-00",
+              "pid": 62,
+              "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_10-20260628/shard-0004-replica-00/valkey.pid"
+            }
+          ],
+          "pidfile_collect_seconds": 0.040712,
+          "process_start_command_seconds": 0.070526
+        },
+        "process_start_command_seconds": 0.070526
+      },
+      "duration_seconds": 0.111255,
+      "name": "process_start",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "node_count": 10
+      },
+      "duration_seconds": 0.012939,
+      "name": "process_ready_wait",
+      "status": "PASS"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "primary_cluster_create",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "replica_meet",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "replica_replicate",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "runtime_representative_probe",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "runtime_final_full_probe",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "runtime_diagnostic_full_probe",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "wrapper_wait_cluster_ok",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "wrapper_data_path_probe",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "cleanup",
+      "status": "MISSING"
+    }
+  ]
+}

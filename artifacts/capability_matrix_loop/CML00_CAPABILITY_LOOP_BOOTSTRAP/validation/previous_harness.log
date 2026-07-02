@@ -1,0 +1,92 @@
+$ python3 scripts/codex_gate.py precheck --all
+PASS precheck
+
+exit_code=0
+
+$ python3 scripts/safety_scan.py
+PASS safety_scan
+
+exit_code=0
+
+$ python3 -m compileall -q scripts src tests
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P00_REPO_CONTRACT
+PASS postcheck P00_REPO_CONTRACT
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P01_CONFIG_SCHEMA
+PASS postcheck P01_CONFIG_SCHEMA
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P02_PLANNER
+PASS postcheck P02_PLANNER
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P03_LOCAL_DOCKER_VALKEY
+PASS postcheck P03_LOCAL_DOCKER_VALKEY
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P04_CLUSTER_MANAGEMENT_OPS
+PASS postcheck P04_CLUSTER_MANAGEMENT_OPS
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P05_WORKLOAD_ENGINE
+PASS postcheck P05_WORKLOAD_ENGINE
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P06_OBSERVABILITY_METRICS
+PASS postcheck P06_OBSERVABILITY_METRICS
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P07_FAULT_INJECTION_SANDBOX
+PASS postcheck P07_FAULT_INJECTION_SANDBOX
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P08_FAILOVER_SPLIT_BRAIN
+PASS postcheck P08_FAILOVER_SPLIT_BRAIN
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P09_ANALYSIS_REPORTING
+PASS postcheck P09_ANALYSIS_REPORTING
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P10_MULTI_HOST_ORCHESTRATION
+PASS postcheck P10_MULTI_HOST_ORCHESTRATION
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P11_STABILITY_SOAK
+PASS postcheck P11_STABILITY_SOAK
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P12_SCALE_LADDER_10_30
+PASS postcheck P12_SCALE_LADDER_10_30
+
+exit_code=0
+
+$ python3 scripts/codex_gate.py postcheck --phase P13_SCALE_LADDER_50_100
+PASS postcheck P13_SCALE_LADDER_50_100
+
+exit_code=0
+
+$ pytest -q
+........................................................................ [ 26%]
+........................................................................ [ 52%]
+........................................................................ [ 78%]
+............................................................             [100%]
+276 passed in 7.79s
+
+exit_code=0

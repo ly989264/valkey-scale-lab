@@ -1,0 +1,43 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_loop_stage_result",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:17:13.680925Z",
+  "git": {
+    "branch": "codex/valkey-scale-lab-loop",
+    "head_before": "e3d03373d235ec277aebe3d602156d434be3e8b5",
+    "head_after": "pending_commit",
+    "pushed": true
+  },
+  "previous_harness": {
+    "status": "PASS",
+    "commands": [
+      "python3 scripts/codex_gate.py precheck --all",
+      "python3 scripts/safety_scan.py",
+      "python3 -m compileall -q scripts src tests",
+      "python3 scripts/codex_gate.py postcheck --phase <completed phase>",
+      "pytest -q"
+    ]
+  },
+  "current_harness": {
+    "status": "PASS",
+    "freeze_sha256": "16505b87b7c87172c61b1bdc402e2fd96f2bd2b71240d9b26bd1c402cdc2babe",
+    "negative_tests_passed": true
+  },
+  "real_valkey_evidence": {
+    "required": false,
+    "scale_rungs": [],
+    "evidence_paths": []
+  },
+  "capability_matrix_delta": [
+    {
+      "capability": "supplemental_loop_bootstrap",
+      "status": "PASS"
+    }
+  ],
+  "audit": {
+    "decision": "PASS",
+    "path": "audit/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/AUDIT.md"
+  }
+}

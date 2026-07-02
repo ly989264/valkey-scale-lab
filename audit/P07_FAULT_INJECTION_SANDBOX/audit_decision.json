@@ -1,19 +1,26 @@
 {
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P07_FAULT_INJECTION_SANDBOX",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "capability-refresh-reviewer",
+  "created_at": "2026-07-02T04:01:46.234449Z",
+  "gate_result_path": "artifacts/gates/P07_FAULT_INJECTION_SANDBOX/gate_result.json",
+  "gate_result_sha256": "19b2c4a889bbc0c3ee09c0feebf638448aba266cc2e658d64ae824cd985e26de",
   "artifact_paths": [
     "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/phase_summary.json",
     "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json",
     "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json",
     "artifacts/phases/P07_FAULT_INJECTION_SANDBOX/cleanup_report.json"
   ],
-  "artifact_type": "audit_decision",
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-29T02:47:50Z",
-  "decision": "PASS",
-  "fresh_context": true,
-  "gate_result_path": "artifacts/gates/P07_FAULT_INJECTION_SANDBOX/gate_result.json",
-  "gate_result_sha256": "71dfd17accdd9432c413274ab12c9f2c1e0cde2737093f6e4c9cb75f2d8e6c09",
-  "phase_id": "P07_FAULT_INJECTION_SANDBOX",
-  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/fault_safety_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 6.",
-  "risks": [],
-  "schema_version": "v1"
+  "risks": [
+    {
+      "risk": "Supplemental CML capability closure remains in progress",
+      "severity": "medium",
+      "required_before_next_phase": false,
+      "notes": "Handled by CML stages."
+    }
+  ],
+  "rationale": "Gate and audit refreshed against current manifest before CML bootstrap."
 }

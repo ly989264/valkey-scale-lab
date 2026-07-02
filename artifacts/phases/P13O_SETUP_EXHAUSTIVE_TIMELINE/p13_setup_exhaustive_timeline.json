@@ -5,16 +5,16 @@
   "optimization_phase_id": "P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
   "run_id": "phase-P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
   "scenario": "scale_100",
-  "created_at": "2026-06-30T02:44:05.299063Z",
+  "created_at": "2026-07-02T04:11:22.270911Z",
   "producer": {
     "name": "valkey-scale-lab-runtime",
     "version": "0.0.0"
   },
   "status": "PASS",
   "node_count": 100,
-  "setup_command_wall_seconds": 248.41558,
-  "setup_timeline_total_seconds": 248.37056,
-  "setup_timeline_unexplained_seconds": 0.04502,
+  "setup_command_wall_seconds": 73.2923,
+  "setup_timeline_total_seconds": 73.243372,
+  "setup_timeline_unexplained_seconds": 0.048928,
   "setup_timeline_unexplained_status": "PASS",
   "setup_timeline_unexplained_explanation": {
     "status": "PASS",
@@ -26,9 +26,9 @@
       "name": "setup_entry",
       "kind": "span",
       "category": "setup_lifecycle",
-      "start_monotonic": 284785.132933,
-      "end_monotonic": 284785.132954,
-      "duration_seconds": 2.1e-05,
+      "start_monotonic": 380332.666302,
+      "end_monotonic": 380332.66632,
+      "duration_seconds": 1.8e-05,
       "status": "PASS",
       "details": {
         "phase_id": "P13_SCALE_LADDER_50_100",
@@ -40,9 +40,9 @@
       "name": "config_parse_and_validate",
       "kind": "span",
       "category": "configuration",
-      "start_monotonic": 284785.132965,
-      "end_monotonic": 284785.133101,
-      "duration_seconds": 0.000136,
+      "start_monotonic": 380332.666328,
+      "end_monotonic": 380332.666466,
+      "duration_seconds": 0.000138,
       "status": "PASS",
       "details": {
         "config_path": "templates/configs/scale_100.yaml"
@@ -53,9 +53,9 @@
       "name": "node_spec_generation",
       "kind": "span",
       "category": "planning",
-      "start_monotonic": 284785.133106,
-      "end_monotonic": 284785.133173,
-      "duration_seconds": 6.7e-05,
+      "start_monotonic": 380332.666471,
+      "end_monotonic": 380332.666547,
+      "duration_seconds": 7.6e-05,
       "status": "PASS",
       "details": {
         "run_id": "P13_SCALE_LADDER_50_100-scale_100-20260628"
@@ -66,9 +66,9 @@
       "name": "port_preflight_check",
       "kind": "span",
       "category": "preflight",
-      "start_monotonic": 284785.133176,
-      "end_monotonic": 284785.134125,
-      "duration_seconds": 0.000949,
+      "start_monotonic": 380332.666551,
+      "end_monotonic": 380332.667624,
+      "duration_seconds": 0.001073,
       "status": "PASS",
       "details": {
         "port_count": 200
@@ -79,9 +79,9 @@
       "name": "pre_cleanup_by_label",
       "kind": "span",
       "category": "docker_cleanup",
-      "start_monotonic": 284785.134131,
-      "end_monotonic": 284785.168408,
-      "duration_seconds": 0.034277,
+      "start_monotonic": 380332.667631,
+      "end_monotonic": 380332.699419,
+      "duration_seconds": 0.031788,
       "status": "PASS",
       "details": {
         "run_id": "P13_SCALE_LADDER_50_100-scale_100-20260628"
@@ -92,9 +92,9 @@
       "name": "docker_network_create",
       "kind": "span",
       "category": "docker_network",
-      "start_monotonic": 284785.168425,
-      "end_monotonic": 284785.211151,
-      "duration_seconds": 0.042726,
+      "start_monotonic": 380332.699441,
+      "end_monotonic": 380332.74179,
+      "duration_seconds": 0.042349,
       "status": "PASS",
       "details": {
         "network_name": "vslab-p13-scale-ladder-50-100-scale_100"
@@ -105,8 +105,8 @@
       "name": "nodehost_plan",
       "kind": "span",
       "category": "planning",
-      "start_monotonic": 284785.211183,
-      "end_monotonic": 284785.211229,
+      "start_monotonic": 380332.741816,
+      "end_monotonic": 380332.741862,
       "duration_seconds": 4.6e-05,
       "status": "PASS",
       "details": {
@@ -118,9 +118,9 @@
       "name": "nodehost_start",
       "kind": "span",
       "category": "nodehost_start",
-      "start_monotonic": 284785.211244,
-      "end_monotonic": 284785.681612,
-      "duration_seconds": 0.470368,
+      "start_monotonic": 380332.741875,
+      "end_monotonic": 380333.173397,
+      "duration_seconds": 0.431522,
       "status": "PASS",
       "details": {
         "nodehost_count": 2,
@@ -132,9 +132,9 @@
       "name": "node_config_local_generate",
       "kind": "span",
       "category": "process_config_prepare",
-      "start_monotonic": 284785.681684,
-      "end_monotonic": 284785.689361,
-      "duration_seconds": 0.007677,
+      "start_monotonic": 380333.173457,
+      "end_monotonic": 380333.181817,
+      "duration_seconds": 0.00836,
       "status": "PASS",
       "details": {
         "node_count": 100
@@ -145,9 +145,9 @@
       "name": "nodehost_bundle_write",
       "kind": "span",
       "category": "process_config_prepare",
-      "start_monotonic": 284785.689381,
-      "end_monotonic": 284785.703529,
-      "duration_seconds": 0.014148,
+      "start_monotonic": 380333.181834,
+      "end_monotonic": 380333.196374,
+      "duration_seconds": 0.01454,
       "status": "PASS",
       "details": {
         "nodehost_count": 2
@@ -158,9 +158,9 @@
       "name": "docker_cp_bundle",
       "kind": "span",
       "category": "process_config_prepare",
-      "start_monotonic": 284785.70355,
-      "end_monotonic": 284785.72903,
-      "duration_seconds": 0.02548,
+      "start_monotonic": 380333.19639,
+      "end_monotonic": 380333.221776,
+      "duration_seconds": 0.025386,
       "status": "PASS",
       "details": {
         "nodehost_count": 2,
@@ -172,9 +172,9 @@
       "name": "nodehost_bundle_install",
       "kind": "span",
       "category": "process_config_prepare",
-      "start_monotonic": 284785.729056,
-      "end_monotonic": 284785.815183,
-      "duration_seconds": 0.086127,
+      "start_monotonic": 380333.221808,
+      "end_monotonic": 380333.303575,
+      "duration_seconds": 0.081767,
       "status": "PASS",
       "details": {
         "nodehost_count": 2,
@@ -186,9 +186,9 @@
       "name": "nodehost_start_all",
       "kind": "span",
       "category": "process_start",
-      "start_monotonic": 284785.815229,
-      "end_monotonic": 284786.066846,
-      "duration_seconds": 0.251617,
+      "start_monotonic": 380333.303637,
+      "end_monotonic": 380333.628385,
+      "duration_seconds": 0.324748,
       "status": "PASS",
       "details": {
         "nodehost_count": 2,
@@ -200,9 +200,9 @@
       "name": "pidfile_collect",
       "kind": "span",
       "category": "process_start",
-      "start_monotonic": 284786.066883,
-      "end_monotonic": 284786.129266,
-      "duration_seconds": 0.062383,
+      "start_monotonic": 380333.628421,
+      "end_monotonic": 380333.688865,
+      "duration_seconds": 0.060444,
       "status": "PASS",
       "details": {
         "nodehost_count": 2,
@@ -214,9 +214,9 @@
       "name": "process_ready_wait",
       "kind": "span",
       "category": "process_ready_wait",
-      "start_monotonic": 284786.129343,
-      "end_monotonic": 284786.203766,
-      "duration_seconds": 0.074423,
+      "start_monotonic": 380333.688968,
+      "end_monotonic": 380333.762215,
+      "duration_seconds": 0.073247,
       "status": "PASS",
       "details": {
         "node_count": 100
@@ -227,9 +227,9 @@
       "name": "state_write_before_cluster",
       "kind": "span",
       "category": "state_write",
-      "start_monotonic": 284786.203893,
-      "end_monotonic": 284786.205561,
-      "duration_seconds": 0.001668,
+      "start_monotonic": 380333.762575,
+      "end_monotonic": 380333.763323,
+      "duration_seconds": 0.000748,
       "status": "PASS",
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_100.json"
@@ -240,9 +240,9 @@
       "name": "primary_cluster_create",
       "kind": "span",
       "category": "cluster_formation",
-      "start_monotonic": 284786.20558,
-      "end_monotonic": 284888.934519,
-      "duration_seconds": 102.728939,
+      "start_monotonic": 380333.763343,
+      "end_monotonic": 380373.244551,
+      "duration_seconds": 39.481208,
       "status": "PASS",
       "details": {
         "primary_count": 50,
@@ -254,9 +254,9 @@
       "name": "replica_meet",
       "kind": "span",
       "category": "cluster_formation",
-      "start_monotonic": 284888.934577,
-      "end_monotonic": 284891.985312,
-      "duration_seconds": 3.050735,
+      "start_monotonic": 380373.244605,
+      "end_monotonic": 380378.317264,
+      "duration_seconds": 5.072659,
       "status": "PASS",
       "details": {
         "fanout": 4,
@@ -269,9 +269,9 @@
       "name": "replica_replicate",
       "kind": "span",
       "category": "cluster_formation",
-      "start_monotonic": 284891.985378,
-      "end_monotonic": 284892.256897,
-      "duration_seconds": 0.271519,
+      "start_monotonic": 380378.31742,
+      "end_monotonic": 380378.59138,
+      "duration_seconds": 0.27396,
       "status": "PASS",
       "details": {
         "parallelism": 8,
@@ -283,9 +283,9 @@
       "name": "cluster_convergence_wait",
       "kind": "span",
       "category": "cluster_formation",
-      "start_monotonic": 284892.256928,
-      "end_monotonic": 284892.263808,
-      "duration_seconds": 0.00688,
+      "start_monotonic": 380378.591405,
+      "end_monotonic": 380378.599788,
+      "duration_seconds": 0.008383,
       "status": "PASS",
       "details": {
         "expected_nodes": 100,
@@ -298,9 +298,9 @@
       "name": "cluster_final_snapshot",
       "kind": "span",
       "category": "cluster_formation",
-      "start_monotonic": 284892.263826,
-      "end_monotonic": 284892.266086,
-      "duration_seconds": 0.00226,
+      "start_monotonic": 380378.599798,
+      "end_monotonic": 380378.602051,
+      "duration_seconds": 0.002253,
       "status": "PASS",
       "details": {
         "node_count": 100,
@@ -312,9 +312,9 @@
       "name": "cluster_final_full_snapshot",
       "kind": "span",
       "category": "cluster_formation",
-      "start_monotonic": 284892.266108,
-      "end_monotonic": 285033.266191,
-      "duration_seconds": 141.000083,
+      "start_monotonic": 380378.602074,
+      "end_monotonic": 380405.673032,
+      "duration_seconds": 27.070958,
       "status": "PASS",
       "details": {
         "node_count": 100,
@@ -326,9 +326,9 @@
       "name": "cluster_snapshot_write",
       "kind": "span",
       "category": "artifact_write",
-      "start_monotonic": 285033.26628,
-      "end_monotonic": 285033.268661,
-      "duration_seconds": 0.002381,
+      "start_monotonic": 380405.673128,
+      "end_monotonic": 380405.673928,
+      "duration_seconds": 0.0008,
       "status": "PASS",
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cluster_snapshots_scale_100.json"
@@ -339,9 +339,9 @@
       "name": "runtime_timing_write",
       "kind": "span",
       "category": "artifact_write",
-      "start_monotonic": 285033.268917,
-      "end_monotonic": 285033.27328,
-      "duration_seconds": 0.004363,
+      "start_monotonic": 380405.674168,
+      "end_monotonic": 380405.675368,
+      "duration_seconds": 0.0012,
       "status": "PASS",
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/runtime_timing_breakdown_scale_100.json"
@@ -352,9 +352,9 @@
       "name": "state_write_after_cluster",
       "kind": "span",
       "category": "state_write",
-      "start_monotonic": 285033.27331,
-      "end_monotonic": 285033.283261,
-      "duration_seconds": 0.009951,
+      "start_monotonic": 380405.675379,
+      "end_monotonic": 380405.677953,
+      "duration_seconds": 0.002574,
       "status": "PASS",
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_100.json"
@@ -365,9 +365,9 @@
       "name": "scale_ladder_artifact_write",
       "kind": "span",
       "category": "artifact_write",
-      "start_monotonic": 285033.283301,
-      "end_monotonic": 285033.492034,
-      "duration_seconds": 0.208733,
+      "start_monotonic": 380405.67796,
+      "end_monotonic": 380405.905477,
+      "duration_seconds": 0.227517,
       "status": "PASS",
       "details": {
         "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
@@ -378,9 +378,9 @@
       "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
       "kind": "gap",
       "category": "gap",
-      "start_monotonic": 285033.492034,
-      "end_monotonic": 285033.494243,
-      "duration_seconds": 0.002209,
+      "start_monotonic": 380405.905477,
+      "end_monotonic": 380405.908408,
+      "duration_seconds": 0.002931,
       "status": "PASS",
       "details": {
         "next_segment": "state_write_setup_timeline_reference",
@@ -393,9 +393,9 @@
       "name": "state_write_setup_timeline_reference",
       "kind": "span",
       "category": "state_write",
-      "start_monotonic": 285033.494243,
-      "end_monotonic": 285033.504636,
-      "duration_seconds": 0.010393,
+      "start_monotonic": 380405.908408,
+      "end_monotonic": 380405.911086,
+      "duration_seconds": 0.002678,
       "status": "PASS",
       "details": {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/state_scale_100.json",
@@ -407,8 +407,8 @@
       "name": "setup_return",
       "kind": "span",
       "category": "setup_lifecycle",
-      "start_monotonic": 285033.504681,
-      "end_monotonic": 285033.504682,
+      "start_monotonic": 380405.911095,
+      "end_monotonic": 380405.911096,
       "duration_seconds": 1e-06,
       "status": "PASS",
       "details": {
@@ -421,13 +421,13 @@
     {
       "name": "process_config_prepare",
       "category": "process_config_prepare",
-      "inclusive_duration_seconds": 0.133432,
+      "inclusive_duration_seconds": 0.130053,
       "exclusive_duration_seconds": 0.0,
       "children": [
         {
           "name": "node_config_local_generate",
-          "inclusive_duration_seconds": 0.007677,
-          "exclusive_duration_seconds": 0.007677,
+          "inclusive_duration_seconds": 0.00836,
+          "exclusive_duration_seconds": 0.00836,
           "segment_ids": [
             "segment_009"
           ],
@@ -435,8 +435,8 @@
         },
         {
           "name": "nodehost_bundle_write",
-          "inclusive_duration_seconds": 0.014148,
-          "exclusive_duration_seconds": 0.014148,
+          "inclusive_duration_seconds": 0.01454,
+          "exclusive_duration_seconds": 0.01454,
           "segment_ids": [
             "segment_010"
           ],
@@ -444,8 +444,8 @@
         },
         {
           "name": "docker_cp_bundle",
-          "inclusive_duration_seconds": 0.02548,
-          "exclusive_duration_seconds": 0.02548,
+          "inclusive_duration_seconds": 0.025386,
+          "exclusive_duration_seconds": 0.025386,
           "segment_ids": [
             "segment_011"
           ],
@@ -453,8 +453,8 @@
         },
         {
           "name": "nodehost_bundle_install",
-          "inclusive_duration_seconds": 0.086127,
-          "exclusive_duration_seconds": 0.086127,
+          "inclusive_duration_seconds": 0.081767,
+          "exclusive_duration_seconds": 0.081767,
           "segment_ids": [
             "segment_012"
           ],
@@ -466,13 +466,13 @@
     {
       "name": "process_start",
       "category": "process_start",
-      "inclusive_duration_seconds": 0.314,
+      "inclusive_duration_seconds": 0.385192,
       "exclusive_duration_seconds": 0.0,
       "children": [
         {
           "name": "nodehost_start_all",
-          "inclusive_duration_seconds": 0.251617,
-          "exclusive_duration_seconds": 0.251617,
+          "inclusive_duration_seconds": 0.324748,
+          "exclusive_duration_seconds": 0.324748,
           "segment_ids": [
             "segment_013"
           ],
@@ -480,8 +480,8 @@
         },
         {
           "name": "pidfile_collect",
-          "inclusive_duration_seconds": 0.062383,
-          "exclusive_duration_seconds": 0.062383,
+          "inclusive_duration_seconds": 0.060444,
+          "exclusive_duration_seconds": 0.060444,
           "segment_ids": [
             "segment_014"
           ],
@@ -493,13 +493,13 @@
     {
       "name": "cluster_formation",
       "category": "cluster_formation",
-      "inclusive_duration_seconds": 247.060416,
+      "inclusive_duration_seconds": 71.909421,
       "exclusive_duration_seconds": 0.0,
       "children": [
         {
           "name": "primary_cluster_create",
-          "inclusive_duration_seconds": 102.728939,
-          "exclusive_duration_seconds": 102.728939,
+          "inclusive_duration_seconds": 39.481208,
+          "exclusive_duration_seconds": 39.481208,
           "segment_ids": [
             "segment_017"
           ],
@@ -507,8 +507,8 @@
         },
         {
           "name": "replica_meet",
-          "inclusive_duration_seconds": 3.050735,
-          "exclusive_duration_seconds": 3.050735,
+          "inclusive_duration_seconds": 5.072659,
+          "exclusive_duration_seconds": 5.072659,
           "segment_ids": [
             "segment_018"
           ],
@@ -516,8 +516,8 @@
         },
         {
           "name": "replica_replicate",
-          "inclusive_duration_seconds": 0.271519,
-          "exclusive_duration_seconds": 0.271519,
+          "inclusive_duration_seconds": 0.27396,
+          "exclusive_duration_seconds": 0.27396,
           "segment_ids": [
             "segment_019"
           ],
@@ -525,8 +525,8 @@
         },
         {
           "name": "cluster_convergence_wait",
-          "inclusive_duration_seconds": 0.00688,
-          "exclusive_duration_seconds": 0.00688,
+          "inclusive_duration_seconds": 0.008383,
+          "exclusive_duration_seconds": 0.008383,
           "segment_ids": [
             "segment_020"
           ],
@@ -534,8 +534,8 @@
         },
         {
           "name": "cluster_final_snapshot",
-          "inclusive_duration_seconds": 0.00226,
-          "exclusive_duration_seconds": 0.00226,
+          "inclusive_duration_seconds": 0.002253,
+          "exclusive_duration_seconds": 0.002253,
           "segment_ids": [
             "segment_021"
           ],
@@ -543,8 +543,8 @@
         },
         {
           "name": "cluster_final_full_snapshot",
-          "inclusive_duration_seconds": 141.000083,
-          "exclusive_duration_seconds": 141.000083,
+          "inclusive_duration_seconds": 27.070958,
+          "exclusive_duration_seconds": 27.070958,
           "segment_ids": [
             "segment_022"
           ],
@@ -593,30 +593,30 @@
   },
   "largest_segments": [
     {
-      "id": "segment_022",
-      "name": "cluster_final_full_snapshot",
-      "category": "cluster_formation",
-      "duration_seconds": 141.000083,
-      "details": {
-        "node_count": 100,
-        "sample_scope": "all_nodes"
-      }
-    },
-    {
       "id": "segment_017",
       "name": "primary_cluster_create",
       "category": "cluster_formation",
-      "duration_seconds": 102.728939,
+      "duration_seconds": 39.481208,
       "details": {
         "primary_count": 50,
         "strategy": "valkey_cli_cluster_create_primaries"
       }
     },
     {
+      "id": "segment_022",
+      "name": "cluster_final_full_snapshot",
+      "category": "cluster_formation",
+      "duration_seconds": 27.070958,
+      "details": {
+        "node_count": 100,
+        "sample_scope": "all_nodes"
+      }
+    },
+    {
       "id": "segment_018",
       "name": "replica_meet",
       "category": "cluster_formation",
-      "duration_seconds": 3.050735,
+      "duration_seconds": 5.072659,
       "details": {
         "fanout": 4,
         "parallelism": 8,
@@ -627,7 +627,17 @@
       "id": "segment_008",
       "name": "nodehost_start",
       "category": "nodehost_start",
-      "duration_seconds": 0.470368,
+      "duration_seconds": 0.431522,
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      }
+    },
+    {
+      "id": "segment_013",
+      "name": "nodehost_start_all",
+      "category": "process_start",
+      "duration_seconds": 0.324748,
       "details": {
         "nodehost_count": 2,
         "parallelism": 8
@@ -637,27 +647,17 @@
       "id": "segment_019",
       "name": "replica_replicate",
       "category": "cluster_formation",
-      "duration_seconds": 0.271519,
+      "duration_seconds": 0.27396,
       "details": {
         "parallelism": 8,
         "replica_count": 50
       }
     },
     {
-      "id": "segment_013",
-      "name": "nodehost_start_all",
-      "category": "process_start",
-      "duration_seconds": 0.251617,
-      "details": {
-        "nodehost_count": 2,
-        "parallelism": 8
-      }
-    },
-    {
       "id": "segment_026",
       "name": "scale_ladder_artifact_write",
       "category": "artifact_write",
-      "duration_seconds": 0.208733,
+      "duration_seconds": 0.227517,
       "details": {
         "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
       }
@@ -666,7 +666,7 @@
       "id": "segment_012",
       "name": "nodehost_bundle_install",
       "category": "process_config_prepare",
-      "duration_seconds": 0.086127,
+      "duration_seconds": 0.081767,
       "details": {
         "nodehost_count": 2,
         "parallelism": 8
@@ -676,7 +676,7 @@
       "id": "segment_015",
       "name": "process_ready_wait",
       "category": "process_ready_wait",
-      "duration_seconds": 0.074423,
+      "duration_seconds": 0.073247,
       "details": {
         "node_count": 100
       }
@@ -685,7 +685,7 @@
       "id": "segment_014",
       "name": "pidfile_collect",
       "category": "process_start",
-      "duration_seconds": 0.062383,
+      "duration_seconds": 0.060444,
       "details": {
         "nodehost_count": 2,
         "parallelism": 8
@@ -697,7 +697,7 @@
       "id": "segment_027",
       "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
       "category": "gap",
-      "duration_seconds": 0.002209,
+      "duration_seconds": 0.002931,
       "details": {
         "next_segment": "state_write_setup_timeline_reference",
         "previous_segment": "scale_ladder_artifact_write",
@@ -726,60 +726,60 @@
   "source_artifacts": [
     {
       "path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
-      "sha256": "95cdfc372f13e776f2859b81d20731b84a7be78be7b322df73f50597d1d3ce86"
+      "sha256": "7932149c51893d64a7b3fb2430defb0ddc6ff39026247bfe7911c6f0a61009fb"
     },
     {
       "path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
-      "sha256": "ab91709c8dd235479eb70751da7ffd75e7461a0407945a7818f431e4cce2b96c"
+      "sha256": "77394bf85631e87168c5ee0bf9c7bd40b549600f4b9ce5c71b84c4a0f70b83e5"
     },
     {
       "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
-      "sha256": "c8bdde24a12f9701861abceaa197930bd12a1e0614df0e20f876aa3fbd2afad3"
+      "sha256": "98c75219df37439ce64c6d3031965ba6667039a77e45daf00fae2eae4dc0b519"
     },
     {
       "path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
-      "sha256": "fc697ee2aecd7c3738086b1d811f58fc33d5675a9afd8c4ed17830c24057816f"
+      "sha256": "f94de45a7f1118017bdf79b3f0f306ed645bfeb7178ecafa6754d9f6ff7cad0e"
     },
     {
       "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
-      "sha256": "a04bf652e7b32496bd0d2b97f08212d3c477ac92505f4e19677bfd5746cda037"
+      "sha256": "6fd65c120e88d47c08a8c4aa003363c0cbdf0fd47175e59b02d7a4ca2cbf2be0"
     },
     {
       "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
-      "sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de"
+      "sha256": "5d3ae8cda007539b7fcbc05093353ae2b9e284bdf8267d3e4bebd58c2f27fb0e"
     }
   ],
   "summary": {
-    "setup_command_wall_seconds": 248.41558,
-    "setup_timeline_total_seconds": 248.37056,
-    "setup_timeline_unexplained_seconds": 0.04502,
+    "setup_command_wall_seconds": 73.2923,
+    "setup_timeline_total_seconds": 73.243372,
+    "setup_timeline_unexplained_seconds": 0.048928,
     "setup_timeline_unexplained_status": "PASS",
     "largest_segments": [
-      {
-        "id": "segment_022",
-        "name": "cluster_final_full_snapshot",
-        "category": "cluster_formation",
-        "duration_seconds": 141.000083,
-        "details": {
-          "node_count": 100,
-          "sample_scope": "all_nodes"
-        }
-      },
       {
         "id": "segment_017",
         "name": "primary_cluster_create",
         "category": "cluster_formation",
-        "duration_seconds": 102.728939,
+        "duration_seconds": 39.481208,
         "details": {
           "primary_count": 50,
           "strategy": "valkey_cli_cluster_create_primaries"
         }
       },
       {
+        "id": "segment_022",
+        "name": "cluster_final_full_snapshot",
+        "category": "cluster_formation",
+        "duration_seconds": 27.070958,
+        "details": {
+          "node_count": 100,
+          "sample_scope": "all_nodes"
+        }
+      },
+      {
         "id": "segment_018",
         "name": "replica_meet",
         "category": "cluster_formation",
-        "duration_seconds": 3.050735,
+        "duration_seconds": 5.072659,
         "details": {
           "fanout": 4,
           "parallelism": 8,
@@ -790,7 +790,17 @@
         "id": "segment_008",
         "name": "nodehost_start",
         "category": "nodehost_start",
-        "duration_seconds": 0.470368,
+        "duration_seconds": 0.431522,
+        "details": {
+          "nodehost_count": 2,
+          "parallelism": 8
+        }
+      },
+      {
+        "id": "segment_013",
+        "name": "nodehost_start_all",
+        "category": "process_start",
+        "duration_seconds": 0.324748,
         "details": {
           "nodehost_count": 2,
           "parallelism": 8
@@ -800,27 +810,17 @@
         "id": "segment_019",
         "name": "replica_replicate",
         "category": "cluster_formation",
-        "duration_seconds": 0.271519,
+        "duration_seconds": 0.27396,
         "details": {
           "parallelism": 8,
           "replica_count": 50
         }
       },
       {
-        "id": "segment_013",
-        "name": "nodehost_start_all",
-        "category": "process_start",
-        "duration_seconds": 0.251617,
-        "details": {
-          "nodehost_count": 2,
-          "parallelism": 8
-        }
-      },
-      {
         "id": "segment_026",
         "name": "scale_ladder_artifact_write",
         "category": "artifact_write",
-        "duration_seconds": 0.208733,
+        "duration_seconds": 0.227517,
         "details": {
           "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
         }
@@ -829,7 +829,7 @@
         "id": "segment_012",
         "name": "nodehost_bundle_install",
         "category": "process_config_prepare",
-        "duration_seconds": 0.086127,
+        "duration_seconds": 0.081767,
         "details": {
           "nodehost_count": 2,
           "parallelism": 8
@@ -839,7 +839,7 @@
         "id": "segment_015",
         "name": "process_ready_wait",
         "category": "process_ready_wait",
-        "duration_seconds": 0.074423,
+        "duration_seconds": 0.073247,
         "details": {
           "node_count": 100
         }
@@ -848,7 +848,7 @@
         "id": "segment_014",
         "name": "pidfile_collect",
         "category": "process_start",
-        "duration_seconds": 0.062383,
+        "duration_seconds": 0.060444,
         "details": {
           "nodehost_count": 2,
           "parallelism": 8
@@ -860,7 +860,7 @@
         "id": "segment_027",
         "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
         "category": "gap",
-        "duration_seconds": 0.002209,
+        "duration_seconds": 0.002931,
         "details": {
           "next_segment": "state_write_setup_timeline_reference",
           "previous_segment": "scale_ladder_artifact_write",
@@ -876,16 +876,16 @@
       "node_count": 50,
       "status": "PASS",
       "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
-      "setup_command_wall_seconds": 22.601064,
-      "setup_timeline_total_seconds": 22.552887,
-      "setup_timeline_unexplained_seconds": 0.048177,
+      "setup_command_wall_seconds": 48.858496,
+      "setup_timeline_total_seconds": 48.811269,
+      "setup_timeline_unexplained_seconds": 0.047227,
       "setup_timeline_unexplained_status": "PASS",
       "largest_segments": [
         {
           "id": "segment_017",
           "name": "primary_cluster_create",
           "category": "cluster_formation",
-          "duration_seconds": 11.176557,
+          "duration_seconds": 29.361513,
           "details": {
             "primary_count": 25,
             "strategy": "valkey_cli_cluster_create_primaries"
@@ -895,7 +895,7 @@
           "id": "segment_022",
           "name": "cluster_final_full_snapshot",
           "category": "cluster_formation",
-          "duration_seconds": 6.217648,
+          "duration_seconds": 14.387377,
           "details": {
             "node_count": 50,
             "sample_scope": "all_nodes"
@@ -905,7 +905,7 @@
           "id": "segment_018",
           "name": "replica_meet",
           "category": "cluster_formation",
-          "duration_seconds": 4.050456,
+          "duration_seconds": 4.041985,
           "details": {
             "fanout": 4,
             "parallelism": 8,
@@ -916,7 +916,7 @@
           "id": "segment_008",
           "name": "nodehost_start",
           "category": "nodehost_start",
-          "duration_seconds": 0.349809,
+          "duration_seconds": 0.305184,
           "details": {
             "nodehost_count": 2,
             "parallelism": 8
@@ -926,7 +926,7 @@
           "id": "segment_013",
           "name": "nodehost_start_all",
           "category": "process_start",
-          "duration_seconds": 0.212641,
+          "duration_seconds": 0.164272,
           "details": {
             "nodehost_count": 2,
             "parallelism": 8
@@ -936,7 +936,7 @@
           "id": "segment_026",
           "name": "scale_ladder_artifact_write",
           "category": "artifact_write",
-          "duration_seconds": 0.119105,
+          "duration_seconds": 0.120962,
           "details": {
             "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
           }
@@ -945,27 +945,27 @@
           "id": "segment_019",
           "name": "replica_replicate",
           "category": "cluster_formation",
-          "duration_seconds": 0.103842,
+          "duration_seconds": 0.111569,
           "details": {
             "parallelism": 8,
             "replica_count": 25
           }
         },
         {
-          "id": "segment_012",
-          "name": "nodehost_bundle_install",
-          "category": "process_config_prepare",
-          "duration_seconds": 0.072283,
+          "id": "segment_014",
+          "name": "pidfile_collect",
+          "category": "process_start",
+          "duration_seconds": 0.081457,
           "details": {
             "nodehost_count": 2,
             "parallelism": 8
           }
         },
         {
-          "id": "segment_014",
-          "name": "pidfile_collect",
-          "category": "process_start",
-          "duration_seconds": 0.058344,
+          "id": "segment_012",
+          "name": "nodehost_bundle_install",
+          "category": "process_config_prepare",
+          "duration_seconds": 0.05888,
           "details": {
             "nodehost_count": 2,
             "parallelism": 8
@@ -975,7 +975,7 @@
           "id": "segment_006",
           "name": "docker_network_create",
           "category": "docker_network",
-          "duration_seconds": 0.04679,
+          "duration_seconds": 0.044322,
           "details": {
             "network_name": "vslab-p13-scale-ladder-50-100-scale_50"
           }
@@ -986,7 +986,7 @@
           "id": "segment_027",
           "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
           "category": "gap",
-          "duration_seconds": 0.001369,
+          "duration_seconds": 0.002229,
           "details": {
             "next_segment": "state_write_setup_timeline_reference",
             "previous_segment": "scale_ladder_artifact_write",
@@ -1055,36 +1055,36 @@
       "node_count": 100,
       "status": "PASS",
       "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
-      "setup_command_wall_seconds": 248.41558,
-      "setup_timeline_total_seconds": 248.37056,
-      "setup_timeline_unexplained_seconds": 0.04502,
+      "setup_command_wall_seconds": 73.2923,
+      "setup_timeline_total_seconds": 73.243372,
+      "setup_timeline_unexplained_seconds": 0.048928,
       "setup_timeline_unexplained_status": "PASS",
       "largest_segments": [
-        {
-          "id": "segment_022",
-          "name": "cluster_final_full_snapshot",
-          "category": "cluster_formation",
-          "duration_seconds": 141.000083,
-          "details": {
-            "node_count": 100,
-            "sample_scope": "all_nodes"
-          }
-        },
         {
           "id": "segment_017",
           "name": "primary_cluster_create",
           "category": "cluster_formation",
-          "duration_seconds": 102.728939,
+          "duration_seconds": 39.481208,
           "details": {
             "primary_count": 50,
             "strategy": "valkey_cli_cluster_create_primaries"
           }
         },
         {
+          "id": "segment_022",
+          "name": "cluster_final_full_snapshot",
+          "category": "cluster_formation",
+          "duration_seconds": 27.070958,
+          "details": {
+            "node_count": 100,
+            "sample_scope": "all_nodes"
+          }
+        },
+        {
           "id": "segment_018",
           "name": "replica_meet",
           "category": "cluster_formation",
-          "duration_seconds": 3.050735,
+          "duration_seconds": 5.072659,
           "details": {
             "fanout": 4,
             "parallelism": 8,
@@ -1095,7 +1095,17 @@
           "id": "segment_008",
           "name": "nodehost_start",
           "category": "nodehost_start",
-          "duration_seconds": 0.470368,
+          "duration_seconds": 0.431522,
+          "details": {
+            "nodehost_count": 2,
+            "parallelism": 8
+          }
+        },
+        {
+          "id": "segment_013",
+          "name": "nodehost_start_all",
+          "category": "process_start",
+          "duration_seconds": 0.324748,
           "details": {
             "nodehost_count": 2,
             "parallelism": 8
@@ -1105,27 +1115,17 @@
           "id": "segment_019",
           "name": "replica_replicate",
           "category": "cluster_formation",
-          "duration_seconds": 0.271519,
+          "duration_seconds": 0.27396,
           "details": {
             "parallelism": 8,
             "replica_count": 50
           }
         },
         {
-          "id": "segment_013",
-          "name": "nodehost_start_all",
-          "category": "process_start",
-          "duration_seconds": 0.251617,
-          "details": {
-            "nodehost_count": 2,
-            "parallelism": 8
-          }
-        },
-        {
           "id": "segment_026",
           "name": "scale_ladder_artifact_write",
           "category": "artifact_write",
-          "duration_seconds": 0.208733,
+          "duration_seconds": 0.227517,
           "details": {
             "artifacts_dir": "artifacts/phases/P13_SCALE_LADDER_50_100"
           }
@@ -1134,7 +1134,7 @@
           "id": "segment_012",
           "name": "nodehost_bundle_install",
           "category": "process_config_prepare",
-          "duration_seconds": 0.086127,
+          "duration_seconds": 0.081767,
           "details": {
             "nodehost_count": 2,
             "parallelism": 8
@@ -1144,7 +1144,7 @@
           "id": "segment_015",
           "name": "process_ready_wait",
           "category": "process_ready_wait",
-          "duration_seconds": 0.074423,
+          "duration_seconds": 0.073247,
           "details": {
             "node_count": 100
           }
@@ -1153,7 +1153,7 @@
           "id": "segment_014",
           "name": "pidfile_collect",
           "category": "process_start",
-          "duration_seconds": 0.062383,
+          "duration_seconds": 0.060444,
           "details": {
             "nodehost_count": 2,
             "parallelism": 8
@@ -1165,7 +1165,7 @@
           "id": "segment_027",
           "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
           "category": "gap",
-          "duration_seconds": 0.002209,
+          "duration_seconds": 0.002931,
           "details": {
             "next_segment": "state_write_setup_timeline_reference",
             "previous_segment": "scale_ladder_artifact_write",

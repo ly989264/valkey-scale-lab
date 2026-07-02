@@ -1,18 +1,25 @@
 {
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "capability-refresh-reviewer",
+  "created_at": "2026-07-02T04:02:46.921534Z",
+  "gate_result_path": "artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/gate_result.json",
+  "gate_result_sha256": "cdd1de38a5257e05cf1051e2e4f90178f36fa4c238a574ac2c125349ba0517d9",
   "artifact_paths": [
     "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/phase_summary.json",
     "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json",
     "artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/cleanup_report.json"
   ],
-  "artifact_type": "audit_decision",
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-29T02:47:50Z",
-  "decision": "PASS",
-  "fresh_context": true,
-  "gate_result_path": "artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/gate_result.json",
-  "gate_result_sha256": "c80f6f89d123eb0ca0517a047efab2d95536689fdbdd800318537804fc275bb6",
-  "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
-  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/valkey_e2e_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 6.",
-  "risks": [],
-  "schema_version": "v1"
+  "risks": [
+    {
+      "risk": "Supplemental CML capability closure remains in progress",
+      "severity": "medium",
+      "required_before_next_phase": false,
+      "notes": "Handled by CML stages."
+    }
+  ],
+  "rationale": "Gate and audit refreshed against current manifest before CML bootstrap."
 }

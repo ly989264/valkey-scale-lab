@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "status": "PASS",
+  "reports": [
+    {
+      "path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/reports/capability_matrix_baseline.json",
+      "sha256": "e92d0f859b11434ca21b5d753a54233da08c56a6310e465b8e5f2dec43cfb47d"
+    }
+  ]
+}

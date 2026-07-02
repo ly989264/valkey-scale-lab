@@ -1,4 +1,13 @@
 {
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P06_OBSERVABILITY_METRICS",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "capability-refresh-reviewer",
+  "created_at": "2026-07-02T04:01:36.742903Z",
+  "gate_result_path": "artifacts/gates/P06_OBSERVABILITY_METRICS/gate_result.json",
+  "gate_result_sha256": "fddc430e8212e717d0e6e6fc44c6041dedbe18cc2e2e5f37402cb43656c0b0d3",
   "artifact_paths": [
     "artifacts/phases/P06_OBSERVABILITY_METRICS/phase_summary.json",
     "artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json",
@@ -6,15 +15,13 @@
     "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl",
     "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl"
   ],
-  "artifact_type": "audit_decision",
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-29T02:47:50Z",
-  "decision": "PASS",
-  "fresh_context": true,
-  "gate_result_path": "artifacts/gates/P06_OBSERVABILITY_METRICS/gate_result.json",
-  "gate_result_sha256": "32055bccfdc04695465bf4db7816356d8f83e11504330bdb521148eced23a346",
-  "phase_id": "P06_OBSERVABILITY_METRICS",
-  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/valkey_e2e_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 6.",
-  "risks": [],
-  "schema_version": "v1"
+  "risks": [
+    {
+      "risk": "Supplemental CML capability closure remains in progress",
+      "severity": "medium",
+      "required_before_next_phase": false,
+      "notes": "Handled by CML stages."
+    }
+  ],
+  "rationale": "Gate and audit refreshed against current manifest before CML bootstrap."
 }

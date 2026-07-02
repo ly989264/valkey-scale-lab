@@ -2,8 +2,8 @@
   "schema_version": "v1",
   "artifact_type": "failover_report",
   "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
-  "run_id": "phase-P08_FAILOVER_SPLIT_BRAIN-primary-stop",
-  "created_at": "2026-06-28T07:02:05.305987Z",
+  "run_id": "phase-P08_FAILOVER_SPLIT_BRAIN-failover_setup-primary-stop",
+  "created_at": "2026-07-02T04:02:34.614114Z",
   "producer": {
     "name": "scripts/fault_failover_gate.py",
     "version": "v1"
@@ -13,9 +13,10 @@
     {
       "fault_id": "fault-primary-stop",
       "target_logical_id": "shard-0000-primary",
-      "old_primary_node_id": "e2126f4f1543a8f06b6f429a5647ce7b344bef4e",
-      "promoted_node_id": "e9ab2ea9eefb4276749c1f44ed32fc65dc3fe622",
-      "failover_latency_ms": 408.125
+      "old_primary_node_id": "0a42f0f349a1ff027ec2dcfc09e29ba2081121a2",
+      "expected_replica_node_id": "2dc09760e9f291f94c6c10919d926d22d60704b0",
+      "promoted_node_id": "2dc09760e9f291f94c6c10919d926d22d60704b0",
+      "failover_latency_ms": 35265.196
     }
   ],
   "summary": {
@@ -24,7 +25,64 @@
     "split_brain_duration_ms": {
       "value": null,
       "status": "MISSING",
-      "reason": "not_measured_by_primary_stop_gate"
+      "reason": "primary_stop_gate_did_not_observe_conflicting_primaries"
+    },
+    "failover_node_timeout_ms": 15000
+  },
+  "timeout_adjustments": [
+    {
+      "logical_id": "shard-0000-primary",
+      "host": "127.0.0.1",
+      "port": 7000,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "host": "127.0.0.1",
+      "port": 7001,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "host": "127.0.0.1",
+      "port": 7002,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "port": 7003,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "port": 7004,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
+    },
+    {
+      "logical_id": "shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "port": 7005,
+      "parameter": "cluster-node-timeout",
+      "value": 15000,
+      "status": "PASS",
+      "reply": "OK"
     }
-  }
+  ]
 }

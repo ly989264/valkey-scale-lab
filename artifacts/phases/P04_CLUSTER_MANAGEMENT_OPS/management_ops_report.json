@@ -4,34 +4,53 @@
   "operations": [
     {
       "details": {
-        "cluster_known_nodes": 6,
-        "nodes_joined": 5
+        "cluster_known_nodes": 3,
+        "fanout": 4,
+        "meet_commands": 2,
+        "nodes_joined": 2,
+        "parallelism": 8
       },
-      "duration_seconds": 3.294039,
+      "duration_seconds": 0.001705,
       "finished_at": "2026-06-28T00:00:00Z",
-      "operation": "meet",
+      "operation": "tree_fanout_meet_primaries",
       "started_at": "2026-06-28T00:00:00Z",
       "status": "PASS"
     },
     {
       "details": {
+        "parallelism": 8,
         "primary_count": 3,
         "slots_assigned": 16384
       },
-      "duration_seconds": 4.856831,
+      "duration_seconds": 2.043354,
       "finished_at": "2026-06-28T00:00:00Z",
-      "operation": "add_slots",
+      "operation": "parallel_add_slots",
+      "started_at": "2026-06-28T00:00:00Z",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "cluster_known_nodes": 6,
+        "fanout": 4,
+        "meet_commands": 3,
+        "nodes_joined": 3,
+        "parallelism": 8
+      },
+      "duration_seconds": 0.005015,
+      "finished_at": "2026-06-28T00:00:00Z",
+      "operation": "tree_fanout_meet_replicas",
       "started_at": "2026-06-28T00:00:00Z",
       "status": "PASS"
     },
     {
       "details": {
         "cluster_state": "ok",
+        "parallelism": 8,
         "replica_count": 3
       },
-      "duration_seconds": 2.041548,
+      "duration_seconds": 1.034385,
       "finished_at": "2026-06-28T00:00:00Z",
-      "operation": "add_replica",
+      "operation": "parallel_add_replicas",
       "started_at": "2026-06-28T00:00:00Z",
       "status": "PASS"
     },
@@ -39,7 +58,7 @@
       "details": {
         "cluster_state": "ok"
       },
-      "duration_seconds": 0.372283,
+      "duration_seconds": 2.018974,
       "finished_at": "2026-06-28T00:00:00Z",
       "operation": "convergence_check",
       "started_at": "2026-06-28T00:00:00Z",
@@ -49,7 +68,7 @@
       "details": {
         "line_count": 6
       },
-      "duration_seconds": 0.059916,
+      "duration_seconds": 0.001312,
       "finished_at": "2026-06-28T00:00:00Z",
       "operation": "cluster_nodes",
       "started_at": "2026-06-28T00:00:00Z",
@@ -60,7 +79,7 @@
         "cluster_known_nodes": "6",
         "cluster_state": "ok"
       },
-      "duration_seconds": 0.056938,
+      "duration_seconds": 0.001061,
       "finished_at": "2026-06-28T00:00:00Z",
       "operation": "cluster_info",
       "started_at": "2026-06-28T00:00:00Z",
@@ -117,8 +136,8 @@
       "UNSUPPORTED": "operation unavailable in current runtime scope"
     },
     "failed": 0,
-    "passed": 6,
+    "passed": 7,
     "skipped_with_reason": 4,
-    "total_operations": 10
+    "total_operations": 11
   }
 }

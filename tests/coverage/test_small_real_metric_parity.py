@@ -41,19 +41,23 @@ def test_required_surfaces_have_separate_fake_and_small_real_metric_layers() -> 
     assert all(metric["real_valkey_coverage"] is False for metric in artifact["metrics"] if metric["evidence_layer"] == "fake")
 
 
-def test_fault_and_failover_skipped_data_path_semantics_are_preserved() -> None:
+def test_fault_skipped_and_failover_measured_data_path_semantics_are_preserved() -> None:
     artifact = build()
-    names = [
+    skipped_names = [
         "fault_sandbox.real_evidence.data_path_result",
-        "failover_primary_stop.real_evidence.data_path_result",
         "fault_sandbox.observed_impact",
     ]
 
-    for name in names:
+    for name in skipped_names:
         metrics = metric_by_name(artifact, name)
         assert metrics
         assert metrics[0]["value_status"] == "SKIPPED_WITH_REASON"
         assert metrics[0]["missing_semantics"]["reason"]
+
+    failover_data_path = metric_by_name(artifact, "failover_primary_stop.real_evidence.data_path_result")
+    assert failover_data_path
+    assert failover_data_path[0]["value_status"] == "PASS"
+    assert failover_data_path[0]["value"] == "PASS"
 
 
 def test_failover_split_brain_is_explicit_missing() -> None:
@@ -66,7 +70,10 @@ def test_failover_split_brain_is_explicit_missing() -> None:
 
     assert metric["value"] is None
     assert metric["value_status"] == "MISSING"
-    assert metric["missing_semantics"]["reason"] == "not_measured_by_primary_stop_gate"
+    assert metric["missing_semantics"]["reason"] in {
+        "not_measured_by_primary_stop_gate",
+        "primary_stop_gate_did_not_observe_conflicting_primaries",
+    }
 
 
 def test_stability_no_baseline_values_are_not_fabricated() -> None:

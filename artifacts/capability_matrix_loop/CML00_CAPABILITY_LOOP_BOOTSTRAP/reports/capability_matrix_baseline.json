@@ -1,0 +1,81 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_matrix_baseline",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "status": "PASS",
+  "created_at": "2026-07-02T03:55:59.445774Z",
+  "capabilities": [
+    {
+      "capability": "cluster_management_scale_30",
+      "scale_nodes": 30,
+      "status": "PARTIAL",
+      "real_valkey_required": true,
+      "cleanup_required": true,
+      "evidence_paths": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json"
+      ],
+      "cleanup_evidence_paths": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json"
+      ],
+      "missing_or_partial": [
+        "remove_node",
+        "add_node",
+        "reshard",
+        "rebalance",
+        "rolling_restart workload windows require CML02 closure"
+      ],
+      "report_artifacts": []
+    },
+    {
+      "capability": "fault_failover_scale_30",
+      "scale_nodes": 30,
+      "status": "PARTIAL",
+      "real_valkey_required": true,
+      "cleanup_required": true,
+      "evidence_paths": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_fault_30.json"
+      ],
+      "cleanup_evidence_paths": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_fault_30.json"
+      ],
+      "missing_or_partial": [
+        "network partition",
+        "nodehost kill/restart",
+        "split-brain ABSENT_OBSERVED proof",
+        "full before/during/after workload windows"
+      ],
+      "report_artifacts": []
+    },
+    {
+      "capability": "scale_ladder_50_100",
+      "scale_nodes": 100,
+      "status": "PARTIAL",
+      "real_valkey_required": true,
+      "cleanup_required": true,
+      "evidence_paths": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json"
+      ],
+      "cleanup_evidence_paths": [
+        "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json"
+      ],
+      "missing_or_partial": [
+        "capability suite replay for management/fault/failover/split-brain/workload/soak across 50 and 100"
+      ],
+      "report_artifacts": []
+    },
+    {
+      "capability": "bounded_soak_30_60_minutes",
+      "scale_nodes": 30,
+      "status": "MISSING",
+      "real_valkey_required": true,
+      "cleanup_required": true,
+      "evidence_paths": [],
+      "cleanup_evidence_paths": [],
+      "missing_or_partial": [
+        "30-minute soak",
+        "60-minute soak"
+      ],
+      "report_artifacts": []
+    }
+  ]
+}

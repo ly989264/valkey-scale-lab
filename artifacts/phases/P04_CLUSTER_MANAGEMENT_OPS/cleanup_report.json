@@ -4,96 +4,104 @@
   "cleanup_actions": [
     {
       "action": "stop",
-      "id": "07db8fe64325",
+      "id": "83fef987a6ea",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "07db8fe64325",
+      "id": "83fef987a6ea",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "3b065f677555",
+      "id": "06edec87abd8",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "3b065f677555",
+      "id": "06edec87abd8",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "d908855f8ab5",
+      "id": "c7fde343ce6a",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "d908855f8ab5",
+      "id": "c7fde343ce6a",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "4cf75e5fd79f",
+      "id": "f7523536ebeb",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "4cf75e5fd79f",
+      "id": "f7523536ebeb",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "c40649233008",
+      "id": "39ab6aa6e240",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "c40649233008",
+      "id": "39ab6aa6e240",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "1e36292e00ca",
+      "id": "78a97459d349",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "1e36292e00ca",
+      "id": "78a97459d349",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "1e984c0409ca",
+      "id": "5e2cb546e0a2",
       "status": "PASS",
       "stderr": "",
       "type": "network"
     }
   ],
+  "cleanup_timing": {
+    "cleanup_remove_containers_seconds": 0.437761,
+    "cleanup_remove_networks_seconds": 0.097702,
+    "cleanup_residual_scan_seconds": 0.035119,
+    "cleanup_terminate_processes_seconds": 0.0,
+    "cleanup_verify_nodehost_empty_seconds": 0.0,
+    "cleanup_verify_process_exit_seconds": 0.0
+  },
   "created_at": "2026-06-28T00:00:00Z",
   "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
   "producer": {

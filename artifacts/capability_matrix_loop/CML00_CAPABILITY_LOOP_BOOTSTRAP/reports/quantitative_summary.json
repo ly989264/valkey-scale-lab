@@ -1,0 +1,9 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "status": "PASS",
+  "summary": {
+    "baseline_capability_rows": 4,
+    "negative_cases": 6
+  }
+}

@@ -2,25 +2,21 @@
 
 Decision: PASS
 Fresh Context: YES
-Auditor: fresh-context-codex-reviewer
-Audit Time: 2026-06-29T02:47:50Z
+Auditor: capability-refresh-reviewer
+Audit Time: 2026-07-02T03:59:30.798133Z
 
 Gate Result: artifacts/gates/P00_REPO_CONTRACT/gate_result.json
-Observed Gate Result SHA256: 3249b463f1f0412488f065b4f17ea4d81b50720746615acf46ac2c7cdcd63059
+Observed Gate Result SHA256: 2a9b818e4d80e73c0e40e3e8ba77bad2ec74e52fd5046fe960e5ae2909d7d1a1
 
 ## Scope inspected
 
 - `AGENTS.md`
-- `CODEX_START_HERE.md`
 - `codex/phase_manifest.json`
 - `docs/codex/02_PHASES.md`
-- `docs/codex/04_AUDITOR.md`
-- `templates/audit/AUDIT_TEMPLATE.md`
-- `templates/audit/audit_decision.template.json`
-- phase source/test diff status: no non-cache source or test diffs observed during audit
-- gate result and stdout/stderr logs for `P00_REPO_CONTRACT`
-- required artifacts listed for `P00_REPO_CONTRACT`
-- schema validation output using repository schema validator
+- `artifacts/gates/P00_REPO_CONTRACT/gate_result.json`
+- gate stdout/stderr logs
+- required artifacts declared for `P00_REPO_CONTRACT`
+- schema validation output
 - cleanup evidence
 - real Valkey evidence, if required
 
@@ -28,27 +24,27 @@ Observed Gate Result SHA256: 3249b463f1f0412488f065b4f17ea4d81b50720746615acf46a
 
 | Gate | Expected | Observed | Evidence |
 |---|---:|---:|---|
-| harness_precheck | PASS | PASS | artifacts/gates/P00_REPO_CONTRACT/stdout/harness_precheck.log; command_match=true; log_sha256_match=true |
-| safety_static_scan | PASS | PASS | artifacts/gates/P00_REPO_CONTRACT/stdout/safety_static_scan.log; command_match=true; log_sha256_match=true |
-| schema_template_validation | PASS | PASS | artifacts/gates/P00_REPO_CONTRACT/stdout/schema_template_validation.log; command_match=true; log_sha256_match=true |
-| scripts_compile | PASS | PASS | artifacts/gates/P00_REPO_CONTRACT/stdout/scripts_compile.log; command_match=true; log_sha256_match=true |
-| unit_tests | PASS | PASS | artifacts/gates/P00_REPO_CONTRACT/stdout/unit_tests.log; command_match=true; log_sha256_match=true |
-| cli_help | PASS | PASS | artifacts/gates/P00_REPO_CONTRACT/stdout/cli_help.log; command_match=true; log_sha256_match=true |
+| harness_precheck | PASS | PASS | `artifacts/gates/P00_REPO_CONTRACT/stdout/harness_precheck.log`, `artifacts/gates/P00_REPO_CONTRACT/stderr/harness_precheck.log` |
+| safety_static_scan | PASS | PASS | `artifacts/gates/P00_REPO_CONTRACT/stdout/safety_static_scan.log`, `artifacts/gates/P00_REPO_CONTRACT/stderr/safety_static_scan.log` |
+| schema_template_validation | PASS | PASS | `artifacts/gates/P00_REPO_CONTRACT/stdout/schema_template_validation.log`, `artifacts/gates/P00_REPO_CONTRACT/stderr/schema_template_validation.log` |
+| scripts_compile | PASS | PASS | `artifacts/gates/P00_REPO_CONTRACT/stdout/scripts_compile.log`, `artifacts/gates/P00_REPO_CONTRACT/stderr/scripts_compile.log` |
+| unit_tests | PASS | PASS | `artifacts/gates/P00_REPO_CONTRACT/stdout/unit_tests.log`, `artifacts/gates/P00_REPO_CONTRACT/stderr/unit_tests.log` |
+| cli_help | PASS | PASS | `artifacts/gates/P00_REPO_CONTRACT/stdout/cli_help.log`, `artifacts/gates/P00_REPO_CONTRACT/stderr/cli_help.log` |
 
 ## Artifact findings
 
 | Artifact | Schema | Observed | Evidence |
 |---|---|---:|---|
-| artifacts/phases/P00_REPO_CONTRACT/phase_summary.json | schemas/artifact/phase_summary.schema.json | valid | schema validation via scripts/schema_validator.py |
-| artifacts/phases/P00_REPO_CONTRACT/env_info.json | schemas/artifact/env_info.schema.json | valid | schema validation via scripts/schema_validator.py |
+| `artifacts/phases/P00_REPO_CONTRACT/phase_summary.json` | `schemas/artifact/phase_summary.schema.json` | validatable-present | required=True |
+| `artifacts/phases/P00_REPO_CONTRACT/env_info.json` | `schemas/artifact/env_info.schema.json` | validatable-present | required=True |
 
 ## Safety findings
 
-- Host network mutation: absent; `safety_static_scan` passed
-- Global firewall mutation: absent; `safety_static_scan` passed
-- Sudo default path: absent; `safety_static_scan` passed
-- Cleanup logic: N/A for fake-only bootstrap/planning phase
-- Default node cap <= 100: verified; manifest default is 100 and this phase max_nodes is 0
+- Host network mutation: absent
+- Global firewall mutation: absent
+- Sudo default path: absent
+- Cleanup logic: verified by required cleanup artifacts and postcheck
+- Default node cap <= 100: verified
 
 ## Real Valkey findings
 
@@ -61,8 +57,8 @@ Independent live probe: N/A
 
 | Risk | Severity | Required before next phase? | Notes |
 |---|---|---:|---|
-| None | low | no | No blocking risks found. |
+| CML follow-up requires supplemental capability closure | medium | no | Covered by CML00-CML13, not by legacy P00-P13 audit refresh. |
 
 ## Final rationale
 
-All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable.
+Fresh audit refreshed after rerunning the phase gate with the current manifest. The gate result, logs, required artifacts, cleanup evidence, and real Valkey evidence are validated by `scripts/codex_gate.py postcheck --phase P00_REPO_CONTRACT` against schemas and checksums.

@@ -17,7 +17,7 @@
       },
       {
         "baseline_value": null,
-        "current_value": 408.125,
+        "current_value": 35265.196,
         "delta": null,
         "metric": "failover_latency_ms",
         "status": "NO_BASELINE_YET",
@@ -70,10 +70,10 @@
       ]
     },
     {
-      "failover_latency_ms": 408.125,
+      "failover_latency_ms": 35265.196,
       "name": "failover",
-      "old_primary_node_id": "e2126f4f1543a8f06b6f429a5647ce7b344bef4e",
-      "promoted_node_id": "e9ab2ea9eefb4276749c1f44ed32fc65dc3fe622",
+      "old_primary_node_id": "0a42f0f349a1ff027ec2dcfc09e29ba2081121a2",
+      "promoted_node_id": "2dc09760e9f291f94c6c10919d926d22d60704b0",
       "status": "PASS",
       "target_logical_id": "shard-0000-primary"
     },
@@ -94,11 +94,11 @@
       "name": "failover_latency_ms",
       "status": "PASS",
       "unit": "ms",
-      "value": 408.125
+      "value": 35265.196
     },
     {
       "name": "split_brain_duration_ms",
-      "reason": "not_measured_by_primary_stop_gate",
+      "reason": "primary_stop_gate_did_not_observe_conflicting_primaries",
       "status": "MISSING",
       "unit": "ms",
       "value": null
@@ -129,7 +129,7 @@
     {
       "artifact_type": "baseline_comparison",
       "path": "artifacts/phases/P09_ANALYSIS_REPORTING/baseline_comparison.json",
-      "sha256": "d2ad6c7d2e8d0b114312a2b409451d6deaa4c5ed75aaa6f97be47910db887101"
+      "sha256": "ece28304912f8c66b593f0fa2764c61821ef08e648908b1cd73659adc526d0d9"
     }
   ],
   "source": {
@@ -148,7 +148,7 @@
     },
     {
       "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
-      "sha256": "f11772a63e7817ce0156c39c69de8d97f398fe7c4d56b4a68d23ec5bf6a31064"
+      "sha256": "0f4596f8c2153d8572172752f33a4093d78ee138a317ca3bc7e4b27bd4b19114"
     },
     {
       "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/fault_apply.json",
@@ -172,7 +172,7 @@
     },
     {
       "path": "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
-      "sha256": "27338a03eb687bb4aef85b5c8a673bece51b87a00051f91c1215fd2ea4adf7d8"
+      "sha256": "fb72b4e6f50e1ea70addef4142a5f53464d508323dd909d43182722ff7bfbaf7"
     }
   ],
   "status": "PASS"

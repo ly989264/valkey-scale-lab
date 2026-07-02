@@ -1,0 +1,89 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:19:30.862263Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "capability_matrix_baseline",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "missing_artifact",
+      "status": "PASS",
+      "expected_error_fragment": "required artifact missing",
+      "observed_errors": [
+        "required artifact missing: synthetic"
+      ]
+    },
+    {
+      "name": "fake_real_valkey_evidence",
+      "status": "PASS",
+      "expected_error_fragment": "fake real_valkey evidence",
+      "observed_errors": [
+        "baseline row 0 fake real_valkey evidence: artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/fake_valkey_evidence.json"
+      ]
+    },
+    {
+      "name": "skip_as_pass",
+      "status": "PASS",
+      "expected_error_fragment": "target capability cannot pass as skipped",
+      "observed_errors": [
+        "baseline row 0 target capability cannot pass as skipped"
+      ]
+    },
+    {
+      "name": "cleanup_missing",
+      "status": "PASS",
+      "expected_error_fragment": "cleanup required",
+      "observed_errors": [
+        "baseline row 0 cleanup required but missing evidence"
+      ]
+    },
+    {
+      "name": "report_without_checksum",
+      "status": "PASS",
+      "expected_error_fragment": "report source missing sha256",
+      "observed_errors": [
+        "baseline row 0 report source missing sha256"
+      ]
+    },
+    {
+      "name": "old_artifact_reuse",
+      "status": "PASS",
+      "expected_error_fragment": "old artifact reused",
+      "observed_errors": [
+        "baseline row 0 old artifact reused as current stage evidence"
+      ]
+    }
+  ]
+}

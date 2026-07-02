@@ -1,0 +1,76 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/README.md",
+      "purpose": "bootstrap loop readme",
+      "kind": "manifest"
+    },
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "CML stage manifest",
+      "kind": "manifest"
+    },
+    {
+      "path": "codex/capability_matrix_loop/harness_lock.json",
+      "purpose": "CML harness lock",
+      "kind": "lock"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/prompt_pack_location.schema.json",
+      "purpose": "prompt pack location schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/constraints_snapshot.schema.json",
+      "purpose": "constraints snapshot schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/harness_files.schema.json",
+      "purpose": "harness file list schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/harness_freeze.schema.json",
+      "purpose": "harness freeze schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/regression_guard_result.schema.json",
+      "purpose": "regression guard schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json",
+      "purpose": "current stage gate result schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_matrix_baseline.schema.json",
+      "purpose": "capability baseline schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_audit_decision.schema.json",
+      "purpose": "CML audit decision schema",
+      "kind": "schema"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_stage_result.schema.json",
+      "purpose": "CML stage result schema",
+      "kind": "schema"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "CML gate runner",
+      "kind": "runner"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "purpose": "CML negative/policy tests",
+      "kind": "test"
+    }
+  ]
+}

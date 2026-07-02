@@ -1,45 +1,43 @@
-1:M 29 Jun 2026 02:26:32.018 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
-1:M 29 Jun 2026 02:26:32.018 * Valkey version=9.1.0, bits=64, commit=00000000, modified=0, pid=1, just started
-1:M 29 Jun 2026 02:26:32.018 * Configuration loaded
-1:M 29 Jun 2026 02:26:32.018 * monotonic clock: ARM CNTVCT @ 24 ticks/us
-1:M 29 Jun 2026 02:26:32.018 * Running mode=cluster, port=6379.
-1:M 29 Jun 2026 02:26:32.020 * No cluster configuration found, I'm 2039eaa6b627540f574c461c023e2d0ae4788729
-1:M 29 Jun 2026 02:26:32.021 * Static Module 'lua' successfully loaded
-1:M 29 Jun 2026 02:26:32.021 * Server initialized
-1:M 29 Jun 2026 02:26:32.021 * Ready to accept connections tcp
-1:M 29 Jun 2026 02:26:32.727 * IP address for this node updated to 172.18.0.7
-1:M 29 Jun 2026 02:26:32.731 * configEpoch collision with node f11d582dbdf91152a32fecef8ca3bf78ae736998 (172.18.0.4:6379). configEpoch set to 2
-1:M 29 Jun 2026 02:26:33.238 * configEpoch collision with node d4d64c819ea11198f140fd3e04f0e501aecb309c (172.18.0.6:6379). configEpoch set to 4
-1:M 29 Jun 2026 02:26:34.061 # Cluster is currently down: I am part of a minority partition.
-1:M 29 Jun 2026 02:26:35.074 * Mismatch in topology information for sender node cc4a91981345c5c74effe276de3fa9541ebcc214 (172.18.0.2:6379) in shard 829faff17455061530c2f89c70ef0664c1670b16
-1:M 29 Jun 2026 02:26:35.075 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
-1:M 29 Jun 2026 02:26:35.581 * Mismatch in topology information for sender node 15fc104ce51db3db8b3e0dd82e621a126a642354 (172.18.0.3:6379) in shard d47895575634bc0e1bacc730ab9316d873e2e660
-1:M 29 Jun 2026 02:26:35.984 * Mismatch in topology information for sender node f11d582dbdf91152a32fecef8ca3bf78ae736998 (172.18.0.4:6379) in shard bbf110049d352fc43d0fe64bf7666a14bcc651d6
-1:M 29 Jun 2026 02:26:36.463 * Mismatch in topology information for sender node f11d582dbdf91152a32fecef8ca3bf78ae736998 (172.18.0.4:6379) in shard bbf110049d352fc43d0fe64bf7666a14bcc651d6
-1:M 29 Jun 2026 02:26:38.307 * Mismatch in topology information for sender node 15fc104ce51db3db8b3e0dd82e621a126a642354 (172.18.0.3:6379) in shard d47895575634bc0e1bacc730ab9316d873e2e660
-1:M 29 Jun 2026 02:26:39.493 * Node b311185bb915450c6ebde63f48f791dd4051c6bf (172.18.0.5:6379) is no longer primary of shard ed8f8b8d0153070cbea8c6e8683f17417a9a2a40; removed all 0 slot(s) it used to own
-1:M 29 Jun 2026 02:26:39.493 * Node b311185bb915450c6ebde63f48f791dd4051c6bf (172.18.0.5:6379) is now part of shard 829faff17455061530c2f89c70ef0664c1670b16
-1:M 29 Jun 2026 02:26:39.493 * Node b311185bb915450c6ebde63f48f791dd4051c6bf (172.18.0.5:6379) is now a replica of node cc4a91981345c5c74effe276de3fa9541ebcc214 (172.18.0.2:6379) in shard 829faff17455061530c2f89c70ef0664c1670b16
-1:M 29 Jun 2026 02:26:39.552 * Node d4d64c819ea11198f140fd3e04f0e501aecb309c (172.18.0.6:6379) is no longer primary of shard b5bd39e6c86de3ebbb9ba99a366542d34a71df9c; removed all 0 slot(s) it used to own
-1:M 29 Jun 2026 02:26:39.552 * Node d4d64c819ea11198f140fd3e04f0e501aecb309c (172.18.0.6:6379) is now part of shard d47895575634bc0e1bacc730ab9316d873e2e660
-1:M 29 Jun 2026 02:26:39.552 * Node d4d64c819ea11198f140fd3e04f0e501aecb309c (172.18.0.6:6379) is now a replica of node 15fc104ce51db3db8b3e0dd82e621a126a642354 (172.18.0.3:6379) in shard d47895575634bc0e1bacc730ab9316d873e2e660
-1:S 29 Jun 2026 02:26:39.603 * Connecting to PRIMARY 172.18.0.4:6379
-1:S 29 Jun 2026 02:26:39.604 * PRIMARY <-> REPLICA sync started
-1:S 29 Jun 2026 02:26:39.604 * Cluster state changed: ok
-1:S 29 Jun 2026 02:26:39.604 * Non blocking connect for SYNC fired the event.
-1:S 29 Jun 2026 02:26:39.604 * Primary replied to PING, replication can continue...
-1:S 29 Jun 2026 02:26:39.608 * Partial resynchronization not possible (no cached primary)
-1:S 29 Jun 2026 02:26:44.796 * Full resync from primary: 6c623a79d1c154f1fe7b0eca63f56c8937957f3e:14
-1:S 29 Jun 2026 02:26:44.797 * Replica main thread creating Bio thread to save RDB to disk
-1:S 29 Jun 2026 02:26:44.797 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
-1:S 29 Jun 2026 02:26:44.797 * Replica bio thread: Done downloading RDB
-1:S 29 Jun 2026 02:26:45.359 * Replica main thread detected RDB download completion in Bio thread
-1:S 29 Jun 2026 02:26:45.359 * Loading the RDB and finalizing primary-replica sync...
-1:S 29 Jun 2026 02:26:45.365 * PRIMARY <-> REPLICA sync: Loading DB in memory
-1:S 29 Jun 2026 02:26:45.365 * Cleaning slot migration log in anticipation of a load operation.
-1:S 29 Jun 2026 02:26:45.365 * RDB signature and version check passed. Flushing old data
-1:S 29 Jun 2026 02:26:45.366 * Loading RDB produced by Valkey version 9.1.0
-1:S 29 Jun 2026 02:26:45.366 * RDB age 1 seconds
-1:S 29 Jun 2026 02:26:45.366 * RDB memory usage when created 2.86 Mb
-1:S 29 Jun 2026 02:26:45.366 * Done loading RDB, keys loaded: 0, keys expired: 0, all fields expired hashes: 0.
-1:S 29 Jun 2026 02:26:45.366 * PRIMARY <-> REPLICA sync: Finished with success
+1:M 02 Jul 2026 04:01:21.211 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+1:M 02 Jul 2026 04:01:21.211 * Valkey version=9.1.0, bits=64, commit=00000000, modified=0, pid=1, just started
+1:M 02 Jul 2026 04:01:21.211 * Configuration loaded
+1:M 02 Jul 2026 04:01:21.211 * monotonic clock: ARM CNTVCT @ 24 ticks/us
+1:M 02 Jul 2026 04:01:21.211 * Running mode=cluster, port=6379.
+1:M 02 Jul 2026 04:01:21.212 * No cluster configuration found, I'm 6eb411fee8b3fd56fd66638373e73b29e4b79cfa
+1:M 02 Jul 2026 04:01:21.214 * Static Module 'lua' successfully loaded
+1:M 02 Jul 2026 04:01:21.214 * Server initialized
+1:M 02 Jul 2026 04:01:21.214 * Ready to accept connections tcp
+1:M 02 Jul 2026 04:01:23.250 # Cluster is currently down: I am part of a minority partition.
+1:M 02 Jul 2026 04:01:23.323 * IP address for this node updated to 172.18.0.7
+1:M 02 Jul 2026 04:01:23.352 * Mismatch in topology information for sender node d946b5fac17314496042815db62d9f81079c3c26 (172.18.0.3:6379) in shard 7500d1e35c84e2141fab1991edaed162e109ced9
+1:M 02 Jul 2026 04:01:23.352 * configEpoch collision with node d946b5fac17314496042815db62d9f81079c3c26 (172.18.0.3:6379). configEpoch set to 3
+1:M 02 Jul 2026 04:01:23.352 # Cluster is currently down: At least one hash slot is not served by any available node. Please check the 'cluster-require-full-coverage' configuration.
+1:M 02 Jul 2026 04:01:23.357 * Mismatch in topology information for sender node b829972ce79e84c82c6f5995f0e775bc57abf015 (172.18.0.4:6379) in shard d8f3dc27e09ab6788e4906732e3d1d37853f289d
+1:M 02 Jul 2026 04:01:23.456 * Mismatch in topology information for sender node d20fb1f1a5dbaf14d12e0964ed9ea92637c0595a (172.18.0.2:6379) in shard a7d53b4e494f3a054e7be7fcd19cba19d78a036c
+1:S 02 Jul 2026 04:01:24.332 * Connecting to PRIMARY 172.18.0.4:6379
+1:S 02 Jul 2026 04:01:24.332 * PRIMARY <-> REPLICA sync started
+1:S 02 Jul 2026 04:01:24.332 * Cluster state changed: ok
+1:S 02 Jul 2026 04:01:24.333 * Non blocking connect for SYNC fired the event.
+1:S 02 Jul 2026 04:01:24.333 * Node f2e2b09f45c8d24273abe6dcbbba8e31d3c46986 (172.18.0.5:6379) is no longer primary of shard acdd67211d5fef8243006d02b00d0e2476e6444d; removed all 0 slot(s) it used to own
+1:S 02 Jul 2026 04:01:24.333 * Node f2e2b09f45c8d24273abe6dcbbba8e31d3c46986 (172.18.0.5:6379) is now part of shard 7f38b0b33a855e54df6e4a30ce1f045881887330
+1:S 02 Jul 2026 04:01:24.333 * Node f2e2b09f45c8d24273abe6dcbbba8e31d3c46986 (172.18.0.5:6379) is now a replica of node d20fb1f1a5dbaf14d12e0964ed9ea92637c0595a (172.18.0.2:6379) in shard 7f38b0b33a855e54df6e4a30ce1f045881887330
+1:S 02 Jul 2026 04:01:24.333 * Shard id ef1986c2b748eb20ef057f5c380adc84e8a9fec9 update request for node id f2e2b09f45c8d24273abe6dcbbba8e31d3c46986 diverges from existing primary shard id 7f38b0b33a855e54df6e4a30ce1f045881887330, rejecting!
+1:S 02 Jul 2026 04:01:24.340 * Primary replied to PING, replication can continue...
+1:S 02 Jul 2026 04:01:24.341 * Node 5cba5f21bba477119fd94a9a05f0980cbaa80ac6 (172.18.0.6:6379) is no longer primary of shard 59f3b26c14712b8eb163625a2b1a561b1d9d5ae9; removed all 0 slot(s) it used to own
+1:S 02 Jul 2026 04:01:24.341 * Node 5cba5f21bba477119fd94a9a05f0980cbaa80ac6 (172.18.0.6:6379) is now part of shard e25fc041f32c64352f8c2fceaa679ad876fbce8f
+1:S 02 Jul 2026 04:01:24.341 * Node 5cba5f21bba477119fd94a9a05f0980cbaa80ac6 (172.18.0.6:6379) is now a replica of node d946b5fac17314496042815db62d9f81079c3c26 (172.18.0.3:6379) in shard e25fc041f32c64352f8c2fceaa679ad876fbce8f
+1:S 02 Jul 2026 04:01:24.346 * Partial resynchronization not possible (no cached primary)
+1:S 02 Jul 2026 04:01:29.194 * Full resync from primary: 58415689d76f053275e9342cca77b2ac777e095a:0
+1:S 02 Jul 2026 04:01:29.196 * Replica main thread creating Bio thread to save RDB to disk
+1:S 02 Jul 2026 04:01:29.196 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
+1:S 02 Jul 2026 04:01:29.196 * Replica bio thread: Done downloading RDB
+1:S 02 Jul 2026 04:01:29.640 * Replica main thread detected RDB download completion in Bio thread
+1:S 02 Jul 2026 04:01:29.640 * Loading the RDB and finalizing primary-replica sync...
+1:S 02 Jul 2026 04:01:29.645 * PRIMARY <-> REPLICA sync: Loading DB in memory
+1:S 02 Jul 2026 04:01:29.645 * Cleaning slot migration log in anticipation of a load operation.
+1:S 02 Jul 2026 04:01:29.645 * RDB signature and version check passed. Flushing old data
+1:S 02 Jul 2026 04:01:29.646 * Loading RDB produced by Valkey version 9.1.0
+1:S 02 Jul 2026 04:01:29.646 * RDB age 0 seconds
+1:S 02 Jul 2026 04:01:29.646 * RDB memory usage when created 2.89 Mb
+1:S 02 Jul 2026 04:01:29.646 * Done loading RDB, keys loaded: 0, keys expired: 0, all fields expired hashes: 0.
+1:S 02 Jul 2026 04:01:29.646 * PRIMARY <-> REPLICA sync: Finished with success

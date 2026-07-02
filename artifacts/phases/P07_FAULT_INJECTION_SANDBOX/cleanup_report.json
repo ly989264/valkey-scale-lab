@@ -4,96 +4,104 @@
   "cleanup_actions": [
     {
       "action": "stop",
-      "id": "60dcf782e8b1",
+      "id": "41e6eb3d72dc",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "60dcf782e8b1",
+      "id": "41e6eb3d72dc",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "71d6d8be1474",
+      "id": "d81371650556",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "71d6d8be1474",
+      "id": "d81371650556",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "8635c5e2227a",
+      "id": "806f0e93ea6b",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "8635c5e2227a",
+      "id": "806f0e93ea6b",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "c447230e1f8d",
+      "id": "f77f44e9e56c",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "c447230e1f8d",
+      "id": "f77f44e9e56c",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "3bd6bba9895f",
+      "id": "d7b06ae4ca48",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "3bd6bba9895f",
+      "id": "d7b06ae4ca48",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "8753c6fd5e7e",
+      "id": "1f05389622b6",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "8753c6fd5e7e",
+      "id": "1f05389622b6",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "4fb14cb497a5",
+      "id": "4e23d9f06fd5",
       "status": "PASS",
       "stderr": "",
       "type": "network"
     }
   ],
+  "cleanup_timing": {
+    "cleanup_remove_containers_seconds": 0.355841,
+    "cleanup_remove_networks_seconds": 0.073381,
+    "cleanup_residual_scan_seconds": 0.031632,
+    "cleanup_terminate_processes_seconds": 0.0,
+    "cleanup_verify_nodehost_empty_seconds": 0.0,
+    "cleanup_verify_process_exit_seconds": 0.0
+  },
   "created_at": "2026-06-28T00:00:00Z",
   "phase_id": "P07_FAULT_INJECTION_SANDBOX",
   "producer": {

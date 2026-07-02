@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_prompt_pack_location",
+  "prompt_pack_path": "codex/capability_loop_prompt",
+  "files_found": [
+    "codex/capability_loop_prompt/README.md",
+    "codex/capability_loop_prompt/00_REPOSITORY_CONTEXT.md",
+    "codex/capability_loop_prompt/01_LOOP_ENGINEERING_PROTOCOL.md",
+    "codex/capability_loop_prompt/02_MULTI_AGENT_PROTOCOL.md",
+    "codex/capability_loop_prompt/03_HARNESS_POLICY.md",
+    "codex/capability_loop_prompt/04_CAPABILITY_STAGE_PLAN.md",
+    "codex/capability_loop_prompt/05_METRIC_ARTIFACT_REPORT_CONTRACT.md",
+    "codex/capability_loop_prompt/06_SCALE_EXECUTION_POLICY.md",
+    "codex/capability_loop_prompt/07_TOKEN_EFFICIENCY_POLICY.md",
+    "codex/capability_loop_prompt/MAIN_LOOP_PROMPT.md"
+  ],
+  "status": "PASS"
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "decision": "PASS",
+  "protected_files_changed": [
+    "scripts/audit_small_real_scenario_parity.py"
+  ],
+  "frozen_harness_mismatches": [],
+  "suspicious_patterns": [],
+  "requires_harness_exception": true,
+  "harness_exception_path": "artifacts/harness_exception/CML00_CAPABILITY_LOOP_BOOTSTRAP.md",
+  "notes": [
+    "scripts/audit_small_real_scenario_parity.py changed to require stronger P08 failover data-path PASS evidence; harness exception documents why this preserves/strengthens requirements."
+  ]
+}

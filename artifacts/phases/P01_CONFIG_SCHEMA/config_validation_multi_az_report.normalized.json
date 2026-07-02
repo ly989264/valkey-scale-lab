@@ -36,8 +36,7 @@
   "network": {
     "azs": [
       "az-a",
-      "az-b",
-      "az-c"
+      "az-b"
     ],
     "virtual_az_mode": "multi"
   },

@@ -1,0 +1,63 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "created_at": "2026-07-02T04:15:15.507320Z",
+  "files": [
+    {
+      "path": "codex/capability_matrix_loop/README.md",
+      "sha256": "f054e896d9278b8bee18e1faaebe5d49033b5496215250444fe726068b79cb0f"
+    },
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "sha256": "d9c2b05a09ae163a1d48d1dd47aa27ac95e63cbaff6c10d5d5ca451b50946caf"
+    },
+    {
+      "path": "codex/capability_matrix_loop/harness_lock.json",
+      "sha256": "ff19bc3f6080cc83b2629793b8ff831e443b1a2274903d537007cabb2cff4d9f"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/prompt_pack_location.schema.json",
+      "sha256": "35e9ead50ce0abd4640e97364d41f0aee93df83e1228e2a48e2eecb3f50df415"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/constraints_snapshot.schema.json",
+      "sha256": "305e7b99b48694e19306d513f2e7918b307825d3e1a038c195b87bc93cc2c5fe"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/harness_files.schema.json",
+      "sha256": "7383044ec55e01e3358e93e151e22cb6beed475524b30a89f13d690a084300e2"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/harness_freeze.schema.json",
+      "sha256": "27da4ace9542984cd833e08818c31a198646905285acd390e386ceb574eeb872"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/regression_guard_result.schema.json",
+      "sha256": "1fd1b4adf61845fc85e6615fb815558fcebb53196f02e8dee7cc1f3a918f4deb"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_stage_gate_result.schema.json",
+      "sha256": "bc6330fe1ba56a975b41349d0bcfc97ed61f712775b75ef1db32d5a696fbdfc8"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_matrix_baseline.schema.json",
+      "sha256": "b7c4080009ec437ff10be7cc2837e6c92f27502350bc94a25b6c5752762848d5"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_audit_decision.schema.json",
+      "sha256": "75afa945bbab7a0c530a4080f279dbf5ae8a4f6158796acbd13151d96c972e09"
+    },
+    {
+      "path": "schemas/capability_matrix_loop/capability_stage_result.schema.json",
+      "sha256": "430961ad5727c07cdeaf9823fd2116fccee1deb4a72927c7c2093b0b1e30bfac"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "b8e078d9293e66359d290ee831541a4c029f7a0c06214c12eefcc8074db07709"
+    },
+    {
+      "path": "tests/capability_loop/test_capability_matrix_gate.py",
+      "sha256": "f3c46e0505442ed63c8ae24528ee4a13f0f003049dad7bfbbe07b167911ae06f"
+    }
+  ]
+}

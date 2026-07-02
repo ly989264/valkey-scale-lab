@@ -17,6 +17,11 @@
       "status": "PASS"
     },
     {
+      "description": "Multi-AZ profiles use exactly two virtual AZs so each shard's primary and replica live in opposite AZ containers.",
+      "name": "two_virtual_azs",
+      "status": "PASS"
+    },
+    {
       "description": "1000-node configs require allow_1000_nodes, opt_in_1000, dry_run_only, and runtime.dry_run.",
       "name": "scale_1000_opt_in",
       "status": "PASS"

@@ -4,7 +4,7 @@
   "phase_id": "P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
   "artifact_phase_id": "P13O_SETUP_EXHAUSTIVE_TIMELINE",
   "run_id": "phase-P13O-07_SETUP_EXHAUSTIVE_TIMELINE",
-  "created_at": "2026-06-30T02:44:05.299419Z",
+  "created_at": "2026-07-02T04:11:22.271205Z",
   "producer": {
     "name": "scripts/p13_optimization_gate.py",
     "version": "v1"
@@ -60,15 +60,15 @@
   "timing_accounting": {
     "scale_50": {
       "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_50.json",
-      "setup_command_wall_seconds": 22.601064,
-      "setup_timeline_total_seconds": 22.552887,
-      "setup_timeline_unexplained_seconds": 0.048177,
+      "setup_command_wall_seconds": 48.858496,
+      "setup_timeline_total_seconds": 48.811269,
+      "setup_timeline_unexplained_seconds": 0.047227,
       "setup_timeline_unexplained_status": "PASS",
       "largest_segment": {
         "id": "segment_017",
         "name": "primary_cluster_create",
         "category": "cluster_formation",
-        "duration_seconds": 11.176557,
+        "duration_seconds": 29.361513,
         "details": {
           "primary_count": 25,
           "strategy": "valkey_cli_cluster_create_primaries"
@@ -78,7 +78,7 @@
         "id": "segment_027",
         "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
         "category": "gap",
-        "duration_seconds": 0.001369,
+        "duration_seconds": 0.002229,
         "details": {
           "next_segment": "state_write_setup_timeline_reference",
           "previous_segment": "scale_ladder_artifact_write",
@@ -88,25 +88,25 @@
     },
     "scale_100": {
       "setup_timeline_path": "artifacts/phases/P13_SCALE_LADDER_50_100/setup_timeline_scale_100.json",
-      "setup_command_wall_seconds": 248.41558,
-      "setup_timeline_total_seconds": 248.37056,
-      "setup_timeline_unexplained_seconds": 0.04502,
+      "setup_command_wall_seconds": 73.2923,
+      "setup_timeline_total_seconds": 73.243372,
+      "setup_timeline_unexplained_seconds": 0.048928,
       "setup_timeline_unexplained_status": "PASS",
       "largest_segment": {
-        "id": "segment_022",
-        "name": "cluster_final_full_snapshot",
+        "id": "segment_017",
+        "name": "primary_cluster_create",
         "category": "cluster_formation",
-        "duration_seconds": 141.000083,
+        "duration_seconds": 39.481208,
         "details": {
-          "node_count": 100,
-          "sample_scope": "all_nodes"
+          "primary_count": 50,
+          "strategy": "valkey_cli_cluster_create_primaries"
         }
       },
       "largest_gap": {
         "id": "segment_027",
         "name": "gap_after_scale_ladder_artifact_write_before_state_write_setup_timeline_reference",
         "category": "gap",
-        "duration_seconds": 0.002209,
+        "duration_seconds": 0.002931,
         "details": {
           "next_segment": "state_write_setup_timeline_reference",
           "previous_segment": "scale_ladder_artifact_write",

@@ -40,7 +40,7 @@
     },
     {
       "details": {
-        "free_mb": 169562,
+        "free_mb": 157606,
         "required_free_mb": 1024
       },
       "name": "disk_free",

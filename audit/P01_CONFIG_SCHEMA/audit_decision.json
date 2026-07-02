@@ -1,19 +1,26 @@
 {
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P01_CONFIG_SCHEMA",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "capability-refresh-reviewer",
+  "created_at": "2026-07-02T03:59:31.398207Z",
+  "gate_result_path": "artifacts/gates/P01_CONFIG_SCHEMA/gate_result.json",
+  "gate_result_sha256": "c04a3fb3e9082ba3c5bb8ff133e747a1792cf3ad31a358926fa0e85b3715e848",
   "artifact_paths": [
     "artifacts/phases/P01_CONFIG_SCHEMA/phase_summary.json",
     "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_report.json",
     "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_multi_az_report.json",
     "artifacts/phases/P01_CONFIG_SCHEMA/config_schema_report.json"
   ],
-  "artifact_type": "audit_decision",
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-29T02:47:50Z",
-  "decision": "PASS",
-  "fresh_context": true,
-  "gate_result_path": "artifacts/gates/P01_CONFIG_SCHEMA/gate_result.json",
-  "gate_result_sha256": "2633130d5dce915ccd269ed68d58f1ed7ea03d1eeb8943006fb4a522a0abbd4e",
-  "phase_id": "P01_CONFIG_SCHEMA",
-  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable.",
-  "risks": [],
-  "schema_version": "v1"
+  "risks": [
+    {
+      "risk": "Supplemental CML capability closure remains in progress",
+      "severity": "medium",
+      "required_before_next_phase": false,
+      "notes": "Handled by CML stages."
+    }
+  ],
+  "rationale": "Gate and audit refreshed against current manifest before CML bootstrap."
 }

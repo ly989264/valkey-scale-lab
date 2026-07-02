@@ -1,0 +1,35 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_matrix_baseline",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "status": "PASS",
+  "created_at": "2026-07-02T04:19:31.478103Z",
+  "capabilities": [
+    {
+      "capability": "negative_fake_real",
+      "scale_nodes": 30,
+      "status": "PASS",
+      "evidence_paths": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json"
+      ],
+      "real_valkey_required": true,
+      "cleanup_required": true,
+      "cleanup_evidence_paths": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json"
+      ],
+      "report_artifacts": [
+        {
+          "path": "reports/fake.html",
+          "source_artifacts": [
+            {
+              "path": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+              "sha256": "x"
+            }
+          ]
+        }
+      ],
+      "source_stage": "P12_SCALE_LADDER_10_30",
+      "current_stage": "CML00_CAPABILITY_LOOP_BOOTSTRAP"
+    }
+  ]
+}

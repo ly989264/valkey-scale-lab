@@ -15,7 +15,7 @@
     },
     {
       "baseline_value": null,
-      "current_value": 408.125,
+      "current_value": 35265.196,
       "delta": null,
       "metric": "failover_latency_ms",
       "status": "NO_BASELINE_YET",

@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "coverage_matrix",
-  "created_at": "2026-07-01T03:48:35.064496Z",
+  "created_at": "2026-07-02T04:14:51.143750Z",
   "producer": {
     "name": "scripts/build_metric_coverage_matrix.py",
     "version": "v1"
@@ -230,18 +230,19 @@
       "surface": "management",
       "status": "COVERED",
       "evidence_class": "real_valkey",
-      "metric_count": 13,
+      "metric_count": 14,
       "metric_names": [
-        "management.operation.add_replica.duration_seconds",
-        "management.operation.add_slots.duration_seconds",
         "management.operation.cluster_info.duration_seconds",
         "management.operation.cluster_nodes.duration_seconds",
         "management.operation.convergence_check.duration_seconds",
-        "management.operation.meet.duration_seconds",
+        "management.operation.parallel_add_replicas.duration_seconds",
+        "management.operation.parallel_add_slots.duration_seconds",
         "management.operation.rebalance.duration_seconds",
         "management.operation.remove_node.duration_seconds",
         "management.operation.reshard.duration_seconds",
         "management.operation.rolling_restart.duration_seconds",
+        "management.operation.tree_fanout_meet_primaries.duration_seconds",
+        "management.operation.tree_fanout_meet_replicas.duration_seconds",
         "management.real_evidence.cluster_state_observed",
         "management.real_evidence.data_path_result",
         "management.real_evidence.nodes_observed"

@@ -1,0 +1,13 @@
+{
+  "schema_version": "v1",
+  "loop_id": "capability_matrix_loop",
+  "current_stage": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL",
+  "completed_stages": [
+    "CML00_CAPABILITY_LOOP_BOOTSTRAP"
+  ],
+  "stage_status": {
+    "CML00_CAPABILITY_LOOP_BOOTSTRAP": "PASS",
+    "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL": "START"
+  },
+  "last_updated": "2026-07-02T04:17:13.681198Z"
+}

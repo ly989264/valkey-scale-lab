@@ -4,91 +4,91 @@
   "cleanup_actions": [
     {
       "action": "stop",
-      "id": "1e63a9395771",
+      "id": "f1fb6646a599",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "1e63a9395771",
+      "id": "f1fb6646a599",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "9117376e772b",
+      "id": "dd964d72e4b1",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "9117376e772b",
+      "id": "dd964d72e4b1",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "b016127b25a0",
+      "id": "cdd3f147bddb",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "b016127b25a0",
+      "id": "cdd3f147bddb",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "a467389c5172",
+      "id": "b2cf060b17e8",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "a467389c5172",
+      "id": "b2cf060b17e8",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "80b370a9ef72",
+      "id": "e62a81aa048c",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "80b370a9ef72",
+      "id": "e62a81aa048c",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "stop",
-      "id": "ba0cd3c13fd5",
+      "id": "2681f1407644",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "ba0cd3c13fd5",
+      "id": "2681f1407644",
       "status": "PASS",
       "stderr": "",
       "type": "container"
     },
     {
       "action": "remove",
-      "id": "452f3239859c",
+      "id": "fb8ca259e13c",
       "status": "PASS",
       "stderr": "",
       "type": "network"
@@ -101,6 +101,14 @@
       "type": "orchestrator"
     }
   ],
+  "cleanup_timing": {
+    "cleanup_remove_containers_seconds": 0.488377,
+    "cleanup_remove_networks_seconds": 0.083085,
+    "cleanup_residual_scan_seconds": 0.033319,
+    "cleanup_terminate_processes_seconds": 0.0,
+    "cleanup_verify_nodehost_empty_seconds": 0.0,
+    "cleanup_verify_process_exit_seconds": 0.0
+  },
   "created_at": "2026-06-28T00:00:00Z",
   "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
   "producer": {

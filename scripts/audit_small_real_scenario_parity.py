@@ -97,7 +97,7 @@ SURFACES = [
         ),
         expected_nodes=None,
         min_nodes_observed=5,
-        expected_data_path="SKIPPED_WITH_REASON",
+        expected_data_path="PASS",
         producer="scripts/fault_failover_gate.py",
     ),
     SurfaceSpec(

@@ -1,0 +1,21 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/current_stage_gate_result.json",
+  "gate_result_sha256": "66aa775d96b6543caa22b70599d1d043cb65821dd89de7c51fee68cb505a5915",
+  "artifact_paths": [
+    "artifacts/capability_matrix_loop/prompt_pack_location.json",
+    "artifacts/capability_matrix_loop/session_context.md",
+    "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/context_refresh.md",
+    "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/constraints_snapshot.json",
+    "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/previous_harness.log",
+    "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/current_stage_gate_result.json",
+    "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/regression_guard_result.json",
+    "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/reports/capability_matrix_baseline.json",
+    "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_freeze.json"
+  ],
+  "blocking_findings": [],
+  "rationale": "CML00 bootstrap gate and previous harness verification passed."
+}

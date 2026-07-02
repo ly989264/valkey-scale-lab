@@ -1,0 +1,119 @@
+{
+  "schema_version": "v1",
+  "stage_id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+  "read_files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "422aae779284c0b871da2bcb78ab362b2890254134c1a67d726d88871cebf6f3",
+      "summary": "# AGENTS.md \u2014 Valkey 9 Ultra-Scale Local Cluster Lab This repository is built by Codex in a strict phase loop. Codex must treat this file as the controlling instruction source and must read `CODEX_START_HERE.md` before editing code. ## Miss"
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "sha256": "01ad5f448161debb8914d212fb9754916817dce7c9b28781ffc93b26147f4e75",
+      "summary": "# CODEX_START_HERE.md \u2014 Autonomous Build Entry Point This file is the start prompt for Codex App. Read `AGENTS.md` first, then execute the automatic phase loop without waiting for human intervention. ## Target repository Create a production"
+    },
+    {
+      "path": "README.md",
+      "sha256": "644148287aecc3fa0dab8d2590a879415502ed36eb0b122bee71d81322770f02",
+      "summary": "# valkey-scale-lab Codex Bootstrap This repository bootstrap package contains the phase plan, AGENTS.md, schemas, templates, and pre-authored gate scripts for building `valkey-scale-lab` with Codex App. Start with: ```bash python3 scripts/c"
+    },
+    {
+      "path": "codex/status/phase_state.json",
+      "sha256": "d3a42bb84027029da6c680ecf9f6ac871325fa739470a1b29dc5143ab300c39f",
+      "summary": "{ \"schema_version\": \"v1\", \"completed_phases\": [ \"P00_REPO_CONTRACT\", \"P01_CONFIG_SCHEMA\", \"P02_PLANNER\", \"P03_LOCAL_DOCKER_VALKEY\", \"P04_CLUSTER_MANAGEMENT_OPS\","
+    },
+    {
+      "path": "docs/codex/00_MISSION.md",
+      "sha256": "02240033b191f2cd201a0c2d61ffe4a0c1119cb8796203e4d87a6aa537650803",
+      "summary": "# 00_MISSION.md \u2014 Project Mission and Product Contract ## 1. What must be built Build `valkey-scale-lab`, a local-first Valkey 9.1.x ultra-scale cluster experiment harness. It must begin on a single Mac and scale to multiple Mac/Linux hosts"
+    },
+    {
+      "path": "docs/codex/01_ARCHITECTURE_CONTRACT.md",
+      "sha256": "3620f3ca2ef33966602173582ff0895afdc4fa4f814c5536fe2798753815c3ac",
+      "summary": "# 01_ARCHITECTURE_CONTRACT.md \u2014 Architecture Contract ## 1. Component model ```text +-------------------+      +-------------------+      +--------------------+ | Declarative Config| ---> | Planner           | ---> | Runtime            | | "
+    },
+    {
+      "path": "docs/codex/02_PHASES.md",
+      "sha256": "c8eda72f1ce2213774de4c6653b8564af39f871d5c3ade20ec077dc0292689f1",
+      "summary": "# 02_PHASES.md \u2014 Phase Plan and Gates The authoritative machine-readable phase list is `codex/phase_manifest.json`. This document explains intent and judgment criteria. A phase is complete only when `scripts/codex_gate.py postcheck --phase "
+    },
+    {
+      "path": "docs/codex/03_HARNESS_AND_GATES.md",
+      "sha256": "b3149efc2200404e08661e627dbc007934a944fc01e7489e0daf1d1d26d42762",
+      "summary": "# 03_HARNESS_AND_GATES.md \u2014 Harness and Gate Model ## 1. Gate hierarchy A phase gate has four layers: ```text +--------------------------+"
+    },
+    {
+      "path": "docs/codex/04_AUDITOR.md",
+      "sha256": "b05d658b2c5131a19dfa263f7c016218b6ea7a2dea5c3932d97b14b4a055e204",
+      "summary": "# 04_AUDITOR.md \u2014 Fresh-Context Reviewer/Auditor Protocol ## 1. Purpose The auditor prevents the implementation agent from self-certifying. The auditor must enter with fresh context and judge only evidence present in the repository, gate lo"
+    },
+    {
+      "path": "docs/codex/05_ARTIFACTS.md",
+      "sha256": "33f7d030cde266c3db187c47a0b2b5af60fa607bd62068d20d5b975d6a47818e",
+      "summary": "# 05_ARTIFACTS.md \u2014 Artifact Contract ## 1. Artifact envelope Every JSON artifact should include: ```json {"
+    },
+    {
+      "path": "docs/codex/06_FAULT_ISOLATION.md",
+      "sha256": "528e4db5bc5c8a61bb3dfd3d48d7169bc7b10cd0c9b5492545dfb63614858562",
+      "summary": "# 06_FAULT_ISOLATION.md \u2014 Fault Injection Isolation Design ## 1. Isolation goal Fault injection must affect only Valkey nodes owned by the current run. It must not affect the physical host, other applications, other containers, or the user'"
+    },
+    {
+      "path": "docs/codex/07_SCALE_POLICY.md",
+      "sha256": "34ebddc25cbba5ba455f71c0bd8093f12cafefb1e3bb53f9aec17834f31236cb",
+      "summary": "# 07_SCALE_POLICY.md \u2014 Scale Policy ## 1. Default ceiling Automatic development and gate phases may run up to 100 Valkey nodes. They must never default to 1000 nodes. ```text P00-P02: fake/planner/dry-run allowed"
+    },
+    {
+      "path": "codex/capability_loop_prompt/README.md",
+      "sha256": "9500d54b41731d7bb933fd6b9ec0f8f3b078a1f3a1005ee936db6c46dbd622e2",
+      "summary": "# Valkey Scale Lab Capability Matrix Loop Prompt Pack \u7528\u9014\uff1a\u628a `valkey-scale-lab` \u4ece\u5df2\u6709 P00-P13 phase loop \u5ef6\u4f38\u5230\u201c\u771f\u5b9e Valkey \u96c6\u7fa4\u80fd\u529b\u77e9\u9635\u95ed\u73af\u201d\u3002 \u8fd9\u4e2a\u5305\u4e0d\u662f\u66ff\u6362\u73b0\u6709 harness\uff0c\u800c\u662f\u8981\u6c42 Codex \u5728\u5f53\u524d\u4ed3\u5e93\u4e2d\u8ffd\u52a0\u4e00\u4e2a supplemental capability loop\uff1a\u6bcf\u4e2a stage \u5148\u4fdd\u8bc1\u65e2\u6709 P00-P13 harness \u4ecd\u53ef\u901a\u8fc7\uff0c\u518d\u4e3a\u5f53\u524d stag"
+    },
+    {
+      "path": "codex/capability_loop_prompt/00_REPOSITORY_CONTEXT.md",
+      "sha256": "2b0c126a540d01bf8204a82da6dfa39615d21c4d45f1669df4409b9156804a6f",
+      "summary": "# 00 \u2014 Repository Context ## \u5f53\u524d\u4e0a\u4e0b\u6587\u5b9a\u4f4d \u4ed3\u5e93\uff1a`ly989264/valkey-scale-lab` \u76ee\u6807\u5206\u652f\uff1a`codex/valkey-scale-lab-loop`"
+    },
+    {
+      "path": "codex/capability_loop_prompt/01_LOOP_ENGINEERING_PROTOCOL.md",
+      "sha256": "bd2bbbfdb8c2f1ef4249d40f85ecb70f0fb1b93575db055f6a216398c216f684",
+      "summary": "# 01 \u2014 Loop Engineering Protocol ## 1. \u76ee\u6807 \u672c\u534f\u8bae\u89e3\u51b3\u7684\u95ee\u9898\u662f\uff1a\u957f loop \u5bb9\u6613\u9057\u5fd8\u7ea6\u675f\u3001\u8dd1\u504f\u3001\u7528 narrative \u4ee3\u66ff\u8bc1\u636e\u3001\u7528\u6539 harness \u89c4\u907f\u5931\u8d25\u3002\u89e3\u51b3\u65b9\u5f0f\u662f\u628a\u6bcf\u4e2a stage \u7684\u4e0a\u4e0b\u6587\u3001\u72b6\u6001\u3001\u7ea6\u675f\u3001\u5b50 agent \u8f93\u5165\u8f93\u51fa\u3001\u9a8c\u8bc1\u7ed3\u679c\u5168\u90e8\u843d\u76d8\uff0c\u5e76\u7528\u4e3b agent \u9a71\u52a8\u56fa\u5b9a\u72b6\u6001\u673a\u3002 ## 2. \u56fa\u5b9a\u72b6\u6001\u673a"
+    },
+    {
+      "path": "codex/capability_loop_prompt/02_MULTI_AGENT_PROTOCOL.md",
+      "sha256": "27d28898adcb3de5edbcd37666ef6f86f79a8d10582d6a79cda8be411ce25fd1",
+      "summary": "# 02 \u2014 Multi-Agent Protocol ## 1. \u89d2\u8272\u5206\u5de5 \u4e3b agent \u53ea\u8d1f\u8d23\u63a7\u5236 loop\u3001\u7ef4\u62a4\u72b6\u6001\u3001\u8c03\u5ea6\u5b50 agent\u3001\u6267\u884c\u547d\u4ee4\u3001\u6574\u5408\u7ed3\u679c\u3002\u4e3b agent \u4e0d\u5f97\u628a worker \u7684\u81ea\u8bc4\u5f53\u6210 PASS\u3002 \u5b50 agent\uff1a"
+    },
+    {
+      "path": "codex/capability_loop_prompt/03_HARNESS_POLICY.md",
+      "sha256": "b60640879d907ded6279c149637b3181b63689df2f715524f6d962eec576727f",
+      "summary": "# 03 \u2014 Harness Policy ## 1. Harness \u5206\u5c42 \u65b0 capability loop \u7684 harness \u5fc5\u987b\u53e0\u5728\u5df2\u6709 P00-P13 harness \u4e4b\u4e0a\uff1a ```text +-----------------------------------------------+"
+    },
+    {
+      "path": "codex/capability_loop_prompt/04_CAPABILITY_STAGE_PLAN.md",
+      "sha256": "5063f62b03bacae367928cf2c94175a38b533b951305a3ef533bb45706005565",
+      "summary": "# 04 \u2014 Capability Stage Plan ## \u603b\u4f53\u5b8c\u6210\u5b9a\u4e49 \u6700\u7ec8\u5b8c\u6210\u65f6\uff0c\u771f\u5b9e Valkey 30/50/100 \u8282\u70b9\u96c6\u7fa4\u5fc5\u987b\u8986\u76d6\uff1a | \u80fd\u529b | \u5fc5\u987b\u4ece SKIPPED/MISSING \u53d8\u6210\u4ec0\u4e48 | |---|---|"
+    },
+    {
+      "path": "codex/capability_loop_prompt/05_METRIC_ARTIFACT_REPORT_CONTRACT.md",
+      "sha256": "a86d8de9625c282afbbe6e6a7f138fb11de2cc2bbedcec920d31fed4e6c9065a",
+      "summary": "# 05 \u2014 Metric, Artifact, Analysis, Report Contract ## 1. \u7edf\u4e00\u8bc1\u636e\u94fe \u6bcf\u4e2a\u80fd\u529b\u5fc5\u987b\u4ea7\u751f\u4e00\u6761\u53ef\u8ffd\u8e2a\u94fe\u8def\uff1a ```text +------------------+      +------------------+      +------------------+      +------------------+"
+    },
+    {
+      "path": "codex/capability_loop_prompt/06_SCALE_EXECUTION_POLICY.md",
+      "sha256": "708d1f77384fe5d87d44c43a437019a372068806303f73927de5ac98d09359d1",
+      "summary": "# 06 \u2014 Scale Execution Policy ## 1. \u9ed8\u8ba4\u89c4\u6a21 \u672c loop \u7684\u771f\u5b9e\u6267\u884c\u76ee\u6807\uff1a ```text 30 nodes -> first capability completion"
+    },
+    {
+      "path": "codex/capability_loop_prompt/07_TOKEN_EFFICIENCY_POLICY.md",
+      "sha256": "996f111faff00c56e39ae1d8fd0ee076e4de0eb109fc9b854f16561fb47ea647",
+      "summary": "# 07 \u2014 Token Efficiency Policy ## 1. \u539f\u5219 \u5f3a harness \u548c\u5f3a loop \u4e0d\u7b49\u4e8e\u65e0\u8282\u5236\u5c55\u5f00\u4e0a\u4e0b\u6587\u3002\u6bcf\u4e2a stage \u53ea\u5904\u7406\u4e00\u4e2a\u660e\u786e\u80fd\u529b\u5207\u7247\uff0c\u6240\u6709\u5927\u4e0a\u4e0b\u6587\u7528\u6587\u4ef6\u6458\u8981\u3001path\u3001sha256\u3001artifact \u5f15\u7528\u66ff\u4ee3\u91cd\u590d\u7c98\u8d34\u3002 ## 2. \u6bcf stage \u7684\u6700\u5c0f\u4e0a\u4e0b\u6587\u5305"
+    }
+  ],
+  "active_constraints": [
+    "Do not modify or weaken existing P00-P13 harness controls.",
+    "Run previous harness verification before every CML stage implementation.",
+    "Default automatic real scale ceiling is 100 nodes; 200/500/1000 are not default real runs.",
+    "Fault injection must be scoped to owned Docker/container namespaces, owned containers, or explicit sandbox proxy layers.",
+    "Target capabilities cannot pass with fake/static evidence or SKIPPED_WITH_REASON.",
+    "Missing measurements must use MISSING, SKIPPED_WITH_REASON, UNSUPPORTED_WITH_EVIDENCE, or ABSENT_OBSERVED with evidence."
+  ]
+}

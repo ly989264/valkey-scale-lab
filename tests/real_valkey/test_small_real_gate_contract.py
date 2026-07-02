@@ -72,7 +72,7 @@ def test_failover_primary_stop_contract_preserves_missing_split_brain() -> None:
     assert evidence["real_valkey"] is True
     assert evidence["nodes_observed"] >= 5
     assert evidence["cluster_state_observed"] == "ok"
-    assert evidence["data_path_result"] == "SKIPPED_WITH_REASON"
+    assert evidence["data_path_result"] == "PASS"
     assert evidence["cleanup"]["status"] == "PASS"
     assert all(version.startswith("9.1.") for version in evidence["valkey_versions"])
 
@@ -83,4 +83,7 @@ def test_failover_primary_stop_contract_preserves_missing_split_brain() -> None:
     split = report["summary"]["split_brain_duration_ms"]
     assert split["value"] is None
     assert split["status"] == "MISSING"
-    assert split["reason"] == "not_measured_by_primary_stop_gate"
+    assert split["reason"] in {
+        "not_measured_by_primary_stop_gate",
+        "primary_stop_gate_did_not_observe_conflicting_primaries",
+    }

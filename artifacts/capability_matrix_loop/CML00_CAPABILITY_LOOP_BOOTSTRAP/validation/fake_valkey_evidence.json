@@ -1,0 +1,29 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "valkey_e2e_evidence",
+  "phase_id": "P12_SCALE_LADDER_10_30",
+  "run_id": "fake-negative-case",
+  "created_at": "2026-07-02T04:19:31.475493Z",
+  "producer": {
+    "name": "capability_matrix_gate",
+    "version": "negative"
+  },
+  "status": "PASS",
+  "real_valkey": false,
+  "valkey_version_prefix_required": "9.1.",
+  "probe_result": "PASS",
+  "nodes_observed": 30,
+  "cluster_state_observed": "ok",
+  "data_path_result": "PASS",
+  "probes": [
+    {
+      "logical_id": "fake",
+      "host": "127.0.0.1",
+      "port": 1,
+      "status": "PASS"
+    }
+  ],
+  "cleanup": {
+    "status": "PASS"
+  }
+}

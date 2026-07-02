@@ -1,0 +1,67 @@
+{
+  "schema_version": "v1",
+  "loop_id": "capability_matrix_loop",
+  "default_max_real_nodes": 100,
+  "forbidden_default_real_scales": [200, 500, 1000],
+  "automatic_stop_after": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH",
+  "stages": [
+    {
+      "id": "CML00_CAPABILITY_LOOP_BOOTSTRAP",
+      "objective": "Create the supplemental capability loop manifest, state, harness lock, runner, schemas, baseline, and bootstrap artifacts.",
+      "automatic": true,
+      "profile": "fast-unit",
+      "max_real_nodes": 0,
+      "real_valkey_required": false,
+      "required_artifacts": [
+        {"path": "artifacts/capability_matrix_loop/prompt_pack_location.json", "schema": "schemas/capability_matrix_loop/prompt_pack_location.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/session_context.md"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/context_refresh.md"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/constraints_snapshot.json", "schema": "schemas/capability_matrix_loop/constraints_snapshot.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/stage_objective.md"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/commands.md"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/agents/requirements_harness_design.response.md"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/agents/worker.response.md"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/agents/regression_guard.response.md"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_plan.md"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_files.json", "schema": "schemas/capability_matrix_loop/harness_files.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/harness/harness_freeze.json", "schema": "schemas/capability_matrix_loop/harness_freeze.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/previous_harness.log"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/validation/regression_guard_result.json", "schema": "schemas/capability_matrix_loop/regression_guard_result.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/reports/capability_matrix_baseline.json", "schema": "schemas/capability_matrix_loop/capability_matrix_baseline.schema.json"},
+        {"path": "audit/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/AUDIT.md"},
+        {"path": "audit/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/audit_decision.json", "schema": "schemas/capability_matrix_loop/capability_audit_decision.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/stage_result.json", "schema": "schemas/capability_matrix_loop/capability_stage_result.schema.json"},
+        {"path": "artifacts/capability_matrix_loop/CML00_CAPABILITY_LOOP_BOOTSTRAP/next_stage_context.md"}
+      ],
+      "commands": [
+        {
+          "name": "capability_bootstrap_gate",
+          "command": "python3 tools/capability_matrix_gate.py run --stage CML00_CAPABILITY_LOOP_BOOTSTRAP",
+          "required": true,
+          "timeout_seconds": 120
+        }
+      ],
+      "negative_requirements": [
+        "missing required artifact fails",
+        "fake real_valkey evidence fails",
+        "skip-as-pass fails",
+        "missing cleanup fails",
+        "report entry without source checksum fails",
+        "old artifact reuse fails"
+      ]
+    },
+    {"id": "CML01_UNIFIED_OBSERVATION_AND_ARTIFACT_MODEL", "objective": "Unify operation/fault to metrics to analysis to report artifacts.", "automatic": true, "profile": "short-real", "max_real_nodes": 3, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML02_CLUSTER_MANAGEMENT_REAL_OPS_30", "objective": "Run real cluster management operations on 30 nodes with workload windows.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML03_PROCESS_AND_NODEHOST_FAULTS_30", "objective": "Run process and owned nodehost faults on 30 nodes.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML04_NETWORK_PARTITION_AND_AZ_FAULTS_30", "objective": "Run container-scoped partition and virtual AZ fault scenarios on 30 nodes.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML05_FAILOVER_LATENCY_AND_RECOVERY_30", "objective": "Measure failover latency and recovery on 30 nodes.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML06_SPLIT_BRAIN_INDICATORS_30", "objective": "Produce auditable split-brain indicators on 30 nodes.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML07_WORKLOAD_FAULT_WINDOWS_30", "objective": "Close before/during/after workload windows for management and fault scenarios.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML08_BOUNDED_SOAK_30_60_MINUTES", "objective": "Run 30 and 60 minute bounded soak with metrics and cleanup.", "automatic": true, "profile": "real-30-soak", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML09_REPORTING_AND_CAPABILITY_MATRIX_CLOSE_30", "objective": "Close the 30-node capability matrix and reports.", "automatic": true, "profile": "real-30", "max_real_nodes": 30, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML10_SCALE_REPLAY_50", "objective": "Replay the capability suite on 50 real nodes.", "automatic": true, "profile": "real-50", "max_real_nodes": 50, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML11_SCALE_REPLAY_100", "objective": "Replay the capability suite on 100 real nodes.", "automatic": true, "profile": "real-100", "max_real_nodes": 100, "real_valkey_required": true, "required_artifacts": [], "commands": []},
+    {"id": "CML12_FUTURE_SCALE_200_500_1000_SUPPORT", "objective": "Parameterize future 200/500/1000 dry-run support without default real execution.", "automatic": true, "profile": "dryrun-future", "max_real_nodes": 0, "real_valkey_required": false, "required_artifacts": [], "commands": []},
+    {"id": "CML13_FINAL_FULL_CHAIN_AUDIT_AND_PUSH", "objective": "Audit the full CML00-CML12 chain and final capability matrix.", "automatic": true, "profile": "audit", "max_real_nodes": 100, "real_valkey_required": true, "required_artifacts": [], "commands": []}
+  ]
+}

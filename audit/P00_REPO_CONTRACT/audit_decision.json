@@ -1,17 +1,24 @@
 {
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P00_REPO_CONTRACT",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "capability-refresh-reviewer",
+  "created_at": "2026-07-02T03:59:30.798345Z",
+  "gate_result_path": "artifacts/gates/P00_REPO_CONTRACT/gate_result.json",
+  "gate_result_sha256": "2a9b818e4d80e73c0e40e3e8ba77bad2ec74e52fd5046fe960e5ae2909d7d1a1",
   "artifact_paths": [
     "artifacts/phases/P00_REPO_CONTRACT/phase_summary.json",
     "artifacts/phases/P00_REPO_CONTRACT/env_info.json"
   ],
-  "artifact_type": "audit_decision",
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-29T02:47:50Z",
-  "decision": "PASS",
-  "fresh_context": true,
-  "gate_result_path": "artifacts/gates/P00_REPO_CONTRACT/gate_result.json",
-  "gate_result_sha256": "3249b463f1f0412488f065b4f17ea4d81b50720746615acf46ac2c7cdcd63059",
-  "phase_id": "P00_REPO_CONTRACT",
-  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable.",
-  "risks": [],
-  "schema_version": "v1"
+  "risks": [
+    {
+      "risk": "Supplemental CML capability closure remains in progress",
+      "severity": "medium",
+      "required_before_next_phase": false,
+      "notes": "Handled by CML stages."
+    }
+  ],
+  "rationale": "Gate and audit refreshed against current manifest before CML bootstrap."
 }

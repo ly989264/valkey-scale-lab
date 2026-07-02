@@ -1,5 +1,5 @@
 {
-  "achieved_qps": 18.724217,
+  "achieved_qps": 18.218891,
   "artifact_type": "workload_report",
   "created_at": "2026-06-28T00:00:00Z",
   "errors": {
@@ -9,11 +9,11 @@
     "total": 0
   },
   "latency": {
-    "max": 67.258125,
-    "min": 43.314875,
-    "p50": 53.282021,
-    "p95": 59.89764,
-    "p99": 66.822649,
+    "max": 77.613125,
+    "min": 43.958,
+    "p50": 53.113792,
+    "p95": 66.283377,
+    "p99": 69.382471,
     "sample_count": 100,
     "unit": "ms"
   },
@@ -35,7 +35,7 @@
   "status": "PASS",
   "timing_windows": [
     {
-      "duration_seconds": 5.340677,
+      "duration_seconds": 5.488808,
       "name": "all_run",
       "operations": 100,
       "status": "PASS"

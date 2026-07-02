@@ -2,8 +2,7 @@
   "artifact_type": "cluster_plan",
   "azs": [
     "az-a",
-    "az-b",
-    "az-c"
+    "az-b"
   ],
   "config_path": "templates/configs/local_az_3x2.yaml",
   "constraints": {
@@ -27,7 +26,9 @@
     "opt_in_1000": false,
     "port_collision_checked": true,
     "primary_replica_distinct_az": true,
-    "required_1000_env_value": null
+    "primary_replica_opposite_az_pair": true,
+    "required_1000_env_value": null,
+    "two_virtual_azs": true
   },
   "created_at": "2026-06-28T00:00:00Z",
   "directories": {
@@ -38,6 +39,44 @@
     "local"
   ],
   "node_count": 6,
+  "nodehosts": [
+    {
+      "az_id": "az-a",
+      "client_ports": [
+        7100,
+        7103,
+        7104
+      ],
+      "cluster_bus_ports": [
+        17100,
+        17103,
+        17104
+      ],
+      "container_name": "vslab-p02-planner-local-20260628-nodehost-az-a",
+      "host_id": "local",
+      "logical_node_count": 3,
+      "nodehost_id": "nodehost-az-a",
+      "ordinal": 0
+    },
+    {
+      "az_id": "az-b",
+      "client_ports": [
+        7101,
+        7102,
+        7105
+      ],
+      "cluster_bus_ports": [
+        17101,
+        17102,
+        17105
+      ],
+      "container_name": "vslab-p02-planner-local-20260628-nodehost-az-b",
+      "host_id": "local",
+      "logical_node_count": 3,
+      "nodehost_id": "nodehost-az-b",
+      "ordinal": 1
+    }
+  ],
   "nodes": [
     {
       "az_id": "az-a",
@@ -49,11 +88,15 @@
       "host_id": "local",
       "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0000-primary",
       "logical_id": "shard-0000-primary",
+      "nodehost_container_name": "vslab-p02-planner-local-20260628-nodehost-az-a",
+      "nodehost_id": "nodehost-az-a",
       "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0000-primary.pid",
+      "process_name": "shard-0000-primary",
       "resource_limits": {
         "memory_mb": 128
       },
       "role": "primary",
+      "runtime_type": "docker_process",
       "shard_id": "shard-0000",
       "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0000-primary.json"
     },
@@ -67,11 +110,15 @@
       "host_id": "local",
       "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0000-replica-00",
       "logical_id": "shard-0000-replica-00",
+      "nodehost_container_name": "vslab-p02-planner-local-20260628-nodehost-az-b",
+      "nodehost_id": "nodehost-az-b",
       "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0000-replica-00.pid",
+      "process_name": "shard-0000-replica-00",
       "resource_limits": {
         "memory_mb": 128
       },
       "role": "replica",
+      "runtime_type": "docker_process",
       "shard_id": "shard-0000",
       "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0000-replica-00.json"
     },
@@ -85,16 +132,20 @@
       "host_id": "local",
       "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0001-primary",
       "logical_id": "shard-0001-primary",
+      "nodehost_container_name": "vslab-p02-planner-local-20260628-nodehost-az-b",
+      "nodehost_id": "nodehost-az-b",
       "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0001-primary.pid",
+      "process_name": "shard-0001-primary",
       "resource_limits": {
         "memory_mb": 128
       },
       "role": "primary",
+      "runtime_type": "docker_process",
       "shard_id": "shard-0001",
       "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0001-primary.json"
     },
     {
-      "az_id": "az-c",
+      "az_id": "az-a",
       "client_port": 7103,
       "cluster_bus_port": 17103,
       "container_name": "vslab-p02-planner-local-20260628-shard-0001-replica-00",
@@ -103,16 +154,20 @@
       "host_id": "local",
       "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0001-replica-00",
       "logical_id": "shard-0001-replica-00",
+      "nodehost_container_name": "vslab-p02-planner-local-20260628-nodehost-az-a",
+      "nodehost_id": "nodehost-az-a",
       "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0001-replica-00.pid",
+      "process_name": "shard-0001-replica-00",
       "resource_limits": {
         "memory_mb": 128
       },
       "role": "replica",
+      "runtime_type": "docker_process",
       "shard_id": "shard-0001",
       "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0001-replica-00.json"
     },
     {
-      "az_id": "az-c",
+      "az_id": "az-a",
       "client_port": 7104,
       "cluster_bus_port": 17104,
       "container_name": "vslab-p02-planner-local-20260628-shard-0002-primary",
@@ -121,16 +176,20 @@
       "host_id": "local",
       "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0002-primary",
       "logical_id": "shard-0002-primary",
+      "nodehost_container_name": "vslab-p02-planner-local-20260628-nodehost-az-a",
+      "nodehost_id": "nodehost-az-a",
       "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0002-primary.pid",
+      "process_name": "shard-0002-primary",
       "resource_limits": {
         "memory_mb": 128
       },
       "role": "primary",
+      "runtime_type": "docker_process",
       "shard_id": "shard-0002",
       "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0002-primary.json"
     },
     {
-      "az_id": "az-a",
+      "az_id": "az-b",
       "client_port": 7105,
       "cluster_bus_port": 17105,
       "container_name": "vslab-p02-planner-local-20260628-shard-0002-replica-00",
@@ -139,11 +198,15 @@
       "host_id": "local",
       "log_dir": "artifacts/runtime/P02_PLANNER-local-20260628/logs/shard-0002-replica-00",
       "logical_id": "shard-0002-replica-00",
+      "nodehost_container_name": "vslab-p02-planner-local-20260628-nodehost-az-b",
+      "nodehost_id": "nodehost-az-b",
       "pid_file": "artifacts/runtime/P02_PLANNER-local-20260628/pids/shard-0002-replica-00.pid",
+      "process_name": "shard-0002-replica-00",
       "resource_limits": {
         "memory_mb": 128
       },
       "role": "replica",
+      "runtime_type": "docker_process",
       "shard_id": "shard-0002",
       "state_file": "artifacts/runtime/P02_PLANNER-local-20260628/state/shard-0002-replica-00.json"
     }
@@ -156,6 +219,7 @@
   "replicas_per_shard": 1,
   "run_id": "P02_PLANNER-local-20260628",
   "runtime": {
+    "container_strategy": "virtual_az_nodehost_with_valkey_processes",
     "dry_run": false,
     "network_mode": "container_namespace",
     "provider": "docker",

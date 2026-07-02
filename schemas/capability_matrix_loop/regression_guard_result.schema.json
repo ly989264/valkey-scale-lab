@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "stage_id", "decision", "protected_files_changed", "frozen_harness_mismatches", "suspicious_patterns", "requires_harness_exception"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "stage_id": {"type": "string", "pattern": "^CML[0-9]{2}_[A-Z0-9_]+$"},
+    "decision": {"type": "string", "enum": ["PASS", "FAIL"]},
+    "protected_files_changed": {"type": "array", "items": {"type": "string"}},
+    "frozen_harness_mismatches": {"type": "array", "items": {"type": "string"}},
+    "suspicious_patterns": {"type": "array", "items": {"type": "string"}},
+    "requires_harness_exception": {"type": "boolean"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "stage_id", "decision", "fresh_context", "gate_result_path", "gate_result_sha256", "artifact_paths", "blocking_findings"],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "stage_id": {"type": "string", "pattern": "^CML[0-9]{2}_[A-Z0-9_]+$"},
+    "decision": {"type": "string", "enum": ["PASS", "FAIL"]},
+    "fresh_context": {"type": "boolean"},
+    "gate_result_path": {"type": "string", "minLength": 1},
+    "gate_result_sha256": {"type": "string", "minLength": 64, "maxLength": 64},
+    "artifact_paths": {"type": "array", "items": {"type": "string"}},
+    "blocking_findings": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

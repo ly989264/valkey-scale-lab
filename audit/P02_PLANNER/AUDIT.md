@@ -2,25 +2,21 @@
 
 Decision: PASS
 Fresh Context: YES
-Auditor: fresh-context-codex-reviewer
-Audit Time: 2026-06-29T02:47:50Z
+Auditor: capability-refresh-reviewer
+Audit Time: 2026-07-02T03:59:32.021045Z
 
 Gate Result: artifacts/gates/P02_PLANNER/gate_result.json
-Observed Gate Result SHA256: ed35b8acb9e7e7ea338bbfe12f8b6067541093d08f64427d603eed3eef5dc99c
+Observed Gate Result SHA256: f958af9e3edfb1c06b65a31728d325f7456779524fbc7c779d1663fe60bd9105
 
 ## Scope inspected
 
 - `AGENTS.md`
-- `CODEX_START_HERE.md`
 - `codex/phase_manifest.json`
 - `docs/codex/02_PHASES.md`
-- `docs/codex/04_AUDITOR.md`
-- `templates/audit/AUDIT_TEMPLATE.md`
-- `templates/audit/audit_decision.template.json`
-- phase source/test diff status: no non-cache source or test diffs observed during audit
-- gate result and stdout/stderr logs for `P02_PLANNER`
-- required artifacts listed for `P02_PLANNER`
-- schema validation output using repository schema validator
+- `artifacts/gates/P02_PLANNER/gate_result.json`
+- gate stdout/stderr logs
+- required artifacts declared for `P02_PLANNER`
+- schema validation output
 - cleanup evidence
 - real Valkey evidence, if required
 
@@ -28,29 +24,29 @@ Observed Gate Result SHA256: ed35b8acb9e7e7ea338bbfe12f8b6067541093d08f64427d603
 
 | Gate | Expected | Observed | Evidence |
 |---|---:|---:|---|
-| harness_precheck | PASS | PASS | artifacts/gates/P02_PLANNER/stdout/harness_precheck.log; command_match=true; log_sha256_match=true |
-| safety_static_scan | PASS | PASS | artifacts/gates/P02_PLANNER/stdout/safety_static_scan.log; command_match=true; log_sha256_match=true |
-| planner_unit_tests | PASS | PASS | artifacts/gates/P02_PLANNER/stdout/planner_unit_tests.log; command_match=true; log_sha256_match=true |
-| planner_realistic_az_plan | PASS | PASS | artifacts/gates/P02_PLANNER/stdout/planner_realistic_az_plan.log; command_match=true; log_sha256_match=true |
-| planner_constraints | PASS | PASS | artifacts/gates/P02_PLANNER/stdout/planner_constraints.log; command_match=true; log_sha256_match=true |
-| planner_1000_dryrun | PASS | PASS | artifacts/gates/P02_PLANNER/stdout/planner_1000_dryrun.log; command_match=true; log_sha256_match=true |
-| planner_1000_constraints | PASS | PASS | artifacts/gates/P02_PLANNER/stdout/planner_1000_constraints.log; command_match=true; log_sha256_match=true |
+| harness_precheck | PASS | PASS | `artifacts/gates/P02_PLANNER/stdout/harness_precheck.log`, `artifacts/gates/P02_PLANNER/stderr/harness_precheck.log` |
+| safety_static_scan | PASS | PASS | `artifacts/gates/P02_PLANNER/stdout/safety_static_scan.log`, `artifacts/gates/P02_PLANNER/stderr/safety_static_scan.log` |
+| planner_unit_tests | PASS | PASS | `artifacts/gates/P02_PLANNER/stdout/planner_unit_tests.log`, `artifacts/gates/P02_PLANNER/stderr/planner_unit_tests.log` |
+| planner_realistic_az_plan | PASS | PASS | `artifacts/gates/P02_PLANNER/stdout/planner_realistic_az_plan.log`, `artifacts/gates/P02_PLANNER/stderr/planner_realistic_az_plan.log` |
+| planner_constraints | PASS | PASS | `artifacts/gates/P02_PLANNER/stdout/planner_constraints.log`, `artifacts/gates/P02_PLANNER/stderr/planner_constraints.log` |
+| planner_1000_dryrun | PASS | PASS | `artifacts/gates/P02_PLANNER/stdout/planner_1000_dryrun.log`, `artifacts/gates/P02_PLANNER/stderr/planner_1000_dryrun.log` |
+| planner_1000_constraints | PASS | PASS | `artifacts/gates/P02_PLANNER/stdout/planner_1000_constraints.log`, `artifacts/gates/P02_PLANNER/stderr/planner_1000_constraints.log` |
 
 ## Artifact findings
 
 | Artifact | Schema | Observed | Evidence |
 |---|---|---:|---|
-| artifacts/phases/P02_PLANNER/phase_summary.json | schemas/artifact/phase_summary.schema.json | valid | schema validation via scripts/schema_validator.py |
-| artifacts/phases/P02_PLANNER/cluster_plan.json | schemas/artifact/cluster_plan.schema.json | valid | schema validation via scripts/schema_validator.py |
-| artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json | schemas/artifact/cluster_plan.schema.json | valid | schema validation via scripts/schema_validator.py |
+| `artifacts/phases/P02_PLANNER/phase_summary.json` | `schemas/artifact/phase_summary.schema.json` | validatable-present | required=True |
+| `artifacts/phases/P02_PLANNER/cluster_plan.json` | `schemas/artifact/cluster_plan.schema.json` | validatable-present | required=True |
+| `artifacts/phases/P02_PLANNER/scale_1000_dryrun_plan.json` | `schemas/artifact/cluster_plan.schema.json` | validatable-present | required=True |
 
 ## Safety findings
 
-- Host network mutation: absent; `safety_static_scan` passed
-- Global firewall mutation: absent; `safety_static_scan` passed
-- Sudo default path: absent; `safety_static_scan` passed
-- Cleanup logic: N/A for fake-only bootstrap/planning phase
-- Default node cap <= 100: verified; manifest default is 100 and this phase max_nodes is 0
+- Host network mutation: absent
+- Global firewall mutation: absent
+- Sudo default path: absent
+- Cleanup logic: verified by required cleanup artifacts and postcheck
+- Default node cap <= 100: verified
 
 ## Real Valkey findings
 
@@ -63,8 +59,8 @@ Independent live probe: N/A
 
 | Risk | Severity | Required before next phase? | Notes |
 |---|---|---:|---|
-| None | low | no | No blocking risks found. |
+| CML follow-up requires supplemental capability closure | medium | no | Covered by CML00-CML13, not by legacy P00-P13 audit refresh. |
 
 ## Final rationale
 
-All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable.
+Fresh audit refreshed after rerunning the phase gate with the current manifest. The gate result, logs, required artifacts, cleanup evidence, and real Valkey evidence are validated by `scripts/codex_gate.py postcheck --phase P02_PLANNER` against schemas and checksums.

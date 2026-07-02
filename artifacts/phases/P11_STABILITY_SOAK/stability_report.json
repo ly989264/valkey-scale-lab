@@ -2,7 +2,7 @@
   "artifact_type": "stability_report",
   "baseline_comparison_path": "artifacts/phases/P11_STABILITY_SOAK/stability_baseline_comparison.json",
   "created_at": "2026-06-28T00:00:00Z",
-  "duration_seconds": 3.405719,
+  "duration_seconds": 3.374227,
   "metrics_timeseries_path": "artifacts/phases/P11_STABILITY_SOAK/stability_metrics.jsonl",
   "phase_id": "P11_STABILITY_SOAK",
   "producer": {
@@ -85,44 +85,44 @@
       "max_growth_bytes": 50208,
       "nodes": [
         {
-          "first_used_memory": 3046912,
+          "first_used_memory": 3047552,
           "growth_bytes": 24688,
-          "last_used_memory": 3071600,
+          "last_used_memory": 3072240,
           "logical_id": "shard-0000-primary",
           "status": "PASS"
         },
         {
-          "first_used_memory": 2946496,
+          "first_used_memory": 2946624,
           "growth_bytes": 24688,
-          "last_used_memory": 2971184,
+          "last_used_memory": 2971312,
           "logical_id": "shard-0000-replica-00",
           "status": "PASS"
         },
         {
-          "first_used_memory": 2973368,
+          "first_used_memory": 2973048,
           "growth_bytes": 49376,
-          "last_used_memory": 3022744,
+          "last_used_memory": 3022424,
           "logical_id": "shard-0001-primary",
           "status": "PASS"
         },
         {
-          "first_used_memory": 2945984,
+          "first_used_memory": 2946432,
           "growth_bytes": 24688,
-          "last_used_memory": 2970672,
+          "last_used_memory": 2971120,
           "logical_id": "shard-0001-replica-00",
           "status": "PASS"
         },
         {
-          "first_used_memory": 3043632,
+          "first_used_memory": 3043696,
           "growth_bytes": 50208,
-          "last_used_memory": 3093840,
+          "last_used_memory": 3093904,
           "logical_id": "shard-0002-primary",
           "status": "PASS"
         },
         {
-          "first_used_memory": 2946688,
+          "first_used_memory": 2946560,
           "growth_bytes": 24688,
-          "last_used_memory": 2971376,
+          "last_used_memory": 2971248,
           "logical_id": "shard-0002-replica-00",
           "status": "PASS"
         }
@@ -203,11 +203,11 @@
           "completed_operations": 12,
           "error_count": 0,
           "latency_ms": {
-            "max": 63.425166,
-            "min": 51.472417,
-            "p50": 53.829938,
-            "p95": 62.044964,
-            "p99": 63.149126,
+            "max": 62.885,
+            "min": 51.066167,
+            "p50": 55.408896,
+            "p95": 61.55895,
+            "p99": 62.61979,
             "sample_count": 12,
             "unit": "ms"
           }
@@ -239,11 +239,11 @@
           "completed_operations": 12,
           "error_count": 0,
           "latency_ms": {
-            "max": 63.248875,
-            "min": 49.356458,
-            "p50": 55.059584,
-            "p95": 60.741586,
-            "p99": 62.747417,
+            "max": 61.993334,
+            "min": 42.654083,
+            "p50": 51.355459,
+            "p95": 60.455442,
+            "p99": 61.685756,
             "sample_count": 12,
             "unit": "ms"
           }
@@ -275,11 +275,11 @@
           "completed_operations": 12,
           "error_count": 0,
           "latency_ms": {
-            "max": 61.648042,
-            "min": 48.977042,
-            "p50": 54.077792,
-            "p95": 60.574396,
-            "p99": 61.433313,
+            "max": 64.957833,
+            "min": 51.284625,
+            "p50": 55.150542,
+            "p95": 63.818715,
+            "p99": 64.730009,
             "sample_count": 12,
             "unit": "ms"
           }
@@ -311,11 +311,11 @@
           "completed_operations": 12,
           "error_count": 0,
           "latency_ms": {
-            "max": 56.306958,
-            "min": 42.950792,
-            "p50": 51.049895,
-            "p95": 55.585931,
-            "p99": 56.162753,
+            "max": 63.042958,
+            "min": 44.206958,
+            "p50": 51.332292,
+            "p95": 61.539923,
+            "p99": 62.742351,
             "sample_count": 12,
             "unit": "ms"
           }
@@ -347,11 +347,11 @@
           "completed_operations": 12,
           "error_count": 0,
           "latency_ms": {
-            "max": 59.768875,
-            "min": 48.361125,
-            "p50": 53.967605,
-            "p95": 59.593884,
-            "p99": 59.733877,
+            "max": 63.138084,
+            "min": 40.229917,
+            "p50": 52.30848,
+            "p95": 63.010644,
+            "p99": 63.112596,
             "sample_count": 12,
             "unit": "ms"
           }
@@ -363,11 +363,11 @@
       "completed_operations": 60,
       "error_count": 0,
       "latency_ms": {
-        "max": 63.425166,
-        "min": 42.950792,
-        "p50": 53.829938,
-        "p95": 60.952325,
-        "p99": 63.321154,
+        "max": 64.957833,
+        "min": 40.229917,
+        "p50": 53.110563,
+        "p95": 62.913204,
+        "p99": 63.884181,
         "sample_count": 60,
         "unit": "ms"
       }

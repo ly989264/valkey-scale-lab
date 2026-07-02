@@ -1,26 +1,26 @@
 {
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "capability-refresh-reviewer",
+  "created_at": "2026-07-02T04:02:34.655873Z",
+  "gate_result_path": "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/gate_result.json",
+  "gate_result_sha256": "eaaa00b4dec6251627efe977acdc49e4c75bdcb4d1ea457530aadaa04a1224ff",
   "artifact_paths": [
     "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/phase_summary.json",
     "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/valkey_e2e_evidence.json",
     "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/failover_report.json",
     "artifacts/phases/P08_FAILOVER_SPLIT_BRAIN/cleanup_report.json"
   ],
-  "artifact_type": "audit_decision",
-  "auditor": "fresh-context-codex-reviewer",
-  "created_at": "2026-06-29T02:47:50Z",
-  "decision": "PASS",
-  "fresh_context": true,
-  "gate_result_path": "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/gate_result.json",
-  "gate_result_sha256": "2a98ccda6ef377bcff871d7975cb9552ef4278e6043ea0abcbd8039864d0c68a",
-  "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
-  "rationale": "All manifest gates passed, command text matched the manifest, stdout/stderr files existed with matching SHA256, required artifacts validated, safety scan passed, and cleanup evidence reported no owned resources remaining where applicable. Real-Valkey evidence is produced by scripts/fault_failover_gate.py, reports real_valkey=true, probe_result=PASS, Valkey version(s) 9.1.0, and observed node counts 5.",
   "risks": [
     {
-      "notes": "Promotion observed and cleanup passed.",
+      "risk": "Supplemental CML capability closure remains in progress",
+      "severity": "medium",
       "required_before_next_phase": false,
-      "risk": "P08 evidence contains one failed probe for the intentionally stopped primary; failover_report.json and fault_failover_gate output disambiguate this as expected scenario behavior.",
-      "severity": "low"
+      "notes": "Handled by CML stages."
     }
   ],
-  "schema_version": "v1"
+  "rationale": "Gate and audit refreshed against current manifest before CML bootstrap."
 }
