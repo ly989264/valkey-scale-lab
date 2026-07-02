@@ -589,7 +589,7 @@
     },
     {
       "path": "scripts/assert_management_ops_coverage.py",
-      "sha256": "3e0607a540c3504ad4b2ff9e11ee089eb31ed999e3b3b665749f3bb12b193ae1"
+      "sha256": "b8264db150e0b9d88a0b03310e06898fa7ed4da132e9517e8248a3fa4b23eccc"
     },
     {
       "path": "scripts/assert_plan_constraints.py",

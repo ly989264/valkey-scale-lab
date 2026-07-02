@@ -1,0 +1,35 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [],
+  "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/phase_summary.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/valkey_e2e_evidence.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/cleanup_report.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/events.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/metrics_timeseries.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/workload_windows.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/quant_summary.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_ops_matrix.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_operation_results.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_workload_impact.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_topology_snapshots.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_command_log.jsonl"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "P17 uses bounded local 6-node and 10-node sidecar runs for operation rows while the wrapper independently probes the main 6-node cluster.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P17_MANAGEMENT_REMOVE_NODE-management_remove_node-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P17 implemented the remove-node management matrix with real Valkey 6-node and 10-node evidence, safe primary failover/removal, failed-node cleanup, workload impact windows, and command/topology traces."
+}

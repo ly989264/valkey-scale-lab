@@ -1,0 +1,94 @@
+{
+  "artifact_type": "management_ops_matrix",
+  "created_at": "2026-06-28T00:00:00Z",
+  "operations": [
+    {
+      "node_count": 6,
+      "operation_id": "remove_replica-06",
+      "operation_name": "remove_replica",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "target_logical_id": "shard-0000-replica-00",
+      "workload_window_ref": "remove_replica-06:event"
+    },
+    {
+      "node_count": 10,
+      "operation_id": "remove_replica-10",
+      "operation_name": "remove_replica",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "target_logical_id": "shard-0000-replica-00",
+      "workload_window_ref": "remove_replica-10:event"
+    },
+    {
+      "node_count": 6,
+      "operation_id": "remove_primary_drained-06",
+      "operation_name": "remove_primary_drained",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "target_logical_id": "shard-0000-primary",
+      "workload_window_ref": "remove_primary_drained-06:event"
+    },
+    {
+      "node_count": 10,
+      "operation_id": "remove_primary_drained-10",
+      "operation_name": "remove_primary_drained",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "target_logical_id": "shard-0000-primary",
+      "workload_window_ref": "remove_primary_drained-10:event"
+    },
+    {
+      "node_count": 6,
+      "operation_id": "remove_failed_node-06",
+      "operation_name": "remove_failed_node",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "target_logical_id": "shard-0002-replica-00",
+      "workload_window_ref": "remove_failed_node-06:event"
+    },
+    {
+      "node_count": 10,
+      "operation_id": "remove_failed_node-10",
+      "operation_name": "remove_failed_node",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "target_logical_id": "shard-0004-replica-00",
+      "workload_window_ref": "remove_failed_node-10:event"
+    }
+  ],
+  "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_rows": [
+    {
+      "node_count": 6,
+      "operation_name": "remove_replica"
+    },
+    {
+      "node_count": 10,
+      "operation_name": "remove_replica"
+    },
+    {
+      "node_count": 6,
+      "operation_name": "remove_primary_drained"
+    },
+    {
+      "node_count": 10,
+      "operation_name": "remove_primary_drained"
+    },
+    {
+      "node_count": 6,
+      "operation_name": "remove_failed_node"
+    },
+    {
+      "node_count": 10,
+      "operation_name": "remove_failed_node"
+    }
+  ],
+  "run_id": "P17_MANAGEMENT_REMOVE_NODE-management_remove_node-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

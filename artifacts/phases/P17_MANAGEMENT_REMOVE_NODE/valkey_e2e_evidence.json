@@ -1,0 +1,671 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "valkey_e2e_evidence",
+  "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+  "run_id": "phase-P17_MANAGEMENT_REMOVE_NODE-management_remove_node",
+  "created_at": "2026-07-02T16:51:07.023182Z",
+  "producer": {
+    "name": "scripts/valkey_e2e_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "real_valkey": true,
+  "valkey_version_prefix_required": "9.1.",
+  "probe_result": "PASS",
+  "nodes_observed": 6,
+  "cluster_state_observed": "ok",
+  "data_path_result": "PASS",
+  "valkey_versions": [
+    "9.1.0"
+  ],
+  "scenario": "management_remove_node",
+  "started_at": "2026-07-02T16:49:53.504689Z",
+  "finished_at": "2026-07-02T16:51:07.023218Z",
+  "setup": {
+    "command": [
+      "/Library/Developer/CommandLineTools/usr/bin/python3",
+      "-m",
+      "valkey_scale_lab.cli",
+      "gate",
+      "scenario",
+      "--phase",
+      "P17_MANAGEMENT_REMOVE_NODE",
+      "--scenario",
+      "management_remove_node",
+      "--config",
+      "templates/configs/local_az_3x2.yaml",
+      "--artifacts-dir",
+      "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE",
+      "--state-out",
+      "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/state_management_remove_node.json"
+    ],
+    "status": "PASS",
+    "stdout_path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_remove_node_setup.stdout.log",
+    "stderr_path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_remove_node_setup.stderr.log"
+  },
+  "probes": [
+    {
+      "logical_id": "shard-0000-primary",
+      "host": "127.0.0.1",
+      "port": 7100,
+      "status": "PASS",
+      "ping": "PONG",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "cluster_known_nodes": 6,
+      "myself_node_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+      "cluster_nodes": {
+        "c991fac6c8e64b0c96219e8229f5d4dee85a1a40": {
+          "node_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "addr": "172.18.0.2:6379@16379",
+          "flags": [
+            "master",
+            "myself"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "5461-10921"
+          ]
+        },
+        "cd6b0661c3965d6d221ee118130d61f57854c28a": {
+          "node_id": "cd6b0661c3965d6d221ee118130d61f57854c28a",
+          "addr": "172.18.0.5:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "link_state": "connected",
+          "slots": []
+        },
+        "d3ef691355a2551328de539eee22dcc4b62c15ec": {
+          "node_id": "d3ef691355a2551328de539eee22dcc4b62c15ec",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "link_state": "connected",
+          "slots": []
+        },
+        "bc081d0d411542782485434551d6d7b3c02ad379": {
+          "node_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "addr": "172.18.0.4:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "0-5460"
+          ]
+        },
+        "3947f15c6f99024653a3475b76c144ef7e7eca69": {
+          "node_id": "3947f15c6f99024653a3475b76c144ef7e7eca69",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "link_state": "connected",
+          "slots": []
+        },
+        "c4322edb8b9b510c17a9470e418fa27f4644ba81": {
+          "node_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "addr": "172.18.0.3:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "10922-16383"
+          ]
+        }
+      }
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "host": "127.0.0.1",
+      "port": 7101,
+      "status": "PASS",
+      "ping": "PONG",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "cluster_known_nodes": 6,
+      "myself_node_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+      "cluster_nodes": {
+        "c4322edb8b9b510c17a9470e418fa27f4644ba81": {
+          "node_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "addr": "172.18.0.3:6379@16379",
+          "flags": [
+            "master",
+            "myself"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "10922-16383"
+          ]
+        },
+        "c991fac6c8e64b0c96219e8229f5d4dee85a1a40": {
+          "node_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "addr": "172.18.0.2:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "5461-10921"
+          ]
+        },
+        "bc081d0d411542782485434551d6d7b3c02ad379": {
+          "node_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "addr": "172.18.0.4:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "0-5460"
+          ]
+        },
+        "cd6b0661c3965d6d221ee118130d61f57854c28a": {
+          "node_id": "cd6b0661c3965d6d221ee118130d61f57854c28a",
+          "addr": "172.18.0.5:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "link_state": "connected",
+          "slots": []
+        },
+        "d3ef691355a2551328de539eee22dcc4b62c15ec": {
+          "node_id": "d3ef691355a2551328de539eee22dcc4b62c15ec",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "link_state": "connected",
+          "slots": []
+        },
+        "3947f15c6f99024653a3475b76c144ef7e7eca69": {
+          "node_id": "3947f15c6f99024653a3475b76c144ef7e7eca69",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "link_state": "connected",
+          "slots": []
+        }
+      }
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "host": "127.0.0.1",
+      "port": 7102,
+      "status": "PASS",
+      "ping": "PONG",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "cluster_known_nodes": 6,
+      "myself_node_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+      "cluster_nodes": {
+        "c991fac6c8e64b0c96219e8229f5d4dee85a1a40": {
+          "node_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "addr": "172.18.0.2:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "5461-10921"
+          ]
+        },
+        "cd6b0661c3965d6d221ee118130d61f57854c28a": {
+          "node_id": "cd6b0661c3965d6d221ee118130d61f57854c28a",
+          "addr": "172.18.0.5:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "link_state": "connected",
+          "slots": []
+        },
+        "d3ef691355a2551328de539eee22dcc4b62c15ec": {
+          "node_id": "d3ef691355a2551328de539eee22dcc4b62c15ec",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "link_state": "connected",
+          "slots": []
+        },
+        "3947f15c6f99024653a3475b76c144ef7e7eca69": {
+          "node_id": "3947f15c6f99024653a3475b76c144ef7e7eca69",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "link_state": "connected",
+          "slots": []
+        },
+        "bc081d0d411542782485434551d6d7b3c02ad379": {
+          "node_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "addr": "172.18.0.4:6379@16379",
+          "flags": [
+            "master",
+            "myself"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "0-5460"
+          ]
+        },
+        "c4322edb8b9b510c17a9470e418fa27f4644ba81": {
+          "node_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "addr": "172.18.0.3:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "10922-16383"
+          ]
+        }
+      }
+    },
+    {
+      "logical_id": "shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "port": 7103,
+      "status": "PASS",
+      "ping": "PONG",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "cluster_known_nodes": 6,
+      "myself_node_id": "cd6b0661c3965d6d221ee118130d61f57854c28a",
+      "cluster_nodes": {
+        "3947f15c6f99024653a3475b76c144ef7e7eca69": {
+          "node_id": "3947f15c6f99024653a3475b76c144ef7e7eca69",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "link_state": "connected",
+          "slots": []
+        },
+        "bc081d0d411542782485434551d6d7b3c02ad379": {
+          "node_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "addr": "172.18.0.4:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "0-5460"
+          ]
+        },
+        "d3ef691355a2551328de539eee22dcc4b62c15ec": {
+          "node_id": "d3ef691355a2551328de539eee22dcc4b62c15ec",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "link_state": "connected",
+          "slots": []
+        },
+        "c4322edb8b9b510c17a9470e418fa27f4644ba81": {
+          "node_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "addr": "172.18.0.3:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "10922-16383"
+          ]
+        },
+        "c991fac6c8e64b0c96219e8229f5d4dee85a1a40": {
+          "node_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "addr": "172.18.0.2:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "5461-10921"
+          ]
+        },
+        "cd6b0661c3965d6d221ee118130d61f57854c28a": {
+          "node_id": "cd6b0661c3965d6d221ee118130d61f57854c28a",
+          "addr": "172.18.0.5:6379@16379",
+          "flags": [
+            "myself",
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "link_state": "connected",
+          "slots": []
+        }
+      }
+    },
+    {
+      "logical_id": "shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "port": 7104,
+      "status": "PASS",
+      "ping": "PONG",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "cluster_known_nodes": 6,
+      "myself_node_id": "3947f15c6f99024653a3475b76c144ef7e7eca69",
+      "cluster_nodes": {
+        "c4322edb8b9b510c17a9470e418fa27f4644ba81": {
+          "node_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "addr": "172.18.0.3:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "10922-16383"
+          ]
+        },
+        "bc081d0d411542782485434551d6d7b3c02ad379": {
+          "node_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "addr": "172.18.0.4:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "0-5460"
+          ]
+        },
+        "cd6b0661c3965d6d221ee118130d61f57854c28a": {
+          "node_id": "cd6b0661c3965d6d221ee118130d61f57854c28a",
+          "addr": "172.18.0.5:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "link_state": "connected",
+          "slots": []
+        },
+        "3947f15c6f99024653a3475b76c144ef7e7eca69": {
+          "node_id": "3947f15c6f99024653a3475b76c144ef7e7eca69",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "myself",
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "link_state": "connected",
+          "slots": []
+        },
+        "c991fac6c8e64b0c96219e8229f5d4dee85a1a40": {
+          "node_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "addr": "172.18.0.2:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "5461-10921"
+          ]
+        },
+        "d3ef691355a2551328de539eee22dcc4b62c15ec": {
+          "node_id": "d3ef691355a2551328de539eee22dcc4b62c15ec",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "link_state": "connected",
+          "slots": []
+        }
+      }
+    },
+    {
+      "logical_id": "shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "port": 7105,
+      "status": "PASS",
+      "ping": "PONG",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "cluster_known_nodes": 6,
+      "myself_node_id": "d3ef691355a2551328de539eee22dcc4b62c15ec",
+      "cluster_nodes": {
+        "cd6b0661c3965d6d221ee118130d61f57854c28a": {
+          "node_id": "cd6b0661c3965d6d221ee118130d61f57854c28a",
+          "addr": "172.18.0.5:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "link_state": "connected",
+          "slots": []
+        },
+        "3947f15c6f99024653a3475b76c144ef7e7eca69": {
+          "node_id": "3947f15c6f99024653a3475b76c144ef7e7eca69",
+          "addr": "172.18.0.6:6379@16379",
+          "flags": [
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "link_state": "connected",
+          "slots": []
+        },
+        "bc081d0d411542782485434551d6d7b3c02ad379": {
+          "node_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "addr": "172.18.0.4:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "0-5460"
+          ]
+        },
+        "c991fac6c8e64b0c96219e8229f5d4dee85a1a40": {
+          "node_id": "c991fac6c8e64b0c96219e8229f5d4dee85a1a40",
+          "addr": "172.18.0.2:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "5461-10921"
+          ]
+        },
+        "d3ef691355a2551328de539eee22dcc4b62c15ec": {
+          "node_id": "d3ef691355a2551328de539eee22dcc4b62c15ec",
+          "addr": "172.18.0.7:6379@16379",
+          "flags": [
+            "myself",
+            "slave"
+          ],
+          "role": "replica",
+          "master_id": "bc081d0d411542782485434551d6d7b3c02ad379",
+          "link_state": "connected",
+          "slots": []
+        },
+        "c4322edb8b9b510c17a9470e418fa27f4644ba81": {
+          "node_id": "c4322edb8b9b510c17a9470e418fa27f4644ba81",
+          "addr": "172.18.0.3:6379@16379",
+          "flags": [
+            "master"
+          ],
+          "role": "primary",
+          "master_id": null,
+          "link_state": "connected",
+          "slots": [
+            "10922-16383"
+          ]
+        }
+      }
+    }
+  ],
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p17-management-remove-node-management_remove_node",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P17_MANAGEMENT_REMOVE_NODE-management_remove_node-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "nodehosts": [],
+  "node_processes": [
+    {
+      "logical_id": "shard-0000-primary",
+      "nodehost_id": "MISSING",
+      "pid": 10639,
+      "client_port": 7100,
+      "cluster_bus_port": "MISSING",
+      "role": "primary",
+      "shard_id": "shard-0000",
+      "data_dir": "MISSING",
+      "log_file": "MISSING",
+      "config_file": "MISSING"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "nodehost_id": "MISSING",
+      "pid": 10713,
+      "client_port": 7101,
+      "cluster_bus_port": "MISSING",
+      "role": "primary",
+      "shard_id": "shard-0001",
+      "data_dir": "MISSING",
+      "log_file": "MISSING",
+      "config_file": "MISSING"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "nodehost_id": "MISSING",
+      "pid": 10790,
+      "client_port": 7102,
+      "cluster_bus_port": "MISSING",
+      "role": "primary",
+      "shard_id": "shard-0002",
+      "data_dir": "MISSING",
+      "log_file": "MISSING",
+      "config_file": "MISSING"
+    },
+    {
+      "logical_id": "shard-0000-replica-00",
+      "nodehost_id": "MISSING",
+      "pid": 10865,
+      "client_port": 7103,
+      "cluster_bus_port": "MISSING",
+      "role": "replica",
+      "shard_id": "shard-0000",
+      "data_dir": "MISSING",
+      "log_file": "MISSING",
+      "config_file": "MISSING"
+    },
+    {
+      "logical_id": "shard-0001-replica-00",
+      "nodehost_id": "MISSING",
+      "pid": 10940,
+      "client_port": 7104,
+      "cluster_bus_port": "MISSING",
+      "role": "replica",
+      "shard_id": "shard-0001",
+      "data_dir": "MISSING",
+      "log_file": "MISSING",
+      "config_file": "MISSING"
+    },
+    {
+      "logical_id": "shard-0002-replica-00",
+      "nodehost_id": "MISSING",
+      "pid": 11015,
+      "client_port": 7105,
+      "cluster_bus_port": "MISSING",
+      "role": "replica",
+      "shard_id": "shard-0002",
+      "data_dir": "MISSING",
+      "log_file": "MISSING",
+      "config_file": "MISSING"
+    }
+  ],
+  "role_counts": {
+    "primary": 3,
+    "replica": 3,
+    "handshake": 0,
+    "fail": 0,
+    "pfail": 0
+  },
+  "cluster_snapshots": [],
+  "timing_breakdown_path": "SKIPPED_WITH_REASON",
+  "timing_breakdown": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "P13 timing breakdown is only emitted for P13 scale gates"
+  },
+  "cleanup": {
+    "status": "PASS",
+    "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/cleanup_report.json"
+  },
+  "errors": []
+}

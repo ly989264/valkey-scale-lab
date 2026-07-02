@@ -1,0 +1,78 @@
+{
+  "artifact_refs": [
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/events.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/metrics_timeseries.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/workload_windows.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_ops_matrix.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_operation_results.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_workload_impact.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_topology_snapshots.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_command_log.jsonl"
+  ],
+  "artifact_type": "quant_summary",
+  "cleanup_summaries": [
+    {
+      "cleanup_action_count": 11,
+      "operation_id": "remove_replica-06",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 19,
+      "operation_id": "remove_replica-10",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 11,
+      "operation_id": "remove_primary_drained-06",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 19,
+      "operation_id": "remove_primary_drained-10",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 11,
+      "operation_id": "remove_failed_node-06",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "cleanup_action_count": 19,
+      "operation_id": "remove_failed_node-10",
+      "resources_remaining": [],
+      "status": "PASS"
+    }
+  ],
+  "counts": {
+    "command_log_count": 56,
+    "event_count": 86,
+    "main_gate_node_count": 6,
+    "metric_count": 720,
+    "operation_count": 6,
+    "six_node_operation_count": 3,
+    "ten_node_operation_count": 3,
+    "topology_snapshot_count": 24,
+    "workload_window_count": 36
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_data": [],
+  "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P17_MANAGEMENT_REMOVE_NODE-management_remove_node-20260628",
+  "runtime_claims": {
+    "fault_runtime_claimed": false,
+    "management_runtime_claimed": true,
+    "real_valkey_claimed": true
+  },
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P17 executed real remove-node management operations on 6-node and 10-node Valkey clusters with telemetry, workload, topology, command, and cleanup evidence."
+}

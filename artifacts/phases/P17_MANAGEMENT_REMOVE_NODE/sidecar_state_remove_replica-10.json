@@ -1,0 +1,152 @@
+{
+  "cluster_id": "P17_MANAGEMENT_REMOVE_NODE-management_remove_node-20260628-remove_replica-10",
+  "nodes": [
+    {
+      "az_id": "az-a",
+      "client_port": 7340,
+      "container_id": "d9b9c1de750e16312e250098c80d8d6667b3ca94745c8d1fc58e88bc49fe1af4",
+      "container_ip": "172.19.0.2",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 12197,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7341,
+      "container_id": "2074d47cfe9e60fc831769f1db4cef9901fc412e64e6fc15ca716a6dab201b00",
+      "container_ip": "172.19.0.3",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 12271,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7342,
+      "container_id": "8ed641bea61f28a56cabad0f889c508d90399530567f9d1a0895f4303fc25fd9",
+      "container_ip": "172.19.0.4",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 12347,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7343,
+      "container_id": "489095a3ac11bffd33c95546e4ec7a135be2dfb1aa59ca0303e85dc6461aab48",
+      "container_ip": "172.19.0.5",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0003-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0003-primary",
+      "pid": 12422,
+      "role": "primary",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7344,
+      "container_id": "c1053442c17b54447677d24850e7013b0043a75c625d26d21aae3e0a416d8882",
+      "container_ip": "172.19.0.6",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0004-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0004-primary",
+      "pid": 12496,
+      "role": "primary",
+      "shard_id": "shard-0004"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7345,
+      "container_id": "0ea30e8a2911b9717da0737a8824cc7711aa11612cd648e2c7db7cb6bd041659",
+      "container_ip": "172.19.0.7",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 12573,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7346,
+      "container_id": "f88f8b4838c2145683b94720605507d65c5f1bfb31b5b2ae40d767904ed45a66",
+      "container_ip": "172.19.0.8",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 12649,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7347,
+      "container_id": "0200baad507b8dfcda2feb28c51f3022532fa59128ac24538d8e3a9e1e8ac42b",
+      "container_ip": "172.19.0.9",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 12723,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7348,
+      "container_id": "15555955f16a8e66b93a827e297995083c6a9e71519e48f2647d81bb035b29b1",
+      "container_ip": "172.19.0.10",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0003-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0003-replica-00",
+      "pid": 12796,
+      "role": "replica",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7349,
+      "container_id": "861e02cbdb1b26fc6890f312d78a2f7226bd1c7b786a56266eeafe0ee959c717",
+      "container_ip": "172.19.0.11",
+      "container_name": "vslab-p17-management-remove-node-management-remove-node-20260628-remove-replica-10-shard-0004-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0004-replica-00",
+      "pid": 12874,
+      "role": "replica",
+      "shard_id": "shard-0004"
+    }
+  ],
+  "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p17-management-remove-node-management_remove_node_remove_replica_10",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P17_MANAGEMENT_REMOVE_NODE-management_remove_node-20260628-remove_replica-10",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "management_remove_node_remove_replica_10",
+  "schema_version": "v1"
+}

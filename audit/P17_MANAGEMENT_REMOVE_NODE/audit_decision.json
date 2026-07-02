@@ -1,0 +1,38 @@
+{
+  "artifact_paths": [
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/phase_summary.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/valkey_e2e_evidence.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/cleanup_report.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/events.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/metrics_timeseries.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/workload_windows.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/quant_summary.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_ops_matrix.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_operation_results.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_workload_impact.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_topology_snapshots.jsonl",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_command_log.jsonl"
+  ],
+  "artifact_type": "audit_decision",
+  "audit_report_path": "audit/P17_MANAGEMENT_REMOVE_NODE/AUDIT.md",
+  "audit_report_sha256": "a8e5a90afea766abc7b555d5eb4271647e4252f63d8a6444f66f49a345d64174",
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-07-02T16:51:30Z",
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/gates/P17_MANAGEMENT_REMOVE_NODE/gate_result.json",
+  "gate_result_sha256": "e827d805256897c922efdd6cd96ff3823cd9d6c8cc3413a3250ca2a291fc0c7e",
+  "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+  "rationale": "P17 passed all gates and produced all required artifacts. Six exact remove-node rows for 6 and 10 nodes passed with real execution, clean before/after slot coverage, workload impact, topology and command evidence, and cleanup with no remaining owned resources.",
+  "review_path": "artifacts/goal_loop/P17_MANAGEMENT_REMOVE_NODE/REVIEW.md",
+  "review_sha256": "fec096b9713b3f5c0720c90241bf7d92df9b5fd443b3bb40cf4b6a17fc7fee65",
+  "risks": [
+    {
+      "notes": "Strengthened management assertion and artifacts enforce all 10-node rows.",
+      "required_before_next_phase": false,
+      "risk": "The outer wrapper remains a 6-node probe while 10-node proof is produced by P17 runtime sidecar rows.",
+      "severity": "low"
+    }
+  ],
+  "schema_version": "v1"
+}

@@ -16,7 +16,7 @@ from typing import Any, Callable, ContextManager, Iterable, TypeVar
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.config.validation import normalize_config, validate_semantics
-from valkey_scale_lab.metrics import MISSING, TelemetryRun, write_jsonl
+from valkey_scale_lab.metrics import MISSING, TelemetryRun, workload_metrics, write_jsonl
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
 from valkey_scale_lab.orchestrator.local import write_phase_summary as write_p10_phase_summary
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
@@ -142,6 +142,7 @@ def create_scenario(
         ("P13_SCALE_LADDER_50_100", "scale_50"),
         ("P13_SCALE_LADDER_50_100", "scale_100"),
         ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"),
+        ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
@@ -238,6 +239,8 @@ def create_scenario(
             write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         if phase == "P16_QUANT_TELEMETRY_UNIFICATION":
             write_goal_loop_quant_telemetry_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        if phase == "P17_MANAGEMENT_REMOVE_NODE":
+            write_p17_management_remove_node_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         _write_state(Path(state_out), state)
         return state
     except Exception as exc:
@@ -2988,6 +2991,7 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
         ("P13_SCALE_LADDER_50_100", "scale_50"): {50},
         ("P13_SCALE_LADDER_50_100", "scale_100"): {100},
         ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"): {6},
+        ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"): {6},
     }
     return node_count in expected.get((phase, scenario), set())
 
@@ -3922,6 +3926,955 @@ def _write_p16_phase_summary(path: Path, *, phase: str, run_id: str, sample_erro
         "sample_errors": sample_errors,
     }
     path.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+P17_REQUIRED_ROWS = [
+    ("remove_replica", 6),
+    ("remove_replica", 10),
+    ("remove_primary_drained", 6),
+    ("remove_primary_drained", 10),
+    ("remove_failed_node", 6),
+    ("remove_failed_node", 10),
+]
+
+
+def write_p17_management_remove_node_artifacts(
+    artifacts: Path,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    config: dict[str, Any],
+    nodes: list[dict[str, Any]],
+) -> None:
+    artifacts.mkdir(parents=True, exist_ok=True)
+    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id)
+    events: list[dict[str, Any]] = [
+        telemetry.event(
+            "management_matrix_started",
+            subject_type="management_matrix",
+            subject_id=scenario,
+            message="P17 remove-node management matrix started.",
+            metadata={"required_rows": [{"operation_name": op, "node_count": count} for op, count in P17_REQUIRED_ROWS]},
+        )
+    ]
+    metric_rows: list[dict[str, Any]] = []
+    workload_windows: list[dict[str, Any]] = []
+    operation_rows: list[dict[str, Any]] = []
+    matrix_rows: list[dict[str, Any]] = []
+    topology_rows: list[dict[str, Any]] = []
+    command_log: list[dict[str, Any]] = []
+    cleanup_summaries: list[dict[str, Any]] = []
+
+    for row_index, (operation_name, node_count) in enumerate(P17_REQUIRED_ROWS):
+        row_config = _p17_config_for_node_count(config, node_count, row_index)
+        operation_id = f"{operation_name}-{node_count:02d}"
+        events.append(
+            telemetry.event(
+                "management_operation_started",
+                subject_type="management_operation",
+                subject_id=operation_name,
+                operation_id=operation_id,
+                message=f"P17 {operation_name} on {node_count} nodes started.",
+                metadata={"node_count": node_count},
+            )
+        )
+        row_result, row_events, row_metrics, row_windows, row_topology, row_commands, row_cleanup = _p17_run_management_row(
+            phase=phase,
+            parent_scenario=scenario,
+            parent_run_id=run_id,
+            artifacts=artifacts,
+            config=row_config,
+            operation_name=operation_name,
+            operation_id=operation_id,
+            node_count=node_count,
+            row_index=row_index,
+            telemetry=telemetry,
+        )
+        operation_rows.append(row_result)
+        matrix_rows.append(
+            {
+                "operation_name": operation_name,
+                "node_count": node_count,
+                "operation_status": row_result["operation_status"],
+                "workload_window_ref": row_result["workload_window_ref"],
+                "operation_id": operation_id,
+                "target_logical_id": row_result.get("target_logical_id", MISSING),
+                "real_execution_verified": row_result.get("real_execution_verified", False),
+            }
+        )
+        events.extend(row_events)
+        metric_rows.extend(row_metrics)
+        workload_windows.extend(row_windows)
+        topology_rows.extend(row_topology)
+        command_log.extend(row_commands)
+        cleanup_summaries.append(row_cleanup)
+        events.append(
+            telemetry.event(
+                "management_operation_finished",
+                subject_type="management_operation",
+                subject_id=operation_name,
+                operation_id=operation_id,
+                message=f"P17 {operation_name} on {node_count} nodes finished.",
+                metadata={
+                    "node_count": node_count,
+                    "status": row_result["operation_status"],
+                    "wall_ms": row_result["wall_ms"],
+                    "removed_node_absent": row_result.get("removed_node_absent", False),
+                },
+            )
+        )
+
+    events.append(
+        telemetry.event(
+            "management_matrix_finished",
+            subject_type="management_matrix",
+            subject_id=scenario,
+            message="P17 remove-node management matrix finished.",
+            metadata={"operation_count": len(operation_rows), "command_count": len(command_log)},
+        )
+    )
+
+    write_jsonl(artifacts / "events.jsonl", events)
+    write_jsonl(artifacts / "metrics_timeseries.jsonl", metric_rows)
+    write_jsonl(artifacts / "management_operation_results.jsonl", operation_rows)
+    write_jsonl(artifacts / "management_topology_snapshots.jsonl", topology_rows)
+    write_jsonl(artifacts / "management_command_log.jsonl", command_log)
+
+    workload_artifact = {
+        "schema_version": "v1",
+        "artifact_type": "workload_windows",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "scenario_name": scenario,
+        "status": "PASS" if all(window.get("status") == "PASS" for window in workload_windows) else "FAIL",
+        "windows": workload_windows,
+    }
+    (artifacts / "workload_windows.json").write_text(json.dumps(workload_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    matrix = {
+        "schema_version": "v1",
+        "artifact_type": "management_ops_matrix",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if all(row["operation_status"] == "PASS" for row in operation_rows) else "FAIL",
+        "operations": matrix_rows,
+        "required_rows": [{"operation_name": op, "node_count": count} for op, count in P17_REQUIRED_ROWS],
+    }
+    (artifacts / "management_ops_matrix.json").write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    impact = {
+        "schema_version": "v1",
+        "artifact_type": "workload_impact_report",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": workload_artifact["status"],
+        "windows": _p17_aggregate_workload_windows(workload_windows),
+        "comparisons": _p17_workload_comparisons(workload_windows),
+        "operation_window_count": len(workload_windows),
+    }
+    (artifacts / "management_workload_impact.json").write_text(json.dumps(impact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    quant_summary = {
+        "schema_version": "v1",
+        "artifact_type": "quant_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if matrix["status"] == "PASS" and workload_artifact["status"] == "PASS" else "FAIL",
+        "summary": "P17 executed real remove-node management operations on 6-node and 10-node Valkey clusters with telemetry, workload, topology, command, and cleanup evidence.",
+        "artifact_refs": [
+            f"artifacts/phases/{phase}/events.jsonl",
+            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
+            f"artifacts/phases/{phase}/workload_windows.json",
+            f"artifacts/phases/{phase}/management_ops_matrix.json",
+            f"artifacts/phases/{phase}/management_operation_results.jsonl",
+            f"artifacts/phases/{phase}/management_workload_impact.json",
+            f"artifacts/phases/{phase}/management_topology_snapshots.jsonl",
+            f"artifacts/phases/{phase}/management_command_log.jsonl",
+        ],
+        "missing_data": [],
+        "runtime_claims": {
+            "real_valkey_claimed": True,
+            "management_runtime_claimed": True,
+            "fault_runtime_claimed": False,
+        },
+        "counts": {
+            "main_gate_node_count": len(nodes),
+            "operation_count": len(operation_rows),
+            "six_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 6),
+            "ten_node_operation_count": sum(1 for row in operation_rows if row["node_count"] == 10),
+            "event_count": len(events),
+            "metric_count": len(metric_rows),
+            "workload_window_count": len(workload_windows),
+            "topology_snapshot_count": len(topology_rows),
+            "command_log_count": len(command_log),
+        },
+        "cleanup_summaries": cleanup_summaries,
+    }
+    (artifacts / "quant_summary.json").write_text(json.dumps(quant_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    phase_summary = {
+        "schema_version": "v1",
+        "artifact_type": "phase_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": quant_summary["status"],
+        "summary": "P17 implemented the remove-node management matrix with real Valkey 6-node and 10-node evidence, safe primary failover/removal, failed-node cleanup, workload impact windows, and command/topology traces.",
+        "required_artifacts": [
+            f"artifacts/phases/{phase}/phase_summary.json",
+            f"artifacts/phases/{phase}/valkey_e2e_evidence.json",
+            f"artifacts/phases/{phase}/cleanup_report.json",
+            f"artifacts/phases/{phase}/events.jsonl",
+            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
+            f"artifacts/phases/{phase}/workload_windows.json",
+            f"artifacts/phases/{phase}/quant_summary.json",
+            f"artifacts/phases/{phase}/management_ops_matrix.json",
+            f"artifacts/phases/{phase}/management_operation_results.jsonl",
+            f"artifacts/phases/{phase}/management_workload_impact.json",
+            f"artifacts/phases/{phase}/management_topology_snapshots.jsonl",
+            f"artifacts/phases/{phase}/management_command_log.jsonl",
+        ],
+        "missing_metrics": [],
+        "risks": [
+            {
+                "risk": "P17 uses bounded local 6-node and 10-node sidecar runs for operation rows while the wrapper independently probes the main 6-node cluster.",
+                "severity": "low",
+                "required_before_next_phase": False,
+            }
+        ],
+    }
+    (artifacts / "phase_summary.json").write_text(json.dumps(phase_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _p17_config_for_node_count(base_config: dict[str, Any], node_count: int, row_index: int) -> dict[str, Any]:
+    if node_count == 6:
+        config = json.loads(json.dumps(base_config))
+    elif node_count == 10:
+        config = normalize_config(parse_config_file(Path("templates/configs/scale_10.yaml")))
+    else:
+        raise DockerRuntimeError(f"P17 unsupported node_count={node_count}")
+    shards = int(config["cluster"]["shards"])
+    replicas = int(config["cluster"]["replicas_per_shard"])
+    if shards * (1 + replicas) != node_count:
+        raise DockerRuntimeError(f"P17 config produced {shards * (1 + replicas)} nodes, expected {node_count}")
+    port_base = 7300 + row_index * 40
+    config["cluster"]["port_base"] = port_base
+    config["cluster"]["cluster_bus_port_base"] = port_base + 10000
+    config["cluster"]["node_memory_limit_mb"] = min(int(config["cluster"].get("node_memory_limit_mb") or 128), 128)
+    config["profile_name"] = f"p17_{node_count}_node_row_{row_index}"
+    return config
+
+
+def _p17_run_management_row(
+    *,
+    phase: str,
+    parent_scenario: str,
+    parent_run_id: str,
+    artifacts: Path,
+    config: dict[str, Any],
+    operation_name: str,
+    operation_id: str,
+    node_count: int,
+    row_index: int,
+    telemetry: TelemetryRun,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    side_scenario = f"{parent_scenario}_{operation_name}_{node_count}"
+    side_run_id = f"{parent_run_id}-{operation_name}-{node_count}"
+    nodes = _node_specs(config, phase, side_scenario, side_run_id)
+    ports = [node["client_port"] for node in nodes]
+    network_name = _network_name(phase, side_scenario)
+    cleanup_path = artifacts / f"sidecar_cleanup_{operation_id}.json"
+    state_path = artifacts / f"sidecar_state_{operation_id}.json"
+    events: list[dict[str, Any]] = []
+    metric_rows: list[dict[str, Any]] = []
+    topology_rows: list[dict[str, Any]] = []
+    command_log: list[dict[str, Any]] = []
+    started_ms = telemetry.now_unix_ms()
+    started_mono = time.monotonic()
+    state: dict[str, Any] | None = None
+
+    try:
+        _check_ports_free(ports)
+        cleanup_by_label(phase=phase, run_id=side_run_id)
+        run_docker(
+            [
+                "network",
+                "create",
+                "--label",
+                f"{LABEL_PREFIX}.project={PROJECT}",
+                "--label",
+                f"{LABEL_PREFIX}.phase={phase}",
+                "--label",
+                f"{LABEL_PREFIX}.run_id={side_run_id}",
+                network_name,
+            ],
+            timeout=120,
+        )
+        for node in nodes:
+            container_id = _start_container(node, network_name, config["runtime"]["valkey_image"], phase, side_scenario, side_run_id)
+            node["container_id"] = container_id
+            node["pid"] = _container_pid(container_id)
+            node["container_ip"] = _container_ip(container_id, network_name)
+        state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, nodes)
+        _write_state(state_path, state)
+        _configure_cluster(nodes)
+        _p17_wait_clean_cluster(nodes, timeout=120.0)
+        topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "before", nodes, nodes))
+        result, row_events, row_metrics, row_windows, during_topology = _p17_run_operation_with_workload(
+            telemetry=telemetry,
+            phase=phase,
+            parent_run_id=parent_run_id,
+            operation_name=operation_name,
+            operation_id=operation_id,
+            node_count=node_count,
+            nodes=nodes,
+            command_log=command_log,
+        )
+        events.extend(row_events)
+        metric_rows.extend(row_metrics)
+        topology_rows.extend(during_topology)
+        topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "after", result["survivors"], nodes))
+        cleanup_report = cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
+        result["sidecar_cleanup_status"] = cleanup_report.get("status", MISSING)
+        result["sidecar_cleanup_report"] = cleanup_path.as_posix()
+        result["removed_resource_cleanup"] = result.get("removed_resource_cleanup", {}) | {
+            "sidecar_cleanup_status": cleanup_report.get("status", MISSING),
+            "sidecar_resources_remaining": cleanup_report.get("resources_remaining", MISSING),
+        }
+        result.pop("survivors", None)
+        result["started_at_unix_ms"] = started_ms
+        result["ended_at_unix_ms"] = telemetry.now_unix_ms()
+        result["wall_ms"] = round(max(time.monotonic() - started_mono, 0.0) * 1000.0, 6)
+        return result, events, metric_rows, row_windows, topology_rows, command_log, _p17_cleanup_summary(operation_id, cleanup_report)
+    except Exception:
+        if state is None:
+            started_nodes = [node for node in nodes if "container_id" in node]
+            state = _runtime_state(phase, side_scenario, side_run_id, network_name, config, started_nodes)
+            _write_state(state_path, state)
+        cleanup_scenario(state_path=state_path, artifacts_dir=artifacts, out_path=cleanup_path)
+        raise
+
+
+def _p17_run_operation_with_workload(
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    parent_run_id: str,
+    operation_name: str,
+    operation_id: str,
+    node_count: int,
+    nodes: list[dict[str, Any]],
+    command_log: list[dict[str, Any]],
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    events: list[dict[str, Any]] = []
+    metric_rows: list[dict[str, Any]] = []
+    windows: list[dict[str, Any]] = []
+    topology_rows: list[dict[str, Any]] = []
+    operation_result: dict[str, Any] | None = None
+    all_latencies: list[float] = []
+    all_errors: list[str] = []
+    all_started = time.monotonic()
+    all_start = telemetry.event(
+        "workload_window_started",
+        subject_type="workload_window",
+        subject_id=f"{operation_id}:all_run",
+        operation_id=operation_id,
+        message="All-run workload window started for P17 operation.",
+        metadata={"window_name": "all_run", "operation_id": operation_id, "node_count": node_count},
+    )
+    events.append(all_start)
+
+    def cluster_command(*args: Any, timeout: int = 10) -> str:
+        live_nodes = operation_result.get("survivors", nodes) if operation_result else nodes
+        return run_node_cluster_cli(live_nodes[0], *args, timeout=timeout)
+
+    for window_name in CANONICAL_WINDOWS[:-1]:
+        start_event = telemetry.event(
+            "workload_window_started",
+            subject_type="workload_window",
+            subject_id=f"{operation_id}:{window_name}",
+            operation_id=operation_id,
+            message=f"{window_name} workload window started for P17 operation.",
+            metadata={"window_name": window_name, "operation_id": operation_id, "node_count": node_count},
+        )
+        events.append(start_event)
+        window_started = time.monotonic()
+        latencies_ms: list[float] = []
+        errors: list[str] = []
+        for op_index in range(4):
+            if window_name == "event" and op_index == 1 and operation_result is None:
+                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_before_command", nodes, nodes))
+                op_started = time.monotonic()
+                operation_result = _p17_execute_remove_operation(
+                    telemetry=telemetry,
+                    phase=phase,
+                    parent_run_id=parent_run_id,
+                    operation_name=operation_name,
+                    operation_id=operation_id,
+                    node_count=node_count,
+                    nodes=nodes,
+                    command_log=command_log,
+                )
+                operation_result["command_ms"] = round(max(time.monotonic() - op_started, 0.0) * 1000.0, 6)
+                topology_rows.append(_p17_topology_snapshot(telemetry, phase, parent_run_id, operation_id, "during_after_command", operation_result["survivors"], nodes))
+            op_type = "SET" if op_index % 3 == 0 else "GET"
+            key = f"{{vslab-p17}}:{operation_id}:{window_name}:{op_index % 3}"
+            value = f"value-{operation_id}-{window_name}-{op_index}"
+            op_started = time.monotonic()
+            try:
+                result = cluster_command(op_type, key, value, timeout=10) if op_type == "SET" else cluster_command(op_type, key, timeout=10)
+                if op_type == "SET" and str(result).upper() != "OK":
+                    errors.append(f"SET unexpected result {result!r}")
+                else:
+                    latencies_ms.append((time.monotonic() - op_started) * 1000.0)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(repr(exc))
+        metrics = workload_metrics(
+            requested_qps=200.0,
+            duration_seconds=max(time.monotonic() - window_started, 0.000001),
+            latencies_ms=latencies_ms,
+            error_texts=errors,
+        )
+        end_event = telemetry.event(
+            "workload_window_finished",
+            subject_type="workload_window",
+            subject_id=f"{operation_id}:{window_name}",
+            operation_id=operation_id,
+            message=f"{window_name} workload window finished for P17 operation.",
+            metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": metrics["sample_count"]},
+        )
+        events.append(end_event)
+        windows.append(
+            {
+                "window_name": window_name,
+                "start_event_id": start_event["event_id"],
+                "end_event_id": end_event["event_id"],
+                "status": "PASS" if not errors else "FAIL",
+                "operation_id": operation_id,
+                "node_count": node_count,
+                "metrics": metrics,
+            }
+        )
+        metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, window_name, metrics))
+        all_latencies.extend(latencies_ms)
+        all_errors.extend(errors)
+
+    if operation_result is None:
+        operation_result = _p17_execute_remove_operation(
+            telemetry=telemetry,
+            phase=phase,
+            parent_run_id=parent_run_id,
+            operation_name=operation_name,
+            operation_id=operation_id,
+            node_count=node_count,
+            nodes=nodes,
+            command_log=command_log,
+        )
+    all_metrics = workload_metrics(
+        requested_qps=200.0,
+        duration_seconds=max(time.monotonic() - all_started, 0.000001),
+        latencies_ms=all_latencies,
+        error_texts=all_errors,
+    )
+    all_end = telemetry.event(
+        "workload_window_finished",
+        subject_type="workload_window",
+        subject_id=f"{operation_id}:all_run",
+        operation_id=operation_id,
+        message="All-run workload window finished for P17 operation.",
+        metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]},
+    )
+    events.append(all_end)
+    windows.append(
+        {
+            "window_name": "all_run",
+            "start_event_id": all_start["event_id"],
+            "end_event_id": all_end["event_id"],
+            "status": "PASS" if not all_errors else "FAIL",
+            "operation_id": operation_id,
+            "node_count": node_count,
+            "metrics": all_metrics,
+        }
+    )
+    metric_rows.extend(_p17_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
+    operation_result["workload_window_ref"] = f"{operation_id}:event"
+    return operation_result, events, metric_rows, windows, topology_rows
+
+
+def _p17_workload_metric_rows(
+    telemetry: TelemetryRun,
+    operation_id: str,
+    window_name: str,
+    metrics: dict[str, Any],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    missing_reasons = metrics.get("missing_reasons", {})
+    for name, value in metrics.items():
+        if name == "missing_reasons":
+            continue
+        rows.append(
+            telemetry.metric(
+                source_type="workload",
+                source_id=f"{operation_id}:{window_name}",
+                metric_name=name,
+                metric_value=value,
+                metric_unit="count" if name.endswith("_count") or name.endswith("_ops") or name == "sample_count" else "ms" if name.startswith("latency_") else "ratio" if name == "error_rate" else "ops_per_second" if name.endswith("qps") else "seconds" if name == "duration_seconds" else "value",
+                labels={"operation_id": operation_id, "window_name": window_name},
+                missing_reason_text=str(missing_reasons.get(name, "")),
+            )
+        )
+    return rows
+
+
+def _p17_execute_remove_operation(
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    parent_run_id: str,
+    operation_name: str,
+    operation_id: str,
+    node_count: int,
+    nodes: list[dict[str, Any]],
+    command_log: list[dict[str, Any]],
+) -> dict[str, Any]:
+    primaries = [node for node in nodes if node["role"] == "primary"]
+    replicas = [node for node in nodes if node["role"] == "replica"]
+    before = _p17_cluster_health(nodes)
+    if before["cluster_state"] != "ok" or before["slots_assigned"] != 16384 or before["slots_ok"] != 16384 or before["slots_fail"] != 0:
+        raise DockerRuntimeError(f"P17 operation requires clean cluster before removal; operation_id={operation_id} before={before}")
+    convergence_started = time.monotonic()
+    if operation_name == "remove_replica":
+        target = replicas[0]
+        survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
+        details = _p17_stop_forget_and_remove(telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, target=target, survivors=survivors, expected_primaries=len(primaries), expected_replicas=len(replicas) - 1, command_log=command_log, reason="remove live replica after owned container stop")
+        safe_path = "stop_replica_then_cluster_forget_from_survivors"
+    elif operation_name == "remove_failed_node":
+        target = replicas[-1]
+        survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
+        details = _p17_stop_forget_and_remove(telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, target=target, survivors=survivors, expected_primaries=len(primaries), expected_replicas=len(replicas) - 1, command_log=command_log, reason="owned failed replica stop then metadata removal")
+        safe_path = "owned_failed_replica_stop_then_cluster_forget_from_survivors"
+    elif operation_name == "remove_primary_drained":
+        target = primaries[0]
+        replacement = next(replica for replica in replicas if replica["shard_id"] == target["shard_id"])
+        _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="cluster_failover_takeover", target=replacement, args=["CLUSTER", "FAILOVER", "TAKEOVER"], timeout=60)
+        _p17_wait_node_role(replacement, "master", timeout=90.0)
+        survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
+        details = _p17_stop_forget_and_remove(telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, target=target, survivors=survivors, expected_primaries=len(primaries), expected_replicas=len(replicas) - 1, command_log=command_log, reason="controlled replica takeover before old primary removal")
+        details["replacement_logical_id"] = replacement["logical_id"]
+        safe_path = "cluster_failover_takeover_then_forget_old_primary"
+    else:
+        raise DockerRuntimeError(f"unsupported P17 operation {operation_name}")
+
+    convergence_ms = round(max(time.monotonic() - convergence_started, 0.0) * 1000.0, 6)
+    after = _p17_cluster_health(details["survivors"])
+    errors_by_type = _p17_errors_by_type(command_log, operation_id)
+    removed_absent = _p17_removed_absent(details["survivors"], str(details["removed_node_id"]))
+    pass_status = (
+        removed_absent
+        and before["cluster_state"] == "ok"
+        and before["slots_assigned"] == 16384
+        and after["cluster_state"] == "ok"
+        and after["slots_assigned"] == 16384
+        and after["slots_ok"] == 16384
+        and after["slots_fail"] == 0
+        and details["removed_resource_cleanup"]["status"] == "PASS"
+        and not any(value for value in errors_by_type.values())
+    )
+    return {
+        "schema_version": "v1",
+        "phase_id": phase,
+        "operation_name": operation_name,
+        "operation_id": operation_id,
+        "node_count": node_count,
+        "operation_status": "PASS" if pass_status else "FAIL",
+        "started_at_unix_ms": telemetry.now_unix_ms(),
+        "ended_at_unix_ms": telemetry.now_unix_ms(),
+        "wall_ms": MISSING,
+        "command_ms": MISSING,
+        "convergence_ms": convergence_ms,
+        "cluster_state_before": before["cluster_state"],
+        "cluster_state_after": after["cluster_state"],
+        "slots_before": before["slots_assigned"],
+        "slots_after": after["slots_assigned"],
+        "workload_window_ref": f"{operation_id}:event",
+        "errors_by_type": errors_by_type,
+        "missing_fields": [],
+        "real_execution_verified": pass_status,
+        "safe_path": safe_path,
+        "target_logical_id": details["target_logical_id"],
+        "target_role": details["target_role"],
+        "removed_node_id": details["removed_node_id"],
+        "removed_node_absent": removed_absent,
+        "removed_resource_cleanup": details["removed_resource_cleanup"],
+        "expected_nodes_after": node_count - 1,
+        "observed_nodes_after": after["known_nodes"],
+        "role_counts_after": {"primary": after["primary_count"], "replica": after["replica_count"]},
+        "survivors": details["survivors"],
+    }
+
+
+def _p17_wait_clean_cluster(nodes: list[dict[str, Any]], timeout: float) -> None:
+    primaries = [node for node in nodes if node["role"] == "primary"]
+    replicas = [node for node in nodes if node["role"] == "replica"]
+    _wait_cluster_known(nodes, expected=len(nodes), timeout=timeout, final_check=True)
+    _wait_cluster_slots_assigned(nodes, timeout=timeout, final_check=True)
+    _wait_cluster_ok(nodes, timeout=timeout, final_check=True)
+    _wait_cluster_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, final_check=True)
+
+
+def _p17_stop_forget_and_remove(
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    parent_run_id: str,
+    operation_id: str,
+    target: dict[str, Any],
+    survivors: list[dict[str, Any]],
+    expected_primaries: int,
+    expected_replicas: int,
+    command_log: list[dict[str, Any]],
+    reason: str,
+) -> dict[str, Any]:
+    removed_id = _node_command(target, "CLUSTER", "MYID", timeout=30).strip()
+    _p17_log_docker_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="owned_container_stop", target=target, args=["stop", "-t", "2", target["container_name"]], timeout=30)
+    _p17_wait_target_unreachable(target, timeout=20.0)
+    _p17_forget_until_absent(telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, survivors=survivors, removed_id=removed_id, expected_nodes=len(survivors), expected_primaries=expected_primaries, expected_replicas=expected_replicas, command_log=command_log)
+    rm_result = _p17_log_docker_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="owned_removed_node_container_rm", target=target, args=["rm", "-f", target["container_name"]], timeout=30)
+    inspect = run_docker(["ps", "-a", "-q", "--filter", f"name=^{target['container_name']}$"], timeout=30, check=False)
+    cleanup = {
+        "status": "PASS" if rm_result.get("status") == "PASS" and not inspect.stdout.strip() else "FAIL",
+        "target_container_name": target["container_name"],
+        "target_logical_id": target["logical_id"],
+        "reason": reason,
+    }
+    return {
+        "target_logical_id": target["logical_id"],
+        "target_role": target["role"],
+        "removed_node_id": removed_id,
+        "survivors": survivors,
+        "removed_resource_cleanup": cleanup,
+    }
+
+
+def _p17_forget_until_absent(
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    parent_run_id: str,
+    operation_id: str,
+    survivors: list[dict[str, Any]],
+    removed_id: str,
+    expected_nodes: int,
+    expected_primaries: int,
+    expected_replicas: int,
+    command_log: list[dict[str, Any]],
+) -> None:
+    deadline = time.monotonic() + 120.0
+    last_health: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        for survivor in survivors:
+            try:
+                if _p17_cluster_nodes_contains(survivor, removed_id):
+                    _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=parent_run_id, operation_id=operation_id, command_kind="cluster_forget_removed_node", target=survivor, args=["CLUSTER", "FORGET", removed_id], timeout=30)
+            except Exception:
+                pass
+        health = _p17_cluster_health(survivors)
+        last_health = health
+        if (
+            health["cluster_state"] == "ok"
+            and health["known_nodes"] == expected_nodes
+            and health["primary_count"] == expected_primaries
+            and health["replica_count"] == expected_replicas
+            and health["slots_assigned"] == 16384
+            and health["slots_ok"] == 16384
+            and health["slots_fail"] == 0
+            and _p17_removed_absent(survivors, removed_id)
+        ):
+            return
+        time.sleep(2)
+    raise DockerRuntimeError(f"P17 removed node did not converge absent; removed_id={removed_id} last_health={last_health}")
+
+
+def _p17_cluster_nodes_contains(node: dict[str, Any], node_id: str) -> bool:
+    text = _node_command(node, "CLUSTER", "NODES", timeout=5)
+    return any(line.startswith(node_id + " ") for line in text.splitlines())
+
+
+def _p17_removed_absent(nodes: list[dict[str, Any]], removed_id: str) -> bool:
+    for node in nodes:
+        if _p17_cluster_nodes_contains(node, removed_id):
+            return False
+    return True
+
+
+def _p17_wait_target_unreachable(target: dict[str, Any], timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            _node_command(target, "PING", timeout=1.0)
+        except Exception:
+            return
+        time.sleep(0.5)
+    raise DockerRuntimeError(f"P17 target remained reachable after stop: {target['logical_id']}")
+
+
+def _p17_wait_node_role(node: dict[str, Any], role_flag: str, timeout: float) -> None:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        text = _node_command(node, "CLUSTER", "NODES", timeout=5)
+        for line in text.splitlines():
+            parts = line.split()
+            if len(parts) >= 8 and "myself" in parts[2].split(",") and role_flag in parts[2].split(",") and parts[7] == "connected":
+                return
+        time.sleep(1)
+    raise DockerRuntimeError(f"P17 node {node['logical_id']} did not reach role flag {role_flag}")
+
+
+def _p17_cluster_health(nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    snapshots = [_process_node_snapshot(node) for node in nodes]
+    return {
+        "cluster_state": "ok" if snapshots and all(snap["cluster_state"] == "ok" for snap in snapshots) else "unknown",
+        "known_nodes": min((snap["known_nodes"] for snap in snapshots), default=0),
+        "primary_count": min((snap["primary_count"] for snap in snapshots), default=0),
+        "replica_count": min((snap["replica_count"] for snap in snapshots), default=0),
+        "slots_assigned": min((snap["slots_assigned"] for snap in snapshots), default=0),
+        "slots_ok": min((snap["slots_ok"] for snap in snapshots), default=0),
+        "slots_fail": max((snap["slots_fail"] for snap in snapshots), default=0),
+        "snapshots": snapshots,
+    }
+
+
+def _p17_topology_snapshot(
+    telemetry: TelemetryRun,
+    phase: str,
+    run_id: str,
+    operation_id: str,
+    label: str,
+    probe_nodes: list[dict[str, Any]],
+    all_nodes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    health = _p17_cluster_health(probe_nodes)
+    try:
+        text = _node_command(probe_nodes[0], "CLUSTER", "NODES", timeout=5)
+        parsed_nodes = _p17_parse_cluster_nodes_text(text, all_nodes)
+    except Exception as exc:  # noqa: BLE001
+        parsed_nodes = [{"status": MISSING, "reason": repr(exc)}]
+    return {
+        "schema_version": "v1",
+        "phase_id": phase,
+        "run_id": run_id,
+        "snapshot_id": f"{operation_id}-{label}",
+        "timestamp_unix_ms": telemetry.now_unix_ms(),
+        "operation_id": operation_id,
+        "label": label,
+        "nodes": parsed_nodes,
+        "slots": {
+            "assigned": health["slots_assigned"],
+            "ok": health["slots_ok"],
+            "fail": health["slots_fail"],
+            "cluster_state": health["cluster_state"],
+            "known_nodes": health["known_nodes"],
+            "primary_count": health["primary_count"],
+            "replica_count": health["replica_count"],
+        },
+    }
+
+
+def _p17_parse_cluster_nodes_text(text: str, all_nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 8:
+            continue
+        flags = parts[2].split(",")
+        role = "primary" if "master" in flags else "replica" if ("slave" in flags or "replica" in flags) else "unknown"
+        rows.append(
+            {
+                "node_id": parts[0],
+                "role": role,
+                "flags": flags,
+                "master_id": parts[3],
+                "link_state": parts[7],
+                "slots": parts[8:],
+                "logical_id": next((item["logical_id"] for item in all_nodes if item.get("container_ip") and str(item["container_ip"]) in parts[1]), MISSING),
+            }
+        )
+    return rows
+
+
+def _p17_log_node_command(
+    command_log: list[dict[str, Any]],
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    parent_run_id: str,
+    operation_id: str,
+    command_kind: str,
+    target: dict[str, Any],
+    args: list[Any],
+    timeout: int,
+) -> dict[str, Any]:
+    started = telemetry.now_unix_ms()
+    command_id = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
+    try:
+        stdout = _node_command(target, *args, timeout=timeout)
+        status = "PASS"
+        stderr = ""
+    except Exception as exc:  # noqa: BLE001
+        stdout = ""
+        stderr = repr(exc)
+        status = "FAIL"
+    entry = {
+        "schema_version": "v1",
+        "phase_id": phase,
+        "run_id": parent_run_id,
+        "command_id": command_id,
+        "operation_id": operation_id,
+        "command_kind": command_kind,
+        "target_logical_id": target.get("logical_id", MISSING),
+        "argv": [str(arg) for arg in args],
+        "started_at_unix_ms": started,
+        "ended_at_unix_ms": telemetry.now_unix_ms(),
+        "status": status,
+        "stdout_tail": stdout[-500:],
+        "stderr_tail": stderr[-500:],
+    }
+    command_log.append(entry)
+    if status == "FAIL":
+        raise DockerRuntimeError(f"P17 command failed {command_kind} target={target.get('logical_id')}: {stderr}")
+    return entry
+
+
+def _p17_log_docker_command(
+    command_log: list[dict[str, Any]],
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    parent_run_id: str,
+    operation_id: str,
+    command_kind: str,
+    target: dict[str, Any],
+    args: list[str],
+    timeout: int,
+) -> dict[str, Any]:
+    started = telemetry.now_unix_ms()
+    command_id = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
+    result = run_docker(args, timeout=timeout, check=False)
+    entry = {
+        "schema_version": "v1",
+        "phase_id": phase,
+        "run_id": parent_run_id,
+        "command_id": command_id,
+        "operation_id": operation_id,
+        "command_kind": command_kind,
+        "target_logical_id": target.get("logical_id", MISSING),
+        "argv": ["docker", *args],
+        "started_at_unix_ms": started,
+        "ended_at_unix_ms": telemetry.now_unix_ms(),
+        "status": "PASS" if result.returncode == 0 else "FAIL",
+        "stdout_tail": result.stdout[-500:],
+        "stderr_tail": result.stderr[-500:],
+        "returncode": result.returncode,
+    }
+    command_log.append(entry)
+    if result.returncode != 0:
+        raise DockerRuntimeError(f"P17 docker command failed {command_kind}: {result.stderr.strip()}")
+    return entry
+
+
+def _p17_errors_by_type(command_log: list[dict[str, Any]], operation_id: str) -> dict[str, int]:
+    errors = [row.get("stderr_tail", "") for row in command_log if row.get("operation_id") == operation_id and row.get("status") == "FAIL"]
+    counts = {"command_error": len(errors), "timeout": 0, "cluster_unavailable": 0, "cleanup_error": 0, "unknown": 0}
+    for text in errors:
+        lowered = str(text).lower()
+        if "timeout" in lowered:
+            counts["timeout"] += 1
+        elif "cluster" in lowered and ("down" in lowered or "fail" in lowered):
+            counts["cluster_unavailable"] += 1
+        elif "cleanup" in lowered or "remove" in lowered or "rm" in lowered:
+            counts["cleanup_error"] += 1
+        else:
+            counts["unknown"] += 1
+    return counts
+
+
+def _p17_aggregate_workload_windows(windows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for window_name in CANONICAL_WINDOWS:
+        matching = [window for window in windows if window.get("window_name") == window_name]
+        if matching:
+            rows.append({"window_name": window_name, "operation_count": len(matching), "metrics": _p17_merge_workload_metrics([window.get("metrics", {}) for window in matching])})
+    return rows
+
+
+def _p17_merge_workload_metrics(metric_items: list[dict[str, Any]]) -> dict[str, Any]:
+    latencies_p50 = [float(item["latency_p50_ms"]) for item in metric_items if isinstance(item.get("latency_p50_ms"), (int, float))]
+    latencies_p95 = [float(item["latency_p95_ms"]) for item in metric_items if isinstance(item.get("latency_p95_ms"), (int, float))]
+    latencies_p99 = [float(item["latency_p99_ms"]) for item in metric_items if isinstance(item.get("latency_p99_ms"), (int, float))]
+    ok_ops = sum(int(item.get("ok_ops", 0)) for item in metric_items)
+    error_ops = sum(int(item.get("error_ops", 0)) for item in metric_items)
+    duration = sum(float(item.get("duration_seconds", 0.0)) for item in metric_items)
+    missing_reasons: dict[str, str] = {}
+
+    def latency(name: str, values: list[float]) -> float | str:
+        if not values:
+            missing_reasons[name] = "no successful latency samples were collected for this aggregate window"
+            return MISSING
+        return round(sum(values) / len(values), 6)
+
+    achieved_qps: float | str = round(ok_ops / max(duration, 0.000001), 6) if ok_ops or error_ops else MISSING
+    error_rate: float | str = round(error_ops / max(ok_ops + error_ops, 1), 6) if ok_ops or error_ops else MISSING
+    if achieved_qps == MISSING:
+        missing_reasons["achieved_qps"] = "no workload operations were attempted for this aggregate window"
+    if error_rate == MISSING:
+        missing_reasons["error_rate"] = "no workload operations were attempted for this aggregate window"
+    return {
+        "requested_qps": 200.0,
+        "achieved_qps": achieved_qps,
+        "ok_ops": ok_ops,
+        "error_ops": error_ops,
+        "error_rate": error_rate,
+        "latency_p50_ms": latency("latency_p50_ms", latencies_p50),
+        "latency_p95_ms": latency("latency_p95_ms", latencies_p95),
+        "latency_p99_ms": latency("latency_p99_ms", latencies_p99),
+        "timeout_count": sum(int(item.get("timeout_count", 0)) for item in metric_items),
+        "moved_redirection_count": sum(int(item.get("moved_redirection_count", 0)) for item in metric_items),
+        "ask_redirection_count": sum(int(item.get("ask_redirection_count", 0)) for item in metric_items),
+        "missing_reasons": missing_reasons,
+    }
+
+
+def _p17_workload_comparisons(windows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_name = {row["window_name"]: row["metrics"] for row in _p17_aggregate_workload_windows(windows)}
+    baseline = by_name.get("baseline", {})
+    event = by_name.get("event", {})
+    comparisons: list[dict[str, Any]] = []
+    for metric in ["achieved_qps", "error_rate", "latency_p95_ms"]:
+        base_value = baseline.get(metric, MISSING)
+        event_value = event.get(metric, MISSING)
+        delta: float | str = MISSING
+        if isinstance(base_value, (int, float)) and isinstance(event_value, (int, float)):
+            delta = round(float(event_value) - float(base_value), 6)
+        comparisons.append({"metric": metric, "baseline": base_value, "event": event_value, "delta": delta})
+    return comparisons
+
+
+def _p17_cleanup_summary(operation_id: str, cleanup_report: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "operation_id": operation_id,
+        "status": cleanup_report.get("status", MISSING),
+        "resources_remaining": cleanup_report.get("resources_remaining", MISSING),
+        "cleanup_action_count": len(cleanup_report.get("cleanup_actions", [])),
+    }
 
 
 def write_stability_artifacts(

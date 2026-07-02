@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -251,3 +252,87 @@ def test_workload_metrics_encode_empty_latency_as_missing_with_reason() -> None:
 
     assert metrics["latency_p99_ms"] == MISSING
     assert metrics["missing_reasons"]["latency_p99_ms"]
+
+
+def p17_management_row(operation_name: str, node_count: int) -> dict:
+    operation_id = f"{operation_name}-{node_count:02d}"
+    return {
+        "schema_version": "v1",
+        "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+        "operation_name": operation_name,
+        "operation_id": operation_id,
+        "node_count": node_count,
+        "operation_status": "PASS",
+        "started_at_unix_ms": 1,
+        "ended_at_unix_ms": 2,
+        "wall_ms": 1.0,
+        "command_ms": 1.0,
+        "convergence_ms": 1.0,
+        "cluster_state_before": "ok",
+        "cluster_state_after": "ok",
+        "slots_before": 16384,
+        "slots_after": 16384,
+        "workload_window_ref": f"{operation_id}:event",
+        "errors_by_type": {},
+        "missing_fields": [],
+        "real_execution_verified": True,
+        "removed_node_absent": True,
+        "removed_node_id": "node-id",
+        "target_logical_id": "shard-0000-replica-00",
+        "observed_nodes_after": node_count - 1,
+        "removed_resource_cleanup": {"status": "PASS"},
+        "sidecar_cleanup_status": "PASS",
+    }
+
+
+def write_p17_management_artifacts(base: Path, rows: list[dict]) -> None:
+    write_json(
+        base / "management_ops_matrix.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "management_ops_matrix",
+            "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+            "run_id": "run",
+            "operations": [
+                {
+                    "operation_name": row["operation_name"],
+                    "node_count": row["node_count"],
+                    "operation_status": row["operation_status"],
+                    "workload_window_ref": row["workload_window_ref"],
+                }
+                for row in rows
+            ],
+        },
+    )
+    write_jsonl(base / "management_operation_results.jsonl", rows)
+
+
+def run_management_assertion(tmp_path: Path, monkeypatch, rows: list[dict]) -> int:
+    assertion = load_script("assert_management_ops_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / "P17_MANAGEMENT_REMOVE_NODE"
+    phase_dir.mkdir(parents=True)
+    write_p17_management_artifacts(phase_dir, rows)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_management_ops_coverage.py", "--phase", "P17_MANAGEMENT_REMOVE_NODE"])
+    return assertion.main()
+
+
+def test_p17_management_assertion_requires_6_and_10_node_rows(tmp_path: Path, monkeypatch) -> None:
+    rows = [
+        p17_management_row("remove_replica", 6),
+        p17_management_row("remove_primary_drained", 6),
+        p17_management_row("remove_failed_node", 6),
+    ]
+
+    assert run_management_assertion(tmp_path, monkeypatch, rows) == 1
+
+
+def test_p17_management_assertion_accepts_exact_required_rows(tmp_path: Path, monkeypatch) -> None:
+    rows = [
+        p17_management_row(operation, count)
+        for operation in ["remove_replica", "remove_primary_drained", "remove_failed_node"]
+        for count in [6, 10]
+    ]
+
+    assert run_management_assertion(tmp_path, monkeypatch, rows) == 0
