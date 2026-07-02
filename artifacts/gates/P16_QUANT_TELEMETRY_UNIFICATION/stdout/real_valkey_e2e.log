@@ -1,0 +1,1 @@
+PASS real_valkey_e2e scenario=goal_loop_quant_telemetry nodes=6 out=artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/valkey_e2e_evidence.json

@@ -1,0 +1,100 @@
+{
+  "cluster_id": "P16_QUANT_TELEMETRY_UNIFICATION-goal_loop_quant_telemetry-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "5c4560c4b80693973264b188e7a7e0978d7737d75a529637f866c9f1e002b27f",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p16-quant-telemetry-unification-goal-loop-quant-telemetry-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 1840,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "3108f9e4dc751bface0c84749414685fbc2348615a514dee0a5b372cf2085577",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p16-quant-telemetry-unification-goal-loop-quant-telemetry-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 1915,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "ddb4346954125c620d0a85918167472019fca81b42b12893c6ea1f8d1a38f9e6",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p16-quant-telemetry-unification-goal-loop-quant-telemetry-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 1989,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "60852475d077aaeb2f36f11ec46d4fecb48161241c2e504647df8379cde6329b",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p16-quant-telemetry-unification-goal-loop-quant-telemetry-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 2065,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "1911fee682623dcd5b27af6e33dc8f70f98914a1fd21a1fc0e0afdc129915528",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p16-quant-telemetry-unification-goal-loop-quant-telemetry-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 2139,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "2aacc481312e27eb4ffe1196564dd6622777f0e6328d088053d6504efc9b2edd",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p16-quant-telemetry-unification-goal-loop-quant-telemetry-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 2214,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P16_QUANT_TELEMETRY_UNIFICATION",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p16-quant-telemetry-unification-goal_loop_quant_telemetry",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P16_QUANT_TELEMETRY_UNIFICATION-goal_loop_quant_telemetry-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "goal_loop_quant_telemetry",
+  "schema_version": "v1"
+}

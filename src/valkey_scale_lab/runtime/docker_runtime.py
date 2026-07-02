@@ -16,9 +16,11 @@ from typing import Any, Callable, ContextManager, Iterable, TypeVar
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.config.validation import normalize_config, validate_semantics
+from valkey_scale_lab.metrics import MISSING, TelemetryRun, write_jsonl
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
 from valkey_scale_lab.orchestrator.local import write_phase_summary as write_p10_phase_summary
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
+from valkey_scale_lab.workload import CANONICAL_WINDOWS, run_windowed_workload
 
 PROJECT = "valkey-scale-lab"
 LABEL_PREFIX = "org.valkey-scale-lab"
@@ -139,6 +141,7 @@ def create_scenario(
         ("P12_SCALE_LADDER_10_30", "scale_30"),
         ("P13_SCALE_LADDER_50_100", "scale_50"),
         ("P13_SCALE_LADDER_50_100", "scale_100"),
+        ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"),
     }:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
@@ -233,6 +236,8 @@ def create_scenario(
             write_stability_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         if phase in {"P12_SCALE_LADDER_10_30", "P13_SCALE_LADDER_50_100"}:
             write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        if phase == "P16_QUANT_TELEMETRY_UNIFICATION":
+            write_goal_loop_quant_telemetry_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         _write_state(Path(state_out), state)
         return state
     except Exception as exc:
@@ -2982,6 +2987,7 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
         ("P12_SCALE_LADDER_10_30", "scale_30"): {30},
         ("P13_SCALE_LADDER_50_100", "scale_50"): {50},
         ("P13_SCALE_LADDER_50_100", "scale_100"): {100},
+        ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"): {6},
     }
     return node_count in expected.get((phase, scenario), set())
 
@@ -3467,6 +3473,455 @@ def write_observability_artifacts(
     event_lines.append(_event(phase, run_id, "observability_collection_finished", "info", {"sample_count": len(metric_lines)}))
     metrics_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in metric_lines) + "\n", encoding="utf-8")
     events_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in event_lines) + "\n", encoding="utf-8")
+
+
+def write_goal_loop_quant_telemetry_artifacts(
+    artifacts: Path,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    config: dict[str, Any],
+    nodes: list[dict[str, Any]],
+) -> None:
+    artifacts.mkdir(parents=True, exist_ok=True)
+    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id)
+    events: list[dict[str, Any]] = [
+        telemetry.event(
+            "telemetry_collection_started",
+            subject_type="scenario",
+            subject_id=scenario,
+            message="P16 telemetry collection started.",
+            metadata={"node_count": len(nodes), "canonical_windows": CANONICAL_WINDOWS},
+        )
+    ]
+    metric_rows: list[dict[str, Any]] = []
+    sample_errors: list[dict[str, Any]] = []
+
+    for node in nodes:
+        logical_id = node["logical_id"]
+        try:
+            server_info = _parse_info(_node_command(node, "INFO", "server", timeout=10))
+            default_info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
+            info = {**server_info, **default_info}
+            metric_rows.extend(_p16_info_metric_rows(telemetry, logical_id, node, info))
+            events.append(
+                telemetry.event(
+                    "valkey_info_sampled",
+                    subject_type="node",
+                    subject_id=logical_id,
+                    message=f"Valkey INFO sampled for {logical_id}.",
+                    metadata={"role": node.get("role", MISSING), "az_id": node.get("az_id", MISSING)},
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            sample_errors.append({"logical_id": logical_id, "source_type": "valkey_info", "error": repr(exc)})
+            metric_rows.append(
+                telemetry.metric(
+                    source_type="valkey_info",
+                    source_id=logical_id,
+                    metric_name="valkey_info_sample",
+                    metric_value=MISSING,
+                    metric_unit="status",
+                    labels=_p16_node_labels(node),
+                    missing_reason_text=f"INFO sample failed: {exc!r}",
+                )
+            )
+
+        try:
+            cluster_info = _parse_info(_node_command(node, "CLUSTER", "INFO", timeout=10))
+            metric_rows.extend(_p16_cluster_info_metric_rows(telemetry, logical_id, node, cluster_info))
+            events.append(
+                telemetry.event(
+                    "cluster_info_sampled",
+                    subject_type="node",
+                    subject_id=logical_id,
+                    message=f"CLUSTER INFO sampled for {logical_id}.",
+                    metadata={"cluster_state": cluster_info.get("cluster_state", MISSING)},
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            sample_errors.append({"logical_id": logical_id, "source_type": "cluster_info", "error": repr(exc)})
+            metric_rows.append(
+                telemetry.metric(
+                    source_type="cluster_info",
+                    source_id=logical_id,
+                    metric_name="cluster_info_sample",
+                    metric_value=MISSING,
+                    metric_unit="status",
+                    labels=_p16_node_labels(node),
+                    missing_reason_text=f"CLUSTER INFO sample failed: {exc!r}",
+                )
+            )
+
+        try:
+            cluster_nodes_raw = _node_command(node, "CLUSTER", "NODES", timeout=10)
+            metric_rows.extend(_p16_cluster_nodes_metric_rows(telemetry, logical_id, node, cluster_nodes_raw))
+            events.append(
+                telemetry.event(
+                    "cluster_nodes_sampled",
+                    subject_type="node",
+                    subject_id=logical_id,
+                    message=f"CLUSTER NODES sampled for {logical_id}.",
+                    metadata={"line_count": len([line for line in cluster_nodes_raw.splitlines() if line.strip()])},
+                )
+            )
+        except Exception as exc:  # noqa: BLE001
+            sample_errors.append({"logical_id": logical_id, "source_type": "cluster_nodes", "error": repr(exc)})
+            metric_rows.append(
+                telemetry.metric(
+                    source_type="cluster_nodes",
+                    source_id=logical_id,
+                    metric_name="cluster_nodes_sample",
+                    metric_value=MISSING,
+                    metric_unit="status",
+                    labels=_p16_node_labels(node),
+                    missing_reason_text=f"CLUSTER NODES sample failed: {exc!r}",
+                )
+            )
+
+        docker_stats = _docker_stats(node["container_name"])
+        metric_rows.extend(_p16_docker_metric_rows(telemetry, logical_id, node, docker_stats))
+
+    workload = config.get("workload", {})
+    requested_qps = min(12.0, float(workload.get("uniform_qps", 0)) + float(workload.get("hotspot_qps", 0)) or 12.0)
+    workload_events, workload_metrics_rows, workload_windows = run_windowed_workload(
+        telemetry=telemetry,
+        command=lambda *args, timeout=10: run_node_cluster_cli(nodes[0], *args, timeout=int(timeout)),
+        requested_qps=requested_qps,
+        operations_per_window=6,
+        sleep_seconds=0.02,
+    )
+    events.extend(workload_events)
+    metric_rows.extend(workload_metrics_rows)
+    events.append(
+        telemetry.event(
+            "telemetry_collection_finished",
+            subject_type="scenario",
+            subject_id=scenario,
+            message="P16 telemetry collection finished.",
+            metadata={
+                "event_count": len(events) + 1,
+                "metric_count": len(metric_rows),
+                "workload_window_count": len(workload_windows),
+                "sample_error_count": len(sample_errors),
+            },
+        )
+    )
+
+    events_path = artifacts / "events.jsonl"
+    metrics_path = artifacts / "metrics_timeseries.jsonl"
+    workload_windows_path = artifacts / "workload_windows.json"
+    quant_summary_path = artifacts / "quant_summary.json"
+    phase_summary_path = artifacts / "phase_summary.json"
+
+    write_jsonl(events_path, events)
+    write_jsonl(metrics_path, metric_rows)
+    workload_artifact = {
+        "schema_version": "v1",
+        "artifact_type": "workload_windows",
+        "phase_id": phase,
+        "run_id": run_id,
+        "scenario_name": scenario,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if not any(window.get("status") == "FAIL" for window in workload_windows) else "FAIL",
+        "windows": workload_windows,
+    }
+    workload_windows_path.write_text(json.dumps(workload_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _write_p16_quant_summary(
+        quant_summary_path,
+        phase=phase,
+        scenario=scenario,
+        run_id=run_id,
+        node_count=len(nodes),
+        event_count=len(events),
+        metric_count=len(metric_rows),
+        workload_windows=workload_windows,
+        sample_errors=sample_errors,
+    )
+    _write_p16_phase_summary(phase_summary_path, phase=phase, run_id=run_id, sample_errors=sample_errors)
+
+
+def _p16_node_labels(node: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "logical_node_id": node.get("logical_id", MISSING),
+        "role": node.get("role", MISSING),
+        "az_id": node.get("az_id", MISSING),
+        "host_id": node.get("host_id", MISSING),
+    }
+
+
+def _p16_metric_value(value: Any, reason: str) -> tuple[int | float | str | bool, str]:
+    if value is None or value == MISSING:
+        return MISSING, reason
+    converted = _int_or_missing(value)
+    if converted != MISSING:
+        return converted, ""
+    return str(value), ""
+
+
+def _p16_info_metric_rows(
+    telemetry: TelemetryRun,
+    logical_id: str,
+    node: dict[str, Any],
+    info: dict[str, str],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for name, unit, reason in [
+        ("valkey_version", "version", "Valkey server INFO did not include valkey_version"),
+        ("uptime_in_seconds", "seconds", "Valkey INFO did not include uptime_in_seconds"),
+        ("connected_clients", "count", "Valkey INFO did not include connected_clients"),
+        ("used_memory", "bytes", "Valkey INFO did not include used_memory"),
+        ("total_commands_processed", "count", "Valkey INFO did not include total_commands_processed"),
+    ]:
+        value, missing = _p16_metric_value(info.get(name), reason)
+        rows.append(
+            telemetry.metric(
+                source_type="valkey_info",
+                source_id=logical_id,
+                metric_name=name,
+                metric_value=value,
+                metric_unit=unit,
+                labels=_p16_node_labels(node),
+                missing_reason_text=missing,
+            )
+        )
+    rows.append(
+        telemetry.metric(
+            source_type="valkey_info",
+            source_id=logical_id,
+            metric_name="valkey_info_sample",
+            metric_value=True,
+            metric_unit="status",
+            labels=_p16_node_labels(node),
+        )
+    )
+    return rows
+
+
+def _p16_cluster_info_metric_rows(
+    telemetry: TelemetryRun,
+    logical_id: str,
+    node: dict[str, Any],
+    cluster_info: dict[str, str],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for name, unit, reason in [
+        ("cluster_state", "state", "CLUSTER INFO did not include cluster_state"),
+        ("cluster_known_nodes", "count", "CLUSTER INFO did not include cluster_known_nodes"),
+        ("cluster_slots_assigned", "count", "CLUSTER INFO did not include cluster_slots_assigned"),
+        ("cluster_slots_ok", "count", "CLUSTER INFO did not include cluster_slots_ok"),
+    ]:
+        value, missing = _p16_metric_value(cluster_info.get(name), reason)
+        rows.append(
+            telemetry.metric(
+                source_type="cluster_info",
+                source_id=logical_id,
+                metric_name=name,
+                metric_value=value,
+                metric_unit=unit,
+                labels=_p16_node_labels(node),
+                missing_reason_text=missing,
+            )
+        )
+    return rows
+
+
+def _p16_cluster_nodes_metric_rows(
+    telemetry: TelemetryRun,
+    logical_id: str,
+    node: dict[str, Any],
+    cluster_nodes_raw: str,
+) -> list[dict[str, Any]]:
+    role_counts = _cluster_nodes_role_counts(cluster_nodes_raw)
+    labels = _p16_node_labels(node)
+    return [
+        telemetry.metric(
+            source_type="cluster_nodes",
+            source_id=logical_id,
+            metric_name="cluster_nodes_line_count",
+            metric_value=len([line for line in cluster_nodes_raw.splitlines() if line.strip()]),
+            metric_unit="count",
+            labels=labels,
+        ),
+        telemetry.metric(
+            source_type="cluster_nodes",
+            source_id=logical_id,
+            metric_name="cluster_nodes_primary_count",
+            metric_value=role_counts["primary"],
+            metric_unit="count",
+            labels=labels,
+        ),
+        telemetry.metric(
+            source_type="cluster_nodes",
+            source_id=logical_id,
+            metric_name="cluster_nodes_replica_count",
+            metric_value=role_counts["replica"],
+            metric_unit="count",
+            labels=labels,
+        ),
+    ]
+
+
+def _cluster_nodes_role_counts(cluster_nodes_raw: str) -> dict[str, int]:
+    counts = {"primary": 0, "replica": 0}
+    for line in cluster_nodes_raw.splitlines():
+        parts = line.split()
+        if len(parts) < 8:
+            continue
+        flags = set(parts[2].split(","))
+        if flags.intersection({"fail", "handshake", "noaddr"}) or parts[7] != "connected":
+            continue
+        if "master" in flags:
+            counts["primary"] += 1
+        elif "slave" in flags or "replica" in flags:
+            counts["replica"] += 1
+    return counts
+
+
+def _p16_docker_metric_rows(
+    telemetry: TelemetryRun,
+    logical_id: str,
+    node: dict[str, Any],
+    stats: dict[str, Any],
+) -> list[dict[str, Any]]:
+    labels = _p16_node_labels(node)
+    if stats.get("status") != "PASS":
+        return [
+            telemetry.metric(
+                source_type="docker_stats",
+                source_id=logical_id,
+                metric_name="docker_stats_sample",
+                metric_value=MISSING,
+                metric_unit="status",
+                labels=labels,
+                missing_reason_text=str(stats.get("reason", "docker stats unavailable")),
+            )
+        ]
+    rows: list[dict[str, Any]] = []
+    for name in ["cpu_percent", "memory_usage", "memory_percent", "net_io", "block_io", "pids"]:
+        value = stats.get(name, MISSING)
+        rows.append(
+            telemetry.metric(
+                source_type="docker_stats",
+                source_id=logical_id,
+                metric_name=name,
+                metric_value=value if value != MISSING else MISSING,
+                metric_unit="docker_stats_string" if name != "pids" else "count",
+                labels=labels,
+                missing_reason_text="" if value != MISSING else f"docker stats did not include {name}",
+            )
+        )
+    return rows
+
+
+def _write_p16_quant_summary(
+    path: Path,
+    *,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    node_count: int,
+    event_count: int,
+    metric_count: int,
+    workload_windows: list[dict[str, Any]],
+    sample_errors: list[dict[str, Any]],
+) -> None:
+    nonzero_windows = [
+        window["window_name"]
+        for window in workload_windows
+        if int(window.get("metrics", {}).get("sample_count", 0)) > 0
+    ]
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": "quant_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if not sample_errors and nonzero_windows else "FAIL",
+        "summary": "P16 emitted canonical events, metrics, workload windows, and summary telemetry for a real 6-node Valkey cluster.",
+        "artifact_refs": [
+            f"artifacts/phases/{phase}/events.jsonl",
+            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
+            f"artifacts/phases/{phase}/workload_windows.json",
+            f"artifacts/phases/{phase}/cleanup_report.json",
+            f"artifacts/phases/{phase}/valkey_e2e_evidence.json",
+        ],
+        "missing_data": [
+            {
+                "field": "management_operation_matrix",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "P16 only implements canonical telemetry; management operation execution begins in P17.",
+            },
+            {
+                "field": "fault_matrix",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "P16 only implements canonical telemetry; fault and failover execution begins in later stages.",
+            },
+        ],
+        "runtime_claims": {
+            "real_valkey_claimed": True,
+            "management_runtime_claimed": False,
+            "fault_runtime_claimed": False,
+        },
+        "counts": {
+            "node_count": node_count,
+            "event_count": event_count,
+            "metric_count": metric_count,
+            "workload_window_count": len(workload_windows),
+            "workload_windows_with_samples": nonzero_windows,
+            "sample_error_count": len(sample_errors),
+        },
+        "scenario_name": scenario,
+        "sample_errors": sample_errors,
+    }
+    path.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_p16_phase_summary(path: Path, *, phase: str, run_id: str, sample_errors: list[dict[str, Any]]) -> None:
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": "phase_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "status": "PASS" if not sample_errors else "FAIL",
+        "summary": "P16 unified quantitative telemetry for real 6-node Valkey gate scenarios without implementing future management or fault behavior.",
+        "required_artifacts": [
+            f"artifacts/phases/{phase}/phase_summary.json",
+            f"artifacts/phases/{phase}/valkey_e2e_evidence.json",
+            f"artifacts/phases/{phase}/cleanup_report.json",
+            f"artifacts/phases/{phase}/events.jsonl",
+            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
+            f"artifacts/phases/{phase}/workload_windows.json",
+            f"artifacts/phases/{phase}/quant_summary.json",
+        ],
+        "missing_metrics": [
+            {
+                "metric": "management_operation_timing",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "P16 is the telemetry foundation stage; management operation timing is required in P17-P19.",
+                "impact": "No management operation performance claim is made by P16.",
+            },
+            {
+                "metric": "fault_or_failover_latency",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "P16 is the telemetry foundation stage; fault and failover latency are required in P20-P24.",
+                "impact": "No fault or failover performance claim is made by P16.",
+            },
+        ],
+        "risks": [
+            {
+                "risk": "P16 remains a 6-node smoke scenario; later stages must reuse these artifact shapes at larger scale.",
+                "severity": "medium",
+                "required_before_next_phase": False,
+            }
+        ],
+        "sample_errors": sample_errors,
+    }
+    path.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def write_stability_artifacts(

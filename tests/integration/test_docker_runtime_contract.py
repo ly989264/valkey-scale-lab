@@ -61,6 +61,19 @@ def test_p13_defaults_to_docker_process_runtime() -> None:
     assert docker_runtime._uses_docker_process_runtime("P11_STABILITY_SOAK", "stability_soak_smoke") is False
 
 
+def test_p16_quant_telemetry_is_six_node_only() -> None:
+    assert docker_runtime._scenario_node_count_allowed(
+        "P16_QUANT_TELEMETRY_UNIFICATION",
+        "goal_loop_quant_telemetry",
+        6,
+    ) is True
+    assert docker_runtime._scenario_node_count_allowed(
+        "P16_QUANT_TELEMETRY_UNIFICATION",
+        "goal_loop_quant_telemetry",
+        10,
+    ) is False
+
+
 def test_p13_runtime_timing_names_split_diagnostic_probe() -> None:
     assert "runtime_final_full_probe" in docker_runtime.P13_TIMING_NAMES
     assert "runtime_diagnostic_full_probe" in docker_runtime.P13_TIMING_NAMES

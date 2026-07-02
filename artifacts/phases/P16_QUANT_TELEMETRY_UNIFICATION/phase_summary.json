@@ -1,0 +1,44 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "No management operation performance claim is made by P16.",
+      "metric": "management_operation_timing",
+      "reason": "P16 is the telemetry foundation stage; management operation timing is required in P17-P19.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "impact": "No fault or failover performance claim is made by P16.",
+      "metric": "fault_or_failover_latency",
+      "reason": "P16 is the telemetry foundation stage; fault and failover latency are required in P20-P24.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P16_QUANT_TELEMETRY_UNIFICATION",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/phase_summary.json",
+    "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/valkey_e2e_evidence.json",
+    "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/cleanup_report.json",
+    "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/events.jsonl",
+    "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/metrics_timeseries.jsonl",
+    "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/workload_windows.json",
+    "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/quant_summary.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "P16 remains a 6-node smoke scenario; later stages must reuse these artifact shapes at larger scale.",
+      "severity": "medium"
+    }
+  ],
+  "run_id": "P16_QUANT_TELEMETRY_UNIFICATION-goal_loop_quant_telemetry-20260628",
+  "sample_errors": [],
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P16 unified quantitative telemetry for real 6-node Valkey gate scenarios without implementing future management or fault behavior."
+}

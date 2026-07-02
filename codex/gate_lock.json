@@ -597,7 +597,7 @@
     },
     {
       "path": "scripts/assert_quant_artifacts.py",
-      "sha256": "adaca1a6d90dfefcffca151e91123b315ed7d7c3c3bea561852d73bec80c6cc8"
+      "sha256": "a33218b94c6f547a10a0b58e306f983cff67c234f22c2b96cceb3c828a2af0ac"
     },
     {
       "path": "scripts/assert_split_brain_report.py",
