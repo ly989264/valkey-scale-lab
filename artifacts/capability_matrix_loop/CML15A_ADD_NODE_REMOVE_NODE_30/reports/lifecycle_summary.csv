@@ -1,0 +1,2 @@
+stage_id,status,nodes_observed,cluster_state,slots_assigned,slots_fail
+CML15A_ADD_NODE_REMOVE_NODE_30,PASS,30,ok,16384,0

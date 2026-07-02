@@ -1,0 +1,59 @@
+{
+  "artifact_type": "lifecycle_workload_window_report",
+  "node_count": 30,
+  "schema_version": "v1",
+  "stage_id": "CML15B_RESHARD_SLOTS_30",
+  "status": "PASS",
+  "windows": [
+    {
+      "achieved_qps": 18.332341,
+      "availability_percent": 100.0,
+      "completed_operations": 30,
+      "data_path_result": "PASS",
+      "duration_seconds": 1.636452,
+      "error_count": 0,
+      "errors": [],
+      "latency_ms": {
+        "p50": 54.777375,
+        "p95": 62.628944,
+        "p99": 64.148965,
+        "sample_count": 30
+      },
+      "name": "before",
+      "operation_count": 30,
+      "samples": [
+        {
+          "completed_operations": 30,
+          "duration_seconds": 1.636452,
+          "errors": 0
+        }
+      ],
+      "status": "MEASURED"
+    },
+    {
+      "achieved_qps": 18.807991,
+      "availability_percent": 100.0,
+      "completed_operations": 30,
+      "data_path_result": "PASS",
+      "duration_seconds": 1.595067,
+      "error_count": 0,
+      "errors": [],
+      "latency_ms": {
+        "p50": 54.747437,
+        "p95": 61.221279,
+        "p99": 62.942967,
+        "sample_count": 30
+      },
+      "name": "after",
+      "operation_count": 30,
+      "samples": [
+        {
+          "completed_operations": 30,
+          "duration_seconds": 1.595067,
+          "errors": 0
+        }
+      ],
+      "status": "MEASURED"
+    }
+  ]
+}

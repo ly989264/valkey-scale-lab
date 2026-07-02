@@ -538,6 +538,34 @@ def cml13_paths(stage_id: str) -> dict[str, Path]:
     }
 
 
+def cml15_operation_paths(stage_id: str) -> dict[str, Path]:
+    stage_root = ARTIFACT_ROOT / stage_id
+    return {
+        "operation": stage_root / "samples" / "operation_event.jsonl",
+        "fault": stage_root / "samples" / "fault_event.jsonl",
+        "metrics": stage_root / "samples" / "metrics_window.jsonl",
+        "workload": stage_root / "samples" / "workload_window.jsonl",
+        "evidence": stage_root / "samples" / "lifecycle_evidence_30.json",
+        "state": stage_root / "samples" / "state_scale_30.json",
+        "before": stage_root / "samples" / "before_snapshot.json",
+        "trace": stage_root / "samples" / "operation_command_trace.jsonl",
+        "after": stage_root / "samples" / "after_convergence.json",
+        "slot_coverage": stage_root / "samples" / "slot_coverage.json",
+        "role_counts": stage_root / "samples" / "role_counts.json",
+        "workload_report": stage_root / "samples" / "workload_window_report_30.json",
+        "cleanup": stage_root / "samples" / "cleanup_report_30.json",
+        "matrix": stage_root / "capability_matrix.json",
+        "analysis": stage_root / "analysis_summary.json",
+        "report_index": stage_root / "reports" / "report_index.json",
+    }
+
+
+def cml15_report_paths(stage_id: str) -> dict[str, Path]:
+    paths = cml15_operation_paths(stage_id)
+    paths["lifecycle_matrix_report"] = ARTIFACT_ROOT / stage_id / "samples" / "lifecycle_matrix_report_30.json"
+    return paths
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -2163,6 +2191,277 @@ def make_cml13_negative_cases(stage_id: str) -> list[dict[str, Any]]:
     return results
 
 
+CML15_STAGE_TARGETS = {
+    "CML15A_ADD_NODE_REMOVE_NODE_30": {"add_node", "remove_node"},
+    "CML15B_RESHARD_SLOTS_30": {"reshard_slots"},
+    "CML15C_REBALANCE_SLOTS_30": {"rebalance_slots"},
+    "CML15D_ROLLING_RESTART_ONE_PRIMARY_30": {"rolling_restart"},
+}
+
+
+def _cml15_validate_common_jsonl(stage_id: str, paths: dict[str, Path]) -> list[str]:
+    errors: list[str] = []
+    for key, schema in [
+        ("operation", "schemas/capability_matrix_loop/operation_event.schema.json"),
+        ("fault", "schemas/capability_matrix_loop/fault_event.schema.json"),
+        ("metrics", "schemas/capability_matrix_loop/metrics_window.schema.json"),
+        ("workload", "schemas/capability_matrix_loop/workload_window.schema.json"),
+    ]:
+        errors.extend(jsonl_schema_errors(paths[key], schema))
+    errors.extend(schema_errors(paths["matrix"], "schemas/capability_matrix_loop/capability_matrix.schema.json"))
+    errors.extend(schema_errors(paths["analysis"], "schemas/capability_matrix_loop/capability_analysis_summary.schema.json"))
+    errors.extend(schema_errors(paths["report_index"], "schemas/capability_matrix_loop/capability_report_index.schema.json"))
+    if errors:
+        return errors
+    for row in load_jsonl(paths["metrics"]) + load_jsonl(paths["workload"]):
+        if row.get("source_stage") != stage_id or row.get("current_stage") != stage_id:
+            errors.append(f"{stage_id} old artifact reused in {row.get('artifact_type')} {row.get('window_id')}")
+        errors.extend(source_checksum_errors(row.get("source_artifacts", []), f"{stage_id} {row.get('artifact_type')} {row.get('window_id')}"))
+    report_index = load_json(paths["report_index"])
+    kinds = {report.get("kind") for report in report_index.get("reports", [])}
+    if kinds != {"csv", "markdown", "html", "chart"}:
+        errors.append(f"{stage_id} report index must include csv, markdown, html, chart")
+    for report in report_index.get("reports", []):
+        if not (ROOT / str(report.get("path", ""))).exists():
+            errors.append(f"{stage_id} report path missing: {report.get('path')}")
+        errors.extend(source_checksum_errors(report.get("source_artifacts", []), f"{stage_id} report {report.get('kind')}"))
+    return errors
+
+
+def validate_cml15_lifecycle_operation(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml15_operation_paths(stage_id)
+    target_ops = CML15_STAGE_TARGETS.get(stage_id)
+    if not target_ops:
+        return [f"unknown CML15 lifecycle operation stage: {stage_id}"]
+    errors = _cml15_validate_common_jsonl(stage_id, paths)
+    if errors:
+        return errors
+    evidence = load_json(paths["evidence"])
+    if evidence.get("real_valkey") is not True or evidence.get("probe_result") != "PASS":
+        errors.append(f"{stage_id} evidence must be real Valkey PASS")
+    versions = evidence.get("valkey_versions", [])
+    if not versions or any(not str(version).startswith("9.1.") for version in versions):
+        errors.append(f"{stage_id} evidence must record Valkey 9.1.x versions")
+    if int(evidence.get("nodes_observed", 0)) != 30:
+        errors.append(f"{stage_id} nodes_observed must be 30")
+    if evidence.get("cluster_state") != "ok":
+        errors.append(f"{stage_id} cluster_state must be ok")
+    if int(evidence.get("slots_assigned", 0)) != 16384:
+        errors.append(f"{stage_id} slots_assigned must be 16384")
+    if int(evidence.get("slots_fail", -1)) != 0:
+        errors.append(f"{stage_id} slots_fail must be 0")
+    if evidence.get("data_path_result") != "PASS":
+        errors.append(f"{stage_id} data_path_result must be PASS")
+    observed_targets = set(evidence.get("target_operations", []))
+    missing_targets = sorted(target_ops - observed_targets)
+    if missing_targets:
+        errors.append(f"{stage_id} missing target operations: {missing_targets}")
+    durations = evidence.get("operation_durations", {})
+    for op in target_ops:
+        duration = durations.get(op)
+        if not isinstance(duration, (int, float)):
+            errors.append(f"{stage_id} target op {op} missing numeric duration")
+    if evidence.get("no_target_skipped_with_reason") is not True:
+        errors.append(f"{stage_id} target operation has SKIPPED_WITH_REASON")
+    if stage_id == "CML15A_ADD_NODE_REMOVE_NODE_30":
+        if int(evidence.get("nodes_observed_after_add", 0)) != 31:
+            errors.append("CML15A must observe 31 nodes after add_node")
+        if int(evidence.get("nodes_observed_after_remove", 0)) != 30:
+            errors.append("CML15A must return to 30 nodes after remove_node")
+
+    before = load_json(paths["before"])
+    after = load_json(paths["after"])
+    slot = load_json(paths["slot_coverage"])
+    roles = load_json(paths["role_counts"])
+    cleanup = load_json(paths["cleanup"])
+    if int(before.get("nodes_observed", 0)) != 30 or before.get("cluster_state") != "ok":
+        errors.append(f"{stage_id} before snapshot must observe 30-node ok cluster")
+    if int(after.get("nodes_observed", 0)) != 30 or after.get("cluster_state") != "ok":
+        errors.append(f"{stage_id} after convergence must observe 30-node ok cluster")
+    if int(slot.get("slots_assigned", 0)) != 16384 or int(slot.get("slots_fail", -1)) != 0:
+        errors.append(f"{stage_id} slot coverage must assign 16384 slots with zero failures")
+    if int(roles.get("primary_count", 0)) <= 0 or int(roles.get("replica_count", 0)) <= 0:
+        errors.append(f"{stage_id} role counts must include primaries and replicas")
+    if cleanup.get("status") != "PASS" or cleanup.get("resources_remaining") not in ([], None):
+        errors.append(f"{stage_id} cleanup must PASS with no resources_remaining")
+
+    trace_rows = load_jsonl(paths["trace"])
+    trace_targets = {row.get("operation_id") for row in trace_rows if row.get("status") == "PASS"}
+    if missing_trace := sorted(target_ops - trace_targets):
+        errors.append(f"{stage_id} command trace missing PASS target operations: {missing_trace}")
+    for row in trace_rows:
+        if row.get("operation_id") in target_ops:
+            if row.get("status") == "SKIPPED_WITH_REASON":
+                errors.append(f"{stage_id} target op {row.get('operation_id')} is skipped")
+            if not isinstance(row.get("duration_seconds"), (int, float)):
+                errors.append(f"{stage_id} target op {row.get('operation_id')} trace duration must be numeric")
+
+    workload = load_json(paths["workload_report"])
+    if workload.get("status") != "PASS" or int(workload.get("node_count", 0)) != 30:
+        errors.append(f"{stage_id} workload report must PASS with node_count 30")
+    windows = {window.get("name"): window for window in workload.get("windows", [])}
+    for name in ["before", "during", "after"]:
+        window = windows.get(name)
+        if not isinstance(window, dict):
+            errors.append(f"{stage_id} workload missing {name}")
+            continue
+        if window.get("status") != "MEASURED":
+            errors.append(f"{stage_id} workload {name} must be MEASURED")
+        if window.get("data_path_result") != "PASS":
+            errors.append(f"{stage_id} workload {name} data_path_result must be PASS")
+        if int(window.get("operation_count", 0)) <= 0 or not window.get("samples"):
+            errors.append(f"{stage_id} workload {name} must include operations and samples")
+
+    matrix = load_json(paths["matrix"])
+    entries = capability_entries_by_id(matrix)
+    expected_capability = {
+        "CML15A_ADD_NODE_REMOVE_NODE_30": "add_node_remove_node_30",
+        "CML15B_RESHARD_SLOTS_30": "reshard_slots_30",
+        "CML15C_REBALANCE_SLOTS_30": "rebalance_slots_30",
+        "CML15D_ROLLING_RESTART_ONE_PRIMARY_30": "rolling_restart_one_primary_30",
+    }[stage_id]
+    row = entries.get(expected_capability)
+    if not row or row.get("status") != "PASS":
+        errors.append(f"{stage_id} capability matrix must PASS {expected_capability}")
+    elif set(row.get("executed_operations", [])) != target_ops:
+        errors.append(f"{stage_id} capability matrix executed_operations mismatch")
+    return errors
+
+
+def make_cml15_lifecycle_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml15_operation_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+
+    wrong_nodes = validation_dir / "negative_wrong_node_count.json"
+    evidence = load_json(paths["evidence"])
+    evidence["nodes_observed"] = 29
+    write_json(wrong_nodes, evidence)
+    cases.append(("wrong_node_count", {"evidence": wrong_nodes}, "nodes_observed must be 30"))
+
+    bad_slots = validation_dir / "negative_slot_failure.json"
+    slot = load_json(paths["slot_coverage"])
+    slot["slots_fail"] = 1
+    write_json(bad_slots, slot)
+    cases.append(("slot_failure", {"slot_coverage": bad_slots}, "zero failures"))
+
+    skipped_trace = validation_dir / "negative_skipped_target_trace.jsonl"
+    rows = load_jsonl(paths["trace"])
+    for row in rows:
+        if row.get("operation_id") in CML15_STAGE_TARGETS[stage_id]:
+            row["status"] = "SKIPPED_WITH_REASON"
+            break
+    skipped_trace.write_text("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n", encoding="utf-8")
+    cases.append(("skipped_target_trace", {"trace": skipped_trace}, "command trace missing PASS target operations"))
+
+    nonnumeric_duration = validation_dir / "negative_nonnumeric_duration.json"
+    evidence2 = load_json(paths["evidence"])
+    for op in CML15_STAGE_TARGETS[stage_id]:
+        evidence2.setdefault("operation_durations", {})[op] = "MISSING"
+        break
+    write_json(nonnumeric_duration, evidence2)
+    cases.append(("nonnumeric_duration", {"evidence": nonnumeric_duration}, "missing numeric duration"))
+
+    missing_workload = validation_dir / "negative_missing_during_workload.json"
+    workload = load_json(paths["workload_report"])
+    workload["windows"] = [window for window in workload.get("windows", []) if window.get("name") != "during"]
+    write_json(missing_workload, workload)
+    cases.append(("missing_during_workload", {"workload_report": missing_workload}, "workload missing during"))
+
+    results = []
+    for name, overrides, expected in cases:
+        candidate = dict(paths)
+        candidate.update(overrides)
+        observed = validate_cml15_lifecycle_operation(stage_id, candidate)
+        results.append({"name": name, "status": "PASS" if any(expected in e for e in observed) else "FAIL", "expected_error_fragment": expected, "observed_errors": observed})
+    return results
+
+
+def validate_cml15_lifecycle_report(stage_id: str, paths: dict[str, Path] | None = None) -> list[str]:
+    paths = paths or cml15_report_paths(stage_id)
+    errors = _cml15_validate_common_jsonl(stage_id, paths)
+    if errors:
+        return errors
+    report = load_json(paths["lifecycle_matrix_report"])
+    if report.get("status") != "PASS" or int(report.get("scale_nodes_validated", 0)) != 30:
+        errors.append("CML15E lifecycle matrix report must PASS with scale_nodes_validated 30")
+    entries = {entry.get("stage_id"): entry for entry in report.get("capabilities", [])}
+    required = set(CML15_STAGE_TARGETS)
+    missing = sorted(required - set(entries))
+    if missing:
+        errors.append(f"CML15E missing operation stages: {missing}")
+    for source_stage in required & set(entries):
+        entry = entries[source_stage]
+        if entry.get("status") != "PASS":
+            errors.append(f"CML15E source {source_stage} must PASS")
+        if int(entry.get("nodes_observed", 0)) != 30:
+            errors.append(f"CML15E source {source_stage} nodes_observed must be 30")
+        if entry.get("cluster_state") != "ok":
+            errors.append(f"CML15E source {source_stage} cluster_state must be ok")
+        if int(entry.get("slots_assigned", 0)) != 16384 or int(entry.get("slots_fail", -1)) != 0:
+            errors.append(f"CML15E source {source_stage} slot coverage must be complete")
+        if entry.get("data_path_result") != "PASS":
+            errors.append(f"CML15E source {source_stage} data_path_result must PASS")
+        for op in CML15_STAGE_TARGETS[source_stage]:
+            if not isinstance(entry.get("operation_durations", {}).get(op), (int, float)):
+                errors.append(f"CML15E source {source_stage} op {op} duration must be numeric")
+    future = report.get("future_scale_capability_note", {})
+    if 50 not in future.get("not_claimed_as_pass", []) or 100 not in future.get("not_claimed_as_pass", []):
+        errors.append("CML15E must state 50/100 lifecycle replay is not claimed as PASS by this 30-node goal")
+    matrix = load_json(paths["matrix"])
+    entries_by_id = capability_entries_by_id(matrix)
+    lifecycle = entries_by_id.get("lifecycle_ops_30")
+    if not lifecycle or lifecycle.get("status") != "PASS":
+        errors.append("CML15E capability matrix must promote lifecycle_ops_30 to PASS")
+    else:
+        expected_ops = {"add_node", "remove_node", "reshard_slots", "rebalance_slots", "rolling_restart"}
+        if set(lifecycle.get("executed_operations", [])) != expected_ops:
+            errors.append("CML15E lifecycle_ops_30 executed_operations mismatch")
+    future_row = entries_by_id.get("lifecycle_ops_50_100_future_replay")
+    if not future_row or future_row.get("status") == "PASS":
+        errors.append("CML15E future 50/100 lifecycle row must not be PASS")
+    cleanup = load_json(paths["cleanup"])
+    if cleanup.get("status") != "PASS" or cleanup.get("resources_remaining") not in ([], None):
+        errors.append("CML15E cleanup record must PASS with no resources_remaining")
+    return errors
+
+
+def make_cml15_report_negative_cases(stage_id: str) -> list[dict[str, Any]]:
+    paths = cml15_report_paths(stage_id)
+    validation_dir = ARTIFACT_ROOT / stage_id / "validation"
+    validation_dir.mkdir(parents=True, exist_ok=True)
+    cases: list[tuple[str, dict[str, Path], str]] = []
+
+    missing_stage = validation_dir / "negative_missing_source_stage.json"
+    report = load_json(paths["lifecycle_matrix_report"])
+    report["capabilities"] = [entry for entry in report.get("capabilities", []) if entry.get("stage_id") != "CML15D_ROLLING_RESTART_ONE_PRIMARY_30"]
+    write_json(missing_stage, report)
+    cases.append(("missing_source_stage", {"lifecycle_matrix_report": missing_stage}, "missing operation stages"))
+
+    future_pass = validation_dir / "negative_future_pass.json"
+    matrix = load_json(paths["matrix"])
+    for row in matrix.get("capabilities", []):
+        if row.get("capability_id") == "lifecycle_ops_50_100_future_replay":
+            row["status"] = "PASS"
+    write_json(future_pass, matrix)
+    cases.append(("future_pass", {"matrix": future_pass}, "must not be PASS"))
+
+    no_duration = validation_dir / "negative_missing_duration.json"
+    report2 = load_json(paths["lifecycle_matrix_report"])
+    report2["capabilities"][0]["operation_durations"] = {}
+    write_json(no_duration, report2)
+    cases.append(("missing_duration", {"lifecycle_matrix_report": no_duration}, "duration must be numeric"))
+
+    results = []
+    for name, overrides, expected in cases:
+        candidate = dict(paths)
+        candidate.update(overrides)
+        observed = validate_cml15_lifecycle_report(stage_id, candidate)
+        results.append({"name": name, "status": "PASS" if any(expected in e for e in observed) else "FAIL", "expected_error_fragment": expected, "observed_errors": observed})
+    return results
+
+
 def build_baseline() -> dict[str, Any]:
     capabilities = [
         {
@@ -2338,6 +2637,16 @@ def command_run(args: argparse.Namespace) -> int:
         final_errors = validate_cml13_final_audit(args.stage)
         add_check("final_full_chain_audit", final_errors)
         negative_cases = make_cml13_negative_cases(args.stage) if not final_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage in CML15_STAGE_TARGETS:
+        lifecycle_errors = validate_cml15_lifecycle_operation(args.stage)
+        add_check("cml15_lifecycle_operation_30", lifecycle_errors)
+        negative_cases = make_cml15_lifecycle_negative_cases(args.stage) if not lifecycle_errors else []
+        add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
+    elif args.stage == "CML15E_LIFECYCLE_MATRIX_REPORT_30":
+        report_errors = validate_cml15_lifecycle_report(args.stage)
+        add_check("cml15_lifecycle_matrix_report_30", report_errors)
+        negative_cases = make_cml15_report_negative_cases(args.stage) if not report_errors else []
         add_check("negative_cases", [case["name"] for case in negative_cases if case["status"] != "PASS"])
     else:
         baseline_path = ROOT / "artifacts" / "capability_matrix_loop" / args.stage / "reports" / "capability_matrix_baseline.json"

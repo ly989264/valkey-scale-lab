@@ -1,0 +1,69 @@
+{
+  "after_convergence_path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/after_convergence.json",
+  "artifact_type": "lifecycle_real_valkey_evidence",
+  "before_snapshot_path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/before_snapshot.json",
+  "cleanup_report_path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/cleanup_report_30.json",
+  "cluster_state": "ok",
+  "created_at": "2026-07-02T00:00:00Z",
+  "data_path_result": "PASS",
+  "expected_nodes_after": 30,
+  "no_target_skipped_with_reason": true,
+  "nodes_observed": 29,
+  "operation_command_trace_path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/operation_command_trace.jsonl",
+  "operation_durations": {
+    "rolling_restart": 0.637876
+  },
+  "phase_id": "P12_SCALE_LADDER_10_30",
+  "probe_result": "PASS",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "real_valkey": true,
+  "role_counts_path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/role_counts.json",
+  "run_id": "P12_SCALE_LADDER_10_30-scale_30-20260628",
+  "schema_version": "v1",
+  "slot_coverage_path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/slot_coverage.json",
+  "slots_assigned": 16384,
+  "slots_fail": 0,
+  "source_artifacts": [
+    {
+      "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/before_snapshot.json",
+      "sha256": "ee0ed326b31cb062fc5148994d693ff379ae0233505be49080c1b8ac4e0b27f5"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/operation_command_trace.jsonl",
+      "sha256": "c8e096125aaaff4de85c10f85b80102d5e56ad788cdd568454537b1f52e8d110"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/after_convergence.json",
+      "sha256": "2b305f9b4675009eaed1ba53976d29df8239b647392dd942fa244dddef1ed935"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/slot_coverage.json",
+      "sha256": "4fb52cf57b018d543813709866e0d188eb70e4d0899e9672c802fb0250400513"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/role_counts.json",
+      "sha256": "de2cdbe39005694b1e4bbc7b04c394d1e19981aeb5ef2b901438f343bfbb373f"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/workload_window_report_30.json",
+      "sha256": "8eeb05c145bc78feecaf8b483acd20e4a16df2520997738ad9ff8407675cd18e"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/cleanup_report_30.json",
+      "sha256": "212cef7802e3c36564296e4f5240b2e7d843e6228d125f372e343a370bd97cb0"
+    }
+  ],
+  "stage_id": "CML15D_ROLLING_RESTART_ONE_PRIMARY_30",
+  "status": "PASS",
+  "target_operations": [
+    "rolling_restart"
+  ],
+  "valkey_version_prefix_required": "9.1.",
+  "valkey_versions": [
+    "9.1.0"
+  ],
+  "workload_window_report_path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/workload_window_report_30.json"
+}

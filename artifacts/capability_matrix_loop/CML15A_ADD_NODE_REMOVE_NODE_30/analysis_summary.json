@@ -1,0 +1,19 @@
+{
+  "artifact_type": "capability_analysis_summary",
+  "created_at": "2026-07-02T00:00:00Z",
+  "schema_version": "v1",
+  "stage_id": "CML15A_ADD_NODE_REMOVE_NODE_30",
+  "status": "PASS",
+  "summary": {
+    "delta": 0,
+    "error_rate": 0,
+    "latency_delta": 0,
+    "qps_drop_ratio": 0,
+    "sample_coverage": 1.0,
+    "target_operations": [
+      "add_node",
+      "remove_node"
+    ],
+    "unavailable_ms": 0
+  }
+}

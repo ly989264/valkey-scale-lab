@@ -1,0 +1,16 @@
+{
+  "artifact_paths": [
+    "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/lifecycle_matrix_report_30.json",
+    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/lifecycle_evidence_30.json",
+    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/lifecycle_evidence_30.json",
+    "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/lifecycle_evidence_30.json",
+    "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/lifecycle_evidence_30.json"
+  ],
+  "blocking_findings": [],
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/validation/current_stage_gate_result.json",
+  "gate_result_sha256": "9e638f225b9ffc30402e9f029b993b8aefb0eba4d7d16039bcf12ca01a9a74f7",
+  "schema_version": "v1",
+  "stage_id": "CML15E_LIFECYCLE_MATRIX_REPORT_30"
+}

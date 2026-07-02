@@ -1,0 +1,27 @@
+{
+  "active_constraints": [
+    "CML15 lifecycle stages must run real 30-node Valkey clusters.",
+    "Target lifecycle operations must not be SKIPPED_WITH_REASON.",
+    "Host network, firewall, route, and interface mutation are forbidden.",
+    "Cleanup must leave no owned Docker resources."
+  ],
+  "read_files": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "422aae779284c0b871da2bcb78ab362b2890254134c1a67d726d88871cebf6f3",
+      "summary": "Repository safety and phase-loop constraints."
+    },
+    {
+      "path": "CODEX_START_HERE.md",
+      "sha256": "01ad5f448161debb8914d212fb9754916817dce7c9b28781ffc93b26147f4e75",
+      "summary": "Autonomous build entry point and artifact discipline."
+    },
+    {
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "sha256": "686e0fa5c6eaed5f60a7aada247971e02fa2b3c1c1ca9e80a3b3397777503e31",
+      "summary": "CML15 stage manifest and artifact requirements."
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML15A_ADD_NODE_REMOVE_NODE_30"
+}

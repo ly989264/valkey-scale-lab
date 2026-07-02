@@ -5,7 +5,7 @@
   "properties": {
     "schema_version": {"type": "string", "const": "v1"},
     "artifact_type": {"type": "string", "const": "fault_event"},
-    "stage_id": {"type": "string", "pattern": "^CML[0-9]{2}_[A-Z0-9_]+$"},
+    "stage_id": {"type": "string", "pattern": "^CML[0-9]{2}[A-Z]?_[A-Z0-9_]+$"},
     "fault_id": {"type": "string", "minLength": 1},
     "fault_type": {"type": "string", "minLength": 1},
     "window_id": {"type": "string", "enum": ["before", "operation_or_fault_apply", "during", "clear_or_recovery_start", "after_recovery", "all_run"]},

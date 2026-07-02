@@ -1,0 +1,50 @@
+{
+  "artifact_type": "capability_loop_stage_result",
+  "audit": {
+    "decision": "PASS",
+    "path": "audit/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/AUDIT.md"
+  },
+  "capability_matrix_delta": [
+    {
+      "capability": "CML15D_ROLLING_RESTART_ONE_PRIMARY_30",
+      "status": "PASS"
+    }
+  ],
+  "created_at": "2026-07-02T00:00:00Z",
+  "current_harness": {
+    "freeze_sha256": "884a76c3233c9a84963e1eed0e0f70bd0ac002d0616d07ab429d37cd3ce5c824",
+    "negative_tests_passed": true,
+    "status": "PASS"
+  },
+  "git": {
+    "branch": "codex/valkey-scale-lab-loop",
+    "head_after": "MISSING",
+    "head_before": "MISSING",
+    "pushed": false
+  },
+  "previous_harness": {
+    "commands": [
+      "python3 tools/capability_matrix_gate.py run --stage CML15D_ROLLING_RESTART_ONE_PRIMARY_30"
+    ],
+    "status": "PASS"
+  },
+  "real_valkey_evidence": {
+    "evidence_paths": [
+      "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/lifecycle_evidence_30.json",
+      "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/before_snapshot.json",
+      "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/operation_command_trace.jsonl",
+      "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/after_convergence.json",
+      "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/slot_coverage.json",
+      "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/role_counts.json",
+      "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/workload_window_report_30.json",
+      "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/cleanup_report_30.json"
+    ],
+    "required": true,
+    "scale_rungs": [
+      30
+    ]
+  },
+  "schema_version": "v1",
+  "stage_id": "CML15D_ROLLING_RESTART_ONE_PRIMARY_30",
+  "status": "PASS"
+}

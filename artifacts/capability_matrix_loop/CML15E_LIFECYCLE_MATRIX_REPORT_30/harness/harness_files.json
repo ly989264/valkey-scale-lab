@@ -1,0 +1,21 @@
+{
+  "files": [
+    {
+      "kind": "runner",
+      "path": "tools/cml15_lifecycle_runner.py",
+      "purpose": "Run real 30-node lifecycle operations and emit CML15 artifacts."
+    },
+    {
+      "kind": "runner",
+      "path": "tools/capability_matrix_gate.py",
+      "purpose": "Validate CML15 artifacts and negative cases."
+    },
+    {
+      "kind": "manifest",
+      "path": "codex/capability_matrix_loop/stage_manifest.json",
+      "purpose": "Declare CML15 stages and required artifacts."
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML15E_LIFECYCLE_MATRIX_REPORT_30"
+}

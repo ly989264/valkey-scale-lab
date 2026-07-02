@@ -1,0 +1,91 @@
+{
+  "added_node": {
+    "az_id": "az-a",
+    "client_port": 7330,
+    "cluster_bus_port": 17330,
+    "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/lifecycle-add-node-primary/valkey.conf",
+    "container_id": "0918a8bfcdcc4dccca99f2048b85d1e1d5642802bcbf8a7baa18200702d02efb",
+    "container_ip": "172.18.0.3",
+    "container_name": "vslab-p12-scale-ladder-10-30-scale-30-20260628-nodehost-az-a",
+    "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/lifecycle-add-node-primary",
+    "host": "127.0.0.1",
+    "logical_id": "lifecycle-add-node-primary",
+    "nodehost_container_ip": "172.18.0.3",
+    "nodehost_container_name": "vslab-p12-scale-ladder-10-30-scale-30-20260628-nodehost-az-a",
+    "pid": 924,
+    "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/lifecycle-add-node-primary/valkey.pid",
+    "role": "primary",
+    "shard_id": "lifecycle-extra"
+  },
+  "after_convergence_path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/after_convergence.json",
+  "artifact_type": "lifecycle_real_valkey_evidence",
+  "before_snapshot_path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/before_snapshot.json",
+  "cleanup_report_path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/cleanup_report_30.json",
+  "cluster_state": "ok",
+  "created_at": "2026-07-02T00:00:00Z",
+  "data_path_result": "PASS",
+  "expected_nodes_after": 30,
+  "no_target_skipped_with_reason": true,
+  "nodes_observed": 30,
+  "nodes_observed_after_add": 31,
+  "nodes_observed_after_remove": 30,
+  "operation_command_trace_path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/operation_command_trace.jsonl",
+  "operation_durations": {
+    "add_node": 0.077456,
+    "remove_node": "MISSING"
+  },
+  "phase_id": "P12_SCALE_LADDER_10_30",
+  "probe_result": "PASS",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "real_valkey": true,
+  "role_counts_path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/role_counts.json",
+  "run_id": "P12_SCALE_LADDER_10_30-scale_30-20260628",
+  "schema_version": "v1",
+  "slot_coverage_path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/slot_coverage.json",
+  "slots_assigned": 16384,
+  "slots_fail": 0,
+  "source_artifacts": [
+    {
+      "path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/before_snapshot.json",
+      "sha256": "ee0ed326b31cb062fc5148994d693ff379ae0233505be49080c1b8ac4e0b27f5"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/operation_command_trace.jsonl",
+      "sha256": "4b1fd6d4b8ac60954dbb7c14d97e5f6b6819c5117b42b7cc4d7251e3807b7f0b"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/after_convergence.json",
+      "sha256": "2b305f9b4675009eaed1ba53976d29df8239b647392dd942fa244dddef1ed935"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/slot_coverage.json",
+      "sha256": "4fb52cf57b018d543813709866e0d188eb70e4d0899e9672c802fb0250400513"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/role_counts.json",
+      "sha256": "de2cdbe39005694b1e4bbc7b04c394d1e19981aeb5ef2b901438f343bfbb373f"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/workload_window_report_30.json",
+      "sha256": "454f4363c9dabedd7c65a5207c2588c2ba7942a4a6e17e1d2681994ffaef945f"
+    },
+    {
+      "path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/cleanup_report_30.json",
+      "sha256": "780d2d7245254fd06e87d3391ddb4cd3852f889674f4ae3744f9b987d83170cf"
+    }
+  ],
+  "stage_id": "CML15A_ADD_NODE_REMOVE_NODE_30",
+  "status": "PASS",
+  "target_operations": [
+    "add_node",
+    "remove_node"
+  ],
+  "valkey_version_prefix_required": "9.1.",
+  "valkey_versions": [
+    "9.1.0"
+  ],
+  "workload_window_report_path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/workload_window_report_30.json"
+}

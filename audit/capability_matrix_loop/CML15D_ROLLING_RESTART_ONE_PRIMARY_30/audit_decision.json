@@ -1,0 +1,19 @@
+{
+  "artifact_paths": [
+    "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/lifecycle_evidence_30.json",
+    "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/before_snapshot.json",
+    "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/operation_command_trace.jsonl",
+    "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/after_convergence.json",
+    "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/slot_coverage.json",
+    "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/role_counts.json",
+    "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/workload_window_report_30.json",
+    "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/cleanup_report_30.json"
+  ],
+  "blocking_findings": [],
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/validation/current_stage_gate_result.json",
+  "gate_result_sha256": "179db135371879e1d55df896e1502d9d440618ff3231ac01642ef1632939e649",
+  "schema_version": "v1",
+  "stage_id": "CML15D_ROLLING_RESTART_ONE_PRIMARY_30"
+}

@@ -1,0 +1,97 @@
+{
+  "artifact_type": "capability_report_index",
+  "created_at": "2026-07-02T00:00:00Z",
+  "reports": [
+    {
+      "kind": "csv",
+      "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/lifecycle_summary.csv",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "5ce360649f7abe408c4004c1ebeb9aa56397a4832c0f0c0dcb5b9d053d6e714c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_command_trace.jsonl",
+          "sha256": "a717f53bcf9d7de7ad19b417c2736222f256e5cf797ebb5504af69badc12cff5"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window_report_30.json",
+          "sha256": "d7035e7e034c455322b9c6a40771a0d6a096da563b2e1e2913dd4144ff72b080"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json",
+          "sha256": "8382114aef74193b1bdf309f08079dc6ad4bf5b5b808c721077b752c6c783866"
+        }
+      ]
+    },
+    {
+      "kind": "markdown",
+      "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/report.md",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "5ce360649f7abe408c4004c1ebeb9aa56397a4832c0f0c0dcb5b9d053d6e714c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_command_trace.jsonl",
+          "sha256": "a717f53bcf9d7de7ad19b417c2736222f256e5cf797ebb5504af69badc12cff5"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window_report_30.json",
+          "sha256": "d7035e7e034c455322b9c6a40771a0d6a096da563b2e1e2913dd4144ff72b080"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json",
+          "sha256": "8382114aef74193b1bdf309f08079dc6ad4bf5b5b808c721077b752c6c783866"
+        }
+      ]
+    },
+    {
+      "kind": "html",
+      "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/index.html",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "5ce360649f7abe408c4004c1ebeb9aa56397a4832c0f0c0dcb5b9d053d6e714c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_command_trace.jsonl",
+          "sha256": "a717f53bcf9d7de7ad19b417c2736222f256e5cf797ebb5504af69badc12cff5"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window_report_30.json",
+          "sha256": "d7035e7e034c455322b9c6a40771a0d6a096da563b2e1e2913dd4144ff72b080"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json",
+          "sha256": "8382114aef74193b1bdf309f08079dc6ad4bf5b5b808c721077b752c6c783866"
+        }
+      ]
+    },
+    {
+      "kind": "chart",
+      "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/lifecycle_timeline.svg",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "5ce360649f7abe408c4004c1ebeb9aa56397a4832c0f0c0dcb5b9d053d6e714c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_command_trace.jsonl",
+          "sha256": "a717f53bcf9d7de7ad19b417c2736222f256e5cf797ebb5504af69badc12cff5"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window_report_30.json",
+          "sha256": "d7035e7e034c455322b9c6a40771a0d6a096da563b2e1e2913dd4144ff72b080"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json",
+          "sha256": "8382114aef74193b1bdf309f08079dc6ad4bf5b5b808c721077b752c6c783866"
+        }
+      ]
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML15B_RESHARD_SLOTS_30",
+  "status": "PASS"
+}

@@ -330,6 +330,52 @@ def test_stage_manifest_requires_cml13_final_audit_artifacts():
     }.issubset(set(cml13["negative_requirements"]))
 
 
+def test_stage_manifest_requires_cml15_lifecycle_split_harnesses():
+    manifest = json.loads((ROOT / "codex" / "capability_matrix_loop" / "stage_manifest.json").read_text())
+    assert manifest["automatic_stop_after"] == "CML15E_LIFECYCLE_MATRIX_REPORT_30"
+    expected = {
+        "CML15A_ADD_NODE_REMOVE_NODE_30": "samples/lifecycle_evidence_30.json",
+        "CML15B_RESHARD_SLOTS_30": "samples/lifecycle_evidence_30.json",
+        "CML15C_REBALANCE_SLOTS_30": "samples/lifecycle_evidence_30.json",
+        "CML15D_ROLLING_RESTART_ONE_PRIMARY_30": "samples/lifecycle_evidence_30.json",
+        "CML15E_LIFECYCLE_MATRIX_REPORT_30": "samples/lifecycle_matrix_report_30.json",
+    }
+    for stage_id, specific_suffix in expected.items():
+        stage = next(item for item in manifest["stages"] if item["id"] == stage_id)
+        required = {artifact["path"] for artifact in stage["required_artifacts"]}
+        assert stage["max_real_nodes"] == 30
+        assert stage["real_valkey_required"] is True
+        for suffix in [
+            "samples/before_snapshot.json",
+            "samples/operation_command_trace.jsonl",
+            "samples/after_convergence.json",
+            "samples/slot_coverage.json",
+            "samples/role_counts.json",
+            "samples/cleanup_report_30.json",
+            "samples/metrics_window.jsonl",
+            "samples/workload_window.jsonl",
+            "capability_matrix.json",
+            "reports/report_index.json",
+            specific_suffix,
+        ]:
+            assert any(path.endswith(suffix) for path in required)
+        assert {
+            "wrong node count fails",
+            "slot coverage failure fails",
+            "target operation SKIPPED_WITH_REASON fails",
+            "operation duration must be numeric",
+            "missing before/during/after workload measurement fails",
+            "cleanup residue fails",
+        }.issubset(set(stage["negative_requirements"]))
+
+
+def test_cml15_substage_ids_are_schema_valid():
+    gate = load_gate_module()
+    assert gate.check_manifest() == []
+    schema_text = (ROOT / "schemas" / "capability_matrix_loop" / "operation_event.schema.json").read_text()
+    assert "^CML[0-9]{2}[A-Z]?_[A-Z0-9_]+$" in schema_text
+
+
 def test_strict_status_negative_cases_cover_false_pass_regressions():
     gate = load_gate_module()
     cml02_cases = {case["name"]: case for case in gate.make_cml02_negative_cases("CML02_CLUSTER_MANAGEMENT_REAL_OPS_30")}

@@ -1,0 +1,129 @@
+{
+  "bundle_name": "vslab-bundle-P12_SCALE_LADDER_10_30-scale_30-20260628-nodehost-az-a",
+  "node_count": 15,
+  "nodehost_id": "nodehost-az-a",
+  "nodes": [
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0000-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0000-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0000-primary",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0000-primary/valkey.log",
+      "logical_id": "shard-0000-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0000-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0002-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0002-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0002-primary",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0002-primary/valkey.log",
+      "logical_id": "shard-0002-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0002-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0004-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0004-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0004-primary",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0004-primary/valkey.log",
+      "logical_id": "shard-0004-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0004-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0006-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0006-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0006-primary",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0006-primary/valkey.log",
+      "logical_id": "shard-0006-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0006-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0008-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0008-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0008-primary",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0008-primary/valkey.log",
+      "logical_id": "shard-0008-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0008-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0010-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0010-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0010-primary",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0010-primary/valkey.log",
+      "logical_id": "shard-0010-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0010-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0012-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0012-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0012-primary",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0012-primary/valkey.log",
+      "logical_id": "shard-0012-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0012-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0014-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0014-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0014-primary",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0014-primary/valkey.log",
+      "logical_id": "shard-0014-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0014-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0001-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0001-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0001-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0001-replica-00/valkey.log",
+      "logical_id": "shard-0001-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0001-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0003-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0003-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0003-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0003-replica-00/valkey.log",
+      "logical_id": "shard-0003-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0003-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0005-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0005-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0005-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0005-replica-00/valkey.log",
+      "logical_id": "shard-0005-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0005-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0007-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0007-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0007-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0007-replica-00/valkey.log",
+      "logical_id": "shard-0007-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0007-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0009-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0009-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0009-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0009-replica-00/valkey.log",
+      "logical_id": "shard-0009-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0009-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0011-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0011-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0011-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0011-replica-00/valkey.log",
+      "logical_id": "shard-0011-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0011-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/liuyu/centos_ex/projects/VibeCoding/valkey-scale-lab/artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/runtime/node_configs/shard-0013-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0013-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0013-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0013-replica-00/valkey.log",
+      "logical_id": "shard-0013-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0013-replica-00/valkey.pid"
+    }
+  ],
+  "run_id": "P12_SCALE_LADDER_10_30-scale_30-20260628",
+  "schema_version": "v1"
+}

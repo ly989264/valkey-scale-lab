@@ -1,0 +1,82 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "capability_stage_gate_result",
+  "stage_id": "CML15C_REBALANCE_SLOTS_30",
+  "status": "PASS",
+  "created_at": "2026-07-02T10:47:58.347733Z",
+  "checks": [
+    {
+      "name": "manifest",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "state",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "harness_lock",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "required_artifacts",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "cml15_lifecycle_operation_30",
+      "status": "PASS",
+      "errors": []
+    },
+    {
+      "name": "negative_cases",
+      "status": "PASS",
+      "errors": []
+    }
+  ],
+  "negative_cases": [
+    {
+      "name": "wrong_node_count",
+      "status": "PASS",
+      "expected_error_fragment": "nodes_observed must be 30",
+      "observed_errors": [
+        "CML15C_REBALANCE_SLOTS_30 nodes_observed must be 30"
+      ]
+    },
+    {
+      "name": "slot_failure",
+      "status": "PASS",
+      "expected_error_fragment": "zero failures",
+      "observed_errors": [
+        "CML15C_REBALANCE_SLOTS_30 slot coverage must assign 16384 slots with zero failures"
+      ]
+    },
+    {
+      "name": "skipped_target_trace",
+      "status": "PASS",
+      "expected_error_fragment": "command trace missing PASS target operations",
+      "observed_errors": [
+        "CML15C_REBALANCE_SLOTS_30 command trace missing PASS target operations: ['rebalance_slots']",
+        "CML15C_REBALANCE_SLOTS_30 target op rebalance_slots is skipped"
+      ]
+    },
+    {
+      "name": "nonnumeric_duration",
+      "status": "PASS",
+      "expected_error_fragment": "missing numeric duration",
+      "observed_errors": [
+        "CML15C_REBALANCE_SLOTS_30 target op rebalance_slots missing numeric duration"
+      ]
+    },
+    {
+      "name": "missing_during_workload",
+      "status": "PASS",
+      "expected_error_fragment": "workload missing during",
+      "observed_errors": [
+        "CML15C_REBALANCE_SLOTS_30 workload missing during"
+      ]
+    }
+  ]
+}

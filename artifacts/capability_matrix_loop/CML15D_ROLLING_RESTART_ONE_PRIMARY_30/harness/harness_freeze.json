@@ -1,0 +1,15 @@
+{
+  "created_at": "2026-07-02T00:00:00Z",
+  "files": [
+    {
+      "path": "tools/cml15_lifecycle_runner.py",
+      "sha256": "fc2948decd4f859fbdc4bf9385a0d11d987202a53de93745073da18cdf602e78"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "378b9ad10f6331a7bcf67885003dce4dd87e2975967665aa5bc44413897f2e2e"
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML15D_ROLLING_RESTART_ONE_PRIMARY_30"
+}

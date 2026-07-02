@@ -1,0 +1,84 @@
+{
+  "artifact_type": "lifecycle_workload_window_report",
+  "node_count": 30,
+  "schema_version": "v1",
+  "stage_id": "CML15D_ROLLING_RESTART_ONE_PRIMARY_30",
+  "status": "PASS",
+  "windows": [
+    {
+      "achieved_qps": 19.311574,
+      "availability_percent": 100.0,
+      "completed_operations": 30,
+      "data_path_result": "PASS",
+      "duration_seconds": 1.553473,
+      "error_count": 0,
+      "errors": [],
+      "latency_ms": {
+        "p50": 51.251271,
+        "p95": 60.581386,
+        "p99": 64.909541,
+        "sample_count": 30
+      },
+      "name": "before",
+      "operation_count": 30,
+      "samples": [
+        {
+          "completed_operations": 30,
+          "duration_seconds": 1.553473,
+          "errors": 0
+        }
+      ],
+      "status": "MEASURED"
+    },
+    {
+      "achieved_qps": 10.435298,
+      "availability_percent": 100.0,
+      "completed_operations": 11,
+      "data_path_result": "PASS",
+      "duration_seconds": 1.054115,
+      "error_count": 0,
+      "errors": [],
+      "latency_ms": {
+        "p50": 62.675625,
+        "p95": 68.350958,
+        "p99": 68.461558,
+        "sample_count": 11
+      },
+      "name": "during",
+      "operation_count": 11,
+      "samples": [
+        {
+          "completed_operations": 11,
+          "duration_seconds": 1.054115,
+          "errors": 0
+        }
+      ],
+      "status": "MEASURED"
+    },
+    {
+      "achieved_qps": 19.057113,
+      "availability_percent": 100.0,
+      "completed_operations": 30,
+      "data_path_result": "PASS",
+      "duration_seconds": 1.574215,
+      "error_count": 0,
+      "errors": [],
+      "latency_ms": {
+        "p50": 53.251937,
+        "p95": 62.350744,
+        "p99": 63.93495,
+        "sample_count": 30
+      },
+      "name": "after",
+      "operation_count": 30,
+      "samples": [
+        {
+          "completed_operations": 30,
+          "duration_seconds": 1.574215,
+          "errors": 0
+        }
+      ],
+      "status": "MEASURED"
+    }
+  ]
+}

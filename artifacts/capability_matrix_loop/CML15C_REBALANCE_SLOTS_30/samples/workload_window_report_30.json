@@ -1,0 +1,84 @@
+{
+  "artifact_type": "lifecycle_workload_window_report",
+  "node_count": 30,
+  "schema_version": "v1",
+  "stage_id": "CML15C_REBALANCE_SLOTS_30",
+  "status": "PASS",
+  "windows": [
+    {
+      "achieved_qps": 18.6333,
+      "availability_percent": 100.0,
+      "completed_operations": 30,
+      "data_path_result": "PASS",
+      "duration_seconds": 1.610021,
+      "error_count": 0,
+      "errors": [],
+      "latency_ms": {
+        "p50": 52.956271,
+        "p95": 65.575759,
+        "p99": 65.797403,
+        "sample_count": 30
+      },
+      "name": "before",
+      "operation_count": 30,
+      "samples": [
+        {
+          "completed_operations": 30,
+          "duration_seconds": 1.610021,
+          "errors": 0
+        }
+      ],
+      "status": "MEASURED"
+    },
+    {
+      "achieved_qps": 12.882276,
+      "availability_percent": 100.0,
+      "completed_operations": 218,
+      "data_path_result": "PASS",
+      "duration_seconds": 16.922476,
+      "error_count": 0,
+      "errors": [],
+      "latency_ms": {
+        "p50": 43.794375,
+        "p95": 57.406521,
+        "p99": 63.004959,
+        "sample_count": 218
+      },
+      "name": "during",
+      "operation_count": 218,
+      "samples": [
+        {
+          "completed_operations": 218,
+          "duration_seconds": 16.922476,
+          "errors": 0
+        }
+      ],
+      "status": "MEASURED"
+    },
+    {
+      "achieved_qps": 19.523743,
+      "availability_percent": 100.0,
+      "completed_operations": 30,
+      "data_path_result": "PASS",
+      "duration_seconds": 1.536591,
+      "error_count": 0,
+      "errors": [],
+      "latency_ms": {
+        "p50": 51.331938,
+        "p95": 62.976271,
+        "p99": 64.739582,
+        "sample_count": 30
+      },
+      "name": "after",
+      "operation_count": 30,
+      "samples": [
+        {
+          "completed_operations": 30,
+          "duration_seconds": 1.536591,
+          "errors": 0
+        }
+      ],
+      "status": "MEASURED"
+    }
+  ]
+}

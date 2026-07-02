@@ -1,0 +1,7 @@
+{
+  "cluster_state": "ok",
+  "nodes_observed": 30,
+  "slots_assigned": 16384,
+  "slots_fail": 0,
+  "slots_ok": 16384
+}

@@ -1,0 +1,1 @@
+{"command": ["kill", "-TERM", "749", "&&", "valkey-server", "/tmp/valkey-scale-lab/P12_SCALE_LADDER_10_30-scale_30-20260628/shard-0000-primary/valkey.conf"], "duration_seconds": 0.637876, "exit_code": 0, "operation_id": "rolling_restart", "status": "PASS", "stderr_tail": "", "stdout_tail": "749\n", "target_logical_id": "shard-0000-primary"}

@@ -1,0 +1,15 @@
+{
+  "created_at": "2026-07-02T00:00:00Z",
+  "files": [
+    {
+      "path": "tools/cml15_lifecycle_runner.py",
+      "sha256": "51d3ff636bebf95742bd371da0e2f76d0bed9465c2e7c8e2a1b53141bf344fdd"
+    },
+    {
+      "path": "tools/capability_matrix_gate.py",
+      "sha256": "378b9ad10f6331a7bcf67885003dce4dd87e2975967665aa5bc44413897f2e2e"
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML15C_REBALANCE_SLOTS_30"
+}

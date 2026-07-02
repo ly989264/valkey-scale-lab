@@ -1,0 +1,97 @@
+{
+  "artifact_type": "capability_report_index",
+  "created_at": "2026-07-02T00:00:00Z",
+  "reports": [
+    {
+      "kind": "csv",
+      "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/lifecycle_summary.csv",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "0deb3d2c8603ff27efb7d289e666b584b054374ff511beb1af927b18eddf544e"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/operation_command_trace.jsonl",
+          "sha256": "0c1ffb56a26b7daf841535a3e7c28ea368f578d19774826b63da2af0deb84e88"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/workload_window_report_30.json",
+          "sha256": "2b28a815bf1f68b568a67914ca2420b791ee8c5d69749f393aee4cd3223303c3"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/cleanup_report_30.json",
+          "sha256": "ad04fb750298c7f3dfca3c6c51e814896130912e949ece2fec4500f310cc4d32"
+        }
+      ]
+    },
+    {
+      "kind": "markdown",
+      "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/report.md",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "0deb3d2c8603ff27efb7d289e666b584b054374ff511beb1af927b18eddf544e"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/operation_command_trace.jsonl",
+          "sha256": "0c1ffb56a26b7daf841535a3e7c28ea368f578d19774826b63da2af0deb84e88"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/workload_window_report_30.json",
+          "sha256": "2b28a815bf1f68b568a67914ca2420b791ee8c5d69749f393aee4cd3223303c3"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/cleanup_report_30.json",
+          "sha256": "ad04fb750298c7f3dfca3c6c51e814896130912e949ece2fec4500f310cc4d32"
+        }
+      ]
+    },
+    {
+      "kind": "html",
+      "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/index.html",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "0deb3d2c8603ff27efb7d289e666b584b054374ff511beb1af927b18eddf544e"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/operation_command_trace.jsonl",
+          "sha256": "0c1ffb56a26b7daf841535a3e7c28ea368f578d19774826b63da2af0deb84e88"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/workload_window_report_30.json",
+          "sha256": "2b28a815bf1f68b568a67914ca2420b791ee8c5d69749f393aee4cd3223303c3"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/cleanup_report_30.json",
+          "sha256": "ad04fb750298c7f3dfca3c6c51e814896130912e949ece2fec4500f310cc4d32"
+        }
+      ]
+    },
+    {
+      "kind": "chart",
+      "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/lifecycle_timeline.svg",
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "0deb3d2c8603ff27efb7d289e666b584b054374ff511beb1af927b18eddf544e"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/operation_command_trace.jsonl",
+          "sha256": "0c1ffb56a26b7daf841535a3e7c28ea368f578d19774826b63da2af0deb84e88"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/workload_window_report_30.json",
+          "sha256": "2b28a815bf1f68b568a67914ca2420b791ee8c5d69749f393aee4cd3223303c3"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/cleanup_report_30.json",
+          "sha256": "ad04fb750298c7f3dfca3c6c51e814896130912e949ece2fec4500f310cc4d32"
+        }
+      ]
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "CML15C_REBALANCE_SLOTS_30",
+  "status": "PASS"
+}

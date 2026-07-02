@@ -4,7 +4,7 @@
   "required": ["schema_version", "stage_id", "files"],
   "properties": {
     "schema_version": {"type": "string", "const": "v1"},
-    "stage_id": {"type": "string", "pattern": "^CML[0-9]{2}_[A-Z0-9_]+$"},
+    "stage_id": {"type": "string", "pattern": "^CML[0-9]{2}[A-Z]?_[A-Z0-9_]+$"},
     "files": {
       "type": "array",
       "minItems": 1,

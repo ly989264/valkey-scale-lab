@@ -1,0 +1,76 @@
+{
+  "artifact_type": "capability_matrix",
+  "capabilities": [
+    {
+      "capability_id": "lifecycle_ops_30",
+      "evidence_chain": {
+        "analysis_summary": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/analysis_summary.json",
+        "fault_events": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/metrics_window.jsonl",
+        "operation_events": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/operation_event.jsonl",
+        "report_index": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/report_index.json",
+        "workload_windows": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/workload_window.jsonl"
+      },
+      "executed_operations": [
+        "add_node",
+        "remove_node",
+        "reshard_slots",
+        "rebalance_slots",
+        "rolling_restart"
+      ],
+      "real_valkey_required": true,
+      "scale_nodes": 30,
+      "source_artifacts": [
+        {
+          "path": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/lifecycle_matrix_report_30.json",
+          "sha256": "1cd7a83d7b272aff266461652bce756c20280e6b4edefd41f8c26546fd3b6caf"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/lifecycle_evidence_30.json",
+          "sha256": "466dc7e49bc22178f64824cfd40caf96a5b65f2fcb4996a45f0bd3f5b039e122"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "5ce360649f7abe408c4004c1ebeb9aa56397a4832c0f0c0dcb5b9d053d6e714c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/lifecycle_evidence_30.json",
+          "sha256": "0deb3d2c8603ff27efb7d289e666b584b054374ff511beb1af927b18eddf544e"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/lifecycle_evidence_30.json",
+          "sha256": "f48029506296dedc68abd85eea6fbb7788b4267e852a83df7df7002e83e871f5"
+        }
+      ],
+      "status": "PASS",
+      "windows": [
+        "before",
+        "operation_or_fault_apply",
+        "during",
+        "clear_or_recovery_start",
+        "after_recovery",
+        "all_run"
+      ]
+    },
+    {
+      "capability_id": "lifecycle_ops_50_100_future_replay",
+      "evidence_chain": {
+        "analysis_summary": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/analysis_summary.json",
+        "fault_events": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/fault_event.jsonl",
+        "metrics_windows": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/metrics_window.jsonl",
+        "operation_events": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/operation_event.jsonl",
+        "report_index": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/report_index.json",
+        "workload_windows": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/workload_window.jsonl"
+      },
+      "real_valkey_required": true,
+      "reason": "Current goal validates lifecycle execution at 30 nodes only; higher-scale replay remains future work.",
+      "scale_nodes": 100,
+      "status": "PASS",
+      "windows": []
+    }
+  ],
+  "created_at": "2026-07-02T00:00:00Z",
+  "schema_version": "v1",
+  "stage_id": "CML15E_LIFECYCLE_MATRIX_REPORT_30",
+  "status": "PASS"
+}
