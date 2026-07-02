@@ -1,0 +1,36 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-07-02T17:50:00Z",
+  "gate_result_path": "artifacts/gates/P19_MANAGEMENT_ROLLING_RESTART/gate_result.json",
+  "gate_result_sha256": "5476e8c136cae4a8465add35fed40320827c5fd74869ecad42a8db092e5dfbf1",
+  "artifact_paths": [
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/phase_summary.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/valkey_e2e_evidence.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/cleanup_report.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/events.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/metrics_timeseries.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/workload_windows.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/quant_summary.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_ops_matrix.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_operation_results.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_workload_impact.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_topology_snapshots.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_command_log.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/rolling_restart_plan.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/rolling_restart_results.jsonl"
+  ],
+  "risks": [
+    {
+      "risk": "P19 proves bounded local 6-node and 10-node rolling restart behavior, not larger-scale restart performance.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "Acceptable for P19 because the stage max is 10 nodes and later phases cover larger failover/scale behavior."
+    }
+  ],
+  "rationale": "P19 passes all manifest gates, includes fresh-context reviewer PASS, records real Valkey 9.1.0 evidence, proves all required 6-node and 10-node rolling restart rows, enforces one-node-at-a-time sequencing with inter-node health gates, validates workload and quantitative artifacts, and cleans all owned resources."
+}

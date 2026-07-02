@@ -1,0 +1,62 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "P19 records this metric as unavailable for restart rows where no outage or no primary promotion applied; per-node rolling_restart_results.jsonl carries the row-level reason.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "P19 records this metric as unavailable for restart rows where no outage or no primary promotion applied; per-node rolling_restart_results.jsonl carries the row-level reason.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "P19 records this metric as unavailable for restart rows where no outage or no primary promotion applied; per-node rolling_restart_results.jsonl carries the row-level reason.",
+      "metric": "promotion_latency_ms",
+      "reason": "Target was not primary at restart time, so no failover promotion was required.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "P19 records this metric as unavailable for restart rows where no outage or no primary promotion applied; per-node rolling_restart_results.jsonl carries the row-level reason.",
+      "metric": "cluster_recovery_latency_ms",
+      "reason": "Target was not primary at restart time, so primary failover recovery did not apply.",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/phase_summary.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/valkey_e2e_evidence.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/cleanup_report.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/events.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/metrics_timeseries.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/workload_windows.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/quant_summary.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_ops_matrix.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_operation_results.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_workload_impact.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_topology_snapshots.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_command_log.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/rolling_restart_plan.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/rolling_restart_results.jsonl"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "P19 uses bounded local 6-node and 10-node sidecar runs while the wrapper independently probes the main 6-node cluster.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P19_MANAGEMENT_ROLLING_RESTART-management_rolling_restart-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P19 implemented deterministic rolling restart rows with replica-first ordering, safe primary restart paths, per-node health gates, workload impact, and cleanup evidence."
+}

@@ -311,7 +311,7 @@ def write_p17_management_artifacts(base: Path, rows: list[dict]) -> None:
 def run_management_assertion(tmp_path: Path, monkeypatch, rows: list[dict], phase: str = "P17_MANAGEMENT_REMOVE_NODE") -> int:
     assertion = load_script("assert_management_ops_coverage")
     phase_dir = tmp_path / "artifacts" / "phases" / phase
-    phase_dir.mkdir(parents=True)
+    phase_dir.mkdir(parents=True, exist_ok=True)
     write_p17_management_artifacts(phase_dir, rows)
     if phase == "P18_MANAGEMENT_RESHARD_REBALANCE":
         write_jsonl(
@@ -346,6 +346,8 @@ def run_management_assertion(tmp_path: Path, monkeypatch, rows: list[dict], phas
                 "workload_impact_ref": "management_workload_impact.json",
             },
         )
+    if phase == "P19_MANAGEMENT_ROLLING_RESTART":
+        write_p19_rolling_restart_artifacts(phase_dir, rows)
     monkeypatch.setattr(assertion, "ROOT", tmp_path)
     monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
     monkeypatch.setattr(sys, "argv", ["assert_management_ops_coverage.py", "--phase", phase])
@@ -427,3 +429,222 @@ def test_p18_management_assertion_rejects_noop_rebalance(tmp_path: Path, monkeyp
             row["imbalance_after"] = row["imbalance_before"]
 
     assert run_management_assertion(tmp_path, monkeypatch, rows, phase="P18_MANAGEMENT_RESHARD_REBALANCE") == 1
+
+
+def p19_management_row(operation_name: str, node_count: int) -> dict:
+    row = p17_management_row(operation_name, node_count)
+    operation_id = f"{operation_name}-{node_count:02d}"
+    row.update(
+        {
+            "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+            "operation_id": operation_id,
+            "workload_window_ref": f"{operation_id}:event",
+            "restart_count": node_count,
+            "health_gate_count": node_count,
+            "max_concurrent_restarts": 1,
+            "safe_primary_path": "cluster_failover_takeover_before_owned_container_restart"
+            if operation_name == "rolling_restart_primary_safe"
+            else "replica_first_owned_container_restart",
+        }
+    )
+    return row
+
+
+def p19_nodes(node_count: int) -> list[dict]:
+    primaries = node_count // 2
+    nodes: list[dict] = []
+    for shard in range(primaries):
+        nodes.append({"logical_node_id": f"shard-{shard:04d}-primary", "planned_role": "primary", "shard_id": f"shard-{shard:04d}"})
+        nodes.append({"logical_node_id": f"shard-{shard:04d}-replica-00", "planned_role": "replica", "shard_id": f"shard-{shard:04d}"})
+    return nodes
+
+
+def p19_order(operation_name: str, node_count: int) -> list[dict]:
+    nodes = p19_nodes(node_count)
+    if operation_name == "rolling_restart_replica_first":
+        ordered = sorted(nodes, key=lambda item: (0 if item["planned_role"] == "replica" else 1, item["shard_id"], item["logical_node_id"]))
+    else:
+        ordered = sorted(nodes, key=lambda item: (item["shard_id"], 0 if item["planned_role"] == "primary" else 1, item["logical_node_id"]))
+    return [{**node, "sequence": index, "container_name": f"container-{node['logical_node_id']}"} for index, node in enumerate(ordered, start=1)]
+
+
+def p19_restart_result(operation_name: str, node_count: int, entry: dict, base_ms: int) -> dict:
+    operation_id = f"{operation_name}-{node_count:02d}"
+    role_before = entry["planned_role"]
+    missing_fields = []
+    if operation_name == "rolling_restart_primary_safe" and role_before != "primary":
+        missing_fields = [
+            {"field": "promotion_latency_ms", "status": MISSING, "reason": "Target was not primary at restart time."},
+            {"field": "cluster_recovery_latency_ms", "status": MISSING, "reason": "Target was not primary at restart time."},
+        ]
+    if operation_name == "rolling_restart_primary_safe":
+        missing_fields.extend(
+            [
+                {"field": "read_unavailability_ms", "status": MISSING, "reason": "No read outage observed."},
+                {"field": "write_unavailability_ms", "status": MISSING, "reason": "No write outage observed."},
+            ]
+        )
+    return {
+        "schema_version": "v1",
+        "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+        "run_id": "run",
+        "operation_id": operation_id,
+        "operation_name": operation_name,
+        "node_count": node_count,
+        "sequence": entry["sequence"],
+        "node_logical_id": entry["logical_node_id"],
+        "planned_role": entry["planned_role"],
+        "role_before_restart": role_before,
+        "max_concurrent_restarts": 1,
+        "restart_started_at_ms": base_ms,
+        "restart_completed_at_ms": base_ms + 10,
+        "health_gate_started_at_ms": base_ms + 10,
+        "health_gate_completed_at_ms": base_ms + 20,
+        "health_gate_status": "PASS",
+        "cluster_state_after_gate": "ok",
+        "known_nodes_after_gate": node_count,
+        "slots_after_gate": 16384,
+        "command_ref": f"{operation_id}-cmd-{entry['sequence']:04d}",
+        "command_status": "PASS",
+        "workload_impact_ref": f"{operation_id}:event",
+        "primary_safe_path": "cluster_failover_takeover_before_owned_container_restart"
+        if operation_name == "rolling_restart_primary_safe" and role_before == "primary"
+        else "not_required_for_replica_restart",
+        "promotion_latency_ms": 7 if operation_name == "rolling_restart_primary_safe" and role_before == "primary" else MISSING,
+        "cluster_recovery_latency_ms": 9 if operation_name == "rolling_restart_primary_safe" and role_before == "primary" else MISSING,
+        "read_unavailability_ms": MISSING,
+        "write_unavailability_ms": MISSING,
+        "missing_fields": missing_fields,
+    }
+
+
+def write_p19_rolling_restart_artifacts(base: Path, rows: list[dict]) -> None:
+    operations = []
+    restart_results = []
+    command_rows = []
+    for row in rows:
+        order = p19_order(row["operation_name"], row["node_count"])
+        operation_id = row["operation_id"]
+        operations.append(
+            {
+                "operation_id": operation_id,
+                "operation_name": row["operation_name"],
+                "node_count": row["node_count"],
+                "max_concurrent_restarts": 1,
+                "health_gate": {"required_after_each_restart": True, "required_between_nodes": True},
+                "restart_order": order,
+            }
+        )
+        for entry in order:
+            result = p19_restart_result(row["operation_name"], row["node_count"], entry, base_ms=entry["sequence"] * 100)
+            restart_results.append(result)
+            command_rows.append(
+                {
+                    "schema_version": "v1",
+                    "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+                    "run_id": "run",
+                    "operation_id": operation_id,
+                    "command_id": result["command_ref"],
+                    "command_kind": "owned_container_restart",
+                    "status": "PASS",
+                }
+            )
+    write_json(
+        base / "rolling_restart_plan.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "rolling_restart_plan",
+            "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+            "run_id": "run",
+            "health_gate": {
+                "required_between_nodes": True,
+                "required_after_each_restart": True,
+                "cluster_state": "ok",
+                "slots_assigned": 16384,
+                "max_concurrent_restarts": 1,
+            },
+            "restart_order": [{"operation_id": op["operation_id"], **entry} for op in operations for entry in op["restart_order"]],
+            "operations": operations,
+        },
+    )
+    write_jsonl(base / "rolling_restart_results.jsonl", restart_results)
+    write_jsonl(base / "management_command_log.jsonl", command_rows)
+
+
+def p19_required_rows() -> list[dict]:
+    return [
+        p19_management_row(operation, count)
+        for operation in ["rolling_restart_replica_first", "rolling_restart_primary_safe"]
+        for count in [6, 10]
+    ]
+
+
+def test_p19_management_assertion_accepts_valid_rolling_restart(tmp_path: Path, monkeypatch) -> None:
+    assert run_management_assertion(tmp_path, monkeypatch, p19_required_rows(), phase="P19_MANAGEMENT_ROLLING_RESTART") == 0
+
+
+def test_p19_management_assertion_rejects_missing_10_node_rows(tmp_path: Path, monkeypatch) -> None:
+    rows = [
+        p19_management_row("rolling_restart_replica_first", 6),
+        p19_management_row("rolling_restart_primary_safe", 6),
+    ]
+
+    assert run_management_assertion(tmp_path, monkeypatch, rows, phase="P19_MANAGEMENT_ROLLING_RESTART") == 1
+
+
+def test_p19_management_assertion_rejects_primary_before_replica(tmp_path: Path, monkeypatch) -> None:
+    rows = p19_required_rows()
+    assertion = load_script("assert_management_ops_coverage")
+    phase = "P19_MANAGEMENT_ROLLING_RESTART"
+    phase_dir = tmp_path / "artifacts" / "phases" / phase
+    phase_dir.mkdir(parents=True)
+    write_p17_management_artifacts(phase_dir, rows)
+    write_p19_rolling_restart_artifacts(phase_dir, rows)
+    plan = json.loads((phase_dir / "rolling_restart_plan.json").read_text(encoding="utf-8"))
+    operation = next(item for item in plan["operations"] if item["operation_id"] == "rolling_restart_replica_first-06")
+    operation["restart_order"] = sorted(operation["restart_order"], key=lambda item: 0 if item["planned_role"] == "primary" else 1)
+    (phase_dir / "rolling_restart_plan.json").write_text(json.dumps(plan), encoding="utf-8")
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_management_ops_coverage.py", "--phase", phase])
+
+    assert assertion.main() == 1
+
+
+def test_p19_management_assertion_rejects_overlapping_restart_health_gate(tmp_path: Path, monkeypatch) -> None:
+    rows = p19_required_rows()
+    phase = "P19_MANAGEMENT_ROLLING_RESTART"
+    assertion = load_script("assert_management_ops_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / phase
+    phase_dir.mkdir(parents=True)
+    write_p17_management_artifacts(phase_dir, rows)
+    write_p19_rolling_restart_artifacts(phase_dir, rows)
+    results = [json.loads(line) for line in (phase_dir / "rolling_restart_results.jsonl").read_text(encoding="utf-8").splitlines()]
+    first = next(row for row in results if row["operation_id"] == "rolling_restart_replica_first-06" and row["sequence"] == 1)
+    second = next(row for row in results if row["operation_id"] == "rolling_restart_replica_first-06" and row["sequence"] == 2)
+    first["health_gate_completed_at_ms"] = 500
+    second["restart_started_at_ms"] = 400
+    write_jsonl(phase_dir / "rolling_restart_results.jsonl", results)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_management_ops_coverage.py", "--phase", phase])
+
+    assert assertion.main() == 1
+
+
+def test_p19_management_assertion_rejects_failed_health_gate(tmp_path: Path, monkeypatch) -> None:
+    rows = p19_required_rows()
+    phase = "P19_MANAGEMENT_ROLLING_RESTART"
+    assertion = load_script("assert_management_ops_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / phase
+    phase_dir.mkdir(parents=True)
+    write_p17_management_artifacts(phase_dir, rows)
+    write_p19_rolling_restart_artifacts(phase_dir, rows)
+    results = [json.loads(line) for line in (phase_dir / "rolling_restart_results.jsonl").read_text(encoding="utf-8").splitlines()]
+    results[0]["health_gate_status"] = "FAIL"
+    write_jsonl(phase_dir / "rolling_restart_results.jsonl", results)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_management_ops_coverage.py", "--phase", phase])
+
+    assert assertion.main() == 1

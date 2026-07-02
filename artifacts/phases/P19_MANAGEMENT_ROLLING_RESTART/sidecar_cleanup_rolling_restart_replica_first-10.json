@@ -1,0 +1,171 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART",
+  "cleanup_actions": [
+    {
+      "action": "stop",
+      "id": "656fa3b7689d",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "656fa3b7689d",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "b95ce5667894",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "b95ce5667894",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "21134553b15d",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "21134553b15d",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "772fd97cd578",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "772fd97cd578",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "1fbd55117fcb",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "1fbd55117fcb",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "50a66c8d5c24",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "50a66c8d5c24",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "fc0fb4db007f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "fc0fb4db007f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "f5310aeb6c41",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "f5310aeb6c41",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "a75b18973e5f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "a75b18973e5f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "d61aff2c6175",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "d61aff2c6175",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "70ca8262d760",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "cleanup_remove_containers_seconds": 1.121493,
+    "cleanup_remove_networks_seconds": 0.239643,
+    "cleanup_residual_scan_seconds": 0.0676,
+    "cleanup_terminate_processes_seconds": 0.0,
+    "cleanup_verify_nodehost_empty_seconds": 0.0,
+    "cleanup_verify_process_exit_seconds": 0.0
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P19_MANAGEMENT_ROLLING_RESTART-management_rolling_restart-20260628-rolling_restart_replica_first-10",
+  "schema_version": "v1",
+  "status": "PASS"
+}

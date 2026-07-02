@@ -1,0 +1,143 @@
+{
+  "artifact_type": "workload_impact_report",
+  "comparisons": [
+    {
+      "baseline": 13.634485,
+      "delta": -13.406905,
+      "event": 0.22758,
+      "metric": "achieved_qps"
+    },
+    {
+      "baseline": 0.0,
+      "delta": 0.0,
+      "event": 0.0,
+      "metric": "error_rate"
+    },
+    {
+      "baseline": 84.291572,
+      "delta": -9.022143,
+      "event": 75.269429,
+      "metric": "latency_p95_ms"
+    }
+  ],
+  "created_at": "2026-06-28T00:00:00Z",
+  "operation_window_count": 24,
+  "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P19_MANAGEMENT_ROLLING_RESTART-management_rolling_restart-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "windows": [
+    {
+      "metrics": {
+        "achieved_qps": 13.634485,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 70.873,
+        "latency_p95_ms": 84.291572,
+        "latency_p99_ms": 85.71624,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 16,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 4,
+      "window_name": "baseline"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 15.22477,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 65.86775,
+        "latency_p95_ms": 70.745587,
+        "latency_p99_ms": 71.049109,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 16,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 4,
+      "window_name": "pre_event"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 0.22758,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 67.435536,
+        "latency_p95_ms": 75.269429,
+        "latency_p99_ms": 76.151153,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 16,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 4,
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 15.711937,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 62.882901,
+        "latency_p95_ms": 71.908325,
+        "latency_p99_ms": 72.96154,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 16,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 4,
+      "window_name": "recovery"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 15.950792,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 62.335099,
+        "latency_p95_ms": 67.594433,
+        "latency_p99_ms": 68.183478,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 16,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 4,
+      "window_name": "post_recovery"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 1.073036,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 65.857636,
+        "latency_p95_ms": 76.683149,
+        "latency_p99_ms": 85.613522,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 80,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 4,
+      "window_name": "all_run"
+    }
+  ]
+}

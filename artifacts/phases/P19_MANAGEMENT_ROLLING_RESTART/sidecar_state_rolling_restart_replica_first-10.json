@@ -1,0 +1,152 @@
+{
+  "cluster_id": "P19_MANAGEMENT_ROLLING_RESTART-management_rolling_restart-20260628-rolling_restart_replica_first-10",
+  "nodes": [
+    {
+      "az_id": "az-a",
+      "client_port": 7940,
+      "container_id": "d61aff2c617543401e33a9b1a3c7fb91543105512570c6060a2c0fd9befdaefe",
+      "container_ip": "172.19.0.2",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 12470,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7941,
+      "container_id": "a75b18973e5f1e78bc65c55d4d76fbc2b9a7445a1c00ed65d42bf8c029bb72b3",
+      "container_ip": "172.19.0.3",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 12543,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7942,
+      "container_id": "f5310aeb6c41c31b07d2654746038bbbabeaf82e3d6e67caef82461ff10635ff",
+      "container_ip": "172.19.0.4",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 12620,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7943,
+      "container_id": "fc0fb4db007f738625de8ed8d21ffe22536a61b64f20736688dcd5389b5b08d4",
+      "container_ip": "172.19.0.5",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0003-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0003-primary",
+      "pid": 12694,
+      "role": "primary",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7944,
+      "container_id": "50a66c8d5c245160dba63e037492c5d81a93b87173ce75d60302e19533980111",
+      "container_ip": "172.19.0.6",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0004-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0004-primary",
+      "pid": 12768,
+      "role": "primary",
+      "shard_id": "shard-0004"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7945,
+      "container_id": "1fbd55117fcbf98c5f4481780486b952619d486fa3c2d19093a1868ccb3a7525",
+      "container_ip": "172.19.0.7",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 12843,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7946,
+      "container_id": "772fd97cd5782dc0d8ae33e9bb09ccd0adb03f23ddaebc15f407f0d4ced4bab8",
+      "container_ip": "172.19.0.8",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 12920,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7947,
+      "container_id": "21134553b15d666323090a52fd4412de2943b32e3d3ffafca679cce405b1c1bb",
+      "container_ip": "172.19.0.9",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 12996,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7948,
+      "container_id": "b95ce56678942f8540ea5b9480a3329978bd8079ef03b564c2d3a82fbc13af87",
+      "container_ip": "172.19.0.10",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0003-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0003-replica-00",
+      "pid": 13072,
+      "role": "replica",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7949,
+      "container_id": "656fa3b7689db69c9c021b414fdfd3c8f5d843b90e938dc0642f1580ef490542",
+      "container_ip": "172.19.0.11",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0004-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0004-replica-00",
+      "pid": 13145,
+      "role": "replica",
+      "shard_id": "shard-0004"
+    }
+  ],
+  "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p19-management-rolling-restart-management_rolling_restart_rolling_restart_replica_first_10",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P19_MANAGEMENT_ROLLING_RESTART-management_rolling_restart-20260628-rolling_restart_replica_first-10",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "management_rolling_restart_rolling_restart_replica_first_10",
+  "schema_version": "v1"
+}

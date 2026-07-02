@@ -1,0 +1,152 @@
+{
+  "cluster_id": "P19_MANAGEMENT_ROLLING_RESTART-management_rolling_restart-20260628-rolling_restart_primary_safe-10",
+  "nodes": [
+    {
+      "az_id": "az-a",
+      "client_port": 8020,
+      "container_id": "dc023e01af79bab1e220e016fd9150b91b6a9ce8e3e484bc98e9ac06999d6d90",
+      "container_ip": "172.19.0.2",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 16907,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 8021,
+      "container_id": "40ef9b6efb1f50ad8ae4ee0ecd5447596ad33f8834bfc4e01a6d64e2677f9114",
+      "container_ip": "172.19.0.3",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 16983,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 8022,
+      "container_id": "81da288bd5de28c4e7425c764e646ca5f630700d1969ff94b52ea0fa6266b153",
+      "container_ip": "172.19.0.4",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 17057,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 8023,
+      "container_id": "fe9570377fc7bfafdae9c31ea7edb8e410954aec2d1f292f882b828b3417dc44",
+      "container_ip": "172.19.0.5",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0003-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0003-primary",
+      "pid": 17131,
+      "role": "primary",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 8024,
+      "container_id": "4f7c077dbc2853f4944be6b120f4d0fa89f264f1f0cc3b93d1284d8ba86dab10",
+      "container_ip": "172.19.0.6",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0004-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0004-primary",
+      "pid": 17210,
+      "role": "primary",
+      "shard_id": "shard-0004"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 8025,
+      "container_id": "e44939d5a87785bcf1ab73082952c8b3ee0c51c685d04c038b0bc276bc058781",
+      "container_ip": "172.19.0.7",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 17285,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 8026,
+      "container_id": "2b102c5cc0eb4926f6741e1635b9bf8e4ac5b24f5fac43fe4ff47e21f97671c8",
+      "container_ip": "172.19.0.8",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 17361,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 8027,
+      "container_id": "48c466f6fa162be92f9b4aa8eebae97bce8843d572beb0869477b2b5f521297a",
+      "container_ip": "172.19.0.9",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 17437,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 8028,
+      "container_id": "581d6c63102a38a73cafe2d77891fcc025a32e37a65bb19d99d00a4e53272bb9",
+      "container_ip": "172.19.0.10",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0003-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0003-replica-00",
+      "pid": 17511,
+      "role": "replica",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 8029,
+      "container_id": "604a51607fdf2e9fd0bc421db4082db05f961df69439692169cbdaae85453b20",
+      "container_ip": "172.19.0.11",
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0004-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0004-replica-00",
+      "pid": 17586,
+      "role": "replica",
+      "shard_id": "shard-0004"
+    }
+  ],
+  "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p19-management-rolling-restart-management_rolling_restart_rolling_restart_primary_safe_10",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P19_MANAGEMENT_ROLLING_RESTART-management_rolling_restart-20260628-rolling_restart_primary_safe-10",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "management_rolling_restart_rolling_restart_primary_safe_10",
+  "schema_version": "v1"
+}

@@ -401,11 +401,11 @@
     },
     {
       "path": "schemas/artifact/rolling_restart_plan.schema.json",
-      "sha256": "de545ed1f93e9749121422d3b53aaca00d9813a94615c73993b6c160b998a5a3"
+      "sha256": "067dcebd2006e1ab5da0be691c106798ae1e220e3600417237d2a1b8031562b2"
     },
     {
       "path": "schemas/artifact/rolling_restart_result.schema.json",
-      "sha256": "06d80dada1aca5454c8ec02e485907bdef1e0a53a3c94658edd857ed93a71d83"
+      "sha256": "0811ddf0a9e238db5f14786e097c109ebc477dba037e8e38e14c56ab0b3dd697"
     },
     {
       "path": "schemas/artifact/scale_build_metrics.schema.json",
@@ -589,7 +589,7 @@
     },
     {
       "path": "scripts/assert_management_ops_coverage.py",
-      "sha256": "ce0b266fa62ee5fa75d17a413fdae7766c332a5348074a67e0d63262af71b632"
+      "sha256": "6dae1c5de76702037915f4bc1e5672ec44f48dc1d2b9436ee733467dc357d463"
     },
     {
       "path": "scripts/assert_plan_constraints.py",

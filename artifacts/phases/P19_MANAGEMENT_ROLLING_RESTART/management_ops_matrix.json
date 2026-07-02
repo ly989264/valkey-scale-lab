@@ -1,0 +1,76 @@
+{
+  "artifact_type": "management_ops_matrix",
+  "created_at": "2026-06-28T00:00:00Z",
+  "operations": [
+    {
+      "health_gate_count": 6,
+      "max_concurrent_restarts": 1,
+      "node_count": 6,
+      "operation_id": "rolling_restart_replica_first-06",
+      "operation_name": "rolling_restart_replica_first",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "restart_count": 6,
+      "workload_window_ref": "rolling_restart_replica_first-06:event"
+    },
+    {
+      "health_gate_count": 10,
+      "max_concurrent_restarts": 1,
+      "node_count": 10,
+      "operation_id": "rolling_restart_replica_first-10",
+      "operation_name": "rolling_restart_replica_first",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "restart_count": 10,
+      "workload_window_ref": "rolling_restart_replica_first-10:event"
+    },
+    {
+      "health_gate_count": 6,
+      "max_concurrent_restarts": 1,
+      "node_count": 6,
+      "operation_id": "rolling_restart_primary_safe-06",
+      "operation_name": "rolling_restart_primary_safe",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "restart_count": 6,
+      "workload_window_ref": "rolling_restart_primary_safe-06:event"
+    },
+    {
+      "health_gate_count": 10,
+      "max_concurrent_restarts": 1,
+      "node_count": 10,
+      "operation_id": "rolling_restart_primary_safe-10",
+      "operation_name": "rolling_restart_primary_safe",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "restart_count": 10,
+      "workload_window_ref": "rolling_restart_primary_safe-10:event"
+    }
+  ],
+  "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_rows": [
+    {
+      "node_count": 6,
+      "operation_name": "rolling_restart_replica_first"
+    },
+    {
+      "node_count": 10,
+      "operation_name": "rolling_restart_replica_first"
+    },
+    {
+      "node_count": 6,
+      "operation_name": "rolling_restart_primary_safe"
+    },
+    {
+      "node_count": 10,
+      "operation_name": "rolling_restart_primary_safe"
+    }
+  ],
+  "run_id": "P19_MANAGEMENT_ROLLING_RESTART-management_rolling_restart-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

@@ -1,0 +1,617 @@
+{
+  "artifact_type": "rolling_restart_plan",
+  "created_at": "2026-06-28T00:00:00Z",
+  "health_gate": {
+    "cluster_state": "ok",
+    "max_concurrent_restarts": 1,
+    "required_after_each_restart": true,
+    "required_between_nodes": true,
+    "slots_assigned": 16384
+  },
+  "operations": [
+    {
+      "health_gate": {
+        "cluster_state": "ok",
+        "known_nodes": 6,
+        "required_after_each_restart": true,
+        "required_between_nodes": true,
+        "slots_assigned": 16384
+      },
+      "max_concurrent_restarts": 1,
+      "node_count": 6,
+      "operation_id": "rolling_restart_replica_first-06",
+      "operation_name": "rolling_restart_replica_first",
+      "restart_order": [
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0000-replica-00",
+          "logical_node_id": "shard-0000-replica-00",
+          "operation_id": "rolling_restart_replica_first-06",
+          "planned_role": "replica",
+          "sequence": 1,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0001-replica-00",
+          "logical_node_id": "shard-0001-replica-00",
+          "operation_id": "rolling_restart_replica_first-06",
+          "planned_role": "replica",
+          "sequence": 2,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0002-replica-00",
+          "logical_node_id": "shard-0002-replica-00",
+          "operation_id": "rolling_restart_replica_first-06",
+          "planned_role": "replica",
+          "sequence": 3,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0000-primary",
+          "logical_node_id": "shard-0000-primary",
+          "operation_id": "rolling_restart_replica_first-06",
+          "planned_role": "primary",
+          "sequence": 4,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0001-primary",
+          "logical_node_id": "shard-0001-primary",
+          "operation_id": "rolling_restart_replica_first-06",
+          "planned_role": "primary",
+          "sequence": 5,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0002-primary",
+          "logical_node_id": "shard-0002-primary",
+          "operation_id": "rolling_restart_replica_first-06",
+          "planned_role": "primary",
+          "sequence": 6,
+          "shard_id": "shard-0002"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "health_gate": {
+        "cluster_state": "ok",
+        "known_nodes": 10,
+        "required_after_each_restart": true,
+        "required_between_nodes": true,
+        "slots_assigned": 16384
+      },
+      "max_concurrent_restarts": 1,
+      "node_count": 10,
+      "operation_id": "rolling_restart_replica_first-10",
+      "operation_name": "rolling_restart_replica_first",
+      "restart_order": [
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0000-replica-00",
+          "logical_node_id": "shard-0000-replica-00",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "replica",
+          "sequence": 1,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0001-replica-00",
+          "logical_node_id": "shard-0001-replica-00",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "replica",
+          "sequence": 2,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0002-replica-00",
+          "logical_node_id": "shard-0002-replica-00",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "replica",
+          "sequence": 3,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0003-replica-00",
+          "logical_node_id": "shard-0003-replica-00",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "replica",
+          "sequence": 4,
+          "shard_id": "shard-0003"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0004-replica-00",
+          "logical_node_id": "shard-0004-replica-00",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "replica",
+          "sequence": 5,
+          "shard_id": "shard-0004"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0000-primary",
+          "logical_node_id": "shard-0000-primary",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "primary",
+          "sequence": 6,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0001-primary",
+          "logical_node_id": "shard-0001-primary",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "primary",
+          "sequence": 7,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0002-primary",
+          "logical_node_id": "shard-0002-primary",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "primary",
+          "sequence": 8,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0003-primary",
+          "logical_node_id": "shard-0003-primary",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "primary",
+          "sequence": 9,
+          "shard_id": "shard-0003"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0004-primary",
+          "logical_node_id": "shard-0004-primary",
+          "operation_id": "rolling_restart_replica_first-10",
+          "planned_role": "primary",
+          "sequence": 10,
+          "shard_id": "shard-0004"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "health_gate": {
+        "cluster_state": "ok",
+        "known_nodes": 6,
+        "required_after_each_restart": true,
+        "required_between_nodes": true,
+        "slots_assigned": 16384
+      },
+      "max_concurrent_restarts": 1,
+      "node_count": 6,
+      "operation_id": "rolling_restart_primary_safe-06",
+      "operation_name": "rolling_restart_primary_safe",
+      "restart_order": [
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0000-primary",
+          "logical_node_id": "shard-0000-primary",
+          "operation_id": "rolling_restart_primary_safe-06",
+          "planned_role": "primary",
+          "sequence": 1,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0000-replica-00",
+          "logical_node_id": "shard-0000-replica-00",
+          "operation_id": "rolling_restart_primary_safe-06",
+          "planned_role": "replica",
+          "sequence": 2,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0001-primary",
+          "logical_node_id": "shard-0001-primary",
+          "operation_id": "rolling_restart_primary_safe-06",
+          "planned_role": "primary",
+          "sequence": 3,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0001-replica-00",
+          "logical_node_id": "shard-0001-replica-00",
+          "operation_id": "rolling_restart_primary_safe-06",
+          "planned_role": "replica",
+          "sequence": 4,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0002-primary",
+          "logical_node_id": "shard-0002-primary",
+          "operation_id": "rolling_restart_primary_safe-06",
+          "planned_role": "primary",
+          "sequence": 5,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0002-replica-00",
+          "logical_node_id": "shard-0002-replica-00",
+          "operation_id": "rolling_restart_primary_safe-06",
+          "planned_role": "replica",
+          "sequence": 6,
+          "shard_id": "shard-0002"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "health_gate": {
+        "cluster_state": "ok",
+        "known_nodes": 10,
+        "required_after_each_restart": true,
+        "required_between_nodes": true,
+        "slots_assigned": 16384
+      },
+      "max_concurrent_restarts": 1,
+      "node_count": 10,
+      "operation_id": "rolling_restart_primary_safe-10",
+      "operation_name": "rolling_restart_primary_safe",
+      "restart_order": [
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0000-primary",
+          "logical_node_id": "shard-0000-primary",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "primary",
+          "sequence": 1,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0000-replica-00",
+          "logical_node_id": "shard-0000-replica-00",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "replica",
+          "sequence": 2,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0001-primary",
+          "logical_node_id": "shard-0001-primary",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "primary",
+          "sequence": 3,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0001-replica-00",
+          "logical_node_id": "shard-0001-replica-00",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "replica",
+          "sequence": 4,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0002-primary",
+          "logical_node_id": "shard-0002-primary",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "primary",
+          "sequence": 5,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0002-replica-00",
+          "logical_node_id": "shard-0002-replica-00",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "replica",
+          "sequence": 6,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0003-primary",
+          "logical_node_id": "shard-0003-primary",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "primary",
+          "sequence": 7,
+          "shard_id": "shard-0003"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0003-replica-00",
+          "logical_node_id": "shard-0003-replica-00",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "replica",
+          "sequence": 8,
+          "shard_id": "shard-0003"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0004-primary",
+          "logical_node_id": "shard-0004-primary",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "primary",
+          "sequence": 9,
+          "shard_id": "shard-0004"
+        },
+        {
+          "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0004-replica-00",
+          "logical_node_id": "shard-0004-replica-00",
+          "operation_id": "rolling_restart_primary_safe-10",
+          "planned_role": "replica",
+          "sequence": 10,
+          "shard_id": "shard-0004"
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_rows": [
+    {
+      "node_count": 6,
+      "operation_name": "rolling_restart_replica_first"
+    },
+    {
+      "node_count": 10,
+      "operation_name": "rolling_restart_replica_first"
+    },
+    {
+      "node_count": 6,
+      "operation_name": "rolling_restart_primary_safe"
+    },
+    {
+      "node_count": 10,
+      "operation_name": "rolling_restart_primary_safe"
+    }
+  ],
+  "restart_order": [
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0000-replica-00",
+      "logical_node_id": "shard-0000-replica-00",
+      "operation_id": "rolling_restart_replica_first-06",
+      "planned_role": "replica",
+      "sequence": 1,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0001-replica-00",
+      "logical_node_id": "shard-0001-replica-00",
+      "operation_id": "rolling_restart_replica_first-06",
+      "planned_role": "replica",
+      "sequence": 2,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0002-replica-00",
+      "logical_node_id": "shard-0002-replica-00",
+      "operation_id": "rolling_restart_replica_first-06",
+      "planned_role": "replica",
+      "sequence": 3,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0000-primary",
+      "logical_node_id": "shard-0000-primary",
+      "operation_id": "rolling_restart_replica_first-06",
+      "planned_role": "primary",
+      "sequence": 4,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0001-primary",
+      "logical_node_id": "shard-0001-primary",
+      "operation_id": "rolling_restart_replica_first-06",
+      "planned_role": "primary",
+      "sequence": 5,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-6-shard-0002-primary",
+      "logical_node_id": "shard-0002-primary",
+      "operation_id": "rolling_restart_replica_first-06",
+      "planned_role": "primary",
+      "sequence": 6,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0000-replica-00",
+      "logical_node_id": "shard-0000-replica-00",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "replica",
+      "sequence": 1,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0001-replica-00",
+      "logical_node_id": "shard-0001-replica-00",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "replica",
+      "sequence": 2,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0002-replica-00",
+      "logical_node_id": "shard-0002-replica-00",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "replica",
+      "sequence": 3,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0003-replica-00",
+      "logical_node_id": "shard-0003-replica-00",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "replica",
+      "sequence": 4,
+      "shard_id": "shard-0003"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0004-replica-00",
+      "logical_node_id": "shard-0004-replica-00",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "replica",
+      "sequence": 5,
+      "shard_id": "shard-0004"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0000-primary",
+      "logical_node_id": "shard-0000-primary",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "primary",
+      "sequence": 6,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0001-primary",
+      "logical_node_id": "shard-0001-primary",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "primary",
+      "sequence": 7,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0002-primary",
+      "logical_node_id": "shard-0002-primary",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "primary",
+      "sequence": 8,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0003-primary",
+      "logical_node_id": "shard-0003-primary",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "primary",
+      "sequence": 9,
+      "shard_id": "shard-0003"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-replica-first-10-shard-0004-primary",
+      "logical_node_id": "shard-0004-primary",
+      "operation_id": "rolling_restart_replica_first-10",
+      "planned_role": "primary",
+      "sequence": 10,
+      "shard_id": "shard-0004"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0000-primary",
+      "logical_node_id": "shard-0000-primary",
+      "operation_id": "rolling_restart_primary_safe-06",
+      "planned_role": "primary",
+      "sequence": 1,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0000-replica-00",
+      "logical_node_id": "shard-0000-replica-00",
+      "operation_id": "rolling_restart_primary_safe-06",
+      "planned_role": "replica",
+      "sequence": 2,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0001-primary",
+      "logical_node_id": "shard-0001-primary",
+      "operation_id": "rolling_restart_primary_safe-06",
+      "planned_role": "primary",
+      "sequence": 3,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0001-replica-00",
+      "logical_node_id": "shard-0001-replica-00",
+      "operation_id": "rolling_restart_primary_safe-06",
+      "planned_role": "replica",
+      "sequence": 4,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0002-primary",
+      "logical_node_id": "shard-0002-primary",
+      "operation_id": "rolling_restart_primary_safe-06",
+      "planned_role": "primary",
+      "sequence": 5,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-6-shard-0002-replica-00",
+      "logical_node_id": "shard-0002-replica-00",
+      "operation_id": "rolling_restart_primary_safe-06",
+      "planned_role": "replica",
+      "sequence": 6,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0000-primary",
+      "logical_node_id": "shard-0000-primary",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "primary",
+      "sequence": 1,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0000-replica-00",
+      "logical_node_id": "shard-0000-replica-00",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "replica",
+      "sequence": 2,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0001-primary",
+      "logical_node_id": "shard-0001-primary",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "primary",
+      "sequence": 3,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0001-replica-00",
+      "logical_node_id": "shard-0001-replica-00",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "replica",
+      "sequence": 4,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0002-primary",
+      "logical_node_id": "shard-0002-primary",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "primary",
+      "sequence": 5,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0002-replica-00",
+      "logical_node_id": "shard-0002-replica-00",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "replica",
+      "sequence": 6,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0003-primary",
+      "logical_node_id": "shard-0003-primary",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "primary",
+      "sequence": 7,
+      "shard_id": "shard-0003"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0003-replica-00",
+      "logical_node_id": "shard-0003-replica-00",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "replica",
+      "sequence": 8,
+      "shard_id": "shard-0003"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0004-primary",
+      "logical_node_id": "shard-0004-primary",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "primary",
+      "sequence": 9,
+      "shard_id": "shard-0004"
+    },
+    {
+      "container_name": "vslab-p19-management-rolling-restart-management-rolling-restart-20260628-rolling-restart-primary-safe-10-shard-0004-replica-00",
+      "logical_node_id": "shard-0004-replica-00",
+      "operation_id": "rolling_restart_primary_safe-10",
+      "planned_role": "replica",
+      "sequence": 10,
+      "shard_id": "shard-0004"
+    }
+  ],
+  "run_id": "P19_MANAGEMENT_ROLLING_RESTART-management_rolling_restart-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}
