@@ -3,6 +3,12 @@
   "created_at": "2026-07-02T00:00:00Z",
   "reports": [
     {
+      "data_series": [
+        "operation_duration",
+        "workload_latency_ms",
+        "workload_availability_percent",
+        "cluster_slot_role_counts"
+      ],
       "kind": "csv",
       "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/lifecycle_summary.csv",
       "source_artifacts": [
@@ -21,10 +27,36 @@
         {
           "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/cleanup_report_30.json",
           "sha256": "212cef7802e3c36564296e4f5240b2e7d843e6228d125f372e343a370bd97cb0"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/operation_event.jsonl",
+          "sha256": "a99a0dfdbc2dd6ce3bdd40c714681ba16e821700e93643f669d54b336a766c14"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/metrics_window.jsonl",
+          "sha256": "abe180d13e6815a86cb0d0f802a0faf6efc9ecc359644915aea4fb173046426f"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/workload_window.jsonl",
+          "sha256": "85eb87273f4266b4765354c2090d5dcdfcd31c26f2ab896a143d7ba5a03bb441"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/capability_matrix.json",
+          "sha256": "f0aa593a4c45b96e1069233461b6927a32ee5a85251a66f71d84990a5163063f"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/analysis_summary.json",
+          "sha256": "9a51cda6803ad0cf8fd3fe89ba1cb8be9a229e6650917cc3ce3d76a67717c202"
         }
       ]
     },
     {
+      "data_series": [
+        "operation_duration",
+        "workload_latency_ms",
+        "workload_availability_percent",
+        "cluster_slot_role_counts"
+      ],
       "kind": "markdown",
       "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/report.md",
       "source_artifacts": [
@@ -43,10 +75,36 @@
         {
           "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/cleanup_report_30.json",
           "sha256": "212cef7802e3c36564296e4f5240b2e7d843e6228d125f372e343a370bd97cb0"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/operation_event.jsonl",
+          "sha256": "a99a0dfdbc2dd6ce3bdd40c714681ba16e821700e93643f669d54b336a766c14"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/metrics_window.jsonl",
+          "sha256": "abe180d13e6815a86cb0d0f802a0faf6efc9ecc359644915aea4fb173046426f"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/workload_window.jsonl",
+          "sha256": "85eb87273f4266b4765354c2090d5dcdfcd31c26f2ab896a143d7ba5a03bb441"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/capability_matrix.json",
+          "sha256": "f0aa593a4c45b96e1069233461b6927a32ee5a85251a66f71d84990a5163063f"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/analysis_summary.json",
+          "sha256": "9a51cda6803ad0cf8fd3fe89ba1cb8be9a229e6650917cc3ce3d76a67717c202"
         }
       ]
     },
     {
+      "data_series": [
+        "operation_duration",
+        "workload_latency_ms",
+        "workload_availability_percent",
+        "cluster_slot_role_counts"
+      ],
       "kind": "html",
       "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/index.html",
       "source_artifacts": [
@@ -65,10 +123,36 @@
         {
           "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/cleanup_report_30.json",
           "sha256": "212cef7802e3c36564296e4f5240b2e7d843e6228d125f372e343a370bd97cb0"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/operation_event.jsonl",
+          "sha256": "a99a0dfdbc2dd6ce3bdd40c714681ba16e821700e93643f669d54b336a766c14"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/metrics_window.jsonl",
+          "sha256": "abe180d13e6815a86cb0d0f802a0faf6efc9ecc359644915aea4fb173046426f"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/workload_window.jsonl",
+          "sha256": "85eb87273f4266b4765354c2090d5dcdfcd31c26f2ab896a143d7ba5a03bb441"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/capability_matrix.json",
+          "sha256": "f0aa593a4c45b96e1069233461b6927a32ee5a85251a66f71d84990a5163063f"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/analysis_summary.json",
+          "sha256": "9a51cda6803ad0cf8fd3fe89ba1cb8be9a229e6650917cc3ce3d76a67717c202"
         }
       ]
     },
     {
+      "data_series": [
+        "operation_duration",
+        "workload_latency_ms",
+        "workload_availability_percent",
+        "cluster_slot_role_counts"
+      ],
       "kind": "chart",
       "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/lifecycle_timeline.svg",
       "source_artifacts": [
@@ -87,6 +171,26 @@
         {
           "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/cleanup_report_30.json",
           "sha256": "212cef7802e3c36564296e4f5240b2e7d843e6228d125f372e343a370bd97cb0"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/operation_event.jsonl",
+          "sha256": "a99a0dfdbc2dd6ce3bdd40c714681ba16e821700e93643f669d54b336a766c14"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/metrics_window.jsonl",
+          "sha256": "abe180d13e6815a86cb0d0f802a0faf6efc9ecc359644915aea4fb173046426f"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/workload_window.jsonl",
+          "sha256": "85eb87273f4266b4765354c2090d5dcdfcd31c26f2ab896a143d7ba5a03bb441"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/capability_matrix.json",
+          "sha256": "f0aa593a4c45b96e1069233461b6927a32ee5a85251a66f71d84990a5163063f"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/analysis_summary.json",
+          "sha256": "9a51cda6803ad0cf8fd3fe89ba1cb8be9a229e6650917cc3ce3d76a67717c202"
         }
       ]
     }

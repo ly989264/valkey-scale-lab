@@ -56,7 +56,7 @@
         "properties": {
           "path": {"type": "string", "minLength": 1},
           "sha256": {"type": "string", "minLength": 64},
-          "role": {"type": "string", "enum": ["html_report", "csv_view", "visualization", "json_index", "json_source"]},
+          "role": {"type": "string", "enum": ["html_report", "markdown_report", "csv_view", "visualization", "json_index", "json_source"]},
           "source_of_truth": {"type": "boolean", "const": false},
           "source_artifacts": {
             "type": "array",

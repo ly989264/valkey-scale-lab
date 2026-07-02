@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML15B_RESHARD_SLOTS_30",
   "status": "PASS",
-  "created_at": "2026-07-02T10:47:58.213858Z",
+  "created_at": "2026-07-02T12:02:22.494354Z",
   "checks": [
     {
       "name": "manifest",

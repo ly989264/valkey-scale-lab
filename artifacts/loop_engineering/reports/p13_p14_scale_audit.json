@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "p13_p14_scale_audit",
-  "created_at": "2026-07-01T03:30:45.784459Z",
+  "created_at": "2026-07-02T12:02:23.341473Z",
   "producer": {
     "name": "scripts/audit_p13_p14_scale.py",
     "version": "v1"
@@ -29,7 +29,7 @@
         "scenario": "scale_50",
         "status": "PASS",
         "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
-        "evidence_sha256": "a04bf652e7b32496bd0d2b97f08212d3c477ac92505f4e19677bfd5746cda037",
+        "evidence_sha256": "6fd65c120e88d47c08a8c4aa003363c0cbdf0fd47175e59b02d7a4ca2cbf2be0",
         "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "scale_rung_path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_50.json",
         "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_50.json",
@@ -103,7 +103,7 @@
         "scenario": "scale_100",
         "status": "PASS",
         "evidence_path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
-        "evidence_sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de",
+        "evidence_sha256": "5d3ae8cda007539b7fcbc05093353ae2b9e284bdf8267d3e4bebd58c2f27fb0e",
         "timing_path": "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
         "scale_rung_path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_rung_100.json",
         "cleanup_path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report_scale_100.json",
@@ -186,11 +186,8 @@
       "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json",
       "status": "PASS",
       "finding_ids": [],
-      "historical_finding_ids": [
-        "P13P14-0001",
-        "P13P14-0002"
-      ],
-      "historical_drift_allowed": true
+      "historical_finding_ids": [],
+      "historical_drift_allowed": false
     },
     "optimization_artifacts": {
       "classified_separately": true,
@@ -236,42 +233,42 @@
         "schema_path": "schemas/artifact/resource_preflight.schema.json",
         "exists": true,
         "status": "PASS",
-        "sha256": "ec3b330d8c39f76fefe962789c89cad2b8ace0fa182d04862942a1b644ca73c5"
+        "sha256": "981a4ff76ba0731c0b1e2d9d0d395b395a664f3984819cacd1819993991c4f3b"
       },
       {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/resource_preflight_100.json",
         "schema_path": "schemas/artifact/resource_preflight.schema.json",
         "exists": true,
         "status": "PASS",
-        "sha256": "270389fb0c89ebba805129e9f6963f48c9a1a531fe31d0c8de69df484446100c"
+        "sha256": "21b66334abb13c11f0c46e7c562beb6df057c1fbe323f522e6ce03daa2aa9abd"
       },
       {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_50.json",
         "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
         "exists": true,
         "status": "PASS",
-        "sha256": "a04bf652e7b32496bd0d2b97f08212d3c477ac92505f4e19677bfd5746cda037"
+        "sha256": "6fd65c120e88d47c08a8c4aa003363c0cbdf0fd47175e59b02d7a4ca2cbf2be0"
       },
       {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/valkey_e2e_evidence_100.json",
         "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
         "exists": true,
         "status": "PASS",
-        "sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de"
+        "sha256": "5d3ae8cda007539b7fcbc05093353ae2b9e284bdf8267d3e4bebd58c2f27fb0e"
       },
       {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "schema_path": "schemas/artifact/scale_ladder_report.schema.json",
         "exists": true,
         "status": "PASS",
-        "sha256": "8f361663f6ccf6bfbb81189c7f8e5276d07ab0a8826fbbf07d2e7ff6abeadfe5"
+        "sha256": "36d0603c8ca77e113c1a5a3071e99ab556b7352743b85407a49b3431546a8fd6"
       },
       {
         "path": "artifacts/phases/P13_SCALE_LADDER_50_100/cleanup_report.json",
         "schema_path": "schemas/artifact/cleanup_report.schema.json",
         "exists": true,
         "status": "PASS",
-        "sha256": "93117cbfdb86afdf23648e4b923c85c97e93acce7083db97e258558c2f349bb0"
+        "sha256": "b998333f71ee9be2e28d9a9072129d92824a1272858fc1cfb29ba038b9ce5434"
       }
     ]
   },
@@ -292,30 +289,5 @@
     "finding_ids": [],
     "reason": "P14 is opt-in dry-run/resource/planner only and was not executed by L04."
   },
-  "findings": [
-    {
-      "id": "P13P14-0001",
-      "severity": "medium",
-      "category": "p13_historical_manifest_drift",
-      "classification": "historical",
-      "blocking": false,
-      "description": "P13 gate result has allowlisted legacy manifest SHA drift",
-      "evidence": [
-        "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8"
-      ]
-    },
-    {
-      "id": "P13P14-0002",
-      "severity": "medium",
-      "category": "p13_historical_command_drift",
-      "classification": "historical",
-      "blocking": false,
-      "description": "P13 scale_tests command drift is historical and explicitly recorded",
-      "evidence": [
-        "python3 -m pytest -q tests/unit tests/scale tests/integration",
-        "python3 -m pytest -q tests/unit tests/scale tests/integration -m 'not slow and not perf'"
-      ]
-    }
-  ]
+  "findings": []
 }

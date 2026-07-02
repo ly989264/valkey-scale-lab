@@ -59,6 +59,8 @@ def test_renderer_emits_required_outputs_and_schema_valid_index(tmp_path: Path) 
     assert all(report["source_of_truth"] is False for report in index["reports"])
     assert any(source["path"].endswith("coverage_matrix.json") for source in index["source_artifacts"])
     assert any(source["path"].endswith("provenance_graph.json") for source in index["source_artifacts"])
+    assert any(source["path"].endswith("CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/lifecycle_matrix_report_30.json") for source in index["source_artifacts"])
+    assert sum(1 for report in index["reports"] if "artifacts/capability_matrix_loop/CML15" in report["path"]) == 25
 
     html = (tmp_path / "index.html").read_text(encoding="utf-8")
     assert "Valkey Scale Lab Audit Report" in html
@@ -67,6 +69,9 @@ def test_renderer_emits_required_outputs_and_schema_valid_index(tmp_path: Path) 
     assert "p13_timing_waterfall.svg" in html
     assert "Stability soak profiles" in html
     assert "artifacts/loop_engineering/reports/stability_soak_metrics.json" in html
+    assert "CML15 Lifecycle Matrix" in html
+    assert "CML15E_LIFECYCLE_MATRIX_REPORT_30 / lifecycle_timeline.svg" in html
+    assert "CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/lifecycle_timeline.svg" in html
 
 
 def test_coverage_matrix_csv_matches_source_entries(tmp_path: Path) -> None:

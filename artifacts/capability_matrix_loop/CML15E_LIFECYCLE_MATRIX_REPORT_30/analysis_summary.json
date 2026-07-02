@@ -5,11 +5,41 @@
   "stage_id": "CML15E_LIFECYCLE_MATRIX_REPORT_30",
   "status": "PASS",
   "summary": {
-    "delta": 0,
-    "error_rate": 0,
-    "latency_delta": 0,
-    "qps_drop_ratio": 0,
+    "after_p95_ms": 0.0,
+    "before_p95_ms": 0.0,
+    "delta": 0.0,
+    "during_p95_ms": 0.0,
+    "error_rate": 0.0,
+    "latency_delta": 0.0,
+    "metrics_window_count": 6,
+    "min_availability_percent": 100.0,
+    "operation_durations_seconds": {
+      "add_node": 0.077456,
+      "rebalance_slots": 0.051261,
+      "remove_node": 1.125269,
+      "reshard_slots": 0.072206,
+      "rolling_restart": 0.637876
+    },
+    "qps_drop_ratio": 0.0,
+    "role_counts": {
+      "nodes_observed": 30,
+      "primary_count": 15,
+      "replica_count": 15
+    },
     "sample_coverage": 1.0,
-    "unavailable_ms": 0
+    "slot_coverage": {
+      "cluster_state": "ok",
+      "slots_assigned": 16384,
+      "slots_fail": 0
+    },
+    "target_operations": [
+      "add_node",
+      "rebalance_slots",
+      "remove_node",
+      "reshard_slots",
+      "rolling_restart"
+    ],
+    "unavailable_ms": 0,
+    "workload_window_count": 6
   }
 }

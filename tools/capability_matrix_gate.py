@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -2198,6 +2199,58 @@ CML15_STAGE_TARGETS = {
     "CML15D_ROLLING_RESTART_ONE_PRIMARY_30": {"rolling_restart"},
 }
 
+CML15_REQUIRED_REPORT_SERIES = {"operation_duration", "workload_latency_ms", "workload_availability_percent", "cluster_slot_role_counts"}
+
+
+def _cml15_report_by_kind(report_index: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {str(report.get("kind")): report for report in report_index.get("reports", []) if isinstance(report, dict)}
+
+
+def _cml15_validate_enhanced_reports(stage_id: str, report_index: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    by_kind = _cml15_report_by_kind(report_index)
+    for kind, report in by_kind.items():
+        series = set(report.get("data_series", []))
+        missing = sorted(CML15_REQUIRED_REPORT_SERIES - series)
+        if missing:
+            errors.append(f"{stage_id} {kind} report missing enhanced data_series: {missing}")
+
+    csv_report = by_kind.get("csv", {})
+    csv_path = ROOT / str(csv_report.get("path", ""))
+    if csv_path.exists():
+        with csv_path.open("r", encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+        if not rows:
+            errors.append(f"{stage_id} enhanced csv report has no data rows")
+        csv_groups = {row.get("metric_group") for row in rows}
+        missing_groups = sorted(CML15_REQUIRED_REPORT_SERIES - csv_groups)
+        if missing_groups:
+            errors.append(f"{stage_id} enhanced csv missing metric groups: {missing_groups}")
+        required_columns = {"metric_group", "window_id", "metric_name", "value", "unit", "source_path"}
+        if rows and set(rows[0]) != required_columns:
+            errors.append(f"{stage_id} enhanced csv columns mismatch")
+
+    html_report = by_kind.get("html", {})
+    html_path = ROOT / str(html_report.get("path", ""))
+    if html_path.exists():
+        html_text = html_path.read_text(encoding="utf-8")
+        if 'data-cml15-report="enhanced"' not in html_text:
+            errors.append(f"{stage_id} html report missing enhanced marker")
+        for series in CML15_REQUIRED_REPORT_SERIES:
+            if series not in html_text:
+                errors.append(f"{stage_id} html report missing section for {series}")
+
+    chart_report = by_kind.get("chart", {})
+    chart_path = ROOT / str(chart_report.get("path", ""))
+    if chart_path.exists():
+        chart_text = chart_path.read_text(encoding="utf-8")
+        if 'data-cml15-chart="enhanced"' not in chart_text:
+            errors.append(f"{stage_id} chart report missing enhanced marker")
+        for phrase in ["Operation duration", "p95 latency", "Availability percent", "Slot coverage and roles"]:
+            if phrase not in chart_text:
+                errors.append(f"{stage_id} chart report missing {phrase}")
+    return errors
+
 
 def _cml15_validate_common_jsonl(stage_id: str, paths: dict[str, Path]) -> list[str]:
     errors: list[str] = []
@@ -2225,6 +2278,7 @@ def _cml15_validate_common_jsonl(stage_id: str, paths: dict[str, Path]) -> list[
         if not (ROOT / str(report.get("path", ""))).exists():
             errors.append(f"{stage_id} report path missing: {report.get('path')}")
         errors.extend(source_checksum_errors(report.get("source_artifacts", []), f"{stage_id} report {report.get('kind')}"))
+    errors.extend(_cml15_validate_enhanced_reports(stage_id, report_index))
     return errors
 
 

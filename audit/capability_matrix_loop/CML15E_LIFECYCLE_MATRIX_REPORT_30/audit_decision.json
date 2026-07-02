@@ -10,7 +10,7 @@
   "decision": "PASS",
   "fresh_context": true,
   "gate_result_path": "artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/validation/current_stage_gate_result.json",
-  "gate_result_sha256": "9e638f225b9ffc30402e9f029b993b8aefb0eba4d7d16039bcf12ca01a9a74f7",
+  "gate_result_sha256": "aa43144383b6deea65caab2b68389e1c7369a7983eff0c17bb471992d9cdb54c",
   "schema_version": "v1",
   "stage_id": "CML15E_LIFECYCLE_MATRIX_REPORT_30"
 }

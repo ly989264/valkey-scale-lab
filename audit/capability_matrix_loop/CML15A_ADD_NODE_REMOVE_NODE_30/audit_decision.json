@@ -1,19 +1,20 @@
 {
   "artifact_paths": [
     "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/lifecycle_evidence_30.json",
-    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/before_snapshot.json",
     "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/operation_command_trace.jsonl",
-    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/after_convergence.json",
-    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/slot_coverage.json",
-    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/role_counts.json",
     "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/workload_window_report_30.json",
-    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/cleanup_report_30.json"
+    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/cleanup_report_30.json",
+    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/operation_event.jsonl",
+    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/metrics_window.jsonl",
+    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/workload_window.jsonl",
+    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/capability_matrix.json",
+    "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/analysis_summary.json"
   ],
   "blocking_findings": [],
   "decision": "PASS",
   "fresh_context": true,
   "gate_result_path": "artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/validation/current_stage_gate_result.json",
-  "gate_result_sha256": "d471c7f736fa229479d2cea3a836265a624588eb578f722dc270941c76a8dba0",
+  "gate_result_sha256": "48e29111031719a8f79c62fa67d560982c6bb91335764d32bbfcb2ceb3cd41d9",
   "schema_version": "v1",
   "stage_id": "CML15A_ADD_NODE_REMOVE_NODE_30"
 }

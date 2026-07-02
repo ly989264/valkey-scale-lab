@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML15C_REBALANCE_SLOTS_30",
   "status": "PASS",
-  "created_at": "2026-07-02T10:47:58.347733Z",
+  "created_at": "2026-07-02T12:02:22.596501Z",
   "checks": [
     {
       "name": "manifest",

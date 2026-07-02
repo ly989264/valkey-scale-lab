@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "audit_report",
-  "created_at": "2026-07-01T03:30:19.940843Z",
+  "created_at": "2026-07-02T12:02:22.872277Z",
   "producer": {
     "name": "scripts/audit_committed_artifacts.py",
     "version": "v1"
@@ -40,7 +40,7 @@
     "artifact_count": 59,
     "gate_result_count": 14,
     "blocking_findings_count": 0,
-    "historical_findings_count": 15,
+    "historical_findings_count": 0,
     "real_evidence_count": 13
   },
   "phase_results": [
@@ -52,10 +52,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": false,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0001"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P01_CONFIG_SCHEMA",
@@ -65,10 +63,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": false,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0002"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P02_PLANNER",
@@ -78,10 +74,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": false,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0003"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P03_LOCAL_DOCKER_VALKEY",
@@ -91,10 +85,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0004"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
@@ -104,10 +96,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0005"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P05_WORKLOAD_ENGINE",
@@ -117,10 +107,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0006"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P06_OBSERVABILITY_METRICS",
@@ -130,13 +118,12 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
+      "historical_findings": 0,
       "finding_ids": [
-        "CAF-0007",
-        "CAF-0008",
-        "CAF-0009",
-        "CAF-0010",
-        "CAF-0011"
+        "CAF-0001",
+        "CAF-0002",
+        "CAF-0003",
+        "CAF-0004"
       ]
     },
     {
@@ -147,10 +134,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0012"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
@@ -160,10 +145,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0013"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P09_ANALYSIS_REPORTING",
@@ -173,10 +156,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0014"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
@@ -186,10 +167,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0015"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P11_STABILITY_SOAK",
@@ -199,10 +178,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0016"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P12_SCALE_LADDER_10_30",
@@ -212,10 +189,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 1,
-      "finding_ids": [
-        "CAF-0017"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     },
     {
       "phase_id": "P13_SCALE_LADDER_50_100",
@@ -225,11 +200,8 @@
       "gate_result_checked": true,
       "real_evidence_checked": true,
       "blocking_findings": 0,
-      "historical_findings": 2,
-      "finding_ids": [
-        "CAF-0018",
-        "CAF-0019"
-      ]
+      "historical_findings": 0,
+      "finding_ids": []
     }
   ],
   "artifact_results": [
@@ -369,7 +341,7 @@
       "schema_path": "schemas/artifact/config_schema_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "0744004e7886752af4f5de5dfea6c2e2b8b9e4512bf6c9e61b9622c9c2f0f14c",
+      "sha256": "a7e6b94b3d8c7004f370fb03b46d9b1f6b0af3e354ffb9df2612ca23f62e9ecb",
       "metadata": {
         "artifact_type": "config_schema_report",
         "phase_id": "P01_CONFIG_SCHEMA",
@@ -419,7 +391,7 @@
       "schema_path": "schemas/artifact/cluster_plan.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "018819974e17942684762cdd9c7155634ba1cdb424bfc2a0af078ef44e815fd0",
+      "sha256": "7fa82dd691f6e61f0db6f1a0ff61da411c89d5efa1f35ac5f422b02aa12aaf8b",
       "metadata": {
         "artifact_type": "cluster_plan",
         "phase_id": "P02_PLANNER",
@@ -444,7 +416,7 @@
       "schema_path": "schemas/artifact/cluster_plan.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "6531601a7045895e8d35595120d640425b0deaeeb7c505ec4b84d116815a7564",
+      "sha256": "ce38e6ec5fd30b8490803a9676bd6aa4e604c473c56280619c0bdc2e7266aeef",
       "metadata": {
         "artifact_type": "cluster_plan",
         "phase_id": "P02_PLANNER",
@@ -494,7 +466,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "8cd3c251a3c8a2eee29192dc40a7894e7d501234cfba6e4f79f817f84110e3f2",
+      "sha256": "e7f4b34cf10e497842de53dd43775e398b961f5e123f9c01b8d8ac10db879f65",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P03_LOCAL_DOCKER_VALKEY",
@@ -519,7 +491,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "f2cdb8c3fc890e0781a1c3a374f336a0a91c2cea2af542d374e505b5df98130f",
+      "sha256": "4f37ee3c40f8c18e6b228e24b9812e48b70ef4680fcb4e3d367645b8226b4d56",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P03_LOCAL_DOCKER_VALKEY",
@@ -569,7 +541,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "044eb58c0117081fcda4e07cf80fd5c9c8aa7eb2b7ea9a2dcd490bcc6e3394f8",
+      "sha256": "2bcf1aaaebec6758d0de9e146c6c7c6bacee168fd14b6576694922956fed447b",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
@@ -594,7 +566,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "aa52298dd6e64ffd110b8cac0f5e06dc5bd36e53927689e13950c45dcdb8e943",
+      "sha256": "626725641bd95dbaabe1481b82befda5ce6c29016f79b0d7fd7a0681a8c61092",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
@@ -619,7 +591,7 @@
       "schema_path": "schemas/artifact/management_ops_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "2ce4d733b9a0338ccfe4940eb7b6f0e0b116d961411f849794b0c4f5074d61bb",
+      "sha256": "3457e2b2e04b8ced543708158b2d10041f4aab6765963992df905f69aa3eef74",
       "metadata": {
         "artifact_type": "management_ops_report",
         "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
@@ -669,7 +641,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "4f3a7938e5077cc8848c66e4a7ea3b96b3a9b45ff192dff1468164a26c2e06a2",
+      "sha256": "b0f5506127feaa3d8a26d8a926af7fa54fe0f11c0fa7ebe95b297660c63288de",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P05_WORKLOAD_ENGINE",
@@ -694,7 +666,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "6705eb8287dba84212ea2c266e3489c7303aefe70dcee812cc9508b39bc0b304",
+      "sha256": "43e807ec4dc7e85f9d097c809da09b86639cc3c086e95d76e001b7c47455134b",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P05_WORKLOAD_ENGINE",
@@ -719,7 +691,7 @@
       "schema_path": "schemas/artifact/workload_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "dc2d9fcc9fbf5d2e74ff0d629099039cec8ec6f34903329913486ac756a722c7",
+      "sha256": "f672702c2d0ea7a7cfc4462bd0212b24d0d355136e22bab35e71e00b746b6ab2",
       "metadata": {
         "artifact_type": "workload_report",
         "phase_id": "P05_WORKLOAD_ENGINE",
@@ -769,7 +741,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "b89d370587e9ad095c0d8122a58d78bf5bf1eae3703d600bac4f21c83ea29806",
+      "sha256": "d44026d35c3f15e317c9b0fd74749b8437a00b2a274ce04ed3b509651a486c65",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P06_OBSERVABILITY_METRICS",
@@ -794,7 +766,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "3094cf2f7e7ec5dc8913a638f5074b36eacca57471714dcd27364cd4f9b0828d",
+      "sha256": "d18b8891764b2132f7d634568df03222c7c650d3b01c41bd97e9d02464e3c3f1",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P06_OBSERVABILITY_METRICS",
@@ -819,7 +791,7 @@
       "schema_path": "schemas/artifact/metric_sample.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "3138cf6cfbc696181a0334b0708733cf884f23ab886a380df54842a7af7dbf61",
+      "sha256": "4f3327f12febec5df639c42913d546b5ac639924a68d5e347ca239fbf0af5970",
       "metadata": {
         "artifact_type": "metric_sample",
         "phase_id": "P06_OBSERVABILITY_METRICS",
@@ -832,8 +804,8 @@
         "status": null
       },
       "finding_ids": [
-        "CAF-0008",
-        "CAF-0009"
+        "CAF-0001",
+        "CAF-0002"
       ]
     },
     {
@@ -860,8 +832,8 @@
         "status": null
       },
       "finding_ids": [
-        "CAF-0010",
-        "CAF-0011"
+        "CAF-0003",
+        "CAF-0004"
       ]
     },
     {
@@ -900,7 +872,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "156f0b11fcb9d4bc25d9e3c92cbbd3f79cfc9bb9c43dde1b91ea335650d2bf71",
+      "sha256": "e78f8a31454227347918a2a9e2a41e886e29a98a88a9e00761eaf01b37fb96ca",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P07_FAULT_INJECTION_SANDBOX",
@@ -925,7 +897,7 @@
       "schema_path": "schemas/artifact/fault_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "6071f35974b9d619cd7d33c94b226876b256ce5a00d53050c308d85f5436b8a9",
+      "sha256": "3c3ddb5256c53fcdbf3a994ae151aa8fc78c80d02580871f70ad1712cd36e481",
       "metadata": {
         "artifact_type": "fault_report",
         "phase_id": "P07_FAULT_INJECTION_SANDBOX",
@@ -950,7 +922,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "863cbc9aabed2b3daacc4cd6d9b9ad892b26526168f0da56250e40518002c27a",
+      "sha256": "6ccb627921fcfe34db0f9f97b551c9f5ae1048020858030aed9840d7ec543760",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P07_FAULT_INJECTION_SANDBOX",
@@ -1000,7 +972,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "27338a03eb687bb4aef85b5c8a673bece51b87a00051f91c1215fd2ea4adf7d8",
+      "sha256": "fb72b4e6f50e1ea70addef4142a5f53464d508323dd909d43182722ff7bfbaf7",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
@@ -1025,7 +997,7 @@
       "schema_path": "schemas/artifact/failover_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "f11772a63e7817ce0156c39c69de8d97f398fe7c4d56b4a68d23ec5bf6a31064",
+      "sha256": "0f4596f8c2153d8572172752f33a4093d78ee138a317ca3bc7e4b27bd4b19114",
       "metadata": {
         "artifact_type": "failover_report",
         "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
@@ -1100,7 +1072,7 @@
       "schema_path": "schemas/artifact/analysis_summary.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "8b5e206d6ea563b4fc3e01dddaf937d649680d1b2e3426b1f75408c7f685f950",
+      "sha256": "f4d23242efaaee1a25373dcf89a445c64fc490c7185b1bbf20cd80610effb174",
       "metadata": {
         "artifact_type": "analysis_summary",
         "phase_id": "P09_ANALYSIS_REPORTING",
@@ -1125,7 +1097,7 @@
       "schema_path": "schemas/artifact/report_index.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "3e0a060009e9d82769acc9aab1d536a77f4bd87270316a82beff9f45b8515f1c",
+      "sha256": "b32a6da793ae78bcc2eddcf8645ffdfa9f63a2ea681f21fadd11237f4baf8fb7",
       "metadata": {
         "artifact_type": "report_index",
         "phase_id": "P09_ANALYSIS_REPORTING",
@@ -1150,7 +1122,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "8aefa987218e7e2e40d07fa8b221857816ca13f63cbbef6f454c070b6891ffb6",
+      "sha256": "ed5f9442c22b9dbc6f47bc0936eee94984e11e88967723ab26ff3544ecb95a7d",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P09_ANALYSIS_REPORTING",
@@ -1175,7 +1147,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "571830067022cee3850af26ef7046e33590873538a76b610248552917e8a11e5",
+      "sha256": "c2ba7993b0444111586228aa1f57aeba44eb5b391e0a0c7e15b2d99d9628fdc9",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P09_ANALYSIS_REPORTING",
@@ -1225,7 +1197,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "592850f67f68236330d756f68164007899ac300f1f4daa76065aa3617c24519a",
+      "sha256": "7e87ef96574ffbe59170957bbe0ef7283738444ba976d83712e3eac5102f1226",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
@@ -1250,7 +1222,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "7dc3eb5105290fe9ece6b99b524cdb59cc5ace5e786b467dad87bc7666930f8d",
+      "sha256": "925ec8b2a2352a0d5f9aecac1767158385aa72a780e859e7b4a420d686a16ca1",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
@@ -1300,7 +1272,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "b228e61454a00a9211975d097f45462969c0495e7ad555204e9c54418f1b4e4e",
+      "sha256": "ad63a7f58ac7d71b5a66fda1df70ede0ccc96cfceeee7d74fc354ca548e78d74",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P11_STABILITY_SOAK",
@@ -1325,7 +1297,7 @@
       "schema_path": "schemas/artifact/stability_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "b7cb60f9a4ac7a65cd4e3bcf216de5dd8089ca1562cbc27ce2ef75859d903140",
+      "sha256": "c811bbad191769a34e4158d68ead1fa67c53a04487fb4a4c5a381d33a57520b3",
       "metadata": {
         "artifact_type": "stability_report",
         "phase_id": "P11_STABILITY_SOAK",
@@ -1350,7 +1322,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "471abc06fe4992da3411b4fce0f16dddaca12442fbd9c1ef8206b552fe1c5551",
+      "sha256": "c5e1bedbbabd71cb1bc6d89daeadcb0878b9408f5fa55a1cc66a4db1847dfa6e",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P11_STABILITY_SOAK",
@@ -1400,7 +1372,7 @@
       "schema_path": "schemas/artifact/resource_preflight.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "cc06d0e7373a5992e0b48e09198caae6dd0c53cad4ded8e1dc1f33518b47780d",
+      "sha256": "cbeff53a23ab72977327b27db2f722f007dca90b90c811938ea8147dae12da4e",
       "metadata": {
         "artifact_type": "resource_preflight",
         "phase_id": "P12_SCALE_LADDER_10_30",
@@ -1425,7 +1397,7 @@
       "schema_path": "schemas/artifact/resource_preflight.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "8acb354c3c6cd1d948ec4fa630abaebb7b821914937e8fe25c3f732e11bbe89d",
+      "sha256": "5be446adc19969350c7f701e25ae4e32a6af39e3ffc256b8bb5ff221bd516992",
       "metadata": {
         "artifact_type": "resource_preflight",
         "phase_id": "P12_SCALE_LADDER_10_30",
@@ -1450,7 +1422,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "42bb0f2b27d459b2c61248c91b45e471d224f86da745c347d2e90c5f9134ca0c",
+      "sha256": "eada8838216509eb4b6d17ca1165601c2f99e7747e43c98cb926adba6dc537e3",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P12_SCALE_LADDER_10_30",
@@ -1475,7 +1447,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "7d46291b11c0e6dc240b619e8d8aeda08d07d6be0fa0ab63bd41ef693ade11a1",
+      "sha256": "ee29c32a9a701e94574981b9d5328b4f9e11d3117d7e5cc919b00d71b0587e00",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P12_SCALE_LADDER_10_30",
@@ -1500,7 +1472,7 @@
       "schema_path": "schemas/artifact/scale_ladder_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "88753908cb280048eb656ebdd8ea7208f2f7e6c5f650d4a1c202bd1cc7562230",
+      "sha256": "922211db64ebeaedc9b24bd978f51a156736a5d3f4434bf550501c1640a1622c",
       "metadata": {
         "artifact_type": "scale_ladder_report",
         "phase_id": "P12_SCALE_LADDER_10_30",
@@ -1525,7 +1497,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "bff1dcdd8caf72234aa27fad4564b017743cdd58468e975386317752789027a7",
+      "sha256": "f35d383b668b15644c0a6b1c22415702548788b877f81e05eb8ccacecc918c77",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P12_SCALE_LADDER_10_30",
@@ -1575,7 +1547,7 @@
       "schema_path": "schemas/artifact/resource_preflight.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "ec3b330d8c39f76fefe962789c89cad2b8ace0fa182d04862942a1b644ca73c5",
+      "sha256": "981a4ff76ba0731c0b1e2d9d0d395b395a664f3984819cacd1819993991c4f3b",
       "metadata": {
         "artifact_type": "resource_preflight",
         "phase_id": "P13_SCALE_LADDER_50_100",
@@ -1600,7 +1572,7 @@
       "schema_path": "schemas/artifact/resource_preflight.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "270389fb0c89ebba805129e9f6963f48c9a1a531fe31d0c8de69df484446100c",
+      "sha256": "21b66334abb13c11f0c46e7c562beb6df057c1fbe323f522e6ce03daa2aa9abd",
       "metadata": {
         "artifact_type": "resource_preflight",
         "phase_id": "P13_SCALE_LADDER_50_100",
@@ -1625,7 +1597,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "a04bf652e7b32496bd0d2b97f08212d3c477ac92505f4e19677bfd5746cda037",
+      "sha256": "6fd65c120e88d47c08a8c4aa003363c0cbdf0fd47175e59b02d7a4ca2cbf2be0",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P13_SCALE_LADDER_50_100",
@@ -1650,7 +1622,7 @@
       "schema_path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "ae1d32d7a3424803d79fe64812590795e69e582b1771911888efe2f1809d75de",
+      "sha256": "5d3ae8cda007539b7fcbc05093353ae2b9e284bdf8267d3e4bebd58c2f27fb0e",
       "metadata": {
         "artifact_type": "valkey_e2e_evidence",
         "phase_id": "P13_SCALE_LADDER_50_100",
@@ -1675,7 +1647,7 @@
       "schema_path": "schemas/artifact/scale_ladder_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "8f361663f6ccf6bfbb81189c7f8e5276d07ab0a8826fbbf07d2e7ff6abeadfe5",
+      "sha256": "36d0603c8ca77e113c1a5a3071e99ab556b7352743b85407a49b3431546a8fd6",
       "metadata": {
         "artifact_type": "scale_ladder_report",
         "phase_id": "P13_SCALE_LADDER_50_100",
@@ -1700,7 +1672,7 @@
       "schema_path": "schemas/artifact/cleanup_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "93117cbfdb86afdf23648e4b923c85c97e93acce7083db97e258558c2f349bb0",
+      "sha256": "b998333f71ee9be2e28d9a9072129d92824a1272858fc1cfb29ba038b9ce5434",
       "metadata": {
         "artifact_type": "cleanup_report",
         "phase_id": "P13_SCALE_LADDER_50_100",
@@ -1722,15 +1694,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0001"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P01_CONFIG_SCHEMA",
@@ -1738,15 +1706,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0002"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P02_PLANNER",
@@ -1754,15 +1718,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0003"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P03_LOCAL_DOCKER_VALKEY",
@@ -1770,15 +1730,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0004"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
@@ -1786,15 +1742,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0005"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P05_WORKLOAD_ENGINE",
@@ -1802,15 +1754,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0006"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P06_OBSERVABILITY_METRICS",
@@ -1818,15 +1766,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0007"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P07_FAULT_INJECTION_SANDBOX",
@@ -1834,15 +1778,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0012"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
@@ -1850,15 +1790,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0013"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P09_ANALYSIS_REPORTING",
@@ -1866,15 +1802,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0014"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
@@ -1882,15 +1814,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0015"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P11_STABILITY_SOAK",
@@ -1898,15 +1826,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0016"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P12_SCALE_LADDER_10_30",
@@ -1914,15 +1838,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "command_mismatches": [],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0017"
-      ]
+      "historical_drift": [],
+      "finding_ids": []
     },
     {
       "phase_id": "P13_SCALE_LADDER_50_100",
@@ -1930,22 +1850,11 @@
       "exists": true,
       "schema_valid": true,
       "status": "PASS",
-      "manifest_sha256": "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+      "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
       "expected_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "command_mismatches": [
-        {
-          "gate": "scale_tests",
-          "expected": "python3 -m pytest -q tests/unit tests/scale tests/integration -m 'not slow and not perf'",
-          "observed": "python3 -m pytest -q tests/unit tests/scale tests/integration"
-        }
-      ],
-      "historical_drift": [
-        "manifest_sha256"
-      ],
-      "finding_ids": [
-        "CAF-0018",
-        "CAF-0019"
-      ]
+      "command_mismatches": [],
+      "historical_drift": [],
+      "finding_ids": []
     }
   ],
   "p14_boundary": {
@@ -1963,111 +1872,6 @@
   "findings": [
     {
       "id": "CAF-0001",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P00_REPO_CONTRACT",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P00_REPO_CONTRACT",
-      "path": "artifacts/gates/P00_REPO_CONTRACT/gate_result.json"
-    },
-    {
-      "id": "CAF-0002",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P01_CONFIG_SCHEMA",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P01_CONFIG_SCHEMA",
-      "path": "artifacts/gates/P01_CONFIG_SCHEMA/gate_result.json"
-    },
-    {
-      "id": "CAF-0003",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P02_PLANNER",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P02_PLANNER",
-      "path": "artifacts/gates/P02_PLANNER/gate_result.json"
-    },
-    {
-      "id": "CAF-0004",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P03_LOCAL_DOCKER_VALKEY",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P03_LOCAL_DOCKER_VALKEY",
-      "path": "artifacts/gates/P03_LOCAL_DOCKER_VALKEY/gate_result.json"
-    },
-    {
-      "id": "CAF-0005",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P04_CLUSTER_MANAGEMENT_OPS",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
-      "path": "artifacts/gates/P04_CLUSTER_MANAGEMENT_OPS/gate_result.json"
-    },
-    {
-      "id": "CAF-0006",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P05_WORKLOAD_ENGINE",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P05_WORKLOAD_ENGINE",
-      "path": "artifacts/gates/P05_WORKLOAD_ENGINE/gate_result.json"
-    },
-    {
-      "id": "CAF-0007",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P06_OBSERVABILITY_METRICS",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P06_OBSERVABILITY_METRICS",
-      "path": "artifacts/gates/P06_OBSERVABILITY_METRICS/gate_result.json"
-    },
-    {
-      "id": "CAF-0008",
       "severity": "low",
       "category": "missing_producer",
       "classification": "informational",
@@ -2080,7 +1884,7 @@
       "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl"
     },
     {
-      "id": "CAF-0009",
+      "id": "CAF-0002",
       "severity": "low",
       "category": "missing_status",
       "classification": "informational",
@@ -2093,7 +1897,7 @@
       "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl"
     },
     {
-      "id": "CAF-0010",
+      "id": "CAF-0003",
       "severity": "low",
       "category": "missing_producer",
       "classification": "informational",
@@ -2106,7 +1910,7 @@
       "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl"
     },
     {
-      "id": "CAF-0011",
+      "id": "CAF-0004",
       "severity": "low",
       "category": "missing_status",
       "classification": "informational",
@@ -2117,125 +1921,6 @@
       ],
       "phase_id": "P06_OBSERVABILITY_METRICS",
       "path": "artifacts/phases/P06_OBSERVABILITY_METRICS/events.jsonl"
-    },
-    {
-      "id": "CAF-0012",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P07_FAULT_INJECTION_SANDBOX",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P07_FAULT_INJECTION_SANDBOX",
-      "path": "artifacts/gates/P07_FAULT_INJECTION_SANDBOX/gate_result.json"
-    },
-    {
-      "id": "CAF-0013",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P08_FAILOVER_SPLIT_BRAIN",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
-      "path": "artifacts/gates/P08_FAILOVER_SPLIT_BRAIN/gate_result.json"
-    },
-    {
-      "id": "CAF-0014",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P09_ANALYSIS_REPORTING",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P09_ANALYSIS_REPORTING",
-      "path": "artifacts/gates/P09_ANALYSIS_REPORTING/gate_result.json"
-    },
-    {
-      "id": "CAF-0015",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P10_MULTI_HOST_ORCHESTRATION",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
-      "path": "artifacts/gates/P10_MULTI_HOST_ORCHESTRATION/gate_result.json"
-    },
-    {
-      "id": "CAF-0016",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P11_STABILITY_SOAK",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P11_STABILITY_SOAK",
-      "path": "artifacts/gates/P11_STABILITY_SOAK/gate_result.json"
-    },
-    {
-      "id": "CAF-0017",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P12_SCALE_LADDER_10_30",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P12_SCALE_LADDER_10_30",
-      "path": "artifacts/gates/P12_SCALE_LADDER_10_30/gate_result.json"
-    },
-    {
-      "id": "CAF-0018",
-      "severity": "medium",
-      "category": "manifest_sha256_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate result manifest_sha256 does not match current manifest for P13_SCALE_LADDER_50_100",
-      "evidence": [
-        "observed=87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
-        "current=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
-      ],
-      "phase_id": "P13_SCALE_LADDER_50_100",
-      "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json"
-    },
-    {
-      "id": "CAF-0019",
-      "severity": "medium",
-      "category": "gate_command_mismatch",
-      "classification": "historical",
-      "blocking": false,
-      "description": "Gate command mismatch for P13_SCALE_LADDER_50_100/scale_tests",
-      "evidence": [
-        "expected=python3 -m pytest -q tests/unit tests/scale tests/integration -m 'not slow and not perf'",
-        "observed=python3 -m pytest -q tests/unit tests/scale tests/integration"
-      ],
-      "phase_id": "P13_SCALE_LADDER_50_100",
-      "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json"
     }
   ]
 }

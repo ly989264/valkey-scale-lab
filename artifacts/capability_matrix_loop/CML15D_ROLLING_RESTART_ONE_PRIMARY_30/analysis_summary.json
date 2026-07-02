@@ -5,14 +5,33 @@
   "stage_id": "CML15D_ROLLING_RESTART_ONE_PRIMARY_30",
   "status": "PASS",
   "summary": {
-    "delta": 0,
-    "error_rate": 0,
-    "latency_delta": 0,
-    "qps_drop_ratio": 0,
+    "after_p95_ms": 62.350744,
+    "before_p95_ms": 60.581386,
+    "delta": 7.769572,
+    "during_p95_ms": 68.350958,
+    "error_rate": 0.0,
+    "latency_delta": 7.769572,
+    "metrics_window_count": 6,
+    "min_availability_percent": 100.0,
+    "operation_durations_seconds": {
+      "rolling_restart": 0.637876
+    },
+    "qps_drop_ratio": 0.633333,
+    "role_counts": {
+      "nodes_observed": 30,
+      "primary_count": 15,
+      "replica_count": 15
+    },
     "sample_coverage": 1.0,
+    "slot_coverage": {
+      "cluster_state": "ok",
+      "slots_assigned": 16384,
+      "slots_fail": 0
+    },
     "target_operations": [
       "rolling_restart"
     ],
-    "unavailable_ms": 0
+    "unavailable_ms": 0,
+    "workload_window_count": 3
   }
 }

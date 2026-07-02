@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML15D_ROLLING_RESTART_ONE_PRIMARY_30",
   "status": "PASS",
-  "created_at": "2026-07-02T10:47:58.461364Z",
+  "created_at": "2026-07-02T12:02:22.695843Z",
   "checks": [
     {
       "name": "manifest",

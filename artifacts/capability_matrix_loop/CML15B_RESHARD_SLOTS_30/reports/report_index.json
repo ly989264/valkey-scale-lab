@@ -3,6 +3,12 @@
   "created_at": "2026-07-02T00:00:00Z",
   "reports": [
     {
+      "data_series": [
+        "operation_duration",
+        "workload_latency_ms",
+        "workload_availability_percent",
+        "cluster_slot_role_counts"
+      ],
       "kind": "csv",
       "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/lifecycle_summary.csv",
       "source_artifacts": [
@@ -21,10 +27,36 @@
         {
           "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json",
           "sha256": "8382114aef74193b1bdf309f08079dc6ad4bf5b5b808c721077b752c6c783866"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_event.jsonl",
+          "sha256": "69565dffa72f8421f80b295d405f90590c522e90aac5aef5a31ed934acefef98"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/metrics_window.jsonl",
+          "sha256": "de8fb7efaedd1b30db3af8c186a8911b2bd6fc3e643b288a9c54ab23a3ab1cef"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window.jsonl",
+          "sha256": "39e2ef4860f67ebe4aa6ac04ee32d9a5dd850be4ae0ec47a338ba43ae73d8d1c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/capability_matrix.json",
+          "sha256": "584ed643e3aa816f3a7d14c10c8f884d59713da10769735b0030f6f8e08c559c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/analysis_summary.json",
+          "sha256": "82d2b0e7bf4ed88abc5cb82a6af78eeb724e877c7007047e71cea278d6113e74"
         }
       ]
     },
     {
+      "data_series": [
+        "operation_duration",
+        "workload_latency_ms",
+        "workload_availability_percent",
+        "cluster_slot_role_counts"
+      ],
       "kind": "markdown",
       "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/report.md",
       "source_artifacts": [
@@ -43,10 +75,36 @@
         {
           "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json",
           "sha256": "8382114aef74193b1bdf309f08079dc6ad4bf5b5b808c721077b752c6c783866"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_event.jsonl",
+          "sha256": "69565dffa72f8421f80b295d405f90590c522e90aac5aef5a31ed934acefef98"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/metrics_window.jsonl",
+          "sha256": "de8fb7efaedd1b30db3af8c186a8911b2bd6fc3e643b288a9c54ab23a3ab1cef"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window.jsonl",
+          "sha256": "39e2ef4860f67ebe4aa6ac04ee32d9a5dd850be4ae0ec47a338ba43ae73d8d1c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/capability_matrix.json",
+          "sha256": "584ed643e3aa816f3a7d14c10c8f884d59713da10769735b0030f6f8e08c559c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/analysis_summary.json",
+          "sha256": "82d2b0e7bf4ed88abc5cb82a6af78eeb724e877c7007047e71cea278d6113e74"
         }
       ]
     },
     {
+      "data_series": [
+        "operation_duration",
+        "workload_latency_ms",
+        "workload_availability_percent",
+        "cluster_slot_role_counts"
+      ],
       "kind": "html",
       "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/index.html",
       "source_artifacts": [
@@ -65,10 +123,36 @@
         {
           "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json",
           "sha256": "8382114aef74193b1bdf309f08079dc6ad4bf5b5b808c721077b752c6c783866"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_event.jsonl",
+          "sha256": "69565dffa72f8421f80b295d405f90590c522e90aac5aef5a31ed934acefef98"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/metrics_window.jsonl",
+          "sha256": "de8fb7efaedd1b30db3af8c186a8911b2bd6fc3e643b288a9c54ab23a3ab1cef"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window.jsonl",
+          "sha256": "39e2ef4860f67ebe4aa6ac04ee32d9a5dd850be4ae0ec47a338ba43ae73d8d1c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/capability_matrix.json",
+          "sha256": "584ed643e3aa816f3a7d14c10c8f884d59713da10769735b0030f6f8e08c559c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/analysis_summary.json",
+          "sha256": "82d2b0e7bf4ed88abc5cb82a6af78eeb724e877c7007047e71cea278d6113e74"
         }
       ]
     },
     {
+      "data_series": [
+        "operation_duration",
+        "workload_latency_ms",
+        "workload_availability_percent",
+        "cluster_slot_role_counts"
+      ],
       "kind": "chart",
       "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/lifecycle_timeline.svg",
       "source_artifacts": [
@@ -87,6 +171,26 @@
         {
           "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json",
           "sha256": "8382114aef74193b1bdf309f08079dc6ad4bf5b5b808c721077b752c6c783866"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_event.jsonl",
+          "sha256": "69565dffa72f8421f80b295d405f90590c522e90aac5aef5a31ed934acefef98"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/metrics_window.jsonl",
+          "sha256": "de8fb7efaedd1b30db3af8c186a8911b2bd6fc3e643b288a9c54ab23a3ab1cef"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window.jsonl",
+          "sha256": "39e2ef4860f67ebe4aa6ac04ee32d9a5dd850be4ae0ec47a338ba43ae73d8d1c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/capability_matrix.json",
+          "sha256": "584ed643e3aa816f3a7d14c10c8f884d59713da10769735b0030f6f8e08c559c"
+        },
+        {
+          "path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/analysis_summary.json",
+          "sha256": "82d2b0e7bf4ed88abc5cb82a6af78eeb724e877c7007047e71cea278d6113e74"
         }
       ]
     }

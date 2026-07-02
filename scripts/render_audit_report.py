@@ -5,6 +5,7 @@ import argparse
 import csv
 import html
 import json
+import os
 import shutil
 import sys
 from hashlib import sha256
@@ -104,6 +105,10 @@ def report_record(root: Path, path: Path, role: str, sources: list[str]) -> dict
         "source_of_truth": False,
         "source_artifacts": sources,
     }
+
+
+def html_link(out_dir: Path, path: Path) -> str:
+    return os.path.relpath(path.resolve(), out_dir.resolve())
 
 
 def write_coverage_csv(path: Path, coverage: dict[str, Any]) -> Path:
@@ -342,17 +347,39 @@ def write_index_html(path: Path, sources: dict[str, dict[str, Any]], reports: li
     catalog = sources["metric_catalog"]
     coverage = sources["coverage_matrix"]
     p13 = sources["p13_p14_scale_audit"]
+    cml15 = sources.get("cml15_lifecycle_matrix_report", {})
     small_real = sources.get("small_real_parity_audit", {})
     scale_build = sources.get("scale_build_metrics", {})
     fault_failover = sources.get("fault_failover_scale", {})
     stability_soak = sources.get("stability_soak_metrics", {})
     provenance = sources.get("provenance_graph", {})
+    out_dir = path.parent
     root_commit_sha = str(provenance.get("root_commit_sha", "MISSING"))
     source_rows = "\n".join(
         f"<tr><td><code>{escape(record['path'])}</code></td><td>{escape(record['artifact_type'])}</td><td>{escape(record['status'])}</td><td><code>{escape(record['sha256'][:12])}</code></td></tr>"
         for record in sources["source_records"]
     )
-    report_links = "\n".join(f'<li><a href="{escape(report.name)}">{escape(report.name)}</a></li>' for report in reports)
+    report_links = "\n".join(f'<li><a href="{escape(html_link(out_dir, report))}">{escape(report.name)}</a> <code>{escape(str(report.suffix or ""))}</code></li>' for report in reports)
+    cml15_report_paths = [Path(path_text) for path_text in sources.get("cml15_report_paths", [])]
+    cml15_links = "\n".join(
+        f'<li><a href="{escape(html_link(out_dir, report_path))}">{escape(report_path.parent.parent.name)} / {escape(report_path.name)}</a></li>'
+        for report_path in cml15_report_paths
+    )
+    cml15_rows = "\n".join(
+        "<tr>"
+        f"<td><code>{escape(entry.get('stage_id'))}</code></td>"
+        f"<td>{escape(entry.get('status'))}</td>"
+        f"<td>{escape(', '.join(entry.get('target_operations', [])))}</td>"
+        f"<td>{escape(entry.get('nodes_observed'))}</td>"
+        f"<td>{escape(entry.get('cluster_state'))}</td>"
+        f"<td>{escape(entry.get('slots_assigned'))}</td>"
+        f"<td>{escape(entry.get('slots_fail'))}</td>"
+        f"<td><code>{escape(entry.get('operation_durations'))}</code></td>"
+        "</tr>"
+        for entry in cml15.get("capabilities", [])
+    )
+    cml15_chart = next((p for p in cml15_report_paths if p.name == "lifecycle_timeline.svg" and "CML15E" in p.as_posix()), None)
+    cml15_chart_html = f'<img src="{escape(html_link(out_dir, cml15_chart))}" alt="CML15 lifecycle matrix chart">' if cml15_chart else "<p>CML15 chart missing.</p>"
     document = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -375,8 +402,14 @@ def write_index_html(path: Path, sources: dict[str, dict[str, Any]], reports: li
   <p>Scale build rungs: <code>{escape(scale_build.get("summary", {}).get("canonical_node_counts", "MISSING"))}</code>. Measured build metrics: <code>{escape(scale_build.get("summary", {}).get("measured_metric_count", "MISSING"))}</code>. Missing build metrics: <code>{escape(scale_build.get("summary", {}).get("missing_metric_count", "MISSING"))}</code>.</p>
   <p>Fault/failover rungs: <code>{escape(fault_failover.get("summary", {}).get("canonical_node_counts", "MISSING"))}</code>. Real rungs: <code>{escape(fault_failover.get("summary", {}).get("real_valkey_rung_count", "MISSING"))}</code>. Missing metrics: <code>{escape(fault_failover.get("summary", {}).get("missing_metric_count", "MISSING"))}</code>.</p>
   <p>Stability soak profiles: <code>{escape(stability_soak.get("summary", {}).get("required_node_counts", "MISSING"))}</code>. Measured profiles: <code>{escape(stability_soak.get("summary", {}).get("measured_profile_count", "MISSING"))}</code>. Resource-aware profiles: <code>{escape(stability_soak.get("summary", {}).get("resource_aware_profile_count", "MISSING"))}</code>.</p>
+  <p>CML15 lifecycle capabilities: <code>{escape(len(cml15.get("capabilities", [])))}</code>. Validated scale: <code>{escape(cml15.get("scale_nodes_validated", "MISSING"))}</code>. Status: <code>{escape(cml15.get("status", "MISSING"))}</code>.</p>
   <h2>Rendered Views</h2>
   <ul>{report_links}</ul>
+  <h2>CML15 Lifecycle Matrix</h2>
+  <table><thead><tr><th>Stage</th><th>Status</th><th>Operations</th><th>Nodes</th><th>Cluster</th><th>Slots</th><th>Slot Fail</th><th>Durations</th></tr></thead><tbody>{cml15_rows}</tbody></table>
+  <h3>CML15 Reports</h3>
+  <ul>{cml15_links}</ul>
+  {cml15_chart_html}
   <h2>Source Artifacts</h2>
   <table><thead><tr><th>Path</th><th>Type</th><th>Status</th><th>SHA256</th></tr></thead><tbody>{source_rows}</tbody></table>
   <h2>Visualizations</h2>
@@ -395,6 +428,14 @@ def build_report(root: Path, input_dir: Path, out_dir: Path) -> dict[str, Any]:
     out_dir = out_dir if out_dir.is_absolute() else root / out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    cml15_stage_ids = [
+        "CML15A_ADD_NODE_REMOVE_NODE_30",
+        "CML15B_RESHARD_SLOTS_30",
+        "CML15C_REBALANCE_SLOTS_30",
+        "CML15D_ROLLING_RESTART_ONE_PRIMARY_30",
+        "CML15E_LIFECYCLE_MATRIX_REPORT_30",
+    ]
+    cml15_root = root / "artifacts" / "capability_matrix_loop"
     source_paths = {
         "audit_report": input_dir / "audit_report.json",
         "provenance_graph": input_dir / "provenance_graph.json",
@@ -408,9 +449,26 @@ def build_report(root: Path, input_dir: Path, out_dir: Path) -> dict[str, Any]:
         "scale_ladder_report": root / "artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json",
         "p13_timing_50": root / "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json",
         "p13_timing_100": root / "artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json",
+        "cml15_lifecycle_matrix_report": cml15_root / "CML15E_LIFECYCLE_MATRIX_REPORT_30" / "samples" / "lifecycle_matrix_report_30.json",
     }
+    for stage_id in cml15_stage_ids:
+        source_paths[f"cml15_{stage_id}_analysis_summary"] = cml15_root / stage_id / "analysis_summary.json"
+        if stage_id != "CML15E_LIFECYCLE_MATRIX_REPORT_30":
+            source_paths[f"cml15_{stage_id}_lifecycle_evidence"] = cml15_root / stage_id / "samples" / "lifecycle_evidence_30.json"
     payloads = {name: load_json(path) for name, path in source_paths.items()}
     validate_metric_sources(payloads["metric_catalog"])
+    cml15_report_paths: list[Path] = []
+    for stage_id in cml15_stage_ids:
+        reports_dir = cml15_root / stage_id / "reports"
+        cml15_report_paths.extend(
+            [
+                reports_dir / "index.html",
+                reports_dir / "report.md",
+                reports_dir / "lifecycle_summary.csv",
+                reports_dir / "lifecycle_timeline.svg",
+                reports_dir / "report_index.json",
+            ]
+        )
 
     provenance_out = out_dir / "provenance_graph.json"
     if source_paths["provenance_graph"].resolve() != provenance_out.resolve():
@@ -423,6 +481,8 @@ def build_report(root: Path, input_dir: Path, out_dir: Path) -> dict[str, Any]:
         write_scale_ladder_svg(out_dir / "scale_ladder.svg", payloads["scale_ladder_report"], payloads["p13_p14_scale_audit"]),
         write_timing_waterfall_svg(out_dir / "p13_timing_waterfall.svg", [payloads["p13_timing_50"], payloads["p13_timing_100"]]),
     ]
+    reports.extend(cml15_report_paths)
+    payloads["cml15_report_paths"] = [str(path) for path in cml15_report_paths]
     reports.append(write_index_html(out_dir / "index.html", {**payloads, "source_records": []}, reports))
 
     source_records = [source_record(root, path, payloads[name]) for name, path in source_paths.items()]
@@ -432,6 +492,7 @@ def build_report(root: Path, input_dir: Path, out_dir: Path) -> dict[str, Any]:
     report_sources = [record["path"] for record in source_records]
     report_roles = {
         ".html": "html_report",
+        ".md": "markdown_report",
         ".csv": "csv_view",
         ".svg": "visualization",
         ".json": "json_source",

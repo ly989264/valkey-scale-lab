@@ -10,7 +10,7 @@ fake,cleanup,SKIPPED_WITH_REASON,fake,1,false,false,All metrics in this cell are
 fake,scale,SKIPPED_WITH_REASON,fake,1,false,false,All metrics in this cell are explicitly skipped with reason.,artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json
 fake,report_visualization,SKIPPED_WITH_REASON,fake,1,false,false,All metrics in this cell are explicitly skipped with reason.,artifacts/loop_engineering/stages/L03_METRIC_CATALOG_AND_COVERAGE_MATRIX/current_harness_plan.json
 small-real,cluster_build,COVERED,real_valkey,6,true,false,,artifacts/phases/P03_LOCAL_DOCKER_VALKEY/valkey_e2e_evidence.json;artifacts/phases/P10_MULTI_HOST_ORCHESTRATION/valkey_e2e_evidence.json
-small-real,management,COVERED,real_valkey,13,true,false,,artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json;artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json
+small-real,management,COVERED,real_valkey,14,true,false,,artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json;artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/valkey_e2e_evidence.json
 small-real,workload,COVERED,real_valkey,14,true,false,,artifacts/phases/P05_WORKLOAD_ENGINE/valkey_e2e_evidence.json;artifacts/phases/P05_WORKLOAD_ENGINE/workload_report.json
 small-real,observability,COVERED,real_valkey,20,true,false,,artifacts/phases/P06_OBSERVABILITY_METRICS/metrics_timeseries.jsonl;artifacts/phases/P06_OBSERVABILITY_METRICS/valkey_e2e_evidence.json
 small-real,fault,COVERED,real_valkey,8,true,false,,artifacts/phases/P07_FAULT_INJECTION_SANDBOX/fault_report.json;artifacts/phases/P07_FAULT_INJECTION_SANDBOX/valkey_e2e_evidence.json

@@ -1,1 +1,32 @@
-<html><body><h1>CML15D rolling_restart_one_primary 30</h1><p>Status: PASS</p></body></html>
+<!doctype html>
+<html lang="en" data-cml15-report="enhanced">
+<head>
+  <meta charset="utf-8"/>
+  <title>CML15D rolling_restart_one_primary 30</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; color: #111827; background: #f8fafc; }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0 28px; background: #fff; }
+    th, td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; }
+    th { background: #e5e7eb; }
+    .summary { display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 12px; margin: 18px 0; }
+    .summary div { background: #fff; border: 1px solid #d1d5db; padding: 12px; border-radius: 4px; }
+    img { max-width: 100%; border: 1px solid #d1d5db; background: #fff; }
+  </style>
+</head>
+<body>
+  <h1>CML15D rolling_restart_one_primary 30</h1>
+  <div class="summary" data-section="cluster_slot_role_counts">
+    <div><strong>nodes_observed</strong><br>30</div>
+    <div><strong>cluster_state</strong><br>ok</div>
+    <div><strong>slots</strong><br>16384 / fail 0</div>
+    <div><strong>roles</strong><br>15 primary / 15 replica</div>
+    <div><strong>data_path</strong><br>PASS</div>
+  </div>
+  <h2 data-section="operation_duration">Operation Duration</h2>
+  <table><thead><tr><th>Operation</th><th>Duration seconds</th><th>Status</th></tr></thead><tbody><tr><td>rolling_restart</td><td>0.637876</td><td>PASS</td></tr></tbody></table>
+  <h2 data-section="workload_latency_ms">Workload Latency and Availability</h2>
+  <table><thead><tr><th>Window</th><th>Availability %</th><th>Errors</th><th>p50 ms</th><th>p95 ms</th><th>p99 ms</th></tr></thead><tbody><tr><td>before</td><td>100.000</td><td>0</td><td>51.251</td><td>60.581</td><td>64.910</td></tr><tr><td>during</td><td>100.000</td><td>0</td><td>62.676</td><td>68.351</td><td>68.462</td></tr><tr><td>after</td><td>100.000</td><td>0</td><td>53.252</td><td>62.351</td><td>63.935</td></tr></tbody></table>
+  <h2 data-section="workload_availability_percent">Chart</h2>
+  <img alt="CML15 lifecycle chart" src="lifecycle_timeline.svg"/>
+</body>
+</html>

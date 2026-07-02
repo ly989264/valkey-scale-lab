@@ -4,48 +4,48 @@
 <text x="20" y="54" font-size="12">Timing values rendered from p13_timing_breakdown JSON artifacts</text>
 <text x="20" y="88" font-size="14" font-weight="700">50 nodes</text>
 <text x="40" y="124" font-size="11">setup_command_wall_seconds</text>
-<rect class="timing-bar" x="260" y="108" width="41" height="18" fill="#2f6f4e" data-node-count="50" data-component="setup_command_wall_seconds" data-value-seconds="22.601064"/>
-<text x="311" y="122" font-size="11">22.6011s</text>
+<rect class="timing-bar" x="260" y="108" width="306" height="18" fill="#2f6f4e" data-node-count="50" data-component="setup_command_wall_seconds" data-value-seconds="48.858496"/>
+<text x="576" y="122" font-size="11">48.8585s</text>
 <text x="40" y="154" font-size="11">cluster_create_duration_seconds</text>
-<rect class="timing-bar" x="260" y="138" width="28" height="18" fill="#2f6f4e" data-node-count="50" data-component="cluster_create_duration_seconds" data-value-seconds="15.330973"/>
-<text x="298" y="152" font-size="11">15.331s</text>
+<rect class="timing-bar" x="260" y="138" width="210" height="18" fill="#2f6f4e" data-node-count="50" data-component="cluster_create_duration_seconds" data-value-seconds="33.515185"/>
+<text x="480" y="152" font-size="11">33.5152s</text>
 <text x="40" y="184" font-size="11">replica_config_duration_seconds</text>
-<rect class="timing-bar" x="260" y="168" width="2" height="18" fill="#2f6f4e" data-node-count="50" data-component="replica_config_duration_seconds" data-value-seconds="0.103871"/>
-<text x="272" y="182" font-size="11">0.103871s</text>
+<rect class="timing-bar" x="260" y="168" width="2" height="18" fill="#2f6f4e" data-node-count="50" data-component="replica_config_duration_seconds" data-value-seconds="0.1116"/>
+<text x="272" y="182" font-size="11">0.1116s</text>
 <text x="40" y="214" font-size="11">wrapper_probe_duration_seconds</text>
-<rect class="timing-bar" x="260" y="198" width="2" height="18" fill="#2f6f4e" data-node-count="50" data-component="wrapper_probe_duration_seconds" data-value-seconds="0.019626"/>
-<text x="272" y="212" font-size="11">0.019626s</text>
+<rect class="timing-bar" x="260" y="198" width="2" height="18" fill="#2f6f4e" data-node-count="50" data-component="wrapper_probe_duration_seconds" data-value-seconds="0.019375"/>
+<text x="272" y="212" font-size="11">0.019375s</text>
 <text x="40" y="244" font-size="11">final_full_probe_duration_seconds</text>
-<rect class="timing-bar" x="260" y="228" width="2" height="18" fill="#2f6f4e" data-node-count="50" data-component="final_full_probe_duration_seconds" data-value-seconds="0.01117"/>
-<text x="272" y="242" font-size="11">0.01117s</text>
+<rect class="timing-bar" x="260" y="228" width="2" height="18" fill="#2f6f4e" data-node-count="50" data-component="final_full_probe_duration_seconds" data-value-seconds="0.013053"/>
+<text x="272" y="242" font-size="11">0.013053s</text>
 <text x="40" y="274" font-size="11">cleanup_command_wall_seconds</text>
-<rect class="timing-bar" x="260" y="258" width="11" height="18" fill="#2f6f4e" data-node-count="50" data-component="cleanup_command_wall_seconds" data-value-seconds="6.37787"/>
-<text x="281" y="272" font-size="11">6.37787s</text>
+<rect class="timing-bar" x="260" y="258" width="39" height="18" fill="#2f6f4e" data-node-count="50" data-component="cleanup_command_wall_seconds" data-value-seconds="6.325156"/>
+<text x="309" y="272" font-size="11">6.32516s</text>
 <text x="40" y="304" font-size="11">artifact_write_seconds</text>
-<rect class="timing-bar" x="260" y="288" width="2" height="18" fill="#2f6f4e" data-node-count="50" data-component="artifact_write_seconds" data-value-seconds="0.001245"/>
-<text x="272" y="302" font-size="11">0.001245s</text>
+<rect class="timing-bar" x="260" y="288" width="2" height="18" fill="#2f6f4e" data-node-count="50" data-component="artifact_write_seconds" data-value-seconds="0.000475"/>
+<text x="272" y="302" font-size="11">0.000475s</text>
 <text x="40" y="334" font-size="11" data-node-count="50" data-component="diagnostic_full_probe_duration_seconds" data-status="MISSING">diagnostic_full_probe_duration_seconds MISSING</text>
 <text x="20" y="356" font-size="14" font-weight="700">100 nodes</text>
 <text x="40" y="392" font-size="11">setup_command_wall_seconds</text>
-<rect class="timing-bar" x="260" y="376" width="460" height="18" fill="#2f6f4e" data-node-count="100" data-component="setup_command_wall_seconds" data-value-seconds="248.41558"/>
-<text x="730" y="390" font-size="11">248.416s</text>
+<rect class="timing-bar" x="260" y="376" width="460" height="18" fill="#2f6f4e" data-node-count="100" data-component="setup_command_wall_seconds" data-value-seconds="73.2923"/>
+<text x="730" y="390" font-size="11">73.2923s</text>
 <text x="40" y="422" font-size="11">cluster_create_duration_seconds</text>
-<rect class="timing-bar" x="260" y="406" width="196" height="18" fill="#2f6f4e" data-node-count="100" data-component="cluster_create_duration_seconds" data-value-seconds="106.051279"/>
-<text x="466" y="420" font-size="11">106.051s</text>
+<rect class="timing-bar" x="260" y="406" width="281" height="18" fill="#2f6f4e" data-node-count="100" data-component="cluster_create_duration_seconds" data-value-seconds="44.827946"/>
+<text x="551" y="420" font-size="11">44.8279s</text>
 <text x="40" y="452" font-size="11">replica_config_duration_seconds</text>
-<rect class="timing-bar" x="260" y="436" width="2" height="18" fill="#2f6f4e" data-node-count="100" data-component="replica_config_duration_seconds" data-value-seconds="0.271537"/>
-<text x="272" y="450" font-size="11">0.271537s</text>
+<rect class="timing-bar" x="260" y="436" width="2" height="18" fill="#2f6f4e" data-node-count="100" data-component="replica_config_duration_seconds" data-value-seconds="0.273989"/>
+<text x="272" y="450" font-size="11">0.273989s</text>
 <text x="40" y="482" font-size="11">wrapper_probe_duration_seconds</text>
-<rect class="timing-bar" x="260" y="466" width="2" height="18" fill="#2f6f4e" data-node-count="100" data-component="wrapper_probe_duration_seconds" data-value-seconds="0.035476"/>
-<text x="272" y="480" font-size="11">0.035476s</text>
+<rect class="timing-bar" x="260" y="466" width="2" height="18" fill="#2f6f4e" data-node-count="100" data-component="wrapper_probe_duration_seconds" data-value-seconds="0.035427"/>
+<text x="272" y="480" font-size="11">0.035427s</text>
 <text x="40" y="512" font-size="11">final_full_probe_duration_seconds</text>
-<rect class="timing-bar" x="260" y="496" width="2" height="18" fill="#2f6f4e" data-node-count="100" data-component="final_full_probe_duration_seconds" data-value-seconds="0.028325"/>
-<text x="272" y="510" font-size="11">0.028325s</text>
+<rect class="timing-bar" x="260" y="496" width="2" height="18" fill="#2f6f4e" data-node-count="100" data-component="final_full_probe_duration_seconds" data-value-seconds="0.025499"/>
+<text x="272" y="510" font-size="11">0.025499s</text>
 <text x="40" y="542" font-size="11">cleanup_command_wall_seconds</text>
-<rect class="timing-bar" x="260" y="526" width="13" height="18" fill="#2f6f4e" data-node-count="100" data-component="cleanup_command_wall_seconds" data-value-seconds="7.429097"/>
-<text x="283" y="540" font-size="11">7.4291s</text>
+<rect class="timing-bar" x="260" y="526" width="45" height="18" fill="#2f6f4e" data-node-count="100" data-component="cleanup_command_wall_seconds" data-value-seconds="7.308403"/>
+<text x="315" y="540" font-size="11">7.3084s</text>
 <text x="40" y="572" font-size="11">artifact_write_seconds</text>
-<rect class="timing-bar" x="260" y="556" width="2" height="18" fill="#2f6f4e" data-node-count="100" data-component="artifact_write_seconds" data-value-seconds="0.002338"/>
-<text x="272" y="570" font-size="11">0.002338s</text>
+<rect class="timing-bar" x="260" y="556" width="2" height="18" fill="#2f6f4e" data-node-count="100" data-component="artifact_write_seconds" data-value-seconds="0.000651"/>
+<text x="272" y="570" font-size="11">0.000651s</text>
 <text x="40" y="602" font-size="11" data-node-count="100" data-component="diagnostic_full_probe_duration_seconds" data-status="MISSING">diagnostic_full_probe_duration_seconds MISSING</text>
 </svg>

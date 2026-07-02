@@ -1,19 +1,20 @@
 {
   "artifact_paths": [
     "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/lifecycle_evidence_30.json",
-    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/before_snapshot.json",
     "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_command_trace.jsonl",
-    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/after_convergence.json",
-    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/slot_coverage.json",
-    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/role_counts.json",
     "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window_report_30.json",
-    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json"
+    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/cleanup_report_30.json",
+    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/operation_event.jsonl",
+    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/metrics_window.jsonl",
+    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/workload_window.jsonl",
+    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/capability_matrix.json",
+    "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/analysis_summary.json"
   ],
   "blocking_findings": [],
   "decision": "PASS",
   "fresh_context": true,
   "gate_result_path": "artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/validation/current_stage_gate_result.json",
-  "gate_result_sha256": "4c5515d8519d32cd9020014262d7eef95d021c307b9fa8fede9e218aeeb95244",
+  "gate_result_sha256": "003c553d8f73bc5b4bdd498af3ebdc215846b037afe7c8ce9c0c7245d3fbcada",
   "schema_version": "v1",
   "stage_id": "CML15B_RESHARD_SLOTS_30"
 }

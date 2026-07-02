@@ -3,7 +3,7 @@
   "artifact_type": "capability_stage_gate_result",
   "stage_id": "CML15A_ADD_NODE_REMOVE_NODE_30",
   "status": "PASS",
-  "created_at": "2026-07-02T10:47:58.082544Z",
+  "created_at": "2026-07-02T12:02:22.387312Z",
   "checks": [
     {
       "name": "manifest",

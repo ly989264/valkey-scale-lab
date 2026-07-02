@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import html
 import json
 import shlex
 import subprocess
@@ -88,6 +89,18 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped:
+                rows.append(json.loads(stripped))
+    return rows
 
 
 def source(path: Path) -> dict[str, str]:
@@ -1024,26 +1037,16 @@ def run_operation_stage(stage_id: str) -> int:
                 ],
             },
         )
-        write_json(
-            analysis_path,
-            {
-                "schema_version": "v1",
-                "artifact_type": "capability_analysis_summary",
-                "stage_id": stage_id,
-                "status": "PASS",
-                "created_at": CREATED_AT,
-                "summary": {
-                    "delta": 0,
-                    "error_rate": 0,
-                    "qps_drop_ratio": 0,
-                    "latency_delta": 0,
-                    "unavailable_ms": 0,
-                    "sample_coverage": 1.0,
-                    "target_operations": meta["target_ops"],
-                },
-            },
-        )
-        write_reports(stage_id, stage_root, meta["report_title"], source_artifacts)
+        write_json(analysis_path, build_cml15_analysis_summary(stage_id, load_report_dataset(stage_id, stage_root), meta["target_ops"]))
+        report_sources = [
+            *source_artifacts,
+            source(operation_path),
+            source(metrics_path),
+            source(workload_path),
+            source(matrix_path),
+            source(analysis_path),
+        ]
+        write_reports(stage_id, stage_root, meta["report_title"], report_sources)
         status = "PASS"
         write_common_stage_files(stage_id, status, stage_root, sample_sources)
         return 0
@@ -1059,25 +1062,412 @@ def run_operation_stage(stage_id: str) -> int:
         return 1
 
 
-def write_reports(stage_id: str, stage_root: Path, title: str, source_artifacts: list[dict[str, str]]) -> None:
-    reports = stage_root / "reports"
-    rows = [
-        ["stage_id", "status", "nodes_observed", "cluster_state", "slots_assigned", "slots_fail"],
-        [stage_id, "PASS", "30", "ok", "16384", "0"],
+def as_float(value: Any, default: float = 0.0) -> float:
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
+
+
+def load_report_dataset(stage_id: str, stage_root: Path) -> dict[str, Any]:
+    samples = stage_root / "samples"
+    evidence_path = samples / "lifecycle_evidence_30.json"
+    matrix_report_path = samples / "lifecycle_matrix_report_30.json"
+    workload_report_path = samples / "workload_window_report_30.json"
+    operation_trace_path = samples / "operation_command_trace.jsonl"
+    metrics_path = samples / "metrics_window.jsonl"
+    workload_path = samples / "workload_window.jsonl"
+    before_path = samples / "before_snapshot.json"
+    after_path = samples / "after_convergence.json"
+    slot_path = samples / "slot_coverage.json"
+    role_path = samples / "role_counts.json"
+
+    evidence = load_json(evidence_path) if evidence_path.exists() else {}
+    matrix_report = load_json(matrix_report_path) if matrix_report_path.exists() else {}
+    workload_report = load_json(workload_report_path) if workload_report_path.exists() else {}
+    operation_trace = load_jsonl(operation_trace_path)
+    operation_events = load_jsonl(samples / "operation_event.jsonl")
+    metrics_rows = load_jsonl(metrics_path)
+    workload_rows = load_jsonl(workload_path)
+    before = load_json(before_path) if before_path.exists() else {}
+    after = load_json(after_path) if after_path.exists() else {}
+    slot = load_json(slot_path) if slot_path.exists() else {}
+    roles = load_json(role_path) if role_path.exists() else {}
+
+    operations: list[dict[str, Any]] = []
+    if evidence.get("operation_durations"):
+        for operation_id, duration in sorted(evidence["operation_durations"].items()):
+            operations.append({"operation_id": operation_id, "duration_seconds": as_float(duration), "status": "PASS"})
+    elif matrix_report.get("capabilities"):
+        for entry in matrix_report.get("capabilities", []):
+            for operation_id, duration in sorted((entry.get("operation_durations") or {}).items()):
+                operations.append(
+                    {
+                        "operation_id": operation_id,
+                        "duration_seconds": as_float(duration),
+                        "status": entry.get("status", "MISSING"),
+                        "source_stage": entry.get("stage_id"),
+                    }
+                )
+    else:
+        for row in operation_trace or operation_events:
+            duration = row.get("duration_seconds")
+            if duration is None:
+                duration = row.get("evidence", {}).get("duration_seconds")
+            operations.append({"operation_id": row.get("operation_id", "MISSING"), "duration_seconds": as_float(duration), "status": row.get("status", "MISSING")})
+
+    workload_windows: list[dict[str, Any]] = []
+    if workload_report.get("windows"):
+        for window in workload_report.get("windows", []):
+            workload_windows.append({"window_id": window.get("name", "MISSING"), **window})
+    elif workload_rows:
+        for row in workload_rows:
+            workload_windows.append({"window_id": row.get("window_id", "MISSING"), **(row.get("workload") or {})})
+
+    metric_windows = [
+        {"window_id": row.get("window_id", "MISSING"), **(row.get("metrics") or {})}
+        for row in metrics_rows
     ]
-    csv_path = reports / "lifecycle_summary.csv"
+
+    if stage_id == "CML15E_LIFECYCLE_MATRIX_REPORT_30":
+        capabilities = matrix_report.get("capabilities", [])
+        nodes_observed = matrix_report.get("scale_nodes_validated", 30)
+        cluster_state = "ok" if all(entry.get("cluster_state") == "ok" for entry in capabilities) else "MISSING"
+        slots_assigned = min((int(entry.get("slots_assigned", 0)) for entry in capabilities), default=0)
+        slots_fail = max((int(entry.get("slots_fail", 0)) for entry in capabilities), default=0)
+        data_path_result = "PASS" if all(entry.get("data_path_result") == "PASS" for entry in capabilities) else "FAIL"
+    else:
+        capabilities = []
+        nodes_observed = evidence.get("nodes_observed", after.get("nodes_observed", 0))
+        cluster_state = evidence.get("cluster_state", after.get("cluster_state", "MISSING"))
+        slots_assigned = evidence.get("slots_assigned", slot.get("slots_assigned", 0))
+        slots_fail = evidence.get("slots_fail", slot.get("slots_fail", 0))
+        data_path_result = evidence.get("data_path_result", workload_report.get("status", "MISSING"))
+
+    return {
+        "stage_id": stage_id,
+        "status": evidence.get("status") or matrix_report.get("status") or "PASS",
+        "nodes_observed": nodes_observed,
+        "cluster_state": cluster_state,
+        "slots_assigned": slots_assigned,
+        "slots_fail": slots_fail,
+        "primary_count": roles.get("primary_count", after.get("primary_count", 15)),
+        "replica_count": roles.get("replica_count", after.get("replica_count", 15)),
+        "data_path_result": data_path_result,
+        "operations": operations,
+        "metric_windows": metric_windows,
+        "workload_windows": workload_windows,
+        "capabilities": capabilities,
+        "source_paths": {
+            "evidence": rel(evidence_path) if evidence_path.exists() else rel(matrix_report_path),
+            "metrics": rel(metrics_path),
+            "workload": rel(workload_path),
+            "workload_report": rel(workload_report_path) if workload_report_path.exists() else rel(workload_path),
+            "trace": rel(operation_trace_path),
+        },
+    }
+
+
+def latency_value(window: dict[str, Any], key: str) -> float:
+    latency = window.get("latency_ms") or {}
+    return as_float(latency.get(key), 0.0)
+
+
+def build_cml15_analysis_summary(stage_id: str, dataset: dict[str, Any], target_ops: list[str] | None = None) -> dict[str, Any]:
+    workload = dataset.get("workload_windows", [])
+    measured = [window for window in workload if window.get("status") == "MEASURED"]
+    before = next((window for window in workload if window.get("window_id") == "before"), measured[0] if measured else {})
+    during = next((window for window in workload if window.get("window_id") in {"during", "operation_or_fault_apply"}), before)
+    after = next((window for window in workload if window.get("window_id") in {"after", "after_recovery", "all_run"}), during)
+    total_ops = sum(int(as_float(window.get("operation_count"), 0)) for window in measured)
+    total_errors = sum(int(as_float(window.get("error_count"), 0)) for window in measured)
+    before_completed = max(as_float(before.get("completed_operations"), 0), 1.0)
+    during_completed = as_float(during.get("completed_operations"), 0)
+    qps_drop_ratio = round(max(0.0, (before_completed - during_completed) / before_completed), 6)
+    latency_delta = round(latency_value(during, "p95") - latency_value(before, "p95"), 6)
+    operation_durations = {item.get("operation_id"): item.get("duration_seconds") for item in dataset.get("operations", [])}
+    return {
+        "schema_version": "v1",
+        "artifact_type": "capability_analysis_summary",
+        "stage_id": stage_id,
+        "status": dataset.get("status", "PASS"),
+        "created_at": CREATED_AT,
+        "summary": {
+            "delta": latency_delta,
+            "error_rate": round(total_errors / max(total_ops, 1), 6),
+            "qps_drop_ratio": qps_drop_ratio,
+            "latency_delta": latency_delta,
+            "unavailable_ms": 0 if all(window.get("data_path_result") == "PASS" for window in measured) else "MISSING",
+            "sample_coverage": round(len(measured) / max(len(workload), 1), 6),
+            "target_operations": target_ops or sorted(operation_durations),
+            "operation_durations_seconds": operation_durations,
+            "workload_window_count": len(workload),
+            "metrics_window_count": len(dataset.get("metric_windows", [])),
+            "before_p95_ms": latency_value(before, "p95"),
+            "during_p95_ms": latency_value(during, "p95"),
+            "after_p95_ms": latency_value(after, "p95"),
+            "min_availability_percent": min((as_float(window.get("availability_percent"), 0.0) for window in measured), default=0.0),
+            "slot_coverage": {
+                "slots_assigned": dataset.get("slots_assigned"),
+                "slots_fail": dataset.get("slots_fail"),
+                "cluster_state": dataset.get("cluster_state"),
+            },
+            "role_counts": {
+                "primary_count": dataset.get("primary_count"),
+                "replica_count": dataset.get("replica_count"),
+                "nodes_observed": dataset.get("nodes_observed"),
+            },
+        },
+    }
+
+
+def write_report_csv(csv_path: Path, dataset: dict[str, Any]) -> None:
+    rows = [["metric_group", "window_id", "metric_name", "value", "unit", "source_path"]]
+    source_paths = dataset.get("source_paths", {})
+    for operation in dataset.get("operations", []):
+        rows.append(["operation_duration", "operation_or_fault_apply", str(operation.get("operation_id")), operation.get("duration_seconds", 0), "seconds", source_paths.get("trace", source_paths.get("evidence", ""))])
+    rows.extend(
+        [
+            ["cluster_slot_role_counts", "after_recovery", "nodes_observed", dataset.get("nodes_observed"), "nodes", source_paths.get("metrics", "")],
+            ["cluster_slot_role_counts", "after_recovery", "primary_count", dataset.get("primary_count"), "nodes", source_paths.get("metrics", "")],
+            ["cluster_slot_role_counts", "after_recovery", "replica_count", dataset.get("replica_count"), "nodes", source_paths.get("metrics", "")],
+            ["cluster_slot_role_counts", "after_recovery", "slots_assigned", dataset.get("slots_assigned"), "slots", source_paths.get("metrics", "")],
+            ["cluster_slot_role_counts", "after_recovery", "slots_fail", dataset.get("slots_fail"), "slots", source_paths.get("metrics", "")],
+        ]
+    )
+    for window in dataset.get("workload_windows", []):
+        window_id = window.get("window_id", "MISSING")
+        rows.append(["workload_availability_percent", window_id, "availability_percent", window.get("availability_percent", "MISSING"), "percent", source_paths.get("workload", "")])
+        rows.append(["workload_errors", window_id, "error_count", window.get("error_count", "MISSING"), "count", source_paths.get("workload", "")])
+        for key in ["p50", "p95", "p99"]:
+            rows.append(["workload_latency_ms", window_id, key, latency_value(window, key), "milliseconds", source_paths.get("workload", "")])
     with csv_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, lineterminator="\n")
         writer.writerows(rows)
-    md_path = reports / "report.md"
-    md_path.write_text(f"# {title}\n\nStatus: PASS\n\nAll target lifecycle checks passed on 30 real Valkey nodes.\n", encoding="utf-8")
-    html_path = reports / "index.html"
-    html_path.write_text(f"<html><body><h1>{title}</h1><p>Status: PASS</p></body></html>\n", encoding="utf-8")
-    svg_path = reports / "lifecycle_timeline.svg"
-    svg_path.write_text(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="80"><text x="20" y="45">CML15 lifecycle PASS</text></svg>\n',
+
+
+def svg_bar(x: float, y: float, width: float, height: float, fill: str, label: str, value: Any) -> str:
+    safe_label = html.escape(str(label))
+    safe_value = html.escape(str(value))
+    return (
+        f'<rect x="{x:.1f}" y="{y:.1f}" width="{width:.1f}" height="{height:.1f}" fill="{fill}" rx="2"/>'
+        f'<text x="{x + width / 2:.1f}" y="{y + height + 18:.1f}" text-anchor="middle" font-size="11" fill="#17202a">{safe_label}</text>'
+        f'<text x="{x + width / 2:.1f}" y="{max(14, y - 8):.1f}" text-anchor="middle" font-size="11" fill="#17202a">{safe_value}</text>'
+    )
+
+
+def svg_window_label(window_id: Any) -> str:
+    labels = {
+        "before": "before",
+        "operation_or_fault_apply": "apply",
+        "during": "during",
+        "clear_or_recovery_start": "clear",
+        "after_recovery": "recovery",
+        "all_run": "all",
+        "after": "after",
+    }
+    text = str(window_id)
+    return labels.get(text, text[:10])
+
+
+def svg_panel(x: int, y: int, width: int, height: int, title: str) -> str:
+    return (
+        f'<rect x="{x}" y="{y}" width="{width}" height="{height}" fill="#ffffff" stroke="#d1d5db" rx="6"/>'
+        f'<text x="{x + 18}" y="{y + 30}" font-size="16" font-weight="700" font-family="Arial, sans-serif" fill="#111827">{html.escape(title)}</text>'
+    )
+
+
+def write_report_svg(svg_path: Path, dataset: dict[str, Any], title: str) -> None:
+    operations = dataset.get("operations", [])
+    workload = dataset.get("workload_windows", [])
+    width = 980
+    height = 1140
+    max_duration = max((as_float(item.get("duration_seconds"), 0) for item in operations), default=1.0)
+    max_p95 = max(max((latency_value(window, "p95") for window in workload), default=0.0), 1.0)
+    bars: list[str] = []
+    op_x, op_y, op_w, op_h = 40, 90, 900, 230
+    op_plot_y = op_y + 60
+    op_baseline = op_y + op_h - 52
+    op_slot = op_w / max(len(operations), 1)
+    op_bar_w = min(70, max(34, op_slot * 0.45))
+    for idx, operation in enumerate(operations):
+        duration = as_float(operation.get("duration_seconds"), 0)
+        bar_height = 130 * duration / max(max_duration, 0.001)
+        x = op_x + 32 + idx * op_slot + (op_slot - op_bar_w) / 2
+        y = op_baseline - bar_height
+        label = str(operation.get("operation_id", "op")).replace("_slots", "").replace("rolling_restart", "restart")
+        bars.append(svg_bar(x, y, op_bar_w, bar_height, "#2f7d6d", label, f"{duration:.3f}s"))
+    p95_points: list[str] = []
+    latency_labels: list[str] = []
+    lat_x, lat_y, lat_w, lat_h = 40, 350, 900, 230
+    lat_left = lat_x + 52
+    lat_right = lat_x + lat_w - 36
+    lat_top = lat_y + 58
+    lat_base = lat_y + lat_h - 58
+    lat_step = (lat_right - lat_left) / max(len(workload) - 1, 1)
+    for idx, window in enumerate(workload):
+        x = lat_left + idx * lat_step
+        p95 = latency_value(window, "p95")
+        y = lat_base - ((lat_base - lat_top) * p95 / max_p95)
+        p95_points.append(f"{x:.1f},{y:.1f}")
+        latency_labels.append(f'<text x="{x:.1f}" y="{lat_base + 24:.1f}" text-anchor="middle" font-size="11" fill="#17202a">{html.escape(svg_window_label(window.get("window_id")))}</text>')
+        latency_labels.append(f'<text x="{x:.1f}" y="{max(lat_top - 8, y - 10):.1f}" text-anchor="middle" font-size="10" fill="#991b1b">{p95:.1f}</text>')
+    availability_bars: list[str] = []
+    av_x, av_y, av_w, av_h = 40, 610, 900, 240
+    av_baseline = av_y + av_h - 38
+    av_slot = av_w / max(len(workload), 1)
+    av_bar_w = min(62, max(32, av_slot * 0.45))
+    for idx, window in enumerate(workload):
+        avail = as_float(window.get("availability_percent"), 0.0)
+        bar_height = 150 * min(max(avail, 0.0), 100.0) / 100.0
+        x = av_x + 32 + idx * av_slot + (av_slot - av_bar_w) / 2
+        y = av_baseline - bar_height
+        availability_bars.append(svg_bar(x, y, av_bar_w, bar_height, "#4361ee", svg_window_label(window.get("window_id")), f"{avail:.1f}%"))
+    role_total = max(1.0, as_float(dataset.get("primary_count"), 0) + as_float(dataset.get("replica_count"), 0))
+    state_x, state_y, state_w, state_h = 40, 880, 900, 225
+    state_bar_w = 760
+    primary_width = state_bar_w * as_float(dataset.get("primary_count"), 0) / role_total
+    replica_width = state_bar_w - primary_width
+    slots_width = state_bar_w * as_float(dataset.get("slots_assigned"), 0) / 16384.0
+    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" data-cml15-chart="enhanced">
+  <rect width="{width}" height="{height}" fill="#f8fafc"/>
+  <text x="40" y="38" font-size="24" font-weight="700" font-family="Arial, sans-serif" fill="#111827">{html.escape(title)}</text>
+  <text x="40" y="64" font-size="13" font-family="Arial, sans-serif" fill="#4b5563">Data-driven lifecycle chart from operation trace, metrics windows, workload windows, and lifecycle evidence.</text>
+  {svg_panel(op_x, op_y, op_w, op_h, "Operation duration")}
+  <line x1="{op_x + 32}" y1="{op_baseline}" x2="{op_x + op_w - 28}" y2="{op_baseline}" stroke="#9ca3af"/>
+  {''.join(bars) if bars else '<text x="60" y="150" font-size="12" fill="#991b1b">No operation durations recorded</text>'}
+  {svg_panel(lat_x, lat_y, lat_w, lat_h, "p95 latency by workload window")}
+  <line x1="{lat_left}" y1="{lat_base}" x2="{lat_right}" y2="{lat_base}" stroke="#9ca3af"/>
+  <line x1="{lat_left}" y1="{lat_top}" x2="{lat_left}" y2="{lat_base}" stroke="#9ca3af"/>
+  <polyline points="{' '.join(p95_points)}" fill="none" stroke="#dc2626" stroke-width="3"/>
+  {''.join(f'<circle cx="{point.split(",")[0]}" cy="{point.split(",")[1]}" r="4" fill="#dc2626"/>' for point in p95_points)}
+  {''.join(latency_labels)}
+  {svg_panel(av_x, av_y, av_w, av_h, "Availability percent")}
+  <line x1="{av_x + 32}" y1="{av_baseline}" x2="{av_x + av_w - 28}" y2="{av_baseline}" stroke="#9ca3af"/>
+  {''.join(availability_bars)}
+  {svg_panel(state_x, state_y, state_w, state_h, "Slot coverage and roles")}
+  <text x="{state_x + 28}" y="{state_y + 60}" font-size="12" fill="#374151">Slot coverage</text>
+  <rect x="{state_x + 28}" y="{state_y + 72}" width="{state_bar_w}" height="24" fill="#e5e7eb" rx="3"/>
+  <rect x="{state_x + 28}" y="{state_y + 72}" width="{slots_width:.1f}" height="24" fill="#0f766e" rx="3"/>
+  <text x="{state_x + 28}" y="{state_y + 112}" font-size="12" fill="#111827">slots_assigned={html.escape(str(dataset.get("slots_assigned")))} slots_fail={html.escape(str(dataset.get("slots_fail")))}</text>
+  <text x="{state_x + 28}" y="{state_y + 142}" font-size="12" fill="#374151">Role counts</text>
+  <rect x="{state_x + 28}" y="{state_y + 154}" width="{primary_width:.1f}" height="26" fill="#2563eb" rx="3"/>
+  <rect x="{state_x + 28 + primary_width:.1f}" y="{state_y + 154}" width="{replica_width:.1f}" height="26" fill="#f59e0b" rx="3"/>
+  <text x="{state_x + 28}" y="{state_y + 198}" font-size="12" fill="#111827">primary={html.escape(str(dataset.get("primary_count")))} replica={html.escape(str(dataset.get("replica_count")))} nodes={html.escape(str(dataset.get("nodes_observed")))} | cluster_state={html.escape(str(dataset.get("cluster_state")))} data_path_result={html.escape(str(dataset.get("data_path_result")))}</text>
+</svg>
+'''
+    svg_path.write_text(svg, encoding="utf-8")
+
+
+def write_report_markdown(md_path: Path, dataset: dict[str, Any], title: str) -> None:
+    operation_lines = ["| operation | duration_seconds | status |", "| --- | ---: | --- |"]
+    for operation in dataset.get("operations", []):
+        operation_lines.append(f"| {operation.get('operation_id')} | {as_float(operation.get('duration_seconds'), 0):.6f} | {operation.get('status', 'PASS')} |")
+    workload_lines = ["| window | availability_percent | errors | p50_ms | p95_ms | p99_ms |", "| --- | ---: | ---: | ---: | ---: | ---: |"]
+    for window in dataset.get("workload_windows", []):
+        workload_lines.append(
+            f"| {window.get('window_id')} | {as_float(window.get('availability_percent'), 0):.3f} | {int(as_float(window.get('error_count'), 0))} | {latency_value(window, 'p50'):.3f} | {latency_value(window, 'p95'):.3f} | {latency_value(window, 'p99'):.3f} |"
+        )
+    md_path.write_text(
+        "\n".join(
+            [
+                f"# {title}",
+                "",
+                f"Status: {dataset.get('status')}",
+                "",
+                "## Cluster Summary",
+                "",
+                f"- nodes_observed: `{dataset.get('nodes_observed')}`",
+                f"- cluster_state: `{dataset.get('cluster_state')}`",
+                f"- slots_assigned: `{dataset.get('slots_assigned')}`",
+                f"- slots_fail: `{dataset.get('slots_fail')}`",
+                f"- roles: `{dataset.get('primary_count')}` primary / `{dataset.get('replica_count')}` replica",
+                f"- data_path_result: `{dataset.get('data_path_result')}`",
+                "",
+                "## Operation Durations",
+                "",
+                *operation_lines,
+                "",
+                "## Workload Windows",
+                "",
+                *workload_lines,
+                "",
+                "## Visual",
+                "",
+                "See `lifecycle_timeline.svg` for operation duration, latency, availability, slot coverage, and role count charts.",
+                "",
+            ]
+        ),
         encoding="utf-8",
     )
+
+
+def write_report_html(html_path: Path, dataset: dict[str, Any], title: str) -> None:
+    operations = "".join(
+        f"<tr><td>{html.escape(str(operation.get('operation_id')))}</td><td>{as_float(operation.get('duration_seconds'), 0):.6f}</td><td>{html.escape(str(operation.get('status', 'PASS')))}</td></tr>"
+        for operation in dataset.get("operations", [])
+    )
+    workload = "".join(
+        f"<tr><td>{html.escape(str(window.get('window_id')))}</td><td>{as_float(window.get('availability_percent'), 0):.3f}</td><td>{int(as_float(window.get('error_count'), 0))}</td><td>{latency_value(window, 'p50'):.3f}</td><td>{latency_value(window, 'p95'):.3f}</td><td>{latency_value(window, 'p99'):.3f}</td></tr>"
+        for window in dataset.get("workload_windows", [])
+    )
+    html_path.write_text(
+        f'''<!doctype html>
+<html lang="en" data-cml15-report="enhanced">
+<head>
+  <meta charset="utf-8"/>
+  <title>{html.escape(title)}</title>
+  <style>
+    body {{ font-family: Arial, sans-serif; margin: 32px; color: #111827; background: #f8fafc; }}
+    table {{ border-collapse: collapse; width: 100%; margin: 16px 0 28px; background: #fff; }}
+    th, td {{ border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; }}
+    th {{ background: #e5e7eb; }}
+    .summary {{ display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 12px; margin: 18px 0; }}
+    .summary div {{ background: #fff; border: 1px solid #d1d5db; padding: 12px; border-radius: 4px; }}
+    img {{ max-width: 100%; border: 1px solid #d1d5db; background: #fff; }}
+  </style>
+</head>
+<body>
+  <h1>{html.escape(title)}</h1>
+  <div class="summary" data-section="cluster_slot_role_counts">
+    <div><strong>nodes_observed</strong><br>{html.escape(str(dataset.get('nodes_observed')))}</div>
+    <div><strong>cluster_state</strong><br>{html.escape(str(dataset.get('cluster_state')))}</div>
+    <div><strong>slots</strong><br>{html.escape(str(dataset.get('slots_assigned')))} / fail {html.escape(str(dataset.get('slots_fail')))}</div>
+    <div><strong>roles</strong><br>{html.escape(str(dataset.get('primary_count')))} primary / {html.escape(str(dataset.get('replica_count')))} replica</div>
+    <div><strong>data_path</strong><br>{html.escape(str(dataset.get('data_path_result')))}</div>
+  </div>
+  <h2 data-section="operation_duration">Operation Duration</h2>
+  <table><thead><tr><th>Operation</th><th>Duration seconds</th><th>Status</th></tr></thead><tbody>{operations}</tbody></table>
+  <h2 data-section="workload_latency_ms">Workload Latency and Availability</h2>
+  <table><thead><tr><th>Window</th><th>Availability %</th><th>Errors</th><th>p50 ms</th><th>p95 ms</th><th>p99 ms</th></tr></thead><tbody>{workload}</tbody></table>
+  <h2 data-section="workload_availability_percent">Chart</h2>
+  <img alt="CML15 lifecycle chart" src="lifecycle_timeline.svg"/>
+</body>
+</html>
+''',
+        encoding="utf-8",
+    )
+
+
+def write_reports(stage_id: str, stage_root: Path, title: str, source_artifacts: list[dict[str, str]]) -> None:
+    reports = stage_root / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    dataset = load_report_dataset(stage_id, stage_root)
+    csv_path = reports / "lifecycle_summary.csv"
+    write_report_csv(csv_path, dataset)
+    md_path = reports / "report.md"
+    write_report_markdown(md_path, dataset, title)
+    html_path = reports / "index.html"
+    write_report_html(html_path, dataset, title)
+    svg_path = reports / "lifecycle_timeline.svg"
+    write_report_svg(svg_path, dataset, title)
+    data_series = ["operation_duration", "workload_latency_ms", "workload_availability_percent", "cluster_slot_role_counts"]
     write_json(
         reports / "report_index.json",
         {
@@ -1087,10 +1477,10 @@ def write_reports(stage_id: str, stage_root: Path, title: str, source_artifacts:
             "status": "PASS",
             "created_at": CREATED_AT,
             "reports": [
-                {"kind": "csv", "path": rel(csv_path), "source_artifacts": source_artifacts},
-                {"kind": "markdown", "path": rel(md_path), "source_artifacts": source_artifacts},
-                {"kind": "html", "path": rel(html_path), "source_artifacts": source_artifacts},
-                {"kind": "chart", "path": rel(svg_path), "source_artifacts": source_artifacts},
+                {"kind": "csv", "path": rel(csv_path), "source_artifacts": source_artifacts, "data_series": data_series},
+                {"kind": "markdown", "path": rel(md_path), "source_artifacts": source_artifacts, "data_series": data_series},
+                {"kind": "html", "path": rel(html_path), "source_artifacts": source_artifacts, "data_series": data_series},
+                {"kind": "chart", "path": rel(svg_path), "source_artifacts": source_artifacts, "data_series": data_series},
             ],
         },
     )
@@ -1230,18 +1620,16 @@ def run_report_stage() -> int:
             ],
         },
     )
-    write_json(
-        analysis_path,
-        {
-            "schema_version": "v1",
-            "artifact_type": "capability_analysis_summary",
-            "stage_id": stage_id,
-            "status": "PASS",
-            "created_at": CREATED_AT,
-            "summary": {"delta": 0, "error_rate": 0, "qps_drop_ratio": 0, "latency_delta": 0, "unavailable_ms": 0, "sample_coverage": 1.0},
-        },
-    )
-    write_reports(stage_id, stage_root, "CML15E lifecycle_matrix_report_30", report_source)
+    write_json(analysis_path, build_cml15_analysis_summary(stage_id, load_report_dataset(stage_id, stage_root)))
+    report_sources = [
+        *report_source,
+        source(operation_path),
+        source(metrics_path),
+        source(workload_path),
+        source(matrix_path),
+        source(analysis_path),
+    ]
+    write_reports(stage_id, stage_root, "CML15E lifecycle_matrix_report_30", report_sources)
     before_path = samples / "before_snapshot.json"
     trace_path = samples / "operation_command_trace.jsonl"
     during_path = samples / "during_metrics.jsonl"
@@ -1260,10 +1648,44 @@ def run_report_stage() -> int:
     return 0
 
 
+def refresh_existing_reports(stage_id: str) -> int:
+    if stage_id == "CML15E_LIFECYCLE_MATRIX_REPORT_30":
+        return run_report_stage()
+    if stage_id not in STAGES:
+        raise LifecycleError(f"unknown CML15 operation stage: {stage_id}")
+    stage_root = ARTIFACT_ROOT / stage_id
+    samples = stage_root / "samples"
+    reports = stage_root / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    required = [
+        samples / "lifecycle_evidence_30.json",
+        samples / "operation_command_trace.jsonl",
+        samples / "workload_window_report_30.json",
+        samples / "cleanup_report_30.json",
+        samples / "operation_event.jsonl",
+        samples / "metrics_window.jsonl",
+        samples / "workload_window.jsonl",
+        stage_root / "capability_matrix.json",
+    ]
+    missing = [rel(path) for path in required if not path.exists()]
+    if missing:
+        raise LifecycleError(f"cannot refresh reports; missing artifacts: {missing}")
+    analysis_path = stage_root / "analysis_summary.json"
+    dataset = load_report_dataset(stage_id, stage_root)
+    write_json(analysis_path, build_cml15_analysis_summary(stage_id, dataset, STAGES[stage_id]["target_ops"]))
+    report_sources = [source(path) for path in [*required, analysis_path]]
+    write_reports(stage_id, stage_root, STAGES[stage_id]["report_title"], report_sources)
+    write_common_stage_files(stage_id, "PASS", stage_root, report_sources)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run CML15 30-node lifecycle harnesses")
     parser.add_argument("--stage", required=True, choices=[*STAGES.keys(), "CML15E_LIFECYCLE_MATRIX_REPORT_30"])
+    parser.add_argument("--refresh-reports-only", action="store_true", help="Rebuild CML15 analysis/report artifacts from existing samples without starting Valkey nodes.")
     args = parser.parse_args()
+    if args.refresh_reports_only:
+        return refresh_existing_reports(args.stage)
     if args.stage == "CML15E_LIFECYCLE_MATRIX_REPORT_30":
         return run_report_stage()
     return run_operation_stage(args.stage)

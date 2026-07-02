@@ -13,33 +13,101 @@
 </head>
 <body>
   <h1>Valkey Scale Lab Audit Report</h1>
-  <p>Root commit SHA: <code>4ff3e726f911bd5146ffd18381985d6b58785ee0</code></p>
-  <p>Status: <code>PASS</code>. Metrics: <code>419</code>. Coverage cells: <code>60</code>.</p>
+  <p>Root commit SHA: <code>6c8fdba9f7f1259b04064eadbc0cb6d3e324c935</code></p>
+  <p>Status: <code>PASS</code>. Metrics: <code>420</code>. Coverage cells: <code>60</code>.</p>
   <p>P13 real rungs: <code>2</code>. P14 opt-in dry-run: <code>True</code>.</p>
-  <p>Small-real parity surfaces: <code>8</code>. Missing metrics: <code>1</code>. Skipped metrics: <code>26</code>.</p>
-  <p>Scale build rungs: <code>[30, 50, 100]</code>. Measured build metrics: <code>68</code>. Missing build metrics: <code>16</code>.</p>
+  <p>Small-real parity surfaces: <code>8</code>. Missing metrics: <code>1</code>. Skipped metrics: <code>25</code>.</p>
+  <p>Scale build rungs: <code>[30, 50, 100]</code>. Measured build metrics: <code>74</code>. Missing build metrics: <code>10</code>.</p>
   <p>Fault/failover rungs: <code>[30, 50, 100]</code>. Real rungs: <code>3</code>. Missing metrics: <code>3</code>.</p>
   <p>Stability soak profiles: <code>[6, 30, 50, 100]</code>. Measured profiles: <code>1</code>. Resource-aware profiles: <code>4</code>.</p>
+  <p>CML15 lifecycle capabilities: <code>4</code>. Validated scale: <code>30</code>. Status: <code>PASS</code>.</p>
   <h2>Rendered Views</h2>
-  <ul><li><a href="coverage_matrix.csv">coverage_matrix.csv</a></li>
-<li><a href="missing_metrics.csv">missing_metrics.csv</a></li>
-<li><a href="coverage_heatmap.svg">coverage_heatmap.svg</a></li>
-<li><a href="scale_ladder.svg">scale_ladder.svg</a></li>
-<li><a href="p13_timing_waterfall.svg">p13_timing_waterfall.svg</a></li>
-<li><a href="index.html">index.html</a></li></ul>
+  <ul><li><a href="coverage_matrix.csv">coverage_matrix.csv</a> <code>.csv</code></li>
+<li><a href="missing_metrics.csv">missing_metrics.csv</a> <code>.csv</code></li>
+<li><a href="coverage_heatmap.svg">coverage_heatmap.svg</a> <code>.svg</code></li>
+<li><a href="scale_ladder.svg">scale_ladder.svg</a> <code>.svg</code></li>
+<li><a href="p13_timing_waterfall.svg">p13_timing_waterfall.svg</a> <code>.svg</code></li>
+<li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/index.html">index.html</a> <code>.html</code></li>
+<li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/report.md">report.md</a> <code>.md</code></li>
+<li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/lifecycle_summary.csv">lifecycle_summary.csv</a> <code>.csv</code></li>
+<li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/lifecycle_timeline.svg">lifecycle_timeline.svg</a> <code>.svg</code></li>
+<li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/report_index.json">report_index.json</a> <code>.json</code></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/index.html">index.html</a> <code>.html</code></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/report.md">report.md</a> <code>.md</code></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/lifecycle_summary.csv">lifecycle_summary.csv</a> <code>.csv</code></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/lifecycle_timeline.svg">lifecycle_timeline.svg</a> <code>.svg</code></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/report_index.json">report_index.json</a> <code>.json</code></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/index.html">index.html</a> <code>.html</code></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/report.md">report.md</a> <code>.md</code></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/lifecycle_summary.csv">lifecycle_summary.csv</a> <code>.csv</code></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/lifecycle_timeline.svg">lifecycle_timeline.svg</a> <code>.svg</code></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/report_index.json">report_index.json</a> <code>.json</code></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/index.html">index.html</a> <code>.html</code></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/report.md">report.md</a> <code>.md</code></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/lifecycle_summary.csv">lifecycle_summary.csv</a> <code>.csv</code></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/lifecycle_timeline.svg">lifecycle_timeline.svg</a> <code>.svg</code></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/report_index.json">report_index.json</a> <code>.json</code></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/index.html">index.html</a> <code>.html</code></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/report.md">report.md</a> <code>.md</code></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/lifecycle_summary.csv">lifecycle_summary.csv</a> <code>.csv</code></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/lifecycle_timeline.svg">lifecycle_timeline.svg</a> <code>.svg</code></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/report_index.json">report_index.json</a> <code>.json</code></li>
+<li><a href="index.html">index.html</a> <code>.html</code></li></ul>
+  <h2>CML15 Lifecycle Matrix</h2>
+  <table><thead><tr><th>Stage</th><th>Status</th><th>Operations</th><th>Nodes</th><th>Cluster</th><th>Slots</th><th>Slot Fail</th><th>Durations</th></tr></thead><tbody><tr><td><code>CML15A_ADD_NODE_REMOVE_NODE_30</code></td><td>PASS</td><td>add_node, remove_node</td><td>30</td><td>ok</td><td>16384</td><td>0</td><td><code>{&#x27;add_node&#x27;: 0.077456, &#x27;remove_node&#x27;: 1.125269}</code></td></tr>
+<tr><td><code>CML15B_RESHARD_SLOTS_30</code></td><td>PASS</td><td>reshard_slots</td><td>30</td><td>ok</td><td>16384</td><td>0</td><td><code>{&#x27;reshard_slots&#x27;: 0.072206}</code></td></tr>
+<tr><td><code>CML15C_REBALANCE_SLOTS_30</code></td><td>PASS</td><td>rebalance_slots</td><td>30</td><td>ok</td><td>16384</td><td>0</td><td><code>{&#x27;rebalance_slots&#x27;: 0.051261}</code></td></tr>
+<tr><td><code>CML15D_ROLLING_RESTART_ONE_PRIMARY_30</code></td><td>PASS</td><td>rolling_restart</td><td>30</td><td>ok</td><td>16384</td><td>0</td><td><code>{&#x27;rolling_restart&#x27;: 0.637876}</code></td></tr></tbody></table>
+  <h3>CML15 Reports</h3>
+  <ul><li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/index.html">CML15A_ADD_NODE_REMOVE_NODE_30 / index.html</a></li>
+<li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/report.md">CML15A_ADD_NODE_REMOVE_NODE_30 / report.md</a></li>
+<li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/lifecycle_summary.csv">CML15A_ADD_NODE_REMOVE_NODE_30 / lifecycle_summary.csv</a></li>
+<li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/lifecycle_timeline.svg">CML15A_ADD_NODE_REMOVE_NODE_30 / lifecycle_timeline.svg</a></li>
+<li><a href="../../capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/reports/report_index.json">CML15A_ADD_NODE_REMOVE_NODE_30 / report_index.json</a></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/index.html">CML15B_RESHARD_SLOTS_30 / index.html</a></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/report.md">CML15B_RESHARD_SLOTS_30 / report.md</a></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/lifecycle_summary.csv">CML15B_RESHARD_SLOTS_30 / lifecycle_summary.csv</a></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/lifecycle_timeline.svg">CML15B_RESHARD_SLOTS_30 / lifecycle_timeline.svg</a></li>
+<li><a href="../../capability_matrix_loop/CML15B_RESHARD_SLOTS_30/reports/report_index.json">CML15B_RESHARD_SLOTS_30 / report_index.json</a></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/index.html">CML15C_REBALANCE_SLOTS_30 / index.html</a></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/report.md">CML15C_REBALANCE_SLOTS_30 / report.md</a></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/lifecycle_summary.csv">CML15C_REBALANCE_SLOTS_30 / lifecycle_summary.csv</a></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/lifecycle_timeline.svg">CML15C_REBALANCE_SLOTS_30 / lifecycle_timeline.svg</a></li>
+<li><a href="../../capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/reports/report_index.json">CML15C_REBALANCE_SLOTS_30 / report_index.json</a></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/index.html">CML15D_ROLLING_RESTART_ONE_PRIMARY_30 / index.html</a></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/report.md">CML15D_ROLLING_RESTART_ONE_PRIMARY_30 / report.md</a></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/lifecycle_summary.csv">CML15D_ROLLING_RESTART_ONE_PRIMARY_30 / lifecycle_summary.csv</a></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/lifecycle_timeline.svg">CML15D_ROLLING_RESTART_ONE_PRIMARY_30 / lifecycle_timeline.svg</a></li>
+<li><a href="../../capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/reports/report_index.json">CML15D_ROLLING_RESTART_ONE_PRIMARY_30 / report_index.json</a></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/index.html">CML15E_LIFECYCLE_MATRIX_REPORT_30 / index.html</a></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/report.md">CML15E_LIFECYCLE_MATRIX_REPORT_30 / report.md</a></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/lifecycle_summary.csv">CML15E_LIFECYCLE_MATRIX_REPORT_30 / lifecycle_summary.csv</a></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/lifecycle_timeline.svg">CML15E_LIFECYCLE_MATRIX_REPORT_30 / lifecycle_timeline.svg</a></li>
+<li><a href="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/report_index.json">CML15E_LIFECYCLE_MATRIX_REPORT_30 / report_index.json</a></li></ul>
+  <img src="../../capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/reports/lifecycle_timeline.svg" alt="CML15 lifecycle matrix chart">
   <h2>Source Artifacts</h2>
-  <table><thead><tr><th>Path</th><th>Type</th><th>Status</th><th>SHA256</th></tr></thead><tbody><tr><td><code>artifacts/loop_engineering/reports/audit_report.json</code></td><td>audit_report</td><td>PASS</td><td><code>32af431483b2</code></td></tr>
-<tr><td><code>artifacts/loop_engineering/reports/provenance_graph.json</code></td><td>provenance_graph</td><td>PASS</td><td><code>e4eb04e3b689</code></td></tr>
-<tr><td><code>artifacts/loop_engineering/reports/metric_catalog.json</code></td><td>metric_catalog</td><td>PASS</td><td><code>896eac1db245</code></td></tr>
-<tr><td><code>artifacts/loop_engineering/reports/coverage_matrix.json</code></td><td>coverage_matrix</td><td>PASS</td><td><code>02de6937fa32</code></td></tr>
-<tr><td><code>artifacts/loop_engineering/reports/p13_p14_scale_audit.json</code></td><td>p13_p14_scale_audit</td><td>PASS</td><td><code>cf828ccb272f</code></td></tr>
-<tr><td><code>artifacts/loop_engineering/reports/small_real_parity_audit.json</code></td><td>small_real_parity_audit</td><td>PASS</td><td><code>126eb526a986</code></td></tr>
-<tr><td><code>artifacts/loop_engineering/reports/scale_build_metrics.json</code></td><td>scale_build_metrics</td><td>PASS</td><td><code>e410abca3faf</code></td></tr>
-<tr><td><code>artifacts/loop_engineering/reports/fault_failover_scale.json</code></td><td>fault_failover_scale</td><td>PASS</td><td><code>e41de72d45c6</code></td></tr>
+  <table><thead><tr><th>Path</th><th>Type</th><th>Status</th><th>SHA256</th></tr></thead><tbody><tr><td><code>artifacts/loop_engineering/reports/audit_report.json</code></td><td>audit_report</td><td>PASS</td><td><code>49fef411baa8</code></td></tr>
+<tr><td><code>artifacts/loop_engineering/reports/provenance_graph.json</code></td><td>provenance_graph</td><td>PASS</td><td><code>8825e00bdabd</code></td></tr>
+<tr><td><code>artifacts/loop_engineering/reports/metric_catalog.json</code></td><td>metric_catalog</td><td>PASS</td><td><code>f523dbf15e5e</code></td></tr>
+<tr><td><code>artifacts/loop_engineering/reports/coverage_matrix.json</code></td><td>coverage_matrix</td><td>PASS</td><td><code>7ef0fe0c54d7</code></td></tr>
+<tr><td><code>artifacts/loop_engineering/reports/p13_p14_scale_audit.json</code></td><td>p13_p14_scale_audit</td><td>PASS</td><td><code>a0b06dd2226f</code></td></tr>
+<tr><td><code>artifacts/loop_engineering/reports/small_real_parity_audit.json</code></td><td>small_real_parity_audit</td><td>PASS</td><td><code>ea6adbdc263e</code></td></tr>
+<tr><td><code>artifacts/loop_engineering/reports/scale_build_metrics.json</code></td><td>scale_build_metrics</td><td>PASS</td><td><code>22551d7097c1</code></td></tr>
+<tr><td><code>artifacts/loop_engineering/reports/fault_failover_scale.json</code></td><td>fault_failover_scale</td><td>PASS</td><td><code>1ca00d049551</code></td></tr>
 <tr><td><code>artifacts/loop_engineering/reports/stability_soak_metrics.json</code></td><td>stability_soak_metrics</td><td>PASS</td><td><code>2253cfb49fc3</code></td></tr>
-<tr><td><code>artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json</code></td><td>scale_ladder_report</td><td>PASS</td><td><code>8f361663f6cc</code></td></tr>
-<tr><td><code>artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json</code></td><td>p13_timing_breakdown</td><td>PASS</td><td><code>c8bdde24a12f</code></td></tr>
-<tr><td><code>artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json</code></td><td>p13_timing_breakdown</td><td>PASS</td><td><code>fc697ee2aecd</code></td></tr></tbody></table>
+<tr><td><code>artifacts/phases/P13_SCALE_LADDER_50_100/scale_ladder_report.json</code></td><td>scale_ladder_report</td><td>PASS</td><td><code>36d0603c8ca7</code></td></tr>
+<tr><td><code>artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_50.json</code></td><td>p13_timing_breakdown</td><td>PASS</td><td><code>98c75219df37</code></td></tr>
+<tr><td><code>artifacts/phases/P13_SCALE_LADDER_50_100/p13_timing_breakdown_scale_100.json</code></td><td>p13_timing_breakdown</td><td>PASS</td><td><code>f94de45a7f11</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/samples/lifecycle_matrix_report_30.json</code></td><td>lifecycle_matrix_report</td><td>PASS</td><td><code>1cd7a83d7b27</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/analysis_summary.json</code></td><td>capability_analysis_summary</td><td>PASS</td><td><code>6d3c11ec226b</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15A_ADD_NODE_REMOVE_NODE_30/samples/lifecycle_evidence_30.json</code></td><td>lifecycle_real_valkey_evidence</td><td>PASS</td><td><code>466dc7e49bc2</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/analysis_summary.json</code></td><td>capability_analysis_summary</td><td>PASS</td><td><code>82d2b0e7bf4e</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15B_RESHARD_SLOTS_30/samples/lifecycle_evidence_30.json</code></td><td>lifecycle_real_valkey_evidence</td><td>PASS</td><td><code>5ce360649f7a</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/analysis_summary.json</code></td><td>capability_analysis_summary</td><td>PASS</td><td><code>07079872d09b</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15C_REBALANCE_SLOTS_30/samples/lifecycle_evidence_30.json</code></td><td>lifecycle_real_valkey_evidence</td><td>PASS</td><td><code>0deb3d2c8603</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/analysis_summary.json</code></td><td>capability_analysis_summary</td><td>PASS</td><td><code>9a51cda6803a</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15D_ROLLING_RESTART_ONE_PRIMARY_30/samples/lifecycle_evidence_30.json</code></td><td>lifecycle_real_valkey_evidence</td><td>PASS</td><td><code>f48029506296</code></td></tr>
+<tr><td><code>artifacts/capability_matrix_loop/CML15E_LIFECYCLE_MATRIX_REPORT_30/analysis_summary.json</code></td><td>capability_analysis_summary</td><td>PASS</td><td><code>6a7fa4ff7b80</code></td></tr></tbody></table>
   <h2>Visualizations</h2>
   <img src="coverage_heatmap.svg" alt="Coverage heatmap">
   <img src="scale_ladder.svg" alt="Scale ladder">

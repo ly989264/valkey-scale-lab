@@ -376,6 +376,20 @@ def test_cml15_substage_ids_are_schema_valid():
     assert "^CML[0-9]{2}[A-Z]?_[A-Z0-9_]+$" in schema_text
 
 
+def test_cml15_reports_require_enhanced_quantitative_visuals():
+    gate = load_gate_module()
+    assert gate.validate_cml15_lifecycle_operation("CML15A_ADD_NODE_REMOVE_NODE_30") == []
+    stage_root = ROOT / "artifacts" / "capability_matrix_loop" / "CML15A_ADD_NODE_REMOVE_NODE_30"
+    report_index = json.loads((stage_root / "reports" / "report_index.json").read_text())
+    required = {"operation_duration", "workload_latency_ms", "workload_availability_percent", "cluster_slot_role_counts"}
+    for report in report_index["reports"]:
+        assert required.issubset(set(report["data_series"]))
+    html = (stage_root / "reports" / "index.html").read_text()
+    svg = (stage_root / "reports" / "lifecycle_timeline.svg").read_text()
+    assert 'data-cml15-report="enhanced"' in html
+    assert 'data-cml15-chart="enhanced"' in svg
+
+
 def test_strict_status_negative_cases_cover_false_pass_regressions():
     gate = load_gate_module()
     cml02_cases = {case["name"]: case for case in gate.make_cml02_negative_cases("CML02_CLUSTER_MANAGEMENT_REAL_OPS_30")}
