@@ -1,0 +1,17 @@
+{
+  "bundle_name": "vslab-bundle-P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628-nodehost-p24-minority",
+  "node_count": 1,
+  "nodehost_id": "nodehost-p24-minority",
+  "nodes": [
+    {
+      "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_6/node_configs/shard-0000-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628/shard-0000-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628/shard-0000-primary",
+      "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628/shard-0000-primary/valkey.log",
+      "logical_id": "shard-0000-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628/shard-0000-primary/valkey.pid"
+    }
+  ],
+  "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+  "schema_version": "v1"
+}

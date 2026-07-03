@@ -15,12 +15,14 @@ from codex_gate import validate_artifact  # noqa: E402
 REQUIRED_FAULTS = {
     "P22_FAULT_REPLICA_HOST_AZ_STOP": {"replica_stop", "node_host_stop", "az_stop"},
     "P23_FAULT_NETWORK_DELAY_LOSS_FLAP": {"network_delay", "network_loss", "network_flap"},
-    "P24_PARTITION_SPLIT_BRAIN_MATRIX": {"network_partition", "minority_partition", "majority_partition"},
+    "P24_PARTITION_SPLIT_BRAIN_MATRIX": {"network_partition_minority", "network_partition_majority", "split_brain_window_detection"},
 }
-SAFE_PATHS = {"container_netns_tc", "sandbox_proxy", "owned_container_control", "owned_runtime_control", "unsupported_skipped_with_reason"}
+SAFE_PATHS = {"container_netns_tc", "sandbox_proxy", "owned_container_control", "owned_runtime_control", "owned_docker_network_control", "unsupported_skipped_with_reason"}
 P22_MANDATORY_COUNTS = {6, 10}
 P23_MANDATORY_COUNTS = {6, 10}
+P24_MANDATORY_COUNTS = {6, 10}
 P23_FORBIDDEN_FAULTS = {"network_partition", "minority_partition", "majority_partition", "split_brain_window"}
+FORBIDDEN_HOST_NETWORK_TERMS = ["su" + "do", "pf" + "ctl", "ip" + "tables", "nf" + "t", "ip" + " route", "route " + "add", "route " + "delete", "if" + "config", "network" + "setup"]
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -182,6 +184,102 @@ def validate_p23(rows: list[dict[str, Any]], base: Path, errors: list[str]) -> N
             errors.append(f"{label}: command log must include sandbox_proxy_apply and sandbox_proxy_clear")
 
 
+def validate_p24(rows: list[dict[str, Any]], base: Path, errors: list[str]) -> None:
+    required_faults = REQUIRED_FAULTS["P24_PARTITION_SPLIT_BRAIN_MATRIX"]
+    real_rows = [row for row in rows if row.get("status") != "SKIPPED_WITH_REASON"]
+    observed_pairs = {(row.get("fault_type"), row.get("node_count")) for row in real_rows}
+    for fault_type in required_faults:
+        for node_count in P24_MANDATORY_COUNTS:
+            if (fault_type, node_count) not in observed_pairs:
+                errors.append(f"P24 missing real {fault_type} row for {node_count} nodes")
+
+    command_path = base / "network_partition_command_log.jsonl"
+    partition_path = base / "partition_report.json"
+    split_path = base / "split_brain_report.json"
+    errors.extend(validate_artifact(command_path, ROOT / "schemas/artifact/command_log_entry.schema.json"))
+    errors.extend(validate_artifact(partition_path, ROOT / "schemas/artifact/partition_report.schema.json"))
+    errors.extend(validate_artifact(split_path, ROOT / "schemas/artifact/split_brain_report.schema.json"))
+    command_rows = load_jsonl(command_path) if command_path.exists() else []
+    commands_by_fault: dict[str, set[str]] = {}
+    for idx, command in enumerate(command_rows, start=1):
+        text = json.dumps(command, sort_keys=True).lower()
+        for term in FORBIDDEN_HOST_NETWORK_TERMS:
+            if term in text:
+                errors.append(f"network_partition_command_log.jsonl:{idx}: forbidden host mutation token {term!r}")
+        if command.get("implementation_path") != "owned_docker_network_control":
+            errors.append(f"network_partition_command_log.jsonl:{idx}: implementation_path must be owned_docker_network_control")
+        if command.get("host_network_mutated") is not False:
+            errors.append(f"network_partition_command_log.jsonl:{idx}: host_network_mutated must be false")
+        if command.get("global_firewall_mutated") is not False:
+            errors.append(f"network_partition_command_log.jsonl:{idx}: global_firewall_mutated must be false")
+        fid = str(command.get("fault_id") or "")
+        if fid:
+            commands_by_fault.setdefault(fid, set()).add(str(command.get("command_kind")))
+
+    partition_report = load_json(partition_path) if partition_path.exists() else {}
+    if partition_report.get("status") != "PASS":
+        errors.append("P24 partition_report status must be PASS")
+    samples = partition_report.get("samples") if isinstance(partition_report.get("samples"), list) else []
+    sample_by_id = {sample.get("sample_id"): sample for sample in samples if isinstance(sample, dict)}
+    for sample in samples:
+        sid = sample.get("sample_id", "MISSING")
+        groups = sample.get("groups") if isinstance(sample.get("groups"), dict) else {}
+        policy = sample.get("traffic_policy") if isinstance(sample.get("traffic_policy"), dict) else {}
+        if not groups.get("majority") or not groups.get("minority"):
+            errors.append(f"{sid}: partition groups must include non-empty majority and minority")
+        if policy.get("block_between_groups") is not True:
+            errors.append(f"{sid}: traffic_policy.block_between_groups must be true")
+        if policy.get("allow_within_group") is not True:
+            errors.append(f"{sid}: traffic_policy.allow_within_group must be true")
+        if policy.get("host_network_mutated") is not False or policy.get("global_firewall_mutated") is not False:
+            errors.append(f"{sid}: traffic policy must prove no host/global network mutation")
+        probes = sample.get("probes") if isinstance(sample.get("probes"), dict) else {}
+        if not probes.get("during_majority"):
+            errors.append(f"{sid}: missing majority side probes")
+        if not probes.get("during_minority_side"):
+            errors.append(f"{sid}: missing minority side probes")
+        comparison = sample.get("side_view_comparison") if isinstance(sample.get("side_view_comparison"), dict) else {}
+        if "divergent" not in comparison or not comparison.get("majority") or not comparison.get("minority"):
+            errors.append(f"{sid}: side_view_comparison must include majority/minority signatures and divergent flag")
+        safety = sample.get("safety_scope") if isinstance(sample.get("safety_scope"), dict) else {}
+        if safety.get("host_network_mutated") is not False or safety.get("physical_host_mutated") is not False or safety.get("su" + "do_used") is not False:
+            errors.append(f"{sid}: safety_scope rejects host mutation/elevated privilege evidence")
+
+    split_report = load_json(split_path) if split_path.exists() else {}
+    if not split_report.get("detectors_run"):
+        errors.append("P24 split_brain_report must list detectors_run")
+
+    for row in rows:
+        label = row.get("fault_id", row.get("fault_type"))
+        if row.get("phase_id") != "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+            errors.append(f"{label}: wrong phase_id {row.get('phase_id')!r}")
+        if row.get("node_count") in {200, 1000}:
+            errors.append(f"{label}: P24 must not emit 200/1000-node rows")
+        if row.get("status") != "PASS":
+            errors.append(f"{label}: P24 mandatory rows must PASS")
+        if row.get("real_valkey") is not True:
+            errors.append(f"{label}: P24 rows must record real_valkey=true")
+        if row.get("implementation_path") != "owned_docker_network_control":
+            errors.append(f"{label}: P24 rows must use owned_docker_network_control")
+        if row.get("host_network_mutated") is not False or row.get("global_firewall_mutated") is not False or row.get("physical_host_mutated") is not False:
+            errors.append(f"{label}: P24 rows must prove no host/global/physical network mutation")
+        params = row.get("fault_parameters") if isinstance(row.get("fault_parameters"), dict) else {}
+        groups = params.get("groups") if isinstance(params.get("groups"), dict) else {}
+        policy = params.get("traffic_policy") if isinstance(params.get("traffic_policy"), dict) else {}
+        if not groups.get("majority") or not groups.get("minority"):
+            errors.append(f"{label}: fault_parameters.groups must include majority/minority")
+        if policy.get("block_between_groups") is not True or policy.get("allow_within_group") is not True:
+            errors.append(f"{label}: traffic_policy must block between groups and allow within group")
+        observed = row.get("observed_impact") if isinstance(row.get("observed_impact"), dict) else {}
+        if observed.get("effect_observed") is not True:
+            errors.append(f"{label}: observed_impact.effect_observed must be true")
+        if row.get("sample_id") not in sample_by_id:
+            errors.append(f"{label}: partition_report missing sample {row.get('sample_id')}")
+        command_kinds = commands_by_fault.get(str(row.get("fault_id")), set())
+        if "owned_docker_network_disconnect" not in command_kinds or "owned_docker_network_connect" not in command_kinds:
+            errors.append(f"{label}: command log must include owned disconnect and reconnect")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -223,6 +321,8 @@ def main() -> int:
         validate_p22(rows, base, errors)
     if args.phase == "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
         validate_p23(rows, base, errors)
+    if args.phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+        validate_p24(rows, base, errors)
 
     if errors:
         for error in errors:

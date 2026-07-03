@@ -1,0 +1,474 @@
+{
+  "artifact_type": "p13_timing_breakdown",
+  "created_at": "2026-06-28T00:00:00Z",
+  "node_count": 10,
+  "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+  "producer": {
+    "name": "valkey-scale-lab-runtime",
+    "version": "0.0.0"
+  },
+  "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+  "scenario": "p24_partition_matrix_10",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": {
+    "cluster_create_duration_seconds": "MISSING",
+    "diagnostic_full_probe_duration_seconds": "MISSING",
+    "final_full_probe_duration_seconds": "MISSING",
+    "replica_config_duration_seconds": "MISSING",
+    "wrapper_probe_duration_seconds": "MISSING"
+  },
+  "timings": [
+    {
+      "count": 1,
+      "details": {
+        "nodehost_count": 3,
+        "parallelism": 8
+      },
+      "duration_seconds": 0.285284,
+      "name": "nodehost_start",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "bundle_records": [
+          {
+            "bundle_artifact_dir": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/nodehost_bundles/vslab-bundle-P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628-nodehost-p24-minority",
+            "node_count": 1,
+            "nodehost_id": "nodehost-p24-minority",
+            "remote_bundle_dir": "/tmp/vslab-bundle-P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628-nodehost-p24-minority"
+          },
+          {
+            "bundle_artifact_dir": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/nodehost_bundles/vslab-bundle-P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628-nodehost-p24-majority-a",
+            "node_count": 5,
+            "nodehost_id": "nodehost-p24-majority-a",
+            "remote_bundle_dir": "/tmp/vslab-bundle-P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628-nodehost-p24-majority-a"
+          },
+          {
+            "bundle_artifact_dir": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/nodehost_bundles/vslab-bundle-P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628-nodehost-p24-majority-b",
+            "node_count": 4,
+            "nodehost_id": "nodehost-p24-majority-b",
+            "remote_bundle_dir": "/tmp/vslab-bundle-P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628-nodehost-p24-majority-b"
+          }
+        ],
+        "config_local_generate_seconds": 0.007209,
+        "config_remote_install_seconds": 0.100484,
+        "docker_cp_bundle_seconds": 0.036017,
+        "docker_cp_count_before_after": {
+          "after": 3,
+          "after_basis": "one config bundle docker cp per nodehost",
+          "before": 10,
+          "before_basis": "legacy per-node config docker cp",
+          "stage": "config_remote_install"
+        },
+        "docker_exec_count_before_after": {
+          "after": 3,
+          "after_basis": "one install.sh exec per nodehost",
+          "before": 10,
+          "before_basis": "legacy per-node mkdir",
+          "stage": "config_remote_install"
+        },
+        "node_config_local_generate_seconds": 0.00113,
+        "node_count": 10,
+        "nodehost_bulk_install_used": true,
+        "nodehost_bundle_install_seconds": 0.064467,
+        "nodehost_bundle_write_seconds": 0.006079,
+        "nodehost_count": 3,
+        "parallelism": 8,
+        "process_bootstrap_batching": {
+          "config_local_generate_seconds": 0.007209,
+          "config_remote_install_seconds": 0.100484,
+          "docker_cp_count_before_after": {
+            "after": 3,
+            "basis": "deterministic setup command plan for config transfer",
+            "before": 10,
+            "reduction": 7,
+            "stages": {
+              "config_remote_install": {
+                "after": 3,
+                "after_basis": "one config bundle docker cp per nodehost",
+                "before": 10,
+                "before_basis": "legacy per-node config docker cp",
+                "stage": "config_remote_install"
+              }
+            }
+          },
+          "docker_exec_count_before_after": {
+            "after": 9,
+            "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+            "before": 30,
+            "reduction": 21,
+            "stages": {
+              "config_remote_install": {
+                "after": 3,
+                "after_basis": "one install.sh exec per nodehost",
+                "before": 10,
+                "before_basis": "legacy per-node mkdir",
+                "stage": "config_remote_install"
+              },
+              "process_start_and_pidfile_collect": {
+                "after": 6,
+                "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                "before": 20,
+                "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                "stage": "process_start_and_pidfile_collect"
+              }
+            }
+          },
+          "node_count": 10,
+          "nodehost_bulk_install_used": true,
+          "nodehost_bulk_start_used": true,
+          "nodehost_count": 3,
+          "per_logical_node_evidence": [
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0000-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-primary/valkey.log",
+              "logical_id": "shard-0000-primary",
+              "pid": 24,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0001-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-primary/valkey.log",
+              "logical_id": "shard-0001-primary",
+              "pid": 33,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0002-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-primary/valkey.log",
+              "logical_id": "shard-0002-primary",
+              "pid": 29,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0003-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-primary/valkey.log",
+              "logical_id": "shard-0003-primary",
+              "pid": 42,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0004-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-primary/valkey.log",
+              "logical_id": "shard-0004-primary",
+              "pid": 38,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0000-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-replica-00/valkey.log",
+              "logical_id": "shard-0000-replica-00",
+              "pid": 51,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0001-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-replica-00/valkey.log",
+              "logical_id": "shard-0001-replica-00",
+              "pid": 47,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0002-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-replica-00/valkey.log",
+              "logical_id": "shard-0002-replica-00",
+              "pid": 60,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0003-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-replica-00/valkey.log",
+              "logical_id": "shard-0003-replica-00",
+              "pid": 56,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0004-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-replica-00/valkey.log",
+              "logical_id": "shard-0004-replica-00",
+              "pid": 69,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-replica-00/valkey.pid"
+            }
+          ],
+          "pidfile_collect_seconds": 0.08033,
+          "process_start_command_seconds": 0.08056
+        }
+      },
+      "duration_seconds": 0.10775,
+      "name": "process_config_prepare",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "docker_exec_count_before_after": {
+          "after": 6,
+          "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+          "before": 20,
+          "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+          "stage": "process_start_and_pidfile_collect"
+        },
+        "node_count": 10,
+        "nodehost_bulk_start_used": true,
+        "nodehost_count": 3,
+        "parallelism": 8,
+        "pidfile_collect_seconds": 0.08033,
+        "process_bootstrap_batching": {
+          "config_local_generate_seconds": 0.007209,
+          "config_remote_install_seconds": 0.100484,
+          "docker_cp_count_before_after": {
+            "after": 3,
+            "basis": "deterministic setup command plan for config transfer",
+            "before": 10,
+            "reduction": 7,
+            "stages": {
+              "config_remote_install": {
+                "after": 3,
+                "after_basis": "one config bundle docker cp per nodehost",
+                "before": 10,
+                "before_basis": "legacy per-node config docker cp",
+                "stage": "config_remote_install"
+              }
+            }
+          },
+          "docker_exec_count_before_after": {
+            "after": 9,
+            "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+            "before": 30,
+            "reduction": 21,
+            "stages": {
+              "config_remote_install": {
+                "after": 3,
+                "after_basis": "one install.sh exec per nodehost",
+                "before": 10,
+                "before_basis": "legacy per-node mkdir",
+                "stage": "config_remote_install"
+              },
+              "process_start_and_pidfile_collect": {
+                "after": 6,
+                "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                "before": 20,
+                "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                "stage": "process_start_and_pidfile_collect"
+              }
+            }
+          },
+          "node_count": 10,
+          "nodehost_bulk_install_used": true,
+          "nodehost_bulk_start_used": true,
+          "nodehost_count": 3,
+          "per_logical_node_evidence": [
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0000-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-primary/valkey.log",
+              "logical_id": "shard-0000-primary",
+              "pid": 24,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0001-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-primary/valkey.log",
+              "logical_id": "shard-0001-primary",
+              "pid": 33,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0002-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-primary/valkey.log",
+              "logical_id": "shard-0002-primary",
+              "pid": 29,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0003-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-primary/valkey.log",
+              "logical_id": "shard-0003-primary",
+              "pid": 42,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0004-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-primary",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-primary/valkey.log",
+              "logical_id": "shard-0004-primary",
+              "pid": 38,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0000-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-replica-00/valkey.log",
+              "logical_id": "shard-0000-replica-00",
+              "pid": 51,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0000-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0001-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-replica-00/valkey.log",
+              "logical_id": "shard-0001-replica-00",
+              "pid": 47,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0001-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0002-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-replica-00/valkey.log",
+              "logical_id": "shard-0002-replica-00",
+              "pid": 60,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0002-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0003-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-replica-00/valkey.log",
+              "logical_id": "shard-0003-replica-00",
+              "pid": 56,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0003-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/node_configs/shard-0004-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-replica-00/valkey.log",
+              "logical_id": "shard-0004-replica-00",
+              "pid": 69,
+              "pid_file": "/tmp/valkey-scale-lab/P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628/shard-0004-replica-00/valkey.pid"
+            }
+          ],
+          "pidfile_collect_seconds": 0.08033,
+          "process_start_command_seconds": 0.08056
+        },
+        "process_start_command_seconds": 0.08056
+      },
+      "duration_seconds": 0.160913,
+      "name": "process_start",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "node_count": 10
+      },
+      "duration_seconds": 0.017122,
+      "name": "process_ready_wait",
+      "status": "PASS"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "primary_cluster_create",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "replica_meet",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "replica_replicate",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "runtime_representative_probe",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "runtime_final_full_probe",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "runtime_diagnostic_full_probe",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "wrapper_wait_cluster_ok",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "wrapper_data_path_probe",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": null,
+      "name": "cleanup",
+      "status": "MISSING"
+    }
+  ]
+}

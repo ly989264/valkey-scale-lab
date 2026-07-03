@@ -208,6 +208,87 @@ def main() -> int:
             ]:
                 if field not in item:
                     errors.append(f"P23 comparison {item.get('sample_id')}: missing {field}")
+    if args.phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+        required_faults = {"network_partition_minority", "network_partition_majority", "split_brain_window_detection"}
+        sample_ids = {row.get("sample_id") for row in rows if row.get("sample_id")}
+        by_sample: dict[Any, list[dict[str, Any]]] = {}
+        for row in rows:
+            by_sample.setdefault(row.get("sample_id"), []).append(row)
+            if row.get("fault_type") not in required_faults:
+                errors.append(f"{row.get('sample_id')}: unexpected P24 fault_type {row.get('fault_type')!r}")
+            if row.get("node_count") in {200, 1000}:
+                errors.append(f"{row.get('sample_id')}: P24 workload must not use 200/1000-node rows")
+            if not row.get("fault_id"):
+                errors.append(f"{row.get('sample_id')}: P24 workload row requires fault_id")
+            if not row.get("side_label"):
+                errors.append(f"{row.get('sample_id')}: P24 workload row requires side_label")
+        required_sample_pairs = {
+            (fault_type, node_count)
+            for fault_type in required_faults
+            for node_count in [6, 10]
+        }
+        observed_pairs = {
+            (items[0].get("fault_type"), items[0].get("node_count"))
+            for items in by_sample.values()
+            if items
+        }
+        missing_pairs = sorted(required_sample_pairs - observed_pairs)
+        if missing_pairs:
+            errors.append(f"P24 workload missing required real sample pairs: {missing_pairs}")
+        for sid, items in by_sample.items():
+            names = {item.get("window_name") for item in items}
+            missing = sorted(WINDOWS - names)
+            if missing:
+                errors.append(f"P24 sample {sid} missing workload windows: {missing}")
+            event = next((item for item in items if item.get("window_name") == "event"), {})
+            metrics = event.get("metrics") if isinstance(event.get("metrics"), dict) else {}
+            if int(metrics.get("sample_count", 0) or 0) == 0:
+                errors.append(f"P24 sample {sid} event window must contain attempted workload samples")
+            for item in items:
+                item_metrics = item.get("metrics") if isinstance(item.get("metrics"), dict) else {}
+                classified_errors = sum(int(item_metrics.get(field, 0) or 0) for field in [
+                    "timeout_count",
+                    "connection_error_count",
+                    "cluster_down_error_count",
+                    "readonly_error_count",
+                    "tryagain_error_count",
+                    "unknown_error_count",
+                ])
+                if classified_errors != int(item_metrics.get("error_ops", 0) or 0):
+                    errors.append(f"P24 sample {sid} {item.get('window_name')}: error taxonomy counts must equal error_ops")
+                has_clusterdown_sample = any(
+                    isinstance(sample, dict) and "clusterdown" in str(sample.get("error", "")).lower()
+                    for sample in item.get("samples", [])
+                )
+                if has_clusterdown_sample and int(item_metrics.get("cluster_down_error_count", 0) or 0) <= 0:
+                    errors.append(f"P24 sample {sid} {item.get('window_name')}: CLUSTERDOWN samples require cluster_down_error_count")
+                if item.get("window_name") == "all_run" and int(item_metrics.get("ok_ops", 0) or 0) > 0:
+                    for latency_field in ["latency_p50_ms", "latency_p90_ms", "latency_p95_ms", "latency_p99_ms"]:
+                        if item_metrics.get(latency_field) == "MISSING":
+                            errors.append(f"P24 sample {sid} all_run: {latency_field} must be derived when ok_ops > 0")
+                    if any("No successful workload operations" in str(reason) for reason in item_metrics.get("missing_reasons", {}).values()):
+                        errors.append(f"P24 sample {sid} all_run: missing reasons must not contradict ok_ops > 0")
+            side_labels = {item.get("side_label") for item in items}
+            invalid_side_labels = side_labels - {"minority", "majority", "aggregate"}
+            if invalid_side_labels:
+                errors.append(f"P24 sample {sid} has invalid side labels {sorted(str(item) for item in invalid_side_labels)}")
+        comparisons = report.get("comparisons", [])
+        comparison_ids = {item.get("sample_id") for item in comparisons if isinstance(item, dict)}
+        missing_comparisons = sorted(str(item) for item in sample_ids - comparison_ids)
+        if missing_comparisons:
+            errors.append(f"P24 comparisons missing sample IDs: {missing_comparisons}")
+        for item in comparisons:
+            if not isinstance(item, dict):
+                continue
+            for field in [
+                "fault_window_qps_ratio",
+                "fault_window_p99_delta_ms",
+                "fault_window_error_rate_delta",
+                "recovery_window_duration_ms",
+                "post_recovery_qps_ratio",
+            ]:
+                if field not in item:
+                    errors.append(f"P24 comparison {item.get('sample_id')}: missing {field}")
     if errors:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)

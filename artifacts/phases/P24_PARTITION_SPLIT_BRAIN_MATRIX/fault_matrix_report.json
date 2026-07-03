@@ -1,0 +1,2135 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "fault_matrix_report",
+  "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+  "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-partition-split-brain-20260703",
+  "created_at": "2026-07-03T02:27:08.154658Z",
+  "producer": {
+    "name": "scripts/fault_safety_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "fault_rows": [
+    {
+      "schema_version": "v1",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "scenario_name": "p24_partition_matrix_6",
+      "sample_id": "p24-6-network_partition_minority",
+      "node_count": 6,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_partition_minority",
+      "fault_id": "p24-6-network_partition_minority-fault",
+      "scope": "owned_docker_network",
+      "implementation_path": "owned_docker_network_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p24-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-p24-minority",
+          "client_port": 7680,
+          "pid": 24,
+          "container_name": "vslab-p24-partition-split-brain-matrix-p24-partition-matrix-6-20260628-nodehost-p24-minority"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "virtual_az_partition",
+        "selected_az_id": "az-a",
+        "majority_azs": [
+          "az-a",
+          "az-b"
+        ],
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        }
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        },
+        "group_nodehosts": {
+          "majority": [
+            "nodehost-p24-majority-a",
+            "nodehost-p24-majority-b"
+          ],
+          "minority": [
+            "nodehost-p24-minority"
+          ],
+          "isolated": []
+        },
+        "traffic_policy": {
+          "block_between_groups": true,
+          "allow_within_group": true,
+          "implementation_path": "owned_docker_network_control",
+          "between_group_control": "docker network disconnect owned minority nodehost containers from owned stage network",
+          "within_group_preservation": "majority nodehost containers remain connected on the owned Docker network; minority side is probed through owned container loopback while isolated",
+          "host_network_mutated": false,
+          "global_firewall_mutated": false,
+          "physical_host_mutated": false
+        },
+        "duration_seconds": 8.802,
+        "side_measured": "minority"
+      },
+      "apply_started_at_ms": 1783045530081,
+      "apply_completed_at_ms": 1783045530407,
+      "clear_started_at_ms": 1783045539209,
+      "clear_completed_at_ms": 1783045539254,
+      "recovery_completed_at_ms": 1783045545355,
+      "apply_duration_ms": 326,
+      "clear_duration_ms": 45,
+      "recovery_latency_ms": 6146,
+      "observed_effect_started_at_ms": 1783045530407,
+      "expected_impact": "Traffic between majority and minority nodehost groups is blocked while within-majority traffic remains available.",
+      "observed_impact": {
+        "effect_observed": true,
+        "majority_available": true,
+        "minority_side_probed": true,
+        "minority_host_blocked": true,
+        "split_brain": {
+          "detectors_run": [
+            "primary_slot_assignment_overlap",
+            "partition_side_cluster_view_divergence",
+            "conflicting_write_probe"
+          ],
+          "detector_results": [
+            {
+              "detector": "primary_slot_assignment_overlap",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045539144,
+              "ended_at_ms": 1783045539144,
+              "window_ms": 0,
+              "conflicts": []
+            },
+            {
+              "detector": "partition_side_cluster_view_divergence",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": true,
+              "started_at_ms": 1783045539144,
+              "ended_at_ms": 1783045539144,
+              "window_ms": 0,
+              "majority_signature": {
+                "pass_probe_count": 5,
+                "cluster_states": [
+                  "ok"
+                ],
+                "known_node_ids": [
+                  "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+                  "6213d2c536d2554ed90554b90ea0017095157651",
+                  "7306a7716242ee93deced7d3f1866785567bd5c6",
+                  "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                  "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                  "d3449c88824ef436c9b386d453777001c06a5d88"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  }
+                ]
+              },
+              "minority_signature": {
+                "pass_probe_count": 1,
+                "cluster_states": [
+                  "fail"
+                ],
+                "known_node_ids": [
+                  "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+                  "6213d2c536d2554ed90554b90ea0017095157651",
+                  "7306a7716242ee93deced7d3f1866785567bd5c6",
+                  "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                  "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                  "d3449c88824ef436c9b386d453777001c06a5d88"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  }
+                ]
+              },
+              "conflicting_nodes": [
+                "partition_side_cluster_view_divergence"
+              ]
+            },
+            {
+              "detector": "conflicting_write_probe",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045539144,
+              "ended_at_ms": 1783045539209,
+              "window_ms": 0,
+              "key": "p24-majority:network_partition_minority:shard-0001-primary:{p23-3}:split-brain-detector",
+              "majority_write_status": "FAIL:RespError('CLUSTERDOWN The cluster is down')",
+              "minority_write_status": "FAIL",
+              "conflicting_write_keys": []
+            }
+          ],
+          "indicator_observed": true,
+          "indicator_start_ms": 1783045539144,
+          "indicator_end_ms": 1783045539144,
+          "split_brain_window_ms": 1,
+          "conflicting_slots": [],
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ],
+          "conflicting_write_keys": [],
+          "missing_detectors_with_reason": [
+            {
+              "detector": "old_primary_accepts_write_after_promotion",
+              "status": "MISSING",
+              "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+            }
+          ]
+        }
+      },
+      "partition_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json#p24-6-network_partition_minority",
+      "split_brain_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json#p24-6-network_partition_minority",
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "global_firewall_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json#p24-6-network_partition_minority",
+      "command_log_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/network_partition_command_log.jsonl#p24-6-network_partition_minority-fault",
+      "state_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_6/state_p24.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_6/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "scenario_name": "p24_partition_matrix_6",
+      "sample_id": "p24-6-network_partition_majority",
+      "node_count": 6,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_partition_majority",
+      "fault_id": "p24-6-network_partition_majority-fault",
+      "scope": "owned_docker_network",
+      "implementation_path": "owned_docker_network_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p24-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-p24-minority",
+          "client_port": 7680,
+          "pid": 24,
+          "container_name": "vslab-p24-partition-split-brain-matrix-p24-partition-matrix-6-20260628-nodehost-p24-minority"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "virtual_az_partition",
+        "selected_az_id": "az-a",
+        "majority_azs": [
+          "az-a",
+          "az-b"
+        ],
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        }
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        },
+        "group_nodehosts": {
+          "majority": [
+            "nodehost-p24-majority-a",
+            "nodehost-p24-majority-b"
+          ],
+          "minority": [
+            "nodehost-p24-minority"
+          ],
+          "isolated": []
+        },
+        "traffic_policy": {
+          "block_between_groups": true,
+          "allow_within_group": true,
+          "implementation_path": "owned_docker_network_control",
+          "between_group_control": "docker network disconnect owned minority nodehost containers from owned stage network",
+          "within_group_preservation": "majority nodehost containers remain connected on the owned Docker network; minority side is probed through owned container loopback while isolated",
+          "host_network_mutated": false,
+          "global_firewall_mutated": false,
+          "physical_host_mutated": false
+        },
+        "duration_seconds": 8.382,
+        "side_measured": "majority"
+      },
+      "apply_started_at_ms": 1783045545659,
+      "apply_completed_at_ms": 1783045545981,
+      "clear_started_at_ms": 1783045554363,
+      "clear_completed_at_ms": 1783045554407,
+      "recovery_completed_at_ms": 1783045555437,
+      "apply_duration_ms": 322,
+      "clear_duration_ms": 44,
+      "recovery_latency_ms": 1074,
+      "observed_effect_started_at_ms": 1783045545981,
+      "expected_impact": "Traffic between majority and minority nodehost groups is blocked while within-majority traffic remains available.",
+      "observed_impact": {
+        "effect_observed": true,
+        "majority_available": true,
+        "minority_side_probed": true,
+        "minority_host_blocked": true,
+        "split_brain": {
+          "detectors_run": [
+            "primary_slot_assignment_overlap",
+            "partition_side_cluster_view_divergence",
+            "conflicting_write_probe"
+          ],
+          "detector_results": [
+            {
+              "detector": "primary_slot_assignment_overlap",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045554300,
+              "ended_at_ms": 1783045554300,
+              "window_ms": 0,
+              "conflicts": []
+            },
+            {
+              "detector": "partition_side_cluster_view_divergence",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": true,
+              "started_at_ms": 1783045554300,
+              "ended_at_ms": 1783045554300,
+              "window_ms": 0,
+              "majority_signature": {
+                "pass_probe_count": 5,
+                "cluster_states": [
+                  "ok"
+                ],
+                "known_node_ids": [
+                  "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+                  "6213d2c536d2554ed90554b90ea0017095157651",
+                  "7306a7716242ee93deced7d3f1866785567bd5c6",
+                  "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                  "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                  "d3449c88824ef436c9b386d453777001c06a5d88"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  }
+                ]
+              },
+              "minority_signature": {
+                "pass_probe_count": 1,
+                "cluster_states": [
+                  "fail"
+                ],
+                "known_node_ids": [
+                  "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+                  "6213d2c536d2554ed90554b90ea0017095157651",
+                  "7306a7716242ee93deced7d3f1866785567bd5c6",
+                  "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                  "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                  "d3449c88824ef436c9b386d453777001c06a5d88"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  }
+                ]
+              },
+              "conflicting_nodes": [
+                "partition_side_cluster_view_divergence"
+              ]
+            },
+            {
+              "detector": "conflicting_write_probe",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045554300,
+              "ended_at_ms": 1783045554363,
+              "window_ms": 0,
+              "key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-3}:split-brain-detector",
+              "majority_write_status": "PASS",
+              "minority_write_status": "FAIL",
+              "conflicting_write_keys": []
+            }
+          ],
+          "indicator_observed": true,
+          "indicator_start_ms": 1783045554300,
+          "indicator_end_ms": 1783045554300,
+          "split_brain_window_ms": 1,
+          "conflicting_slots": [],
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ],
+          "conflicting_write_keys": [],
+          "missing_detectors_with_reason": [
+            {
+              "detector": "old_primary_accepts_write_after_promotion",
+              "status": "MISSING",
+              "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+            }
+          ]
+        }
+      },
+      "partition_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json#p24-6-network_partition_majority",
+      "split_brain_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json#p24-6-network_partition_majority",
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "global_firewall_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json#p24-6-network_partition_majority",
+      "command_log_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/network_partition_command_log.jsonl#p24-6-network_partition_majority-fault",
+      "state_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_6/state_p24.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_6/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "scenario_name": "p24_partition_matrix_6",
+      "sample_id": "p24-6-split_brain_window_detection",
+      "node_count": 6,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "split_brain_window_detection",
+      "fault_id": "p24-6-split_brain_window_detection-fault",
+      "scope": "owned_docker_network",
+      "implementation_path": "owned_docker_network_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p24-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-p24-minority",
+          "client_port": 7680,
+          "pid": 24,
+          "container_name": "vslab-p24-partition-split-brain-matrix-p24-partition-matrix-6-20260628-nodehost-p24-minority"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "virtual_az_partition",
+        "selected_az_id": "az-a",
+        "majority_azs": [
+          "az-a",
+          "az-b"
+        ],
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        }
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        },
+        "group_nodehosts": {
+          "majority": [
+            "nodehost-p24-majority-a",
+            "nodehost-p24-majority-b"
+          ],
+          "minority": [
+            "nodehost-p24-minority"
+          ],
+          "isolated": []
+        },
+        "traffic_policy": {
+          "block_between_groups": true,
+          "allow_within_group": true,
+          "implementation_path": "owned_docker_network_control",
+          "between_group_control": "docker network disconnect owned minority nodehost containers from owned stage network",
+          "within_group_preservation": "majority nodehost containers remain connected on the owned Docker network; minority side is probed through owned container loopback while isolated",
+          "host_network_mutated": false,
+          "global_firewall_mutated": false,
+          "physical_host_mutated": false
+        },
+        "duration_seconds": 8.438,
+        "side_measured": "majority"
+      },
+      "apply_started_at_ms": 1783045555465,
+      "apply_completed_at_ms": 1783045555791,
+      "clear_started_at_ms": 1783045564229,
+      "clear_completed_at_ms": 1783045564275,
+      "recovery_completed_at_ms": 1783045565302,
+      "apply_duration_ms": 326,
+      "clear_duration_ms": 46,
+      "recovery_latency_ms": 1073,
+      "observed_effect_started_at_ms": 1783045555791,
+      "expected_impact": "Traffic between majority and minority nodehost groups is blocked while within-majority traffic remains available.",
+      "observed_impact": {
+        "effect_observed": true,
+        "majority_available": true,
+        "minority_side_probed": true,
+        "minority_host_blocked": true,
+        "split_brain": {
+          "detectors_run": [
+            "primary_slot_assignment_overlap",
+            "partition_side_cluster_view_divergence",
+            "conflicting_write_probe"
+          ],
+          "detector_results": [
+            {
+              "detector": "primary_slot_assignment_overlap",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045564164,
+              "ended_at_ms": 1783045564164,
+              "window_ms": 0,
+              "conflicts": []
+            },
+            {
+              "detector": "partition_side_cluster_view_divergence",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": true,
+              "started_at_ms": 1783045564164,
+              "ended_at_ms": 1783045564164,
+              "window_ms": 0,
+              "majority_signature": {
+                "pass_probe_count": 5,
+                "cluster_states": [
+                  "ok"
+                ],
+                "known_node_ids": [
+                  "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+                  "6213d2c536d2554ed90554b90ea0017095157651",
+                  "7306a7716242ee93deced7d3f1866785567bd5c6",
+                  "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                  "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                  "d3449c88824ef436c9b386d453777001c06a5d88"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  }
+                ]
+              },
+              "minority_signature": {
+                "pass_probe_count": 1,
+                "cluster_states": [
+                  "fail"
+                ],
+                "known_node_ids": [
+                  "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+                  "6213d2c536d2554ed90554b90ea0017095157651",
+                  "7306a7716242ee93deced7d3f1866785567bd5c6",
+                  "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                  "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                  "d3449c88824ef436c9b386d453777001c06a5d88"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                    "low": 0,
+                    "high": 5460
+                  },
+                  {
+                    "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                    "low": 5461,
+                    "high": 10921
+                  },
+                  {
+                    "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                    "low": 10922,
+                    "high": 16383
+                  }
+                ]
+              },
+              "conflicting_nodes": [
+                "partition_side_cluster_view_divergence"
+              ]
+            },
+            {
+              "detector": "conflicting_write_probe",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045564164,
+              "ended_at_ms": 1783045564229,
+              "window_ms": 0,
+              "key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-3}:split-brain-detector",
+              "majority_write_status": "PASS",
+              "minority_write_status": "FAIL",
+              "conflicting_write_keys": []
+            }
+          ],
+          "indicator_observed": true,
+          "indicator_start_ms": 1783045564164,
+          "indicator_end_ms": 1783045564164,
+          "split_brain_window_ms": 1,
+          "conflicting_slots": [],
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ],
+          "conflicting_write_keys": [],
+          "missing_detectors_with_reason": [
+            {
+              "detector": "old_primary_accepts_write_after_promotion",
+              "status": "MISSING",
+              "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+            }
+          ]
+        }
+      },
+      "partition_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json#p24-6-split_brain_window_detection",
+      "split_brain_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json#p24-6-split_brain_window_detection",
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "global_firewall_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json#p24-6-split_brain_window_detection",
+      "command_log_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/network_partition_command_log.jsonl#p24-6-split_brain_window_detection-fault",
+      "state_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_6/state_p24.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_6/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "scenario_name": "p24_partition_matrix_10",
+      "sample_id": "p24-10-network_partition_minority",
+      "node_count": 10,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_partition_minority",
+      "fault_id": "p24-10-network_partition_minority-fault",
+      "scope": "owned_docker_network",
+      "implementation_path": "owned_docker_network_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p24-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-p24-minority",
+          "client_port": 7820,
+          "pid": 24,
+          "container_name": "vslab-p24-partition-split-brain-matrix-p24-partition-matrix-10-20260628-nodehost-p24-minority"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "virtual_az_partition",
+        "selected_az_id": "az-a",
+        "majority_azs": [
+          "az-a",
+          "az-b"
+        ],
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0003-primary",
+            "shard-0004-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00",
+            "shard-0003-replica-00",
+            "shard-0004-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        }
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0003-primary",
+            "shard-0004-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00",
+            "shard-0003-replica-00",
+            "shard-0004-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        },
+        "group_nodehosts": {
+          "majority": [
+            "nodehost-p24-majority-a",
+            "nodehost-p24-majority-b"
+          ],
+          "minority": [
+            "nodehost-p24-minority"
+          ],
+          "isolated": []
+        },
+        "traffic_policy": {
+          "block_between_groups": true,
+          "allow_within_group": true,
+          "implementation_path": "owned_docker_network_control",
+          "between_group_control": "docker network disconnect owned minority nodehost containers from owned stage network",
+          "within_group_preservation": "majority nodehost containers remain connected on the owned Docker network; minority side is probed through owned container loopback while isolated",
+          "host_network_mutated": false,
+          "global_firewall_mutated": false,
+          "physical_host_mutated": false
+        },
+        "duration_seconds": 8.801,
+        "side_measured": "minority"
+      },
+      "apply_started_at_ms": 1783045581885,
+      "apply_completed_at_ms": 1783045582202,
+      "clear_started_at_ms": 1783045591003,
+      "clear_completed_at_ms": 1783045591050,
+      "recovery_completed_at_ms": 1783045600163,
+      "apply_duration_ms": 317,
+      "clear_duration_ms": 47,
+      "recovery_latency_ms": 9160,
+      "observed_effect_started_at_ms": 1783045582202,
+      "expected_impact": "Traffic between majority and minority nodehost groups is blocked while within-majority traffic remains available.",
+      "observed_impact": {
+        "effect_observed": true,
+        "majority_available": true,
+        "minority_side_probed": true,
+        "minority_host_blocked": true,
+        "split_brain": {
+          "detectors_run": [
+            "primary_slot_assignment_overlap",
+            "partition_side_cluster_view_divergence",
+            "conflicting_write_probe"
+          ],
+          "detector_results": [
+            {
+              "detector": "primary_slot_assignment_overlap",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045590930,
+              "ended_at_ms": 1783045590930,
+              "window_ms": 0,
+              "conflicts": []
+            },
+            {
+              "detector": "partition_side_cluster_view_divergence",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": true,
+              "started_at_ms": 1783045590930,
+              "ended_at_ms": 1783045590931,
+              "window_ms": 1,
+              "majority_signature": {
+                "pass_probe_count": 9,
+                "cluster_states": [
+                  "ok"
+                ],
+                "known_node_ids": [
+                  "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                  "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                  "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+                  "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+                  "6064ff384ee6d93eb6b60b79620ab841c842929f",
+                  "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                  "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                  "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+                  "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                  "cd90be8a49a22fdb8feed60137a45fee56716c00"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  }
+                ]
+              },
+              "minority_signature": {
+                "pass_probe_count": 1,
+                "cluster_states": [
+                  "fail"
+                ],
+                "known_node_ids": [
+                  "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                  "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                  "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+                  "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+                  "6064ff384ee6d93eb6b60b79620ab841c842929f",
+                  "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                  "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                  "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+                  "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                  "cd90be8a49a22fdb8feed60137a45fee56716c00"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                    "low": 13107,
+                    "high": 16383
+                  }
+                ]
+              },
+              "conflicting_nodes": [
+                "partition_side_cluster_view_divergence"
+              ]
+            },
+            {
+              "detector": "conflicting_write_probe",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045590931,
+              "ended_at_ms": 1783045591003,
+              "window_ms": 0,
+              "key": "p24-majority:network_partition_minority:shard-0001-primary:{p23-6}:split-brain-detector",
+              "majority_write_status": "FAIL:RespError('CLUSTERDOWN The cluster is down')",
+              "minority_write_status": "FAIL",
+              "conflicting_write_keys": []
+            }
+          ],
+          "indicator_observed": true,
+          "indicator_start_ms": 1783045590930,
+          "indicator_end_ms": 1783045590931,
+          "split_brain_window_ms": 1,
+          "conflicting_slots": [],
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ],
+          "conflicting_write_keys": [],
+          "missing_detectors_with_reason": [
+            {
+              "detector": "old_primary_accepts_write_after_promotion",
+              "status": "MISSING",
+              "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+            }
+          ]
+        }
+      },
+      "partition_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json#p24-10-network_partition_minority",
+      "split_brain_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json#p24-10-network_partition_minority",
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "global_firewall_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json#p24-10-network_partition_minority",
+      "command_log_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/network_partition_command_log.jsonl#p24-10-network_partition_minority-fault",
+      "state_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/state_p24.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "scenario_name": "p24_partition_matrix_10",
+      "sample_id": "p24-10-network_partition_majority",
+      "node_count": 10,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_partition_majority",
+      "fault_id": "p24-10-network_partition_majority-fault",
+      "scope": "owned_docker_network",
+      "implementation_path": "owned_docker_network_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p24-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-p24-minority",
+          "client_port": 7820,
+          "pid": 24,
+          "container_name": "vslab-p24-partition-split-brain-matrix-p24-partition-matrix-10-20260628-nodehost-p24-minority"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "virtual_az_partition",
+        "selected_az_id": "az-a",
+        "majority_azs": [
+          "az-a",
+          "az-b"
+        ],
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0003-primary",
+            "shard-0004-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00",
+            "shard-0003-replica-00",
+            "shard-0004-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        }
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0003-primary",
+            "shard-0004-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00",
+            "shard-0003-replica-00",
+            "shard-0004-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        },
+        "group_nodehosts": {
+          "majority": [
+            "nodehost-p24-majority-a",
+            "nodehost-p24-majority-b"
+          ],
+          "minority": [
+            "nodehost-p24-minority"
+          ],
+          "isolated": []
+        },
+        "traffic_policy": {
+          "block_between_groups": true,
+          "allow_within_group": true,
+          "implementation_path": "owned_docker_network_control",
+          "between_group_control": "docker network disconnect owned minority nodehost containers from owned stage network",
+          "within_group_preservation": "majority nodehost containers remain connected on the owned Docker network; minority side is probed through owned container loopback while isolated",
+          "host_network_mutated": false,
+          "global_firewall_mutated": false,
+          "physical_host_mutated": false
+        },
+        "duration_seconds": 8.428,
+        "side_measured": "majority"
+      },
+      "apply_started_at_ms": 1783045600484,
+      "apply_completed_at_ms": 1783045600771,
+      "clear_started_at_ms": 1783045609199,
+      "clear_completed_at_ms": 1783045609250,
+      "recovery_completed_at_ms": 1783045610274,
+      "apply_duration_ms": 287,
+      "clear_duration_ms": 51,
+      "recovery_latency_ms": 1075,
+      "observed_effect_started_at_ms": 1783045600771,
+      "expected_impact": "Traffic between majority and minority nodehost groups is blocked while within-majority traffic remains available.",
+      "observed_impact": {
+        "effect_observed": true,
+        "majority_available": true,
+        "minority_side_probed": true,
+        "minority_host_blocked": true,
+        "split_brain": {
+          "detectors_run": [
+            "primary_slot_assignment_overlap",
+            "partition_side_cluster_view_divergence",
+            "conflicting_write_probe"
+          ],
+          "detector_results": [
+            {
+              "detector": "primary_slot_assignment_overlap",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045609130,
+              "ended_at_ms": 1783045609130,
+              "window_ms": 0,
+              "conflicts": []
+            },
+            {
+              "detector": "partition_side_cluster_view_divergence",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": true,
+              "started_at_ms": 1783045609130,
+              "ended_at_ms": 1783045609130,
+              "window_ms": 0,
+              "majority_signature": {
+                "pass_probe_count": 9,
+                "cluster_states": [
+                  "ok"
+                ],
+                "known_node_ids": [
+                  "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                  "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                  "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+                  "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+                  "6064ff384ee6d93eb6b60b79620ab841c842929f",
+                  "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                  "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                  "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+                  "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                  "cd90be8a49a22fdb8feed60137a45fee56716c00"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  }
+                ]
+              },
+              "minority_signature": {
+                "pass_probe_count": 1,
+                "cluster_states": [
+                  "fail"
+                ],
+                "known_node_ids": [
+                  "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                  "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                  "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+                  "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+                  "6064ff384ee6d93eb6b60b79620ab841c842929f",
+                  "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                  "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                  "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+                  "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                  "cd90be8a49a22fdb8feed60137a45fee56716c00"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                    "low": 13107,
+                    "high": 16383
+                  }
+                ]
+              },
+              "conflicting_nodes": [
+                "partition_side_cluster_view_divergence"
+              ]
+            },
+            {
+              "detector": "conflicting_write_probe",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045609130,
+              "ended_at_ms": 1783045609199,
+              "window_ms": 0,
+              "key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-6}:split-brain-detector",
+              "majority_write_status": "PASS",
+              "minority_write_status": "FAIL",
+              "conflicting_write_keys": []
+            }
+          ],
+          "indicator_observed": true,
+          "indicator_start_ms": 1783045609130,
+          "indicator_end_ms": 1783045609130,
+          "split_brain_window_ms": 1,
+          "conflicting_slots": [],
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ],
+          "conflicting_write_keys": [],
+          "missing_detectors_with_reason": [
+            {
+              "detector": "old_primary_accepts_write_after_promotion",
+              "status": "MISSING",
+              "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+            }
+          ]
+        }
+      },
+      "partition_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json#p24-10-network_partition_majority",
+      "split_brain_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json#p24-10-network_partition_majority",
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "global_firewall_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json#p24-10-network_partition_majority",
+      "command_log_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/network_partition_command_log.jsonl#p24-10-network_partition_majority-fault",
+      "state_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/state_p24.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "scenario_name": "p24_partition_matrix_10",
+      "sample_id": "p24-10-split_brain_window_detection",
+      "node_count": 10,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "split_brain_window_detection",
+      "fault_id": "p24-10-split_brain_window_detection-fault",
+      "scope": "owned_docker_network",
+      "implementation_path": "owned_docker_network_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p24-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-p24-minority",
+          "client_port": 7820,
+          "pid": 24,
+          "container_name": "vslab-p24-partition-split-brain-matrix-p24-partition-matrix-10-20260628-nodehost-p24-minority"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "virtual_az_partition",
+        "selected_az_id": "az-a",
+        "majority_azs": [
+          "az-a",
+          "az-b"
+        ],
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0003-primary",
+            "shard-0004-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00",
+            "shard-0003-replica-00",
+            "shard-0004-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        }
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "groups": {
+          "majority": [
+            "shard-0001-primary",
+            "shard-0002-primary",
+            "shard-0003-primary",
+            "shard-0004-primary",
+            "shard-0000-replica-00",
+            "shard-0001-replica-00",
+            "shard-0002-replica-00",
+            "shard-0003-replica-00",
+            "shard-0004-replica-00"
+          ],
+          "minority": [
+            "shard-0000-primary"
+          ],
+          "isolated": []
+        },
+        "group_nodehosts": {
+          "majority": [
+            "nodehost-p24-majority-a",
+            "nodehost-p24-majority-b"
+          ],
+          "minority": [
+            "nodehost-p24-minority"
+          ],
+          "isolated": []
+        },
+        "traffic_policy": {
+          "block_between_groups": true,
+          "allow_within_group": true,
+          "implementation_path": "owned_docker_network_control",
+          "between_group_control": "docker network disconnect owned minority nodehost containers from owned stage network",
+          "within_group_preservation": "majority nodehost containers remain connected on the owned Docker network; minority side is probed through owned container loopback while isolated",
+          "host_network_mutated": false,
+          "global_firewall_mutated": false,
+          "physical_host_mutated": false
+        },
+        "duration_seconds": 8.396,
+        "side_measured": "majority"
+      },
+      "apply_started_at_ms": 1783045610304,
+      "apply_completed_at_ms": 1783045610601,
+      "clear_started_at_ms": 1783045618997,
+      "clear_completed_at_ms": 1783045619043,
+      "recovery_completed_at_ms": 1783045620057,
+      "apply_duration_ms": 297,
+      "clear_duration_ms": 46,
+      "recovery_latency_ms": 1060,
+      "observed_effect_started_at_ms": 1783045610601,
+      "expected_impact": "Traffic between majority and minority nodehost groups is blocked while within-majority traffic remains available.",
+      "observed_impact": {
+        "effect_observed": true,
+        "majority_available": true,
+        "minority_side_probed": true,
+        "minority_host_blocked": true,
+        "split_brain": {
+          "detectors_run": [
+            "primary_slot_assignment_overlap",
+            "partition_side_cluster_view_divergence",
+            "conflicting_write_probe"
+          ],
+          "detector_results": [
+            {
+              "detector": "primary_slot_assignment_overlap",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045618928,
+              "ended_at_ms": 1783045618928,
+              "window_ms": 0,
+              "conflicts": []
+            },
+            {
+              "detector": "partition_side_cluster_view_divergence",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": true,
+              "started_at_ms": 1783045618928,
+              "ended_at_ms": 1783045618928,
+              "window_ms": 0,
+              "majority_signature": {
+                "pass_probe_count": 9,
+                "cluster_states": [
+                  "ok"
+                ],
+                "known_node_ids": [
+                  "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                  "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                  "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+                  "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+                  "6064ff384ee6d93eb6b60b79620ab841c842929f",
+                  "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                  "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                  "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+                  "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                  "cd90be8a49a22fdb8feed60137a45fee56716c00"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  }
+                ]
+              },
+              "minority_signature": {
+                "pass_probe_count": 1,
+                "cluster_states": [
+                  "fail"
+                ],
+                "known_node_ids": [
+                  "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                  "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                  "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+                  "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+                  "6064ff384ee6d93eb6b60b79620ab841c842929f",
+                  "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                  "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                  "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+                  "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                  "cd90be8a49a22fdb8feed60137a45fee56716c00"
+                ],
+                "primary_slot_ranges": [
+                  {
+                    "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                    "low": 0,
+                    "high": 3275
+                  },
+                  {
+                    "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                    "low": 3276,
+                    "high": 6552
+                  },
+                  {
+                    "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                    "low": 6553,
+                    "high": 9829
+                  },
+                  {
+                    "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                    "low": 9830,
+                    "high": 13106
+                  },
+                  {
+                    "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                    "low": 13107,
+                    "high": 16383
+                  }
+                ]
+              },
+              "conflicting_nodes": [
+                "partition_side_cluster_view_divergence"
+              ]
+            },
+            {
+              "detector": "conflicting_write_probe",
+              "status": "PASS",
+              "ran": true,
+              "indicator_observed": false,
+              "started_at_ms": 1783045618928,
+              "ended_at_ms": 1783045618997,
+              "window_ms": 0,
+              "key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-6}:split-brain-detector",
+              "majority_write_status": "PASS",
+              "minority_write_status": "FAIL",
+              "conflicting_write_keys": []
+            }
+          ],
+          "indicator_observed": true,
+          "indicator_start_ms": 1783045618928,
+          "indicator_end_ms": 1783045618928,
+          "split_brain_window_ms": 1,
+          "conflicting_slots": [],
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ],
+          "conflicting_write_keys": [],
+          "missing_detectors_with_reason": [
+            {
+              "detector": "old_primary_accepts_write_after_promotion",
+              "status": "MISSING",
+              "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+            }
+          ]
+        }
+      },
+      "partition_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json#p24-10-split_brain_window_detection",
+      "split_brain_report_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json#p24-10-split_brain_window_detection",
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "global_firewall_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json#p24-10-split_brain_window_detection",
+      "command_log_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/network_partition_command_log.jsonl#p24-10-split_brain_window_detection-fault",
+      "state_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/state_p24.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10/cleanup_report.json"
+    }
+  ],
+  "safety_checks": {
+    "host_network_mutated": false,
+    "global_firewall_mutated": false,
+    "physical_host_mutated": false,
+    "owned_docker_network_control": true
+  }
+}

@@ -471,6 +471,135 @@ def assert_p23_semantics(base: Path, errors: list[str]) -> None:
         errors.append("P23 quant_summary.json missing")
 
 
+def assert_p24_semantics(base: Path, errors: list[str]) -> None:
+    events = read_jsonl(base / "events.jsonl", errors)
+    metrics = read_jsonl(base / "metrics_timeseries.jsonl", errors)
+    fault_rows = read_jsonl(base / "fault_results.jsonl", errors)
+    snapshots = read_jsonl(base / "fault_topology_snapshots.jsonl", errors)
+    command_rows = read_jsonl(base / "network_partition_command_log.jsonl", errors)
+    required_faults = {"network_partition_minority", "network_partition_majority", "split_brain_window_detection"}
+    real_rows = [row for row in fault_rows if row.get("status") != "SKIPPED_WITH_REASON"]
+    real_sample_ids = {str(row.get("sample_id")) for row in real_rows if row.get("sample_id")}
+    required_pairs = {(fault_type, count) for fault_type in required_faults for count in [6, 10]}
+    observed_pairs = {(row.get("fault_type"), row.get("node_count")) for row in real_rows}
+    missing_pairs = sorted(required_pairs - observed_pairs)
+    if missing_pairs:
+        errors.append(f"P24 quant missing required real fault pairs: {missing_pairs}")
+    if any(row.get("node_count") in {200, 1000} for row in fault_rows):
+        errors.append("P24 quant artifacts must not contain 200/1000-node rows")
+
+    event_sample_ids = {str(event.get("sample_id")) for event in events if event.get("sample_id")}
+    metric_sample_ids = {str(metric.get("sample_id")) for metric in metrics if metric.get("sample_id")}
+    snapshot_sample_ids = {str(snapshot.get("sample_id")) for snapshot in snapshots if snapshot.get("sample_id")}
+    missing_event_samples = sorted(real_sample_ids - event_sample_ids)
+    missing_metric_samples = sorted(real_sample_ids - metric_sample_ids)
+    missing_snapshot_samples = sorted(real_sample_ids - snapshot_sample_ids)
+    if missing_event_samples:
+        errors.append(f"P24 events.jsonl missing sample IDs: {missing_event_samples}")
+    if missing_metric_samples:
+        errors.append(f"P24 metrics_timeseries.jsonl missing sample IDs: {missing_metric_samples}")
+    if missing_snapshot_samples:
+        errors.append(f"P24 topology snapshots missing sample IDs: {missing_snapshot_samples}")
+
+    fault_ids = {str(row.get("fault_id")) for row in real_rows if row.get("fault_id")}
+    event_fault_ids = {str(event.get("fault_id")) for event in events if event.get("fault_id")}
+    metric_fault_ids = {str(metric.get("source_id")) for metric in metrics if metric.get("source_type") == "harness"}
+    command_fault_ids = {str(command.get("fault_id")) for command in command_rows if command.get("fault_id")}
+    if not fault_ids.issubset(event_fault_ids):
+        errors.append(f"P24 events missing fault IDs: {sorted(fault_ids - event_fault_ids)}")
+    if not fault_ids.issubset(metric_fault_ids):
+        errors.append(f"P24 harness metrics missing fault IDs: {sorted(fault_ids - metric_fault_ids)}")
+    if not fault_ids.issubset(command_fault_ids):
+        errors.append(f"P24 command log missing fault IDs: {sorted(fault_ids - command_fault_ids)}")
+
+    for idx, event in enumerate(events, start=1):
+        if event.get("phase_id") != "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+            errors.append(f"P24 events.jsonl:{idx}: wrong phase_id {event.get('phase_id')!r}")
+    for idx, metric in enumerate(metrics, start=1):
+        if metric.get("phase_id") != "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+            errors.append(f"P24 metrics_timeseries.jsonl:{idx}: wrong phase_id {metric.get('phase_id')!r}")
+        if metric.get("metric_value") == "MISSING" and not metric.get("missing_reason"):
+            errors.append(f"P24 metrics_timeseries.jsonl:{idx}: MISSING metric_value requires missing_reason")
+    for idx, row in enumerate(fault_rows, start=1):
+        if row.get("phase_id") != "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+            errors.append(f"P24 fault_results.jsonl:{idx}: wrong phase_id {row.get('phase_id')!r}")
+        if row.get("status") != "PASS":
+            errors.append(f"P24 fault_results.jsonl:{idx}: mandatory row status must be PASS")
+        if row.get("implementation_path") != "owned_docker_network_control":
+            errors.append(f"P24 fault_results.jsonl:{idx}: expected owned_docker_network_control implementation path")
+        if row.get("host_network_mutated") is not False or row.get("global_firewall_mutated") is not False:
+            errors.append(f"P24 fault_results.jsonl:{idx}: host/global network mutation flags must be false")
+    for idx, command in enumerate(command_rows, start=1):
+        if command.get("implementation_path") != "owned_docker_network_control":
+            errors.append(f"P24 network_partition_command_log.jsonl:{idx}: expected owned_docker_network_control")
+        if command.get("host_network_mutated") is not False or command.get("global_firewall_mutated") is not False:
+            errors.append(f"P24 network_partition_command_log.jsonl:{idx}: host/global network mutation flags must be false")
+
+    evidence_path = base / "valkey_e2e_evidence.json"
+    if evidence_path.exists():
+        evidence = load_json(evidence_path)
+        if evidence.get("status") != "PASS":
+            errors.append("P24 valkey_e2e_evidence status must be PASS")
+        if evidence.get("real_valkey") is not True:
+            errors.append("P24 valkey_e2e_evidence must be real Valkey")
+        if int(evidence.get("nodes_observed", 0) or 0) < 10:
+            errors.append("P24 valkey_e2e_evidence must observe at least the 10-node mandatory row")
+        versions = evidence.get("valkey_versions", [])
+        if not versions or any(not str(version).startswith("9.1.") for version in versions):
+            errors.append("P24 valkey_e2e_evidence must include Valkey 9.1.x versions")
+    else:
+        errors.append("P24 valkey_e2e_evidence.json missing")
+
+    partition_path = base / "partition_report.json"
+    if partition_path.exists():
+        partition = load_json(partition_path)
+        if partition.get("status") != "PASS":
+            errors.append("P24 partition_report status must be PASS")
+        sample_ids = {str(sample.get("sample_id")) for sample in partition.get("samples", []) if isinstance(sample, dict)}
+        if not real_sample_ids.issubset(sample_ids):
+            errors.append(f"P24 partition_report missing samples: {sorted(real_sample_ids - sample_ids)}")
+        safety = partition.get("safety_scope", {})
+        if safety.get("host_network_mutated") is not False or safety.get("global_firewall_mutated") is not False:
+            errors.append("P24 partition_report safety_scope must prove no host/global mutation")
+    else:
+        errors.append("P24 partition_report.json missing")
+
+    split_path = base / "split_brain_report.json"
+    if split_path.exists():
+        split = load_json(split_path)
+        if split.get("status") != "PASS":
+            errors.append("P24 split_brain_report status must be PASS")
+        split_sample_ids = {str(sample.get("sample_id")) for sample in split.get("samples", []) if isinstance(sample, dict)}
+        if not real_sample_ids.issubset(split_sample_ids):
+            errors.append(f"P24 split_brain_report missing samples: {sorted(real_sample_ids - split_sample_ids)}")
+        if not split.get("detectors_run"):
+            errors.append("P24 split_brain_report must include detectors_run")
+    else:
+        errors.append("P24 split_brain_report.json missing")
+
+    quant_path = base / "quant_summary.json"
+    if quant_path.exists():
+        quant = load_json(quant_path)
+        counts = quant.get("counts", {})
+        if counts.get("event_count") != len(events):
+            errors.append("P24 quant_summary counts.event_count must match events.jsonl line count")
+        if counts.get("metric_count") != len(metrics):
+            errors.append("P24 quant_summary counts.metric_count must match metrics_timeseries.jsonl line count")
+        if counts.get("fault_result_count") != len(fault_rows):
+            errors.append("P24 quant_summary counts.fault_result_count must match fault_results.jsonl line count")
+        if counts.get("topology_snapshot_count") != len(snapshots):
+            errors.append("P24 quant_summary counts.topology_snapshot_count must match topology snapshot line count")
+        if counts.get("command_log_count") != len(command_rows):
+            errors.append("P24 quant_summary counts.command_log_count must match command log line count")
+        if counts.get("sample_count") != len(real_rows):
+            errors.append("P24 quant_summary counts.sample_count must match non-skipped fault rows")
+        claims = quant.get("runtime_claims", {})
+        if claims.get("real_valkey_claimed") is not True or claims.get("fault_runtime_claimed") is not True:
+            errors.append("P24 quant_summary must claim real Valkey fault runtime")
+    else:
+        errors.append("P24 quant_summary.json missing")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -526,6 +655,8 @@ def main() -> int:
         assert_p22_semantics(base, errors)
     if args.phase == "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
         assert_p23_semantics(base, errors)
+    if args.phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+        assert_p24_semantics(base, errors)
 
     if errors:
         for error in errors:

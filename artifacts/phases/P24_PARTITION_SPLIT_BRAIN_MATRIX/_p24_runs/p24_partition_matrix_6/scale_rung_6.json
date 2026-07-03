@@ -1,0 +1,72 @@
+{
+  "artifact_type": "scale_rung_summary",
+  "az_distribution": {
+    "az-a": 3,
+    "az-b": 3
+  },
+  "client_port_range": {
+    "max": 7685,
+    "min": 7680
+  },
+  "cluster_known_nodes_observed": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+  ],
+  "cluster_states": [
+    "ok"
+  ],
+  "config_path": "p24_6",
+  "created_at": "2026-06-28T00:00:00Z",
+  "errors": [],
+  "evidence_path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/valkey_e2e_evidence_6.json",
+  "host_distribution": {
+    "p24-host-a": 2,
+    "p24-host-b": 2,
+    "p24-host-c": 2
+  },
+  "management": {
+    "cluster_known_nodes_expected": 6,
+    "cluster_known_nodes_max": 6,
+    "cluster_known_nodes_min": 6,
+    "slot_ranges": [
+      {
+        "end": 10921,
+        "start": 5461
+      },
+      {
+        "end": 16383,
+        "start": 10922
+      },
+      {
+        "end": 5460,
+        "start": 0
+      }
+    ],
+    "slots_assigned": 16384
+  },
+  "metrics": {
+    "avg_used_memory": 3013374.666667,
+    "total_commands_processed": 200,
+    "total_used_memory": 18080248
+  },
+  "node_count": 6,
+  "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+  "primary_count": 3,
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "replica_count": 3,
+  "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+  "rung": 6,
+  "scenario": "p24_partition_matrix_6",
+  "schema_version": "v1",
+  "status": "PASS",
+  "valkey_versions": [
+    "9.1.0"
+  ]
+}

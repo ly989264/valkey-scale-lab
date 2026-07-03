@@ -1,0 +1,272 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/_p24_runs/p24_partition_matrix_10",
+  "cleanup_actions": [
+    {
+      "action": "terminate",
+      "id": "shard-0000-primary",
+      "nodehost_id": "nodehost-p24-minority",
+      "pid": 24,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0001-primary",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 33,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0002-primary",
+      "nodehost_id": "nodehost-p24-majority-b",
+      "pid": 29,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0003-primary",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 42,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0004-primary",
+      "nodehost_id": "nodehost-p24-majority-b",
+      "pid": 38,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0000-replica-00",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 51,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0001-replica-00",
+      "nodehost_id": "nodehost-p24-majority-b",
+      "pid": 47,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0002-replica-00",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 60,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0003-replica-00",
+      "nodehost_id": "nodehost-p24-majority-b",
+      "pid": 56,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0004-replica-00",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 69,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0000-primary",
+      "nodehost_id": "nodehost-p24-minority",
+      "pid": 24,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0001-primary",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 33,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0002-primary",
+      "nodehost_id": "nodehost-p24-majority-b",
+      "pid": 29,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0003-primary",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 42,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0004-primary",
+      "nodehost_id": "nodehost-p24-majority-b",
+      "pid": 38,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0000-replica-00",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 51,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0001-replica-00",
+      "nodehost_id": "nodehost-p24-majority-b",
+      "pid": 47,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0002-replica-00",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 60,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0003-replica-00",
+      "nodehost_id": "nodehost-p24-majority-b",
+      "pid": 56,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0004-replica-00",
+      "nodehost_id": "nodehost-p24-majority-a",
+      "pid": 69,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p24-partition-split-brain-matrix-p24-partition-matrix-10-20260628-nodehost-p24-minority",
+      "id": "nodehost-p24-minority",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p24-partition-split-brain-matrix-p24-partition-matrix-10-20260628-nodehost-p24-majority-a",
+      "id": "nodehost-p24-majority-a",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p24-partition-split-brain-matrix-p24-partition-matrix-10-20260628-nodehost-p24-majority-b",
+      "id": "nodehost-p24-majority-b",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "stop",
+      "id": "6b62f21c94fc",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "6b62f21c94fc",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "871de60f78cc",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "871de60f78cc",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "6933be14a02d",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "6933be14a02d",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "8340138a635b",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "bounded_parallelism": true,
+    "cleanup_remove_containers_seconds": 7.286082,
+    "cleanup_remove_networks_seconds": 0.215488,
+    "cleanup_residual_scan_seconds": 0.064879,
+    "cleanup_terminate_processes_seconds": 0.130608,
+    "cleanup_verify_nodehost_empty_seconds": 0.057568,
+    "cleanup_verify_process_exit_seconds": 0.139218,
+    "parallelism": 8
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

@@ -146,7 +146,7 @@ def create_scenario(
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"),
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
-    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None:
+    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
         run_id = _run_id(phase, scenario)
@@ -359,6 +359,7 @@ def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
         _curve_scale_sample_node_count(phase, scenario) is not None
         or _p22_fault_matrix_node_count(phase, scenario) is not None
         or _p23_fault_matrix_node_count(phase, scenario) is not None
+        or _p24_fault_matrix_node_count(phase, scenario) is not None
         or (phase, scenario) in {
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
@@ -403,6 +404,15 @@ def _p23_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
     if phase != "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
         return None
     match = re.fullmatch(r"p23_fault_matrix_(6|10|30|50|100)", scenario)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
+def _p24_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
+    if phase != "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+        return None
+    match = re.fullmatch(r"p24_partition_matrix_(6|10|30|50|100)", scenario)
     if not match:
         return None
     return int(match.group(1))
@@ -580,6 +590,8 @@ def _process_nodehosts(
     scenario: str,
     run_id: str,
 ) -> list[dict[str, Any]]:
+    if phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+        return _p24_process_nodehosts(nodes, run_id)
     safe_run = run_id.lower().replace("_", "-")
     azs = [az for az in config["network"]["azs"] if any(node["az_id"] == az for node in nodes)]
     nodehosts: list[dict[str, Any]] = []
@@ -599,6 +611,47 @@ def _process_nodehosts(
                 "container_name": f"vslab-{safe_run}-{nodehost_id}",
                 "ports": ports,
                 "logical_node_count": len(hosted),
+            }
+        )
+    return nodehosts
+
+
+def _p24_process_nodehosts(nodes: list[dict[str, Any]], run_id: str) -> list[dict[str, Any]]:
+    safe_run = run_id.lower().replace("_", "-")
+    primaries = [node for node in sorted(nodes, key=lambda item: int(item.get("ordinal", 0))) if node.get("role") == "primary"]
+    if not primaries:
+        raise DockerRuntimeError("P24 partition runtime requires at least one primary")
+    minority_id = str(primaries[0]["logical_id"])
+    groups = {
+        "nodehost-p24-minority": [node for node in nodes if str(node.get("logical_id")) == minority_id],
+        "nodehost-p24-majority-a": [],
+        "nodehost-p24-majority-b": [],
+    }
+    majority_ids = ["nodehost-p24-majority-a", "nodehost-p24-majority-b"]
+    majority_index = 0
+    for node in sorted(nodes, key=lambda item: int(item.get("ordinal", 0))):
+        if str(node.get("logical_id")) == minority_id:
+            continue
+        groups[majority_ids[majority_index % len(majority_ids)]].append(node)
+        majority_index += 1
+    nodehosts: list[dict[str, Any]] = []
+    for ordinal, (nodehost_id, hosted) in enumerate(groups.items()):
+        if not hosted:
+            continue
+        for node in hosted:
+            node["runtime_type"] = "docker_process"
+            node["nodehost_id"] = nodehost_id
+        ports = sorted([node["client_port"] for node in hosted] + [node["cluster_bus_port"] for node in hosted])
+        nodehosts.append(
+            {
+                "nodehost_id": nodehost_id,
+                "az_id": "p24-minority" if nodehost_id.endswith("minority") else "p24-majority",
+                "host_id": "local",
+                "ordinal": ordinal,
+                "container_name": f"vslab-{safe_run}-{nodehost_id}",
+                "ports": ports,
+                "logical_node_count": len(hosted),
+                "p24_partition_group": "minority" if nodehost_id.endswith("minority") else "majority",
             }
         )
     return nodehosts
@@ -1429,6 +1482,8 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
     }
     if phase == "P13_SCALE_LADDER_50_100":
         spec["cluster_node_timeout"] = "600000"
+    if phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+        spec["cluster_node_timeout"] = "5000"
     return spec
 
 
@@ -3066,6 +3121,9 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
     p23_count = _p23_fault_matrix_node_count(phase, scenario)
     if p23_count is not None:
         return node_count == p23_count and p23_count <= 100
+    p24_count = _p24_fault_matrix_node_count(phase, scenario)
+    if p24_count is not None:
+        return node_count == p24_count and p24_count <= 100
     expected = {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},

@@ -1,0 +1,50 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "quant_summary",
+  "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+  "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-partition-split-brain-20260703",
+  "created_at": "2026-07-03T02:27:08.157627Z",
+  "producer": {
+    "name": "scripts/fault_safety_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P24 quant summary for real owned Docker network partition and split-brain detector runs.",
+  "artifact_refs": [
+    "fault_results.jsonl",
+    "fault_topology_snapshots.jsonl",
+    "events.jsonl",
+    "metrics_timeseries.jsonl",
+    "workload_windows.json",
+    "workload_impact_report.json",
+    "partition_report.json",
+    "split_brain_report.json",
+    "fault_matrix_report.json",
+    "network_partition_command_log.jsonl",
+    "cleanup_report.json"
+  ],
+  "counts": {
+    "event_count": 102,
+    "metric_count": 138,
+    "sample_count": 6,
+    "fault_result_count": 6,
+    "topology_snapshot_count": 18,
+    "command_log_count": 12,
+    "partition_sample_count": 6,
+    "split_brain_sample_count": 6
+  },
+  "missing_data": [
+    {
+      "field": "split_brain_detector.old_primary_accepts_write_after_promotion",
+      "metric": "split_brain_detector.old_primary_accepts_write_after_promotion",
+      "detector": "old_primary_accepts_write_after_promotion",
+      "status": "MISSING",
+      "reason": "No P24 sample injected a primary-stop promotion condition; see per-sample detector results."
+    }
+  ],
+  "runtime_claims": {
+    "real_valkey_claimed": true,
+    "management_runtime_claimed": false,
+    "fault_runtime_claimed": true
+  }
+}

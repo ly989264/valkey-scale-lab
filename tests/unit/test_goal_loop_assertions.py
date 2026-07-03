@@ -1712,3 +1712,320 @@ def test_p23_quant_assertion_rejects_missing_command_log_fault(tmp_path: Path) -
     assertion.assert_p23_semantics(tmp_path, errors)
 
     assert any("command log missing fault IDs" in error for error in errors)
+
+
+P24_PHASE = "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+P24_FAULTS = ["network_partition_minority", "network_partition_majority", "split_brain_window_detection"]
+
+
+def p24_fault_row(fault_type: str, node_count: int) -> dict:
+    sample_id = f"p24-{node_count}-{fault_type}"
+    groups = {"majority": ["node-a", "node-b", "node-c"], "minority": ["node-d"], "isolated": []}
+    policy = {
+        "block_between_groups": True,
+        "allow_within_group": True,
+        "implementation_path": "owned_docker_network_control",
+        "host_network_mutated": False,
+        "global_firewall_mutated": False,
+        "physical_host_mutated": False,
+    }
+    return {
+        "schema_version": "v1",
+        "phase_id": P24_PHASE,
+        "run_id": "run",
+        "scenario_name": f"p24_partition_matrix_{node_count}",
+        "sample_id": sample_id,
+        "node_count": node_count,
+        "status": "PASS",
+        "real_valkey": True,
+        "fault_type": fault_type,
+        "fault_id": f"{sample_id}-fault",
+        "scope": "owned_docker_network",
+        "implementation_path": "owned_docker_network_control",
+        "targets": [{"logical_id": "node-d", "role": "primary", "host_id": "p24-host-a", "az_id": "az-c"}],
+        "target_selector": {"selector_type": "virtual_az_partition", "selected_az_id": "az-c", "groups": groups},
+        "fault_parameters": {"groups": groups, "traffic_policy": policy, "side_measured": "minority" if fault_type == "network_partition_minority" else "majority"},
+        "apply_started_at_ms": 100,
+        "apply_completed_at_ms": 110,
+        "clear_started_at_ms": 150,
+        "clear_completed_at_ms": 160,
+        "recovery_completed_at_ms": 180,
+        "apply_duration_ms": 10,
+        "clear_duration_ms": 10,
+        "recovery_latency_ms": 20,
+        "observed_effect_started_at_ms": 110,
+        "safety_scope_verified": True,
+        "cleanup_verified": True,
+        "host_network_mutated": False,
+        "global_firewall_mutated": False,
+        "physical_host_mutated": False,
+        "physical_az_mutated": False,
+        "observed_impact": {
+            "effect_observed": True,
+            "majority_available": True,
+            "minority_side_probed": True,
+            "minority_host_blocked": True,
+        },
+        "partition_report_ref": f"partition_report.json#{sample_id}",
+        "split_brain_report_ref": f"split_brain_report.json#{sample_id}",
+        "workload_impact_ref": f"workload_impact_report.json#{sample_id}",
+        "command_log_ref": f"network_partition_command_log.jsonl#{sample_id}-fault",
+    }
+
+
+def p24_command_rows(rows: list[dict]) -> list[dict]:
+    out = []
+    for row in rows:
+        for kind in ["owned_docker_network_disconnect", "owned_docker_network_connect"]:
+            out.append(
+                {
+                    "schema_version": "v1",
+                    "phase_id": P24_PHASE,
+                    "run_id": "run",
+                    "sample_id": row["sample_id"],
+                    "fault_id": row["fault_id"],
+                    "command_id": f"{row['fault_id']}-{kind}",
+                    "command_kind": kind,
+                    "started_at_unix_ms": 100,
+                    "ended_at_unix_ms": 101,
+                    "status": "PASS",
+                    "implementation_path": "owned_docker_network_control",
+                    "host_network_mutated": False,
+                    "global_firewall_mutated": False,
+                    "physical_host_mutated": False,
+                    "details": {"docker_command_scope": "owned_stage_network_and_owned_nodehost_container"},
+                }
+            )
+    return out
+
+
+def p24_window(sample_id: str, fault_type: str, node_count: int, window_name: str) -> dict:
+    side = "minority" if fault_type == "network_partition_minority" else "majority"
+    return {
+        "window_name": window_name,
+        "sample_id": sample_id,
+        "fault_id": f"{sample_id}-fault",
+        "fault_type": fault_type,
+        "node_count": node_count,
+        "side_label": side if window_name != "all_run" else "aggregate",
+        "start_event_id": f"{sample_id}-{window_name}-start",
+        "end_event_id": f"{sample_id}-{window_name}-end",
+        "metrics": {
+            "requested_qps": 1.0,
+            "achieved_qps": 1.0,
+            "ok_ops": 1,
+            "error_ops": 0,
+            "error_rate": 0.0,
+            "latency_p50_ms": 1.0,
+            "latency_p95_ms": 1.0,
+            "latency_p99_ms": 1.0,
+            "timeout_count": 0,
+            "moved_redirection_count": 0,
+            "ask_redirection_count": 0,
+            "sample_count": 1,
+            "missing_reasons": {},
+        },
+    }
+
+
+def p24_partition_sample(row: dict) -> dict:
+    groups = row["fault_parameters"]["groups"]
+    policy = row["fault_parameters"]["traffic_policy"]
+    return {
+        "sample_id": row["sample_id"],
+        "fault_id": row["fault_id"],
+        "fault_type": row["fault_type"],
+        "node_count": row["node_count"],
+        "groups": groups,
+        "traffic_policy": policy,
+        "probes": {
+            "during_majority": [{"status": "PASS", "logical_id": "node-a"}],
+            "during_minority_side": [{"status": "PASS", "logical_id": "node-d", "probe_method": "docker_exec_valkey_cli_loopback"}],
+        },
+        "side_view_comparison": {
+            "majority": {"pass_probe_count": 1, "known_node_ids": ["a", "b"]},
+            "minority": {"pass_probe_count": 1, "known_node_ids": ["d"]},
+            "divergent": True,
+        },
+        "safety_scope": {"implementation_path": "owned_docker_network_control", "host_network_mutated": False, "global_firewall_mutated": False, "physical_host_mutated": False, "sudo_used": False},
+    }
+
+
+def p24_split_report(rows: list[dict]) -> dict:
+    detector_results = [
+        {"detector": "primary_slot_assignment_overlap", "status": "PASS", "ran": True, "indicator_observed": False, "started_at_ms": 100, "ended_at_ms": 101},
+        {"detector": "partition_side_cluster_view_divergence", "status": "PASS", "ran": True, "indicator_observed": True, "started_at_ms": 100, "ended_at_ms": 102, "conflicting_nodes": ["partition_side_cluster_view_divergence"]},
+        {"detector": "conflicting_write_probe", "status": "PASS", "ran": True, "indicator_observed": False, "started_at_ms": 100, "ended_at_ms": 101},
+    ]
+    return {
+        "schema_version": "v1",
+        "artifact_type": "split_brain_report",
+        "phase_id": P24_PHASE,
+        "run_id": "run",
+        "status": "PASS",
+        "detectors_run": ["primary_slot_assignment_overlap", "partition_side_cluster_view_divergence", "conflicting_write_probe"],
+        "detector_results": detector_results,
+        "indicator_observed": True,
+        "indicator_start_ms": 100,
+        "indicator_end_ms": 102,
+        "split_brain_window_ms": 2,
+        "conflicting_slots": [],
+        "conflicting_nodes": ["partition_side_cluster_view_divergence"],
+        "conflicting_write_keys": [],
+        "missing_detectors_with_reason": [{"detector": "old_primary_accepts_write_after_promotion", "status": "MISSING", "reason": "No promotion condition was injected."}],
+        "samples": [{"sample_id": row["sample_id"], "fault_id": row["fault_id"], "fault_type": row["fault_type"], "node_count": row["node_count"], "detector_results": detector_results} for row in rows],
+        "side_view_comparisons": [{"sample_id": row["sample_id"], "majority": {"pass_probe_count": 1}, "minority": {"pass_probe_count": 1}} for row in rows],
+    }
+
+
+def write_p24_bundle(base: Path) -> list[dict]:
+    rows = [p24_fault_row(fault, count) for fault in P24_FAULTS for count in [6, 10]]
+    write_jsonl(base / "fault_results.jsonl", rows)
+    write_jsonl(base / "network_partition_command_log.jsonl", p24_command_rows(rows))
+    samples = [p24_partition_sample(row) for row in rows]
+    write_json(base / "partition_report.json", {"schema_version": "v1", "artifact_type": "partition_report", "phase_id": P24_PHASE, "run_id": "run", "status": "PASS", "groups": samples[0]["groups"], "traffic_policy": samples[0]["traffic_policy"], "probes": samples, "samples": samples, "safety_scope": {"host_network_mutated": False, "global_firewall_mutated": False}})
+    write_json(base / "split_brain_report.json", p24_split_report(rows))
+    workload_rows = [p24_window(row["sample_id"], row["fault_type"], row["node_count"], window) for row in rows for window in P22_WINDOWS]
+    write_json(
+        base / "workload_impact_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "workload_impact_report",
+            "phase_id": P24_PHASE,
+            "run_id": "run",
+            "windows": workload_rows,
+            "comparisons": [
+                {
+                    "sample_id": row["sample_id"],
+                    "fault_type": row["fault_type"],
+                    "node_count": row["node_count"],
+                    "fault_window_qps_ratio": 1.0,
+                    "fault_window_p99_delta_ms": 0.0,
+                    "fault_window_error_rate_delta": 0.0,
+                    "recovery_window_duration_ms": 1,
+                    "post_recovery_qps_ratio": 1.0,
+                }
+                for row in rows
+            ],
+        },
+    )
+    events = [
+        {
+            "schema_version": "v1",
+            "run_id": "run",
+            "phase_id": P24_PHASE,
+            "scenario_name": "p24_partition_matrix",
+            "sample_id": row["sample_id"],
+            "event_id": f"{row['sample_id']}-fault",
+            "event_type": "fault_apply_started",
+            "timestamp_unix_ms": 100,
+            "monotonic_ms": 100,
+            "severity": "INFO",
+            "subject_type": "fault",
+            "subject_id": row["fault_type"],
+            "operation_id": "",
+            "fault_id": row["fault_id"],
+            "message": "fault",
+            "metadata": {},
+        }
+        for row in rows
+    ]
+    metrics = [
+        {
+            "schema_version": "v1",
+            "run_id": "run",
+            "phase_id": P24_PHASE,
+            "scenario_name": "p24_partition_matrix",
+            "sample_id": row["sample_id"],
+            "timestamp_unix_ms": 100,
+            "monotonic_ms": 100,
+            "source_type": "harness",
+            "source_id": row["fault_id"],
+            "metric_name": "split_brain_window_ms",
+            "metric_value": 2,
+            "metric_unit": "ms",
+            "labels": {},
+            "missing_reason": "",
+        }
+        for row in rows
+    ]
+    snapshots = [{"schema_version": "v1", "phase_id": P24_PHASE, "run_id": "run", "snapshot_id": f"{row['sample_id']}-during", "sample_id": row["sample_id"], "nodes": [], "slots": {}} for row in rows]
+    write_jsonl(base / "events.jsonl", events)
+    write_jsonl(base / "metrics_timeseries.jsonl", metrics)
+    write_jsonl(base / "fault_topology_snapshots.jsonl", snapshots)
+    write_json(base / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": True, "nodes_observed": 10, "valkey_versions": ["9.1.0"]})
+    write_json(base / "quant_summary.json", {"counts": {"event_count": len(events), "metric_count": len(metrics), "fault_result_count": len(rows), "topology_snapshot_count": len(snapshots), "command_log_count": len(rows) * 2, "sample_count": len(rows)}, "runtime_claims": {"real_valkey_claimed": True, "fault_runtime_claimed": True, "management_runtime_claimed": False}})
+    return rows
+
+
+def test_p24_fault_matrix_assertion_accepts_valid_bundle(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_fault_matrix_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / P24_PHASE
+    phase_dir.mkdir(parents=True)
+    write_p24_bundle(phase_dir)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_fault_matrix_coverage.py", "--phase", P24_PHASE])
+
+    assert assertion.main() == 0
+
+
+def test_p24_fault_matrix_assertion_rejects_missing_required_row(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_fault_matrix_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / P24_PHASE
+    phase_dir.mkdir(parents=True)
+    rows = write_p24_bundle(phase_dir)
+    rows = [row for row in rows if row["fault_type"] != "network_partition_majority"]
+    write_jsonl(phase_dir / "fault_results.jsonl", rows)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_fault_matrix_coverage.py", "--phase", P24_PHASE])
+
+    assert assertion.main() == 1
+
+
+def test_p24_fault_matrix_assertion_rejects_missing_side_probes_and_groups(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_fault_matrix_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / P24_PHASE
+    phase_dir.mkdir(parents=True)
+    write_p24_bundle(phase_dir)
+    report = json.loads((phase_dir / "partition_report.json").read_text(encoding="utf-8"))
+    report["samples"][0]["groups"]["minority"] = []
+    report["samples"][0]["probes"]["during_minority_side"] = []
+    write_json(phase_dir / "partition_report.json", report)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_fault_matrix_coverage.py", "--phase", P24_PHASE])
+
+    assert assertion.main() == 1
+
+
+def test_p24_split_brain_assertion_rejects_missing_detector_reason(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_split_brain_report")
+    phase_dir = tmp_path / "artifacts" / "phases" / P24_PHASE
+    phase_dir.mkdir(parents=True)
+    rows = write_p24_bundle(phase_dir)
+    report = p24_split_report(rows)
+    report["missing_detectors_with_reason"] = []
+    write_json(phase_dir / "split_brain_report.json", report)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_split_brain_report.py", "--phase", P24_PHASE])
+
+    assert assertion.main() == 1
+
+
+def test_p24_fault_matrix_assertion_rejects_host_network_mutation_evidence(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_fault_matrix_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / P24_PHASE
+    phase_dir.mkdir(parents=True)
+    write_p24_bundle(phase_dir)
+    commands = [json.loads(line) for line in (phase_dir / "network_partition_command_log.jsonl").read_text(encoding="utf-8").splitlines()]
+    commands[0]["host_network_mutated"] = True
+    commands[0]["details"]["forbidden"] = "ip" + "tables -A INPUT"
+    write_jsonl(phase_dir / "network_partition_command_log.jsonl", commands)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_fault_matrix_coverage.py", "--phase", P24_PHASE])
+
+    assert assertion.main() == 1

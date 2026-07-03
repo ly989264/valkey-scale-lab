@@ -1,0 +1,2590 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "workload_impact_report",
+  "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+  "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-partition-split-brain-20260703",
+  "created_at": "2026-07-03T02:27:08.120923Z",
+  "producer": {
+    "name": "scripts/fault_safety_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "windows": [
+    {
+      "window_name": "baseline",
+      "sample_id": "p24-6-network_partition_minority",
+      "fault_id": "p24-6-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 6,
+      "side_label": "minority",
+      "source_window_name": "baseline",
+      "start_event_id": "p24-6-network_partition_minority-baseline-start",
+      "end_event_id": "p24-6-network_partition_minority-baseline-end",
+      "start_time_unix_ms": 1783045529561,
+      "end_time_unix_ms": 1783045529828,
+      "start_monotonic_ms": 7333.421,
+      "end_monotonic_ms": 7600.444,
+      "metrics": {
+        "requested_qps": 14.981,
+        "achieved_qps": 14.981,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 65.963,
+        "latency_p90_ms": 80.08,
+        "latency_p95_ms": 80.08,
+        "latency_p99_ms": 80.08,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 80.08,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 65.963,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 55.965,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 64.9,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "probe_method": "docker_exec_valkey_cli_loopback",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p24-6-network_partition_minority",
+      "fault_id": "p24-6-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 6,
+      "side_label": "minority",
+      "source_window_name": "pre_event",
+      "start_event_id": "p24-6-network_partition_minority-pre_event-start",
+      "end_event_id": "p24-6-network_partition_minority-pre_event-end",
+      "start_time_unix_ms": 1783045529828,
+      "end_time_unix_ms": 1783045530080,
+      "start_monotonic_ms": 7600.484,
+      "end_monotonic_ms": 7852.843,
+      "metrics": {
+        "requested_qps": 15.873,
+        "achieved_qps": 15.873,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 63.793,
+        "latency_p90_ms": 68.278,
+        "latency_p95_ms": 68.278,
+        "latency_p99_ms": 68.278,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 63.793,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 61.44,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 58.729,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 68.278,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "probe_method": "docker_exec_valkey_cli_loopback",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p24-6-network_partition_minority",
+      "fault_id": "p24-6-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 6,
+      "side_label": "minority",
+      "source_window_name": "event",
+      "start_event_id": "p24-6-network_partition_minority-event-start",
+      "end_event_id": "p24-6-network_partition_minority-event-end",
+      "start_time_unix_ms": 1783045538753,
+      "end_time_unix_ms": 1783045539143,
+      "start_monotonic_ms": 16525.687,
+      "end_monotonic_ms": 16915.717,
+      "metrics": {
+        "requested_qps": 15.385,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 6,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 69.08,
+          "error": "RuntimeError(\"SET returned 'CLUSTERDOWN The cluster is down'\")"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 62.269,
+          "error": "RuntimeError(\"GET returned 'CLUSTERDOWN The cluster is down', expected 'p24-value-p24-6-network_partition_minority-event-0'\")"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 61.508,
+          "error": "RuntimeError(\"SET returned 'CLUSTERDOWN The cluster is down'\")"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 69.567,
+          "error": "RuntimeError(\"GET returned 'CLUSTERDOWN The cluster is down', expected 'p24-value-p24-6-network_partition_minority-event-1'\")"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 60.217,
+          "error": "RuntimeError(\"SET returned 'CLUSTERDOWN The cluster is down'\")"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 67.184,
+          "error": "RuntimeError(\"GET returned 'CLUSTERDOWN The cluster is down', expected 'p24-value-p24-6-network_partition_minority-event-2'\")"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "probe_method": "docker_exec_valkey_cli_loopback",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p24-6-network_partition_minority",
+      "fault_id": "p24-6-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 6,
+      "side_label": "minority",
+      "source_window_name": "recovery",
+      "start_event_id": "p24-6-network_partition_minority-recovery-start",
+      "end_event_id": "p24-6-network_partition_minority-recovery-end",
+      "start_time_unix_ms": 1783045545356,
+      "end_time_unix_ms": 1783045545649,
+      "start_monotonic_ms": 23127.724,
+      "end_monotonic_ms": 23421.141,
+      "metrics": {
+        "requested_qps": 13.652,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 4,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 4,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 84.987,
+          "error": "RespError('MOVED 5690 172.18.0.2:7683')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 74.445,
+          "error": "RespError('MOVED 5690 172.18.0.2:7683')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 69.912,
+          "error": "RespError('MOVED 5690 172.18.0.2:7683')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 63.82,
+          "error": "RespError('MOVED 5690 172.18.0.2:7683')"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "probe_method": "docker_exec_valkey_cli_loopback",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p24-6-network_partition_minority",
+      "fault_id": "p24-6-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 6,
+      "side_label": "minority",
+      "source_window_name": "post_recovery",
+      "start_event_id": "p24-6-network_partition_minority-post_recovery-start",
+      "end_event_id": "p24-6-network_partition_minority-post_recovery-end",
+      "start_time_unix_ms": 1783045545649,
+      "end_time_unix_ms": 1783045545649,
+      "start_monotonic_ms": 23421.184,
+      "end_monotonic_ms": 23421.21,
+      "metrics": {
+        "requested_qps": 4000.0,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 4,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 4,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.002,
+          "error": "RuntimeError('no P24 workload entry')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.0,
+          "error": "RuntimeError('no P24 workload entry')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.0,
+          "error": "RuntimeError('no P24 workload entry')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.0,
+          "error": "RuntimeError('no P24 workload entry')"
+        }
+      ],
+      "entry_logical_id": "MISSING",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p24-6-network_partition_minority",
+      "fault_id": "p24-6-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 6,
+      "side_label": "minority",
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p24-6-network_partition_minority-all_run-start",
+      "end_event_id": "p24-6-network_partition_minority-all_run-end",
+      "start_time_unix_ms": 1783045529561,
+      "end_time_unix_ms": 1783045545649,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 1.367,
+        "achieved_qps": 0.497,
+        "ok_ops": 8,
+        "error_ops": 14,
+        "error_rate": 0.636364,
+        "latency_p50_ms": 64.9,
+        "latency_p90_ms": 68.278,
+        "latency_p95_ms": 80.08,
+        "latency_p99_ms": 80.08,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 6,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 8,
+        "sample_count": 22,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "probe_method": "aggregate",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p24-6-network_partition_majority",
+      "fault_id": "p24-6-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "baseline",
+      "start_event_id": "p24-6-network_partition_majority-baseline-start",
+      "end_event_id": "p24-6-network_partition_majority-baseline-end",
+      "start_time_unix_ms": 1783045545650,
+      "end_time_unix_ms": 1783045545654,
+      "start_monotonic_ms": 23422.204,
+      "end_monotonic_ms": 23426.274,
+      "metrics": {
+        "requested_qps": 1000.0,
+        "achieved_qps": 1000.0,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.189,
+        "latency_p90_ms": 1.305,
+        "latency_p95_ms": 1.305,
+        "latency_p99_ms": 1.305,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.189,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.839,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.305,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.698,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p24-6-network_partition_majority",
+      "fault_id": "p24-6-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "pre_event",
+      "start_event_id": "p24-6-network_partition_majority-pre_event-start",
+      "end_event_id": "p24-6-network_partition_majority-pre_event-end",
+      "start_time_unix_ms": 1783045545654,
+      "end_time_unix_ms": 1783045545659,
+      "start_monotonic_ms": 23426.285,
+      "end_monotonic_ms": 23431.235,
+      "metrics": {
+        "requested_qps": 800.0,
+        "achieved_qps": 800.0,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.808,
+        "latency_p90_ms": 2.614,
+        "latency_p95_ms": 2.614,
+        "latency_p99_ms": 2.614,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.808,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.614,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.793,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.709,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p24-6-network_partition_majority",
+      "fault_id": "p24-6-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "event",
+      "start_event_id": "p24-6-network_partition_majority-event-start",
+      "end_event_id": "p24-6-network_partition_majority-event-end",
+      "start_time_unix_ms": 1783045554294,
+      "end_time_unix_ms": 1783045554300,
+      "start_monotonic_ms": 32066.115,
+      "end_monotonic_ms": 32071.715,
+      "metrics": {
+        "requested_qps": 1000.0,
+        "achieved_qps": 1000.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.763,
+        "latency_p90_ms": 1.012,
+        "latency_p95_ms": 1.537,
+        "latency_p99_ms": 1.537,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.012,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.86,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.689,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.537,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.763,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.683,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p24-6-network_partition_majority",
+      "fault_id": "p24-6-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "recovery",
+      "start_event_id": "p24-6-network_partition_majority-recovery-start",
+      "end_event_id": "p24-6-network_partition_majority-recovery-end",
+      "start_time_unix_ms": 1783045555438,
+      "end_time_unix_ms": 1783045555453,
+      "start_monotonic_ms": 33209.379,
+      "end_monotonic_ms": 33224.429,
+      "metrics": {
+        "requested_qps": 266.667,
+        "achieved_qps": 266.667,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 4.24,
+        "latency_p90_ms": 8.162,
+        "latency_p95_ms": 8.162,
+        "latency_p99_ms": 8.162,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 8.162,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 4.24,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.555,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.992,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p24-6-network_partition_majority",
+      "fault_id": "p24-6-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "post_recovery",
+      "start_event_id": "p24-6-network_partition_majority-post_recovery-start",
+      "end_event_id": "p24-6-network_partition_majority-post_recovery-end",
+      "start_time_unix_ms": 1783045555453,
+      "end_time_unix_ms": 1783045555456,
+      "start_monotonic_ms": 33224.454,
+      "end_monotonic_ms": 33227.901,
+      "metrics": {
+        "requested_qps": 1333.333,
+        "achieved_qps": 1333.333,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.864,
+        "latency_p90_ms": 0.943,
+        "latency_p95_ms": 0.943,
+        "latency_p99_ms": 0.943,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.943,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.784,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.864,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.819,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p24-6-network_partition_majority",
+      "fault_id": "p24-6-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p24-6-network_partition_majority-all_run-start",
+      "end_event_id": "p24-6-network_partition_majority-all_run-end",
+      "start_time_unix_ms": 1783045545650,
+      "end_time_unix_ms": 1783045555456,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 2.244,
+        "achieved_qps": 2.244,
+        "ok_ops": 22,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.86,
+        "latency_p90_ms": 2.614,
+        "latency_p95_ms": 4.24,
+        "latency_p99_ms": 8.162,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 22,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "probe_method": "aggregate",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p24-6-split_brain_window_detection",
+      "fault_id": "p24-6-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "baseline",
+      "start_event_id": "p24-6-split_brain_window_detection-baseline-start",
+      "end_event_id": "p24-6-split_brain_window_detection-baseline-end",
+      "start_time_unix_ms": 1783045555458,
+      "end_time_unix_ms": 1783045555461,
+      "start_monotonic_ms": 33229.463,
+      "end_monotonic_ms": 33232.752,
+      "metrics": {
+        "requested_qps": 1333.333,
+        "achieved_qps": 1333.333,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.83,
+        "latency_p90_ms": 0.838,
+        "latency_p95_ms": 0.838,
+        "latency_p99_ms": 0.838,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.783,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.83,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.838,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.802,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p24-6-split_brain_window_detection",
+      "fault_id": "p24-6-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "pre_event",
+      "start_event_id": "p24-6-split_brain_window_detection-pre_event-start",
+      "end_event_id": "p24-6-split_brain_window_detection-pre_event-end",
+      "start_time_unix_ms": 1783045555461,
+      "end_time_unix_ms": 1783045555464,
+      "start_monotonic_ms": 33232.761,
+      "end_monotonic_ms": 33236.208,
+      "metrics": {
+        "requested_qps": 1333.333,
+        "achieved_qps": 1333.333,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.848,
+        "latency_p90_ms": 0.907,
+        "latency_p95_ms": 0.907,
+        "latency_p99_ms": 0.907,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.907,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.848,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.846,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.811,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p24-6-split_brain_window_detection",
+      "fault_id": "p24-6-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "event",
+      "start_event_id": "p24-6-split_brain_window_detection-event-start",
+      "end_event_id": "p24-6-split_brain_window_detection-event-end",
+      "start_time_unix_ms": 1783045564158,
+      "end_time_unix_ms": 1783045564164,
+      "start_monotonic_ms": 41929.343,
+      "end_monotonic_ms": 41935.043,
+      "metrics": {
+        "requested_qps": 1000.0,
+        "achieved_qps": 1000.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.911,
+        "latency_p90_ms": 0.987,
+        "latency_p95_ms": 1.196,
+        "latency_p99_ms": 1.196,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.965,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.773,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.987,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.819,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.196,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.911,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p24-6-split_brain_window_detection",
+      "fault_id": "p24-6-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "recovery",
+      "start_event_id": "p24-6-split_brain_window_detection-recovery-start",
+      "end_event_id": "p24-6-split_brain_window_detection-recovery-end",
+      "start_time_unix_ms": 1783045565302,
+      "end_time_unix_ms": 1783045565310,
+      "start_monotonic_ms": 43073.679,
+      "end_monotonic_ms": 43081.154,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.001,
+        "latency_p90_ms": 2.213,
+        "latency_p95_ms": 2.213,
+        "latency_p99_ms": 2.213,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.9,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.001,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.213,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.159,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p24-6-split_brain_window_detection",
+      "fault_id": "p24-6-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "post_recovery",
+      "start_event_id": "p24-6-split_brain_window_detection-post_recovery-start",
+      "end_event_id": "p24-6-split_brain_window_detection-post_recovery-end",
+      "start_time_unix_ms": 1783045565310,
+      "end_time_unix_ms": 1783045565318,
+      "start_monotonic_ms": 43081.223,
+      "end_monotonic_ms": 43089.196,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.41,
+        "latency_p90_ms": 2.787,
+        "latency_p95_ms": 2.787,
+        "latency_p99_ms": 2.787,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.151,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.787,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.41,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.563,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-3}",
+      "slot": 13944,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p24-6-split_brain_window_detection",
+      "fault_id": "p24-6-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 6,
+      "side_label": "majority",
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p24-6-split_brain_window_detection-all_run-start",
+      "end_event_id": "p24-6-split_brain_window_detection-all_run-end",
+      "start_time_unix_ms": 1783045555458,
+      "end_time_unix_ms": 1783045565318,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 2.231,
+        "achieved_qps": 2.231,
+        "ok_ops": 22,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.911,
+        "latency_p90_ms": 2.213,
+        "latency_p95_ms": 2.41,
+        "latency_p99_ms": 2.787,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 22,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "probe_method": "aggregate",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_6-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p24-10-network_partition_minority",
+      "fault_id": "p24-10-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 10,
+      "side_label": "minority",
+      "source_window_name": "baseline",
+      "start_event_id": "p24-10-network_partition_minority-baseline-start",
+      "end_event_id": "p24-10-network_partition_minority-baseline-end",
+      "start_time_unix_ms": 1783045581420,
+      "end_time_unix_ms": 1783045581653,
+      "start_monotonic_ms": 59191.395,
+      "end_monotonic_ms": 59423.61,
+      "metrics": {
+        "requested_qps": 17.167,
+        "achieved_qps": 17.167,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 63.13,
+        "latency_p90_ms": 65.924,
+        "latency_p95_ms": 65.924,
+        "latency_p99_ms": 65.924,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 65.924,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 63.13,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 49.463,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 53.602,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "probe_method": "docker_exec_valkey_cli_loopback",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p24-10-network_partition_minority",
+      "fault_id": "p24-10-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 10,
+      "side_label": "minority",
+      "source_window_name": "pre_event",
+      "start_event_id": "p24-10-network_partition_minority-pre_event-start",
+      "end_event_id": "p24-10-network_partition_minority-pre_event-end",
+      "start_time_unix_ms": 1783045581653,
+      "end_time_unix_ms": 1783045581885,
+      "start_monotonic_ms": 59423.64,
+      "end_monotonic_ms": 59656.26,
+      "metrics": {
+        "requested_qps": 17.241,
+        "achieved_qps": 17.241,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 58.125,
+        "latency_p90_ms": 60.409,
+        "latency_p95_ms": 60.409,
+        "latency_p99_ms": 60.409,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 57.447,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 60.409,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 56.539,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 58.125,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "probe_method": "docker_exec_valkey_cli_loopback",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p24-10-network_partition_minority",
+      "fault_id": "p24-10-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 10,
+      "side_label": "minority",
+      "source_window_name": "event",
+      "start_event_id": "p24-10-network_partition_minority-event-start",
+      "end_event_id": "p24-10-network_partition_minority-event-end",
+      "start_time_unix_ms": 1783045590547,
+      "end_time_unix_ms": 1783045590930,
+      "start_monotonic_ms": 68317.979,
+      "end_monotonic_ms": 68700.863,
+      "metrics": {
+        "requested_qps": 15.666,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 6,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 67.252,
+          "error": "RuntimeError(\"SET returned 'CLUSTERDOWN The cluster is down'\")"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 65.992,
+          "error": "RuntimeError(\"GET returned 'CLUSTERDOWN The cluster is down', expected 'p24-value-p24-10-network_partition_minority-event-0'\")"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 65.29,
+          "error": "RuntimeError(\"SET returned 'CLUSTERDOWN The cluster is down'\")"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 62.991,
+          "error": "RuntimeError(\"GET returned 'CLUSTERDOWN The cluster is down', expected 'p24-value-p24-10-network_partition_minority-event-1'\")"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 64.56,
+          "error": "RuntimeError(\"SET returned 'CLUSTERDOWN The cluster is down'\")"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 56.614,
+          "error": "RuntimeError(\"GET returned 'CLUSTERDOWN The cluster is down', expected 'p24-value-p24-10-network_partition_minority-event-2'\")"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "probe_method": "docker_exec_valkey_cli_loopback",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p24-10-network_partition_minority",
+      "fault_id": "p24-10-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 10,
+      "side_label": "minority",
+      "source_window_name": "recovery",
+      "start_event_id": "p24-10-network_partition_minority-recovery-start",
+      "end_event_id": "p24-10-network_partition_minority-recovery-end",
+      "start_time_unix_ms": 1783045600163,
+      "end_time_unix_ms": 1783045600474,
+      "start_monotonic_ms": 77933.401,
+      "end_monotonic_ms": 78244.322,
+      "metrics": {
+        "requested_qps": 12.862,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 4,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 4,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 86.349,
+          "error": "RespError('MOVED 9817 172.18.0.3:7825')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 74.888,
+          "error": "RespError('MOVED 9817 172.18.0.3:7825')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 72.978,
+          "error": "RespError('MOVED 9817 172.18.0.3:7825')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 76.503,
+          "error": "RespError('MOVED 9817 172.18.0.3:7825')"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "probe_method": "docker_exec_valkey_cli_loopback",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p24-10-network_partition_minority",
+      "fault_id": "p24-10-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 10,
+      "side_label": "minority",
+      "source_window_name": "post_recovery",
+      "start_event_id": "p24-10-network_partition_minority-post_recovery-start",
+      "end_event_id": "p24-10-network_partition_minority-post_recovery-end",
+      "start_time_unix_ms": 1783045600474,
+      "end_time_unix_ms": 1783045600474,
+      "start_monotonic_ms": 78244.359,
+      "end_monotonic_ms": 78244.382,
+      "metrics": {
+        "requested_qps": 4000.0,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 4,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 4,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.002,
+          "error": "RuntimeError('no P24 workload entry')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.0,
+          "error": "RuntimeError('no P24 workload entry')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.0,
+          "error": "RuntimeError('no P24 workload entry')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.0,
+          "error": "RuntimeError('no P24 workload entry')"
+        }
+      ],
+      "entry_logical_id": "MISSING",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-minority:network_partition_minority:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p24-10-network_partition_minority",
+      "fault_id": "p24-10-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 10,
+      "side_label": "minority",
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p24-10-network_partition_minority-all_run-start",
+      "end_event_id": "p24-10-network_partition_minority-all_run-end",
+      "start_time_unix_ms": 1783045581420,
+      "end_time_unix_ms": 1783045600474,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 1.155,
+        "achieved_qps": 0.42,
+        "ok_ops": 8,
+        "error_ops": 14,
+        "error_rate": 0.636364,
+        "latency_p50_ms": 58.125,
+        "latency_p90_ms": 63.13,
+        "latency_p95_ms": 65.924,
+        "latency_p99_ms": 65.924,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 6,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 8,
+        "sample_count": 22,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "probe_method": "aggregate",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p24-10-network_partition_majority",
+      "fault_id": "p24-10-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "baseline",
+      "start_event_id": "p24-10-network_partition_majority-baseline-start",
+      "end_event_id": "p24-10-network_partition_majority-baseline-end",
+      "start_time_unix_ms": 1783045600475,
+      "end_time_unix_ms": 1783045600480,
+      "start_monotonic_ms": 78245.69,
+      "end_monotonic_ms": 78249.925,
+      "metrics": {
+        "requested_qps": 800.0,
+        "achieved_qps": 800.0,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.142,
+        "latency_p90_ms": 1.421,
+        "latency_p95_ms": 1.421,
+        "latency_p99_ms": 1.421,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.142,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.893,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.421,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.744,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p24-10-network_partition_majority",
+      "fault_id": "p24-10-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "pre_event",
+      "start_event_id": "p24-10-network_partition_majority-pre_event-start",
+      "end_event_id": "p24-10-network_partition_majority-pre_event-end",
+      "start_time_unix_ms": 1783045600480,
+      "end_time_unix_ms": 1783045600484,
+      "start_monotonic_ms": 78249.932,
+      "end_monotonic_ms": 78254.355,
+      "metrics": {
+        "requested_qps": 1000.0,
+        "achieved_qps": 1000.0,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.341,
+        "latency_p90_ms": 1.402,
+        "latency_p95_ms": 1.402,
+        "latency_p99_ms": 1.402,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.402,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.829,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.824,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.341,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p24-10-network_partition_majority",
+      "fault_id": "p24-10-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "event",
+      "start_event_id": "p24-10-network_partition_majority-event-start",
+      "end_event_id": "p24-10-network_partition_majority-event-end",
+      "start_time_unix_ms": 1783045609123,
+      "end_time_unix_ms": 1783045609130,
+      "start_monotonic_ms": 86893.309,
+      "end_monotonic_ms": 86899.809,
+      "metrics": {
+        "requested_qps": 857.143,
+        "achieved_qps": 857.143,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.88,
+        "latency_p90_ms": 1.456,
+        "latency_p95_ms": 1.628,
+        "latency_p99_ms": 1.628,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.456,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.628,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.901,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.88,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.81,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.755,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p24-10-network_partition_majority",
+      "fault_id": "p24-10-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "recovery",
+      "start_event_id": "p24-10-network_partition_majority-recovery-start",
+      "end_event_id": "p24-10-network_partition_majority-recovery-end",
+      "start_time_unix_ms": 1783045610274,
+      "end_time_unix_ms": 1783045610281,
+      "start_monotonic_ms": 88043.778,
+      "end_monotonic_ms": 88050.622,
+      "metrics": {
+        "requested_qps": 571.429,
+        "achieved_qps": 571.429,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.959,
+        "latency_p90_ms": 1.971,
+        "latency_p95_ms": 1.971,
+        "latency_p99_ms": 1.971,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.545,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.971,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.959,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.245,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p24-10-network_partition_majority",
+      "fault_id": "p24-10-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "post_recovery",
+      "start_event_id": "p24-10-network_partition_majority-post_recovery-start",
+      "end_event_id": "p24-10-network_partition_majority-post_recovery-end",
+      "start_time_unix_ms": 1783045610281,
+      "end_time_unix_ms": 1783045610288,
+      "start_monotonic_ms": 88050.645,
+      "end_monotonic_ms": 88058.251,
+      "metrics": {
+        "requested_qps": 571.429,
+        "achieved_qps": 571.429,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.951,
+        "latency_p90_ms": 2.462,
+        "latency_p95_ms": 2.462,
+        "latency_p99_ms": 2.462,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.912,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.222,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.462,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.951,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p24-10-network_partition_majority",
+      "fault_id": "p24-10-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p24-10-network_partition_majority-all_run-start",
+      "end_event_id": "p24-10-network_partition_majority-all_run-end",
+      "start_time_unix_ms": 1783045600475,
+      "end_time_unix_ms": 1783045610288,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 2.242,
+        "achieved_qps": 2.242,
+        "ok_ops": 22,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.245,
+        "latency_p90_ms": 1.959,
+        "latency_p95_ms": 1.971,
+        "latency_p99_ms": 2.462,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 22,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "probe_method": "aggregate",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p24-10-split_brain_window_detection",
+      "fault_id": "p24-10-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "baseline",
+      "start_event_id": "p24-10-split_brain_window_detection-baseline-start",
+      "end_event_id": "p24-10-split_brain_window_detection-baseline-end",
+      "start_time_unix_ms": 1783045610291,
+      "end_time_unix_ms": 1783045610297,
+      "start_monotonic_ms": 88060.604,
+      "end_monotonic_ms": 88067.251,
+      "metrics": {
+        "requested_qps": 666.667,
+        "achieved_qps": 666.667,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.762,
+        "latency_p90_ms": 1.851,
+        "latency_p95_ms": 1.851,
+        "latency_p99_ms": 1.851,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.438,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.522,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.762,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.851,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p24-10-split_brain_window_detection",
+      "fault_id": "p24-10-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "pre_event",
+      "start_event_id": "p24-10-split_brain_window_detection-pre_event-start",
+      "end_event_id": "p24-10-split_brain_window_detection-pre_event-end",
+      "start_time_unix_ms": 1783045610297,
+      "end_time_unix_ms": 1783045610304,
+      "start_monotonic_ms": 88067.267,
+      "end_monotonic_ms": 88074.337,
+      "metrics": {
+        "requested_qps": 571.429,
+        "achieved_qps": 571.429,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.019,
+        "latency_p90_ms": 2.132,
+        "latency_p95_ms": 2.132,
+        "latency_p99_ms": 2.132,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.132,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.446,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.389,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.019,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p24-10-split_brain_window_detection",
+      "fault_id": "p24-10-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "event",
+      "start_event_id": "p24-10-split_brain_window_detection-event-start",
+      "end_event_id": "p24-10-split_brain_window_detection-event-end",
+      "start_time_unix_ms": 1783045618920,
+      "end_time_unix_ms": 1783045618928,
+      "start_monotonic_ms": 96702.994,
+      "end_monotonic_ms": 96711.078,
+      "metrics": {
+        "requested_qps": 750.0,
+        "achieved_qps": 750.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.033,
+        "latency_p90_ms": 1.562,
+        "latency_p95_ms": 2.062,
+        "latency_p99_ms": 2.062,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.562,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.062,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.033,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.375,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.989,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.994,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p24-10-split_brain_window_detection",
+      "fault_id": "p24-10-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "recovery",
+      "start_event_id": "p24-10-split_brain_window_detection-recovery-start",
+      "end_event_id": "p24-10-split_brain_window_detection-recovery-end",
+      "start_time_unix_ms": 1783045620057,
+      "end_time_unix_ms": 1783045620064,
+      "start_monotonic_ms": 97841.139,
+      "end_monotonic_ms": 97848.411,
+      "metrics": {
+        "requested_qps": 571.429,
+        "achieved_qps": 571.429,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.024,
+        "latency_p90_ms": 2.23,
+        "latency_p95_ms": 2.23,
+        "latency_p99_ms": 2.23,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.237,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.024,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.739,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.23,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p24-10-split_brain_window_detection",
+      "fault_id": "p24-10-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "post_recovery",
+      "start_event_id": "p24-10-split_brain_window_detection-post_recovery-start",
+      "end_event_id": "p24-10-split_brain_window_detection-post_recovery-end",
+      "start_time_unix_ms": 1783045620064,
+      "end_time_unix_ms": 1783045620069,
+      "start_monotonic_ms": 97848.426,
+      "end_monotonic_ms": 97853.224,
+      "metrics": {
+        "requested_qps": 800.0,
+        "achieved_qps": 800.0,
+        "ok_ops": 4,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.346,
+        "latency_p90_ms": 1.812,
+        "latency_p95_ms": 1.812,
+        "latency_p99_ms": 1.812,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 4,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.812,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.936,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.681,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.346,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "probe_method": "host_published_endpoint",
+      "slot_key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-6}",
+      "slot": 9949,
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p24-10-split_brain_window_detection",
+      "fault_id": "p24-10-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 10,
+      "side_label": "majority",
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p24-10-split_brain_window_detection-all_run-start",
+      "end_event_id": "p24-10-split_brain_window_detection-all_run-end",
+      "start_time_unix_ms": 1783045610291,
+      "end_time_unix_ms": 1783045620069,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 2.25,
+        "achieved_qps": 2.25,
+        "ok_ops": 22,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.446,
+        "latency_p90_ms": 2.062,
+        "latency_p95_ms": 2.132,
+        "latency_p99_ms": 2.23,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 22,
+        "missing_reasons": {
+          "latency_p999_ms": "P24 focused partition gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "probe_method": "aggregate",
+      "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-p24_partition_matrix_10-20260628",
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+    }
+  ],
+  "comparisons": [
+    {
+      "sample_id": "p24-6-network_partition_minority",
+      "fault_type": "network_partition_minority",
+      "node_count": 6,
+      "baseline_ref": "p24-6-network_partition_minority:baseline",
+      "event_ref": "p24-6-network_partition_minority:event",
+      "recovery_ref": "p24-6-network_partition_minority:recovery",
+      "post_recovery_ref": "p24-6-network_partition_minority:post_recovery",
+      "fault_window_qps_ratio": 0.0,
+      "fault_window_p99_delta_ms": "MISSING",
+      "fault_window_error_rate_delta": 1.0,
+      "recovery_window_duration_ms": 293,
+      "post_recovery_qps_ratio": 0.0
+    },
+    {
+      "sample_id": "p24-6-network_partition_majority",
+      "fault_type": "network_partition_majority",
+      "node_count": 6,
+      "baseline_ref": "p24-6-network_partition_majority:baseline",
+      "event_ref": "p24-6-network_partition_majority:event",
+      "recovery_ref": "p24-6-network_partition_majority:recovery",
+      "post_recovery_ref": "p24-6-network_partition_majority:post_recovery",
+      "fault_window_qps_ratio": 1.0,
+      "fault_window_p99_delta_ms": 0.232,
+      "fault_window_error_rate_delta": 0.0,
+      "recovery_window_duration_ms": 15,
+      "post_recovery_qps_ratio": 1.333333
+    },
+    {
+      "sample_id": "p24-6-split_brain_window_detection",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 6,
+      "baseline_ref": "p24-6-split_brain_window_detection:baseline",
+      "event_ref": "p24-6-split_brain_window_detection:event",
+      "recovery_ref": "p24-6-split_brain_window_detection:recovery",
+      "post_recovery_ref": "p24-6-split_brain_window_detection:post_recovery",
+      "fault_window_qps_ratio": 0.75,
+      "fault_window_p99_delta_ms": 0.358,
+      "fault_window_error_rate_delta": 0.0,
+      "recovery_window_duration_ms": 8,
+      "post_recovery_qps_ratio": 0.375
+    },
+    {
+      "sample_id": "p24-10-network_partition_minority",
+      "fault_type": "network_partition_minority",
+      "node_count": 10,
+      "baseline_ref": "p24-10-network_partition_minority:baseline",
+      "event_ref": "p24-10-network_partition_minority:event",
+      "recovery_ref": "p24-10-network_partition_minority:recovery",
+      "post_recovery_ref": "p24-10-network_partition_minority:post_recovery",
+      "fault_window_qps_ratio": 0.0,
+      "fault_window_p99_delta_ms": "MISSING",
+      "fault_window_error_rate_delta": 1.0,
+      "recovery_window_duration_ms": 311,
+      "post_recovery_qps_ratio": 0.0
+    },
+    {
+      "sample_id": "p24-10-network_partition_majority",
+      "fault_type": "network_partition_majority",
+      "node_count": 10,
+      "baseline_ref": "p24-10-network_partition_majority:baseline",
+      "event_ref": "p24-10-network_partition_majority:event",
+      "recovery_ref": "p24-10-network_partition_majority:recovery",
+      "post_recovery_ref": "p24-10-network_partition_majority:post_recovery",
+      "fault_window_qps_ratio": 1.071429,
+      "fault_window_p99_delta_ms": 0.207,
+      "fault_window_error_rate_delta": 0.0,
+      "recovery_window_duration_ms": 7,
+      "post_recovery_qps_ratio": 0.714286
+    },
+    {
+      "sample_id": "p24-10-split_brain_window_detection",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 10,
+      "baseline_ref": "p24-10-split_brain_window_detection:baseline",
+      "event_ref": "p24-10-split_brain_window_detection:event",
+      "recovery_ref": "p24-10-split_brain_window_detection:recovery",
+      "post_recovery_ref": "p24-10-split_brain_window_detection:post_recovery",
+      "fault_window_qps_ratio": 1.124999,
+      "fault_window_p99_delta_ms": 0.211,
+      "fault_window_error_rate_delta": 0.0,
+      "recovery_window_duration_ms": 7,
+      "post_recovery_qps_ratio": 1.199999
+    }
+  ]
+}

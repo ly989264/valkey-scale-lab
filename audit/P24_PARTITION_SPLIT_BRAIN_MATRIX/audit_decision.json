@@ -1,0 +1,41 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-07-03T02:50:00Z",
+  "gate_result_path": "artifacts/gates/P24_PARTITION_SPLIT_BRAIN_MATRIX/gate_result.json",
+  "gate_result_sha256": "7fd78fd050569defed629680a526fb927c3246dfe0539128f69c7109b20ca430",
+  "artifact_paths": [
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/phase_summary.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/valkey_e2e_evidence.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/cleanup_report.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/events.jsonl",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/metrics_timeseries.jsonl",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_windows.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/quant_summary.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_results.jsonl",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_topology_snapshots.jsonl",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/network_partition_command_log.jsonl"
+  ],
+  "risks": [
+    {
+      "risk": "P24 uses owned Docker network disconnect/reconnect of nodehost containers rather than container tc.",
+      "severity": "medium",
+      "required_before_next_phase": false,
+      "notes": "Accepted because command logs and assertions prove owned Docker scope and no host/global network mutation."
+    },
+    {
+      "risk": "old_primary_accepts_write_after_promotion detector is not run in P24.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "Encoded as MISSING with reason because P24 does not inject a primary-stop promotion condition."
+    }
+  ],
+  "rationale": "All manifest gates passed; required artifacts validate; real Valkey 9.1.0 evidence covers required P24 rows at 6 and 10 nodes; partition/split-brain reports are detector-backed; workload metrics were corrected after fresh-context review; safety and cleanup checks passed."
+}

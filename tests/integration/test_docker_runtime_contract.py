@@ -106,6 +106,19 @@ def test_p23_runtime_admits_only_bounded_network_fault_matrix_scenarios() -> Non
     assert docker_runtime._uses_docker_process_runtime("P23_FAULT_NETWORK_DELAY_LOSS_FLAP", "p23_fault_matrix_200") is False
 
 
+def test_p24_runtime_admits_only_bounded_partition_matrix_scenarios() -> None:
+    for node_count in [6, 10, 30, 50, 100]:
+        scenario = f"p24_partition_matrix_{node_count}"
+        assert docker_runtime._p24_fault_matrix_node_count("P24_PARTITION_SPLIT_BRAIN_MATRIX", scenario) == node_count
+        assert docker_runtime._scenario_node_count_allowed("P24_PARTITION_SPLIT_BRAIN_MATRIX", scenario, node_count) is True
+        assert docker_runtime._uses_docker_process_runtime("P24_PARTITION_SPLIT_BRAIN_MATRIX", scenario) is True
+    assert docker_runtime._p24_fault_matrix_node_count("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_200") is None
+    assert docker_runtime._scenario_node_count_allowed("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_200", 200) is False
+    assert docker_runtime._uses_docker_process_runtime("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_200") is False
+    assert docker_runtime._p24_fault_matrix_node_count("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_1000") is None
+    assert docker_runtime._scenario_node_count_allowed("P24_PARTITION_SPLIT_BRAIN_MATRIX", "p24_partition_matrix_1000", 1000) is False
+
+
 def test_p21_runtime_semantic_exception_is_narrow() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
 

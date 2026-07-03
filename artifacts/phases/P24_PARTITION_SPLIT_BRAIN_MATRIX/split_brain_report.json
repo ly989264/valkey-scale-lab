@@ -1,0 +1,3789 @@
+{
+  "detectors_run": [
+    "primary_slot_assignment_overlap",
+    "partition_side_cluster_view_divergence",
+    "conflicting_write_probe",
+    "primary_slot_assignment_overlap",
+    "partition_side_cluster_view_divergence",
+    "conflicting_write_probe",
+    "primary_slot_assignment_overlap",
+    "partition_side_cluster_view_divergence",
+    "conflicting_write_probe",
+    "primary_slot_assignment_overlap",
+    "partition_side_cluster_view_divergence",
+    "conflicting_write_probe",
+    "primary_slot_assignment_overlap",
+    "partition_side_cluster_view_divergence",
+    "conflicting_write_probe",
+    "primary_slot_assignment_overlap",
+    "partition_side_cluster_view_divergence",
+    "conflicting_write_probe"
+  ],
+  "detector_results": [
+    {
+      "detector": "primary_slot_assignment_overlap",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045539144,
+      "ended_at_ms": 1783045539144,
+      "window_ms": 0,
+      "conflicts": []
+    },
+    {
+      "detector": "partition_side_cluster_view_divergence",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": true,
+      "started_at_ms": 1783045539144,
+      "ended_at_ms": 1783045539144,
+      "window_ms": 0,
+      "majority_signature": {
+        "pass_probe_count": 5,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      },
+      "minority_signature": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      },
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ]
+    },
+    {
+      "detector": "conflicting_write_probe",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045539144,
+      "ended_at_ms": 1783045539209,
+      "window_ms": 0,
+      "key": "p24-majority:network_partition_minority:shard-0001-primary:{p23-3}:split-brain-detector",
+      "majority_write_status": "FAIL:RespError('CLUSTERDOWN The cluster is down')",
+      "minority_write_status": "FAIL",
+      "conflicting_write_keys": []
+    },
+    {
+      "detector": "primary_slot_assignment_overlap",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045554300,
+      "ended_at_ms": 1783045554300,
+      "window_ms": 0,
+      "conflicts": []
+    },
+    {
+      "detector": "partition_side_cluster_view_divergence",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": true,
+      "started_at_ms": 1783045554300,
+      "ended_at_ms": 1783045554300,
+      "window_ms": 0,
+      "majority_signature": {
+        "pass_probe_count": 5,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      },
+      "minority_signature": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      },
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ]
+    },
+    {
+      "detector": "conflicting_write_probe",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045554300,
+      "ended_at_ms": 1783045554363,
+      "window_ms": 0,
+      "key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-3}:split-brain-detector",
+      "majority_write_status": "PASS",
+      "minority_write_status": "FAIL",
+      "conflicting_write_keys": []
+    },
+    {
+      "detector": "primary_slot_assignment_overlap",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045564164,
+      "ended_at_ms": 1783045564164,
+      "window_ms": 0,
+      "conflicts": []
+    },
+    {
+      "detector": "partition_side_cluster_view_divergence",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": true,
+      "started_at_ms": 1783045564164,
+      "ended_at_ms": 1783045564164,
+      "window_ms": 0,
+      "majority_signature": {
+        "pass_probe_count": 5,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      },
+      "minority_signature": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      },
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ]
+    },
+    {
+      "detector": "conflicting_write_probe",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045564164,
+      "ended_at_ms": 1783045564229,
+      "window_ms": 0,
+      "key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-3}:split-brain-detector",
+      "majority_write_status": "PASS",
+      "minority_write_status": "FAIL",
+      "conflicting_write_keys": []
+    },
+    {
+      "detector": "primary_slot_assignment_overlap",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045590930,
+      "ended_at_ms": 1783045590930,
+      "window_ms": 0,
+      "conflicts": []
+    },
+    {
+      "detector": "partition_side_cluster_view_divergence",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": true,
+      "started_at_ms": 1783045590930,
+      "ended_at_ms": 1783045590931,
+      "window_ms": 1,
+      "majority_signature": {
+        "pass_probe_count": 9,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          }
+        ]
+      },
+      "minority_signature": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+            "low": 13107,
+            "high": 16383
+          }
+        ]
+      },
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ]
+    },
+    {
+      "detector": "conflicting_write_probe",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045590931,
+      "ended_at_ms": 1783045591003,
+      "window_ms": 0,
+      "key": "p24-majority:network_partition_minority:shard-0001-primary:{p23-6}:split-brain-detector",
+      "majority_write_status": "FAIL:RespError('CLUSTERDOWN The cluster is down')",
+      "minority_write_status": "FAIL",
+      "conflicting_write_keys": []
+    },
+    {
+      "detector": "primary_slot_assignment_overlap",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045609130,
+      "ended_at_ms": 1783045609130,
+      "window_ms": 0,
+      "conflicts": []
+    },
+    {
+      "detector": "partition_side_cluster_view_divergence",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": true,
+      "started_at_ms": 1783045609130,
+      "ended_at_ms": 1783045609130,
+      "window_ms": 0,
+      "majority_signature": {
+        "pass_probe_count": 9,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          }
+        ]
+      },
+      "minority_signature": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+            "low": 13107,
+            "high": 16383
+          }
+        ]
+      },
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ]
+    },
+    {
+      "detector": "conflicting_write_probe",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045609130,
+      "ended_at_ms": 1783045609199,
+      "window_ms": 0,
+      "key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-6}:split-brain-detector",
+      "majority_write_status": "PASS",
+      "minority_write_status": "FAIL",
+      "conflicting_write_keys": []
+    },
+    {
+      "detector": "primary_slot_assignment_overlap",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045618928,
+      "ended_at_ms": 1783045618928,
+      "window_ms": 0,
+      "conflicts": []
+    },
+    {
+      "detector": "partition_side_cluster_view_divergence",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": true,
+      "started_at_ms": 1783045618928,
+      "ended_at_ms": 1783045618928,
+      "window_ms": 0,
+      "majority_signature": {
+        "pass_probe_count": 9,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          }
+        ]
+      },
+      "minority_signature": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+            "low": 13107,
+            "high": 16383
+          }
+        ]
+      },
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ]
+    },
+    {
+      "detector": "conflicting_write_probe",
+      "status": "PASS",
+      "ran": true,
+      "indicator_observed": false,
+      "started_at_ms": 1783045618928,
+      "ended_at_ms": 1783045618997,
+      "window_ms": 0,
+      "key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-6}:split-brain-detector",
+      "majority_write_status": "PASS",
+      "minority_write_status": "FAIL",
+      "conflicting_write_keys": []
+    }
+  ],
+  "indicator_observed": true,
+  "indicator_start_ms": 1783045539144,
+  "indicator_end_ms": 1783045618928,
+  "split_brain_window_ms": 79784,
+  "conflicting_slots": [],
+  "conflicting_nodes": [
+    "partition_side_cluster_view_divergence"
+  ],
+  "conflicting_write_keys": [],
+  "missing_detectors_with_reason": [
+    {
+      "detector": "old_primary_accepts_write_after_promotion",
+      "status": "MISSING",
+      "reason": "No P24 sample injected a primary-stop promotion condition; see per-sample detector results."
+    }
+  ],
+  "schema_version": "v1",
+  "artifact_type": "split_brain_report",
+  "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+  "run_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX-partition-split-brain-20260703",
+  "created_at": "2026-07-03T02:27:08.113093Z",
+  "producer": {
+    "name": "scripts/fault_safety_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "samples": [
+    {
+      "detectors_run": [
+        "primary_slot_assignment_overlap",
+        "partition_side_cluster_view_divergence",
+        "conflicting_write_probe"
+      ],
+      "detector_results": [
+        {
+          "detector": "primary_slot_assignment_overlap",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045539144,
+          "ended_at_ms": 1783045539144,
+          "window_ms": 0,
+          "conflicts": []
+        },
+        {
+          "detector": "partition_side_cluster_view_divergence",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": true,
+          "started_at_ms": 1783045539144,
+          "ended_at_ms": 1783045539144,
+          "window_ms": 0,
+          "majority_signature": {
+            "pass_probe_count": 5,
+            "cluster_states": [
+              "ok"
+            ],
+            "known_node_ids": [
+              "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+              "6213d2c536d2554ed90554b90ea0017095157651",
+              "7306a7716242ee93deced7d3f1866785567bd5c6",
+              "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+              "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+              "d3449c88824ef436c9b386d453777001c06a5d88"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              }
+            ]
+          },
+          "minority_signature": {
+            "pass_probe_count": 1,
+            "cluster_states": [
+              "fail"
+            ],
+            "known_node_ids": [
+              "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+              "6213d2c536d2554ed90554b90ea0017095157651",
+              "7306a7716242ee93deced7d3f1866785567bd5c6",
+              "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+              "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+              "d3449c88824ef436c9b386d453777001c06a5d88"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              }
+            ]
+          },
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ]
+        },
+        {
+          "detector": "conflicting_write_probe",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045539144,
+          "ended_at_ms": 1783045539209,
+          "window_ms": 0,
+          "key": "p24-majority:network_partition_minority:shard-0001-primary:{p23-3}:split-brain-detector",
+          "majority_write_status": "FAIL:RespError('CLUSTERDOWN The cluster is down')",
+          "minority_write_status": "FAIL",
+          "conflicting_write_keys": []
+        }
+      ],
+      "indicator_observed": true,
+      "indicator_start_ms": 1783045539144,
+      "indicator_end_ms": 1783045539144,
+      "split_brain_window_ms": 1,
+      "conflicting_slots": [],
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ],
+      "conflicting_write_keys": [],
+      "missing_detectors_with_reason": [
+        {
+          "detector": "old_primary_accepts_write_after_promotion",
+          "status": "MISSING",
+          "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+        }
+      ],
+      "sample_id": "p24-6-network_partition_minority",
+      "fault_id": "p24-6-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 6
+    },
+    {
+      "detectors_run": [
+        "primary_slot_assignment_overlap",
+        "partition_side_cluster_view_divergence",
+        "conflicting_write_probe"
+      ],
+      "detector_results": [
+        {
+          "detector": "primary_slot_assignment_overlap",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045554300,
+          "ended_at_ms": 1783045554300,
+          "window_ms": 0,
+          "conflicts": []
+        },
+        {
+          "detector": "partition_side_cluster_view_divergence",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": true,
+          "started_at_ms": 1783045554300,
+          "ended_at_ms": 1783045554300,
+          "window_ms": 0,
+          "majority_signature": {
+            "pass_probe_count": 5,
+            "cluster_states": [
+              "ok"
+            ],
+            "known_node_ids": [
+              "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+              "6213d2c536d2554ed90554b90ea0017095157651",
+              "7306a7716242ee93deced7d3f1866785567bd5c6",
+              "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+              "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+              "d3449c88824ef436c9b386d453777001c06a5d88"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              }
+            ]
+          },
+          "minority_signature": {
+            "pass_probe_count": 1,
+            "cluster_states": [
+              "fail"
+            ],
+            "known_node_ids": [
+              "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+              "6213d2c536d2554ed90554b90ea0017095157651",
+              "7306a7716242ee93deced7d3f1866785567bd5c6",
+              "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+              "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+              "d3449c88824ef436c9b386d453777001c06a5d88"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              }
+            ]
+          },
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ]
+        },
+        {
+          "detector": "conflicting_write_probe",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045554300,
+          "ended_at_ms": 1783045554363,
+          "window_ms": 0,
+          "key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-3}:split-brain-detector",
+          "majority_write_status": "PASS",
+          "minority_write_status": "FAIL",
+          "conflicting_write_keys": []
+        }
+      ],
+      "indicator_observed": true,
+      "indicator_start_ms": 1783045554300,
+      "indicator_end_ms": 1783045554300,
+      "split_brain_window_ms": 1,
+      "conflicting_slots": [],
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ],
+      "conflicting_write_keys": [],
+      "missing_detectors_with_reason": [
+        {
+          "detector": "old_primary_accepts_write_after_promotion",
+          "status": "MISSING",
+          "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+        }
+      ],
+      "sample_id": "p24-6-network_partition_majority",
+      "fault_id": "p24-6-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 6
+    },
+    {
+      "detectors_run": [
+        "primary_slot_assignment_overlap",
+        "partition_side_cluster_view_divergence",
+        "conflicting_write_probe"
+      ],
+      "detector_results": [
+        {
+          "detector": "primary_slot_assignment_overlap",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045564164,
+          "ended_at_ms": 1783045564164,
+          "window_ms": 0,
+          "conflicts": []
+        },
+        {
+          "detector": "partition_side_cluster_view_divergence",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": true,
+          "started_at_ms": 1783045564164,
+          "ended_at_ms": 1783045564164,
+          "window_ms": 0,
+          "majority_signature": {
+            "pass_probe_count": 5,
+            "cluster_states": [
+              "ok"
+            ],
+            "known_node_ids": [
+              "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+              "6213d2c536d2554ed90554b90ea0017095157651",
+              "7306a7716242ee93deced7d3f1866785567bd5c6",
+              "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+              "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+              "d3449c88824ef436c9b386d453777001c06a5d88"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              }
+            ]
+          },
+          "minority_signature": {
+            "pass_probe_count": 1,
+            "cluster_states": [
+              "fail"
+            ],
+            "known_node_ids": [
+              "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+              "6213d2c536d2554ed90554b90ea0017095157651",
+              "7306a7716242ee93deced7d3f1866785567bd5c6",
+              "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+              "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+              "d3449c88824ef436c9b386d453777001c06a5d88"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+                "low": 0,
+                "high": 5460
+              },
+              {
+                "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+                "low": 5461,
+                "high": 10921
+              },
+              {
+                "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+                "low": 10922,
+                "high": 16383
+              }
+            ]
+          },
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ]
+        },
+        {
+          "detector": "conflicting_write_probe",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045564164,
+          "ended_at_ms": 1783045564229,
+          "window_ms": 0,
+          "key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-3}:split-brain-detector",
+          "majority_write_status": "PASS",
+          "minority_write_status": "FAIL",
+          "conflicting_write_keys": []
+        }
+      ],
+      "indicator_observed": true,
+      "indicator_start_ms": 1783045564164,
+      "indicator_end_ms": 1783045564164,
+      "split_brain_window_ms": 1,
+      "conflicting_slots": [],
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ],
+      "conflicting_write_keys": [],
+      "missing_detectors_with_reason": [
+        {
+          "detector": "old_primary_accepts_write_after_promotion",
+          "status": "MISSING",
+          "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+        }
+      ],
+      "sample_id": "p24-6-split_brain_window_detection",
+      "fault_id": "p24-6-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 6
+    },
+    {
+      "detectors_run": [
+        "primary_slot_assignment_overlap",
+        "partition_side_cluster_view_divergence",
+        "conflicting_write_probe"
+      ],
+      "detector_results": [
+        {
+          "detector": "primary_slot_assignment_overlap",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045590930,
+          "ended_at_ms": 1783045590930,
+          "window_ms": 0,
+          "conflicts": []
+        },
+        {
+          "detector": "partition_side_cluster_view_divergence",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": true,
+          "started_at_ms": 1783045590930,
+          "ended_at_ms": 1783045590931,
+          "window_ms": 1,
+          "majority_signature": {
+            "pass_probe_count": 9,
+            "cluster_states": [
+              "ok"
+            ],
+            "known_node_ids": [
+              "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+              "3768eb96fa144e82a2871b48ee3a03e639b49986",
+              "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+              "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+              "6064ff384ee6d93eb6b60b79620ab841c842929f",
+              "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+              "6bbf1a8b649fd901528e3a511729a1071000fca9",
+              "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+              "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+              "cd90be8a49a22fdb8feed60137a45fee56716c00"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              }
+            ]
+          },
+          "minority_signature": {
+            "pass_probe_count": 1,
+            "cluster_states": [
+              "fail"
+            ],
+            "known_node_ids": [
+              "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+              "3768eb96fa144e82a2871b48ee3a03e639b49986",
+              "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+              "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+              "6064ff384ee6d93eb6b60b79620ab841c842929f",
+              "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+              "6bbf1a8b649fd901528e3a511729a1071000fca9",
+              "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+              "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+              "cd90be8a49a22fdb8feed60137a45fee56716c00"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                "low": 13107,
+                "high": 16383
+              }
+            ]
+          },
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ]
+        },
+        {
+          "detector": "conflicting_write_probe",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045590931,
+          "ended_at_ms": 1783045591003,
+          "window_ms": 0,
+          "key": "p24-majority:network_partition_minority:shard-0001-primary:{p23-6}:split-brain-detector",
+          "majority_write_status": "FAIL:RespError('CLUSTERDOWN The cluster is down')",
+          "minority_write_status": "FAIL",
+          "conflicting_write_keys": []
+        }
+      ],
+      "indicator_observed": true,
+      "indicator_start_ms": 1783045590930,
+      "indicator_end_ms": 1783045590931,
+      "split_brain_window_ms": 1,
+      "conflicting_slots": [],
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ],
+      "conflicting_write_keys": [],
+      "missing_detectors_with_reason": [
+        {
+          "detector": "old_primary_accepts_write_after_promotion",
+          "status": "MISSING",
+          "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+        }
+      ],
+      "sample_id": "p24-10-network_partition_minority",
+      "fault_id": "p24-10-network_partition_minority-fault",
+      "fault_type": "network_partition_minority",
+      "node_count": 10
+    },
+    {
+      "detectors_run": [
+        "primary_slot_assignment_overlap",
+        "partition_side_cluster_view_divergence",
+        "conflicting_write_probe"
+      ],
+      "detector_results": [
+        {
+          "detector": "primary_slot_assignment_overlap",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045609130,
+          "ended_at_ms": 1783045609130,
+          "window_ms": 0,
+          "conflicts": []
+        },
+        {
+          "detector": "partition_side_cluster_view_divergence",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": true,
+          "started_at_ms": 1783045609130,
+          "ended_at_ms": 1783045609130,
+          "window_ms": 0,
+          "majority_signature": {
+            "pass_probe_count": 9,
+            "cluster_states": [
+              "ok"
+            ],
+            "known_node_ids": [
+              "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+              "3768eb96fa144e82a2871b48ee3a03e639b49986",
+              "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+              "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+              "6064ff384ee6d93eb6b60b79620ab841c842929f",
+              "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+              "6bbf1a8b649fd901528e3a511729a1071000fca9",
+              "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+              "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+              "cd90be8a49a22fdb8feed60137a45fee56716c00"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              }
+            ]
+          },
+          "minority_signature": {
+            "pass_probe_count": 1,
+            "cluster_states": [
+              "fail"
+            ],
+            "known_node_ids": [
+              "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+              "3768eb96fa144e82a2871b48ee3a03e639b49986",
+              "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+              "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+              "6064ff384ee6d93eb6b60b79620ab841c842929f",
+              "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+              "6bbf1a8b649fd901528e3a511729a1071000fca9",
+              "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+              "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+              "cd90be8a49a22fdb8feed60137a45fee56716c00"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                "low": 13107,
+                "high": 16383
+              }
+            ]
+          },
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ]
+        },
+        {
+          "detector": "conflicting_write_probe",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045609130,
+          "ended_at_ms": 1783045609199,
+          "window_ms": 0,
+          "key": "p24-majority:network_partition_majority:shard-0001-primary:{p23-6}:split-brain-detector",
+          "majority_write_status": "PASS",
+          "minority_write_status": "FAIL",
+          "conflicting_write_keys": []
+        }
+      ],
+      "indicator_observed": true,
+      "indicator_start_ms": 1783045609130,
+      "indicator_end_ms": 1783045609130,
+      "split_brain_window_ms": 1,
+      "conflicting_slots": [],
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ],
+      "conflicting_write_keys": [],
+      "missing_detectors_with_reason": [
+        {
+          "detector": "old_primary_accepts_write_after_promotion",
+          "status": "MISSING",
+          "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+        }
+      ],
+      "sample_id": "p24-10-network_partition_majority",
+      "fault_id": "p24-10-network_partition_majority-fault",
+      "fault_type": "network_partition_majority",
+      "node_count": 10
+    },
+    {
+      "detectors_run": [
+        "primary_slot_assignment_overlap",
+        "partition_side_cluster_view_divergence",
+        "conflicting_write_probe"
+      ],
+      "detector_results": [
+        {
+          "detector": "primary_slot_assignment_overlap",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045618928,
+          "ended_at_ms": 1783045618928,
+          "window_ms": 0,
+          "conflicts": []
+        },
+        {
+          "detector": "partition_side_cluster_view_divergence",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": true,
+          "started_at_ms": 1783045618928,
+          "ended_at_ms": 1783045618928,
+          "window_ms": 0,
+          "majority_signature": {
+            "pass_probe_count": 9,
+            "cluster_states": [
+              "ok"
+            ],
+            "known_node_ids": [
+              "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+              "3768eb96fa144e82a2871b48ee3a03e639b49986",
+              "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+              "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+              "6064ff384ee6d93eb6b60b79620ab841c842929f",
+              "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+              "6bbf1a8b649fd901528e3a511729a1071000fca9",
+              "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+              "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+              "cd90be8a49a22fdb8feed60137a45fee56716c00"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              }
+            ]
+          },
+          "minority_signature": {
+            "pass_probe_count": 1,
+            "cluster_states": [
+              "fail"
+            ],
+            "known_node_ids": [
+              "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+              "3768eb96fa144e82a2871b48ee3a03e639b49986",
+              "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+              "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+              "6064ff384ee6d93eb6b60b79620ab841c842929f",
+              "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+              "6bbf1a8b649fd901528e3a511729a1071000fca9",
+              "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+              "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+              "cd90be8a49a22fdb8feed60137a45fee56716c00"
+            ],
+            "primary_slot_ranges": [
+              {
+                "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+                "low": 0,
+                "high": 3275
+              },
+              {
+                "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+                "low": 3276,
+                "high": 6552
+              },
+              {
+                "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+                "low": 6553,
+                "high": 9829
+              },
+              {
+                "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+                "low": 9830,
+                "high": 13106
+              },
+              {
+                "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+                "low": 13107,
+                "high": 16383
+              }
+            ]
+          },
+          "conflicting_nodes": [
+            "partition_side_cluster_view_divergence"
+          ]
+        },
+        {
+          "detector": "conflicting_write_probe",
+          "status": "PASS",
+          "ran": true,
+          "indicator_observed": false,
+          "started_at_ms": 1783045618928,
+          "ended_at_ms": 1783045618997,
+          "window_ms": 0,
+          "key": "p24-majority:split_brain_window_detection:shard-0001-primary:{p23-6}:split-brain-detector",
+          "majority_write_status": "PASS",
+          "minority_write_status": "FAIL",
+          "conflicting_write_keys": []
+        }
+      ],
+      "indicator_observed": true,
+      "indicator_start_ms": 1783045618928,
+      "indicator_end_ms": 1783045618928,
+      "split_brain_window_ms": 1,
+      "conflicting_slots": [],
+      "conflicting_nodes": [
+        "partition_side_cluster_view_divergence"
+      ],
+      "conflicting_write_keys": [],
+      "missing_detectors_with_reason": [
+        {
+          "detector": "old_primary_accepts_write_after_promotion",
+          "status": "MISSING",
+          "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure."
+        }
+      ],
+      "sample_id": "p24-10-split_brain_window_detection",
+      "fault_id": "p24-10-split_brain_window_detection-fault",
+      "fault_type": "split_brain_window_detection",
+      "node_count": 10
+    }
+  ],
+  "side_view_comparisons": [
+    {
+      "sample_id": "p24-6-network_partition_minority",
+      "majority": {
+        "pass_probe_count": 5,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      },
+      "minority": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "6213d2c536d2554ed90554b90ea0017095157651",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "p24-6-network_partition_majority",
+      "majority": {
+        "pass_probe_count": 5,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      },
+      "minority": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "p24-6-split_brain_window_detection",
+      "majority": {
+        "pass_probe_count": 5,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      },
+      "minority": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "138d7cb876811326f3002653bd9ecbe4150fa8a1",
+          "6213d2c536d2554ed90554b90ea0017095157651",
+          "7306a7716242ee93deced7d3f1866785567bd5c6",
+          "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+          "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+          "d3449c88824ef436c9b386d453777001c06a5d88"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "7306a7716242ee93deced7d3f1866785567bd5c6",
+            "low": 0,
+            "high": 5460
+          },
+          {
+            "node_id": "8b4b90286a80b254ca8a21f5b177fc2b6962766d",
+            "low": 5461,
+            "high": 10921
+          },
+          {
+            "node_id": "d0cd5e83ccb20b3b69c1506cfbe955a7938c5f25",
+            "low": 10922,
+            "high": 16383
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "p24-10-network_partition_minority",
+      "majority": {
+        "pass_probe_count": 9,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          }
+        ]
+      },
+      "minority": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "cd90be8a49a22fdb8feed60137a45fee56716c00",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+            "low": 13107,
+            "high": 16383
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "p24-10-network_partition_majority",
+      "majority": {
+        "pass_probe_count": 9,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          }
+        ]
+      },
+      "minority": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+            "low": 13107,
+            "high": 16383
+          }
+        ]
+      }
+    },
+    {
+      "sample_id": "p24-10-split_brain_window_detection",
+      "majority": {
+        "pass_probe_count": 9,
+        "cluster_states": [
+          "ok"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          }
+        ]
+      },
+      "minority": {
+        "pass_probe_count": 1,
+        "cluster_states": [
+          "fail"
+        ],
+        "known_node_ids": [
+          "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+          "3768eb96fa144e82a2871b48ee3a03e639b49986",
+          "452f0b46fef6640a1c5d70f8274b5272dc75932d",
+          "5d7e48fdaa82a20db41778e5b310e26ea9ed80a6",
+          "6064ff384ee6d93eb6b60b79620ab841c842929f",
+          "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+          "6bbf1a8b649fd901528e3a511729a1071000fca9",
+          "7f660a6c68cdbe117205f3a1d4c3efed1c764a8d",
+          "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+          "cd90be8a49a22fdb8feed60137a45fee56716c00"
+        ],
+        "primary_slot_ranges": [
+          {
+            "node_id": "63df10ec9bf553a1b4b70a1c43707e3c4a77a9b3",
+            "low": 0,
+            "high": 3275
+          },
+          {
+            "node_id": "a61d6f1f3e460fa591c5c2b4e85811d34084d97b",
+            "low": 3276,
+            "high": 6552
+          },
+          {
+            "node_id": "349711f3bb2ec0453bc7864b391d4dc100ff20c9",
+            "low": 6553,
+            "high": 9829
+          },
+          {
+            "node_id": "6bbf1a8b649fd901528e3a511729a1071000fca9",
+            "low": 9830,
+            "high": 13106
+          },
+          {
+            "node_id": "3768eb96fa144e82a2871b48ee3a03e639b49986",
+            "low": 13107,
+            "high": 16383
+          }
+        ]
+      }
+    }
+  ]
+}

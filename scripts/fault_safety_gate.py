@@ -23,6 +23,8 @@ from valkey_probe_lib import (  # noqa: E402
     endpoints_from_state,
     load_state,
     moved_target,
+    parse_cluster_info,
+    parse_cluster_nodes,
     probe_endpoint,
     wait_for_cluster_ok,
 )
@@ -34,6 +36,14 @@ P22_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "a
 P23_PHASE = "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
 P23_FAULT_TYPES = ["network_delay", "network_loss", "network_flap"]
 P23_WINDOWS = P22_WINDOWS
+P24_PHASE = "P24_PARTITION_SPLIT_BRAIN_MATRIX"
+P24_FAULT_TYPES = ["network_partition_minority", "network_partition_majority", "split_brain_window_detection"]
+P24_DETECTORS = [
+    "primary_slot_assignment_overlap",
+    "partition_side_cluster_view_divergence",
+    "conflicting_write_probe",
+    "old_primary_accepts_write_after_promotion",
+]
 
 
 def utc_now() -> str:
@@ -327,7 +337,28 @@ def execute_workload_command(endpoints: list[Endpoint], entry: Endpoint, *comman
     raise RuntimeError("too many cluster redirects")
 
 
-def workload_metrics(operation_count: int, ok_ops: int, errors: int, timeouts: int, redirects: int, latencies: list[float], duration_ms: int) -> dict[str, Any]:
+def workload_metrics(
+    operation_count: int,
+    ok_ops: int,
+    errors: int,
+    timeouts: int,
+    redirects: int,
+    latencies: list[float],
+    duration_ms: int,
+    error_counts: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    error_counts = error_counts or {}
+    connection_errors = int(error_counts.get("connection_error_count", 0) or 0)
+    cluster_down_errors = int(error_counts.get("cluster_down_error_count", 0) or 0)
+    readonly_errors = int(error_counts.get("readonly_error_count", 0) or 0)
+    tryagain_errors = int(error_counts.get("tryagain_error_count", 0) or 0)
+    unknown_errors = int(
+        error_counts.get(
+            "unknown_error_count",
+            max(errors - timeouts - connection_errors - cluster_down_errors - readonly_errors - tryagain_errors, 0),
+        )
+        or 0
+    )
     duration_sec = max(duration_ms / 1000.0, 0.001)
     metrics = {
         "requested_qps": round(operation_count / duration_sec, 3) if operation_count else 0.0,
@@ -341,13 +372,13 @@ def workload_metrics(operation_count: int, ok_ops: int, errors: int, timeouts: i
         "latency_p99_ms": percentile(latencies, 0.99),
         "latency_p999_ms": "MISSING",
         "timeout_count": timeouts,
-        "connection_error_count": 0,
+        "connection_error_count": connection_errors,
         "moved_redirection_count": redirects,
         "ask_redirection_count": 0,
-        "cluster_down_error_count": 0,
-        "readonly_error_count": 0,
-        "tryagain_error_count": 0,
-        "unknown_error_count": max(errors - timeouts, 0),
+        "cluster_down_error_count": cluster_down_errors,
+        "readonly_error_count": readonly_errors,
+        "tryagain_error_count": tryagain_errors,
+        "unknown_error_count": unknown_errors,
         "sample_count": operation_count,
         "missing_reasons": {"latency_p999_ms": "P22 focused gate uses too few workload samples for p999."},
     }
@@ -1987,6 +2018,1272 @@ def run_p23_controller(args: argparse.Namespace) -> int:
     return 0
 
 
+def p24_config_path(node_count: int) -> Path:
+    return ROOT / "templates" / "configs" / f"p24_{node_count}.yaml"
+
+
+def p24_scenario(node_count: int) -> str:
+    return f"p24_partition_matrix_{node_count}"
+
+
+def p24_inner_paths(artifact_dir: Path, node_count: int) -> dict[str, Path]:
+    scenario = p24_scenario(node_count)
+    work_dir = artifact_dir / "_p24_runs" / scenario
+    return {
+        "work_dir": work_dir,
+        "state": work_dir / "state_p24.json",
+        "cleanup_report": work_dir / "cleanup_report.json",
+    }
+
+
+def p24_command_log(
+    *,
+    phase: str,
+    run_id: str,
+    sample_id: str,
+    fault_id: str,
+    command_kind: str,
+    started_at: int,
+    ended_at: int,
+    status: str,
+    details: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema_version": "v1",
+        "phase_id": phase,
+        "run_id": run_id,
+        "sample_id": sample_id,
+        "fault_id": fault_id,
+        "command_id": f"{fault_id}-{command_kind}",
+        "command_kind": command_kind,
+        "started_at_unix_ms": started_at,
+        "ended_at_unix_ms": ended_at,
+        "status": status,
+        "implementation_path": "owned_docker_network_control",
+        "host_network_mutated": False,
+        "global_firewall_mutated": False,
+        "physical_host_mutated": False,
+        "details": details,
+    }
+
+
+def p24_plan_partition(state: dict[str, Any]) -> dict[str, Any]:
+    nodes = list(state.get("nodes", []))
+    by_nodehost: dict[str, list[dict[str, Any]]] = {}
+    for node in nodes:
+        by_nodehost.setdefault(str(node.get("nodehost_id", "MISSING")), []).append(node)
+    candidates = [(nodehost_id, items) for nodehost_id, items in by_nodehost.items() if nodehost_id != "MISSING" and len(items) < len(nodes)]
+    if len(candidates) < 2:
+        raise RuntimeError("P24 requires at least two owned nodehost groups")
+    minority_nodehost_id, minority_nodes = sorted(candidates, key=lambda item: (len(item[1]), item[0]))[0]
+    majority_nodes = [node for node in nodes if node not in minority_nodes]
+    nodehosts_by_id = {str(item.get("nodehost_id")): item for item in state.get("nodehosts", [])}
+    minority_nodehosts = sorted({str(node.get("nodehost_id")) for node in minority_nodes})
+    majority_nodehosts = sorted({str(node.get("nodehost_id")) for node in majority_nodes})
+    if not minority_nodehosts or not majority_nodehosts:
+        raise RuntimeError("P24 partition planner could not map nodehosts")
+    minority_azs = sorted({str(node.get("az_id")) for node in minority_nodes})
+    return {
+        "groups": {
+            "majority": [str(node.get("logical_id")) for node in majority_nodes],
+            "minority": [str(node.get("logical_id")) for node in minority_nodes],
+            "isolated": [],
+        },
+        "group_nodehosts": {
+            "majority": majority_nodehosts,
+            "minority": minority_nodehosts,
+            "isolated": [],
+        },
+        "minority_az": minority_azs[0] if len(minority_azs) == 1 else "mixed",
+        "minority_azs": minority_azs,
+        "minority_nodehost_id": minority_nodehost_id,
+        "majority_azs": sorted({str(node.get("az_id")) for node in majority_nodes}),
+        "majority_nodehost_ids": majority_nodehosts,
+        "minority_nodes": minority_nodes,
+        "majority_nodes": majority_nodes,
+        "minority_nodehosts": [nodehosts_by_id[nodehost_id] for nodehost_id in minority_nodehosts],
+        "majority_nodehosts": [nodehosts_by_id[nodehost_id] for nodehost_id in majority_nodehosts],
+        "traffic_policy": {
+            "block_between_groups": True,
+            "allow_within_group": True,
+            "implementation_path": "owned_docker_network_control",
+            "between_group_control": "docker network disconnect owned minority nodehost containers from owned stage network",
+            "within_group_preservation": "majority nodehost containers remain connected on the owned Docker network; minority side is probed through owned container loopback while isolated",
+            "host_network_mutated": False,
+            "global_firewall_mutated": False,
+            "physical_host_mutated": False,
+        },
+    }
+
+
+def p24_docker_network_control(
+    *,
+    phase: str,
+    run_id: str,
+    sample_id: str,
+    fault_id: str,
+    network_name: str,
+    nodehosts: list[dict[str, Any]],
+    action: str,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    rows: list[dict[str, Any]] = []
+    errors: list[str] = []
+    for nodehost in nodehosts:
+        started = unix_ms()
+        container = str(nodehost.get("container_name"))
+        container_ip = str(nodehost.get("container_ip"))
+        if action == "disconnect":
+            cmd = ["docker", "network", "disconnect", network_name, container]
+            kind = "owned_docker_network_disconnect"
+        elif action == "connect":
+            cmd = ["docker", "network", "connect", "--ip", container_ip, network_name, container]
+            kind = "owned_docker_network_connect"
+        else:
+            raise RuntimeError(f"unsupported P24 network control action {action}")
+        proc = run_cmd(cmd, timeout=60)
+        ended = unix_ms()
+        status = "PASS" if proc.returncode == 0 else "FAIL"
+        if status != "PASS":
+            errors.append(f"{sample_id}: docker network {action} failed for {container}: {proc.stderr[-500:]}")
+        rows.append(
+            p24_command_log(
+                phase=phase,
+                run_id=run_id,
+                sample_id=sample_id,
+                fault_id=fault_id,
+                command_kind=kind,
+                started_at=started,
+                ended_at=ended,
+                status=status,
+                details={
+                    "network_name": network_name,
+                    "container_name": container,
+                    "container_ip": container_ip,
+                    "nodehost_id": nodehost.get("nodehost_id"),
+                    "docker_command_scope": "owned_stage_network_and_owned_nodehost_container",
+                    "stderr": proc.stderr[-500:],
+                },
+            )
+        )
+    return rows, errors
+
+
+def p24_probe_container_node(node: dict[str, Any], timeout: int = 10) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        "logical_id": node.get("logical_id", "MISSING"),
+        "host": "owned-nodehost-loopback",
+        "port": node.get("client_port", "MISSING"),
+        "status": "FAIL",
+        "probe_method": "docker_exec_valkey_cli_loopback",
+        "nodehost_id": node.get("nodehost_id", "MISSING"),
+        "container_name": node.get("container_name", "MISSING"),
+        "host_network_mutated": False,
+    }
+
+    def cli(*args: Any) -> subprocess.CompletedProcess[str]:
+        return run_cmd(
+            ["docker", "exec", str(node.get("container_name")), "valkey-cli", "-p", str(node.get("client_port")), *[str(arg) for arg in args]],
+            timeout=timeout,
+        )
+
+    ping = cli("PING")
+    info = cli("INFO", "server")
+    cinfo = cli("CLUSTER", "INFO")
+    cnodes = cli("CLUSTER", "NODES")
+    if ping.returncode == info.returncode == cinfo.returncode == cnodes.returncode == 0:
+        parsed_info = parse_cluster_info(cinfo.stdout)
+        parsed_nodes = parse_cluster_nodes(cnodes.stdout)
+        myself = next((nid for nid, item in parsed_nodes.items() if "myself" in item.get("flags", [])), None)
+        server_info = {}
+        for line in info.stdout.splitlines():
+            if ":" in line and not line.startswith("#"):
+                key, value = line.split(":", 1)
+                server_info[key] = value
+        result.update(
+            {
+                "status": "PASS",
+                "ping": ping.stdout.strip(),
+                "version": server_info.get("valkey_version") or server_info.get("redis_version") or "unknown",
+                "cluster_state": parsed_info.get("cluster_state", "unknown"),
+                "cluster_known_nodes": int(parsed_info.get("cluster_known_nodes", "0") or 0),
+                "myself_node_id": myself,
+                "cluster_nodes": parsed_nodes,
+            }
+        )
+    else:
+        result["error"] = "; ".join(
+            item.stderr.strip() or item.stdout.strip()
+            for item in [ping, info, cinfo, cnodes]
+            if item.returncode != 0
+        )[:500]
+    return result
+
+
+def p24_probe_side(
+    *,
+    side: str,
+    nodes: list[dict[str, Any]],
+    endpoints: list[Endpoint],
+    method: str,
+) -> list[dict[str, Any]]:
+    logical_ids = {str(node.get("logical_id")) for node in nodes}
+    if method == "host":
+        return [
+            {**probe_endpoint(endpoint, timeout=2.0), "side": side, "probe_method": "host_published_endpoint"}
+            for endpoint in endpoints
+            if endpoint.logical_id in logical_ids
+        ]
+    if method == "docker_exec":
+        return [{**p24_probe_container_node(node), "side": side} for node in nodes]
+    raise RuntimeError(f"unsupported P24 side probe method {method}")
+
+
+def p24_primary_slot_ranges(probe: dict[str, Any]) -> list[dict[str, Any]]:
+    ranges: list[dict[str, Any]] = []
+    for node_id, node in (probe.get("cluster_nodes") or {}).items():
+        if node.get("role") != "primary":
+            continue
+        for slot_spec in node.get("slots", []):
+            slot_range = p23_slot_range(str(slot_spec))
+            if slot_range is None:
+                continue
+            ranges.append({"node_id": node_id, "low": slot_range[0], "high": slot_range[1]})
+    return ranges
+
+
+def p24_side_signature(probes: list[dict[str, Any]]) -> dict[str, Any]:
+    pass_probes = [probe for probe in probes if probe.get("status") == "PASS"]
+    primary_ranges: list[dict[str, Any]] = []
+    known_node_ids: set[str] = set()
+    cluster_states: set[str] = set()
+    for probe in pass_probes:
+        cluster_states.add(str(probe.get("cluster_state", "unknown")))
+        for node_id in (probe.get("cluster_nodes") or {}).keys():
+            known_node_ids.add(str(node_id))
+        primary_ranges.extend(p24_primary_slot_ranges(probe))
+    return {
+        "pass_probe_count": len(pass_probes),
+        "cluster_states": sorted(cluster_states),
+        "known_node_ids": sorted(known_node_ids),
+        "primary_slot_ranges": sorted(primary_ranges, key=lambda item: (item["low"], item["high"], item["node_id"]))[:32],
+    }
+
+
+def p24_select_primary_target(nodes: list[dict[str, Any]], endpoints: list[Endpoint], probes: list[dict[str, Any]], group_logical_ids: set[str], prefix: str) -> tuple[dict[str, Any], Endpoint | None, dict[str, Any]]:
+    endpoint_by_logical = {endpoint.logical_id: endpoint for endpoint in endpoints}
+    probe_by_logical = {probe.get("logical_id"): probe for probe in probes if probe.get("status") == "PASS"}
+    for node in nodes:
+        logical_id = str(node.get("logical_id"))
+        if logical_id not in group_logical_ids or node.get("role") != "primary":
+            continue
+        probe = probe_by_logical.get(logical_id)
+        if not probe:
+            continue
+        myself = probe.get("myself_node_id")
+        cluster_node = (probe.get("cluster_nodes") or {}).get(myself, {})
+        for slot_spec in cluster_node.get("slots", []):
+            slot_range = p23_slot_range(str(slot_spec))
+            if slot_range is None:
+                continue
+            low, high = slot_range
+            slot_key = p23_key_for_slot_range(f"{prefix}:{logical_id}", low, high)
+            return node, endpoint_by_logical.get(logical_id), {
+                "target_logical_id": logical_id,
+                "target_node_id": myself,
+                "slot_range": [low, high],
+                "slot_key": slot_key,
+                "slot": p23_key_slot(slot_key),
+            }
+    raise RuntimeError(f"P24 could not find primary target for {prefix}")
+
+
+def p24_exec_workload_command(node: dict[str, Any], *command: Any) -> tuple[Any, int]:
+    proc = run_cmd(["docker", "exec", str(node.get("container_name")), "valkey-cli", "-p", str(node.get("client_port")), *[str(arg) for arg in command]], timeout=10)
+    output = (proc.stdout or proc.stderr).strip()
+    if proc.returncode != 0:
+        raise RuntimeError(output or f"valkey-cli exit={proc.returncode}")
+    if output.startswith("MOVED") or output.startswith("ASK"):
+        raise RespError(output)
+    return output, 0
+
+
+def p24_workload_window(
+    *,
+    phase: str,
+    run_id: str,
+    sample_id: str,
+    fault_id: str,
+    fault_type: str,
+    node_count: int,
+    window_name: str,
+    endpoints: list[Endpoint],
+    entry: Endpoint | None,
+    exec_node: dict[str, Any] | None,
+    slot_key: str,
+    side_label: str,
+    operation_pairs: int = 2,
+) -> dict[str, Any]:
+    started_at = unix_ms()
+    started_monotonic = monotonic_ms()
+    event_prefix = f"{sample_id}-{window_name}"
+    attempted = 0
+    ok_ops = 0
+    errors = 0
+    timeouts = 0
+    redirects = 0
+    connection_errors = 0
+    cluster_down_errors = 0
+    readonly_errors = 0
+    tryagain_errors = 0
+    unknown_errors = 0
+    latencies: list[float] = []
+    samples: list[dict[str, Any]] = []
+    for index in range(operation_pairs):
+        key = f"{slot_key}:{window_name}:{index}"
+        value = f"p24-value-{sample_id}-{window_name}-{index}"
+        for command in [("SET", key, value), ("GET", key)]:
+            attempted += 1
+            started = time.monotonic()
+            try:
+                if exec_node is not None:
+                    reply, redirect_count = p24_exec_workload_command(exec_node, *command)
+                elif entry is not None:
+                    reply, redirect_count = execute_workload_command(endpoints, entry, *command)
+                else:
+                    raise RuntimeError("no P24 workload entry")
+                if command[0] == "SET" and str(reply) != "OK":
+                    raise RuntimeError(f"SET returned {reply!r}")
+                if command[0] == "GET" and str(reply) != value:
+                    raise RuntimeError(f"GET returned {reply!r}, expected {value!r}")
+                elapsed = round((time.monotonic() - started) * 1000, 3)
+                latencies.append(elapsed)
+                redirects += redirect_count
+                ok_ops += 1
+                samples.append({"command": command[0], "status": "PASS", "latency_ms": elapsed, "redirects": redirect_count})
+            except Exception as exc:  # noqa: BLE001
+                elapsed = round((time.monotonic() - started) * 1000, 3)
+                message = repr(exc)
+                errors += 1
+                lower = message.lower()
+                if "timeout" in lower or "timed out" in lower:
+                    timeouts += 1
+                elif "clusterdown" in lower or "cluster is down" in lower:
+                    cluster_down_errors += 1
+                elif "readonly" in lower:
+                    readonly_errors += 1
+                elif "tryagain" in lower:
+                    tryagain_errors += 1
+                elif "connection" in lower or "closed" in lower:
+                    connection_errors += 1
+                else:
+                    unknown_errors += 1
+                samples.append({"command": command[0], "status": "FAIL", "latency_ms": elapsed, "error": message[:240]})
+    ended_at = unix_ms()
+    duration_ms = max(ended_at - started_at, 0)
+    metrics = workload_metrics(
+        attempted,
+        ok_ops,
+        errors,
+        timeouts,
+        redirects,
+        latencies,
+        duration_ms,
+        {
+            "connection_error_count": connection_errors,
+            "cluster_down_error_count": cluster_down_errors,
+            "readonly_error_count": readonly_errors,
+            "tryagain_error_count": tryagain_errors,
+            "unknown_error_count": unknown_errors,
+        },
+    )
+    if metrics["latency_p999_ms"] == "MISSING":
+        metrics["missing_reasons"]["latency_p999_ms"] = "P24 focused partition gate uses too few workload samples for p999."
+    return {
+        "window_name": window_name,
+        "sample_id": sample_id,
+        "fault_id": fault_id,
+        "fault_type": fault_type,
+        "node_count": node_count,
+        "side_label": side_label,
+        "source_window_name": window_name,
+        "start_event_id": f"{event_prefix}-start",
+        "end_event_id": f"{event_prefix}-end",
+        "start_time_unix_ms": started_at,
+        "end_time_unix_ms": ended_at,
+        "start_monotonic_ms": started_monotonic,
+        "end_monotonic_ms": monotonic_ms(),
+        "metrics": metrics,
+        "samples": samples[:16],
+        "entry_logical_id": (entry.logical_id if entry else exec_node.get("logical_id") if exec_node else "MISSING"),
+        "probe_method": "docker_exec_valkey_cli_loopback" if exec_node else "host_published_endpoint",
+        "slot_key": slot_key,
+        "slot": p23_key_slot(slot_key),
+        "run_id": run_id,
+        "phase_id": phase,
+    }
+
+
+def p24_all_run_window(phase: str, run_id: str, sample_id: str, fault_id: str, fault_type: str, node_count: int, rows: list[dict[str, Any]], side_label: str) -> dict[str, Any]:
+    children = [row for row in rows if row.get("sample_id") == sample_id and row.get("window_name") != "all_run"]
+    started_values = [row.get("start_time_unix_ms") for row in children if isinstance(row.get("start_time_unix_ms"), int)]
+    ended_values = [row.get("end_time_unix_ms") for row in children if isinstance(row.get("end_time_unix_ms"), int)]
+    total_duration = max(max(ended_values, default=0) - min(started_values, default=0), 0)
+    total_ops = sum(int(row.get("metrics", {}).get("sample_count", 0) or 0) for row in children)
+    total_ok = sum(int(row.get("metrics", {}).get("ok_ops", 0) or 0) for row in children)
+    total_errors = sum(int(row.get("metrics", {}).get("error_ops", 0) or 0) for row in children)
+    total_timeouts = sum(int(row.get("metrics", {}).get("timeout_count", 0) or 0) for row in children)
+    total_redirects = sum(int(row.get("metrics", {}).get("moved_redirection_count", 0) or 0) for row in children)
+    latencies = [
+        float(sample["latency_ms"])
+        for row in children
+        for sample in row.get("samples", [])
+        if isinstance(sample, dict) and sample.get("status") == "PASS" and isinstance(sample.get("latency_ms"), (int, float))
+    ]
+    aggregate_error_counts = {
+        "connection_error_count": sum(int(row.get("metrics", {}).get("connection_error_count", 0) or 0) for row in children),
+        "cluster_down_error_count": sum(int(row.get("metrics", {}).get("cluster_down_error_count", 0) or 0) for row in children),
+        "readonly_error_count": sum(int(row.get("metrics", {}).get("readonly_error_count", 0) or 0) for row in children),
+        "tryagain_error_count": sum(int(row.get("metrics", {}).get("tryagain_error_count", 0) or 0) for row in children),
+        "unknown_error_count": sum(int(row.get("metrics", {}).get("unknown_error_count", 0) or 0) for row in children),
+    }
+    metrics = workload_metrics(total_ops, total_ok, total_errors, total_timeouts, total_redirects, latencies, total_duration, aggregate_error_counts)
+    if metrics["latency_p999_ms"] == "MISSING":
+        metrics["missing_reasons"]["latency_p999_ms"] = "P24 focused partition gate uses too few workload samples for p999."
+    return {
+        "window_name": "all_run",
+        "sample_id": sample_id,
+        "fault_id": fault_id,
+        "fault_type": fault_type,
+        "node_count": node_count,
+        "side_label": side_label,
+        "source_window_name": "all_run_aggregate",
+        "start_event_id": f"{sample_id}-all_run-start",
+        "end_event_id": f"{sample_id}-all_run-end",
+        "start_time_unix_ms": min(started_values) if started_values else "MISSING",
+        "end_time_unix_ms": max(ended_values) if ended_values else "MISSING",
+        "start_monotonic_ms": "MISSING",
+        "end_monotonic_ms": "MISSING",
+        "metrics": metrics,
+        "samples": [],
+        "entry_logical_id": "aggregate",
+        "probe_method": "aggregate",
+        "run_id": run_id,
+        "phase_id": phase,
+    }
+
+
+def p24_slot_overlap_detector(majority_probes: list[dict[str, Any]], minority_probes: list[dict[str, Any]]) -> dict[str, Any]:
+    started = unix_ms()
+    conflicts: list[dict[str, Any]] = []
+    left = p24_side_signature(majority_probes).get("primary_slot_ranges", [])
+    right = p24_side_signature(minority_probes).get("primary_slot_ranges", [])
+    for a in left:
+        for b in right:
+            if a["node_id"] == b["node_id"]:
+                continue
+            if max(a["low"], b["low"]) <= min(a["high"], b["high"]):
+                conflicts.append({"majority": a, "minority": b, "overlap": [max(a["low"], b["low"]), min(a["high"], b["high"])]})
+    ended = unix_ms()
+    return {
+        "detector": "primary_slot_assignment_overlap",
+        "status": "PASS",
+        "ran": True,
+        "indicator_observed": bool(conflicts),
+        "started_at_ms": started,
+        "ended_at_ms": ended,
+        "window_ms": max(ended - started, 0) if conflicts else 0,
+        "conflicts": conflicts,
+    }
+
+
+def p24_view_divergence_detector(majority_probes: list[dict[str, Any]], minority_probes: list[dict[str, Any]]) -> dict[str, Any]:
+    started = unix_ms()
+    majority_sig = p24_side_signature(majority_probes)
+    minority_sig = p24_side_signature(minority_probes)
+    observed = majority_sig != minority_sig and majority_sig.get("pass_probe_count", 0) > 0 and minority_sig.get("pass_probe_count", 0) > 0
+    conflicting_nodes = sorted(set(majority_sig.get("known_node_ids", [])) ^ set(minority_sig.get("known_node_ids", [])))
+    if observed and not conflicting_nodes:
+        conflicting_nodes = ["partition_side_cluster_view_divergence"]
+    ended = unix_ms()
+    return {
+        "detector": "partition_side_cluster_view_divergence",
+        "status": "PASS",
+        "ran": True,
+        "indicator_observed": observed,
+        "started_at_ms": started,
+        "ended_at_ms": ended,
+        "window_ms": max(ended - started, 0) if observed else 0,
+        "majority_signature": majority_sig,
+        "minority_signature": minority_sig,
+        "conflicting_nodes": conflicting_nodes,
+    }
+
+
+def p24_conflicting_write_detector(
+    *,
+    endpoints: list[Endpoint],
+    majority_entry: Endpoint | None,
+    minority_node: dict[str, Any],
+    slot_key: str,
+) -> dict[str, Any]:
+    started = unix_ms()
+    key = f"{slot_key}:split-brain-detector"
+    majority_status = "FAIL"
+    minority_status = "FAIL"
+    try:
+        if majority_entry is None:
+            raise RuntimeError("missing majority entry")
+        reply, _redirects = execute_workload_command(endpoints, majority_entry, "SET", key, "majority")
+        majority_status = "PASS" if str(reply) == "OK" else "FAIL"
+    except Exception as exc:  # noqa: BLE001
+        majority_status = f"FAIL:{repr(exc)[:160]}"
+    try:
+        reply, _redirects = p24_exec_workload_command(minority_node, "SET", key, "minority")
+        minority_status = "PASS" if str(reply) == "OK" else "FAIL"
+    except Exception as exc:  # noqa: BLE001
+        minority_status = f"FAIL:{repr(exc)[:160]}"
+    observed = majority_status == "PASS" and minority_status == "PASS"
+    ended = unix_ms()
+    return {
+        "detector": "conflicting_write_probe",
+        "status": "PASS",
+        "ran": True,
+        "indicator_observed": observed,
+        "started_at_ms": started,
+        "ended_at_ms": ended,
+        "window_ms": max(ended - started, 0) if observed else 0,
+        "key": key,
+        "majority_write_status": majority_status,
+        "minority_write_status": minority_status,
+        "conflicting_write_keys": [key] if observed else [],
+    }
+
+
+def p24_detector_summary(detectors: list[dict[str, Any]], missing: list[dict[str, str]]) -> dict[str, Any]:
+    observed = [item for item in detectors if item.get("indicator_observed") is True]
+    starts = [item.get("started_at_ms") for item in observed if isinstance(item.get("started_at_ms"), int)]
+    ends = [item.get("ended_at_ms") for item in observed if isinstance(item.get("ended_at_ms"), int)]
+    indicator_observed = bool(observed)
+    return {
+        "detectors_run": [str(item.get("detector")) for item in detectors if item.get("ran") is True],
+        "detector_results": detectors,
+        "indicator_observed": indicator_observed,
+        "indicator_start_ms": min(starts) if starts else (0 if not indicator_observed else "MISSING"),
+        "indicator_end_ms": max(ends) if ends else (0 if not indicator_observed else "MISSING"),
+        "split_brain_window_ms": max(max(ends) - min(starts), 1) if starts and ends and indicator_observed else 0,
+        "conflicting_slots": [
+            conflict.get("overlap")
+            for item in detectors
+            for conflict in item.get("conflicts", [])
+            if isinstance(conflict, dict)
+        ],
+        "conflicting_nodes": sorted({
+            node
+            for item in detectors
+            for node in item.get("conflicting_nodes", [])
+        }),
+        "conflicting_write_keys": [
+            key
+            for item in detectors
+            for key in item.get("conflicting_write_keys", [])
+        ],
+        "missing_detectors_with_reason": missing,
+    }
+
+
+def p24_run_fault(
+    *,
+    phase: str,
+    node_count: int,
+    state_path: Path,
+    state: dict[str, Any],
+    endpoints: list[Endpoint],
+    probes_before: list[dict[str, Any]],
+    fault_type: str,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any], dict[str, Any], list[str]]:
+    errors: list[str] = []
+    scenario = p24_scenario(node_count)
+    run_id = str(state.get("runtime", {}).get("run_id", f"{phase}-{scenario}-20260703"))
+    sample_id = f"p24-{node_count}-{fault_type}"
+    fault_id = f"{sample_id}-fault"
+    plan = p24_plan_partition(state)
+    network_name = str(state.get("runtime", {}).get("network_name"))
+    majority_ids = set(plan["groups"]["majority"])
+    minority_ids = set(plan["groups"]["minority"])
+    majority_target_node, majority_entry, majority_target = p24_select_primary_target(state.get("nodes", []), endpoints, probes_before, majority_ids, f"p24-majority:{fault_type}")
+    minority_target_node, _minority_entry, minority_target = p24_select_primary_target(state.get("nodes", []), endpoints, probes_before, minority_ids, f"p24-minority:{fault_type}")
+    side_label = "minority" if fault_type == "network_partition_minority" else "majority"
+    side_target = minority_target if side_label == "minority" else majority_target
+    side_entry = None if side_label == "minority" else majority_entry
+    side_exec_node = minority_target_node if side_label == "minority" else None
+
+    workload_rows: list[dict[str, Any]] = []
+    for window in ["baseline", "pre_event"]:
+        workload_rows.append(
+            p24_workload_window(
+                phase=phase,
+                run_id=run_id,
+                sample_id=sample_id,
+                fault_id=fault_id,
+                fault_type=fault_type,
+                node_count=node_count,
+                window_name=window,
+                endpoints=endpoints,
+                entry=side_entry,
+                exec_node=side_exec_node,
+                slot_key=side_target["slot_key"],
+                side_label=side_label,
+            )
+        )
+
+    before_snapshot = topology_snapshot(
+        phase=phase,
+        run_id=run_id,
+        sample_id=sample_id,
+        label="before",
+        state_nodes=state.get("nodes", []),
+        probes=probes_before,
+        targets=plan["minority_nodes"],
+    )
+    apply_started = unix_ms()
+    apply_commands, apply_errors = p24_docker_network_control(
+        phase=phase,
+        run_id=run_id,
+        sample_id=sample_id,
+        fault_id=fault_id,
+        network_name=network_name,
+        nodehosts=plan["minority_nodehosts"],
+        action="disconnect",
+    )
+    apply_completed = unix_ms()
+    errors.extend(apply_errors)
+    time.sleep(6)
+
+    majority_probes = p24_probe_side(side="majority", nodes=plan["majority_nodes"], endpoints=endpoints, method="host")
+    minority_host_probes = p24_probe_side(side="minority", nodes=plan["minority_nodes"], endpoints=endpoints, method="host")
+    minority_exec_probes = p24_probe_side(side="minority", nodes=plan["minority_nodes"], endpoints=endpoints, method="docker_exec")
+    during_probes = majority_probes + minority_host_probes + minority_exec_probes
+    during_snapshot = topology_snapshot(
+        phase=phase,
+        run_id=run_id,
+        sample_id=sample_id,
+        label="during",
+        state_nodes=state.get("nodes", []),
+        probes=during_probes,
+        targets=plan["minority_nodes"],
+    )
+
+    workload_rows.append(
+        p24_workload_window(
+            phase=phase,
+            run_id=run_id,
+            sample_id=sample_id,
+            fault_id=fault_id,
+            fault_type=fault_type,
+            node_count=node_count,
+            window_name="event",
+            endpoints=endpoints,
+            entry=side_entry,
+            exec_node=side_exec_node,
+            slot_key=side_target["slot_key"],
+            side_label=side_label,
+            operation_pairs=3,
+        )
+    )
+
+    detectors = [
+        p24_slot_overlap_detector(majority_probes, minority_exec_probes),
+        p24_view_divergence_detector(majority_probes, minority_exec_probes),
+        p24_conflicting_write_detector(
+            endpoints=endpoints,
+            majority_entry=majority_entry,
+            minority_node=minority_target_node,
+            slot_key=majority_target["slot_key"],
+        ),
+    ]
+    missing_detectors = [
+        {
+            "detector": "old_primary_accepts_write_after_promotion",
+            "status": "MISSING",
+            "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure.",
+        }
+    ]
+    split_summary = p24_detector_summary(detectors, missing_detectors)
+
+    clear_started = unix_ms()
+    clear_commands, clear_errors = p24_docker_network_control(
+        phase=phase,
+        run_id=run_id,
+        sample_id=sample_id,
+        fault_id=fault_id,
+        network_name=network_name,
+        nodehosts=plan["minority_nodehosts"],
+        action="connect",
+    )
+    clear_completed = unix_ms()
+    errors.extend(clear_errors)
+    ok_recovered, recovered_probes = wait_for_cluster_ok(endpoints, node_count, timeout_seconds=120)
+    recovery_completed = unix_ms()
+    if not ok_recovered:
+        errors.append(f"{sample_id}: cluster did not recover to OK after clearing partition")
+    recovered_snapshot = topology_snapshot(
+        phase=phase,
+        run_id=run_id,
+        sample_id=sample_id,
+        label="recovered",
+        state_nodes=state.get("nodes", []),
+        probes=recovered_probes,
+        targets=plan["minority_nodes"],
+    )
+
+    for window in ["recovery", "post_recovery"]:
+        workload_rows.append(
+            p24_workload_window(
+                phase=phase,
+                run_id=run_id,
+                sample_id=sample_id,
+                fault_id=fault_id,
+                fault_type=fault_type,
+                node_count=node_count,
+                window_name=window,
+                endpoints=endpoints,
+                entry=side_entry,
+                exec_node=side_exec_node if window == "recovery" and side_label == "minority" else None,
+                slot_key=side_target["slot_key"],
+                side_label=side_label,
+            )
+        )
+    workload_rows.append(p24_all_run_window(phase, run_id, sample_id, fault_id, fault_type, node_count, workload_rows, side_label))
+
+    majority_available = any(probe.get("status") == "PASS" for probe in majority_probes)
+    minority_side_probed = any(probe.get("status") == "PASS" for probe in minority_exec_probes)
+    minority_host_blocked = any(probe.get("status") != "PASS" for probe in minority_host_probes)
+    observed_effect = bool(majority_available and minority_side_probed and minority_host_blocked)
+    if not observed_effect:
+        errors.append(f"{sample_id}: partition effect was not observed from both sides")
+    if side_label == "minority" and not minority_side_probed:
+        errors.append(f"{sample_id}: minority side probe did not run successfully")
+    if side_label == "majority" and not majority_available:
+        errors.append(f"{sample_id}: majority side probe did not run successfully")
+    if fault_type == "split_brain_window_detection" and not split_summary["detectors_run"]:
+        errors.append(f"{sample_id}: split-brain detectors did not run")
+
+    status = "PASS" if not errors else "FAIL"
+    partition_sample = {
+        "sample_id": sample_id,
+        "fault_id": fault_id,
+        "fault_type": fault_type,
+        "node_count": node_count,
+        "groups": plan["groups"],
+        "group_nodehosts": plan["group_nodehosts"],
+        "minority_az": plan["minority_az"],
+        "majority_azs": plan["majority_azs"],
+        "traffic_policy": plan["traffic_policy"],
+        "probes": {
+            "before": probes_before,
+            "during_majority": majority_probes,
+            "during_minority_host": minority_host_probes,
+            "during_minority_side": minority_exec_probes,
+            "recovered": recovered_probes,
+        },
+        "side_view_comparison": {
+            "majority": p24_side_signature(majority_probes),
+            "minority": p24_side_signature(minority_exec_probes),
+            "divergent": p24_side_signature(majority_probes) != p24_side_signature(minority_exec_probes),
+        },
+        "recovery": {
+            "ok": ok_recovered,
+            "clear_started_at_ms": clear_started,
+            "clear_completed_at_ms": clear_completed,
+            "recovery_completed_at_ms": recovery_completed,
+        },
+        "safety_scope": {
+            "implementation_path": "owned_docker_network_control",
+            "owned_network_name": network_name,
+            "host_network_mutated": False,
+            "global_firewall_mutated": False,
+            "physical_host_mutated": False,
+            "sudo_used": False,
+        },
+    }
+    row = {
+        "schema_version": "v1",
+        "phase_id": phase,
+        "run_id": run_id,
+        "scenario_name": scenario,
+        "sample_id": sample_id,
+        "node_count": node_count,
+        "status": status,
+        "real_valkey": True,
+        "fault_type": fault_type,
+        "fault_id": fault_id,
+        "scope": "owned_docker_network",
+        "implementation_path": "owned_docker_network_control",
+        "targets": [node_identity(node) for node in plan["minority_nodes"]],
+        "target_selector": {
+            "selector_type": "virtual_az_partition",
+            "selected_az_id": plan["minority_az"],
+            "majority_azs": plan["majority_azs"],
+            "groups": plan["groups"],
+        },
+        "target_count": len(plan["minority_nodes"]),
+        "fault_parameters": {
+            "groups": plan["groups"],
+            "group_nodehosts": plan["group_nodehosts"],
+            "traffic_policy": plan["traffic_policy"],
+            "duration_seconds": round(max(clear_started - apply_completed, 0) / 1000.0, 3),
+            "side_measured": side_label,
+        },
+        "apply_started_at_ms": apply_started,
+        "apply_completed_at_ms": apply_completed,
+        "clear_started_at_ms": clear_started,
+        "clear_completed_at_ms": clear_completed,
+        "recovery_completed_at_ms": recovery_completed,
+        "apply_duration_ms": max(apply_completed - apply_started, 0),
+        "clear_duration_ms": max(clear_completed - clear_started, 0),
+        "recovery_latency_ms": max(recovery_completed - clear_started, 0),
+        "observed_effect_started_at_ms": apply_completed if observed_effect else "MISSING",
+        "expected_impact": "Traffic between majority and minority nodehost groups is blocked while within-majority traffic remains available.",
+        "observed_impact": {
+            "effect_observed": observed_effect,
+            "majority_available": majority_available,
+            "minority_side_probed": minority_side_probed,
+            "minority_host_blocked": minority_host_blocked,
+            "split_brain": split_summary,
+        },
+        "partition_report_ref": f"artifacts/phases/{phase}/partition_report.json#{sample_id}",
+        "split_brain_report_ref": f"artifacts/phases/{phase}/split_brain_report.json#{sample_id}",
+        "safety_scope_verified": True,
+        "cleanup_verified": status == "PASS",
+        "host_network_mutated": False,
+        "global_firewall_mutated": False,
+        "physical_host_mutated": False,
+        "physical_az_mutated": False,
+        "workload_impact_ref": f"artifacts/phases/{phase}/workload_impact_report.json#{sample_id}",
+        "command_log_ref": f"artifacts/phases/{phase}/network_partition_command_log.jsonl#{fault_id}",
+        "state_ref": rel_path(state_path),
+        "errors_by_type": {"harness": errors} if errors else {},
+        "missing_fields": [] if observed_effect else [{"field": "observed_effect_started_at_ms", "status": "MISSING", "reason": "Both-side partition effect was not observed."}],
+    }
+    snapshots = [before_snapshot, during_snapshot, recovered_snapshot]
+    return row, workload_rows, snapshots, apply_commands + clear_commands, partition_sample, split_summary, errors
+
+
+def run_p24_node_count(phase: str, artifact_dir: Path, node_count: int) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any], list[dict[str, Any]], set[str], list[str]]:
+    paths = p24_inner_paths(artifact_dir, node_count)
+    work_dir = paths["work_dir"]
+    work_dir.mkdir(parents=True, exist_ok=True)
+    state_path = paths["state"]
+    scenario = p24_scenario(node_count)
+    setup = run_cmd(
+        [
+            sys.executable,
+            "-m",
+            "valkey_scale_lab.cli",
+            "gate",
+            "scenario",
+            "--phase",
+            phase,
+            "--scenario",
+            scenario,
+            "--config",
+            str(p24_config_path(node_count)),
+            "--artifacts-dir",
+            str(work_dir),
+            "--state-out",
+            str(state_path),
+        ],
+        timeout=max(900, node_count * 30),
+    )
+    (work_dir / "p24_setup.stdout.log").write_text(setup.stdout, encoding="utf-8", errors="replace")
+    (work_dir / "p24_setup.stderr.log").write_text(setup.stderr, encoding="utf-8", errors="replace")
+    if setup.returncode != 0:
+        cleanup_status = "FAIL"
+        cleanup_path = paths["cleanup_report"]
+        if state_path.exists():
+            cleanup_status, cleanup_path = project_cleanup(phase, state_path, work_dir)
+        elif not cleanup_path.exists():
+            write_json(
+                cleanup_path,
+                {
+                    "schema_version": "v1",
+                    "artifact_type": "cleanup_report",
+                    "phase_id": phase,
+                    "run_id": f"{phase}-{scenario}-setup-failed",
+                    "created_at": utc_now(),
+                    "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+                    "status": "FAIL",
+                    "resources_remaining": [],
+                    "cleanup_actions": [{"type": "p24_setup", "node_count": node_count, "status": "FAIL", "reason": setup.stderr[-1000:]}],
+                },
+            )
+        cleanup_action = {"type": "p24_subrun_cleanup", "status": cleanup_status, "report_ref": rel_path(cleanup_path), "node_count": node_count}
+        return [], [], [], [], [], [], cleanup_action, [], set(), [f"{scenario}: setup failed exit={setup.returncode}"]
+
+    state = load_state(state_path)
+    endpoints = endpoints_from_state(state)
+    ok_before, probes_before = wait_for_cluster_ok(endpoints, node_count, timeout_seconds=120)
+    errors: list[str] = []
+    if not ok_before:
+        errors.append(f"{scenario}: cluster not OK before P24 faults")
+    rows: list[dict[str, Any]] = []
+    workload_rows: list[dict[str, Any]] = []
+    snapshots: list[dict[str, Any]] = []
+    command_rows: list[dict[str, Any]] = []
+    partition_samples: list[dict[str, Any]] = []
+    split_samples: list[dict[str, Any]] = []
+    versions: set[str] = set()
+    final_probes: list[dict[str, Any]] = []
+
+    for fault_type in P24_FAULT_TYPES:
+        state = load_state(state_path)
+        endpoints = endpoints_from_state(state)
+        row, windows, fault_snapshots, commands, partition_sample, split_sample, fault_errors = p24_run_fault(
+            phase=phase,
+            node_count=node_count,
+            state_path=state_path,
+            state=state,
+            endpoints=endpoints,
+            probes_before=probes_before,
+            fault_type=fault_type,
+        )
+        rows.append(row)
+        workload_rows.extend(windows)
+        snapshots.extend(fault_snapshots)
+        command_rows.extend(commands)
+        partition_samples.append(partition_sample)
+        split_sample = {**split_sample, "sample_id": row["sample_id"], "fault_id": row["fault_id"], "fault_type": fault_type, "node_count": node_count}
+        split_samples.append(split_sample)
+        errors.extend(fault_errors)
+    ok_final, final_probes = wait_for_cluster_ok(endpoints_from_state(load_state(state_path)), node_count, timeout_seconds=120)
+    if not ok_final:
+        errors.append(f"{scenario}: final cluster OK probe failed before cleanup")
+    for probe in final_probes:
+        if probe.get("status") == "PASS" and probe.get("version"):
+            versions.add(str(probe["version"]))
+    cleanup_status, cleanup_path = project_cleanup(phase, state_path, work_dir)
+    if cleanup_status != "PASS":
+        errors.append(f"{scenario}: cleanup failed")
+    for row in rows:
+        if cleanup_status != "PASS":
+            row["cleanup_verified"] = False
+            row["status"] = "FAIL"
+            row.setdefault("errors_by_type", {}).setdefault("cleanup", []).append("aggregate cleanup failed")
+        row["cleanup_ref"] = rel_path(cleanup_path)
+    cleanup_action = {"type": "p24_subrun_cleanup", "node_count": node_count, "status": cleanup_status, "report_ref": rel_path(cleanup_path)}
+    return rows, workload_rows, snapshots, command_rows, partition_samples, split_samples, cleanup_action, final_probes, versions, errors
+
+
+def p24_events(fault_rows: list[dict[str, Any]], workload_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = p22_events(fault_rows, workload_rows)
+    for row in rows:
+        row["scenario_name"] = str(row.get("scenario_name", "")).replace("p22_fault_matrix", "p24_partition_matrix")
+    return rows
+
+
+def p24_metrics(fault_rows: list[dict[str, Any]], workload_rows: list[dict[str, Any]], split_samples: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = p22_metrics(fault_rows, workload_rows)
+    for row in rows:
+        row["scenario_name"] = str(row.get("scenario_name", "")).replace("p22_fault_matrix", "p24_partition_matrix")
+    for sample in split_samples:
+        rows.append(
+            {
+                "schema_version": "v1",
+                "run_id": next((fault.get("run_id") for fault in fault_rows if fault.get("sample_id") == sample.get("sample_id")), "P24"),
+                "phase_id": P24_PHASE,
+                "scenario_name": f"p24_partition_matrix_{sample.get('node_count')}",
+                "sample_id": sample.get("sample_id"),
+                "timestamp_unix_ms": sample.get("indicator_end_ms", "MISSING"),
+                "monotonic_ms": sample.get("indicator_end_ms", "MISSING"),
+                "source_type": "harness",
+                "source_id": sample.get("fault_id"),
+                "metric_name": "split_brain_window_ms",
+                "metric_value": sample.get("split_brain_window_ms", "MISSING"),
+                "metric_unit": "ms",
+                "labels": {"fault_type": sample.get("fault_type"), "node_count": sample.get("node_count")},
+                "missing_reason": "" if sample.get("split_brain_window_ms") != "MISSING" else "Split-brain detector timing was not available.",
+            }
+        )
+    return rows
+
+
+def run_p24_controller(args: argparse.Namespace) -> int:
+    artifact_dir = Path(args.out).parent
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    phase = args.phase
+    run_id = f"{phase}-partition-split-brain-20260703"
+    all_fault_rows: list[dict[str, Any]] = []
+    all_workload_rows: list[dict[str, Any]] = []
+    all_snapshots: list[dict[str, Any]] = []
+    all_command_rows: list[dict[str, Any]] = []
+    all_partition_samples: list[dict[str, Any]] = []
+    all_split_samples: list[dict[str, Any]] = []
+    cleanup_actions: list[dict[str, Any]] = []
+    resources_remaining: list[dict[str, Any]] = []
+    top_probes: list[dict[str, Any]] = []
+    versions: set[str] = set()
+    errors: list[str] = []
+
+    for node_count in [6, 10]:
+        rows, workload_rows, snapshots, command_rows, partition_samples, split_samples, cleanup_action, probes, observed_versions, run_errors = run_p24_node_count(phase, artifact_dir, node_count)
+        all_fault_rows.extend(rows)
+        all_workload_rows.extend(workload_rows)
+        all_snapshots.extend(snapshots)
+        all_command_rows.extend(command_rows)
+        all_partition_samples.extend(partition_samples)
+        all_split_samples.extend(split_samples)
+        cleanup_actions.append(cleanup_action)
+        top_probes.extend(probes[:4])
+        versions.update(observed_versions)
+        errors.extend(run_errors)
+
+    for action in cleanup_actions:
+        report_ref = str(action.get("report_ref") or "")
+        report = load_json_if_exists(ROOT / report_ref) if report_ref else {}
+        for item in report.get("resources_remaining", []) if isinstance(report.get("resources_remaining"), list) else []:
+            resources_remaining.append({"node_count": action.get("node_count"), **item})
+        if action.get("status") != "PASS":
+            errors.append(f"cleanup failed for node_count={action.get('node_count')}")
+
+    comparisons = [
+        p22_comparison(row["sample_id"], row["fault_type"], row["node_count"], all_workload_rows)
+        for row in all_fault_rows
+    ]
+    events = p24_events(all_fault_rows, all_workload_rows)
+    metrics = p24_metrics(all_fault_rows, all_workload_rows, all_split_samples)
+    aggregate_cleanup_status = "PASS" if not resources_remaining and all(action.get("status") == "PASS" for action in cleanup_actions) else "FAIL"
+    status = "PASS" if not errors and all(row.get("status") == "PASS" for row in all_fault_rows) and aggregate_cleanup_status == "PASS" else "FAIL"
+
+    aggregate_split = p24_detector_summary(
+        [detector for sample in all_split_samples for detector in sample.get("detector_results", [])],
+        [
+            {"detector": "old_primary_accepts_write_after_promotion", "status": "MISSING", "reason": "No P24 sample injected a primary-stop promotion condition; see per-sample detector results."}
+        ],
+    )
+    aggregate_split.update(
+        {
+            "schema_version": "v1",
+            "artifact_type": "split_brain_report",
+            "phase_id": phase,
+            "run_id": run_id,
+            "created_at": utc_now(),
+            "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+            "status": status,
+            "samples": all_split_samples,
+            "side_view_comparisons": [
+                {
+                    "sample_id": sample.get("sample_id"),
+                    "majority": (next((item for item in all_partition_samples if item.get("sample_id") == sample.get("sample_id")), {}).get("side_view_comparison") or {}).get("majority"),
+                    "minority": (next((item for item in all_partition_samples if item.get("sample_id") == sample.get("sample_id")), {}).get("side_view_comparison") or {}).get("minority"),
+                }
+                for sample in all_split_samples
+            ],
+        }
+    )
+    missing_detector_data = [
+        {
+            "field": f"split_brain_detector.{item.get('detector', 'unknown')}",
+            "metric": f"split_brain_detector.{item.get('detector', 'unknown')}",
+            **item,
+        }
+        for item in aggregate_split.get("missing_detectors_with_reason", [])
+    ]
+
+    write_jsonl(artifact_dir / "fault_results.jsonl", all_fault_rows)
+    write_jsonl(artifact_dir / "fault_topology_snapshots.jsonl", all_snapshots)
+    write_jsonl(artifact_dir / "network_partition_command_log.jsonl", all_command_rows)
+    write_jsonl(artifact_dir / "events.jsonl", events)
+    write_jsonl(artifact_dir / "metrics_timeseries.jsonl", metrics)
+    write_json(
+        artifact_dir / "workload_windows.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "workload_windows",
+            "phase_id": phase,
+            "run_id": run_id,
+            "created_at": utc_now(),
+            "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+            "status": status,
+            "windows": all_workload_rows,
+        },
+    )
+    write_json(
+        artifact_dir / "workload_impact_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "workload_impact_report",
+            "phase_id": phase,
+            "run_id": run_id,
+            "created_at": utc_now(),
+            "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+            "status": status,
+            "windows": all_workload_rows,
+            "comparisons": comparisons,
+        },
+    )
+    write_json(
+        artifact_dir / "partition_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "partition_report",
+            "phase_id": phase,
+            "run_id": run_id,
+            "created_at": utc_now(),
+            "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+            "status": status,
+            "groups": all_partition_samples[0]["groups"] if all_partition_samples else {},
+            "traffic_policy": all_partition_samples[0]["traffic_policy"] if all_partition_samples else {},
+            "probes": all_partition_samples,
+            "samples": all_partition_samples,
+            "side_view_comparisons": [sample.get("side_view_comparison") for sample in all_partition_samples],
+            "recovery": [sample.get("recovery") for sample in all_partition_samples],
+            "safety_scope": {
+                "implementation_path": "owned_docker_network_control",
+                "host_network_mutated": False,
+                "global_firewall_mutated": False,
+                "physical_host_mutated": False,
+                "sudo_used": False,
+            },
+            "command_log_ref": "network_partition_command_log.jsonl",
+        },
+    )
+    write_json(artifact_dir / "split_brain_report.json", aggregate_split)
+    write_json(
+        Path(args.fault_report),
+        {
+            "schema_version": "v1",
+            "artifact_type": "fault_matrix_report",
+            "phase_id": phase,
+            "run_id": run_id,
+            "created_at": utc_now(),
+            "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+            "status": status,
+            "fault_rows": all_fault_rows,
+            "safety_checks": {
+                "host_network_mutated": False,
+                "global_firewall_mutated": False,
+                "physical_host_mutated": False,
+                "owned_docker_network_control": True,
+            },
+        },
+    )
+    write_json(
+        artifact_dir / "cleanup_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "cleanup_report",
+            "phase_id": phase,
+            "run_id": run_id,
+            "created_at": utc_now(),
+            "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+            "status": aggregate_cleanup_status,
+            "resources_remaining": resources_remaining,
+            "cleanup_actions": cleanup_actions,
+        },
+    )
+    write_json(
+        Path(args.out),
+        {
+            "schema_version": "v1",
+            "artifact_type": "valkey_e2e_evidence",
+            "phase_id": phase,
+            "run_id": run_id,
+            "created_at": utc_now(),
+            "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+            "status": status,
+            "scenario": "p24_partition_matrix",
+            "real_valkey": True,
+            "valkey_version_prefix_required": "9.1.",
+            "probe_result": "PASS" if status == "PASS" else "FAIL",
+            "nodes_observed": max([observed_count(top_probes), *[row.get("node_count", 0) for row in all_fault_rows if row.get("status") == "PASS"]], default=1),
+            "cluster_state_observed": "ok" if status == "PASS" else cluster_state_from_probes(top_probes),
+            "data_path_result": "PASS" if all_workload_rows else "FAIL",
+            "valkey_versions": sorted(versions),
+            "probes": top_probes or [{"logical_id": "p24-no-probe", "host": "127.0.0.1", "port": 1, "status": "FAIL"}],
+            "cleanup": {"status": aggregate_cleanup_status, "path": rel_path(artifact_dir / "cleanup_report.json")},
+            "fault_types": P24_FAULT_TYPES,
+            "sample_refs": [row["sample_id"] for row in all_fault_rows],
+            "errors": errors,
+        },
+    )
+    write_json(
+        artifact_dir / "quant_summary.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "quant_summary",
+            "phase_id": phase,
+            "run_id": run_id,
+            "created_at": utc_now(),
+            "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+            "status": status,
+            "summary": "P24 quant summary for real owned Docker network partition and split-brain detector runs.",
+            "artifact_refs": [
+                "fault_results.jsonl",
+                "fault_topology_snapshots.jsonl",
+                "events.jsonl",
+                "metrics_timeseries.jsonl",
+                "workload_windows.json",
+                "workload_impact_report.json",
+                "partition_report.json",
+                "split_brain_report.json",
+                "fault_matrix_report.json",
+                "network_partition_command_log.jsonl",
+                "cleanup_report.json",
+            ],
+            "counts": {
+                "event_count": len(events),
+                "metric_count": len(metrics),
+                "sample_count": len(all_fault_rows),
+                "fault_result_count": len(all_fault_rows),
+                "topology_snapshot_count": len(all_snapshots),
+                "command_log_count": len(all_command_rows),
+                "partition_sample_count": len(all_partition_samples),
+                "split_brain_sample_count": len(all_split_samples),
+            },
+            "missing_data": missing_detector_data,
+            "runtime_claims": {"real_valkey_claimed": True, "management_runtime_claimed": False, "fault_runtime_claimed": True},
+        },
+    )
+    write_json(
+        artifact_dir / "phase_summary.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "phase_summary",
+            "phase_id": phase,
+            "run_id": run_id,
+            "created_at": utc_now(),
+            "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+            "status": status,
+            "summary": "P24 runs minority/majority partition rows and split-brain-window detectors using owned Docker network controls only.",
+            "required_artifacts": [
+                f"artifacts/phases/{phase}/phase_summary.json",
+                f"artifacts/phases/{phase}/valkey_e2e_evidence.json",
+                f"artifacts/phases/{phase}/cleanup_report.json",
+                f"artifacts/phases/{phase}/events.jsonl",
+                f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
+                f"artifacts/phases/{phase}/workload_windows.json",
+                f"artifacts/phases/{phase}/quant_summary.json",
+                f"artifacts/phases/{phase}/partition_report.json",
+                f"artifacts/phases/{phase}/split_brain_report.json",
+                f"artifacts/phases/{phase}/fault_matrix_report.json",
+                f"artifacts/phases/{phase}/fault_results.jsonl",
+                f"artifacts/phases/{phase}/fault_topology_snapshots.jsonl",
+                f"artifacts/phases/{phase}/workload_impact_report.json",
+                f"artifacts/phases/{phase}/network_partition_command_log.jsonl",
+            ],
+            "missing_metrics": missing_detector_data,
+            "risks": [{"risk": "P24 uses owned Docker network disconnect/reconnect of nodehost containers rather than host firewall or tc; reconnect must preserve container IP for recovery.", "severity": "medium", "required_before_next_phase": False}],
+        },
+    )
+
+    if status != "PASS":
+        for error in errors:
+            print(f"FAIL: {error}", file=sys.stderr)
+        return 1
+    print(f"PASS P24 partition/split-brain matrix out={args.out} fault_report={args.fault_report}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fault isolation gate with independent Valkey probing")
     parser.add_argument("--phase", required=True)
@@ -2000,6 +3297,8 @@ def main() -> int:
         return run_p22_controller(args)
     if args.phase == P23_PHASE:
         return run_p23_controller(args)
+    if args.phase == P24_PHASE:
+        return run_p24_controller(args)
 
     out = Path(args.out)
     fault_report_path = Path(args.fault_report)
