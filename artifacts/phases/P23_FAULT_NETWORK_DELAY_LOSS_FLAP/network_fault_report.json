@@ -1,0 +1,822 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "network_fault_report",
+  "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+  "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-network-faults-20260628",
+  "created_at": "2026-07-03T01:26:11.137809Z",
+  "producer": {
+    "name": "scripts/fault_safety_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "network_faults": [
+    {
+      "schema_version": "v1",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "scenario_name": "p23_fault_matrix_6",
+      "sample_id": "p23-6-network_delay",
+      "node_count": 6,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_delay",
+      "fault_id": "p23-6-network_delay-fault",
+      "scope": "sandbox_proxy",
+      "implementation_path": "sandbox_proxy",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p23-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7640,
+          "pid": 28,
+          "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "primary_slot_owner",
+        "selected_logical_id": "shard-0000-primary",
+        "slot_range": [
+          5461,
+          10921
+        ],
+        "slot": 5690
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "delay_ms": 75,
+        "jitter_ms": 10,
+        "affected_direction": "bidirectional_proxy_relay",
+        "target_set": [
+          "shard-0000-primary"
+        ],
+        "duration_seconds": 1
+      },
+      "apply_started_at_ms": 1783041933966,
+      "apply_completed_at_ms": 1783041933966,
+      "clear_started_at_ms": 1783041935289,
+      "clear_completed_at_ms": 1783041935319,
+      "recovery_completed_at_ms": 1783041935339,
+      "apply_duration_ms": 0,
+      "clear_duration_ms": 30,
+      "recovery_latency_ms": 50,
+      "observed_effect_started_at_ms": 1783041933966,
+      "expected_impact": "network_delay reduces or delays Valkey client traffic through the sandbox proxy.",
+      "observed_impact": {
+        "effect_observed": true,
+        "proxy_stats": {
+          "implementation_path": "sandbox_proxy",
+          "listen_host": "127.0.0.1",
+          "listen_port": 61098,
+          "target_host": "127.0.0.1",
+          "target_port": 7640,
+          "accepted_connections": 8,
+          "proxied_connections": 8,
+          "dropped_connections": 0,
+          "flap_rejections": 0,
+          "relay_errors": 0,
+          "bytes_client_to_target": 640,
+          "bytes_target_to_client": 196,
+          "delay_injections": 16,
+          "total_delay_ms": 1200,
+          "host_network_mutated": false
+        },
+        "event_metrics": {
+          "requested_qps": 6.047,
+          "achieved_qps": 6.047,
+          "ok_ops": 8,
+          "error_ops": 0,
+          "error_rate": 0.0,
+          "latency_p50_ms": 167.705,
+          "latency_p90_ms": 169.767,
+          "latency_p95_ms": 172.967,
+          "latency_p99_ms": 172.967,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 0,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 8,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        },
+        "baseline_metrics": {
+          "requested_qps": 750.0,
+          "achieved_qps": 750.0,
+          "ok_ops": 6,
+          "error_ops": 0,
+          "error_rate": 0.0,
+          "latency_p50_ms": 1.045,
+          "latency_p90_ms": 1.506,
+          "latency_p95_ms": 1.824,
+          "latency_p99_ms": 1.824,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 0,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 6,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        }
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json#p23-6-network_delay",
+      "command_log_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_command_log.jsonl#p23-6-network_delay-fault",
+      "state_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/state_p23.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "scenario_name": "p23_fault_matrix_6",
+      "sample_id": "p23-6-network_loss",
+      "node_count": 6,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_loss",
+      "fault_id": "p23-6-network_loss-fault",
+      "scope": "sandbox_proxy",
+      "implementation_path": "sandbox_proxy",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p23-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7640,
+          "pid": 28,
+          "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "primary_slot_owner",
+        "selected_logical_id": "shard-0000-primary",
+        "slot_range": [
+          5461,
+          10921
+        ],
+        "slot": 5690
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "loss_percent": 50.0,
+        "correlation": 0.0,
+        "affected_direction": "client_to_target_connection",
+        "target_set": [
+          "shard-0000-primary"
+        ],
+        "duration_seconds": 1
+      },
+      "apply_started_at_ms": 1783041935381,
+      "apply_completed_at_ms": 1783041935381,
+      "clear_started_at_ms": 1783041935386,
+      "clear_completed_at_ms": 1783041935587,
+      "recovery_completed_at_ms": 1783041935603,
+      "apply_duration_ms": 0,
+      "clear_duration_ms": 201,
+      "recovery_latency_ms": 217,
+      "observed_effect_started_at_ms": 1783041935381,
+      "expected_impact": "network_loss reduces or delays Valkey client traffic through the sandbox proxy.",
+      "observed_impact": {
+        "effect_observed": true,
+        "proxy_stats": {
+          "implementation_path": "sandbox_proxy",
+          "listen_host": "127.0.0.1",
+          "listen_port": 61151,
+          "target_host": "127.0.0.1",
+          "target_port": 7640,
+          "accepted_connections": 8,
+          "proxied_connections": 4,
+          "dropped_connections": 4,
+          "flap_rejections": 0,
+          "relay_errors": 0,
+          "bytes_client_to_target": 404,
+          "bytes_target_to_client": 20,
+          "delay_injections": 0,
+          "total_delay_ms": 0,
+          "host_network_mutated": false
+        },
+        "event_metrics": {
+          "requested_qps": 1600.0,
+          "achieved_qps": 800.0,
+          "ok_ops": 4,
+          "error_ops": 4,
+          "error_rate": 0.5,
+          "latency_p50_ms": 1.071,
+          "latency_p90_ms": 1.105,
+          "latency_p95_ms": 1.105,
+          "latency_p99_ms": 1.105,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 4,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 8,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        },
+        "baseline_metrics": {
+          "requested_qps": 857.143,
+          "achieved_qps": 857.143,
+          "ok_ops": 6,
+          "error_ops": 0,
+          "error_rate": 0.0,
+          "latency_p50_ms": 0.883,
+          "latency_p90_ms": 0.972,
+          "latency_p95_ms": 2.237,
+          "latency_p99_ms": 2.237,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 0,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 6,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        }
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json#p23-6-network_loss",
+      "command_log_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_command_log.jsonl#p23-6-network_loss-fault",
+      "state_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/state_p23.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "scenario_name": "p23_fault_matrix_6",
+      "sample_id": "p23-6-network_flap",
+      "node_count": 6,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_flap",
+      "fault_id": "p23-6-network_flap-fault",
+      "scope": "sandbox_proxy",
+      "implementation_path": "sandbox_proxy",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p23-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7640,
+          "pid": 28,
+          "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "primary_slot_owner",
+        "selected_logical_id": "shard-0000-primary",
+        "slot_range": [
+          5461,
+          10921
+        ],
+        "slot": 5690
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "up_ms": 80,
+        "down_ms": 80,
+        "iterations": 6,
+        "target_set": [
+          "shard-0000-primary"
+        ],
+        "duration_seconds": 1
+      },
+      "apply_started_at_ms": 1783041935641,
+      "apply_completed_at_ms": 1783041935642,
+      "clear_started_at_ms": 1783041936757,
+      "clear_completed_at_ms": 1783041936888,
+      "recovery_completed_at_ms": 1783041936904,
+      "apply_duration_ms": 1,
+      "clear_duration_ms": 131,
+      "recovery_latency_ms": 147,
+      "observed_effect_started_at_ms": 1783041935642,
+      "expected_impact": "network_flap reduces or delays Valkey client traffic through the sandbox proxy.",
+      "observed_impact": {
+        "effect_observed": true,
+        "proxy_stats": {
+          "implementation_path": "sandbox_proxy",
+          "listen_host": "127.0.0.1",
+          "listen_port": 61200,
+          "target_host": "127.0.0.1",
+          "target_port": 7640,
+          "accepted_connections": 16,
+          "proxied_connections": 10,
+          "dropped_connections": 0,
+          "flap_rejections": 6,
+          "relay_errors": 0,
+          "bytes_client_to_target": 795,
+          "bytes_target_to_client": 240,
+          "delay_injections": 0,
+          "total_delay_ms": 0,
+          "host_network_mutated": false
+        },
+        "event_metrics": {
+          "requested_qps": 14.35,
+          "achieved_qps": 6.278,
+          "ok_ops": 7,
+          "error_ops": 9,
+          "error_rate": 0.5625,
+          "latency_p50_ms": 3.832,
+          "latency_p90_ms": 4.292,
+          "latency_p95_ms": 4.491,
+          "latency_p99_ms": 4.491,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 6,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 3,
+          "sample_count": 16,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        },
+        "baseline_metrics": {
+          "requested_qps": 666.667,
+          "achieved_qps": 666.667,
+          "ok_ops": 6,
+          "error_ops": 0,
+          "error_rate": 0.0,
+          "latency_p50_ms": 1.155,
+          "latency_p90_ms": 2.052,
+          "latency_p95_ms": 2.069,
+          "latency_p99_ms": 2.069,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 0,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 6,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        }
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json#p23-6-network_flap",
+      "command_log_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_command_log.jsonl#p23-6-network_flap-fault",
+      "state_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/state_p23.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "scenario_name": "p23_fault_matrix_10",
+      "sample_id": "p23-10-network_delay",
+      "node_count": 10,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_delay",
+      "fault_id": "p23-10-network_delay-fault",
+      "scope": "sandbox_proxy",
+      "implementation_path": "sandbox_proxy",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p23-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7660,
+          "pid": 32,
+          "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-10-20260628-nodehost-az-a"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "primary_slot_owner",
+        "selected_logical_id": "shard-0000-primary",
+        "slot_range": [
+          6553,
+          9829
+        ],
+        "slot": 9817
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "delay_ms": 75,
+        "jitter_ms": 10,
+        "affected_direction": "bidirectional_proxy_relay",
+        "target_set": [
+          "shard-0000-primary"
+        ],
+        "duration_seconds": 1
+      },
+      "apply_started_at_ms": 1783041960080,
+      "apply_completed_at_ms": 1783041960080,
+      "clear_started_at_ms": 1783041961432,
+      "clear_completed_at_ms": 1783041961461,
+      "recovery_completed_at_ms": 1783041961479,
+      "apply_duration_ms": 0,
+      "clear_duration_ms": 29,
+      "recovery_latency_ms": 47,
+      "observed_effect_started_at_ms": 1783041960080,
+      "expected_impact": "network_delay reduces or delays Valkey client traffic through the sandbox proxy.",
+      "observed_impact": {
+        "effect_observed": true,
+        "proxy_stats": {
+          "implementation_path": "sandbox_proxy",
+          "listen_host": "127.0.0.1",
+          "listen_port": 61618,
+          "target_host": "127.0.0.1",
+          "target_port": 7660,
+          "accepted_connections": 8,
+          "proxied_connections": 8,
+          "dropped_connections": 0,
+          "flap_rejections": 0,
+          "relay_errors": 0,
+          "bytes_client_to_target": 644,
+          "bytes_target_to_client": 200,
+          "delay_injections": 16,
+          "total_delay_ms": 1200,
+          "host_network_mutated": false
+        },
+        "event_metrics": {
+          "requested_qps": 5.922,
+          "achieved_qps": 5.922,
+          "ok_ops": 8,
+          "error_ops": 0,
+          "error_rate": 0.0,
+          "latency_p50_ms": 171.737,
+          "latency_p90_ms": 173.774,
+          "latency_p95_ms": 174.361,
+          "latency_p99_ms": 174.361,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 0,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 8,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        },
+        "baseline_metrics": {
+          "requested_qps": 600.0,
+          "achieved_qps": 600.0,
+          "ok_ops": 6,
+          "error_ops": 0,
+          "error_rate": 0.0,
+          "latency_p50_ms": 1.5,
+          "latency_p90_ms": 2.296,
+          "latency_p95_ms": 2.343,
+          "latency_p99_ms": 2.343,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 0,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 6,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        }
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json#p23-10-network_delay",
+      "command_log_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_command_log.jsonl#p23-10-network_delay-fault",
+      "state_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_10/state_p23.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_10/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "scenario_name": "p23_fault_matrix_10",
+      "sample_id": "p23-10-network_loss",
+      "node_count": 10,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_loss",
+      "fault_id": "p23-10-network_loss-fault",
+      "scope": "sandbox_proxy",
+      "implementation_path": "sandbox_proxy",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p23-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7660,
+          "pid": 32,
+          "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-10-20260628-nodehost-az-a"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "primary_slot_owner",
+        "selected_logical_id": "shard-0000-primary",
+        "slot_range": [
+          6553,
+          9829
+        ],
+        "slot": 9817
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "loss_percent": 50.0,
+        "correlation": 0.0,
+        "affected_direction": "client_to_target_connection",
+        "target_set": [
+          "shard-0000-primary"
+        ],
+        "duration_seconds": 1
+      },
+      "apply_started_at_ms": 1783041961519,
+      "apply_completed_at_ms": 1783041961520,
+      "clear_started_at_ms": 1783041961528,
+      "clear_completed_at_ms": 1783041961730,
+      "recovery_completed_at_ms": 1783041961746,
+      "apply_duration_ms": 1,
+      "clear_duration_ms": 202,
+      "recovery_latency_ms": 218,
+      "observed_effect_started_at_ms": 1783041961520,
+      "expected_impact": "network_loss reduces or delays Valkey client traffic through the sandbox proxy.",
+      "observed_impact": {
+        "effect_observed": true,
+        "proxy_stats": {
+          "implementation_path": "sandbox_proxy",
+          "listen_host": "127.0.0.1",
+          "listen_port": 61673,
+          "target_host": "127.0.0.1",
+          "target_port": 7660,
+          "accepted_connections": 8,
+          "proxied_connections": 4,
+          "dropped_connections": 4,
+          "flap_rejections": 0,
+          "relay_errors": 0,
+          "bytes_client_to_target": 408,
+          "bytes_target_to_client": 20,
+          "delay_injections": 0,
+          "total_delay_ms": 0,
+          "host_network_mutated": false
+        },
+        "event_metrics": {
+          "requested_qps": 1000.0,
+          "achieved_qps": 500.0,
+          "ok_ops": 4,
+          "error_ops": 4,
+          "error_rate": 0.5,
+          "latency_p50_ms": 1.717,
+          "latency_p90_ms": 2.603,
+          "latency_p95_ms": 2.603,
+          "latency_p99_ms": 2.603,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 4,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 8,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        },
+        "baseline_metrics": {
+          "requested_qps": 666.667,
+          "achieved_qps": 666.667,
+          "ok_ops": 6,
+          "error_ops": 0,
+          "error_rate": 0.0,
+          "latency_p50_ms": 1.182,
+          "latency_p90_ms": 1.99,
+          "latency_p95_ms": 2.145,
+          "latency_p99_ms": 2.145,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 0,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 6,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        }
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json#p23-10-network_loss",
+      "command_log_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_command_log.jsonl#p23-10-network_loss-fault",
+      "state_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_10/state_p23.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_10/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "scenario_name": "p23_fault_matrix_10",
+      "sample_id": "p23-10-network_flap",
+      "node_count": 10,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "network_flap",
+      "fault_id": "p23-10-network_flap-fault",
+      "scope": "sandbox_proxy",
+      "implementation_path": "sandbox_proxy",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p23-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7660,
+          "pid": 32,
+          "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-10-20260628-nodehost-az-a"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "primary_slot_owner",
+        "selected_logical_id": "shard-0000-primary",
+        "slot_range": [
+          6553,
+          9829
+        ],
+        "slot": 9817
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "up_ms": 80,
+        "down_ms": 80,
+        "iterations": 6,
+        "target_set": [
+          "shard-0000-primary"
+        ],
+        "duration_seconds": 1
+      },
+      "apply_started_at_ms": 1783041961790,
+      "apply_completed_at_ms": 1783041961791,
+      "clear_started_at_ms": 1783041962878,
+      "clear_completed_at_ms": 1783041963010,
+      "recovery_completed_at_ms": 1783041963034,
+      "apply_duration_ms": 1,
+      "clear_duration_ms": 132,
+      "recovery_latency_ms": 156,
+      "observed_effect_started_at_ms": 1783041961791,
+      "expected_impact": "network_flap reduces or delays Valkey client traffic through the sandbox proxy.",
+      "observed_impact": {
+        "effect_observed": true,
+        "proxy_stats": {
+          "implementation_path": "sandbox_proxy",
+          "listen_host": "127.0.0.1",
+          "listen_port": 61724,
+          "target_host": "127.0.0.1",
+          "target_port": 7660,
+          "accepted_connections": 16,
+          "proxied_connections": 9,
+          "dropped_connections": 0,
+          "flap_rejections": 7,
+          "relay_errors": 0,
+          "bytes_client_to_target": 698,
+          "bytes_target_to_client": 201,
+          "delay_injections": 0,
+          "total_delay_ms": 0,
+          "host_network_mutated": false
+        },
+        "event_metrics": {
+          "requested_qps": 14.719,
+          "achieved_qps": 5.52,
+          "ok_ops": 6,
+          "error_ops": 10,
+          "error_rate": 0.625,
+          "latency_p50_ms": 3.938,
+          "latency_p90_ms": 4.356,
+          "latency_p95_ms": 5.094,
+          "latency_p99_ms": 5.094,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 7,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 3,
+          "sample_count": 16,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        },
+        "baseline_metrics": {
+          "requested_qps": 600.0,
+          "achieved_qps": 600.0,
+          "ok_ops": 6,
+          "error_ops": 0,
+          "error_rate": 0.0,
+          "latency_p50_ms": 1.834,
+          "latency_p90_ms": 2.015,
+          "latency_p95_ms": 2.061,
+          "latency_p99_ms": 2.061,
+          "latency_p999_ms": "MISSING",
+          "timeout_count": 0,
+          "connection_error_count": 0,
+          "moved_redirection_count": 0,
+          "ask_redirection_count": 0,
+          "cluster_down_error_count": 0,
+          "readonly_error_count": 0,
+          "tryagain_error_count": 0,
+          "unknown_error_count": 0,
+          "sample_count": 6,
+          "missing_reasons": {
+            "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+          }
+        }
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json#p23-10-network_flap",
+      "command_log_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_command_log.jsonl#p23-10-network_flap-fault",
+      "state_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_10/state_p23.json",
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_10/cleanup_report.json"
+    }
+  ],
+  "command_log_ref": "network_fault_command_log.jsonl",
+  "safe_paths_exercised": [
+    "sandbox_proxy"
+  ]
+}

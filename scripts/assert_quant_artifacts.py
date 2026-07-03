@@ -379,6 +379,98 @@ def assert_p22_semantics(base: Path, errors: list[str]) -> None:
         errors.append("P22 quant_summary.json missing")
 
 
+def assert_p23_semantics(base: Path, errors: list[str]) -> None:
+    events = read_jsonl(base / "events.jsonl", errors)
+    metrics = read_jsonl(base / "metrics_timeseries.jsonl", errors)
+    fault_rows = read_jsonl(base / "fault_results.jsonl", errors)
+    command_rows = read_jsonl(base / "network_fault_command_log.jsonl", errors)
+    required_faults = {"network_delay", "network_loss", "network_flap"}
+    real_rows = [row for row in fault_rows if row.get("status") != "SKIPPED_WITH_REASON"]
+    real_sample_ids = {str(row.get("sample_id")) for row in real_rows if row.get("sample_id")}
+    required_pairs = {(fault_type, count) for fault_type in required_faults for count in [6, 10]}
+    observed_pairs = {(row.get("fault_type"), row.get("node_count")) for row in real_rows}
+    missing_pairs = sorted(required_pairs - observed_pairs)
+    if missing_pairs:
+        errors.append(f"P23 quant missing required real fault pairs: {missing_pairs}")
+    if any(row.get("node_count") == 200 for row in fault_rows):
+        errors.append("P23 quant artifacts must not contain 200-node rows")
+    event_sample_ids = {str(event.get("sample_id")) for event in events if event.get("sample_id")}
+    metric_sample_ids = {str(metric.get("sample_id")) for metric in metrics if metric.get("sample_id")}
+    missing_event_samples = sorted(real_sample_ids - event_sample_ids)
+    missing_metric_samples = sorted(real_sample_ids - metric_sample_ids)
+    if missing_event_samples:
+        errors.append(f"P23 events.jsonl missing sample IDs: {missing_event_samples}")
+    if missing_metric_samples:
+        errors.append(f"P23 metrics_timeseries.jsonl missing sample IDs: {missing_metric_samples}")
+    fault_ids = {str(row.get("fault_id")) for row in real_rows if row.get("fault_id")}
+    event_fault_ids = {str(event.get("fault_id")) for event in events if event.get("fault_id")}
+    metric_fault_ids = {str(metric.get("source_id")) for metric in metrics if metric.get("source_type") == "harness"}
+    command_fault_ids = {str(command.get("fault_id")) for command in command_rows if command.get("fault_id")}
+    if not fault_ids.issubset(event_fault_ids):
+        errors.append(f"P23 events missing fault IDs: {sorted(fault_ids - event_fault_ids)}")
+    if not fault_ids.issubset(metric_fault_ids):
+        errors.append(f"P23 harness metrics missing fault IDs: {sorted(fault_ids - metric_fault_ids)}")
+    if not fault_ids.issubset(command_fault_ids):
+        errors.append(f"P23 command log missing fault IDs: {sorted(fault_ids - command_fault_ids)}")
+    for idx, event in enumerate(events, start=1):
+        if event.get("phase_id") != "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
+            errors.append(f"P23 events.jsonl:{idx}: wrong phase_id {event.get('phase_id')!r}")
+    for idx, metric in enumerate(metrics, start=1):
+        if metric.get("phase_id") != "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
+            errors.append(f"P23 metrics_timeseries.jsonl:{idx}: wrong phase_id {metric.get('phase_id')!r}")
+        if metric.get("metric_value") == "MISSING" and not metric.get("missing_reason"):
+            errors.append(f"P23 metrics_timeseries.jsonl:{idx}: MISSING metric_value requires missing_reason")
+    for idx, row in enumerate(fault_rows, start=1):
+        if row.get("phase_id") != "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
+            errors.append(f"P23 fault_results.jsonl:{idx}: wrong phase_id {row.get('phase_id')!r}")
+        if row.get("status") != "PASS":
+            errors.append(f"P23 fault_results.jsonl:{idx}: mandatory row status must be PASS")
+        if row.get("implementation_path") != "sandbox_proxy":
+            errors.append(f"P23 fault_results.jsonl:{idx}: expected sandbox_proxy implementation path")
+    evidence_path = base / "valkey_e2e_evidence.json"
+    if evidence_path.exists():
+        evidence = load_json(evidence_path)
+        if evidence.get("status") != "PASS":
+            errors.append("P23 valkey_e2e_evidence status must be PASS")
+        if evidence.get("real_valkey") is not True:
+            errors.append("P23 valkey_e2e_evidence must be real Valkey")
+        if int(evidence.get("nodes_observed", 0) or 0) < 10:
+            errors.append("P23 valkey_e2e_evidence must observe at least the 10-node mandatory row")
+        versions = evidence.get("valkey_versions", [])
+        if not versions or any(not str(version).startswith("9.1.") for version in versions):
+            errors.append("P23 valkey_e2e_evidence must include Valkey 9.1.x versions")
+    else:
+        errors.append("P23 valkey_e2e_evidence.json missing")
+    network_path = base / "network_fault_report.json"
+    if network_path.exists():
+        network = load_json(network_path)
+        if network.get("status") != "PASS":
+            errors.append("P23 network_fault_report status must be PASS")
+        if set(network.get("safe_paths_exercised", [])) != {"sandbox_proxy"}:
+            errors.append("P23 network_fault_report safe_paths_exercised must be exactly sandbox_proxy")
+    else:
+        errors.append("P23 network_fault_report.json missing")
+    quant_path = base / "quant_summary.json"
+    if quant_path.exists():
+        quant = load_json(quant_path)
+        counts = quant.get("counts", {})
+        if counts.get("event_count") != len(events):
+            errors.append("P23 quant_summary counts.event_count must match events.jsonl line count")
+        if counts.get("metric_count") != len(metrics):
+            errors.append("P23 quant_summary counts.metric_count must match metrics_timeseries.jsonl line count")
+        if counts.get("fault_result_count") != len(fault_rows):
+            errors.append("P23 quant_summary counts.fault_result_count must match fault_results.jsonl line count")
+        if counts.get("command_log_count") != len(command_rows):
+            errors.append("P23 quant_summary counts.command_log_count must match command log line count")
+        if counts.get("sample_count") != len(real_rows):
+            errors.append("P23 quant_summary counts.sample_count must match non-skipped fault rows")
+        claims = quant.get("runtime_claims", {})
+        if claims.get("real_valkey_claimed") is not True or claims.get("fault_runtime_claimed") is not True:
+            errors.append("P23 quant_summary must claim real Valkey fault runtime")
+    else:
+        errors.append("P23 quant_summary.json missing")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -432,6 +524,8 @@ def main() -> int:
         assert_p21_semantics(base, errors)
     if args.phase == "P22_FAULT_REPLICA_HOST_AZ_STOP":
         assert_p22_semantics(base, errors)
+    if args.phase == "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
+        assert_p23_semantics(base, errors)
 
     if errors:
         for error in errors:

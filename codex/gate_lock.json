@@ -581,7 +581,7 @@
     },
     {
       "path": "scripts/assert_fault_matrix_coverage.py",
-      "sha256": "ee27d68a1e796f49bdd67c558e1a64e4dfd49c2811bdb2a5c894fbbf710c9ed5"
+      "sha256": "0c17526be9baad94f986ce20fdb73a08e4101787a48c57bc351ff44163716fb1"
     },
     {
       "path": "scripts/assert_goal_loop_stage.py",
@@ -597,7 +597,7 @@
     },
     {
       "path": "scripts/assert_quant_artifacts.py",
-      "sha256": "f4efc53922dd0aebff7e7ddb97582f1cdebe172da7bd24126bedbb22e9e9b710"
+      "sha256": "895b897a06c39cb98067c333de8d116e43f1b4791ceb5dc133f97728c62f2806"
     },
     {
       "path": "scripts/assert_split_brain_report.py",
@@ -605,7 +605,7 @@
     },
     {
       "path": "scripts/assert_workload_impact.py",
-      "sha256": "de7e7e6e0b7c2f0d2168acab51667cd2f259a8dac230fea7035c37da5b4cf82c"
+      "sha256": "f6006879f5a70b8bf61d4b7163c1e1cde0c1b12c3eb881c23c64b5dcfbf3eb58"
     },
     {
       "path": "scripts/audit_committed_artifacts.py",
@@ -649,7 +649,7 @@
     },
     {
       "path": "scripts/fault_safety_gate.py",
-      "sha256": "c54a16aaf25aad8bf57f432e0b20b32b40291e5a89e2b474153bd7aaec2d973d"
+      "sha256": "1eb69bc2ba225e8dce2c33352653054e232fcee3b4a96ad1216044c772d11f1b"
     },
     {
       "path": "scripts/final_audit_gate.py",

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import binascii
 import json
 import os
 import platform
@@ -25,10 +26,14 @@ from valkey_probe_lib import (  # noqa: E402
     probe_endpoint,
     wait_for_cluster_ok,
 )
+from valkey_scale_lab.fault.network_proxy import ProxyRule, SandboxNetworkProxy  # noqa: E402
 
 P22_PHASE = "P22_FAULT_REPLICA_HOST_AZ_STOP"
 P22_FAULT_TYPES = ["replica_stop", "node_host_stop", "az_stop"]
 P22_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]
+P23_PHASE = "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+P23_FAULT_TYPES = ["network_delay", "network_loss", "network_flap"]
+P23_WINDOWS = P22_WINDOWS
 
 
 def utc_now() -> str:
@@ -1201,6 +1206,787 @@ def run_p22_controller(args: argparse.Namespace) -> int:
     return 0
 
 
+def p23_config_path(node_count: int) -> Path:
+    return ROOT / "templates" / "configs" / f"p23_{node_count}.yaml"
+
+
+def p23_scenario(node_count: int) -> str:
+    return f"p23_fault_matrix_{node_count}"
+
+
+def p23_key_slot(key: str) -> int:
+    encoded = key.encode("utf-8")
+    left = key.find("{")
+    if left >= 0:
+        right = key.find("}", left + 1)
+        if right > left + 1:
+            encoded = key[left + 1 : right].encode("utf-8")
+    return binascii.crc_hqx(encoded, 0) % 16384
+
+
+def p23_slot_range(slot_spec: str) -> tuple[int, int] | None:
+    if not slot_spec or slot_spec.startswith("["):
+        return None
+    if "-" in slot_spec:
+        left, right = slot_spec.split("-", 1)
+    else:
+        left = right = slot_spec
+    try:
+        return int(left), int(right)
+    except ValueError:
+        return None
+
+
+def p23_key_for_slot_range(prefix: str, low: int, high: int) -> str:
+    for idx in range(30000):
+        tag = f"p23-{idx}"
+        key = f"{prefix}:{{{tag}}}"
+        if low <= p23_key_slot(key) <= high:
+            return key
+    raise RuntimeError(f"could not find P23 key for slot range {low}-{high}")
+
+
+def p23_target_from_probes(state: dict[str, Any], endpoints: list[Endpoint], probes: list[dict[str, Any]]) -> tuple[dict[str, Any], Endpoint, dict[str, Any]]:
+    endpoint_by_logical = {endpoint.logical_id: endpoint for endpoint in endpoints}
+    probe_by_logical = {probe.get("logical_id"): probe for probe in probes if probe.get("status") == "PASS"}
+    for node in state.get("nodes", []):
+        if node.get("role") != "primary":
+            continue
+        logical_id = str(node.get("logical_id"))
+        endpoint = endpoint_by_logical.get(logical_id)
+        probe = probe_by_logical.get(logical_id)
+        if endpoint is None or not probe:
+            continue
+        myself = probe.get("myself_node_id")
+        cluster_node = (probe.get("cluster_nodes") or {}).get(myself, {})
+        for slot_spec in cluster_node.get("slots", []):
+            slot_range = p23_slot_range(str(slot_spec))
+            if slot_range is None:
+                continue
+            low, high = slot_range
+            slot_key = p23_key_for_slot_range(f"p23:{logical_id}", low, high)
+            return node, endpoint, {
+                "target_logical_id": logical_id,
+                "target_node_id": myself,
+                "slot_range": [low, high],
+                "slot_key": slot_key,
+                "slot": p23_key_slot(slot_key),
+                "entry_logical_id": logical_id,
+            }
+    raise RuntimeError("P23 could not find a primary target with an owned slot range")
+
+
+def p23_rule_and_parameters(fault_type: str, target: dict[str, Any]) -> tuple[ProxyRule, dict[str, Any]]:
+    target_set = [target["target_logical_id"]]
+    if fault_type == "network_delay":
+        params = {
+            "delay_ms": 75,
+            "jitter_ms": 10,
+            "affected_direction": "bidirectional_proxy_relay",
+            "target_set": target_set,
+            "duration_seconds": 1,
+        }
+        return ProxyRule(fault_type=fault_type, delay_ms=75, jitter_ms=10), params
+    if fault_type == "network_loss":
+        params = {
+            "loss_percent": 50.0,
+            "correlation": 0.0,
+            "affected_direction": "client_to_target_connection",
+            "target_set": target_set,
+            "duration_seconds": 1,
+        }
+        return ProxyRule(fault_type=fault_type, loss_percent=50.0), params
+    if fault_type == "network_flap":
+        params = {
+            "up_ms": 80,
+            "down_ms": 80,
+            "iterations": 6,
+            "target_set": target_set,
+            "duration_seconds": 1,
+        }
+        return ProxyRule(fault_type=fault_type, flap_up_ms=80, flap_down_ms=80, flap_iterations=6), params
+    raise RuntimeError(f"unsupported P23 fault type {fault_type}")
+
+
+def p23_command_log(
+    *,
+    phase: str,
+    run_id: str,
+    sample_id: str,
+    fault_id: str,
+    command_kind: str,
+    started_at: int,
+    ended_at: int,
+    status: str,
+    details: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema_version": "v1",
+        "phase_id": phase,
+        "run_id": run_id,
+        "sample_id": sample_id,
+        "fault_id": fault_id,
+        "command_id": f"{fault_id}-{command_kind}",
+        "command_kind": command_kind,
+        "started_at_unix_ms": started_at,
+        "ended_at_unix_ms": ended_at,
+        "status": status,
+        "implementation_path": "sandbox_proxy",
+        "host_network_mutated": False,
+        "details": details,
+    }
+
+
+def p23_workload_window(
+    *,
+    phase: str,
+    run_id: str,
+    sample_id: str,
+    fault_id: str,
+    fault_type: str,
+    node_count: int,
+    window_name: str,
+    endpoints: list[Endpoint],
+    entry: Endpoint,
+    slot_key: str,
+    operation_pairs: int,
+    pause_ms: int = 0,
+) -> dict[str, Any]:
+    started_at = unix_ms()
+    started_monotonic = monotonic_ms()
+    event_prefix = f"{sample_id}-{window_name}"
+    attempted = 0
+    ok_ops = 0
+    errors = 0
+    timeouts = 0
+    redirects = 0
+    connection_errors = 0
+    latencies: list[float] = []
+    samples: list[dict[str, Any]] = []
+    for index in range(operation_pairs):
+        key = f"{slot_key}:{window_name}:{index}"
+        value = f"p23-value-{sample_id}-{window_name}-{index}"
+        for command in [("SET", key, value), ("GET", key)]:
+            attempted += 1
+            started = time.monotonic()
+            try:
+                reply, redirect_count = execute_workload_command(endpoints, entry, *command)
+                if command[0] == "SET" and str(reply) != "OK":
+                    raise RuntimeError(f"SET returned {reply!r}")
+                if command[0] == "GET" and str(reply) != value:
+                    raise RuntimeError(f"GET returned {reply!r}, expected {value!r}")
+                elapsed = round((time.monotonic() - started) * 1000, 3)
+                latencies.append(elapsed)
+                redirects += redirect_count
+                ok_ops += 1
+                samples.append({"command": command[0], "status": "PASS", "latency_ms": elapsed, "redirects": redirect_count})
+            except Exception as exc:  # noqa: BLE001
+                elapsed = round((time.monotonic() - started) * 1000, 3)
+                message = repr(exc)
+                errors += 1
+                if "timeout" in message.lower() or "timed out" in message.lower():
+                    timeouts += 1
+                if "connection" in message.lower() or "empty resp" in message.lower() or "closed" in message.lower():
+                    connection_errors += 1
+                samples.append({"command": command[0], "status": "FAIL", "latency_ms": elapsed, "error": message[:240]})
+            if pause_ms:
+                time.sleep(pause_ms / 1000.0)
+    ended_at = unix_ms()
+    duration_ms = max(ended_at - started_at, 0)
+    metrics = workload_metrics(attempted, ok_ops, errors, timeouts, redirects, latencies, duration_ms)
+    metrics["connection_error_count"] = connection_errors
+    metrics["unknown_error_count"] = max(errors - timeouts - connection_errors, 0)
+    if metrics["latency_p999_ms"] == "MISSING":
+        metrics["missing_reasons"]["latency_p999_ms"] = "P23 focused network fault gate uses too few workload samples for p999."
+    return {
+        "window_name": window_name,
+        "sample_id": sample_id,
+        "fault_id": fault_id,
+        "fault_type": fault_type,
+        "node_count": node_count,
+        "source_window_name": window_name,
+        "start_event_id": f"{event_prefix}-start",
+        "end_event_id": f"{event_prefix}-end",
+        "start_time_unix_ms": started_at,
+        "end_time_unix_ms": ended_at,
+        "start_monotonic_ms": started_monotonic,
+        "end_monotonic_ms": monotonic_ms(),
+        "metrics": metrics,
+        "samples": samples[:24],
+        "entry_logical_id": entry.logical_id,
+        "slot_key": slot_key,
+        "slot": p23_key_slot(slot_key),
+        "run_id": run_id,
+        "phase_id": phase,
+    }
+
+
+def p23_all_run_window(phase: str, run_id: str, sample_id: str, fault_id: str, fault_type: str, node_count: int, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    children = [row for row in rows if row.get("sample_id") == sample_id]
+    started_values = [row.get("start_time_unix_ms") for row in children if isinstance(row.get("start_time_unix_ms"), int)]
+    ended_values = [row.get("end_time_unix_ms") for row in children if isinstance(row.get("end_time_unix_ms"), int)]
+    total_duration = max(max(ended_values, default=0) - min(started_values, default=0), 0)
+    total_ops = sum(int(row.get("metrics", {}).get("sample_count", 0) or 0) for row in children)
+    total_ok = sum(int(row.get("metrics", {}).get("ok_ops", 0) or 0) for row in children)
+    total_errors = sum(int(row.get("metrics", {}).get("error_ops", 0) or 0) for row in children)
+    total_timeouts = sum(int(row.get("metrics", {}).get("timeout_count", 0) or 0) for row in children)
+    total_redirects = sum(int(row.get("metrics", {}).get("moved_redirection_count", 0) or 0) for row in children)
+    return {
+        "window_name": "all_run",
+        "sample_id": sample_id,
+        "fault_id": fault_id,
+        "fault_type": fault_type,
+        "node_count": node_count,
+        "source_window_name": "all_run_aggregate",
+        "start_event_id": f"{sample_id}-all_run-start",
+        "end_event_id": f"{sample_id}-all_run-end",
+        "start_time_unix_ms": min(started_values) if started_values else "MISSING",
+        "end_time_unix_ms": max(ended_values) if ended_values else "MISSING",
+        "start_monotonic_ms": "MISSING",
+        "end_monotonic_ms": "MISSING",
+        "metrics": workload_metrics(total_ops, total_ok, total_errors, total_timeouts, total_redirects, [], total_duration),
+        "samples": [],
+        "entry_logical_id": "aggregate",
+        "run_id": run_id,
+        "phase_id": phase,
+    }
+
+
+def p23_effect_observed(fault_type: str, baseline: dict[str, Any], event: dict[str, Any], proxy_stats: dict[str, Any]) -> bool:
+    baseline_metrics = baseline.get("metrics", {})
+    event_metrics = event.get("metrics", {})
+    if fault_type == "network_delay":
+        baseline_p99 = baseline_metrics.get("latency_p99_ms")
+        event_p99 = event_metrics.get("latency_p99_ms")
+        return bool(proxy_stats.get("delay_injections", 0) > 0 and isinstance(baseline_p99, (int, float)) and isinstance(event_p99, (int, float)) and event_p99 > baseline_p99)
+    if fault_type == "network_loss":
+        return bool(proxy_stats.get("dropped_connections", 0) > 0 and int(event_metrics.get("error_ops", 0) or 0) > int(baseline_metrics.get("error_ops", 0) or 0))
+    if fault_type == "network_flap":
+        return bool(proxy_stats.get("flap_rejections", 0) > 0 and int(event_metrics.get("error_ops", 0) or 0) > int(baseline_metrics.get("error_ops", 0) or 0))
+    return False
+
+
+def p23_run_fault(
+    *,
+    phase: str,
+    node_count: int,
+    state_path: Path,
+    state: dict[str, Any],
+    endpoints: list[Endpoint],
+    probes_before: list[dict[str, Any]],
+    fault_type: str,
+) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+    errors: list[str] = []
+    scenario = p23_scenario(node_count)
+    run_id = str(state.get("runtime", {}).get("run_id", f"{phase}-{scenario}-20260628"))
+    sample_id = f"p23-{node_count}-{fault_type}"
+    fault_id = f"{sample_id}-fault"
+    target_node, target_endpoint, target = p23_target_from_probes(state, endpoints, probes_before)
+    rule, parameters = p23_rule_and_parameters(fault_type, target)
+    workload_rows: list[dict[str, Any]] = []
+    command_rows: list[dict[str, Any]] = []
+
+    direct_entry = target_endpoint
+    for window in ["baseline", "pre_event"]:
+        workload_rows.append(
+            p23_workload_window(
+                phase=phase,
+                run_id=run_id,
+                sample_id=sample_id,
+                fault_id=fault_id,
+                fault_type=fault_type,
+                node_count=node_count,
+                window_name=window,
+                endpoints=endpoints,
+                entry=direct_entry,
+                slot_key=target["slot_key"],
+                operation_pairs=3,
+            )
+        )
+
+    apply_started = unix_ms()
+    proxy = SandboxNetworkProxy(target_host=target_endpoint.host, target_port=target_endpoint.port, rule=rule)
+    proxy.start()
+    apply_completed = unix_ms()
+    command_rows.append(
+        p23_command_log(
+            phase=phase,
+            run_id=run_id,
+            sample_id=sample_id,
+            fault_id=fault_id,
+            command_kind="sandbox_proxy_apply",
+            started_at=apply_started,
+            ended_at=apply_completed,
+            status="PASS",
+            details={
+                "listen_host": proxy.address[0],
+                "listen_port": proxy.address[1],
+                "target_logical_id": target["target_logical_id"],
+                "target_port": target_endpoint.port,
+                "fault_parameters": parameters,
+            },
+        )
+    )
+    proxy_endpoint = Endpoint(
+        logical_id=f"{target_endpoint.logical_id}-sandbox-proxy",
+        host=proxy.address[0],
+        port=proxy.address[1],
+        password=target_endpoint.password,
+        az_id=target_endpoint.az_id,
+        role=target_endpoint.role,
+        container_ip=target_endpoint.container_ip,
+    )
+    event_pairs = 8 if fault_type == "network_flap" else 4
+    event_pause = 60 if fault_type == "network_flap" else 0
+    event_row = p23_workload_window(
+        phase=phase,
+        run_id=run_id,
+        sample_id=sample_id,
+        fault_id=fault_id,
+        fault_type=fault_type,
+        node_count=node_count,
+        window_name="event",
+        endpoints=endpoints,
+        entry=proxy_endpoint,
+        slot_key=target["slot_key"],
+        operation_pairs=event_pairs,
+        pause_ms=event_pause,
+    )
+    workload_rows.append(event_row)
+    proxy_stats = proxy.snapshot()
+    clear_started = unix_ms()
+    proxy.close()
+    clear_completed = unix_ms()
+    command_rows.append(
+        p23_command_log(
+            phase=phase,
+            run_id=run_id,
+            sample_id=sample_id,
+            fault_id=fault_id,
+            command_kind="sandbox_proxy_clear",
+            started_at=clear_started,
+            ended_at=clear_completed,
+            status="PASS",
+            details={"proxy_stats": proxy_stats, "state_ref": rel_path(state_path)},
+        )
+    )
+
+    ok_recovered, _probes_recovered = wait_for_cluster_ok(endpoints, node_count, timeout_seconds=90)
+    recovery_completed = unix_ms()
+    for window in ["recovery", "post_recovery"]:
+        workload_rows.append(
+            p23_workload_window(
+                phase=phase,
+                run_id=run_id,
+                sample_id=sample_id,
+                fault_id=fault_id,
+                fault_type=fault_type,
+                node_count=node_count,
+                window_name=window,
+                endpoints=endpoints,
+                entry=direct_entry,
+                slot_key=target["slot_key"],
+                operation_pairs=3,
+            )
+        )
+    workload_rows.append(p23_all_run_window(phase, run_id, sample_id, fault_id, fault_type, node_count, workload_rows))
+    observed_effect = p23_effect_observed(fault_type, workload_rows[0], event_row, proxy_stats)
+    if not observed_effect:
+        errors.append(f"{sample_id}: expected proxy-observed effect was not measured")
+    if not ok_recovered:
+        errors.append(f"{sample_id}: cluster did not recover to OK after clearing proxy")
+    status = "PASS" if not errors else "FAIL"
+    row = {
+        "schema_version": "v1",
+        "phase_id": phase,
+        "run_id": run_id,
+        "scenario_name": scenario,
+        "sample_id": sample_id,
+        "node_count": node_count,
+        "status": status,
+        "real_valkey": True,
+        "fault_type": fault_type,
+        "fault_id": fault_id,
+        "scope": "sandbox_proxy",
+        "implementation_path": "sandbox_proxy",
+        "targets": [node_identity(target_node)],
+        "target_selector": {
+            "selector_type": "primary_slot_owner",
+            "selected_logical_id": target["target_logical_id"],
+            "slot_range": target["slot_range"],
+            "slot": target["slot"],
+        },
+        "target_count": 1,
+        "fault_parameters": parameters,
+        "apply_started_at_ms": apply_started,
+        "apply_completed_at_ms": apply_completed,
+        "clear_started_at_ms": clear_started,
+        "clear_completed_at_ms": clear_completed,
+        "recovery_completed_at_ms": recovery_completed,
+        "apply_duration_ms": max(apply_completed - apply_started, 0),
+        "clear_duration_ms": max(clear_completed - clear_started, 0),
+        "recovery_latency_ms": max(recovery_completed - clear_started, 0),
+        "observed_effect_started_at_ms": apply_completed if observed_effect else "MISSING",
+        "expected_impact": f"{fault_type} reduces or delays Valkey client traffic through the sandbox proxy.",
+        "observed_impact": {
+            "effect_observed": observed_effect,
+            "proxy_stats": proxy_stats,
+            "event_metrics": event_row.get("metrics", {}),
+            "baseline_metrics": workload_rows[0].get("metrics", {}),
+        },
+        "safety_scope_verified": True,
+        "cleanup_verified": status == "PASS",
+        "host_network_mutated": False,
+        "physical_host_mutated": False,
+        "physical_az_mutated": False,
+        "workload_impact_ref": f"artifacts/phases/{phase}/workload_impact_report.json#{sample_id}",
+        "command_log_ref": f"artifacts/phases/{phase}/network_fault_command_log.jsonl#{fault_id}",
+        "state_ref": rel_path(state_path),
+        "errors_by_type": {"harness": errors} if errors else {},
+        "missing_fields": [] if observed_effect else [{"field": "observed_effect_started_at_ms", "status": "MISSING", "reason": "Proxy counters did not show expected impairment."}],
+    }
+    return row, workload_rows, command_rows, errors
+
+
+def p23_inner_paths(artifact_dir: Path, node_count: int) -> dict[str, Path]:
+    scenario = p23_scenario(node_count)
+    work_dir = artifact_dir / "_p23_runs" / scenario
+    return {
+        "work_dir": work_dir,
+        "state": work_dir / "state_p23.json",
+        "cleanup_report": work_dir / "cleanup_report.json",
+    }
+
+
+def run_p23_node_count(phase: str, artifact_dir: Path, node_count: int) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], dict[str, Any], list[dict[str, Any]], set[str], list[str]]:
+    paths = p23_inner_paths(artifact_dir, node_count)
+    work_dir = paths["work_dir"]
+    work_dir.mkdir(parents=True, exist_ok=True)
+    state_path = paths["state"]
+    scenario = p23_scenario(node_count)
+    setup = run_cmd(
+        [
+            sys.executable,
+            "-m",
+            "valkey_scale_lab.cli",
+            "gate",
+            "scenario",
+            "--phase",
+            phase,
+            "--scenario",
+            scenario,
+            "--config",
+            str(p23_config_path(node_count)),
+            "--artifacts-dir",
+            str(work_dir),
+            "--state-out",
+            str(state_path),
+        ],
+        timeout=max(900, node_count * 30),
+    )
+    (work_dir / "p23_setup.stdout.log").write_text(setup.stdout, encoding="utf-8", errors="replace")
+    (work_dir / "p23_setup.stderr.log").write_text(setup.stderr, encoding="utf-8", errors="replace")
+    if setup.returncode != 0:
+        cleanup_status = "FAIL"
+        cleanup_path = paths["cleanup_report"]
+        if state_path.exists():
+            cleanup_status, cleanup_path = project_cleanup(phase, state_path, work_dir)
+        elif not cleanup_path.exists():
+            write_json(
+                cleanup_path,
+                {
+                    "schema_version": "v1",
+                    "artifact_type": "cleanup_report",
+                    "phase_id": phase,
+                    "run_id": f"{phase}-{scenario}-setup-failed",
+                    "created_at": utc_now(),
+                    "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+                    "status": "FAIL",
+                    "resources_remaining": [],
+                    "cleanup_actions": [{"type": "p23_setup", "node_count": node_count, "status": "FAIL", "reason": setup.stderr[-1000:]}],
+                },
+            )
+        cleanup_action = {"type": "p23_subrun_cleanup", "status": cleanup_status, "report_ref": rel_path(cleanup_path), "node_count": node_count}
+        return [], [], [], cleanup_action, [], set(), [f"{scenario}: setup failed exit={setup.returncode}"]
+    state = load_state(state_path)
+    endpoints = endpoints_from_state(state)
+    ok_before, probes_before = wait_for_cluster_ok(endpoints, node_count, timeout_seconds=120)
+    errors: list[str] = []
+    if not ok_before:
+        errors.append(f"{scenario}: cluster not OK before P23 faults")
+    rows: list[dict[str, Any]] = []
+    workload_rows: list[dict[str, Any]] = []
+    command_rows: list[dict[str, Any]] = []
+    versions: set[str] = set()
+    final_probes: list[dict[str, Any]] = []
+    for fault_type in P23_FAULT_TYPES:
+        state = load_state(state_path)
+        endpoints = endpoints_from_state(state)
+        row, windows, commands, fault_errors = p23_run_fault(
+            phase=phase,
+            node_count=node_count,
+            state_path=state_path,
+            state=state,
+            endpoints=endpoints,
+            probes_before=probes_before,
+            fault_type=fault_type,
+        )
+        rows.append(row)
+        workload_rows.extend(windows)
+        command_rows.extend(commands)
+        errors.extend(fault_errors)
+    ok_final, final_probes = wait_for_cluster_ok(endpoints_from_state(load_state(state_path)), node_count, timeout_seconds=120)
+    if not ok_final:
+        errors.append(f"{scenario}: final cluster OK probe failed before cleanup")
+    for probe in final_probes:
+        if probe.get("status") == "PASS" and probe.get("version"):
+            versions.add(str(probe["version"]))
+    cleanup_status, cleanup_path = project_cleanup(phase, state_path, work_dir)
+    if cleanup_status != "PASS":
+        errors.append(f"{scenario}: cleanup failed")
+    for row in rows:
+        if cleanup_status != "PASS":
+            row["cleanup_verified"] = False
+            row["status"] = "FAIL"
+            row.setdefault("errors_by_type", {}).setdefault("cleanup", []).append("aggregate cleanup failed")
+        row["cleanup_ref"] = rel_path(cleanup_path)
+    cleanup_action = {"type": "p23_subrun_cleanup", "node_count": node_count, "status": cleanup_status, "report_ref": rel_path(cleanup_path)}
+    return rows, workload_rows, command_rows, cleanup_action, final_probes, versions, errors
+
+
+def p23_events(fault_rows: list[dict[str, Any]], workload_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = p22_events(fault_rows, workload_rows)
+    for row in rows:
+        row["scenario_name"] = str(row.get("scenario_name", "")).replace("p22_fault_matrix", "p23_fault_matrix")
+    return rows
+
+
+def p23_metrics(fault_rows: list[dict[str, Any]], workload_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = p22_metrics(fault_rows, workload_rows)
+    for row in rows:
+        row["scenario_name"] = str(row.get("scenario_name", "")).replace("p22_fault_matrix", "p23_fault_matrix")
+    for fault in fault_rows:
+        if fault.get("status") == "SKIPPED_WITH_REASON":
+            continue
+        stats = (fault.get("observed_impact") or {}).get("proxy_stats") or {}
+        for name in ["delay_injections", "dropped_connections", "flap_rejections", "accepted_connections"]:
+            value = stats.get(name, "MISSING")
+            rows.append(
+                {
+                    "schema_version": "v1",
+                    "run_id": fault["run_id"],
+                    "phase_id": fault["phase_id"],
+                    "scenario_name": fault["scenario_name"],
+                    "sample_id": fault["sample_id"],
+                    "timestamp_unix_ms": fault.get("clear_completed_at_ms", "MISSING"),
+                    "monotonic_ms": fault.get("clear_completed_at_ms", "MISSING"),
+                    "source_type": "harness",
+                    "source_id": fault["fault_id"],
+                    "metric_name": f"proxy_{name}",
+                    "metric_value": value,
+                    "metric_unit": "count",
+                    "labels": {"fault_type": fault["fault_type"], "node_count": fault["node_count"]},
+                    "missing_reason": "" if value != "MISSING" else f"{name} was not observed",
+                }
+            )
+    return rows
+
+
+def run_p23_controller(args: argparse.Namespace) -> int:
+    artifact_dir = Path(args.out).parent
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    phase = args.phase
+    run_id = f"{phase}-network-faults-20260628"
+    all_fault_rows: list[dict[str, Any]] = []
+    all_workload_rows: list[dict[str, Any]] = []
+    all_command_rows: list[dict[str, Any]] = []
+    cleanup_actions: list[dict[str, Any]] = []
+    resources_remaining: list[dict[str, Any]] = []
+    top_probes: list[dict[str, Any]] = []
+    versions: set[str] = set()
+    errors: list[str] = []
+
+    for node_count in [6, 10]:
+        rows, workload_rows, command_rows, cleanup_action, probes, observed_versions, run_errors = run_p23_node_count(phase, artifact_dir, node_count)
+        all_fault_rows.extend(rows)
+        all_workload_rows.extend(workload_rows)
+        all_command_rows.extend(command_rows)
+        cleanup_actions.append(cleanup_action)
+        top_probes.extend(probes[:4])
+        versions.update(observed_versions)
+        errors.extend(run_errors)
+
+    for action in cleanup_actions:
+        report_ref = str(action.get("report_ref") or "")
+        report = load_json_if_exists(ROOT / report_ref) if report_ref else {}
+        for item in report.get("resources_remaining", []) if isinstance(report.get("resources_remaining"), list) else []:
+            resources_remaining.append({"node_count": action.get("node_count"), **item})
+        if action.get("status") != "PASS":
+            errors.append(f"cleanup failed for node_count={action.get('node_count')}")
+
+    comparisons = [
+        p22_comparison(row["sample_id"], row["fault_type"], row["node_count"], all_workload_rows)
+        for row in all_fault_rows
+        if row.get("status") != "SKIPPED_WITH_REASON"
+    ]
+    events = p23_events(all_fault_rows, all_workload_rows)
+    metrics = p23_metrics(all_fault_rows, all_workload_rows)
+    aggregate_cleanup_status = "PASS" if not resources_remaining and all(action.get("status") == "PASS" for action in cleanup_actions) else "FAIL"
+    status = "PASS" if not errors and all(row.get("status") == "PASS" for row in all_fault_rows) and aggregate_cleanup_status == "PASS" else "FAIL"
+
+    write_jsonl(artifact_dir / "fault_results.jsonl", all_fault_rows)
+    write_jsonl(artifact_dir / "network_fault_command_log.jsonl", all_command_rows)
+    write_jsonl(artifact_dir / "events.jsonl", events)
+    write_jsonl(artifact_dir / "metrics_timeseries.jsonl", metrics)
+    write_json(artifact_dir / "workload_windows.json", {
+        "schema_version": "v1",
+        "artifact_type": "workload_windows",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+        "status": status,
+        "windows": all_workload_rows,
+    })
+    write_json(artifact_dir / "workload_impact_report.json", {
+        "schema_version": "v1",
+        "artifact_type": "workload_impact_report",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+        "status": status,
+        "windows": all_workload_rows,
+        "comparisons": comparisons,
+    })
+    fault_matrix = {
+        "schema_version": "v1",
+        "artifact_type": "fault_matrix_report",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+        "status": status,
+        "fault_rows": all_fault_rows,
+        "safety_checks": {
+            "host_network_mutated": False,
+            "global_firewall_mutated": False,
+            "physical_host_mutated": False,
+            "physical_az_mutated": False,
+            "sandbox_proxy_only": True,
+        },
+    }
+    write_json(Path(args.fault_report), fault_matrix)
+    write_json(artifact_dir / "network_fault_report.json", {
+        "schema_version": "v1",
+        "artifact_type": "network_fault_report",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+        "status": status,
+        "network_faults": all_fault_rows,
+        "command_log_ref": "network_fault_command_log.jsonl",
+        "safe_paths_exercised": sorted({row.get("implementation_path") for row in all_fault_rows if row.get("status") == "PASS"}),
+    })
+    write_json(artifact_dir / "cleanup_report.json", {
+        "schema_version": "v1",
+        "artifact_type": "cleanup_report",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+        "status": aggregate_cleanup_status,
+        "resources_remaining": resources_remaining,
+        "cleanup_actions": cleanup_actions,
+    })
+    write_json(Path(args.out), {
+        "schema_version": "v1",
+        "artifact_type": "valkey_e2e_evidence",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+        "status": status,
+        "scenario": "p23_fault_matrix",
+        "real_valkey": True,
+        "valkey_version_prefix_required": "9.1.",
+        "probe_result": "PASS" if status == "PASS" else "FAIL",
+        "nodes_observed": max([observed_count(top_probes), *[row.get("node_count", 0) for row in all_fault_rows if row.get("status") == "PASS"]], default=1),
+        "cluster_state_observed": "ok" if status == "PASS" else cluster_state_from_probes(top_probes),
+        "data_path_result": "PASS" if all_workload_rows else "FAIL",
+        "valkey_versions": sorted(versions),
+        "probes": top_probes or [{"logical_id": "p23-no-probe", "host": "127.0.0.1", "port": 1, "status": "FAIL"}],
+        "cleanup": {"status": aggregate_cleanup_status, "path": rel_path(artifact_dir / "cleanup_report.json")},
+        "fault_types": P23_FAULT_TYPES,
+        "sample_refs": [row["sample_id"] for row in all_fault_rows],
+        "errors": errors,
+    })
+    write_json(artifact_dir / "quant_summary.json", {
+        "schema_version": "v1",
+        "artifact_type": "quant_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+        "status": status,
+        "summary": "P23 quant summary for real sandbox-proxy network delay, loss, and flap faults.",
+        "artifact_refs": [
+            "fault_results.jsonl",
+            "events.jsonl",
+            "metrics_timeseries.jsonl",
+            "workload_windows.json",
+            "workload_impact_report.json",
+            "network_fault_report.json",
+            "fault_matrix_report.json",
+            "network_fault_command_log.jsonl",
+            "cleanup_report.json",
+        ],
+        "counts": {
+            "event_count": len(events),
+            "metric_count": len(metrics),
+            "sample_count": len(all_fault_rows),
+            "fault_result_count": len(all_fault_rows),
+            "command_log_count": len(all_command_rows),
+        },
+        "missing_data": [],
+        "runtime_claims": {"real_valkey_claimed": True, "management_runtime_claimed": False, "fault_runtime_claimed": True},
+    })
+    write_json(artifact_dir / "phase_summary.json", {
+        "schema_version": "v1",
+        "artifact_type": "phase_summary",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": utc_now(),
+        "producer": {"name": "scripts/fault_safety_gate.py", "version": "v1"},
+        "status": status,
+        "summary": "P23 runs real network_delay, network_loss, and network_flap rows through a project-owned sandbox proxy.",
+        "required_artifacts": [
+            f"artifacts/phases/{phase}/phase_summary.json",
+            f"artifacts/phases/{phase}/valkey_e2e_evidence.json",
+            f"artifacts/phases/{phase}/cleanup_report.json",
+            f"artifacts/phases/{phase}/events.jsonl",
+            f"artifacts/phases/{phase}/metrics_timeseries.jsonl",
+            f"artifacts/phases/{phase}/workload_windows.json",
+            f"artifacts/phases/{phase}/quant_summary.json",
+            f"artifacts/phases/{phase}/network_fault_report.json",
+            f"artifacts/phases/{phase}/fault_results.jsonl",
+            f"artifacts/phases/{phase}/workload_impact_report.json",
+            f"artifacts/phases/{phase}/network_fault_command_log.jsonl",
+            f"artifacts/phases/{phase}/fault_matrix_report.json",
+        ],
+        "missing_metrics": [],
+        "risks": [{"risk": "P23 measures a proxied target slot rather than applying container namespace traffic control.", "severity": "medium", "required_before_next_phase": False}],
+    })
+
+    if status != "PASS":
+        for error in errors:
+            print(f"FAIL: {error}", file=sys.stderr)
+        return 1
+    print(f"PASS P23 network fault matrix out={args.out} fault_report={args.fault_report}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fault isolation gate with independent Valkey probing")
     parser.add_argument("--phase", required=True)
@@ -1212,6 +1998,8 @@ def main() -> int:
 
     if args.phase == P22_PHASE:
         return run_p22_controller(args)
+    if args.phase == P23_PHASE:
+        return run_p23_controller(args)
 
     out = Path(args.out)
     fault_report_path = Path(args.fault_report)

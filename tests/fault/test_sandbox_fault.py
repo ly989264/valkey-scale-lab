@@ -41,11 +41,13 @@ def test_apply_and_clear_fault_report(tmp_path: Path) -> None:
         out_path=tmp_path / "fault_apply.json",
     )
     assert apply_report["status"] == "PASS"
+    assert apply_report["implementation_path"] == "sandbox_proxy"
     assert apply_report["safety_checks"]["host_network_mutated"] is False
     assert (tmp_path / "fault_state_fault-sandbox-smoke.json").exists()
 
     clear_report = clear_fault(state_path=state, fault_id="fault-sandbox-smoke", out_path=tmp_path / "fault_clear.json")
     assert clear_report["status"] == "PASS"
+    assert clear_report["observed_impact"]["implementation_path"] == "sandbox_proxy"
     assert not (tmp_path / "fault_state_fault-sandbox-smoke.json").exists()
     fault_report = json.loads((tmp_path / "fault_report.json").read_text(encoding="utf-8"))
     assert fault_report["artifact_type"] == "fault_report"

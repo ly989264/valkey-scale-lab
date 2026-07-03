@@ -146,7 +146,7 @@ def create_scenario(
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"),
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
-    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None:
+    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
         run_id = _run_id(phase, scenario)
@@ -355,12 +355,17 @@ def _runtime_state(
 
 
 def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
-    return _curve_scale_sample_node_count(phase, scenario) is not None or _p22_fault_matrix_node_count(phase, scenario) is not None or (phase, scenario) in {
+    return (
+        _curve_scale_sample_node_count(phase, scenario) is not None
+        or _p22_fault_matrix_node_count(phase, scenario) is not None
+        or _p23_fault_matrix_node_count(phase, scenario) is not None
+        or (phase, scenario) in {
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
         ("P13_SCALE_LADDER_50_100", "scale_50"),
         ("P13_SCALE_LADDER_50_100", "scale_100"),
-    }
+        }
+    )
 
 
 def _curve_scale_sample_node_count(phase: str, scenario: str) -> int | None:
@@ -389,6 +394,15 @@ def _p22_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
     if phase != "P22_FAULT_REPLICA_HOST_AZ_STOP":
         return None
     match = re.fullmatch(r"p22_fault_matrix_(6|10|30|50|100)", scenario)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
+def _p23_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
+    if phase != "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
+        return None
+    match = re.fullmatch(r"p23_fault_matrix_(6|10|30|50|100)", scenario)
     if not match:
         return None
     return int(match.group(1))
@@ -3049,6 +3063,9 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
     p22_count = _p22_fault_matrix_node_count(phase, scenario)
     if p22_count is not None:
         return node_count == p22_count and p22_count <= 100
+    p23_count = _p23_fault_matrix_node_count(phase, scenario)
+    if p23_count is not None:
+        return node_count == p23_count and p23_count <= 100
     expected = {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},

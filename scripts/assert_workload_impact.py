@@ -157,6 +157,57 @@ def main() -> int:
             ]:
                 if field not in item:
                     errors.append(f"P22 comparison {item.get('sample_id')}: missing {field}")
+    if args.phase == "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
+        required_faults = {"network_delay", "network_loss", "network_flap"}
+        sample_ids = {row.get("sample_id") for row in rows if row.get("sample_id")}
+        by_sample: dict[Any, list[dict[str, Any]]] = {}
+        for row in rows:
+            by_sample.setdefault(row.get("sample_id"), []).append(row)
+            if row.get("fault_type") not in required_faults:
+                errors.append(f"{row.get('sample_id')}: unexpected P23 fault_type {row.get('fault_type')!r}")
+            if row.get("node_count") == 200:
+                errors.append(f"{row.get('sample_id')}: P23 workload must not use 200-node rows")
+            if not row.get("fault_id"):
+                errors.append(f"{row.get('sample_id')}: P23 workload row requires fault_id")
+        required_sample_pairs = {
+            (fault_type, node_count)
+            for fault_type in required_faults
+            for node_count in [6, 10]
+        }
+        observed_pairs = {
+            (items[0].get("fault_type"), items[0].get("node_count"))
+            for items in by_sample.values()
+            if items
+        }
+        missing_pairs = sorted(required_sample_pairs - observed_pairs)
+        if missing_pairs:
+            errors.append(f"P23 workload missing required real sample pairs: {missing_pairs}")
+        for sid, items in by_sample.items():
+            names = {item.get("window_name") for item in items}
+            missing = sorted(WINDOWS - names)
+            if missing:
+                errors.append(f"P23 sample {sid} missing workload windows: {missing}")
+            event = next((item for item in items if item.get("window_name") == "event"), {})
+            metrics = event.get("metrics") if isinstance(event.get("metrics"), dict) else {}
+            if metrics.get("sample_count", 0) == 0:
+                errors.append(f"P23 sample {sid} event window must contain attempted workload samples")
+        comparisons = report.get("comparisons", [])
+        comparison_ids = {item.get("sample_id") for item in comparisons if isinstance(item, dict)}
+        missing_comparisons = sorted(str(item) for item in sample_ids - comparison_ids)
+        if missing_comparisons:
+            errors.append(f"P23 comparisons missing sample IDs: {missing_comparisons}")
+        for item in comparisons:
+            if not isinstance(item, dict):
+                continue
+            for field in [
+                "fault_window_qps_ratio",
+                "fault_window_p99_delta_ms",
+                "fault_window_error_rate_delta",
+                "recovery_window_duration_ms",
+                "post_recovery_qps_ratio",
+            ]:
+                if field not in item:
+                    errors.append(f"P23 comparison {item.get('sample_id')}: missing {field}")
     if errors:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)

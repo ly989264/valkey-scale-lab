@@ -1,0 +1,1241 @@
+{
+  "cluster_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+  "cluster_snapshots": [
+    {
+      "cluster_states": [
+        "fail"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 3,
+      "known_nodes_max": 3,
+      "label": "after_meet_primaries",
+      "node_count": 6,
+      "pfail_count": 0,
+      "primary_count": 3,
+      "replica_count": 0,
+      "sample_count": 2,
+      "sample_scope": "representative_primaries",
+      "samples": [
+        {
+          "cluster_state": "fail",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 3,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 0,
+          "slots_fail": 0,
+          "slots_ok": 0
+        },
+        {
+          "cluster_state": "fail",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 3,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 0,
+          "slots_fail": 0,
+          "slots_ok": 0
+        }
+      ],
+      "slots_assigned": 0,
+      "slots_fail": 0,
+      "slots_ok": 0
+    },
+    {
+      "cluster_states": [
+        "ok"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 3,
+      "known_nodes_max": 3,
+      "label": "after_add_slots",
+      "node_count": 6,
+      "pfail_count": 0,
+      "primary_count": 3,
+      "replica_count": 0,
+      "sample_count": 2,
+      "sample_scope": "representative_primaries",
+      "samples": [
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 3,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 3,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        }
+      ],
+      "slots_assigned": 16384,
+      "slots_fail": 0,
+      "slots_ok": 16384
+    },
+    {
+      "cluster_states": [
+        "ok"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 6,
+      "known_nodes_max": 6,
+      "label": "after_meet_replicas",
+      "node_count": 6,
+      "pfail_count": 0,
+      "primary_count": 6,
+      "replica_count": 0,
+      "sample_count": 2,
+      "sample_scope": "representative_by_az",
+      "samples": [
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 6,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 6,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        }
+      ],
+      "slots_assigned": 16384,
+      "slots_fail": 0,
+      "slots_ok": 16384
+    },
+    {
+      "cluster_states": [
+        "ok"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 6,
+      "known_nodes_max": 6,
+      "label": "after_add_replicas",
+      "node_count": 6,
+      "pfail_count": 0,
+      "primary_count": 3,
+      "replica_count": 3,
+      "sample_count": 2,
+      "sample_scope": "representative_by_az",
+      "samples": [
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 3,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 3,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        }
+      ],
+      "slots_assigned": 16384,
+      "slots_fail": 0,
+      "slots_ok": 16384
+    },
+    {
+      "cluster_states": [
+        "ok"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 6,
+      "known_nodes_max": 6,
+      "label": "final",
+      "node_count": 6,
+      "pfail_count": 0,
+      "primary_count": 3,
+      "replica_count": 3,
+      "sample_count": 6,
+      "sample_scope": "all_nodes",
+      "samples": [
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0002-replica-00",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 3,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0001-replica-00",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 3,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 3,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0000-replica-00",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 3,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 3,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "logical_id": "shard-0002-primary",
+          "pfail_count": 0,
+          "primary_count": 3,
+          "probe_status": "PASS",
+          "replica_count": 3,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        }
+      ],
+      "slots_assigned": 16384,
+      "slots_fail": 0,
+      "slots_ok": 16384
+    }
+  ],
+  "nodehosts": [
+    {
+      "az_id": "az-a",
+      "container_id": "b28ebefff3e603c4cb3a26e94eb62430a3021b1bf98dc710779fbf4a95634de4",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a",
+      "host_id": "local",
+      "logical_node_count": 3,
+      "nodehost_id": "nodehost-az-a",
+      "ports": [
+        7640,
+        7642,
+        7644,
+        17640,
+        17642,
+        17644
+      ]
+    },
+    {
+      "az_id": "az-b",
+      "container_id": "beaf4d43fb71edf643dd55c92556b7c4d2d992585d40f0d4a40c9e8d21d394ce",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-b",
+      "host_id": "local",
+      "logical_node_count": 3,
+      "nodehost_id": "nodehost-az-b",
+      "ports": [
+        7641,
+        7643,
+        7645,
+        17641,
+        17643,
+        17645
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "az_id": "az-a",
+      "client_port": 7640,
+      "cluster_bus_port": 17640,
+      "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0000-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.conf",
+      "container_id": "b28ebefff3e603c4cb3a26e94eb62430a3021b1bf98dc710779fbf4a95634de4",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a",
+      "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "p23-host-a",
+      "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.log",
+      "logical_id": "shard-0000-primary",
+      "nodehost_container_ip": "172.18.0.3",
+      "nodehost_container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 28,
+      "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.pid",
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7641,
+      "cluster_bus_port": 17641,
+      "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0001-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.conf",
+      "container_id": "beaf4d43fb71edf643dd55c92556b7c4d2d992585d40f0d4a40c9e8d21d394ce",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-b",
+      "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "p23-host-b",
+      "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.log",
+      "logical_id": "shard-0001-primary",
+      "nodehost_container_ip": "172.18.0.2",
+      "nodehost_container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-b",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 28,
+      "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.pid",
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7642,
+      "cluster_bus_port": 17642,
+      "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0002-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.conf",
+      "container_id": "b28ebefff3e603c4cb3a26e94eb62430a3021b1bf98dc710779fbf4a95634de4",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a",
+      "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "p23-host-c",
+      "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.log",
+      "logical_id": "shard-0002-primary",
+      "nodehost_container_ip": "172.18.0.3",
+      "nodehost_container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 37,
+      "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.pid",
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7643,
+      "cluster_bus_port": 17643,
+      "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0000-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.conf",
+      "container_id": "beaf4d43fb71edf643dd55c92556b7c4d2d992585d40f0d4a40c9e8d21d394ce",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-b",
+      "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "p23-host-a",
+      "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.log",
+      "logical_id": "shard-0000-replica-00",
+      "nodehost_container_ip": "172.18.0.2",
+      "nodehost_container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-b",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 37,
+      "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.pid",
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7644,
+      "cluster_bus_port": 17644,
+      "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0001-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.conf",
+      "container_id": "b28ebefff3e603c4cb3a26e94eb62430a3021b1bf98dc710779fbf4a95634de4",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a",
+      "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "p23-host-b",
+      "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.log",
+      "logical_id": "shard-0001-replica-00",
+      "nodehost_container_ip": "172.18.0.3",
+      "nodehost_container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-a",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 46,
+      "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.pid",
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7645,
+      "cluster_bus_port": 17645,
+      "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0002-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.conf",
+      "container_id": "beaf4d43fb71edf643dd55c92556b7c4d2d992585d40f0d4a40c9e8d21d394ce",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-b",
+      "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "p23-host-c",
+      "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.log",
+      "logical_id": "shard-0002-replica-00",
+      "nodehost_container_ip": "172.18.0.2",
+      "nodehost_container_name": "vslab-p23-fault-network-delay-loss-flap-p23-fault-matrix-6-20260628-nodehost-az-b",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 46,
+      "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.pid",
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+  "runtime": {
+    "cluster_create_strategy": "valkey_cli_cluster_create_primaries",
+    "cluster_meet_fanout": 4,
+    "cluster_snapshot_path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/cluster_snapshots_p23_fault_matrix_6.json",
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "container_strategy": "one_owned_docker_nodehost_per_virtual_az",
+    "logical_node_count": 6,
+    "network_name": "vslab-p23-fault-network-delay-loss-flap-p23_fault_matrix_6",
+    "nodehost_count": 2,
+    "operations": [
+      {
+        "details": {
+          "cluster_states": [
+            "fail"
+          ],
+          "fail_count": 0,
+          "fanout": 4,
+          "handshake_count": 0,
+          "known_nodes": 3,
+          "known_nodes_max": 3,
+          "label": "after_meet_primaries",
+          "meet_commands": 2,
+          "node_count": 6,
+          "parallelism": 8,
+          "pfail_count": 0,
+          "primary_count": 3,
+          "replica_count": 0,
+          "sample_count": 2,
+          "sample_scope": "representative_primaries",
+          "samples": [
+            {
+              "cluster_state": "fail",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 3,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 0,
+              "slots_fail": 0,
+              "slots_ok": 0
+            },
+            {
+              "cluster_state": "fail",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 3,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 0,
+              "slots_fail": 0,
+              "slots_ok": 0
+            }
+          ],
+          "slots_assigned": 0,
+          "slots_fail": 0,
+          "slots_ok": 0,
+          "strategy": "tree_fanout_cluster_meet_after_all_processes_start"
+        },
+        "duration_seconds": 1.023622,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "tree_fanout_meet_primaries",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      },
+      {
+        "details": {
+          "cluster_states": [
+            "ok"
+          ],
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 3,
+          "known_nodes_max": 3,
+          "label": "after_add_slots",
+          "node_count": 6,
+          "parallelism": 8,
+          "pfail_count": 0,
+          "primary_count": 3,
+          "replica_count": 0,
+          "sample_count": 2,
+          "sample_scope": "representative_primaries",
+          "samples": [
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 3,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 3,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            }
+          ],
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        "duration_seconds": 2.078172,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "parallel_add_slots",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      },
+      {
+        "details": {
+          "cluster_states": [
+            "ok"
+          ],
+          "fail_count": 0,
+          "fanout": 4,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "known_nodes_max": 6,
+          "label": "after_meet_replicas",
+          "meet_commands": 3,
+          "node_count": 6,
+          "parallelism": 8,
+          "pfail_count": 0,
+          "primary_count": 6,
+          "replica_count": 0,
+          "sample_count": 2,
+          "sample_scope": "representative_by_az",
+          "samples": [
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 6,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 6,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            }
+          ],
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384,
+          "strategy": "tree_fanout_cluster_meet_before_parallel_replication"
+        },
+        "duration_seconds": 1.026109,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "tree_fanout_meet_replicas",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      },
+      {
+        "details": {
+          "cluster_states": [
+            "ok"
+          ],
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "known_nodes_max": 6,
+          "label": "after_add_replicas",
+          "node_count": 6,
+          "parallelism": 8,
+          "pfail_count": 0,
+          "primary_count": 3,
+          "replica_count": 3,
+          "sample_count": 2,
+          "sample_scope": "representative_by_az",
+          "samples": [
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 3,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 3,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            }
+          ],
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        "duration_seconds": 0.033667,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "parallel_add_replicas",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      },
+      {
+        "details": {
+          "cluster_states": [
+            "ok"
+          ],
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "known_nodes_max": 6,
+          "label": "final",
+          "node_count": 6,
+          "pfail_count": 0,
+          "primary_count": 3,
+          "replica_count": 3,
+          "sample_count": 6,
+          "sample_scope": "all_nodes",
+          "samples": [
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0002-replica-00",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 3,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0001-replica-00",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 3,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 3,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0000-replica-00",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 3,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 3,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 6,
+              "logical_id": "shard-0002-primary",
+              "pfail_count": 0,
+              "primary_count": 3,
+              "probe_status": "PASS",
+              "replica_count": 3,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            }
+          ],
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        "duration_seconds": 2.039202,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "final_cluster_check",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      }
+    ],
+    "process_bootstrap_batching": {
+      "config_local_generate_seconds": 0.002979,
+      "config_remote_install_seconds": 0.087913,
+      "docker_cp_count_before_after": {
+        "after": 2,
+        "basis": "deterministic setup command plan for config transfer",
+        "before": 6,
+        "reduction": 4,
+        "stages": {
+          "config_remote_install": {
+            "after": 2,
+            "after_basis": "one config bundle docker cp per nodehost",
+            "before": 6,
+            "before_basis": "legacy per-node config docker cp",
+            "stage": "config_remote_install"
+          }
+        }
+      },
+      "docker_exec_count_before_after": {
+        "after": 6,
+        "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+        "before": 18,
+        "reduction": 12,
+        "stages": {
+          "config_remote_install": {
+            "after": 2,
+            "after_basis": "one install.sh exec per nodehost",
+            "before": 6,
+            "before_basis": "legacy per-node mkdir",
+            "stage": "config_remote_install"
+          },
+          "process_start_and_pidfile_collect": {
+            "after": 4,
+            "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+            "before": 12,
+            "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+            "stage": "process_start_and_pidfile_collect"
+          }
+        }
+      },
+      "node_count": 6,
+      "nodehost_bulk_install_used": true,
+      "nodehost_bulk_start_used": true,
+      "nodehost_count": 2,
+      "per_logical_node_evidence": [
+        {
+          "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0000-primary.conf",
+          "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary",
+          "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.log",
+          "logical_id": "shard-0000-primary",
+          "pid": 28,
+          "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.pid"
+        },
+        {
+          "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0001-primary.conf",
+          "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary",
+          "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.log",
+          "logical_id": "shard-0001-primary",
+          "pid": 28,
+          "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.pid"
+        },
+        {
+          "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0002-primary.conf",
+          "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary",
+          "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.log",
+          "logical_id": "shard-0002-primary",
+          "pid": 37,
+          "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.pid"
+        },
+        {
+          "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0000-replica-00.conf",
+          "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.log",
+          "logical_id": "shard-0000-replica-00",
+          "pid": 37,
+          "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.pid"
+        },
+        {
+          "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0001-replica-00.conf",
+          "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.log",
+          "logical_id": "shard-0001-replica-00",
+          "pid": 46,
+          "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.pid"
+        },
+        {
+          "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0002-replica-00.conf",
+          "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.log",
+          "logical_id": "shard-0002-replica-00",
+          "pid": 46,
+          "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.pid"
+        }
+      ],
+      "pidfile_collect_seconds": 0.068764,
+      "process_start_command_seconds": 0.0909
+    },
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+    "sandbox_network": true,
+    "timing_breakdown_path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/runtime_timing_breakdown_p23_fault_matrix_6.json",
+    "timings": [
+      {
+        "count": 1,
+        "details": {
+          "nodehost_count": 2,
+          "parallelism": 8
+        },
+        "duration_seconds": 0.272009,
+        "name": "nodehost_start",
+        "status": "PASS"
+      },
+      {
+        "count": 1,
+        "details": {
+          "bundle_records": [
+            {
+              "bundle_artifact_dir": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/nodehost_bundles/vslab-bundle-P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628-nodehost-az-a",
+              "node_count": 3,
+              "nodehost_id": "nodehost-az-a",
+              "remote_bundle_dir": "/tmp/vslab-bundle-P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628-nodehost-az-a"
+            },
+            {
+              "bundle_artifact_dir": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/nodehost_bundles/vslab-bundle-P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628-nodehost-az-b",
+              "node_count": 3,
+              "nodehost_id": "nodehost-az-b",
+              "remote_bundle_dir": "/tmp/vslab-bundle-P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628-nodehost-az-b"
+            }
+          ],
+          "config_local_generate_seconds": 0.002979,
+          "config_remote_install_seconds": 0.087913,
+          "docker_cp_bundle_seconds": 0.024115,
+          "docker_cp_count_before_after": {
+            "after": 2,
+            "after_basis": "one config bundle docker cp per nodehost",
+            "before": 6,
+            "before_basis": "legacy per-node config docker cp",
+            "stage": "config_remote_install"
+          },
+          "docker_exec_count_before_after": {
+            "after": 2,
+            "after_basis": "one install.sh exec per nodehost",
+            "before": 6,
+            "before_basis": "legacy per-node mkdir",
+            "stage": "config_remote_install"
+          },
+          "node_config_local_generate_seconds": 0.00113,
+          "node_count": 6,
+          "nodehost_bulk_install_used": true,
+          "nodehost_bundle_install_seconds": 0.063798,
+          "nodehost_bundle_write_seconds": 0.001849,
+          "nodehost_count": 2,
+          "parallelism": 8,
+          "process_bootstrap_batching": {
+            "config_local_generate_seconds": 0.002979,
+            "config_remote_install_seconds": 0.087913,
+            "docker_cp_count_before_after": {
+              "after": 2,
+              "basis": "deterministic setup command plan for config transfer",
+              "before": 6,
+              "reduction": 4,
+              "stages": {
+                "config_remote_install": {
+                  "after": 2,
+                  "after_basis": "one config bundle docker cp per nodehost",
+                  "before": 6,
+                  "before_basis": "legacy per-node config docker cp",
+                  "stage": "config_remote_install"
+                }
+              }
+            },
+            "docker_exec_count_before_after": {
+              "after": 6,
+              "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+              "before": 18,
+              "reduction": 12,
+              "stages": {
+                "config_remote_install": {
+                  "after": 2,
+                  "after_basis": "one install.sh exec per nodehost",
+                  "before": 6,
+                  "before_basis": "legacy per-node mkdir",
+                  "stage": "config_remote_install"
+                },
+                "process_start_and_pidfile_collect": {
+                  "after": 4,
+                  "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                  "before": 12,
+                  "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                  "stage": "process_start_and_pidfile_collect"
+                }
+              }
+            },
+            "node_count": 6,
+            "nodehost_bulk_install_used": true,
+            "nodehost_bulk_start_used": true,
+            "nodehost_count": 2,
+            "per_logical_node_evidence": [
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0000-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.log",
+                "logical_id": "shard-0000-primary",
+                "pid": 28,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0001-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.log",
+                "logical_id": "shard-0001-primary",
+                "pid": 28,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0002-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.log",
+                "logical_id": "shard-0002-primary",
+                "pid": 37,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0000-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.log",
+                "logical_id": "shard-0000-replica-00",
+                "pid": 37,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0001-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.log",
+                "logical_id": "shard-0001-replica-00",
+                "pid": 46,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0002-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.log",
+                "logical_id": "shard-0002-replica-00",
+                "pid": 46,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.pid"
+              }
+            ],
+            "pidfile_collect_seconds": 0.068764,
+            "process_start_command_seconds": 0.0909
+          }
+        },
+        "duration_seconds": 0.090935,
+        "name": "process_config_prepare",
+        "status": "PASS"
+      },
+      {
+        "count": 1,
+        "details": {
+          "node_count": 6
+        },
+        "duration_seconds": 0.011932,
+        "name": "process_ready_wait",
+        "status": "PASS"
+      },
+      {
+        "count": 1,
+        "details": {
+          "docker_exec_count_before_after": {
+            "after": 4,
+            "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+            "before": 12,
+            "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+            "stage": "process_start_and_pidfile_collect"
+          },
+          "node_count": 6,
+          "nodehost_bulk_start_used": true,
+          "nodehost_count": 2,
+          "parallelism": 8,
+          "pidfile_collect_seconds": 0.068764,
+          "process_bootstrap_batching": {
+            "config_local_generate_seconds": 0.002979,
+            "config_remote_install_seconds": 0.087913,
+            "docker_cp_count_before_after": {
+              "after": 2,
+              "basis": "deterministic setup command plan for config transfer",
+              "before": 6,
+              "reduction": 4,
+              "stages": {
+                "config_remote_install": {
+                  "after": 2,
+                  "after_basis": "one config bundle docker cp per nodehost",
+                  "before": 6,
+                  "before_basis": "legacy per-node config docker cp",
+                  "stage": "config_remote_install"
+                }
+              }
+            },
+            "docker_exec_count_before_after": {
+              "after": 6,
+              "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+              "before": 18,
+              "reduction": 12,
+              "stages": {
+                "config_remote_install": {
+                  "after": 2,
+                  "after_basis": "one install.sh exec per nodehost",
+                  "before": 6,
+                  "before_basis": "legacy per-node mkdir",
+                  "stage": "config_remote_install"
+                },
+                "process_start_and_pidfile_collect": {
+                  "after": 4,
+                  "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                  "before": 12,
+                  "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                  "stage": "process_start_and_pidfile_collect"
+                }
+              }
+            },
+            "node_count": 6,
+            "nodehost_bulk_install_used": true,
+            "nodehost_bulk_start_used": true,
+            "nodehost_count": 2,
+            "per_logical_node_evidence": [
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0000-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.log",
+                "logical_id": "shard-0000-primary",
+                "pid": 28,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0001-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.log",
+                "logical_id": "shard-0001-primary",
+                "pid": 28,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0002-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.log",
+                "logical_id": "shard-0002-primary",
+                "pid": 37,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0000-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.log",
+                "logical_id": "shard-0000-replica-00",
+                "pid": 37,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0000-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0001-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.log",
+                "logical_id": "shard-0001-replica-00",
+                "pid": 46,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0001-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/_p23_runs/p23_fault_matrix_6/node_configs/shard-0002-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.log",
+                "logical_id": "shard-0002-replica-00",
+                "pid": 46,
+                "pid_file": "/tmp/valkey-scale-lab/P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628/shard-0002-replica-00/valkey.pid"
+              }
+            ],
+            "pidfile_collect_seconds": 0.068764,
+            "process_start_command_seconds": 0.0909
+          },
+          "process_start_command_seconds": 0.0909
+        },
+        "duration_seconds": 0.159702,
+        "name": "process_start",
+        "status": "PASS"
+      }
+    ],
+    "type": "docker_process"
+  },
+  "scenario": "p23_fault_matrix_6",
+  "schema_version": "v1"
+}

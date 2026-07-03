@@ -1476,3 +1476,239 @@ def test_p22_quant_assertion_rejects_missing_metric_sample(tmp_path: Path) -> No
     assertion.assert_p22_semantics(tmp_path, errors)
 
     assert any("metrics_timeseries.jsonl missing sample IDs" in error for error in errors)
+
+
+P23_PHASE = "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+P23_FAULTS = ["network_delay", "network_loss", "network_flap"]
+
+
+def p23_fault_row(fault_type: str, node_count: int) -> dict:
+    sample_id = f"p23-{node_count}-{fault_type}"
+    params = {
+        "network_delay": {"delay_ms": 75, "jitter_ms": 10, "affected_direction": "bidirectional_proxy_relay", "target_set": ["shard-0000-primary"], "duration_seconds": 1},
+        "network_loss": {"loss_percent": 50.0, "correlation": 0.0, "affected_direction": "client_to_target_connection", "target_set": ["shard-0000-primary"], "duration_seconds": 1},
+        "network_flap": {"up_ms": 80, "down_ms": 80, "iterations": 6, "target_set": ["shard-0000-primary"], "duration_seconds": 1},
+    }[fault_type]
+    stats = {"accepted_connections": 4, "proxied_connections": 2, "delay_injections": 2, "dropped_connections": 2, "flap_rejections": 2}
+    return {
+        "schema_version": "v1",
+        "phase_id": P23_PHASE,
+        "run_id": "run",
+        "scenario_name": f"p23_fault_matrix_{node_count}",
+        "sample_id": sample_id,
+        "node_count": node_count,
+        "status": "PASS",
+        "real_valkey": True,
+        "fault_type": fault_type,
+        "fault_id": f"{sample_id}-fault",
+        "scope": "sandbox_proxy",
+        "implementation_path": "sandbox_proxy",
+        "targets": [{"logical_id": "shard-0000-primary", "role": "primary", "host_id": "p23-host-a", "az_id": "az-a"}],
+        "target_selector": {"selector_type": "primary_slot_owner", "selected_logical_id": "shard-0000-primary", "slot_range": [0, 5460], "slot": 42},
+        "fault_parameters": params,
+        "apply_started_at_ms": 100,
+        "apply_completed_at_ms": 110,
+        "clear_started_at_ms": 120,
+        "clear_completed_at_ms": 130,
+        "recovery_completed_at_ms": 150,
+        "safety_scope_verified": True,
+        "cleanup_verified": True,
+        "host_network_mutated": False,
+        "physical_host_mutated": False,
+        "physical_az_mutated": False,
+        "observed_impact": {
+            "effect_observed": True,
+            "proxy_stats": stats,
+            "event_metrics": {"error_ops": 1, "latency_p99_ms": 100.0},
+            "baseline_metrics": {"error_ops": 0, "latency_p99_ms": 1.0},
+        },
+        "workload_impact_ref": f"workload_impact_report.json#{sample_id}",
+        "command_log_ref": f"network_fault_command_log.jsonl#{sample_id}-fault",
+    }
+
+
+def p23_command_rows(rows: list[dict]) -> list[dict]:
+    out = []
+    for row in rows:
+        for kind in ["sandbox_proxy_apply", "sandbox_proxy_clear"]:
+            out.append(
+                {
+                    "schema_version": "v1",
+                    "phase_id": P23_PHASE,
+                    "run_id": "run",
+                    "sample_id": row["sample_id"],
+                    "fault_id": row["fault_id"],
+                    "command_id": f"{row['fault_id']}-{kind}",
+                    "command_kind": kind,
+                    "started_at_unix_ms": 100,
+                    "ended_at_unix_ms": 101,
+                    "status": "PASS",
+                    "implementation_path": "sandbox_proxy",
+                    "host_network_mutated": False,
+                    "details": {},
+                }
+            )
+    return out
+
+
+def p23_window(sample_id: str, fault_type: str, node_count: int, window_name: str) -> dict:
+    error_ops = 1 if window_name == "event" and fault_type in {"network_loss", "network_flap"} else 0
+    latency = 100.0 if window_name == "event" and fault_type == "network_delay" else 1.0
+    return {
+        "window_name": window_name,
+        "sample_id": sample_id,
+        "fault_id": f"{sample_id}-fault",
+        "fault_type": fault_type,
+        "node_count": node_count,
+        "start_event_id": f"{sample_id}-{window_name}-start",
+        "end_event_id": f"{sample_id}-{window_name}-end",
+        "metrics": {
+            "requested_qps": 1.0,
+            "achieved_qps": 1.0,
+            "ok_ops": 1,
+            "error_ops": error_ops,
+            "error_rate": float(error_ops),
+            "latency_p50_ms": latency,
+            "latency_p95_ms": latency,
+            "latency_p99_ms": latency,
+            "timeout_count": 0,
+            "moved_redirection_count": 0,
+            "ask_redirection_count": 0,
+            "sample_count": 1,
+            "missing_reasons": {},
+        },
+    }
+
+
+def write_p23_bundle(base: Path) -> list[dict]:
+    rows = [p23_fault_row(fault, count) for fault in P23_FAULTS for count in [6, 10]]
+    write_jsonl(base / "fault_results.jsonl", rows)
+    write_jsonl(base / "network_fault_command_log.jsonl", p23_command_rows(rows))
+    write_json(base / "network_fault_report.json", {"schema_version": "v1", "artifact_type": "network_fault_report", "phase_id": P23_PHASE, "run_id": "run", "status": "PASS", "network_faults": rows, "safe_paths_exercised": ["sandbox_proxy"]})
+    workload_rows = [
+        p23_window(row["sample_id"], row["fault_type"], row["node_count"], window)
+        for row in rows
+        for window in P22_WINDOWS
+    ]
+    write_json(
+        base / "workload_impact_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "workload_impact_report",
+            "phase_id": P23_PHASE,
+            "run_id": "run",
+            "windows": workload_rows,
+            "comparisons": [
+                {
+                    "sample_id": row["sample_id"],
+                    "fault_type": row["fault_type"],
+                    "node_count": row["node_count"],
+                    "fault_window_qps_ratio": 1.0,
+                    "fault_window_p99_delta_ms": 99.0 if row["fault_type"] == "network_delay" else 0.0,
+                    "fault_window_error_rate_delta": 1.0 if row["fault_type"] in {"network_loss", "network_flap"} else 0.0,
+                    "recovery_window_duration_ms": 1,
+                    "post_recovery_qps_ratio": 1.0,
+                }
+                for row in rows
+            ],
+        },
+    )
+    events = [
+        {
+            "schema_version": "v1",
+            "run_id": "run",
+            "phase_id": P23_PHASE,
+            "scenario_name": "p23_fault_matrix",
+            "sample_id": row["sample_id"],
+            "event_id": f"{row['sample_id']}-fault",
+            "event_type": "fault_apply_started",
+            "timestamp_unix_ms": 100,
+            "monotonic_ms": 100,
+            "severity": "INFO",
+            "subject_type": "fault",
+            "subject_id": row["fault_type"],
+            "operation_id": "",
+            "fault_id": row["fault_id"],
+            "message": "fault",
+            "metadata": {},
+        }
+        for row in rows
+    ]
+    metrics = [
+        {
+            "schema_version": "v1",
+            "run_id": "run",
+            "phase_id": P23_PHASE,
+            "scenario_name": "p23_fault_matrix",
+            "sample_id": row["sample_id"],
+            "timestamp_unix_ms": 100,
+            "monotonic_ms": 100,
+            "source_type": "harness",
+            "source_id": row["fault_id"],
+            "metric_name": "proxy_accepted_connections",
+            "metric_value": 4,
+            "metric_unit": "count",
+            "labels": {},
+            "missing_reason": "",
+        }
+        for row in rows
+    ]
+    write_jsonl(base / "events.jsonl", events)
+    write_jsonl(base / "metrics_timeseries.jsonl", metrics)
+    write_json(base / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": True, "nodes_observed": 10, "valkey_versions": ["9.1.0"]})
+    write_json(base / "quant_summary.json", {"counts": {"event_count": len(events), "metric_count": len(metrics), "fault_result_count": len(rows), "command_log_count": len(rows) * 2, "sample_count": len(rows)}, "runtime_claims": {"real_valkey_claimed": True, "fault_runtime_claimed": True, "management_runtime_claimed": False}})
+    return rows
+
+
+def test_p23_fault_matrix_assertion_accepts_valid_bundle(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_fault_matrix_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / P23_PHASE
+    phase_dir.mkdir(parents=True)
+    write_p23_bundle(phase_dir)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_fault_matrix_coverage.py", "--phase", P23_PHASE])
+
+    assert assertion.main() == 0
+
+
+def test_p23_fault_matrix_assertion_rejects_partition_row(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_fault_matrix_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / P23_PHASE
+    phase_dir.mkdir(parents=True)
+    rows = write_p23_bundle(phase_dir)
+    rows.append({**p23_fault_row("network_loss", 6), "fault_type": "network_partition", "fault_id": "bad-partition"})
+    write_jsonl(phase_dir / "fault_results.jsonl", rows)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_fault_matrix_coverage.py", "--phase", P23_PHASE])
+
+    assert assertion.main() == 1
+
+
+def test_p23_workload_assertion_rejects_missing_comparison(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_workload_impact")
+    phase_dir = tmp_path / "artifacts" / "phases" / P23_PHASE
+    phase_dir.mkdir(parents=True)
+    write_p23_bundle(phase_dir)
+    report = json.loads((phase_dir / "workload_impact_report.json").read_text(encoding="utf-8"))
+    report["comparisons"] = report["comparisons"][1:]
+    write_json(phase_dir / "workload_impact_report.json", report)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_workload_impact.py", "--phase", P23_PHASE])
+
+    assert assertion.main() == 1
+
+
+def test_p23_quant_assertion_rejects_missing_command_log_fault(tmp_path: Path) -> None:
+    assertion = load_script("assert_quant_artifacts")
+    write_p23_bundle(tmp_path)
+    commands = [json.loads(line) for line in (tmp_path / "network_fault_command_log.jsonl").read_text(encoding="utf-8").splitlines()]
+    commands = [row for row in commands if row["fault_id"] != "p23-6-network_delay-fault"]
+    write_jsonl(tmp_path / "network_fault_command_log.jsonl", commands)
+
+    errors: list[str] = []
+    assertion.assert_p23_semantics(tmp_path, errors)
+
+    assert any("command log missing fault IDs" in error for error in errors)

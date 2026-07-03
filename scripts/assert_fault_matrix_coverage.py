@@ -19,6 +19,8 @@ REQUIRED_FAULTS = {
 }
 SAFE_PATHS = {"container_netns_tc", "sandbox_proxy", "owned_container_control", "owned_runtime_control", "unsupported_skipped_with_reason"}
 P22_MANDATORY_COUNTS = {6, 10}
+P23_MANDATORY_COUNTS = {6, 10}
+P23_FORBIDDEN_FAULTS = {"network_partition", "minority_partition", "majority_partition", "split_brain_window"}
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -100,6 +102,86 @@ def validate_p22(rows: list[dict[str, Any]], base: Path, errors: list[str]) -> N
                 errors.append(f"{label}: az_stop must record split_brain_window_ms or missing reason")
 
 
+def validate_p23(rows: list[dict[str, Any]], base: Path, errors: list[str]) -> None:
+    required_faults = REQUIRED_FAULTS["P23_FAULT_NETWORK_DELAY_LOSS_FLAP"]
+    real_rows = [row for row in rows if row.get("status") != "SKIPPED_WITH_REASON"]
+    observed_pairs = {(row.get("fault_type"), row.get("node_count")) for row in real_rows}
+    for fault_type in required_faults:
+        for node_count in P23_MANDATORY_COUNTS:
+            if (fault_type, node_count) not in observed_pairs:
+                errors.append(f"P23 missing real {fault_type} row for {node_count} nodes")
+    unexpected = sorted({row.get("fault_type") for row in rows if row.get("fault_type") in P23_FORBIDDEN_FAULTS})
+    if unexpected:
+        errors.append(f"P23 must not emit P24 partition/split-brain rows: {unexpected}")
+    command_path = base / "network_fault_command_log.jsonl"
+    network_report_path = base / "network_fault_report.json"
+    errors.extend(validate_artifact(command_path, ROOT / "schemas/artifact/command_log_entry.schema.json"))
+    errors.extend(validate_artifact(network_report_path, ROOT / "schemas/artifact/network_fault_report.schema.json"))
+    command_rows = load_jsonl(command_path) if command_path.exists() else []
+    commands_by_fault: dict[str, set[str]] = {}
+    forbidden_terms = ["su" + "do", "pf" + "ctl", "ip" + "tables", "nf" + "t", "ip" + " route", "route " + "add", "route " + "delete", "if" + "config", "network" + "setup"]
+    for idx, command in enumerate(command_rows, start=1):
+        text = json.dumps(command, sort_keys=True).lower()
+        for term in forbidden_terms:
+            if term in text:
+                errors.append(f"network_fault_command_log.jsonl:{idx}: forbidden host mutation token {term!r}")
+        if command.get("host_network_mutated") is not False:
+            errors.append(f"network_fault_command_log.jsonl:{idx}: host_network_mutated must be false")
+        fid = str(command.get("fault_id") or "")
+        if fid:
+            commands_by_fault.setdefault(fid, set()).add(str(command.get("command_kind")))
+    network_report = load_json(network_report_path) if network_report_path.exists() else {}
+    if network_report.get("status") != "PASS":
+        errors.append("P23 network_fault_report status must be PASS")
+    if "sandbox_proxy" not in set(network_report.get("safe_paths_exercised", [])):
+        errors.append("P23 network_fault_report must record sandbox_proxy as exercised")
+
+    for row in rows:
+        label = row.get("fault_id", row.get("fault_type"))
+        fault_type = row.get("fault_type")
+        if row.get("phase_id") != "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
+            errors.append(f"{label}: wrong phase_id {row.get('phase_id')!r}")
+        if row.get("node_count") == 200:
+            errors.append(f"{label}: P23 must not emit 200-node rows")
+        if row.get("status") == "SKIPPED_WITH_REASON":
+            errors.append(f"{label}: P23 mandatory network rows may not be skipped")
+            continue
+        if row.get("status") != "PASS":
+            errors.append(f"{label}: P23 real rows must PASS")
+        if row.get("real_valkey") is not True:
+            errors.append(f"{label}: P23 real rows must record real_valkey=true")
+        if row.get("implementation_path") not in {"sandbox_proxy", "container_netns_tc"}:
+            errors.append(f"{label}: P23 real rows must use sandbox_proxy or container_netns_tc")
+        if row.get("host_network_mutated") is not False:
+            errors.append(f"{label}: host_network_mutated must be false")
+        if row.get("physical_host_mutated") is not False:
+            errors.append(f"{label}: physical_host_mutated must be false")
+        params = row.get("fault_parameters") if isinstance(row.get("fault_parameters"), dict) else {}
+        if not params.get("target_set"):
+            errors.append(f"{label}: fault_parameters.target_set required")
+        if fault_type == "network_delay":
+            for field in ["delay_ms", "jitter_ms", "affected_direction", "duration_seconds"]:
+                if field not in params:
+                    errors.append(f"{label}: network_delay missing parameter {field}")
+        if fault_type == "network_loss":
+            for field in ["loss_percent", "correlation", "affected_direction", "duration_seconds"]:
+                if field not in params:
+                    errors.append(f"{label}: network_loss missing parameter {field}")
+        if fault_type == "network_flap":
+            for field in ["up_ms", "down_ms", "iterations", "duration_seconds"]:
+                if field not in params:
+                    errors.append(f"{label}: network_flap missing parameter {field}")
+        observed = row.get("observed_impact") if isinstance(row.get("observed_impact"), dict) else {}
+        if observed.get("effect_observed") is not True:
+            errors.append(f"{label}: observed_impact.effect_observed must be true")
+        stats = observed.get("proxy_stats") if isinstance(observed.get("proxy_stats"), dict) else {}
+        if row.get("implementation_path") == "sandbox_proxy" and int(stats.get("accepted_connections", 0) or 0) <= 0:
+            errors.append(f"{label}: sandbox_proxy rows require accepted connection counters")
+        command_kinds = commands_by_fault.get(str(row.get("fault_id")), set())
+        if "sandbox_proxy_apply" not in command_kinds or "sandbox_proxy_clear" not in command_kinds:
+            errors.append(f"{label}: command log must include sandbox_proxy_apply and sandbox_proxy_clear")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -139,6 +221,8 @@ def main() -> int:
             errors.append(f"{label}: targets required")
     if args.phase == "P22_FAULT_REPLICA_HOST_AZ_STOP":
         validate_p22(rows, base, errors)
+    if args.phase == "P23_FAULT_NETWORK_DELAY_LOSS_FLAP":
+        validate_p23(rows, base, errors)
 
     if errors:
         for error in errors:

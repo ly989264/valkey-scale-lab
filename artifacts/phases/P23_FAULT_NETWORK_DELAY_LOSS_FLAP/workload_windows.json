@@ -1,0 +1,2888 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "workload_windows",
+  "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+  "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-network-faults-20260628",
+  "created_at": "2026-07-03T01:26:11.131674Z",
+  "producer": {
+    "name": "scripts/fault_safety_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "windows": [
+    {
+      "window_name": "baseline",
+      "sample_id": "p23-6-network_delay",
+      "fault_id": "p23-6-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 6,
+      "source_window_name": "baseline",
+      "start_event_id": "p23-6-network_delay-baseline-start",
+      "end_event_id": "p23-6-network_delay-baseline-end",
+      "start_time_unix_ms": 1783041933950,
+      "end_time_unix_ms": 1783041933958,
+      "start_monotonic_ms": 8337.681,
+      "end_monotonic_ms": 8345.535,
+      "metrics": {
+        "requested_qps": 750.0,
+        "achieved_qps": 750.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.045,
+        "latency_p90_ms": 1.506,
+        "latency_p95_ms": 1.824,
+        "latency_p99_ms": 1.824,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.824,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.028,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.382,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.506,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.01,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.045,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p23-6-network_delay",
+      "fault_id": "p23-6-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 6,
+      "source_window_name": "pre_event",
+      "start_event_id": "p23-6-network_delay-pre_event-start",
+      "end_event_id": "p23-6-network_delay-pre_event-end",
+      "start_time_unix_ms": 1783041933958,
+      "end_time_unix_ms": 1783041933966,
+      "start_monotonic_ms": 8345.544,
+      "end_monotonic_ms": 8353.391,
+      "metrics": {
+        "requested_qps": 750.0,
+        "achieved_qps": 750.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.035,
+        "latency_p90_ms": 1.764,
+        "latency_p95_ms": 1.933,
+        "latency_p99_ms": 1.933,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.035,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.933,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.205,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.924,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.958,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.764,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p23-6-network_delay",
+      "fault_id": "p23-6-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 6,
+      "source_window_name": "event",
+      "start_event_id": "p23-6-network_delay-event-start",
+      "end_event_id": "p23-6-network_delay-event-end",
+      "start_time_unix_ms": 1783041933966,
+      "end_time_unix_ms": 1783041935289,
+      "start_monotonic_ms": 8353.585,
+      "end_monotonic_ms": 9677.001,
+      "metrics": {
+        "requested_qps": 6.047,
+        "achieved_qps": 6.047,
+        "ok_ops": 8,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 167.705,
+        "latency_p90_ms": 169.767,
+        "latency_p95_ms": 172.967,
+        "latency_p99_ms": 172.967,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 8,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 165.375,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 169.767,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 164.663,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 167.705,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 161.017,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 168.51,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 153.069,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 172.967,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary-sandbox-proxy",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p23-6-network_delay",
+      "fault_id": "p23-6-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 6,
+      "source_window_name": "recovery",
+      "start_event_id": "p23-6-network_delay-recovery-start",
+      "end_event_id": "p23-6-network_delay-recovery-end",
+      "start_time_unix_ms": 1783041935339,
+      "end_time_unix_ms": 1783041935356,
+      "start_monotonic_ms": 9727.312,
+      "end_monotonic_ms": 9743.682,
+      "metrics": {
+        "requested_qps": 352.941,
+        "achieved_qps": 352.941,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.254,
+        "latency_p90_ms": 2.28,
+        "latency_p95_ms": 9.386,
+        "latency_p99_ms": 9.386,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 9.386,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.28,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.254,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.249,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.287,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.813,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p23-6-network_delay",
+      "fault_id": "p23-6-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 6,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p23-6-network_delay-post_recovery-start",
+      "end_event_id": "p23-6-network_delay-post_recovery-end",
+      "start_time_unix_ms": 1783041935356,
+      "end_time_unix_ms": 1783041935366,
+      "start_monotonic_ms": 9743.699,
+      "end_monotonic_ms": 9753.523,
+      "metrics": {
+        "requested_qps": 600.0,
+        "achieved_qps": 600.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.848,
+        "latency_p90_ms": 1.957,
+        "latency_p95_ms": 2.058,
+        "latency_p99_ms": 2.058,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.848,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.957,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.058,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.891,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.88,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.145,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p23-6-network_delay",
+      "fault_id": "p23-6-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 6,
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p23-6-network_delay-all_run-start",
+      "end_event_id": "p23-6-network_delay-all_run-end",
+      "start_time_unix_ms": 1783041933950,
+      "end_time_unix_ms": 1783041935366,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 22.599,
+        "achieved_qps": 22.599,
+        "ok_ops": 32,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 32,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p23-6-network_loss",
+      "fault_id": "p23-6-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 6,
+      "source_window_name": "baseline",
+      "start_event_id": "p23-6-network_loss-baseline-start",
+      "end_event_id": "p23-6-network_loss-baseline-end",
+      "start_time_unix_ms": 1783041935367,
+      "end_time_unix_ms": 1783041935374,
+      "start_monotonic_ms": 9754.612,
+      "end_monotonic_ms": 9761.477,
+      "metrics": {
+        "requested_qps": 857.143,
+        "achieved_qps": 857.143,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.883,
+        "latency_p90_ms": 0.972,
+        "latency_p95_ms": 2.237,
+        "latency_p99_ms": 2.237,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.879,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.972,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.883,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.237,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.88,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.97,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p23-6-network_loss",
+      "fault_id": "p23-6-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 6,
+      "source_window_name": "pre_event",
+      "start_event_id": "p23-6-network_loss-pre_event-start",
+      "end_event_id": "p23-6-network_loss-pre_event-end",
+      "start_time_unix_ms": 1783041935374,
+      "end_time_unix_ms": 1783041935381,
+      "start_monotonic_ms": 9761.485,
+      "end_monotonic_ms": 9768.501,
+      "metrics": {
+        "requested_qps": 857.143,
+        "achieved_qps": 857.143,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.039,
+        "latency_p90_ms": 1.366,
+        "latency_p95_ms": 1.46,
+        "latency_p99_ms": 1.46,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.366,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.46,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.889,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.953,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.039,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.269,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p23-6-network_loss",
+      "fault_id": "p23-6-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 6,
+      "source_window_name": "event",
+      "start_event_id": "p23-6-network_loss-event-start",
+      "end_event_id": "p23-6-network_loss-event-end",
+      "start_time_unix_ms": 1783041935381,
+      "end_time_unix_ms": 1783041935386,
+      "start_monotonic_ms": 9768.726,
+      "end_monotonic_ms": 9773.914,
+      "metrics": {
+        "requested_qps": 1600.0,
+        "achieved_qps": 800.0,
+        "ok_ops": 4,
+        "error_ops": 4,
+        "error_rate": 0.5,
+        "latency_p50_ms": 1.071,
+        "latency_p90_ms": 1.105,
+        "latency_p95_ms": 1.105,
+        "latency_p99_ms": 1.105,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 4,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 8,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.036,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.26,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.071,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.207,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.007,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.207,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.105,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.191,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary-sandbox-proxy",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p23-6-network_loss",
+      "fault_id": "p23-6-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 6,
+      "source_window_name": "recovery",
+      "start_event_id": "p23-6-network_loss-recovery-start",
+      "end_event_id": "p23-6-network_loss-recovery-end",
+      "start_time_unix_ms": 1783041935603,
+      "end_time_unix_ms": 1783041935614,
+      "start_monotonic_ms": 9990.872,
+      "end_monotonic_ms": 10001.525,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.536,
+        "latency_p90_ms": 2.155,
+        "latency_p95_ms": 2.435,
+        "latency_p99_ms": 2.435,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.326,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.705,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.536,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.155,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.435,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.421,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p23-6-network_loss",
+      "fault_id": "p23-6-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 6,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p23-6-network_loss-post_recovery-start",
+      "end_event_id": "p23-6-network_loss-post_recovery-end",
+      "start_time_unix_ms": 1783041935614,
+      "end_time_unix_ms": 1783041935625,
+      "start_monotonic_ms": 10001.542,
+      "end_monotonic_ms": 10012.658,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.999,
+        "latency_p90_ms": 2.094,
+        "latency_p95_ms": 2.483,
+        "latency_p99_ms": 2.483,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.483,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.36,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.116,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.999,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.017,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.094,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p23-6-network_loss",
+      "fault_id": "p23-6-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 6,
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p23-6-network_loss-all_run-start",
+      "end_event_id": "p23-6-network_loss-all_run-end",
+      "start_time_unix_ms": 1783041935367,
+      "end_time_unix_ms": 1783041935625,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 124.031,
+        "achieved_qps": 108.527,
+        "ok_ops": 28,
+        "error_ops": 4,
+        "error_rate": 0.125,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 4,
+        "sample_count": 32,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p23-6-network_flap",
+      "fault_id": "p23-6-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 6,
+      "source_window_name": "baseline",
+      "start_event_id": "p23-6-network_flap-baseline-start",
+      "end_event_id": "p23-6-network_flap-baseline-end",
+      "start_time_unix_ms": 1783041935626,
+      "end_time_unix_ms": 1783041935635,
+      "start_monotonic_ms": 10013.981,
+      "end_monotonic_ms": 10022.717,
+      "metrics": {
+        "requested_qps": 666.667,
+        "achieved_qps": 666.667,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.155,
+        "latency_p90_ms": 2.052,
+        "latency_p95_ms": 2.069,
+        "latency_p99_ms": 2.069,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.12,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.16,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.131,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.069,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.052,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.155,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p23-6-network_flap",
+      "fault_id": "p23-6-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 6,
+      "source_window_name": "pre_event",
+      "start_event_id": "p23-6-network_flap-pre_event-start",
+      "end_event_id": "p23-6-network_flap-pre_event-end",
+      "start_time_unix_ms": 1783041935635,
+      "end_time_unix_ms": 1783041935641,
+      "start_monotonic_ms": 10022.726,
+      "end_monotonic_ms": 10029.285,
+      "metrics": {
+        "requested_qps": 1000.0,
+        "achieved_qps": 1000.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.058,
+        "latency_p90_ms": 1.142,
+        "latency_p95_ms": 1.18,
+        "latency_p99_ms": 1.18,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.128,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.142,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.18,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.058,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.004,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.998,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p23-6-network_flap",
+      "fault_id": "p23-6-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 6,
+      "source_window_name": "event",
+      "start_event_id": "p23-6-network_flap-event-start",
+      "end_event_id": "p23-6-network_flap-event-end",
+      "start_time_unix_ms": 1783041935642,
+      "end_time_unix_ms": 1783041936757,
+      "start_monotonic_ms": 10029.571,
+      "end_monotonic_ms": 11145.014,
+      "metrics": {
+        "requested_qps": 14.35,
+        "achieved_qps": 6.278,
+        "ok_ops": 7,
+        "error_ops": 9,
+        "error_rate": 0.5625,
+        "latency_p50_ms": 3.832,
+        "latency_p90_ms": 4.292,
+        "latency_p95_ms": 4.491,
+        "latency_p99_ms": 4.491,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 6,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 3,
+        "sample_count": 16,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.86,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.61,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.968,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 3.395,
+          "error": "RuntimeError(\"GET returned 'p23-value-p23-6-network_loss-event-1', expected 'p23-value-p23-6-network_flap-event-1'\")"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.972,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 5.634,
+          "error": "RuntimeError(\"GET returned 'p23-value-p23-6-network_loss-event-2', expected 'p23-value-p23-6-network_flap-event-2'\")"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.988,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 4.159,
+          "error": "RuntimeError(\"GET returned 'p23-value-p23-6-network_loss-event-3', expected 'p23-value-p23-6-network_flap-event-3'\")"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 4.491,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.232,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 4.187,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.029,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.832,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.068,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 4.292,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.135,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary-sandbox-proxy",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p23-6-network_flap",
+      "fault_id": "p23-6-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 6,
+      "source_window_name": "recovery",
+      "start_event_id": "p23-6-network_flap-recovery-start",
+      "end_event_id": "p23-6-network_flap-recovery-end",
+      "start_time_unix_ms": 1783041936904,
+      "end_time_unix_ms": 1783041936915,
+      "start_monotonic_ms": 11291.708,
+      "end_monotonic_ms": 11302.688,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.573,
+        "latency_p90_ms": 2.045,
+        "latency_p95_ms": 2.64,
+        "latency_p99_ms": 2.64,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.28,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.573,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.64,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.979,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.372,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.045,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p23-6-network_flap",
+      "fault_id": "p23-6-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 6,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p23-6-network_flap-post_recovery-start",
+      "end_event_id": "p23-6-network_flap-post_recovery-end",
+      "start_time_unix_ms": 1783041936915,
+      "end_time_unix_ms": 1783041936925,
+      "start_monotonic_ms": 11302.711,
+      "end_monotonic_ms": 11312.679,
+      "metrics": {
+        "requested_qps": 600.0,
+        "achieved_qps": 600.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.612,
+        "latency_p90_ms": 1.951,
+        "latency_p95_ms": 2.029,
+        "latency_p99_ms": 2.029,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.951,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.938,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.224,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.612,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.029,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.161,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-1}",
+      "slot": 5690,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p23-6-network_flap",
+      "fault_id": "p23-6-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 6,
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p23-6-network_flap-all_run-start",
+      "end_event_id": "p23-6-network_flap-all_run-end",
+      "start_time_unix_ms": 1783041935626,
+      "end_time_unix_ms": 1783041936925,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 30.793,
+        "achieved_qps": 23.865,
+        "ok_ops": 31,
+        "error_ops": 9,
+        "error_rate": 0.225,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 9,
+        "sample_count": 40,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_6-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p23-10-network_delay",
+      "fault_id": "p23-10-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 10,
+      "source_window_name": "baseline",
+      "start_event_id": "p23-10-network_delay-baseline-start",
+      "end_event_id": "p23-10-network_delay-baseline-end",
+      "start_time_unix_ms": 1783041960062,
+      "end_time_unix_ms": 1783041960072,
+      "start_monotonic_ms": 34451.3,
+      "end_monotonic_ms": 34461.54,
+      "metrics": {
+        "requested_qps": 600.0,
+        "achieved_qps": 600.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.5,
+        "latency_p90_ms": 2.296,
+        "latency_p95_ms": 2.343,
+        "latency_p99_ms": 2.343,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.343,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.296,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.5,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.351,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.949,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.73,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p23-10-network_delay",
+      "fault_id": "p23-10-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 10,
+      "source_window_name": "pre_event",
+      "start_event_id": "p23-10-network_delay-pre_event-start",
+      "end_event_id": "p23-10-network_delay-pre_event-end",
+      "start_time_unix_ms": 1783041960072,
+      "end_time_unix_ms": 1783041960080,
+      "start_monotonic_ms": 34461.567,
+      "end_monotonic_ms": 34469.081,
+      "metrics": {
+        "requested_qps": 750.0,
+        "achieved_qps": 750.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.935,
+        "latency_p90_ms": 1.957,
+        "latency_p95_ms": 1.97,
+        "latency_p99_ms": 1.97,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.935,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.957,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.97,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.701,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.163,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.759,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p23-10-network_delay",
+      "fault_id": "p23-10-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 10,
+      "source_window_name": "event",
+      "start_event_id": "p23-10-network_delay-event-start",
+      "end_event_id": "p23-10-network_delay-event-end",
+      "start_time_unix_ms": 1783041960080,
+      "end_time_unix_ms": 1783041961431,
+      "start_monotonic_ms": 34469.25,
+      "end_monotonic_ms": 35820.752,
+      "metrics": {
+        "requested_qps": 5.922,
+        "achieved_qps": 5.922,
+        "ok_ops": 8,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 171.737,
+        "latency_p90_ms": 173.774,
+        "latency_p95_ms": 174.361,
+        "latency_p99_ms": 174.361,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 8,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 171.737,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 164.307,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 174.361,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 164.732,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 173.774,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 160.732,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 168.722,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 172.856,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary-sandbox-proxy",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p23-10-network_delay",
+      "fault_id": "p23-10-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 10,
+      "source_window_name": "recovery",
+      "start_event_id": "p23-10-network_delay-recovery-start",
+      "end_event_id": "p23-10-network_delay-recovery-end",
+      "start_time_unix_ms": 1783041961479,
+      "end_time_unix_ms": 1783041961491,
+      "start_monotonic_ms": 35868.41,
+      "end_monotonic_ms": 35880.376,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.604,
+        "latency_p90_ms": 2.349,
+        "latency_p95_ms": 2.872,
+        "latency_p99_ms": 2.872,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.872,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.349,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.04,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.582,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.415,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.604,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p23-10-network_delay",
+      "fault_id": "p23-10-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 10,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p23-10-network_delay-post_recovery-start",
+      "end_event_id": "p23-10-network_delay-post_recovery-end",
+      "start_time_unix_ms": 1783041961491,
+      "end_time_unix_ms": 1783041961500,
+      "start_monotonic_ms": 35880.403,
+      "end_monotonic_ms": 35889.039,
+      "metrics": {
+        "requested_qps": 666.667,
+        "achieved_qps": 666.667,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.158,
+        "latency_p90_ms": 1.807,
+        "latency_p95_ms": 2.187,
+        "latency_p99_ms": 2.187,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.059,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.807,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.23,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.187,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.146,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.158,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p23-10-network_delay",
+      "fault_id": "p23-10-network_delay-fault",
+      "fault_type": "network_delay",
+      "node_count": 10,
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p23-10-network_delay-all_run-start",
+      "end_event_id": "p23-10-network_delay-all_run-end",
+      "start_time_unix_ms": 1783041960062,
+      "end_time_unix_ms": 1783041961500,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 22.253,
+        "achieved_qps": 22.253,
+        "ok_ops": 32,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 32,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p23-10-network_loss",
+      "fault_id": "p23-10-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 10,
+      "source_window_name": "baseline",
+      "start_event_id": "p23-10-network_loss-baseline-start",
+      "end_event_id": "p23-10-network_loss-baseline-end",
+      "start_time_unix_ms": 1783041961501,
+      "end_time_unix_ms": 1783041961510,
+      "start_monotonic_ms": 35890.721,
+      "end_monotonic_ms": 35899.678,
+      "metrics": {
+        "requested_qps": 666.667,
+        "achieved_qps": 666.667,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.182,
+        "latency_p90_ms": 1.99,
+        "latency_p95_ms": 2.145,
+        "latency_p99_ms": 2.145,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.419,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.061,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.182,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.096,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.99,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.145,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p23-10-network_loss",
+      "fault_id": "p23-10-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 10,
+      "source_window_name": "pre_event",
+      "start_event_id": "p23-10-network_loss-pre_event-start",
+      "end_event_id": "p23-10-network_loss-pre_event-end",
+      "start_time_unix_ms": 1783041961510,
+      "end_time_unix_ms": 1783041961519,
+      "start_monotonic_ms": 35899.694,
+      "end_monotonic_ms": 35908.496,
+      "metrics": {
+        "requested_qps": 666.667,
+        "achieved_qps": 666.667,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.095,
+        "latency_p90_ms": 2.017,
+        "latency_p95_ms": 2.538,
+        "latency_p99_ms": 2.538,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.017,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.128,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.998,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.538,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.095,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.971,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p23-10-network_loss",
+      "fault_id": "p23-10-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 10,
+      "source_window_name": "event",
+      "start_event_id": "p23-10-network_loss-event-start",
+      "end_event_id": "p23-10-network_loss-event-end",
+      "start_time_unix_ms": 1783041961520,
+      "end_time_unix_ms": 1783041961528,
+      "start_monotonic_ms": 35908.898,
+      "end_monotonic_ms": 35917.002,
+      "metrics": {
+        "requested_qps": 1000.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 4,
+        "error_ops": 4,
+        "error_rate": 0.5,
+        "latency_p50_ms": 1.717,
+        "latency_p90_ms": 2.603,
+        "latency_p95_ms": 2.603,
+        "latency_p99_ms": 2.603,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 4,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 8,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.603,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.307,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.254,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.262,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.376,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.219,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.717,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.249,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary-sandbox-proxy",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p23-10-network_loss",
+      "fault_id": "p23-10-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 10,
+      "source_window_name": "recovery",
+      "start_event_id": "p23-10-network_loss-recovery-start",
+      "end_event_id": "p23-10-network_loss-recovery-end",
+      "start_time_unix_ms": 1783041961746,
+      "end_time_unix_ms": 1783041961756,
+      "start_monotonic_ms": 36134.804,
+      "end_monotonic_ms": 36145.694,
+      "metrics": {
+        "requested_qps": 600.0,
+        "achieved_qps": 600.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.557,
+        "latency_p90_ms": 2.376,
+        "latency_p95_ms": 2.45,
+        "latency_p99_ms": 2.45,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.557,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.45,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.719,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.459,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.246,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.376,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p23-10-network_loss",
+      "fault_id": "p23-10-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 10,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p23-10-network_loss-post_recovery-start",
+      "end_event_id": "p23-10-network_loss-post_recovery-end",
+      "start_time_unix_ms": 1783041961756,
+      "end_time_unix_ms": 1783041961766,
+      "start_monotonic_ms": 36145.716,
+      "end_monotonic_ms": 36154.935,
+      "metrics": {
+        "requested_qps": 600.0,
+        "achieved_qps": 600.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.243,
+        "latency_p90_ms": 1.788,
+        "latency_p95_ms": 2.419,
+        "latency_p99_ms": 2.419,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.156,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.243,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.419,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.288,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.788,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.235,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p23-10-network_loss",
+      "fault_id": "p23-10-network_loss-fault",
+      "fault_type": "network_loss",
+      "node_count": 10,
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p23-10-network_loss-all_run-start",
+      "end_event_id": "p23-10-network_loss-all_run-end",
+      "start_time_unix_ms": 1783041961501,
+      "end_time_unix_ms": 1783041961766,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 120.755,
+        "achieved_qps": 105.66,
+        "ok_ops": 28,
+        "error_ops": 4,
+        "error_rate": 0.125,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 4,
+        "sample_count": 32,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p23-10-network_flap",
+      "fault_id": "p23-10-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 10,
+      "source_window_name": "baseline",
+      "start_event_id": "p23-10-network_flap-baseline-start",
+      "end_event_id": "p23-10-network_flap-baseline-end",
+      "start_time_unix_ms": 1783041961768,
+      "end_time_unix_ms": 1783041961778,
+      "start_monotonic_ms": 36156.89,
+      "end_monotonic_ms": 36167.652,
+      "metrics": {
+        "requested_qps": 600.0,
+        "achieved_qps": 600.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.834,
+        "latency_p90_ms": 2.015,
+        "latency_p95_ms": 2.061,
+        "latency_p99_ms": 2.061,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.115,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.751,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.834,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.909,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.061,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.015,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p23-10-network_flap",
+      "fault_id": "p23-10-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 10,
+      "source_window_name": "pre_event",
+      "start_event_id": "p23-10-network_flap-pre_event-start",
+      "end_event_id": "p23-10-network_flap-pre_event-end",
+      "start_time_unix_ms": 1783041961778,
+      "end_time_unix_ms": 1783041961790,
+      "start_monotonic_ms": 36167.673,
+      "end_monotonic_ms": 36179.474,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.857,
+        "latency_p90_ms": 2.425,
+        "latency_p95_ms": 2.579,
+        "latency_p99_ms": 2.579,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.579,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.178,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.137,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.857,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.425,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.558,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p23-10-network_flap",
+      "fault_id": "p23-10-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 10,
+      "source_window_name": "event",
+      "start_event_id": "p23-10-network_flap-event-start",
+      "end_event_id": "p23-10-network_flap-event-end",
+      "start_time_unix_ms": 1783041961791,
+      "end_time_unix_ms": 1783041962878,
+      "start_monotonic_ms": 36179.815,
+      "end_monotonic_ms": 37267.546,
+      "metrics": {
+        "requested_qps": 14.719,
+        "achieved_qps": 5.52,
+        "ok_ops": 6,
+        "error_ops": 10,
+        "error_rate": 0.625,
+        "latency_p50_ms": 3.938,
+        "latency_p90_ms": 4.356,
+        "latency_p95_ms": 5.094,
+        "latency_p99_ms": 5.094,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 7,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 3,
+        "sample_count": 16,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.006,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.938,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.065,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 4.6,
+          "error": "RuntimeError(\"GET returned 'p23-value-p23-10-network_loss-event-1', expected 'p23-value-p23-10-network_flap-event-1'\")"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.941,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 4.381,
+          "error": "RuntimeError(\"GET returned 'p23-value-p23-10-network_loss-event-2', expected 'p23-value-p23-10-network_flap-event-2'\")"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.72,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.785,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 5.094,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.057,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 4.356,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.004,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 4.211,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.541,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.954,
+          "error": "ConnectionResetError(54, 'Connection reset by peer')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 3.75,
+          "error": "RuntimeError(\"GET returned None, expected 'p23-value-p23-10-network_flap-event-7'\")"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary-sandbox-proxy",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p23-10-network_flap",
+      "fault_id": "p23-10-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 10,
+      "source_window_name": "recovery",
+      "start_event_id": "p23-10-network_flap-recovery-start",
+      "end_event_id": "p23-10-network_flap-recovery-end",
+      "start_time_unix_ms": 1783041963034,
+      "end_time_unix_ms": 1783041963050,
+      "start_monotonic_ms": 37423.125,
+      "end_monotonic_ms": 37439.166,
+      "metrics": {
+        "requested_qps": 375.0,
+        "achieved_qps": 375.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.275,
+        "latency_p90_ms": 3.864,
+        "latency_p95_ms": 3.9,
+        "latency_p99_ms": 3.9,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.275,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.9,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.864,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.295,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.259,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.349,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p23-10-network_flap",
+      "fault_id": "p23-10-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 10,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p23-10-network_flap-post_recovery-start",
+      "end_event_id": "p23-10-network_flap-post_recovery-end",
+      "start_time_unix_ms": 1783041963050,
+      "end_time_unix_ms": 1783041963060,
+      "start_monotonic_ms": 37439.199,
+      "end_monotonic_ms": 37449.537,
+      "metrics": {
+        "requested_qps": 600.0,
+        "achieved_qps": 600.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.826,
+        "latency_p90_ms": 2.026,
+        "latency_p95_ms": 2.062,
+        "latency_p99_ms": 2.062,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P23 focused network fault gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.242,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.112,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.025,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.826,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.026,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.062,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "slot_key": "p23:shard-0000-primary:{p23-2}",
+      "slot": 9817,
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p23-10-network_flap",
+      "fault_id": "p23-10-network_flap-fault",
+      "fault_type": "network_flap",
+      "node_count": 10,
+      "source_window_name": "all_run_aggregate",
+      "start_event_id": "p23-10-network_flap-all_run-start",
+      "end_event_id": "p23-10-network_flap-all_run-end",
+      "start_time_unix_ms": 1783041961768,
+      "end_time_unix_ms": 1783041963060,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 30.96,
+        "achieved_qps": 23.22,
+        "ok_ops": 30,
+        "error_ops": 10,
+        "error_rate": 0.25,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 10,
+        "sample_count": 40,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "entry_logical_id": "aggregate",
+      "run_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP-p23_fault_matrix_10-20260628",
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP"
+    }
+  ]
+}
