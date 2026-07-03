@@ -1,0 +1,33 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "cleanup_report",
+  "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+  "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-fault-matrix-20260628",
+  "created_at": "2026-07-03T00:50:18.617519Z",
+  "producer": {
+    "name": "scripts/fault_safety_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "resources_remaining": [],
+  "cleanup_actions": [
+    {
+      "type": "p22_subrun_cleanup",
+      "node_count": 6,
+      "status": "PASS",
+      "report_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/cleanup_report.json"
+    },
+    {
+      "type": "p22_subrun_cleanup",
+      "node_count": 10,
+      "status": "PASS",
+      "report_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/cleanup_report.json"
+    },
+    {
+      "type": "p22_subrun_cleanup",
+      "node_count": 30,
+      "status": "PASS",
+      "report_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/cleanup_report.json"
+    }
+  ]
+}

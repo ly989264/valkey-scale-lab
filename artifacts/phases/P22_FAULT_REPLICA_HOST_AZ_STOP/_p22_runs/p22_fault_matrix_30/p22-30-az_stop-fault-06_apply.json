@@ -1,0 +1,23 @@
+{
+  "artifact_type": "fault_apply",
+  "created_at": "2026-06-28T00:00:00Z",
+  "fault_id": "p22-30-az_stop-fault-06",
+  "fault_type": "node_stop",
+  "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+  "safety_checks": {
+    "global_firewall_mutated": false,
+    "host_network_mutated": false,
+    "sandbox_only": true,
+    "scope": "owned Docker/container namespace or sandbox proxy"
+  },
+  "schema_version": "v1",
+  "scope": "owned_container_or_process",
+  "state_path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/fault_state_p22-30-az_stop-fault-06.json",
+  "status": "PASS",
+  "target_logical_id": "shard-0010-primary"
+}

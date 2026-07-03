@@ -300,6 +300,85 @@ def assert_p21_semantics(base: Path, errors: list[str]) -> None:
             errors.append("P21 quant_summary must claim real Valkey fault runtime")
 
 
+def assert_p22_semantics(base: Path, errors: list[str]) -> None:
+    events = read_jsonl(base / "events.jsonl", errors)
+    metrics = read_jsonl(base / "metrics_timeseries.jsonl", errors)
+    fault_rows = read_jsonl(base / "fault_results.jsonl", errors)
+    snapshots = read_jsonl(base / "fault_topology_snapshots.jsonl", errors)
+    required_faults = {"replica_stop", "node_host_stop", "az_stop"}
+    real_rows = [row for row in fault_rows if row.get("status") != "SKIPPED_WITH_REASON"]
+    real_sample_ids = {str(row.get("sample_id")) for row in real_rows if row.get("sample_id")}
+    required_pairs = {(fault_type, count) for fault_type in required_faults for count in [6, 10]}
+    observed_pairs = {(row.get("fault_type"), row.get("node_count")) for row in real_rows}
+    missing_pairs = sorted(required_pairs - observed_pairs)
+    if missing_pairs:
+        errors.append(f"P22 quant missing required real fault pairs: {missing_pairs}")
+    if any(row.get("node_count") == 200 for row in fault_rows):
+        errors.append("P22 quant artifacts must not contain 200-node rows")
+    event_sample_ids = {str(event.get("sample_id")) for event in events if event.get("sample_id")}
+    metric_sample_ids = {str(metric.get("sample_id")) for metric in metrics if metric.get("sample_id")}
+    snapshot_sample_ids = {str(snapshot.get("sample_id")) for snapshot in snapshots if snapshot.get("sample_id")}
+    missing_event_samples = sorted(real_sample_ids - event_sample_ids)
+    missing_metric_samples = sorted(real_sample_ids - metric_sample_ids)
+    missing_snapshot_samples = sorted(real_sample_ids - snapshot_sample_ids)
+    if missing_event_samples:
+        errors.append(f"P22 events.jsonl missing sample IDs: {missing_event_samples}")
+    if missing_metric_samples:
+        errors.append(f"P22 metrics_timeseries.jsonl missing sample IDs: {missing_metric_samples}")
+    if missing_snapshot_samples:
+        errors.append(f"P22 topology snapshots missing sample IDs: {missing_snapshot_samples}")
+    fault_ids = {str(row.get("fault_id")) for row in real_rows if row.get("fault_id")}
+    event_fault_ids = {str(event.get("fault_id")) for event in events if event.get("fault_id")}
+    metric_fault_ids = {str(metric.get("source_id")) for metric in metrics if metric.get("source_type") == "harness"}
+    if not fault_ids.issubset(event_fault_ids):
+        errors.append(f"P22 events missing fault IDs: {sorted(fault_ids - event_fault_ids)}")
+    if not fault_ids.issubset(metric_fault_ids):
+        errors.append(f"P22 harness metrics missing fault IDs: {sorted(fault_ids - metric_fault_ids)}")
+    for idx, event in enumerate(events, start=1):
+        if event.get("phase_id") != "P22_FAULT_REPLICA_HOST_AZ_STOP":
+            errors.append(f"P22 events.jsonl:{idx}: wrong phase_id {event.get('phase_id')!r}")
+    for idx, metric in enumerate(metrics, start=1):
+        if metric.get("phase_id") != "P22_FAULT_REPLICA_HOST_AZ_STOP":
+            errors.append(f"P22 metrics_timeseries.jsonl:{idx}: wrong phase_id {metric.get('phase_id')!r}")
+        if metric.get("metric_value") == "MISSING" and not metric.get("missing_reason"):
+            errors.append(f"P22 metrics_timeseries.jsonl:{idx}: MISSING metric_value requires missing_reason")
+    for idx, row in enumerate(fault_rows, start=1):
+        if row.get("phase_id") != "P22_FAULT_REPLICA_HOST_AZ_STOP":
+            errors.append(f"P22 fault_results.jsonl:{idx}: wrong phase_id {row.get('phase_id')!r}")
+        if row.get("status") == "SKIPPED_WITH_REASON" and not row.get("reason"):
+            errors.append(f"P22 fault_results.jsonl:{idx}: skipped row requires reason")
+    evidence_path = base / "valkey_e2e_evidence.json"
+    if evidence_path.exists():
+        evidence = load_json(evidence_path)
+        if evidence.get("status") != "PASS":
+            errors.append("P22 valkey_e2e_evidence status must be PASS")
+        if evidence.get("real_valkey") is not True:
+            errors.append("P22 valkey_e2e_evidence must be real Valkey")
+        if int(evidence.get("nodes_observed", 0) or 0) < 10:
+            errors.append("P22 valkey_e2e_evidence must observe at least the 10-node mandatory row")
+    else:
+        errors.append("P22 valkey_e2e_evidence.json missing")
+    quant_path = base / "quant_summary.json"
+    if quant_path.exists():
+        quant = load_json(quant_path)
+        counts = quant.get("counts", {})
+        if counts.get("event_count") != len(events):
+            errors.append("P22 quant_summary counts.event_count must match events.jsonl line count")
+        if counts.get("metric_count") != len(metrics):
+            errors.append("P22 quant_summary counts.metric_count must match metrics_timeseries.jsonl line count")
+        if counts.get("fault_result_count") != len(fault_rows):
+            errors.append("P22 quant_summary counts.fault_result_count must match fault_results.jsonl line count")
+        if counts.get("topology_snapshot_count") != len(snapshots):
+            errors.append("P22 quant_summary counts.topology_snapshot_count must match topology snapshot line count")
+        if counts.get("sample_count") != len(real_rows):
+            errors.append("P22 quant_summary counts.sample_count must match non-skipped fault rows")
+        claims = quant.get("runtime_claims", {})
+        if claims.get("real_valkey_claimed") is not True or claims.get("fault_runtime_claimed") is not True:
+            errors.append("P22 quant_summary must claim real Valkey fault runtime")
+    else:
+        errors.append("P22 quant_summary.json missing")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -351,6 +430,8 @@ def main() -> int:
         assert_p20_semantics(base, errors)
     if args.phase == "P21_FAILOVER_LATENCY_CURVE_200":
         assert_p21_semantics(base, errors)
+    if args.phase == "P22_FAULT_REPLICA_HOST_AZ_STOP":
+        assert_p22_semantics(base, errors)
 
     if errors:
         for error in errors:

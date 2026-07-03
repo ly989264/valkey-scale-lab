@@ -1,0 +1,1 @@
+PASS P22 fault matrix out=artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/valkey_e2e_evidence.json fault_report=artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_matrix_report.json

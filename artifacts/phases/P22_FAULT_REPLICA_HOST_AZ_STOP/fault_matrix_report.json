@@ -1,0 +1,1124 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "fault_matrix_report",
+  "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+  "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-fault-matrix-20260628",
+  "created_at": "2026-07-03T00:50:18.616519Z",
+  "producer": {
+    "name": "scripts/fault_safety_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "fault_rows": [
+    {
+      "schema_version": "v1",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "scenario_name": "p22_fault_matrix_6",
+      "sample_id": "p22-6-replica_stop",
+      "node_count": 6,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "replica_stop",
+      "fault_id": "p22-6-replica_stop-fault",
+      "scope": "owned_container_or_process",
+      "implementation_path": "owned_runtime_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7603,
+          "pid": 75,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-6-20260628-nodehost-az-b"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "role",
+        "selected_role": "replica",
+        "promotion_expected": false
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "child_fault_ids": [
+          "p22-6-replica_stop-fault-01"
+        ],
+        "stop_method": "node_stop"
+      },
+      "apply_started_at_ms": 1783039704324,
+      "apply_completed_at_ms": 1783039704484,
+      "clear_started_at_ms": 1783039705510,
+      "clear_completed_at_ms": 1783039705709,
+      "recovery_completed_at_ms": 1783039706742,
+      "apply_duration_ms": 160.446,
+      "clear_duration_ms": 199.079,
+      "recovery_latency_ms": 1232,
+      "observed_effect_started_at_ms": 1783039704484,
+      "expected_impact": "replica unavailable without promotion",
+      "observed_impact": {
+        "cluster_state_during": "ok",
+        "nodes_observed_during": 5,
+        "unexpected_promotion_observed": false,
+        "promotion_expected": false,
+        "split_brain_detectors_run": [
+          "primary_slot_assignment_overlap"
+        ],
+        "split_brain_window_ms": 0
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json#p22-6-replica_stop",
+      "state_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/state_p22.json",
+      "apply_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-replica_stop-fault-01_apply.json"
+      ],
+      "clear_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-replica_stop-fault-01_clear.json"
+      ],
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "scenario_name": "p22_fault_matrix_6",
+      "sample_id": "p22-6-node_host_stop",
+      "node_count": 6,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "node_host_stop",
+      "fault_id": "p22-6-node_host_stop-fault",
+      "scope": "owned_container_or_process",
+      "implementation_path": "owned_runtime_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7600,
+          "pid": 79,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-6-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0000-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7603,
+          "pid": 105,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-6-20260628-nodehost-az-b"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "logical_host_id",
+        "selected_host_id": "p22-host-a",
+        "logical_host_only": true,
+        "physical_host_mutated": false
+      },
+      "target_count": 2,
+      "fault_parameters": {
+        "child_fault_ids": [
+          "p22-6-node_host_stop-fault-01",
+          "p22-6-node_host_stop-fault-02"
+        ],
+        "stop_method": "node_stop"
+      },
+      "apply_started_at_ms": 1783039706786,
+      "apply_completed_at_ms": 1783039707045,
+      "clear_started_at_ms": 1783039708065,
+      "clear_completed_at_ms": 1783039708465,
+      "recovery_completed_at_ms": 1783039710502,
+      "apply_duration_ms": 259.145,
+      "clear_duration_ms": 400.531,
+      "recovery_latency_ms": 2437,
+      "observed_effect_started_at_ms": 1783039707045,
+      "expected_impact": "target group unavailable until restore",
+      "observed_impact": {
+        "cluster_state_during": "ok",
+        "nodes_observed_during": 4,
+        "unexpected_promotion_observed": false,
+        "promotion_expected": "MISSING",
+        "split_brain_detectors_run": [
+          "primary_slot_assignment_overlap"
+        ],
+        "split_brain_window_ms": 0
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json#p22-6-node_host_stop",
+      "state_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/state_p22.json",
+      "apply_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-node_host_stop-fault-01_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-node_host_stop-fault-02_apply.json"
+      ],
+      "clear_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-node_host_stop-fault-02_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-node_host_stop-fault-01_clear.json"
+      ],
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "scenario_name": "p22_fault_matrix_6",
+      "sample_id": "p22-6-az_stop",
+      "node_count": 6,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "az_stop",
+      "fault_id": "p22-6-az_stop-fault",
+      "scope": "owned_container_or_process",
+      "implementation_path": "owned_runtime_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7600,
+          "pid": 163,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-6-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0002-primary",
+          "role": "primary",
+          "host_id": "p22-host-c",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7602,
+          "pid": 141,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-6-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0001-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-b",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7604,
+          "pid": 119,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-6-20260628-nodehost-az-a"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "virtual_az_id",
+        "selected_az_id": "az-a",
+        "virtual_az_only": true,
+        "physical_az_mutated": false,
+        "minority_majority": {
+          "stopped_nodes": 3,
+          "remaining_nodes": 3,
+          "remaining_side": "majority_or_equal"
+        }
+      },
+      "target_count": 3,
+      "fault_parameters": {
+        "child_fault_ids": [
+          "p22-6-az_stop-fault-01",
+          "p22-6-az_stop-fault-02",
+          "p22-6-az_stop-fault-03"
+        ],
+        "stop_method": "node_stop"
+      },
+      "apply_started_at_ms": 1783039710571,
+      "apply_completed_at_ms": 1783039711003,
+      "clear_started_at_ms": 1783039712025,
+      "clear_completed_at_ms": 1783039712675,
+      "recovery_completed_at_ms": 1783039714723,
+      "apply_duration_ms": 431.971,
+      "clear_duration_ms": 650.399,
+      "recovery_latency_ms": 2698,
+      "observed_effect_started_at_ms": 1783039711003,
+      "expected_impact": "target group unavailable until restore",
+      "observed_impact": {
+        "cluster_state_during": "ok",
+        "nodes_observed_during": 3,
+        "unexpected_promotion_observed": false,
+        "promotion_expected": "MISSING",
+        "split_brain_detectors_run": [
+          "primary_slot_assignment_overlap"
+        ],
+        "split_brain_window_ms": 0
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json#p22-6-az_stop",
+      "state_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/state_p22.json",
+      "apply_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-az_stop-fault-01_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-az_stop-fault-02_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-az_stop-fault-03_apply.json"
+      ],
+      "clear_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-az_stop-fault-03_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-az_stop-fault-02_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/p22-6-az_stop-fault-01_clear.json"
+      ],
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_6/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "scenario_name": "p22_fault_matrix_10",
+      "sample_id": "p22-10-replica_stop",
+      "node_count": 10,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "replica_stop",
+      "fault_id": "p22-10-replica_stop-fault",
+      "scope": "owned_container_or_process",
+      "implementation_path": "owned_runtime_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-c",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7625,
+          "pid": 99,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-10-20260628-nodehost-az-b"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "role",
+        "selected_role": "replica",
+        "promotion_expected": false
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "child_fault_ids": [
+          "p22-10-replica_stop-fault-01"
+        ],
+        "stop_method": "node_stop"
+      },
+      "apply_started_at_ms": 1783039729836,
+      "apply_completed_at_ms": 1783039729986,
+      "clear_started_at_ms": 1783039731011,
+      "clear_completed_at_ms": 1783039731193,
+      "recovery_completed_at_ms": 1783039731211,
+      "apply_duration_ms": 150.044,
+      "clear_duration_ms": 182.181,
+      "recovery_latency_ms": 200,
+      "observed_effect_started_at_ms": 1783039729986,
+      "expected_impact": "replica unavailable without promotion",
+      "observed_impact": {
+        "cluster_state_during": "ok",
+        "nodes_observed_during": 9,
+        "unexpected_promotion_observed": false,
+        "promotion_expected": false,
+        "split_brain_detectors_run": [
+          "primary_slot_assignment_overlap"
+        ],
+        "split_brain_window_ms": 0
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json#p22-10-replica_stop",
+      "state_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/state_p22.json",
+      "apply_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-replica_stop-fault-01_apply.json"
+      ],
+      "clear_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-replica_stop-fault-01_clear.json"
+      ],
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "scenario_name": "p22_fault_matrix_10",
+      "sample_id": "p22-10-node_host_stop",
+      "node_count": 10,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "node_host_stop",
+      "fault_id": "p22-10-node_host_stop-fault",
+      "scope": "owned_container_or_process",
+      "implementation_path": "owned_runtime_control",
+      "targets": [
+        {
+          "logical_id": "shard-0001-primary",
+          "role": "primary",
+          "host_id": "p22-host-b",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7621,
+          "pid": 155,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-10-20260628-nodehost-az-b"
+        },
+        {
+          "logical_id": "shard-0004-primary",
+          "role": "primary",
+          "host_id": "p22-host-b",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7624,
+          "pid": 100,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-10-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0002-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-b",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7627,
+          "pid": 133,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-10-20260628-nodehost-az-b"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "logical_host_id",
+        "selected_host_id": "p22-host-b",
+        "logical_host_only": true,
+        "physical_host_mutated": false
+      },
+      "target_count": 3,
+      "fault_parameters": {
+        "child_fault_ids": [
+          "p22-10-node_host_stop-fault-01",
+          "p22-10-node_host_stop-fault-02",
+          "p22-10-node_host_stop-fault-03"
+        ],
+        "stop_method": "node_stop"
+      },
+      "apply_started_at_ms": 1783039731258,
+      "apply_completed_at_ms": 1783039731649,
+      "clear_started_at_ms": 1783039732683,
+      "clear_completed_at_ms": 1783039733318,
+      "recovery_completed_at_ms": 1783039735359,
+      "apply_duration_ms": 390.144,
+      "clear_duration_ms": 635.46,
+      "recovery_latency_ms": 2676,
+      "observed_effect_started_at_ms": 1783039731649,
+      "expected_impact": "target group unavailable until restore",
+      "observed_impact": {
+        "cluster_state_during": "ok",
+        "nodes_observed_during": 7,
+        "unexpected_promotion_observed": false,
+        "promotion_expected": "MISSING",
+        "split_brain_detectors_run": [
+          "primary_slot_assignment_overlap"
+        ],
+        "split_brain_window_ms": 0
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json#p22-10-node_host_stop",
+      "state_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/state_p22.json",
+      "apply_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-node_host_stop-fault-01_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-node_host_stop-fault-02_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-node_host_stop-fault-03_apply.json"
+      ],
+      "clear_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-node_host_stop-fault-03_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-node_host_stop-fault-02_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-node_host_stop-fault-01_clear.json"
+      ],
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "scenario_name": "p22_fault_matrix_10",
+      "sample_id": "p22-10-az_stop",
+      "node_count": 10,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "az_stop",
+      "fault_id": "p22-10-az_stop-fault",
+      "scope": "owned_container_or_process",
+      "implementation_path": "owned_runtime_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7620,
+          "pid": 243,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-10-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0002-primary",
+          "role": "primary",
+          "host_id": "p22-host-c",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7622,
+          "pid": 221,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-10-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0004-primary",
+          "role": "primary",
+          "host_id": "p22-host-b",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7624,
+          "pid": 199,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-10-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0001-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7626,
+          "pid": 177,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-10-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0003-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-c",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7628,
+          "pid": 155,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-10-20260628-nodehost-az-a"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "virtual_az_id",
+        "selected_az_id": "az-a",
+        "virtual_az_only": true,
+        "physical_az_mutated": false,
+        "minority_majority": {
+          "stopped_nodes": 5,
+          "remaining_nodes": 5,
+          "remaining_side": "majority_or_equal"
+        }
+      },
+      "target_count": 5,
+      "fault_parameters": {
+        "child_fault_ids": [
+          "p22-10-az_stop-fault-01",
+          "p22-10-az_stop-fault-02",
+          "p22-10-az_stop-fault-03",
+          "p22-10-az_stop-fault-04",
+          "p22-10-az_stop-fault-05"
+        ],
+        "stop_method": "node_stop"
+      },
+      "apply_started_at_ms": 1783039735408,
+      "apply_completed_at_ms": 1783039736089,
+      "clear_started_at_ms": 1783039738079,
+      "clear_completed_at_ms": 1783039739129,
+      "recovery_completed_at_ms": 1783039741170,
+      "apply_duration_ms": 680.967,
+      "clear_duration_ms": 1049.736,
+      "recovery_latency_ms": 3091,
+      "observed_effect_started_at_ms": 1783039736089,
+      "expected_impact": "target group unavailable until restore",
+      "observed_impact": {
+        "cluster_state_during": "ok",
+        "nodes_observed_during": 7,
+        "unexpected_promotion_observed": false,
+        "promotion_expected": "MISSING",
+        "split_brain_detectors_run": [
+          "primary_slot_assignment_overlap"
+        ],
+        "split_brain_window_ms": 0
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json#p22-10-az_stop",
+      "state_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/state_p22.json",
+      "apply_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-01_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-02_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-03_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-04_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-05_apply.json"
+      ],
+      "clear_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-05_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-04_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-03_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-02_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/p22-10-az_stop-fault-01_clear.json"
+      ],
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_10/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "scenario_name": "p22_fault_matrix_30",
+      "sample_id": "p22-30-replica_stop",
+      "node_count": 30,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "replica_stop",
+      "fault_id": "p22-30-replica_stop-fault",
+      "scope": "owned_container_or_process",
+      "implementation_path": "owned_runtime_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7645,
+          "pid": 220,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-b"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "role",
+        "selected_role": "replica",
+        "promotion_expected": false
+      },
+      "target_count": 1,
+      "fault_parameters": {
+        "child_fault_ids": [
+          "p22-30-replica_stop-fault-01"
+        ],
+        "stop_method": "node_stop"
+      },
+      "apply_started_at_ms": 1783039788873,
+      "apply_completed_at_ms": 1783039789015,
+      "clear_started_at_ms": 1783039790066,
+      "clear_completed_at_ms": 1783039790267,
+      "recovery_completed_at_ms": 1783039790295,
+      "apply_duration_ms": 141.734,
+      "clear_duration_ms": 200.427,
+      "recovery_latency_ms": 229,
+      "observed_effect_started_at_ms": 1783039789015,
+      "expected_impact": "replica unavailable without promotion",
+      "observed_impact": {
+        "cluster_state_during": "ok",
+        "nodes_observed_during": 29,
+        "unexpected_promotion_observed": false,
+        "promotion_expected": false,
+        "split_brain_detectors_run": [
+          "primary_slot_assignment_overlap"
+        ],
+        "split_brain_window_ms": 0
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json#p22-30-replica_stop",
+      "state_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/state_p22.json",
+      "apply_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-replica_stop-fault-01_apply.json"
+      ],
+      "clear_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-replica_stop-fault-01_clear.json"
+      ],
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "scenario_name": "p22_fault_matrix_30",
+      "sample_id": "p22-30-node_host_stop",
+      "node_count": 30,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "node_host_stop",
+      "fault_id": "p22-30-node_host_stop-fault",
+      "scope": "owned_container_or_process",
+      "implementation_path": "owned_runtime_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7630,
+          "pid": 346,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0003-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7633,
+          "pid": 373,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-b"
+        },
+        {
+          "logical_id": "shard-0006-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7636,
+          "pid": 324,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0009-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7639,
+          "pid": 351,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-b"
+        },
+        {
+          "logical_id": "shard-0012-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7642,
+          "pid": 288,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0000-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7645,
+          "pid": 316,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-b"
+        },
+        {
+          "logical_id": "shard-0003-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7648,
+          "pid": 266,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0006-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7651,
+          "pid": 294,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-b"
+        },
+        {
+          "logical_id": "shard-0009-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7654,
+          "pid": 244,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0012-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-b",
+          "nodehost_id": "nodehost-az-b",
+          "client_port": 7657,
+          "pid": 272,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-b"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "logical_host_id",
+        "selected_host_id": "p22-host-a",
+        "logical_host_only": true,
+        "physical_host_mutated": false
+      },
+      "target_count": 10,
+      "fault_parameters": {
+        "child_fault_ids": [
+          "p22-30-node_host_stop-fault-01",
+          "p22-30-node_host_stop-fault-02",
+          "p22-30-node_host_stop-fault-03",
+          "p22-30-node_host_stop-fault-04",
+          "p22-30-node_host_stop-fault-05",
+          "p22-30-node_host_stop-fault-06",
+          "p22-30-node_host_stop-fault-07",
+          "p22-30-node_host_stop-fault-08",
+          "p22-30-node_host_stop-fault-09",
+          "p22-30-node_host_stop-fault-10"
+        ],
+        "stop_method": "node_stop"
+      },
+      "apply_started_at_ms": 1783039790341,
+      "apply_completed_at_ms": 1783039791626,
+      "clear_started_at_ms": 1783039792686,
+      "clear_completed_at_ms": 1783039794790,
+      "recovery_completed_at_ms": 1783039796850,
+      "apply_duration_ms": 1285.057,
+      "clear_duration_ms": 2103.696,
+      "recovery_latency_ms": 4164,
+      "observed_effect_started_at_ms": 1783039791626,
+      "expected_impact": "target group unavailable until restore",
+      "observed_impact": {
+        "cluster_state_during": "ok",
+        "nodes_observed_during": 20,
+        "unexpected_promotion_observed": false,
+        "promotion_expected": "MISSING",
+        "split_brain_detectors_run": [
+          "primary_slot_assignment_overlap"
+        ],
+        "split_brain_window_ms": 0
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json#p22-30-node_host_stop",
+      "state_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/state_p22.json",
+      "apply_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-01_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-02_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-03_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-04_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-05_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-06_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-07_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-08_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-09_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-10_apply.json"
+      ],
+      "clear_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-10_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-09_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-08_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-07_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-06_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-05_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-04_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-03_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-02_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-node_host_stop-fault-01_clear.json"
+      ],
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/cleanup_report.json"
+    },
+    {
+      "schema_version": "v1",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "scenario_name": "p22_fault_matrix_30",
+      "sample_id": "p22-30-az_stop",
+      "node_count": 30,
+      "status": "PASS",
+      "real_valkey": true,
+      "fault_type": "az_stop",
+      "fault_id": "p22-30-az_stop-fault",
+      "scope": "owned_container_or_process",
+      "implementation_path": "owned_runtime_control",
+      "targets": [
+        {
+          "logical_id": "shard-0000-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7630,
+          "pid": 770,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0002-primary",
+          "role": "primary",
+          "host_id": "p22-host-c",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7632,
+          "pid": 748,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0004-primary",
+          "role": "primary",
+          "host_id": "p22-host-b",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7634,
+          "pid": 726,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0006-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7636,
+          "pid": 704,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0008-primary",
+          "role": "primary",
+          "host_id": "p22-host-c",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7638,
+          "pid": 682,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0010-primary",
+          "role": "primary",
+          "host_id": "p22-host-b",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7640,
+          "pid": 660,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0012-primary",
+          "role": "primary",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7642,
+          "pid": 638,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0014-primary",
+          "role": "primary",
+          "host_id": "p22-host-c",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7644,
+          "pid": 616,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0001-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-b",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7646,
+          "pid": 594,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0003-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7648,
+          "pid": 571,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0005-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-c",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7650,
+          "pid": 549,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0007-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-b",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7652,
+          "pid": 527,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0009-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-a",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7654,
+          "pid": 505,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0011-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-c",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7656,
+          "pid": 483,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        },
+        {
+          "logical_id": "shard-0013-replica-00",
+          "role": "replica",
+          "host_id": "p22-host-b",
+          "az_id": "az-a",
+          "nodehost_id": "nodehost-az-a",
+          "client_port": 7658,
+          "pid": 461,
+          "container_name": "vslab-p22-fault-replica-host-az-stop-p22-fault-matrix-30-20260628-nodehost-az-a"
+        }
+      ],
+      "target_selector": {
+        "selector_type": "virtual_az_id",
+        "selected_az_id": "az-a",
+        "virtual_az_only": true,
+        "physical_az_mutated": false,
+        "minority_majority": {
+          "stopped_nodes": 15,
+          "remaining_nodes": 15,
+          "remaining_side": "majority_or_equal"
+        }
+      },
+      "target_count": 15,
+      "fault_parameters": {
+        "child_fault_ids": [
+          "p22-30-az_stop-fault-01",
+          "p22-30-az_stop-fault-02",
+          "p22-30-az_stop-fault-03",
+          "p22-30-az_stop-fault-04",
+          "p22-30-az_stop-fault-05",
+          "p22-30-az_stop-fault-06",
+          "p22-30-az_stop-fault-07",
+          "p22-30-az_stop-fault-08",
+          "p22-30-az_stop-fault-09",
+          "p22-30-az_stop-fault-10",
+          "p22-30-az_stop-fault-11",
+          "p22-30-az_stop-fault-12",
+          "p22-30-az_stop-fault-13",
+          "p22-30-az_stop-fault-14",
+          "p22-30-az_stop-fault-15"
+        ],
+        "stop_method": "node_stop"
+      },
+      "apply_started_at_ms": 1783039796934,
+      "apply_completed_at_ms": 1783039798914,
+      "clear_started_at_ms": 1783039800524,
+      "clear_completed_at_ms": 1783039803641,
+      "recovery_completed_at_ms": 1783039805707,
+      "apply_duration_ms": 1979.704,
+      "clear_duration_ms": 3116.26,
+      "recovery_latency_ms": 5183,
+      "observed_effect_started_at_ms": 1783039798914,
+      "expected_impact": "target group unavailable until restore",
+      "observed_impact": {
+        "cluster_state_during": "ok",
+        "nodes_observed_during": 16,
+        "unexpected_promotion_observed": false,
+        "promotion_expected": "MISSING",
+        "split_brain_detectors_run": [
+          "primary_slot_assignment_overlap"
+        ],
+        "split_brain_window_ms": 0
+      },
+      "safety_scope_verified": true,
+      "cleanup_verified": true,
+      "host_network_mutated": false,
+      "physical_host_mutated": false,
+      "physical_az_mutated": false,
+      "workload_impact_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json#p22-30-az_stop",
+      "state_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/state_p22.json",
+      "apply_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-01_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-02_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-03_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-04_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-05_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-06_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-07_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-08_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-09_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-10_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-11_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-12_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-13_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-14_apply.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-15_apply.json"
+      ],
+      "clear_refs": [
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-15_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-14_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-13_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-12_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-11_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-10_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-09_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-08_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-07_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-06_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-05_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-04_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-03_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-02_clear.json",
+        "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/p22-30-az_stop-fault-01_clear.json"
+      ],
+      "errors_by_type": {},
+      "missing_fields": [],
+      "cleanup_ref": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/_p22_runs/p22_fault_matrix_30/cleanup_report.json"
+    }
+  ],
+  "safety_checks": {
+    "host_network_mutated": false,
+    "global_firewall_mutated": false,
+    "physical_host_mutated": false,
+    "physical_az_mutated": false,
+    "logical_topology_labels_only": true
+  }
+}

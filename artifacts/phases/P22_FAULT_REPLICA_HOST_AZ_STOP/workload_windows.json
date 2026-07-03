@@ -1,0 +1,4051 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "workload_windows",
+  "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+  "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-fault-matrix-20260628",
+  "created_at": "2026-07-03T00:50:18.610006Z",
+  "producer": {
+    "name": "scripts/fault_safety_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "windows": [
+    {
+      "window_name": "baseline",
+      "sample_id": "p22-6-replica_stop",
+      "fault_id": "p22-6-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 6,
+      "source_window_name": "baseline",
+      "start_event_id": "p22-6-replica_stop-baseline-start",
+      "end_event_id": "p22-6-replica_stop-baseline-end",
+      "start_time_unix_ms": 1783039704290,
+      "end_time_unix_ms": 1783039704309,
+      "start_monotonic_ms": 9570.009,
+      "end_monotonic_ms": 9588.944,
+      "metrics": {
+        "requested_qps": 315.789,
+        "achieved_qps": 315.789,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 3.03,
+        "latency_p90_ms": 3.537,
+        "latency_p95_ms": 3.781,
+        "latency_p99_ms": 3.781,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.537,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.237,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.316,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.781,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.03,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.978,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p22-6-replica_stop",
+      "fault_id": "p22-6-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 6,
+      "source_window_name": "pre_event",
+      "start_event_id": "p22-6-replica_stop-pre_event-start",
+      "end_event_id": "p22-6-replica_stop-pre_event-end",
+      "start_time_unix_ms": 1783039704309,
+      "end_time_unix_ms": 1783039704324,
+      "start_monotonic_ms": 9588.972,
+      "end_monotonic_ms": 9603.368,
+      "metrics": {
+        "requested_qps": 400.0,
+        "achieved_qps": 400.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.187,
+        "latency_p90_ms": 2.845,
+        "latency_p95_ms": 3.437,
+        "latency_p99_ms": 3.437,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.437,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.661,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.845,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.187,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.288,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.938,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p22-6-replica_stop",
+      "fault_id": "p22-6-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 6,
+      "source_window_name": "event",
+      "start_event_id": "p22-6-replica_stop-event-start",
+      "end_event_id": "p22-6-replica_stop-event-end",
+      "start_time_unix_ms": 1783039705499,
+      "end_time_unix_ms": 1783039705510,
+      "start_monotonic_ms": 10779.16,
+      "end_monotonic_ms": 10790.003,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.72,
+        "latency_p90_ms": 1.922,
+        "latency_p95_ms": 2.026,
+        "latency_p99_ms": 2.026,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.867,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.72,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.026,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.922,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.652,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.628,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p22-6-replica_stop",
+      "fault_id": "p22-6-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 6,
+      "source_window_name": "recovery",
+      "start_event_id": "p22-6-replica_stop-recovery-start",
+      "end_event_id": "p22-6-replica_stop-recovery-end",
+      "start_time_unix_ms": 1783039705710,
+      "end_time_unix_ms": 1783039705723,
+      "start_monotonic_ms": 10989.719,
+      "end_monotonic_ms": 11002.761,
+      "metrics": {
+        "requested_qps": 461.538,
+        "achieved_qps": 461.538,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.872,
+        "latency_p90_ms": 2.922,
+        "latency_p95_ms": 3.197,
+        "latency_p99_ms": 3.197,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.197,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.922,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.872,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.559,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.357,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.096,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p22-6-replica_stop",
+      "fault_id": "p22-6-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 6,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p22-6-replica_stop-post_recovery-start",
+      "end_event_id": "p22-6-replica_stop-post_recovery-end",
+      "start_time_unix_ms": 1783039706742,
+      "end_time_unix_ms": 1783039706756,
+      "start_monotonic_ms": 12022.082,
+      "end_monotonic_ms": 12035.641,
+      "metrics": {
+        "requested_qps": 428.571,
+        "achieved_qps": 428.571,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.03,
+        "latency_p90_ms": 2.762,
+        "latency_p95_ms": 2.959,
+        "latency_p99_ms": 2.959,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.762,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.959,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.825,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.778,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.173,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.03,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p22-6-replica_stop",
+      "fault_id": "p22-6-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 6,
+      "source_window_name": "aggregate",
+      "start_event_id": "p22-6-replica_stop-all_run-start",
+      "end_event_id": "p22-6-replica_stop-all_run-end",
+      "start_time_unix_ms": 1783039704290,
+      "end_time_unix_ms": 1783039706756,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 12.165,
+        "achieved_qps": 12.165,
+        "ok_ops": 30,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 30,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 30,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p22-6-node_host_stop",
+      "fault_id": "p22-6-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 6,
+      "source_window_name": "baseline",
+      "start_event_id": "p22-6-node_host_stop-baseline-start",
+      "end_event_id": "p22-6-node_host_stop-baseline-end",
+      "start_time_unix_ms": 1783039706762,
+      "end_time_unix_ms": 1783039706774,
+      "start_monotonic_ms": 12041.753,
+      "end_monotonic_ms": 12053.744,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.969,
+        "latency_p90_ms": 2.023,
+        "latency_p95_ms": 2.102,
+        "latency_p99_ms": 2.102,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.102,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.943,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.971,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.023,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.954,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.969,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p22-6-node_host_stop",
+      "fault_id": "p22-6-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 6,
+      "source_window_name": "pre_event",
+      "start_event_id": "p22-6-node_host_stop-pre_event-start",
+      "end_event_id": "p22-6-node_host_stop-pre_event-end",
+      "start_time_unix_ms": 1783039706774,
+      "end_time_unix_ms": 1783039706786,
+      "start_monotonic_ms": 12053.76,
+      "end_monotonic_ms": 12065.978,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.935,
+        "latency_p90_ms": 2.33,
+        "latency_p95_ms": 2.672,
+        "latency_p99_ms": 2.672,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.328,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.672,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.011,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.913,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.33,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.935,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p22-6-node_host_stop",
+      "fault_id": "p22-6-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 6,
+      "source_window_name": "event",
+      "start_event_id": "p22-6-node_host_stop-event-start",
+      "end_event_id": "p22-6-node_host_stop-event-end",
+      "start_time_unix_ms": 1783039708058,
+      "end_time_unix_ms": 1783039708065,
+      "start_monotonic_ms": 13337.982,
+      "end_monotonic_ms": 13344.243,
+      "metrics": {
+        "requested_qps": 857.143,
+        "achieved_qps": 857.143,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 0.857,
+        "latency_p90_ms": 1.093,
+        "latency_p95_ms": 1.636,
+        "latency_p99_ms": 1.636,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.021,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.856,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.857,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.775,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.636,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.093,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p22-6-node_host_stop",
+      "fault_id": "p22-6-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 6,
+      "source_window_name": "recovery",
+      "start_event_id": "p22-6-node_host_stop-recovery-start",
+      "end_event_id": "p22-6-node_host_stop-recovery-end",
+      "start_time_unix_ms": 1783039708466,
+      "end_time_unix_ms": 1783039708472,
+      "start_monotonic_ms": 13745.441,
+      "end_monotonic_ms": 13751.604,
+      "metrics": {
+        "requested_qps": 1000.0,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.972,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.349,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.839,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.383,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.819,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.634,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p22-6-node_host_stop",
+      "fault_id": "p22-6-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 6,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p22-6-node_host_stop-post_recovery-start",
+      "end_event_id": "p22-6-node_host_stop-post_recovery-end",
+      "start_time_unix_ms": 1783039710502,
+      "end_time_unix_ms": 1783039710523,
+      "start_monotonic_ms": 15781.542,
+      "end_monotonic_ms": 15802.994,
+      "metrics": {
+        "requested_qps": 285.714,
+        "achieved_qps": 285.714,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 3.429,
+        "latency_p90_ms": 3.847,
+        "latency_p95_ms": 3.977,
+        "latency_p99_ms": 3.977,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.429,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.157,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.977,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.753,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.234,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.847,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p22-6-node_host_stop",
+      "fault_id": "p22-6-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 6,
+      "source_window_name": "aggregate",
+      "start_event_id": "p22-6-node_host_stop-all_run-start",
+      "end_event_id": "p22-6-node_host_stop-all_run-end",
+      "start_time_unix_ms": 1783039706762,
+      "end_time_unix_ms": 1783039710523,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 7.977,
+        "achieved_qps": 6.381,
+        "ok_ops": 24,
+        "error_ops": 6,
+        "error_rate": 0.2,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 18,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 30,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p22-6-az_stop",
+      "fault_id": "p22-6-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 6,
+      "source_window_name": "baseline",
+      "start_event_id": "p22-6-az_stop-baseline-start",
+      "end_event_id": "p22-6-az_stop-baseline-end",
+      "start_time_unix_ms": 1783039710535,
+      "end_time_unix_ms": 1783039710555,
+      "start_monotonic_ms": 15815.137,
+      "end_monotonic_ms": 15835.015,
+      "metrics": {
+        "requested_qps": 300.0,
+        "achieved_qps": 300.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 3.395,
+        "latency_p90_ms": 3.741,
+        "latency_p95_ms": 3.93,
+        "latency_p99_ms": 3.93,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.082,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.406,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.395,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.93,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.741,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.266,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p22-6-az_stop",
+      "fault_id": "p22-6-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 6,
+      "source_window_name": "pre_event",
+      "start_event_id": "p22-6-az_stop-pre_event-start",
+      "end_event_id": "p22-6-az_stop-pre_event-end",
+      "start_time_unix_ms": 1783039710555,
+      "end_time_unix_ms": 1783039710571,
+      "start_monotonic_ms": 15835.036,
+      "end_monotonic_ms": 15850.645,
+      "metrics": {
+        "requested_qps": 375.0,
+        "achieved_qps": 375.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.088,
+        "latency_p90_ms": 3.02,
+        "latency_p95_ms": 3.934,
+        "latency_p99_ms": 3.934,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.983,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.934,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.02,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.088,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.074,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.471,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p22-6-az_stop",
+      "fault_id": "p22-6-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 6,
+      "source_window_name": "event",
+      "start_event_id": "p22-6-az_stop-event-start",
+      "end_event_id": "p22-6-az_stop-event-end",
+      "start_time_unix_ms": 1783039712018,
+      "end_time_unix_ms": 1783039712025,
+      "start_monotonic_ms": 17297.309,
+      "end_monotonic_ms": 17304.617,
+      "metrics": {
+        "requested_qps": 857.143,
+        "achieved_qps": 857.143,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.069,
+        "latency_p90_ms": 1.495,
+        "latency_p95_ms": 1.534,
+        "latency_p99_ms": 1.534,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.495,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.069,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.418,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.534,
+          "redirects": 0
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 0.972,
+          "redirects": 0
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 0.753,
+          "redirects": 0
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p22-6-az_stop",
+      "fault_id": "p22-6-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 6,
+      "source_window_name": "recovery",
+      "start_event_id": "p22-6-az_stop-recovery-start",
+      "end_event_id": "p22-6-az_stop-recovery-end",
+      "start_time_unix_ms": 1783039712676,
+      "end_time_unix_ms": 1783039712692,
+      "start_monotonic_ms": 17955.522,
+      "end_monotonic_ms": 17971.865,
+      "metrics": {
+        "requested_qps": 375.0,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.293,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.937,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 2.183,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 6.767,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.948,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 2.05,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p22-6-az_stop",
+      "fault_id": "p22-6-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 6,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p22-6-az_stop-post_recovery-start",
+      "end_event_id": "p22-6-az_stop-post_recovery-end",
+      "start_time_unix_ms": 1783039714723,
+      "end_time_unix_ms": 1783039714738,
+      "start_monotonic_ms": 20002.809,
+      "end_monotonic_ms": 20017.95,
+      "metrics": {
+        "requested_qps": 400.0,
+        "achieved_qps": 400.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.548,
+        "latency_p90_ms": 2.672,
+        "latency_p95_ms": 3.195,
+        "latency_p99_ms": 3.195,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.548,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.236,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.672,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.599,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.799,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.195,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p22-6-az_stop",
+      "fault_id": "p22-6-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 6,
+      "source_window_name": "aggregate",
+      "start_event_id": "p22-6-az_stop-all_run-start",
+      "end_event_id": "p22-6-az_stop-all_run-end",
+      "start_time_unix_ms": 1783039710535,
+      "end_time_unix_ms": 1783039714738,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 7.138,
+        "achieved_qps": 5.71,
+        "ok_ops": 24,
+        "error_ops": 6,
+        "error_rate": 0.2,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 18,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 30,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_6-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p22-10-replica_stop",
+      "fault_id": "p22-10-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 10,
+      "source_window_name": "baseline",
+      "start_event_id": "p22-10-replica_stop-baseline-start",
+      "end_event_id": "p22-10-replica_stop-baseline-end",
+      "start_time_unix_ms": 1783039729810,
+      "end_time_unix_ms": 1783039729824,
+      "start_monotonic_ms": 35089.572,
+      "end_monotonic_ms": 35103.781,
+      "metrics": {
+        "requested_qps": 428.571,
+        "achieved_qps": 428.571,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.87,
+        "latency_p90_ms": 2.924,
+        "latency_p95_ms": 3.113,
+        "latency_p99_ms": 3.113,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.786,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.707,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.774,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.924,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.113,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.87,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p22-10-replica_stop",
+      "fault_id": "p22-10-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 10,
+      "source_window_name": "pre_event",
+      "start_event_id": "p22-10-replica_stop-pre_event-start",
+      "end_event_id": "p22-10-replica_stop-pre_event-end",
+      "start_time_unix_ms": 1783039729824,
+      "end_time_unix_ms": 1783039729836,
+      "start_monotonic_ms": 35103.812,
+      "end_monotonic_ms": 35115.721,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.673,
+        "latency_p90_ms": 2.456,
+        "latency_p95_ms": 2.528,
+        "latency_p99_ms": 2.528,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.673,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.609,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.528,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.605,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.456,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.004,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p22-10-replica_stop",
+      "fault_id": "p22-10-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 10,
+      "source_window_name": "event",
+      "start_event_id": "p22-10-replica_stop-event-start",
+      "end_event_id": "p22-10-replica_stop-event-end",
+      "start_time_unix_ms": 1783039730999,
+      "end_time_unix_ms": 1783039731011,
+      "start_monotonic_ms": 36278.929,
+      "end_monotonic_ms": 36290.624,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.843,
+        "latency_p90_ms": 1.976,
+        "latency_p95_ms": 2.843,
+        "latency_p99_ms": 2.843,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.843,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.976,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.843,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.61,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.521,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.868,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p22-10-replica_stop",
+      "fault_id": "p22-10-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 10,
+      "source_window_name": "recovery",
+      "start_event_id": "p22-10-replica_stop-recovery-start",
+      "end_event_id": "p22-10-replica_stop-recovery-end",
+      "start_time_unix_ms": 1783039731194,
+      "end_time_unix_ms": 1783039731205,
+      "start_monotonic_ms": 36473.162,
+      "end_monotonic_ms": 36483.979,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.332,
+        "latency_p90_ms": 2.333,
+        "latency_p95_ms": 2.725,
+        "latency_p99_ms": 2.725,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.725,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.333,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.293,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.087,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.012,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.332,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p22-10-replica_stop",
+      "fault_id": "p22-10-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 10,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p22-10-replica_stop-post_recovery-start",
+      "end_event_id": "p22-10-replica_stop-post_recovery-end",
+      "start_time_unix_ms": 1783039731211,
+      "end_time_unix_ms": 1783039731229,
+      "start_monotonic_ms": 36490.44,
+      "end_monotonic_ms": 36508.525,
+      "metrics": {
+        "requested_qps": 333.333,
+        "achieved_qps": 333.333,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.361,
+        "latency_p90_ms": 4.601,
+        "latency_p95_ms": 5.667,
+        "latency_p99_ms": 5.667,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 4.601,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 5.667,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.611,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.361,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.311,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.506,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p22-10-replica_stop",
+      "fault_id": "p22-10-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 10,
+      "source_window_name": "aggregate",
+      "start_event_id": "p22-10-replica_stop-all_run-start",
+      "end_event_id": "p22-10-replica_stop-all_run-end",
+      "start_time_unix_ms": 1783039729810,
+      "end_time_unix_ms": 1783039731229,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 21.142,
+        "achieved_qps": 21.142,
+        "ok_ops": 30,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 30,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 30,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p22-10-node_host_stop",
+      "fault_id": "p22-10-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 10,
+      "source_window_name": "baseline",
+      "start_event_id": "p22-10-node_host_stop-baseline-start",
+      "end_event_id": "p22-10-node_host_stop-baseline-end",
+      "start_time_unix_ms": 1783039731235,
+      "end_time_unix_ms": 1783039731247,
+      "start_monotonic_ms": 36514.796,
+      "end_monotonic_ms": 36526.297,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.912,
+        "latency_p90_ms": 2.184,
+        "latency_p95_ms": 2.194,
+        "latency_p99_ms": 2.194,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.763,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.184,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.912,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.099,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.194,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.319,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p22-10-node_host_stop",
+      "fault_id": "p22-10-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 10,
+      "source_window_name": "pre_event",
+      "start_event_id": "p22-10-node_host_stop-pre_event-start",
+      "end_event_id": "p22-10-node_host_stop-pre_event-end",
+      "start_time_unix_ms": 1783039731247,
+      "end_time_unix_ms": 1783039731258,
+      "start_monotonic_ms": 36526.312,
+      "end_monotonic_ms": 36537.804,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.651,
+        "latency_p90_ms": 2.426,
+        "latency_p95_ms": 3.105,
+        "latency_p99_ms": 3.105,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.105,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.169,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.651,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.426,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.153,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.966,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p22-10-node_host_stop",
+      "fault_id": "p22-10-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 10,
+      "source_window_name": "event",
+      "start_event_id": "p22-10-node_host_stop-event-start",
+      "end_event_id": "p22-10-node_host_stop-event-end",
+      "start_time_unix_ms": 1783039732667,
+      "end_time_unix_ms": 1783039732683,
+      "start_monotonic_ms": 37946.53,
+      "end_monotonic_ms": 37962.327,
+      "metrics": {
+        "requested_qps": 375.0,
+        "achieved_qps": 375.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.633,
+        "latency_p90_ms": 3.164,
+        "latency_p95_ms": 3.259,
+        "latency_p99_ms": 3.259,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.164,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.979,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.633,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.259,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.724,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.971,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p22-10-node_host_stop",
+      "fault_id": "p22-10-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 10,
+      "source_window_name": "recovery",
+      "start_event_id": "p22-10-node_host_stop-recovery-start",
+      "end_event_id": "p22-10-node_host_stop-recovery-end",
+      "start_time_unix_ms": 1783039733319,
+      "end_time_unix_ms": 1783039733331,
+      "start_monotonic_ms": 38598.547,
+      "end_monotonic_ms": 38610.783,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.836,
+        "latency_p90_ms": 2.091,
+        "latency_p95_ms": 3.303,
+        "latency_p99_ms": 3.303,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.303,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.836,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.995,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.384,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.582,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.091,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p22-10-node_host_stop",
+      "fault_id": "p22-10-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 10,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p22-10-node_host_stop-post_recovery-start",
+      "end_event_id": "p22-10-node_host_stop-post_recovery-end",
+      "start_time_unix_ms": 1783039735359,
+      "end_time_unix_ms": 1783039735374,
+      "start_monotonic_ms": 40638.805,
+      "end_monotonic_ms": 40652.956,
+      "metrics": {
+        "requested_qps": 400.0,
+        "achieved_qps": 400.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.104,
+        "latency_p90_ms": 2.369,
+        "latency_p95_ms": 3.704,
+        "latency_p99_ms": 3.704,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.369,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.704,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.104,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.834,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.953,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.142,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p22-10-node_host_stop",
+      "fault_id": "p22-10-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 10,
+      "source_window_name": "aggregate",
+      "start_event_id": "p22-10-node_host_stop-all_run-start",
+      "end_event_id": "p22-10-node_host_stop-all_run-end",
+      "start_time_unix_ms": 1783039731235,
+      "end_time_unix_ms": 1783039735374,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 7.248,
+        "achieved_qps": 7.248,
+        "ok_ops": 30,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 30,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 30,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p22-10-az_stop",
+      "fault_id": "p22-10-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 10,
+      "source_window_name": "baseline",
+      "start_event_id": "p22-10-az_stop-baseline-start",
+      "end_event_id": "p22-10-az_stop-baseline-end",
+      "start_time_unix_ms": 1783039735383,
+      "end_time_unix_ms": 1783039735396,
+      "start_monotonic_ms": 40662.659,
+      "end_monotonic_ms": 40675.81,
+      "metrics": {
+        "requested_qps": 461.538,
+        "achieved_qps": 461.538,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.02,
+        "latency_p90_ms": 2.117,
+        "latency_p95_ms": 3.077,
+        "latency_p99_ms": 3.077,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.954,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.077,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.865,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.081,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.02,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.117,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p22-10-az_stop",
+      "fault_id": "p22-10-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 10,
+      "source_window_name": "pre_event",
+      "start_event_id": "p22-10-az_stop-pre_event-start",
+      "end_event_id": "p22-10-az_stop-pre_event-end",
+      "start_time_unix_ms": 1783039735396,
+      "end_time_unix_ms": 1783039735408,
+      "start_monotonic_ms": 40675.826,
+      "end_monotonic_ms": 40687.692,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.932,
+        "latency_p90_ms": 2.075,
+        "latency_p95_ms": 2.23,
+        "latency_p99_ms": 2.23,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.867,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.032,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.075,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.932,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.703,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.23,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p22-10-az_stop",
+      "fault_id": "p22-10-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 10,
+      "source_window_name": "event",
+      "start_event_id": "p22-10-az_stop-event-start",
+      "end_event_id": "p22-10-az_stop-event-end",
+      "start_time_unix_ms": 1783039737116,
+      "end_time_unix_ms": 1783039738079,
+      "start_monotonic_ms": 42395.434,
+      "end_monotonic_ms": 43358.774,
+      "metrics": {
+        "requested_qps": 6.231,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 949.868,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 3.407,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 2.909,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.709,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 2.591,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 2.535,
+          "error": "RespProtocolError('empty RESP response')"
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p22-10-az_stop",
+      "fault_id": "p22-10-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 10,
+      "source_window_name": "recovery",
+      "start_event_id": "p22-10-az_stop-recovery-start",
+      "end_event_id": "p22-10-az_stop-recovery-end",
+      "start_time_unix_ms": 1783039739130,
+      "end_time_unix_ms": 1783039739136,
+      "start_monotonic_ms": 44409.233,
+      "end_monotonic_ms": 44415.468,
+      "metrics": {
+        "requested_qps": 1000.0,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.24,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.94,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.328,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.78,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.106,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.684,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p22-10-az_stop",
+      "fault_id": "p22-10-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 10,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p22-10-az_stop-post_recovery-start",
+      "end_event_id": "p22-10-az_stop-post_recovery-end",
+      "start_time_unix_ms": 1783039741170,
+      "end_time_unix_ms": 1783039741188,
+      "start_monotonic_ms": 46449.454,
+      "end_monotonic_ms": 46467.006,
+      "metrics": {
+        "requested_qps": 333.333,
+        "achieved_qps": 333.333,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.749,
+        "latency_p90_ms": 3.124,
+        "latency_p95_ms": 3.897,
+        "latency_p99_ms": 3.897,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.696,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.897,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.011,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.749,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.001,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.124,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p22-10-az_stop",
+      "fault_id": "p22-10-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 10,
+      "source_window_name": "aggregate",
+      "start_event_id": "p22-10-az_stop-all_run-start",
+      "end_event_id": "p22-10-az_stop-all_run-end",
+      "start_time_unix_ms": 1783039735383,
+      "end_time_unix_ms": 1783039741188,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 5.168,
+        "achieved_qps": 3.101,
+        "ok_ops": 18,
+        "error_ops": 12,
+        "error_rate": 0.4,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 18,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 12,
+        "sample_count": 30,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_10-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p22-30-replica_stop",
+      "fault_id": "p22-30-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 30,
+      "source_window_name": "baseline",
+      "start_event_id": "p22-30-replica_stop-baseline-start",
+      "end_event_id": "p22-30-replica_stop-baseline-end",
+      "start_time_unix_ms": 1783039788853,
+      "end_time_unix_ms": 1783039788862,
+      "start_monotonic_ms": 94132.284,
+      "end_monotonic_ms": 94141.196,
+      "metrics": {
+        "requested_qps": 666.667,
+        "achieved_qps": 666.667,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.412,
+        "latency_p90_ms": 1.504,
+        "latency_p95_ms": 2.029,
+        "latency_p99_ms": 2.029,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.255,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.412,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.029,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.191,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.504,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.487,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p22-30-replica_stop",
+      "fault_id": "p22-30-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 30,
+      "source_window_name": "pre_event",
+      "start_event_id": "p22-30-replica_stop-pre_event-start",
+      "end_event_id": "p22-30-replica_stop-pre_event-end",
+      "start_time_unix_ms": 1783039788862,
+      "end_time_unix_ms": 1783039788873,
+      "start_monotonic_ms": 94141.222,
+      "end_monotonic_ms": 94151.701,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.493,
+        "latency_p90_ms": 2.041,
+        "latency_p95_ms": 2.246,
+        "latency_p99_ms": 2.246,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.246,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.452,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.791,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.041,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.39,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.493,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p22-30-replica_stop",
+      "fault_id": "p22-30-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 30,
+      "source_window_name": "event",
+      "start_event_id": "p22-30-replica_stop-event-start",
+      "end_event_id": "p22-30-replica_stop-event-end",
+      "start_time_unix_ms": 1783039790056,
+      "end_time_unix_ms": 1783039790066,
+      "start_monotonic_ms": 95335.044,
+      "end_monotonic_ms": 95345.108,
+      "metrics": {
+        "requested_qps": 600.0,
+        "achieved_qps": 600.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.412,
+        "latency_p90_ms": 1.968,
+        "latency_p95_ms": 2.454,
+        "latency_p99_ms": 2.454,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.361,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.412,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.502,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.968,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.454,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.329,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p22-30-replica_stop",
+      "fault_id": "p22-30-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 30,
+      "source_window_name": "recovery",
+      "start_event_id": "p22-30-replica_stop-recovery-start",
+      "end_event_id": "p22-30-replica_stop-recovery-end",
+      "start_time_unix_ms": 1783039790268,
+      "end_time_unix_ms": 1783039790280,
+      "start_monotonic_ms": 95546.557,
+      "end_monotonic_ms": 95558.812,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 500.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.898,
+        "latency_p90_ms": 2.285,
+        "latency_p95_ms": 3.102,
+        "latency_p99_ms": 3.102,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.898,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.285,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.102,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.57,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.366,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.994,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p22-30-replica_stop",
+      "fault_id": "p22-30-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 30,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p22-30-replica_stop-post_recovery-start",
+      "end_event_id": "p22-30-replica_stop-post_recovery-end",
+      "start_time_unix_ms": 1783039790295,
+      "end_time_unix_ms": 1783039790306,
+      "start_monotonic_ms": 95574.081,
+      "end_monotonic_ms": 95584.739,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.86,
+        "latency_p90_ms": 1.986,
+        "latency_p95_ms": 2.369,
+        "latency_p99_ms": 2.369,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.956,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.171,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.369,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.28,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.86,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.986,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p22-30-replica_stop",
+      "fault_id": "p22-30-replica_stop-fault",
+      "fault_type": "replica_stop",
+      "node_count": 30,
+      "source_window_name": "aggregate",
+      "start_event_id": "p22-30-replica_stop-all_run-start",
+      "end_event_id": "p22-30-replica_stop-all_run-end",
+      "start_time_unix_ms": 1783039788853,
+      "end_time_unix_ms": 1783039790306,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 20.647,
+        "achieved_qps": 20.647,
+        "ok_ops": 30,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 30,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 30,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p22-30-node_host_stop",
+      "fault_id": "p22-30-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 30,
+      "source_window_name": "baseline",
+      "start_event_id": "p22-30-node_host_stop-baseline-start",
+      "end_event_id": "p22-30-node_host_stop-baseline-end",
+      "start_time_unix_ms": 1783039790319,
+      "end_time_unix_ms": 1783039790330,
+      "start_monotonic_ms": 95598.347,
+      "end_monotonic_ms": 95608.727,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.44,
+        "latency_p90_ms": 2.087,
+        "latency_p95_ms": 2.189,
+        "latency_p99_ms": 2.189,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.44,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.398,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.189,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.287,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.087,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.952,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p22-30-node_host_stop",
+      "fault_id": "p22-30-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 30,
+      "source_window_name": "pre_event",
+      "start_event_id": "p22-30-node_host_stop-pre_event-start",
+      "end_event_id": "p22-30-node_host_stop-pre_event-end",
+      "start_time_unix_ms": 1783039790330,
+      "end_time_unix_ms": 1783039790341,
+      "start_monotonic_ms": 95608.745,
+      "end_monotonic_ms": 95620.021,
+      "metrics": {
+        "requested_qps": 545.455,
+        "achieved_qps": 545.455,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.818,
+        "latency_p90_ms": 2.352,
+        "latency_p95_ms": 2.575,
+        "latency_p99_ms": 2.575,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.229,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.284,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 1.818,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 1.991,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.575,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.352,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p22-30-node_host_stop",
+      "fault_id": "p22-30-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 30,
+      "source_window_name": "event",
+      "start_event_id": "p22-30-node_host_stop-event-start",
+      "end_event_id": "p22-30-node_host_stop-event-end",
+      "start_time_unix_ms": 1783039792674,
+      "end_time_unix_ms": 1783039792686,
+      "start_monotonic_ms": 97952.995,
+      "end_monotonic_ms": 97964.769,
+      "metrics": {
+        "requested_qps": 500.0,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.652,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 2.656,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 2.429,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.659,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.533,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.675,
+          "error": "RespProtocolError('empty RESP response')"
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p22-30-node_host_stop",
+      "fault_id": "p22-30-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 30,
+      "source_window_name": "recovery",
+      "start_event_id": "p22-30-node_host_stop-recovery-start",
+      "end_event_id": "p22-30-node_host_stop-recovery-end",
+      "start_time_unix_ms": 1783039794791,
+      "end_time_unix_ms": 1783039794798,
+      "start_monotonic_ms": 100069.503,
+      "end_monotonic_ms": 100076.744,
+      "metrics": {
+        "requested_qps": 857.143,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.451,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.856,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.844,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.695,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.353,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.885,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p22-30-node_host_stop",
+      "fault_id": "p22-30-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 30,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p22-30-node_host_stop-post_recovery-start",
+      "end_event_id": "p22-30-node_host_stop-post_recovery-end",
+      "start_time_unix_ms": 1783039796851,
+      "end_time_unix_ms": 1783039796873,
+      "start_monotonic_ms": 102129.369,
+      "end_monotonic_ms": 102151.9,
+      "metrics": {
+        "requested_qps": 272.727,
+        "achieved_qps": 272.727,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 3.473,
+        "latency_p90_ms": 4.107,
+        "latency_p95_ms": 5.564,
+        "latency_p99_ms": 5.564,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 5.564,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 4.107,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.572,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.473,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.115,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.634,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p22-30-node_host_stop",
+      "fault_id": "p22-30-node_host_stop-fault",
+      "fault_type": "node_host_stop",
+      "node_count": 30,
+      "source_window_name": "aggregate",
+      "start_event_id": "p22-30-node_host_stop-all_run-start",
+      "end_event_id": "p22-30-node_host_stop-all_run-end",
+      "start_time_unix_ms": 1783039790319,
+      "end_time_unix_ms": 1783039796873,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 4.577,
+        "achieved_qps": 2.746,
+        "ok_ops": 18,
+        "error_ops": 12,
+        "error_rate": 0.4,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 18,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 12,
+        "sample_count": 30,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "baseline",
+      "sample_id": "p22-30-az_stop",
+      "fault_id": "p22-30-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 30,
+      "source_window_name": "baseline",
+      "start_event_id": "p22-30-az_stop-baseline-start",
+      "end_event_id": "p22-30-az_stop-baseline-end",
+      "start_time_unix_ms": 1783039796895,
+      "end_time_unix_ms": 1783039796912,
+      "start_monotonic_ms": 102173.325,
+      "end_monotonic_ms": 102190.883,
+      "metrics": {
+        "requested_qps": 352.941,
+        "achieved_qps": 352.941,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.682,
+        "latency_p90_ms": 3.138,
+        "latency_p95_ms": 3.986,
+        "latency_p99_ms": 3.986,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.503,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.138,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.682,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.351,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.854,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.986,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "pre_event",
+      "sample_id": "p22-30-az_stop",
+      "fault_id": "p22-30-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 30,
+      "source_window_name": "pre_event",
+      "start_event_id": "p22-30-az_stop-pre_event-start",
+      "end_event_id": "p22-30-az_stop-pre_event-end",
+      "start_time_unix_ms": 1783039796912,
+      "end_time_unix_ms": 1783039796934,
+      "start_monotonic_ms": 102190.902,
+      "end_monotonic_ms": 102212.57,
+      "metrics": {
+        "requested_qps": 272.727,
+        "achieved_qps": 272.727,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 3.398,
+        "latency_p90_ms": 4.122,
+        "latency_p95_ms": 4.467,
+        "latency_p99_ms": 4.467,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.144,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.944,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.398,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 3.548,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 4.467,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 4.122,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "event",
+      "sample_id": "p22-30-az_stop",
+      "fault_id": "p22-30-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 30,
+      "source_window_name": "event",
+      "start_event_id": "p22-30-az_stop-event-start",
+      "end_event_id": "p22-30-az_stop-event-end",
+      "start_time_unix_ms": 1783039799958,
+      "end_time_unix_ms": 1783039800524,
+      "start_monotonic_ms": 105236.972,
+      "end_monotonic_ms": 105802.981,
+      "metrics": {
+        "requested_qps": 10.601,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 555.481,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.87,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 2.017,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 2.496,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 2.232,
+          "error": "RespProtocolError('empty RESP response')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.594,
+          "error": "RespProtocolError('empty RESP response')"
+        }
+      ],
+      "entry_logical_id": "shard-0001-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "recovery",
+      "sample_id": "p22-30-az_stop",
+      "fault_id": "p22-30-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 30,
+      "source_window_name": "recovery",
+      "start_event_id": "p22-30-az_stop-recovery-start",
+      "end_event_id": "p22-30-az_stop-recovery-end",
+      "start_time_unix_ms": 1783039803642,
+      "end_time_unix_ms": 1783039803648,
+      "start_monotonic_ms": 108920.327,
+      "end_monotonic_ms": 108926.962,
+      "metrics": {
+        "requested_qps": 1000.0,
+        "achieved_qps": 0.0,
+        "ok_ops": 0,
+        "error_ops": 6,
+        "error_rate": 1.0,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 0,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 6,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 1.08,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 1.088,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 2.203,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.839,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "SET",
+          "status": "FAIL",
+          "latency_ms": 0.585,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        },
+        {
+          "command": "GET",
+          "status": "FAIL",
+          "latency_ms": 0.676,
+          "error": "RespError('CLUSTERDOWN The cluster is down')"
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "post_recovery",
+      "sample_id": "p22-30-az_stop",
+      "fault_id": "p22-30-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 30,
+      "source_window_name": "post_recovery",
+      "start_event_id": "p22-30-az_stop-post_recovery-start",
+      "end_event_id": "p22-30-az_stop-post_recovery-end",
+      "start_time_unix_ms": 1783039805708,
+      "end_time_unix_ms": 1783039805723,
+      "start_monotonic_ms": 110986.252,
+      "end_monotonic_ms": 111002.154,
+      "metrics": {
+        "requested_qps": 400.0,
+        "achieved_qps": 400.0,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 2.521,
+        "latency_p90_ms": 2.882,
+        "latency_p95_ms": 3.387,
+        "latency_p99_ms": 3.387,
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 6,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 6,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999."
+        }
+      },
+      "samples": [
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.521,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.055,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 3.387,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.882,
+          "redirects": 1
+        },
+        {
+          "command": "SET",
+          "status": "PASS",
+          "latency_ms": 2.749,
+          "redirects": 1
+        },
+        {
+          "command": "GET",
+          "status": "PASS",
+          "latency_ms": 2.251,
+          "redirects": 1
+        }
+      ],
+      "entry_logical_id": "shard-0000-primary",
+      "entry_missing_reason": "",
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    },
+    {
+      "window_name": "all_run",
+      "sample_id": "p22-30-az_stop",
+      "fault_id": "p22-30-az_stop-fault",
+      "fault_type": "az_stop",
+      "node_count": 30,
+      "source_window_name": "aggregate",
+      "start_event_id": "p22-30-az_stop-all_run-start",
+      "end_event_id": "p22-30-az_stop-all_run-end",
+      "start_time_unix_ms": 1783039796895,
+      "end_time_unix_ms": 1783039805723,
+      "start_monotonic_ms": "MISSING",
+      "end_monotonic_ms": "MISSING",
+      "metrics": {
+        "requested_qps": 3.398,
+        "achieved_qps": 2.039,
+        "ok_ops": 18,
+        "error_ops": 12,
+        "error_rate": 0.4,
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 18,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 12,
+        "sample_count": 30,
+        "missing_reasons": {
+          "latency_p999_ms": "P22 focused gate uses too few workload samples for p999.",
+          "latency_p50_ms": "No successful workload operations were observed in this window.",
+          "latency_p90_ms": "No successful workload operations were observed in this window.",
+          "latency_p95_ms": "No successful workload operations were observed in this window.",
+          "latency_p99_ms": "No successful workload operations were observed in this window."
+        }
+      },
+      "samples": [],
+      "run_id": "P22_FAULT_REPLICA_HOST_AZ_STOP-p22_fault_matrix_30-20260628",
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP"
+    }
+  ]
+}

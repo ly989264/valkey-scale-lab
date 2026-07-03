@@ -1216,3 +1216,263 @@ def test_p19_management_assertion_rejects_failed_health_gate(tmp_path: Path, mon
     monkeypatch.setattr(sys, "argv", ["assert_management_ops_coverage.py", "--phase", phase])
 
     assert assertion.main() == 1
+
+
+P22_PHASE = "P22_FAULT_REPLICA_HOST_AZ_STOP"
+P22_FAULTS = ["replica_stop", "node_host_stop", "az_stop"]
+P22_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]
+
+
+def p22_fault_row(fault_type: str, node_count: int) -> dict:
+    target = {
+        "logical_id": "shard-0000-replica-00" if fault_type == "replica_stop" else "shard-0000-primary",
+        "role": "replica" if fault_type == "replica_stop" else "primary",
+        "host_id": "p22-host-a",
+        "az_id": "az-a",
+        "nodehost_id": "nodehost-az-a",
+    }
+    selector = {"selector_type": "role", "selected_role": "replica", "promotion_expected": False}
+    if fault_type == "node_host_stop":
+        selector = {"selector_type": "logical_host_id", "selected_host_id": "p22-host-a", "logical_host_only": True}
+    if fault_type == "az_stop":
+        selector = {"selector_type": "virtual_az_id", "selected_az_id": "az-a", "virtual_az_only": True}
+    sample_id = f"p22-{node_count}-{fault_type}"
+    return {
+        "schema_version": "v1",
+        "phase_id": P22_PHASE,
+        "run_id": "run",
+        "scenario_name": f"p22_fault_matrix_{node_count}",
+        "sample_id": sample_id,
+        "node_count": node_count,
+        "status": "PASS",
+        "real_valkey": True,
+        "fault_type": fault_type,
+        "fault_id": f"{sample_id}-fault",
+        "scope": "owned_container_or_process",
+        "implementation_path": "owned_runtime_control",
+        "targets": [target],
+        "target_selector": selector,
+        "apply_started_at_ms": 100,
+        "apply_completed_at_ms": 110,
+        "clear_started_at_ms": 120,
+        "clear_completed_at_ms": 130,
+        "recovery_completed_at_ms": 150,
+        "safety_scope_verified": True,
+        "cleanup_verified": True,
+        "host_network_mutated": False,
+        "physical_host_mutated": False,
+        "physical_az_mutated": False,
+        "observed_impact": {
+            "unexpected_promotion_observed": False,
+            "promotion_expected": False if fault_type == "replica_stop" else "MISSING",
+            "split_brain_window_ms": 0,
+        },
+        "workload_impact_ref": f"workload_impact_report.json#{sample_id}",
+    }
+
+
+def p22_skip_row(fault_type: str) -> dict:
+    sample_id = f"p22-30-{fault_type}"
+    return {
+        "schema_version": "v1",
+        "phase_id": P22_PHASE,
+        "run_id": "skip",
+        "scenario_name": "p22_fault_matrix_30",
+        "sample_id": sample_id,
+        "node_count": 30,
+        "status": "SKIPPED_WITH_REASON",
+        "reason": "preflight failed",
+        "preflight_ref": "resource_preflight_30.json",
+        "fault_type": fault_type,
+        "fault_id": f"{sample_id}-fault",
+        "scope": "owned_container_or_process",
+        "implementation_path": "unsupported_skipped_with_reason",
+        "targets": [{"status": "SKIPPED_WITH_REASON"}],
+        "apply_started_at_ms": "SKIPPED_WITH_REASON",
+        "apply_completed_at_ms": "SKIPPED_WITH_REASON",
+        "clear_started_at_ms": "SKIPPED_WITH_REASON",
+        "clear_completed_at_ms": "SKIPPED_WITH_REASON",
+        "recovery_completed_at_ms": "SKIPPED_WITH_REASON",
+        "safety_scope_verified": True,
+        "cleanup_verified": True,
+        "workload_impact_ref": "SKIPPED_WITH_REASON",
+    }
+
+
+def p22_window(sample_id: str, fault_type: str, node_count: int, window_name: str) -> dict:
+    return {
+        "window_name": window_name,
+        "sample_id": sample_id,
+        "fault_id": f"{sample_id}-fault",
+        "fault_type": fault_type,
+        "node_count": node_count,
+        "start_event_id": f"{sample_id}-{window_name}-start",
+        "end_event_id": f"{sample_id}-{window_name}-end",
+        "metrics": {
+            "requested_qps": 1.0,
+            "achieved_qps": 1.0,
+            "ok_ops": 1,
+            "error_ops": 0,
+            "error_rate": 0.0,
+            "latency_p50_ms": 1.0,
+            "latency_p95_ms": 1.0,
+            "latency_p99_ms": 1.0,
+            "timeout_count": 0,
+            "moved_redirection_count": 0,
+            "ask_redirection_count": 0,
+            "missing_reasons": {},
+        },
+    }
+
+
+def write_p22_bundle(base: Path) -> list[dict]:
+    rows = [p22_fault_row(fault, count) for fault in P22_FAULTS for count in [6, 10]]
+    rows.extend(p22_skip_row(fault) for fault in P22_FAULTS)
+    write_json(base / "resource_preflight_30.json", {"can_run": False, "status": "FAIL", "node_count": 30})
+    write_jsonl(base / "fault_results.jsonl", rows)
+    workload_rows = [
+        p22_window(row["sample_id"], row["fault_type"], row["node_count"], window)
+        for row in rows
+        if row["status"] != "SKIPPED_WITH_REASON"
+        for window in P22_WINDOWS
+    ]
+    write_json(
+        base / "workload_impact_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "workload_impact_report",
+            "phase_id": P22_PHASE,
+            "run_id": "run",
+            "windows": workload_rows,
+            "comparisons": [
+                {
+                    "sample_id": row["sample_id"],
+                    "fault_type": row["fault_type"],
+                    "node_count": row["node_count"],
+                    "fault_window_qps_ratio": 1.0,
+                    "fault_window_p99_delta_ms": 0.0,
+                    "fault_window_error_rate_delta": 0.0,
+                    "recovery_window_duration_ms": 1,
+                    "post_recovery_qps_ratio": 1.0,
+                }
+                for row in rows
+                if row["status"] != "SKIPPED_WITH_REASON"
+            ],
+        },
+    )
+    events = [
+        {
+            "schema_version": "v1",
+            "run_id": "run",
+            "phase_id": P22_PHASE,
+            "scenario_name": "p22_fault_matrix",
+            "sample_id": row["sample_id"],
+            "event_id": f"{row['sample_id']}-fault",
+            "event_type": "fault_apply_started",
+            "timestamp_unix_ms": 100,
+            "monotonic_ms": 100,
+            "severity": "INFO",
+            "subject_type": "fault",
+            "subject_id": row["fault_type"],
+            "operation_id": "",
+            "fault_id": row["fault_id"],
+            "message": "fault",
+            "metadata": {},
+        }
+        for row in rows
+        if row["status"] != "SKIPPED_WITH_REASON"
+    ]
+    metrics = [
+        {
+            "schema_version": "v1",
+            "run_id": "run",
+            "phase_id": P22_PHASE,
+            "scenario_name": "p22_fault_matrix",
+            "sample_id": row["sample_id"],
+            "timestamp_unix_ms": 100,
+            "monotonic_ms": 100,
+            "source_type": "harness",
+            "source_id": row["fault_id"],
+            "metric_name": "target_count",
+            "metric_value": 1,
+            "metric_unit": "count",
+            "labels": {},
+            "missing_reason": "",
+        }
+        for row in rows
+        if row["status"] != "SKIPPED_WITH_REASON"
+    ]
+    snapshots = [
+        {
+            "schema_version": "v1",
+            "phase_id": P22_PHASE,
+            "run_id": "run",
+            "sample_id": row["sample_id"],
+            "snapshot_id": f"{row['sample_id']}-before",
+            "timestamp_unix_ms": 100,
+            "nodes": [],
+            "slots": {},
+        }
+        for row in rows
+        if row["status"] != "SKIPPED_WITH_REASON"
+    ]
+    write_jsonl(base / "events.jsonl", events)
+    write_jsonl(base / "metrics_timeseries.jsonl", metrics)
+    write_jsonl(base / "fault_topology_snapshots.jsonl", snapshots)
+    write_json(base / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": True, "nodes_observed": 10})
+    write_json(base / "quant_summary.json", {"counts": {"event_count": len(events), "metric_count": len(metrics), "fault_result_count": len(rows), "topology_snapshot_count": len(snapshots), "sample_count": 6}, "runtime_claims": {"real_valkey_claimed": True, "fault_runtime_claimed": True, "management_runtime_claimed": False}})
+    return rows
+
+
+def test_p22_fault_matrix_assertion_accepts_valid_bundle(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_fault_matrix_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / P22_PHASE
+    phase_dir.mkdir(parents=True)
+    write_p22_bundle(phase_dir)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_fault_matrix_coverage.py", "--phase", P22_PHASE])
+
+    assert assertion.main() == 0
+
+
+def test_p22_fault_matrix_assertion_rejects_wrong_replica_role(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_fault_matrix_coverage")
+    phase_dir = tmp_path / "artifacts" / "phases" / P22_PHASE
+    phase_dir.mkdir(parents=True)
+    rows = write_p22_bundle(phase_dir)
+    rows[0]["targets"][0]["role"] = "primary"
+    write_jsonl(phase_dir / "fault_results.jsonl", rows)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_fault_matrix_coverage.py", "--phase", P22_PHASE])
+
+    assert assertion.main() == 1
+
+
+def test_p22_workload_assertion_rejects_missing_window(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_workload_impact")
+    phase_dir = tmp_path / "artifacts" / "phases" / P22_PHASE
+    phase_dir.mkdir(parents=True)
+    write_p22_bundle(phase_dir)
+    report = json.loads((phase_dir / "workload_impact_report.json").read_text(encoding="utf-8"))
+    report["windows"] = [row for row in report["windows"] if not (row["sample_id"] == "p22-6-replica_stop" and row["window_name"] == "event")]
+    write_json(phase_dir / "workload_impact_report.json", report)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_workload_impact.py", "--phase", P22_PHASE])
+
+    assert assertion.main() == 1
+
+
+def test_p22_quant_assertion_rejects_missing_metric_sample(tmp_path: Path) -> None:
+    assertion = load_script("assert_quant_artifacts")
+    write_p22_bundle(tmp_path)
+    metrics = [json.loads(line) for line in (tmp_path / "metrics_timeseries.jsonl").read_text(encoding="utf-8").splitlines()]
+    metrics = [row for row in metrics if row["sample_id"] != "p22-6-replica_stop"]
+    write_jsonl(tmp_path / "metrics_timeseries.jsonl", metrics)
+
+    errors: list[str] = []
+    assertion.assert_p22_semantics(tmp_path, errors)
+
+    assert any("metrics_timeseries.jsonl missing sample IDs" in error for error in errors)

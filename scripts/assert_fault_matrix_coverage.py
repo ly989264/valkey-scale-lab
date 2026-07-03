@@ -18,10 +18,86 @@ REQUIRED_FAULTS = {
     "P24_PARTITION_SPLIT_BRAIN_MATRIX": {"network_partition", "minority_partition", "majority_partition"},
 }
 SAFE_PATHS = {"container_netns_tc", "sandbox_proxy", "owned_container_control", "owned_runtime_control", "unsupported_skipped_with_reason"}
+P22_MANDATORY_COUNTS = {6, 10}
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def validate_p22(rows: list[dict[str, Any]], base: Path, errors: list[str]) -> None:
+    observed_pairs = {(row.get("fault_type"), row.get("node_count")) for row in rows if row.get("status") != "SKIPPED_WITH_REASON"}
+    for fault_type in REQUIRED_FAULTS["P22_FAULT_REPLICA_HOST_AZ_STOP"]:
+        for node_count in P22_MANDATORY_COUNTS:
+            if (fault_type, node_count) not in observed_pairs:
+                errors.append(f"P22 missing real {fault_type} row for {node_count} nodes")
+
+    preflight_path = base / "resource_preflight_30.json"
+    preflight = load_json(preflight_path) if preflight_path.exists() else {}
+    real_30_plus = [row for row in rows if isinstance(row.get("node_count"), int) and int(row["node_count"]) >= 30 and row.get("status") != "SKIPPED_WITH_REASON"]
+    skipped_30 = [row for row in rows if row.get("node_count") == 30 and row.get("status") == "SKIPPED_WITH_REASON"]
+    if preflight.get("can_run") is True:
+        if not real_30_plus:
+            errors.append("P22 30+ preflight passed but no real 30+ row was emitted")
+    else:
+        if len(skipped_30) < len(REQUIRED_FAULTS["P22_FAULT_REPLICA_HOST_AZ_STOP"]):
+            errors.append("P22 30+ preflight did not pass, so every 30-node fault row must be SKIPPED_WITH_REASON")
+        for row in skipped_30:
+            if not row.get("reason") or not row.get("preflight_ref"):
+                errors.append(f"{row.get('fault_id')}: skipped 30+ row requires reason and preflight_ref")
+
+    for row in rows:
+        label = row.get("fault_id", row.get("fault_type"))
+        if row.get("phase_id") != "P22_FAULT_REPLICA_HOST_AZ_STOP":
+            errors.append(f"{label}: wrong phase_id {row.get('phase_id')!r}")
+        if row.get("node_count") == 200:
+            errors.append(f"{label}: P22 must not emit 200-node rows")
+        if row.get("status") == "SKIPPED_WITH_REASON":
+            if row.get("implementation_path") != "unsupported_skipped_with_reason":
+                errors.append(f"{label}: skipped rows must use unsupported_skipped_with_reason")
+            continue
+        if row.get("real_valkey") is not True:
+            errors.append(f"{label}: real rows must record real_valkey=true")
+        if row.get("host_network_mutated") is not False:
+            errors.append(f"{label}: host_network_mutated must be false")
+        if row.get("physical_host_mutated") is not False:
+            errors.append(f"{label}: physical_host_mutated must be false")
+        if row.get("physical_az_mutated") is not False:
+            errors.append(f"{label}: physical_az_mutated must be false")
+        if row.get("implementation_path") not in {"owned_runtime_control", "owned_container_control"}:
+            errors.append(f"{label}: P22 real rows must use owned runtime/container control")
+
+        targets = row.get("targets") if isinstance(row.get("targets"), list) else []
+        selector = row.get("target_selector") if isinstance(row.get("target_selector"), dict) else {}
+        if row.get("fault_type") == "replica_stop":
+            if not targets or any(target.get("role") != "replica" for target in targets if isinstance(target, dict)):
+                errors.append(f"{label}: replica_stop must target only replica role")
+            if selector.get("promotion_expected") is not False:
+                errors.append(f"{label}: replica_stop must record promotion_expected=false")
+            observed = row.get("observed_impact") if isinstance(row.get("observed_impact"), dict) else {}
+            if observed.get("promotion_success") is True and observed.get("unexpected_promotion_observed") is not True:
+                errors.append(f"{label}: replica_stop must not count promotion success unless unexpected promotion is recorded")
+        if row.get("fault_type") == "node_host_stop":
+            selected_host = selector.get("selected_host_id")
+            target_hosts = {target.get("host_id") for target in targets if isinstance(target, dict)}
+            if not selected_host or target_hosts != {selected_host}:
+                errors.append(f"{label}: node_host_stop target host leakage selected={selected_host!r} targets={sorted(str(item) for item in target_hosts)}")
+            if selector.get("logical_host_only") is not True:
+                errors.append(f"{label}: node_host_stop must record logical_host_only=true")
+        if row.get("fault_type") == "az_stop":
+            selected_az = selector.get("selected_az_id")
+            target_azs = {target.get("az_id") for target in targets if isinstance(target, dict)}
+            if not selected_az or target_azs != {selected_az}:
+                errors.append(f"{label}: az_stop target AZ leakage selected={selected_az!r} targets={sorted(str(item) for item in target_azs)}")
+            if selector.get("virtual_az_only") is not True:
+                errors.append(f"{label}: az_stop must record virtual_az_only=true")
+            observed = row.get("observed_impact") if isinstance(row.get("observed_impact"), dict) else {}
+            if "split_brain_window_ms" not in observed:
+                errors.append(f"{label}: az_stop must record split_brain_window_ms or missing reason")
 
 
 def main() -> int:
@@ -61,6 +137,8 @@ def main() -> int:
             errors.append(f"{label}: workload_impact_ref required")
         if not row.get("targets"):
             errors.append(f"{label}: targets required")
+    if args.phase == "P22_FAULT_REPLICA_HOST_AZ_STOP":
+        validate_p22(rows, base, errors)
 
     if errors:
         for error in errors:

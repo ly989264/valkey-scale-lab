@@ -1,0 +1,9 @@
+{
+  "fault_id": "p22-30-az_stop-fault-12",
+  "type": "node_stop",
+  "scope": "owned_container_or_process",
+  "forbid_host_network_mutation": true,
+  "target_logical_id": "shard-0007-replica-00",
+  "p22_parent_fault_id": "p22-30-az_stop-fault",
+  "p22_fault_type": "az_stop"
+}

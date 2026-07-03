@@ -1,0 +1,32 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-07-03T00:58:27.013958Z",
+  "gate_result_path": "artifacts/gates/P22_FAULT_REPLICA_HOST_AZ_STOP/gate_result.json",
+  "gate_result_sha256": "c99e7cd8762e248f14fd5acc8866ac1447f5ac50454954b75967ae2cf8a766ce",
+  "artifact_paths": [
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/phase_summary.json",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/valkey_e2e_evidence.json",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/cleanup_report.json",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/events.jsonl",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/metrics_timeseries.jsonl",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_windows.json",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/quant_summary.json",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_matrix_report.json",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_results.jsonl",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_topology_snapshots.jsonl",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json"
+  ],
+  "risks": [
+    {
+      "risk": "Focused low-sample workload windows limit percentile depth; missing high-percentile values are encoded with reasons.",
+      "severity": "low",
+      "required_before_next_phase": false
+    }
+  ],
+  "rationale": "All manifest gates passed, gate log hashes matched, required artifacts validated, real Valkey 9.1.0 evidence covers replica_stop, node_host_stop, and az_stop at 6, 10, and 30 nodes, and cleanup/safety evidence passed."
+}
