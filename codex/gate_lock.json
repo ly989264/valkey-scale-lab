@@ -21,7 +21,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+      "sha256": "0f8af416b4c1a779daa0bb636e16aadbed80c32df3a650769d21681c1bb75e1f"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -237,7 +237,7 @@
     },
     {
       "path": "schemas/artifact/csv_export_index.schema.json",
-      "sha256": "b188face0ed5d4d14bd439b1b2dcf4fd7a73329f6239767162614568130db753"
+      "sha256": "a910674b2aa04e9723184e91e692a415f2c9fd8166ae8d956877f1106dfbaf5b"
     },
     {
       "path": "schemas/artifact/env_info.schema.json",
@@ -321,7 +321,7 @@
     },
     {
       "path": "schemas/artifact/missing_data_summary.schema.json",
-      "sha256": "85c22789a756453041d22ce6a03953d9a226df0d970797d2758d4fd82c452c0d"
+      "sha256": "5261b0cb4c6e7c0f667d8893cdb85d64f28c84cf5a4ae402a905214cb38dddd1"
     },
     {
       "path": "schemas/artifact/network_fault_report.schema.json",
@@ -453,7 +453,7 @@
     },
     {
       "path": "schemas/artifact/workload_impact_cross_stage.schema.json",
-      "sha256": "cb913cb74f92224088b24c4afa1da89805417b7cea3ed70fd9d23937f2b2a91c"
+      "sha256": "0d4bd5c2908e0ff73b96146873924bfa57b851b171ac060e944d14d66e6b98a3"
     },
     {
       "path": "schemas/artifact/workload_impact_report.schema.json",
@@ -597,7 +597,7 @@
     },
     {
       "path": "scripts/assert_quant_artifacts.py",
-      "sha256": "4e333302d60c208d50a26e3ac1c3f66248ccc3de38e55d5b42f012dc72f4c9a9"
+      "sha256": "ce11c69bd33168d073bca617a5608f83a639ac38a63d9fe9e261f577da51570b"
     },
     {
       "path": "scripts/assert_split_brain_report.py",
@@ -605,7 +605,7 @@
     },
     {
       "path": "scripts/assert_workload_impact.py",
-      "sha256": "388d3b2083643340abef11baa9fda3c44643970073d3ddc2b3d7d4493b6b6ab4"
+      "sha256": "566782c179388216f091ce82ca7513a3a355698e7568d35f4dce1400bfea3f8a"
     },
     {
       "path": "scripts/audit_committed_artifacts.py",

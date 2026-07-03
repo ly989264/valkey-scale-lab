@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import sys
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,32 @@ METRICS = {
     "moved_redirection_count",
     "ask_redirection_count",
 }
+P25_SOURCE_STAGES = {
+    "P17_MANAGEMENT_REMOVE_NODE",
+    "P18_MANAGEMENT_RESHARD_REBALANCE",
+    "P19_MANAGEMENT_ROLLING_RESTART",
+    "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+    "P21_FAILOVER_LATENCY_CURVE_200",
+    "P22_FAULT_REPLICA_HOST_AZ_STOP",
+    "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+    "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+}
+P25_DERIVED_FIELDS = {
+    "fault_or_operation_qps_ratio",
+    "post_recovery_qps_ratio",
+    "latency_p50_delta_ms",
+    "latency_p95_delta_ms",
+    "latency_p99_delta_ms",
+    "error_rate_delta",
+    "recovery_duration_ms",
+}
+P25_CSV_TABLES = {
+    "operation": "workload_impact_by_operation.csv",
+    "fault": "workload_impact_by_fault.csv",
+    "latency": "latency_delta_table.csv",
+    "error": "error_delta_table.csv",
+    "recovery": "recovery_duration_table.csv",
+}
 
 
 def candidate_path(base: Path) -> Path | None:
@@ -39,6 +66,147 @@ def candidate_path(base: Path) -> Path | None:
 def metric_missing_reason(metrics: dict[str, Any], field: str) -> bool:
     reasons = metrics.get("missing_reasons", {})
     return isinstance(reasons, dict) and bool(reasons.get(field))
+
+
+def csv_data_row_count(path: Path) -> int:
+    with path.open(newline="", encoding="utf-8") as f:
+        return sum(1 for _row in csv.DictReader(f))
+
+
+def assert_p25_cross_stage(base: Path, report: dict[str, Any], errors: list[str]) -> None:
+    statuses = report.get("source_stage_statuses", [])
+    status_ids = {item.get("stage_id") for item in statuses if isinstance(item, dict)}
+    missing_statuses = sorted(P25_SOURCE_STAGES - status_ids)
+    if missing_statuses:
+        errors.append(f"P25 source_stage_statuses missing required stages: {missing_statuses}")
+    for item in statuses:
+        if not isinstance(item, dict):
+            errors.append("P25 source_stage_statuses entries must be objects")
+            continue
+        if item.get("status") in {"MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON"} and not item.get("reason"):
+            errors.append(f"P25 source stage {item.get('stage_id')}: missing/skipped status requires reason")
+    rules = report.get("derivation_rules", {})
+    if rules.get("log_parsing") is not False:
+        errors.append("P25 derivation_rules.log_parsing must be false")
+    if rules.get("source_scenarios_rerun") is not False:
+        errors.append("P25 derivation_rules.source_scenarios_rerun must be false")
+
+    rows = report.get("rows", [])
+    if not rows:
+        errors.append("P25 rows must not be empty")
+        return
+    row_counts = report.get("row_counts", {})
+    expected_counts = {
+        "total": len(rows),
+        "management": sum(1 for row in rows if row.get("category") == "management"),
+        "failover": sum(1 for row in rows if row.get("category") == "failover"),
+        "fault": sum(1 for row in rows if row.get("category") == "fault"),
+        "missing_rows": sum(1 for row in rows if row.get("status") != "PASS"),
+        "p24_rows": sum(1 for row in rows if row.get("source_stage_id") == "P24_PARTITION_SPLIT_BRAIN_MATRIX"),
+    }
+    for key, value in expected_counts.items():
+        if row_counts.get(key) != value:
+            errors.append(f"P25 row_counts.{key} expected {value}, got {row_counts.get(key)!r}")
+
+    for row in rows:
+        label = str(row.get("row_id", "MISSING"))
+        if row.get("source_stage_id") not in P25_SOURCE_STAGES:
+            errors.append(f"{label}: invalid or missing source_stage_id {row.get('source_stage_id')!r}")
+        if row.get("status") in {"MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON", "FAIL"} and not row.get("reason"):
+            errors.append(f"{label}: non-PASS status requires reason")
+        refs = row.get("source_refs", [])
+        if row.get("status") == "PASS" and len(refs) < 2:
+            errors.append(f"{label}: PASS rows require metadata and workload source refs")
+        for ref in refs:
+            if not isinstance(ref, dict) or not ref.get("artifact") or not ref.get("sha256"):
+                errors.append(f"{label}: source ref must include artifact and sha256")
+        if row.get("status") != "PASS":
+            continue
+        windows = row.get("windows", {})
+        window_refs = row.get("window_refs", {})
+        for window_name in ["baseline", "event", "recovery", "post_recovery"]:
+            if window_name not in windows:
+                errors.append(f"{label}: missing required window {window_name}")
+                continue
+            window = windows[window_name]
+            if window.get("status") == "MISSING" and not window.get("reason"):
+                errors.append(f"{label}: MISSING window {window_name} requires reason")
+            if window_name not in window_refs:
+                errors.append(f"{label}: missing window_refs.{window_name}")
+        derived = row.get("derived", {})
+        missing_reasons = derived.get("missing_reasons", {})
+        for field in P25_DERIVED_FIELDS:
+            if field not in derived:
+                errors.append(f"{label}: missing derived field {field}")
+            elif derived[field] == "MISSING" and not missing_reasons and row.get("status") == "PASS":
+                errors.append(f"{label}: MISSING derived {field} requires a missing reason")
+        if row.get("source_stage_id") == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
+            taxonomy = row.get("error_taxonomy", {})
+            for window_name, counts in taxonomy.items():
+                if not isinstance(counts, dict):
+                    errors.append(f"{label}: P24 taxonomy {window_name} must be object")
+                    continue
+                classified = sum(int(counts.get(field, 0) or 0) for field in [
+                    "timeout_count",
+                    "connection_error_count",
+                    "cluster_down_error_count",
+                    "readonly_error_count",
+                    "tryagain_error_count",
+                    "unknown_error_count",
+                ])
+                if classified != int(counts.get("error_ops", 0) or 0):
+                    errors.append(f"{label}: P24 taxonomy {window_name} classified errors must equal error_ops")
+                source_metrics = windows.get(window_name, {}).get("metrics", {})
+                if int(source_metrics.get("cluster_down_error_count", 0) or 0) != int(counts.get("cluster_down_error_count", 0) or 0):
+                    errors.append(f"{label}: P24 taxonomy {window_name} must preserve cluster_down_error_count")
+
+    exports = report.get("csv_exports", [])
+    index_path = base / "csv_export_index.json"
+    if not index_path.exists():
+        errors.append("P25 csv_export_index.json missing")
+        index = {}
+    else:
+        index = load_json(index_path)
+    index_exports = {item.get("table_name"): item for item in index.get("exports", []) if isinstance(item, dict)}
+    export_by_table = {item.get("table_name"): item for item in exports if isinstance(item, dict)}
+    expected_json_counts = {
+        "operation": expected_counts["management"],
+        "fault": expected_counts["failover"] + expected_counts["fault"],
+        "latency": expected_counts["total"],
+        "error": expected_counts["total"],
+        "recovery": expected_counts["total"],
+    }
+    for table_name, filename in P25_CSV_TABLES.items():
+        export = export_by_table.get(table_name)
+        index_export = index_exports.get(table_name)
+        csv_path = base / filename
+        if export is None:
+            errors.append(f"P25 csv_exports missing table {table_name}")
+            continue
+        if index_export is None:
+            errors.append(f"P25 csv_export_index missing table {table_name}")
+        if not csv_path.exists():
+            errors.append(f"P25 CSV missing: {filename}")
+            continue
+        actual_rows = csv_data_row_count(csv_path)
+        expected = expected_json_counts[table_name]
+        if actual_rows != expected:
+            errors.append(f"P25 CSV {filename} row count expected {expected}, got {actual_rows}")
+        if export.get("row_count") != actual_rows or export.get("json_source_count") != expected:
+            errors.append(f"P25 csv_exports.{table_name} row/json counts do not match JSON rows")
+        if index_export and (index_export.get("row_count") != actual_rows or index_export.get("json_source_count") != expected):
+            errors.append(f"P25 csv_export_index.{table_name} row/json counts do not match JSON rows")
+
+    missing_path = base / "missing_data_summary.json"
+    if not missing_path.exists():
+        errors.append("P25 missing_data_summary.json missing")
+    else:
+        missing = load_json(missing_path)
+        if missing.get("item_count") != len(missing.get("items", [])):
+            errors.append("P25 missing_data_summary.item_count must match items length")
+        for idx, item in enumerate(missing.get("items", [])):
+            if not item.get("source_stage_id") or not item.get("artifact") or not item.get("field") or not item.get("reason"):
+                errors.append(f"P25 missing_data_summary.items[{idx}] requires source_stage_id, artifact, field, and reason")
 
 
 def main() -> int:
@@ -58,6 +226,14 @@ def main() -> int:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
     report = load_json(path)
+    if args.phase == "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS":
+        assert_p25_cross_stage(base, report, errors)
+        if errors:
+            for error in errors:
+                print(f"FAIL: {error}", file=sys.stderr)
+            return 1
+        print(f"PASS workload impact phase={args.phase}")
+        return 0
     rows = report.get("windows", report.get("rows", []))
     observed = {row.get("window_name") for row in rows}
     missing_windows = sorted(WINDOWS - observed)

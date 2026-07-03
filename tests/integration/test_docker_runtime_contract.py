@@ -75,6 +75,23 @@ def test_p16_quant_telemetry_is_six_node_only() -> None:
     ) is False
 
 
+def test_p25_smoke_runtime_is_six_node_only_and_not_process_runtime() -> None:
+    assert docker_runtime._scenario_node_count_allowed(
+        "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+        "fault_workload_impact_analysis",
+        6,
+    ) is True
+    assert docker_runtime._scenario_node_count_allowed(
+        "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+        "fault_workload_impact_analysis",
+        10,
+    ) is False
+    assert docker_runtime._uses_docker_process_runtime(
+        "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+        "fault_workload_impact_analysis",
+    ) is False
+
+
 def test_p21_runtime_allows_only_exact_200_sample_scenarios() -> None:
     assert docker_runtime._p21_scale_sample_node_count("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01") == 200
     assert docker_runtime._scenario_node_count_allowed("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01", 200) is True

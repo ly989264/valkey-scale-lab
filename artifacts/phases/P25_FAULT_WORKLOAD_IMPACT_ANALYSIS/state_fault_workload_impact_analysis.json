@@ -1,0 +1,100 @@
+{
+  "cluster_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS-fault_workload_impact_analysis-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "b124651ec2f7a5ac9c15d40f7ac8f51b9e797e0b5255f7cd09540b94c3c44895",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p25-fault-workload-impact-analysis-fault-workload-impact-analysis-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 558,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "04442ed1137c40188a819422b56b27d339d0ba57699c5bfefd8bf60b9197d873",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p25-fault-workload-impact-analysis-fault-workload-impact-analysis-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 637,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "95345af9b8ffcfb84335342678242e68585a5f3fd8b47691ff0fd651ce75759a",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p25-fault-workload-impact-analysis-fault-workload-impact-analysis-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 714,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "6e3c7157e8f5b335db01b9ebb249a2649f77c58cc8bd11c48a0ce12a41c7b348",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p25-fault-workload-impact-analysis-fault-workload-impact-analysis-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 792,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "f32f19fd896be48fa8484c079f002424b77df26c7ec99693332588d13ba536d3",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p25-fault-workload-impact-analysis-fault-workload-impact-analysis-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 866,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "359293aeff22098db344a6fe917fbe8e24ec98626fa813cbad12a850928b89ff",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p25-fault-workload-impact-analysis-fault-workload-impact-analysis-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 942,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p25-fault-workload-impact-analysis-fault_workload_impact_analysis",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS-fault_workload_impact_analysis-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "fault_workload_impact_analysis",
+  "schema_version": "v1"
+}

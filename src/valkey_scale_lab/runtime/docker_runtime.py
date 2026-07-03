@@ -146,6 +146,7 @@ def create_scenario(
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"),
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
+        ("P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "fault_workload_impact_analysis"),
     } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
@@ -3142,6 +3143,7 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"): {6},
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"): {6},
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"): {6},
+        ("P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "fault_workload_impact_analysis"): {6},
     }
     return node_count in expected.get((phase, scenario), set())
 

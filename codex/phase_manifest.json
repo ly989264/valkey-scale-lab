@@ -2879,6 +2879,14 @@
           "real_valkey": true
         },
         {
+          "name": "p25_workload_impact_analysis",
+          "kind": "analysis",
+          "command": "python3 -m valkey_scale_lab.cli analyze --kind workload-impact --input artifacts/phases --out-dir artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS --phase P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+          "timeout_seconds": 180,
+          "required": true,
+          "real_valkey": false
+        },
+        {
           "name": "quant_artifact_assertion",
           "kind": "schema",
           "command": "python3 scripts/assert_quant_artifacts.py --phase P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",

@@ -1,0 +1,3487 @@
+{
+  "affected_row_count": 33,
+  "artifact_type": "missing_data_summary",
+  "created_at": "2026-07-03T00:00:00Z",
+  "item_count": 434,
+  "items": [
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P20_FAILOVER_LATENCY_CURVE_30_50_100:rung-100-sample-01; recovery.duration_seconds is None",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P20_FAILOVER_LATENCY_CURVE_30_50_100:rung-100-sample-02; recovery.duration_seconds is None",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P20_FAILOVER_LATENCY_CURVE_30_50_100:rung-100-sample-03; recovery.duration_seconds is None",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P20_FAILOVER_LATENCY_CURVE_30_50_100:rung-30-sample-01; recovery.duration_seconds is None",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P20_FAILOVER_LATENCY_CURVE_30_50_100:rung-30-sample-02; recovery.duration_seconds is None",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P20_FAILOVER_LATENCY_CURVE_30_50_100:rung-30-sample-03; recovery.duration_seconds is None",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P20_FAILOVER_LATENCY_CURVE_30_50_100:rung-50-sample-01; recovery.duration_seconds is None",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P20_FAILOVER_LATENCY_CURVE_30_50_100:rung-50-sample-02; recovery.duration_seconds is None",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P20_FAILOVER_LATENCY_CURVE_30_50_100:rung-50-sample-03; recovery.duration_seconds is None",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-01",
+      "field": "rung-100-sample-01.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-02",
+      "field": "rung-100-sample-02.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-100-sample-03",
+      "field": "rung-100-sample-03.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-01",
+      "field": "rung-30-sample-01.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-02",
+      "field": "rung-30-sample-02.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-30-sample-03",
+      "field": "rung-30-sample-03.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-01",
+      "field": "rung-50-sample-01.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-02",
+      "field": "rung-50-sample-02.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_impact_report.json",
+      "entity_id": "rung-50-sample-03",
+      "field": "rung-50-sample-03.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P21_FAILOVER_LATENCY_CURVE_200:rung-200-sample-01; recovery.duration_seconds is None",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P21_FAILOVER_LATENCY_CURVE_200:rung-200-sample-02; recovery.duration_seconds is None",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P21_FAILOVER_LATENCY_CURVE_200:rung-200-sample-03; recovery.duration_seconds is None",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-01",
+      "field": "rung-200-sample-01.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-02",
+      "field": "rung-200-sample-02.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.all_run.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.all_run.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.baseline.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.baseline.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.post_recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.post_recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.pre_event.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.pre_event.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.recovery.latency_p90_ms",
+      "reason": "single-sample failover workload records p50/p95/p99 only",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json",
+      "entity_id": "rung-200-sample-03",
+      "field": "rung-200-sample-03.recovery.latency_p999_ms",
+      "reason": "sample count too small for p999",
+      "source_stage_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "latency_p50_delta_ms",
+      "reason": "latency_p50_delta_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-10-az_stop; current='MISSING' baseline=2.02",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "latency_p50_delta_ms",
+      "reason": "latency_p50_delta_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-30-az_stop; current='MISSING' baseline=2.682",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "latency_p50_delta_ms",
+      "reason": "latency_p50_delta_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-30-node_host_stop; current='MISSING' baseline=1.44",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "latency_p95_delta_ms",
+      "reason": "latency_p95_delta_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-10-az_stop; current='MISSING' baseline=3.077",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "latency_p95_delta_ms",
+      "reason": "latency_p95_delta_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-30-az_stop; current='MISSING' baseline=3.986",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "latency_p95_delta_ms",
+      "reason": "latency_p95_delta_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-30-node_host_stop; current='MISSING' baseline=2.189",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "latency_p99_delta_ms",
+      "reason": "latency_p99_delta_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-10-az_stop; current='MISSING' baseline=3.077",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "latency_p99_delta_ms",
+      "reason": "latency_p99_delta_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-30-az_stop; current='MISSING' baseline=3.986",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "latency_p99_delta_ms",
+      "reason": "latency_p99_delta_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-30-node_host_stop; current='MISSING' baseline=2.189",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.baseline.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.event.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.event.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.event.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.event.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.post_recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.pre_event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.recovery.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.recovery.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.recovery.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "p22-10-az_stop.recovery.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.baseline.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.post_recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.pre_event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "p22-10-node_host_stop.recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.baseline.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.post_recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.pre_event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "p22-10-replica_stop.recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.baseline.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.event.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.event.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.event.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.event.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.post_recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.pre_event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.recovery.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.recovery.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.recovery.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "p22-30-az_stop.recovery.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.baseline.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.event.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.event.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.event.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.event.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.post_recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.pre_event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.recovery.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.recovery.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.recovery.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "p22-30-node_host_stop.recovery.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.baseline.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.post_recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.pre_event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "p22-30-replica_stop.recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.baseline.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.post_recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.pre_event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.recovery.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.recovery.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.recovery.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "p22-6-az_stop.recovery.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.baseline.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.post_recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.pre_event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.recovery.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.recovery.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.recovery.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "p22-6-node_host_stop.recovery.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.baseline.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.post_recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.pre_event.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "p22-6-replica_stop.recovery.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-az_stop",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-10-az_stop; recovery.duration_seconds is None",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-node_host_stop",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-10-node_host_stop; recovery.duration_seconds is None",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-10-replica_stop",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-10-replica_stop; recovery.duration_seconds is None",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-az_stop",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-30-az_stop; recovery.duration_seconds is None",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-node_host_stop",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-30-node_host_stop; recovery.duration_seconds is None",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-30-replica_stop",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-30-replica_stop; recovery.duration_seconds is None",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-az_stop",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-6-az_stop; recovery.duration_seconds is None",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-node_host_stop",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-6-node_host_stop; recovery.duration_seconds is None",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_impact_report.json",
+      "entity_id": "p22-6-replica_stop",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P22_FAULT_REPLICA_HOST_AZ_STOP:p22-6-replica_stop; recovery.duration_seconds is None",
+      "source_stage_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.baseline.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.post_recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.pre_event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "p23-10-network_delay.recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.baseline.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.post_recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.pre_event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "p23-10-network_flap.recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.baseline.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.post_recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.pre_event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "p23-10-network_loss.recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.baseline.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.post_recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.pre_event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "p23-6-network_delay.recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.baseline.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.post_recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.pre_event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "p23-6-network_flap.recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.all_run.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.all_run.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.all_run.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.all_run.latency_p999_ms",
+      "reason": "P22 focused gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.all_run.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.baseline.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.post_recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.pre_event.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "p23-6-network_loss.recovery.latency_p999_ms",
+      "reason": "P23 focused network fault gate uses too few workload samples for p999.",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_delay",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P23_FAULT_NETWORK_DELAY_LOSS_FLAP:p23-10-network_delay; recovery.duration_seconds is None",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_flap",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P23_FAULT_NETWORK_DELAY_LOSS_FLAP:p23-10-network_flap; recovery.duration_seconds is None",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-10-network_loss",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P23_FAULT_NETWORK_DELAY_LOSS_FLAP:p23-10-network_loss; recovery.duration_seconds is None",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_delay",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P23_FAULT_NETWORK_DELAY_LOSS_FLAP:p23-6-network_delay; recovery.duration_seconds is None",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_flap",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P23_FAULT_NETWORK_DELAY_LOSS_FLAP:p23-6-network_flap; recovery.duration_seconds is None",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_impact_report.json",
+      "entity_id": "p23-6-network_loss",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P23_FAULT_NETWORK_DELAY_LOSS_FLAP:p23-6-network_loss; recovery.duration_seconds is None",
+      "source_stage_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "latency_p50_delta_ms",
+      "reason": "latency_p50_delta_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-10-network_partition_minority; current='MISSING' baseline=63.13",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "latency_p50_delta_ms",
+      "reason": "latency_p50_delta_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-6-network_partition_minority; current='MISSING' baseline=65.963",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "latency_p95_delta_ms",
+      "reason": "latency_p95_delta_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-10-network_partition_minority; current='MISSING' baseline=65.924",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "latency_p95_delta_ms",
+      "reason": "latency_p95_delta_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-6-network_partition_minority; current='MISSING' baseline=80.08",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "latency_p99_delta_ms",
+      "reason": "latency_p99_delta_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-10-network_partition_minority; current='MISSING' baseline=65.924",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "latency_p99_delta_ms",
+      "reason": "latency_p99_delta_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-6-network_partition_minority; current='MISSING' baseline=80.08",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_majority",
+      "field": "p24-10-network_partition_majority.all_run.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_majority",
+      "field": "p24-10-network_partition_majority.baseline.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_majority",
+      "field": "p24-10-network_partition_majority.event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_majority",
+      "field": "p24-10-network_partition_majority.post_recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_majority",
+      "field": "p24-10-network_partition_majority.pre_event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_majority",
+      "field": "p24-10-network_partition_majority.recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.all_run.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.baseline.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.event.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.event.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.event.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.event.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.post_recovery.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.post_recovery.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.post_recovery.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.post_recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.post_recovery.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.pre_event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.recovery.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.recovery.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.recovery.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "p24-10-network_partition_minority.recovery.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-split_brain_window_detection",
+      "field": "p24-10-split_brain_window_detection.all_run.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-split_brain_window_detection",
+      "field": "p24-10-split_brain_window_detection.baseline.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-split_brain_window_detection",
+      "field": "p24-10-split_brain_window_detection.event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-split_brain_window_detection",
+      "field": "p24-10-split_brain_window_detection.post_recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-split_brain_window_detection",
+      "field": "p24-10-split_brain_window_detection.pre_event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-split_brain_window_detection",
+      "field": "p24-10-split_brain_window_detection.recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_majority",
+      "field": "p24-6-network_partition_majority.all_run.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_majority",
+      "field": "p24-6-network_partition_majority.baseline.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_majority",
+      "field": "p24-6-network_partition_majority.event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_majority",
+      "field": "p24-6-network_partition_majority.post_recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_majority",
+      "field": "p24-6-network_partition_majority.pre_event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_majority",
+      "field": "p24-6-network_partition_majority.recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.all_run.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.baseline.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.event.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.event.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.event.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.event.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.post_recovery.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.post_recovery.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.post_recovery.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.post_recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.post_recovery.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.pre_event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.recovery.latency_p50_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.recovery.latency_p90_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.recovery.latency_p95_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "p24-6-network_partition_minority.recovery.latency_p99_ms",
+      "reason": "No successful workload operations were observed in this window.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-split_brain_window_detection",
+      "field": "p24-6-split_brain_window_detection.all_run.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-split_brain_window_detection",
+      "field": "p24-6-split_brain_window_detection.baseline.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-split_brain_window_detection",
+      "field": "p24-6-split_brain_window_detection.event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-split_brain_window_detection",
+      "field": "p24-6-split_brain_window_detection.post_recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-split_brain_window_detection",
+      "field": "p24-6-split_brain_window_detection.pre_event.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-split_brain_window_detection",
+      "field": "p24-6-split_brain_window_detection.recovery.latency_p999_ms",
+      "reason": "P24 focused partition gate uses too few workload samples for p999.",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_majority",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-10-network_partition_majority; recovery.duration_seconds is None",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-network_partition_minority",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-10-network_partition_minority; recovery.duration_seconds is None",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-10-split_brain_window_detection",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-10-split_brain_window_detection; recovery.duration_seconds is None",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_majority",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-6-network_partition_majority; recovery.duration_seconds is None",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-network_partition_minority",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-6-network_partition_minority; recovery.duration_seconds is None",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    },
+    {
+      "artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_impact_report.json",
+      "entity_id": "p24-6-split_brain_window_detection",
+      "field": "recovery_duration_ms",
+      "reason": "recovery_duration_ms cannot be derived for P24_PARTITION_SPLIT_BRAIN_MATRIX:p24-6-split_brain_window_detection; recovery.duration_seconds is None",
+      "source_stage_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS-workload-impact-20260703",
+  "schema_version": "v1"
+}

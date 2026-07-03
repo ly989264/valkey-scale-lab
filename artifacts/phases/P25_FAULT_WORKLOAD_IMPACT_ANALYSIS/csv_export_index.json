@@ -1,0 +1,64 @@
+{
+  "artifact_type": "csv_export_index",
+  "created_at": "2026-07-03T00:00:00Z",
+  "exports": [
+    {
+      "json_source_artifact": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json",
+      "json_source_count": 16,
+      "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_by_operation.csv",
+      "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+      "row_count": 16,
+      "run_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS-workload-impact-20260703",
+      "sha256": "87ceb6cad273a3bcc1f70c1920ce3087db137c7734ea2ba2766752dd74510eab",
+      "table_name": "operation"
+    },
+    {
+      "json_source_artifact": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json",
+      "json_source_count": 33,
+      "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_by_fault.csv",
+      "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+      "row_count": 33,
+      "run_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS-workload-impact-20260703",
+      "sha256": "1cc9daa792c1add26184b6491c3d56d4adfe2e6363df2a7d917318aa8c491816",
+      "table_name": "fault"
+    },
+    {
+      "json_source_artifact": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json",
+      "json_source_count": 49,
+      "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/latency_delta_table.csv",
+      "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+      "row_count": 49,
+      "run_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS-workload-impact-20260703",
+      "sha256": "f46e2367087da08a15f84fcb56caadedc5749b0b511305ee64979d43f9a4defc",
+      "table_name": "latency"
+    },
+    {
+      "json_source_artifact": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json",
+      "json_source_count": 49,
+      "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/error_delta_table.csv",
+      "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+      "row_count": 49,
+      "run_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS-workload-impact-20260703",
+      "sha256": "f2376d86f714adddeac9479a618cf48aaaf96ae86e196f09b67a5a0705a00278",
+      "table_name": "error"
+    },
+    {
+      "json_source_artifact": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json",
+      "json_source_count": 49,
+      "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/recovery_duration_table.csv",
+      "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+      "row_count": 49,
+      "run_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS-workload-impact-20260703",
+      "sha256": "e4dcdf03c86fd77b87c8fd398faed842bedebaaba253309ff42fb4725d048f3e",
+      "table_name": "recovery"
+    }
+  ],
+  "json_source_artifact": "workload_impact_cross_stage.json",
+  "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS-workload-impact-20260703",
+  "schema_version": "v1"
+}

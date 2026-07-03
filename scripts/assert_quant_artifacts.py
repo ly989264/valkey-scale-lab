@@ -14,6 +14,16 @@ from codex_gate import phase_by_id, validate_artifact  # noqa: E402
 from schema_validator import load_json  # noqa: E402
 
 CANONICAL_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]
+P25_SOURCE_STAGES = {
+    "P17_MANAGEMENT_REMOVE_NODE",
+    "P18_MANAGEMENT_RESHARD_REBALANCE",
+    "P19_MANAGEMENT_ROLLING_RESTART",
+    "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+    "P21_FAILOVER_LATENCY_CURVE_200",
+    "P22_FAULT_REPLICA_HOST_AZ_STOP",
+    "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+    "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+}
 
 
 def require_reason(row: dict[str, Any], label: str, errors: list[str]) -> None:
@@ -600,6 +610,122 @@ def assert_p24_semantics(base: Path, errors: list[str]) -> None:
         errors.append("P24 quant_summary.json missing")
 
 
+def assert_p25_semantics(base: Path, errors: list[str]) -> None:
+    events = read_jsonl(base / "events.jsonl", errors)
+    metrics = read_jsonl(base / "metrics_timeseries.jsonl", errors)
+    cross_path = base / "workload_impact_cross_stage.json"
+    missing_path = base / "missing_data_summary.json"
+    csv_index_path = base / "csv_export_index.json"
+    quant_path = base / "quant_summary.json"
+    workload_path = base / "workload_windows.json"
+    if not cross_path.exists():
+        errors.append("P25 workload_impact_cross_stage.json missing")
+        return
+    if not missing_path.exists():
+        errors.append("P25 missing_data_summary.json missing")
+        return
+    if not csv_index_path.exists():
+        errors.append("P25 csv_export_index.json missing")
+        return
+    if not quant_path.exists():
+        errors.append("P25 quant_summary.json missing")
+        return
+
+    cross = load_json(cross_path)
+    missing = load_json(missing_path)
+    csv_index = load_json(csv_index_path)
+    quant = load_json(quant_path)
+    rows = cross.get("rows", [])
+    statuses = cross.get("source_stage_statuses", [])
+    status_ids = {status.get("stage_id") for status in statuses if isinstance(status, dict)}
+    missing_stages = sorted(P25_SOURCE_STAGES - status_ids)
+    if missing_stages:
+        errors.append(f"P25 cross-stage source coverage missing stages: {missing_stages}")
+    row_counts = cross.get("row_counts", {})
+    expected_total = len(rows)
+    if row_counts.get("total") != expected_total:
+        errors.append("P25 workload_impact_cross_stage row_counts.total must match rows length")
+    if row_counts.get("management") != sum(1 for row in rows if row.get("category") == "management"):
+        errors.append("P25 management row count mismatch")
+    if row_counts.get("failover") != sum(1 for row in rows if row.get("category") == "failover"):
+        errors.append("P25 failover row count mismatch")
+    if row_counts.get("fault") != sum(1 for row in rows if row.get("category") == "fault"):
+        errors.append("P25 fault row count mismatch")
+
+    for idx, event in enumerate(events, start=1):
+        if event.get("phase_id") != "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS":
+            errors.append(f"P25 events.jsonl:{idx}: wrong phase_id {event.get('phase_id')!r}")
+    for idx, metric in enumerate(metrics, start=1):
+        if metric.get("phase_id") != "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS":
+            errors.append(f"P25 metrics_timeseries.jsonl:{idx}: wrong phase_id {metric.get('phase_id')!r}")
+        if metric.get("metric_value") == "MISSING" and not metric.get("missing_reason"):
+            errors.append(f"P25 metrics_timeseries.jsonl:{idx}: MISSING metric_value requires missing_reason")
+
+    if missing.get("item_count") != len(missing.get("items", [])):
+        errors.append("P25 missing_data_summary item_count must match item length")
+    for idx, item in enumerate(missing.get("items", [])):
+        if item.get("status") in {"MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON"} and not item.get("reason"):
+            errors.append(f"P25 missing_data_summary.items[{idx}]: status requires reason")
+        if item.get("source_stage_id") not in P25_SOURCE_STAGES:
+            errors.append(f"P25 missing_data_summary.items[{idx}]: invalid source_stage_id {item.get('source_stage_id')!r}")
+
+    table_names = {item.get("table_name") for item in csv_index.get("exports", []) if isinstance(item, dict)}
+    if table_names != {"operation", "fault", "latency", "error", "recovery"}:
+        errors.append(f"P25 csv_export_index must include exact export set, got {sorted(str(item) for item in table_names)}")
+    for export in csv_index.get("exports", []):
+        if not isinstance(export, dict):
+            errors.append("P25 csv_export_index exports must be objects")
+            continue
+        if export.get("row_count") != export.get("json_source_count"):
+            errors.append(f"P25 csv export {export.get('table_name')}: row_count must equal json_source_count")
+        if not export.get("sha256"):
+            errors.append(f"P25 csv export {export.get('table_name')}: sha256 required")
+
+    counts = quant.get("counts", {})
+    if counts.get("event_count") != len(events):
+        errors.append("P25 quant_summary counts.event_count must match events.jsonl line count")
+    if counts.get("metric_count") != len(metrics):
+        errors.append("P25 quant_summary counts.metric_count must match metrics_timeseries.jsonl line count")
+    if counts.get("total") != expected_total:
+        errors.append("P25 quant_summary counts.total must match cross-stage rows")
+    if counts.get("missing_data_item_count") != missing.get("item_count"):
+        errors.append("P25 quant_summary missing_data_item_count must match missing summary")
+    refs = set(str(ref) for ref in quant.get("artifact_refs", []))
+    for required in [
+        "workload_impact_cross_stage.json",
+        "workload_impact_by_operation.csv",
+        "workload_impact_by_fault.csv",
+        "latency_delta_table.csv",
+        "error_delta_table.csv",
+        "recovery_duration_table.csv",
+        "csv_export_index.json",
+        "missing_data_summary.json",
+    ]:
+        if not any(required in ref for ref in refs):
+            errors.append(f"P25 quant_summary artifact_refs missing {required}")
+    for stage_id in P25_SOURCE_STAGES:
+        if not any(stage_id in ref for ref in refs):
+            errors.append(f"P25 quant_summary artifact_refs missing source stage {stage_id}")
+    claims = quant.get("runtime_claims", {})
+    if claims.get("real_valkey_claimed") is not True:
+        errors.append("P25 quant_summary must claim real Valkey smoke evidence")
+    if claims.get("management_runtime_claimed") is not False or claims.get("fault_runtime_claimed") is not False:
+        errors.append("P25 quant_summary must not claim it reran management/fault runtime behavior")
+    if claims.get("source_runtime_behavior_rerun") is not False:
+        errors.append("P25 quant_summary must record source_runtime_behavior_rerun=false")
+
+    if workload_path.exists():
+        workload = load_json(workload_path)
+        names = [window.get("window_name") for window in workload.get("windows", [])]
+        if names != CANONICAL_WINDOWS:
+            errors.append(f"P25 workload_windows must be canonical analysis windows, got {names}")
+        for window in workload.get("windows", []):
+            if window.get("status") == "SKIPPED_WITH_REASON" and not window.get("reason"):
+                errors.append(f"P25 workload window {window.get('window_name')}: skip requires reason")
+    else:
+        errors.append("P25 workload_windows.json missing")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -657,6 +783,8 @@ def main() -> int:
         assert_p23_semantics(base, errors)
     if args.phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
         assert_p24_semantics(base, errors)
+    if args.phase == "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS":
+        assert_p25_semantics(base, errors)
 
     if errors:
         for error in errors:

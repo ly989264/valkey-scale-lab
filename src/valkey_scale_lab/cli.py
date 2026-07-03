@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from valkey_scale_lab import __version__
-from valkey_scale_lab.analysis import AnalysisError, create_analysis_summary
+from valkey_scale_lab.analysis import AnalysisError, WorkloadImpactError, build_workload_impact_analysis, create_analysis_summary
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
 from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
@@ -168,8 +168,17 @@ def _fault_clear(args: argparse.Namespace) -> int:
 
 def _analyze(args: argparse.Namespace) -> int:
     try:
-        create_analysis_summary(args.input, args.out)
-    except AnalysisError as exc:
+        if args.kind == "workload-impact":
+            if not args.out_dir:
+                print("ERROR: analyze: --out-dir is required for workload-impact analysis", file=sys.stderr)
+                return 2
+            build_workload_impact_analysis(args.input, args.out_dir, phase_id=args.phase)
+        else:
+            if not args.out:
+                print("ERROR: analyze: --out is required for summary analysis", file=sys.stderr)
+                return 2
+            create_analysis_summary(args.input, args.out)
+    except (AnalysisError, WorkloadImpactError) as exc:
         print(f"ERROR: analyze: {exc}", file=sys.stderr)
         return 1
     return 0
@@ -257,8 +266,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_unimplemented(fault, "fault")
 
     analyze = sub.add_parser("analyze", help="Analyze machine-readable artifacts.")
+    analyze.add_argument("--kind", choices=["summary", "workload-impact"], default="summary")
     analyze.add_argument("--input", required=True, help="Input artifact directory to analyze.")
-    analyze.add_argument("--out", required=True)
+    analyze.add_argument("--out")
+    analyze.add_argument("--out-dir")
+    analyze.add_argument("--phase", default="P25_FAULT_WORKLOAD_IMPACT_ANALYSIS")
     analyze.set_defaults(func=_analyze)
 
     report = sub.add_parser("report", help="Render reports from artifacts.")
