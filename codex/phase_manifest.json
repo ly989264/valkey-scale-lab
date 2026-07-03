@@ -3529,7 +3529,7 @@
         {
           "name": "real_valkey_e2e",
           "kind": "e2e",
-          "command": "python3 scripts/valkey_e2e_gate.py --phase P30_MANAGEMENT_MATRIX_50_REAL --scenario strict_management_matrix_50 --config templates/configs/scale_50.yaml --out artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/valkey_e2e_evidence.json --min-nodes 50 --require-data-path",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P30_MANAGEMENT_MATRIX_50_REAL --scenario strict_management_matrix_50 --config templates/configs/scale_50.yaml --out artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/valkey_e2e_evidence.json --min-nodes 50 --require-data-path --probe-timeout 10",
           "timeout_seconds": 7200,
           "required": true,
           "real_valkey": true

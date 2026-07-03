@@ -1,0 +1,225 @@
+{
+  "artifact_type": "management_ops_matrix",
+  "created_at": "2026-06-28T00:00:00Z",
+  "operations": [
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.create_cluster",
+      "node_count": 50,
+      "operation_id": "p30-create_cluster-50",
+      "operation_name": "create_cluster",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-create_cluster-50-before",
+        "p30-create_cluster-50-after_restore"
+      ],
+      "workload_window_ref": "p30-create_cluster-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.meet_nodes",
+      "node_count": 50,
+      "operation_id": "p30-meet_nodes-50",
+      "operation_name": "meet_nodes",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-meet_nodes-50-before",
+        "p30-meet_nodes-50-after_restore"
+      ],
+      "workload_window_ref": "p30-meet_nodes-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.add_replica",
+      "node_count": 50,
+      "operation_id": "p30-add_replica-50",
+      "operation_name": "add_replica",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-add_replica-50-before",
+        "p30-add_replica-50-after_restore"
+      ],
+      "workload_window_ref": "p30-add_replica-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.reshard_slot_range",
+      "node_count": 50,
+      "operation_id": "p30-reshard_slot_range-50",
+      "operation_name": "reshard_slot_range",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-reshard_slot_range-50-before",
+        "p30-reshard_slot_range-50-after_restore"
+      ],
+      "workload_window_ref": "p30-reshard_slot_range-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.reshard_with_keys",
+      "node_count": 50,
+      "operation_id": "p30-reshard_with_keys-50",
+      "operation_name": "reshard_with_keys",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-reshard_with_keys-50-before",
+        "p30-reshard_with_keys-50-after_restore"
+      ],
+      "workload_window_ref": "p30-reshard_with_keys-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.rebalance_after_imbalance",
+      "node_count": 50,
+      "operation_id": "p30-rebalance_after_imbalance-50",
+      "operation_name": "rebalance_after_imbalance",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-rebalance_after_imbalance-50-before",
+        "p30-rebalance_after_imbalance-50-after_restore"
+      ],
+      "workload_window_ref": "p30-rebalance_after_imbalance-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.rolling_restart_replica_first",
+      "node_count": 50,
+      "operation_id": "p30-rolling_restart_replica_first-50",
+      "operation_name": "rolling_restart_replica_first",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-rolling_restart_replica_first-50-before",
+        "p30-rolling_restart_replica_first-50-after_restore"
+      ],
+      "workload_window_ref": "p30-rolling_restart_replica_first-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.rolling_restart_primary_safe",
+      "node_count": 50,
+      "operation_id": "p30-rolling_restart_primary_safe-50",
+      "operation_name": "rolling_restart_primary_safe",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-rolling_restart_primary_safe-50-before",
+        "p30-rolling_restart_primary_safe-50-after_restore"
+      ],
+      "workload_window_ref": "p30-rolling_restart_primary_safe-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.remove_replica",
+      "node_count": 50,
+      "operation_id": "p30-remove_replica-50",
+      "operation_name": "remove_replica",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-remove_replica-50-before",
+        "p30-remove_replica-50-after_restore"
+      ],
+      "workload_window_ref": "p30-remove_replica-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.remove_failed_node",
+      "node_count": 50,
+      "operation_id": "p30-remove_failed_node-50",
+      "operation_name": "remove_failed_node",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-remove_failed_node-50-before",
+        "p30-remove_failed_node-50-after_restore"
+      ],
+      "workload_window_ref": "p30-remove_failed_node-50:event"
+    },
+    {
+      "command_log_ref": "management_command_log.jsonl",
+      "coverage_id": "50.management.remove_primary_drained_or_safe_replaced",
+      "node_count": 50,
+      "operation_id": "p30-remove_primary_drained_or_safe_replaced-50",
+      "operation_name": "remove_primary_drained_or_safe_replaced",
+      "operation_status": "PASS",
+      "real_execution_verified": true,
+      "topology_refs": [
+        "p30-remove_primary_drained_or_safe_replaced-50-before",
+        "p30-remove_primary_drained_or_safe_replaced-50-after_restore"
+      ],
+      "workload_window_ref": "p30-remove_primary_drained_or_safe_replaced-50:event"
+    }
+  ],
+  "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_rows": [
+    {
+      "coverage_id": "50.management.create_cluster",
+      "node_count": 50,
+      "operation_name": "create_cluster"
+    },
+    {
+      "coverage_id": "50.management.meet_nodes",
+      "node_count": 50,
+      "operation_name": "meet_nodes"
+    },
+    {
+      "coverage_id": "50.management.add_replica",
+      "node_count": 50,
+      "operation_name": "add_replica"
+    },
+    {
+      "coverage_id": "50.management.remove_replica",
+      "node_count": 50,
+      "operation_name": "remove_replica"
+    },
+    {
+      "coverage_id": "50.management.remove_primary_drained_or_safe_replaced",
+      "node_count": 50,
+      "operation_name": "remove_primary_drained_or_safe_replaced"
+    },
+    {
+      "coverage_id": "50.management.remove_failed_node",
+      "node_count": 50,
+      "operation_name": "remove_failed_node"
+    },
+    {
+      "coverage_id": "50.management.reshard_slot_range",
+      "node_count": 50,
+      "operation_name": "reshard_slot_range"
+    },
+    {
+      "coverage_id": "50.management.reshard_with_keys",
+      "node_count": 50,
+      "operation_name": "reshard_with_keys"
+    },
+    {
+      "coverage_id": "50.management.rebalance_after_imbalance",
+      "node_count": 50,
+      "operation_name": "rebalance_after_imbalance"
+    },
+    {
+      "coverage_id": "50.management.rolling_restart_replica_first",
+      "node_count": 50,
+      "operation_name": "rolling_restart_replica_first"
+    },
+    {
+      "coverage_id": "50.management.rolling_restart_primary_safe",
+      "node_count": 50,
+      "operation_name": "rolling_restart_primary_safe"
+    }
+  ],
+  "run_id": "P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

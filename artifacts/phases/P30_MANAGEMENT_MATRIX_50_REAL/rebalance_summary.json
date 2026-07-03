@@ -1,0 +1,83 @@
+{
+  "artifact_type": "rebalance_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "imbalance_after": 5.0,
+  "imbalance_before": 25.0,
+  "movement_ids": [
+    "p30-rebalance_after_imbalance-50-rebalance_after_imbalance-0-9"
+  ],
+  "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "rows": [
+    {
+      "imbalance_after": 5.0,
+      "imbalance_before": 25.0,
+      "movement_ids": [
+        "p30-rebalance_after_imbalance-50-rebalance_after_imbalance-0-9"
+      ],
+      "node_count": 50,
+      "operation_id": "p30-rebalance_after_imbalance-50",
+      "slot_counts_after": {
+        "00f231701eada87f204dc1c1d44495200e5d7a90": 655,
+        "24eecfc821fc6d8580c9f75772d77f925757cd84": 656,
+        "4c18d9f991932800e86f3181669950d3374d05a1": 655,
+        "616496fdcf545e9948f6a9319577296bb337d16f": 658,
+        "67be330602904fe177574dee99cdddcb9bf80232": 656,
+        "6e46710bb35576777477ba1a9dc43902da2354c4": 656,
+        "6fc6a3953b7f58800655e143b66b3bfd3db2c625": 655,
+        "78e8e8cf941fb8b08a2d5cc45ca9c1428b1b8855": 655,
+        "7c65f11cd28b8b238e3776f61f1e3a9bdd603943": 655,
+        "7d36283ccd5b536523412bb20cbb65ed67e53e50": 655,
+        "802ca94e38ad31be0e3586c6da12326d3834f519": 656,
+        "8405913bde4401702f9c40c831f14c8154fddada": 655,
+        "857fbd848dfc563bda07f00e9203b91387b4c191": 655,
+        "87f765fe4d5c298ae0c2f51218598521854f75a8": 656,
+        "a1e5a83dab9016f5dfa4d34293fa4f6de20a7411": 655,
+        "a37139c8a1b0aab6056e1ff0a7ea5f61ffa85ce7": 653,
+        "aa5e5bd490b497d78d51fabb9e1534a50e836f2e": 655,
+        "acc345ca109efac5e47c0039e54a9f8e392a46b6": 655,
+        "b0aee7ba8e8c5b6c0064fb4e43e90b867c87e735": 655,
+        "bca697bbd2febf0865b39cac5e899e34587c08b0": 655,
+        "bd90c32eb5689a261ff77296c30374d08b207456": 656,
+        "c37d070d4a58cab152b5eb57be4163744e03f1c9": 655,
+        "d694aba2d5e85ea29717364ee6d69b3eb3372ad1": 656,
+        "d7483a657716ed06383ec6a2aae78c829172b91c": 655,
+        "e1fdc012126270dc75b29953422c3eb325eb56d4": 656
+      },
+      "slot_counts_before": {
+        "00f231701eada87f204dc1c1d44495200e5d7a90": 655,
+        "24eecfc821fc6d8580c9f75772d77f925757cd84": 656,
+        "4c18d9f991932800e86f3181669950d3374d05a1": 655,
+        "616496fdcf545e9948f6a9319577296bb337d16f": 668,
+        "67be330602904fe177574dee99cdddcb9bf80232": 656,
+        "6e46710bb35576777477ba1a9dc43902da2354c4": 656,
+        "6fc6a3953b7f58800655e143b66b3bfd3db2c625": 655,
+        "78e8e8cf941fb8b08a2d5cc45ca9c1428b1b8855": 655,
+        "7c65f11cd28b8b238e3776f61f1e3a9bdd603943": 655,
+        "7d36283ccd5b536523412bb20cbb65ed67e53e50": 655,
+        "802ca94e38ad31be0e3586c6da12326d3834f519": 656,
+        "8405913bde4401702f9c40c831f14c8154fddada": 655,
+        "857fbd848dfc563bda07f00e9203b91387b4c191": 655,
+        "87f765fe4d5c298ae0c2f51218598521854f75a8": 656,
+        "a1e5a83dab9016f5dfa4d34293fa4f6de20a7411": 655,
+        "a37139c8a1b0aab6056e1ff0a7ea5f61ffa85ce7": 643,
+        "aa5e5bd490b497d78d51fabb9e1534a50e836f2e": 655,
+        "acc345ca109efac5e47c0039e54a9f8e392a46b6": 655,
+        "b0aee7ba8e8c5b6c0064fb4e43e90b867c87e735": 655,
+        "bca697bbd2febf0865b39cac5e899e34587c08b0": 655,
+        "bd90c32eb5689a261ff77296c30374d08b207456": 656,
+        "c37d070d4a58cab152b5eb57be4163744e03f1c9": 655,
+        "d694aba2d5e85ea29717364ee6d69b3eb3372ad1": 656,
+        "d7483a657716ed06383ec6a2aae78c829172b91c": 655,
+        "e1fdc012126270dc75b29953422c3eb325eb56d4": 656
+      }
+    }
+  ],
+  "run_id": "P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "workload_impact_ref": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_workload_impact.json"
+}

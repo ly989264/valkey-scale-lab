@@ -229,6 +229,8 @@ def _redirect_endpoint(endpoints: list[Endpoint], host: str, port: int, password
     for endpoint in endpoints:
         if endpoint.host == host and endpoint.port == port:
             return endpoint
+        if endpoint.container_ip == host and endpoint.port == port:
+            return endpoint
         if endpoint.container_ip == host and port == 6379:
             return endpoint
     return Endpoint(logical_id=f"redirect-{host}:{port}", host=host, port=port, password=password)

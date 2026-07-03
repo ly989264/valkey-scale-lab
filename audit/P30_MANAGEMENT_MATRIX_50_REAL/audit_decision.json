@@ -1,0 +1,38 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "Codex fresh-context review subagent",
+  "created_at": "2026-07-03T16:52:08Z",
+  "gate_result_path": "artifacts/gates/P30_MANAGEMENT_MATRIX_50_REAL/gate_result.json",
+  "gate_result_sha256": "a60d0e132e882fb7ba8b57f84c200fdddaad7da91fc25c39bd5b95c601df27da",
+  "artifact_paths": [
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/phase_summary.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/valkey_e2e_evidence.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/cleanup_report.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/events.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/metrics_timeseries.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/workload_windows.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/quant_summary.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/coverage_ledger.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/resource_preflight.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/cluster_plan.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/run_state.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_ops_matrix.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_operation_results.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_topology_snapshots.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_command_log.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_workload_impact.json"
+  ],
+  "risks": [
+    {
+      "risk": "P30 changed harness-controlled scripts and gate lock as part of fail-closed strengthening.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "The change is documented in artifacts/harness_exception/P30_MANAGEMENT_MATRIX_50_REAL.md and current anti-bypass and gate-lock checks pass."
+    }
+  ],
+  "rationale": "Fresh-context review rerun verified the strict P30 documents, postcheck expectations, current PASS gate result, exact 50-node real Valkey evidence, all 16 manifest-required artifacts, all 11 management coverage IDs, coverage registry updates, quant telemetry, and cleanup proof. The stage satisfies P30 review and audit requirements."
+}

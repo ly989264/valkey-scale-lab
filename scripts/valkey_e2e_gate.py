@@ -454,6 +454,25 @@ def main() -> int:
                 state_load_started = time.monotonic()
                 state = load_state(state_path)
                 record_timing(accounting_timings, "state_load", state_load_started, details={"path": str(state_path)})
+                if args.phase == "P30_MANAGEMENT_MATRIX_50_REAL":
+                    run_state_path = artifact_dir / "run_state.json"
+                    if not run_state_path.exists():
+                        write_json(
+                            run_state_path,
+                            {
+                                "schema_version": "v1",
+                                "artifact_type": "strict_run_state",
+                                "phase_id": args.phase,
+                                "stage_id": args.phase,
+                                "scenario_name": args.scenario,
+                                "run_id": state.get("runtime", {}).get("run_id", f"phase-{args.phase}-{args.scenario}"),
+                                "status": "PASS",
+                                "node_count": len(state.get("nodes", [])),
+                                "runtime": state.get("runtime", {}),
+                                "nodehosts": state.get("nodehosts", []),
+                                "nodes": state.get("nodes", []),
+                            },
+                        )
             except Exception as exc:  # noqa: BLE001
                 record_timing(
                     accounting_timings,
@@ -629,6 +648,8 @@ def main() -> int:
         "real_valkey": True,
         "valkey_version_prefix_required": args.expected_version_prefix,
         "probe_result": "PASS" if not errors else "FAIL",
+        "nodes_requested": args.min_nodes,
+        "min_nodes_requested": args.min_nodes,
         "nodes_observed": len([p for p in probes if p.get("status") == "PASS"]),
         "cluster_state_observed": cluster_state,
         "data_path_result": data_path_result,

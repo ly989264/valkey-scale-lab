@@ -92,6 +92,28 @@ def test_p29_strict_telemetry_small_real_is_six_node_only() -> None:
     ) is False
 
 
+def test_p30_strict_management_matrix_is_exact_50_process_runtime() -> None:
+    assert docker_runtime._scenario_node_count_allowed(
+        "P30_MANAGEMENT_MATRIX_50_REAL",
+        "strict_management_matrix_50",
+        50,
+    ) is True
+    assert docker_runtime._scenario_node_count_allowed(
+        "P30_MANAGEMENT_MATRIX_50_REAL",
+        "strict_management_matrix_50",
+        49,
+    ) is False
+    assert docker_runtime._scenario_node_count_allowed(
+        "P30_MANAGEMENT_MATRIX_50_REAL",
+        "strict_management_matrix_50",
+        100,
+    ) is False
+    assert docker_runtime._uses_docker_process_runtime(
+        "P30_MANAGEMENT_MATRIX_50_REAL",
+        "strict_management_matrix_50",
+    ) is True
+
+
 def test_p25_smoke_runtime_is_six_node_only_and_not_process_runtime() -> None:
     assert docker_runtime._scenario_node_count_allowed(
         "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",

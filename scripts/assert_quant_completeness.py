@@ -15,6 +15,7 @@ from strict_harness_lib import load_jsonl, phase_dir, print_errors, rel, require
 
 
 P29 = "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
+P30 = "P30_MANAGEMENT_MATRIX_50_REAL"
 CANONICAL_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]
 STRICT_EVENT_FIELDS = [
     "schema_version",
@@ -106,6 +107,8 @@ def main() -> int:
             errors.append("fault_runtime_claimed must be true")
     if args.phase == P29:
         assert_p29_semantics(base, errors)
+    if args.phase == P30 and args.category == "management":
+        assert_p30_management_semantics(base, int(args.scale or 0), errors)
     if errors:
         return print_errors(errors)
     print(f"PASS quant completeness phase={args.phase}")
@@ -166,6 +169,105 @@ def assert_p29_semantics(base: Path, errors: list[str]) -> None:
         errors.append("valkey_e2e_evidence.json: P29 requires exactly 6 observed nodes")
     if cleanup.get("status") != "PASS":
         errors.append("cleanup_report.json: cleanup status must be PASS")
+
+
+def assert_p30_management_semantics(base: Path, scale: int, errors: list[str]) -> None:
+    if scale != 50:
+        errors.append("P30 quant completeness requires --scale 50")
+    events = _load_jsonl_required(base / "events.jsonl", errors)
+    metrics = _load_jsonl_required(base / "metrics_timeseries.jsonl", errors)
+    workload = require_json(base / "workload_windows.json", errors, "workload windows") or {}
+    quant_summary = require_json(base / "quant_summary.json", errors, "quant summary") or {}
+    coverage_ledger = require_json(base / "coverage_ledger.json", errors, "coverage ledger") or {}
+    evidence = require_json(base / "valkey_e2e_evidence.json", errors, "real Valkey evidence") or {}
+    cleanup = require_json(base / "cleanup_report.json", errors, "cleanup report") or {}
+    for artifact_name in [
+        "phase_summary.json",
+        "resource_preflight.json",
+        "cluster_plan.json",
+        "run_state.json",
+        "management_ops_matrix.json",
+        "management_workload_impact.json",
+        "rebalance_summary.json",
+        "rolling_restart_plan.json",
+        "runtime_timing_breakdown_strict_management_matrix_50.json",
+    ]:
+        artifact = require_json(base / artifact_name, errors, artifact_name) or {}
+        _assert_no_forbidden_values(artifact, artifact_name, errors)
+    for index, row in enumerate(events, start=1):
+        _assert_required_fields(row, STRICT_EVENT_FIELDS, f"events.jsonl:{index}", errors)
+        _assert_p30_dimensions(row, f"events.jsonl:{index}", errors)
+        _assert_no_forbidden_values(row, f"events.jsonl:{index}", errors)
+    metric_source_types = set()
+    for index, row in enumerate(metrics, start=1):
+        _assert_required_fields(row, STRICT_METRIC_FIELDS, f"metrics_timeseries.jsonl:{index}", errors)
+        _assert_p30_dimensions(row, f"metrics_timeseries.jsonl:{index}", errors)
+        _assert_no_forbidden_values(row, f"metrics_timeseries.jsonl:{index}", errors)
+        metric_source_types.add(str(row.get("source_type")))
+        if row.get("metric_value") == "MISSING" and not row.get("missing_reason"):
+            errors.append(f"metrics_timeseries.jsonl:{index}: MISSING metric requires missing_reason")
+    if "workload" not in metric_source_types:
+        errors.append("metrics_timeseries.jsonl: P30 requires workload metric rows")
+    _assert_p30_workload_windows(workload, {str(row.get("event_id")) for row in events}, errors)
+    claims = quant_summary.get("runtime_claims", {})
+    if claims.get("real_valkey_claimed") is not True or claims.get("management_runtime_claimed") is not True:
+        errors.append("quant_summary.json: P30 requires real Valkey and management runtime claims")
+    counts = quant_summary.get("counts", {})
+    if counts.get("node_count") != 50 or counts.get("operation_count") != 11 or counts.get("coverage_pass_count") != 11:
+        errors.append("quant_summary.json: P30 counts must record 50 nodes, 11 operations, and 11 coverage passes")
+    if evidence.get("status") != "PASS" or evidence.get("nodes_observed") != 50 or evidence.get("data_path_result") != "PASS":
+        errors.append("valkey_e2e_evidence.json: P30 requires PASS exact-50 data-path evidence")
+    if cleanup.get("status") != "PASS":
+        errors.append("cleanup_report.json: cleanup status must be PASS")
+    if coverage_ledger.get("stage_id") != P30 or coverage_ledger.get("summary", {}).get("counts_by_status", {}).get("PASS") != 11:
+        errors.append("coverage_ledger.json: P30 ledger must contain exactly 11 PASS rows in the full strict registry")
+
+
+def _assert_p30_dimensions(row: dict[str, Any], label: str, errors: list[str]) -> None:
+    if row.get("phase_id") != P30 or row.get("stage_id") != P30:
+        errors.append(f"{label}: phase_id and stage_id must be {P30}")
+    coverage_id = str(row.get("coverage_id", ""))
+    if not coverage_id.startswith("50.management."):
+        errors.append(f"{label}: coverage_id must be a 50.management.* row")
+    if row.get("scale") != 50 or row.get("node_count") != 50:
+        errors.append(f"{label}: scale and node_count must be 50")
+
+
+def _assert_p30_workload_windows(workload: dict[str, Any], event_ids: set[str], errors: list[str]) -> None:
+    windows = workload.get("windows")
+    if not isinstance(windows, list):
+        errors.append("workload_windows.json: windows must be a list")
+        return
+    by_operation: dict[str, list[str]] = {}
+    for index, window in enumerate(windows, start=1):
+        if not isinstance(window, dict):
+            errors.append(f"workload_windows.json:{index}: each window must be an object")
+            continue
+        label = f"workload_windows.json:{window.get('operation_id', index)}:{window.get('window_name', 'MISSING')}"
+        _assert_no_forbidden_values(window, label, errors)
+        op_id = str(window.get("operation_id", ""))
+        by_operation.setdefault(op_id, []).append(str(window.get("window_name")))
+        metrics = window.get("metrics")
+        if not isinstance(metrics, dict):
+            errors.append(f"{label}: metrics must be an object")
+            metrics = {}
+        for field in WORKLOAD_METRICS:
+            if field not in window:
+                errors.append(f"{label}: missing top-level workload metric {field}")
+            if field not in metrics:
+                errors.append(f"{label}: missing nested workload metric {field}")
+            value = window.get(field)
+            if value == "MISSING":
+                reason = metrics.get("missing_reasons", {}).get(field) or window.get("missing_reasons", {}).get(field)
+                if not reason:
+                    errors.append(f"{label}: MISSING metric {field} requires reason")
+        if window.get("window_start_event_id") not in event_ids or window.get("window_end_event_id") not in event_ids:
+            errors.append(f"{label}: workload event IDs must link to events.jsonl")
+        if not isinstance(window.get("sample_count"), int) or int(window.get("sample_count", 0)) <= 0:
+            errors.append(f"{label}: sample_count must be positive")
+    for operation_id, names in by_operation.items():
+        if names != CANONICAL_WINDOWS:
+            errors.append(f"workload_windows.json:{operation_id}: windows must be canonical order {CANONICAL_WINDOWS}, got {names}")
 
 
 def _load_jsonl_required(path: Path, errors: list[str]) -> list[dict[str, Any]]:

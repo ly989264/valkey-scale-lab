@@ -1,0 +1,1618 @@
+{
+  "artifact_type": "p13_timing_breakdown",
+  "created_at": "2026-06-28T00:00:00Z",
+  "node_count": 50,
+  "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+  "producer": {
+    "name": "valkey-scale-lab-runtime",
+    "version": "0.0.0"
+  },
+  "run_id": "P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628",
+  "scenario": "strict_management_matrix_50",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": {
+    "cluster_create_duration_seconds": 29.537306,
+    "diagnostic_full_probe_duration_seconds": 1.75406,
+    "final_full_probe_duration_seconds": 0.024659,
+    "replica_config_duration_seconds": 0.144281,
+    "wrapper_probe_duration_seconds": "MISSING"
+  },
+  "timings": [
+    {
+      "count": 1,
+      "details": {
+        "nodehost_count": 2,
+        "parallelism": 8
+      },
+      "duration_seconds": 0.862034,
+      "name": "nodehost_start",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "bundle_records": [
+          {
+            "bundle_artifact_dir": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/nodehost_bundles/vslab-bundle-P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628-nodehost-az-a",
+            "node_count": 25,
+            "nodehost_id": "nodehost-az-a",
+            "remote_bundle_dir": "/tmp/vslab-bundle-P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628-nodehost-az-a"
+          },
+          {
+            "bundle_artifact_dir": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/nodehost_bundles/vslab-bundle-P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628-nodehost-az-b",
+            "node_count": 25,
+            "nodehost_id": "nodehost-az-b",
+            "remote_bundle_dir": "/tmp/vslab-bundle-P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628-nodehost-az-b"
+          }
+        ],
+        "config_local_generate_seconds": 0.028285,
+        "config_remote_install_seconds": 0.130138,
+        "docker_cp_bundle_seconds": 0.03516,
+        "docker_cp_count_before_after": {
+          "after": 2,
+          "after_basis": "one config bundle docker cp per nodehost",
+          "before": 50,
+          "before_basis": "legacy per-node config docker cp",
+          "stage": "config_remote_install"
+        },
+        "docker_exec_count_before_after": {
+          "after": 2,
+          "after_basis": "one install.sh exec per nodehost",
+          "before": 50,
+          "before_basis": "legacy per-node mkdir",
+          "stage": "config_remote_install"
+        },
+        "node_config_local_generate_seconds": 0.006791,
+        "node_count": 50,
+        "nodehost_bulk_install_used": true,
+        "nodehost_bundle_install_seconds": 0.094978,
+        "nodehost_bundle_write_seconds": 0.021494,
+        "nodehost_count": 2,
+        "parallelism": 8,
+        "process_bootstrap_batching": {
+          "config_local_generate_seconds": 0.028285,
+          "config_remote_install_seconds": 0.130138,
+          "docker_cp_count_before_after": {
+            "after": 2,
+            "basis": "deterministic setup command plan for config transfer",
+            "before": 50,
+            "reduction": 48,
+            "stages": {
+              "config_remote_install": {
+                "after": 2,
+                "after_basis": "one config bundle docker cp per nodehost",
+                "before": 50,
+                "before_basis": "legacy per-node config docker cp",
+                "stage": "config_remote_install"
+              }
+            }
+          },
+          "docker_exec_count_before_after": {
+            "after": 6,
+            "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+            "before": 150,
+            "reduction": 144,
+            "stages": {
+              "config_remote_install": {
+                "after": 2,
+                "after_basis": "one install.sh exec per nodehost",
+                "before": 50,
+                "before_basis": "legacy per-node mkdir",
+                "stage": "config_remote_install"
+              },
+              "process_start_and_pidfile_collect": {
+                "after": 4,
+                "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                "before": 100,
+                "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                "stage": "process_start_and_pidfile_collect"
+              }
+            }
+          },
+          "node_count": 50,
+          "nodehost_bulk_install_used": true,
+          "nodehost_bulk_start_used": true,
+          "nodehost_count": 2,
+          "per_logical_node_evidence": [
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0000-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-primary/valkey.log",
+              "logical_id": "shard-0000-primary",
+              "pid": 71,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0001-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-primary/valkey.log",
+              "logical_id": "shard-0001-primary",
+              "pid": 72,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0002-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-primary/valkey.log",
+              "logical_id": "shard-0002-primary",
+              "pid": 80,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0003-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-primary/valkey.log",
+              "logical_id": "shard-0003-primary",
+              "pid": 81,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0004-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-primary/valkey.log",
+              "logical_id": "shard-0004-primary",
+              "pid": 89,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0005-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-primary/valkey.log",
+              "logical_id": "shard-0005-primary",
+              "pid": 90,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0006-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-primary/valkey.log",
+              "logical_id": "shard-0006-primary",
+              "pid": 98,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0007-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-primary/valkey.log",
+              "logical_id": "shard-0007-primary",
+              "pid": 99,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0008-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-primary/valkey.log",
+              "logical_id": "shard-0008-primary",
+              "pid": 107,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0009-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-primary/valkey.log",
+              "logical_id": "shard-0009-primary",
+              "pid": 108,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0010-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-primary/valkey.log",
+              "logical_id": "shard-0010-primary",
+              "pid": 116,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0011-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-primary/valkey.log",
+              "logical_id": "shard-0011-primary",
+              "pid": 117,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0012-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-primary/valkey.log",
+              "logical_id": "shard-0012-primary",
+              "pid": 125,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0013-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-primary/valkey.log",
+              "logical_id": "shard-0013-primary",
+              "pid": 126,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0014-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-primary/valkey.log",
+              "logical_id": "shard-0014-primary",
+              "pid": 134,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0015-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-primary/valkey.log",
+              "logical_id": "shard-0015-primary",
+              "pid": 135,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0016-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-primary/valkey.log",
+              "logical_id": "shard-0016-primary",
+              "pid": 143,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0017-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-primary/valkey.log",
+              "logical_id": "shard-0017-primary",
+              "pid": 144,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0018-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-primary/valkey.log",
+              "logical_id": "shard-0018-primary",
+              "pid": 152,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0019-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-primary/valkey.log",
+              "logical_id": "shard-0019-primary",
+              "pid": 153,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0020-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-primary/valkey.log",
+              "logical_id": "shard-0020-primary",
+              "pid": 161,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0021-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-primary/valkey.log",
+              "logical_id": "shard-0021-primary",
+              "pid": 162,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0022-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-primary/valkey.log",
+              "logical_id": "shard-0022-primary",
+              "pid": 170,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0023-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-primary/valkey.log",
+              "logical_id": "shard-0023-primary",
+              "pid": 171,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0024-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-primary/valkey.log",
+              "logical_id": "shard-0024-primary",
+              "pid": 179,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0000-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-replica-00/valkey.log",
+              "logical_id": "shard-0000-replica-00",
+              "pid": 180,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0001-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-replica-00/valkey.log",
+              "logical_id": "shard-0001-replica-00",
+              "pid": 188,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0002-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-replica-00/valkey.log",
+              "logical_id": "shard-0002-replica-00",
+              "pid": 189,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0003-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-replica-00/valkey.log",
+              "logical_id": "shard-0003-replica-00",
+              "pid": 197,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0004-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-replica-00/valkey.log",
+              "logical_id": "shard-0004-replica-00",
+              "pid": 198,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0005-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-replica-00/valkey.log",
+              "logical_id": "shard-0005-replica-00",
+              "pid": 206,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0006-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-replica-00/valkey.log",
+              "logical_id": "shard-0006-replica-00",
+              "pid": 207,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0007-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-replica-00/valkey.log",
+              "logical_id": "shard-0007-replica-00",
+              "pid": 215,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0008-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-replica-00/valkey.log",
+              "logical_id": "shard-0008-replica-00",
+              "pid": 216,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0009-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-replica-00/valkey.log",
+              "logical_id": "shard-0009-replica-00",
+              "pid": 224,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0010-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-replica-00/valkey.log",
+              "logical_id": "shard-0010-replica-00",
+              "pid": 225,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0011-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-replica-00/valkey.log",
+              "logical_id": "shard-0011-replica-00",
+              "pid": 233,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0012-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-replica-00/valkey.log",
+              "logical_id": "shard-0012-replica-00",
+              "pid": 234,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0013-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-replica-00/valkey.log",
+              "logical_id": "shard-0013-replica-00",
+              "pid": 242,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0014-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-replica-00/valkey.log",
+              "logical_id": "shard-0014-replica-00",
+              "pid": 243,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0015-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-replica-00/valkey.log",
+              "logical_id": "shard-0015-replica-00",
+              "pid": 251,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0016-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-replica-00/valkey.log",
+              "logical_id": "shard-0016-replica-00",
+              "pid": 252,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0017-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-replica-00/valkey.log",
+              "logical_id": "shard-0017-replica-00",
+              "pid": 260,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0018-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-replica-00/valkey.log",
+              "logical_id": "shard-0018-replica-00",
+              "pid": 261,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0019-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-replica-00/valkey.log",
+              "logical_id": "shard-0019-replica-00",
+              "pid": 269,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0020-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-replica-00/valkey.log",
+              "logical_id": "shard-0020-replica-00",
+              "pid": 270,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0021-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-replica-00/valkey.log",
+              "logical_id": "shard-0021-replica-00",
+              "pid": 278,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0022-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-replica-00/valkey.log",
+              "logical_id": "shard-0022-replica-00",
+              "pid": 279,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0023-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-replica-00/valkey.log",
+              "logical_id": "shard-0023-replica-00",
+              "pid": 287,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0024-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-replica-00/valkey.log",
+              "logical_id": "shard-0024-replica-00",
+              "pid": 288,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-replica-00/valkey.pid"
+            }
+          ],
+          "pidfile_collect_seconds": 0.07498,
+          "process_start_command_seconds": 0.264988
+        }
+      },
+      "duration_seconds": 0.158496,
+      "name": "process_config_prepare",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "docker_exec_count_before_after": {
+          "after": 4,
+          "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+          "before": 100,
+          "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+          "stage": "process_start_and_pidfile_collect"
+        },
+        "node_count": 50,
+        "nodehost_bulk_start_used": true,
+        "nodehost_count": 2,
+        "parallelism": 8,
+        "pidfile_collect_seconds": 0.07498,
+        "process_bootstrap_batching": {
+          "config_local_generate_seconds": 0.028285,
+          "config_remote_install_seconds": 0.130138,
+          "docker_cp_count_before_after": {
+            "after": 2,
+            "basis": "deterministic setup command plan for config transfer",
+            "before": 50,
+            "reduction": 48,
+            "stages": {
+              "config_remote_install": {
+                "after": 2,
+                "after_basis": "one config bundle docker cp per nodehost",
+                "before": 50,
+                "before_basis": "legacy per-node config docker cp",
+                "stage": "config_remote_install"
+              }
+            }
+          },
+          "docker_exec_count_before_after": {
+            "after": 6,
+            "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+            "before": 150,
+            "reduction": 144,
+            "stages": {
+              "config_remote_install": {
+                "after": 2,
+                "after_basis": "one install.sh exec per nodehost",
+                "before": 50,
+                "before_basis": "legacy per-node mkdir",
+                "stage": "config_remote_install"
+              },
+              "process_start_and_pidfile_collect": {
+                "after": 4,
+                "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                "before": 100,
+                "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                "stage": "process_start_and_pidfile_collect"
+              }
+            }
+          },
+          "node_count": 50,
+          "nodehost_bulk_install_used": true,
+          "nodehost_bulk_start_used": true,
+          "nodehost_count": 2,
+          "per_logical_node_evidence": [
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0000-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-primary/valkey.log",
+              "logical_id": "shard-0000-primary",
+              "pid": 71,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0001-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-primary/valkey.log",
+              "logical_id": "shard-0001-primary",
+              "pid": 72,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0002-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-primary/valkey.log",
+              "logical_id": "shard-0002-primary",
+              "pid": 80,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0003-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-primary/valkey.log",
+              "logical_id": "shard-0003-primary",
+              "pid": 81,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0004-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-primary/valkey.log",
+              "logical_id": "shard-0004-primary",
+              "pid": 89,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0005-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-primary/valkey.log",
+              "logical_id": "shard-0005-primary",
+              "pid": 90,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0006-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-primary/valkey.log",
+              "logical_id": "shard-0006-primary",
+              "pid": 98,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0007-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-primary/valkey.log",
+              "logical_id": "shard-0007-primary",
+              "pid": 99,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0008-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-primary/valkey.log",
+              "logical_id": "shard-0008-primary",
+              "pid": 107,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0009-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-primary/valkey.log",
+              "logical_id": "shard-0009-primary",
+              "pid": 108,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0010-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-primary/valkey.log",
+              "logical_id": "shard-0010-primary",
+              "pid": 116,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0011-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-primary/valkey.log",
+              "logical_id": "shard-0011-primary",
+              "pid": 117,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0012-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-primary/valkey.log",
+              "logical_id": "shard-0012-primary",
+              "pid": 125,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0013-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-primary/valkey.log",
+              "logical_id": "shard-0013-primary",
+              "pid": 126,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0014-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-primary/valkey.log",
+              "logical_id": "shard-0014-primary",
+              "pid": 134,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0015-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-primary/valkey.log",
+              "logical_id": "shard-0015-primary",
+              "pid": 135,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0016-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-primary/valkey.log",
+              "logical_id": "shard-0016-primary",
+              "pid": 143,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0017-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-primary/valkey.log",
+              "logical_id": "shard-0017-primary",
+              "pid": 144,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0018-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-primary/valkey.log",
+              "logical_id": "shard-0018-primary",
+              "pid": 152,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0019-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-primary/valkey.log",
+              "logical_id": "shard-0019-primary",
+              "pid": 153,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0020-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-primary/valkey.log",
+              "logical_id": "shard-0020-primary",
+              "pid": 161,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0021-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-primary/valkey.log",
+              "logical_id": "shard-0021-primary",
+              "pid": 162,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0022-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-primary/valkey.log",
+              "logical_id": "shard-0022-primary",
+              "pid": 170,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0023-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-primary/valkey.log",
+              "logical_id": "shard-0023-primary",
+              "pid": 171,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0024-primary.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-primary/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-primary",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-primary/valkey.log",
+              "logical_id": "shard-0024-primary",
+              "pid": 179,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-primary/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0000-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-replica-00/valkey.log",
+              "logical_id": "shard-0000-replica-00",
+              "pid": 180,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0000-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0001-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-replica-00/valkey.log",
+              "logical_id": "shard-0001-replica-00",
+              "pid": 188,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0001-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0002-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-replica-00/valkey.log",
+              "logical_id": "shard-0002-replica-00",
+              "pid": 189,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0002-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0003-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-replica-00/valkey.log",
+              "logical_id": "shard-0003-replica-00",
+              "pid": 197,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0003-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0004-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-replica-00/valkey.log",
+              "logical_id": "shard-0004-replica-00",
+              "pid": 198,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0004-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0005-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-replica-00/valkey.log",
+              "logical_id": "shard-0005-replica-00",
+              "pid": 206,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0005-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0006-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-replica-00/valkey.log",
+              "logical_id": "shard-0006-replica-00",
+              "pid": 207,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0006-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0007-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-replica-00/valkey.log",
+              "logical_id": "shard-0007-replica-00",
+              "pid": 215,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0007-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0008-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-replica-00/valkey.log",
+              "logical_id": "shard-0008-replica-00",
+              "pid": 216,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0008-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0009-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-replica-00/valkey.log",
+              "logical_id": "shard-0009-replica-00",
+              "pid": 224,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0009-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0010-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-replica-00/valkey.log",
+              "logical_id": "shard-0010-replica-00",
+              "pid": 225,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0010-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0011-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-replica-00/valkey.log",
+              "logical_id": "shard-0011-replica-00",
+              "pid": 233,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0011-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0012-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-replica-00/valkey.log",
+              "logical_id": "shard-0012-replica-00",
+              "pid": 234,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0012-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0013-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-replica-00/valkey.log",
+              "logical_id": "shard-0013-replica-00",
+              "pid": 242,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0013-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0014-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-replica-00/valkey.log",
+              "logical_id": "shard-0014-replica-00",
+              "pid": 243,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0014-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0015-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-replica-00/valkey.log",
+              "logical_id": "shard-0015-replica-00",
+              "pid": 251,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0015-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0016-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-replica-00/valkey.log",
+              "logical_id": "shard-0016-replica-00",
+              "pid": 252,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0016-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0017-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-replica-00/valkey.log",
+              "logical_id": "shard-0017-replica-00",
+              "pid": 260,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0017-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0018-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-replica-00/valkey.log",
+              "logical_id": "shard-0018-replica-00",
+              "pid": 261,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0018-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0019-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-replica-00/valkey.log",
+              "logical_id": "shard-0019-replica-00",
+              "pid": 269,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0019-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0020-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-replica-00/valkey.log",
+              "logical_id": "shard-0020-replica-00",
+              "pid": 270,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0020-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0021-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-replica-00/valkey.log",
+              "logical_id": "shard-0021-replica-00",
+              "pid": 278,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0021-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0022-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-replica-00/valkey.log",
+              "logical_id": "shard-0022-replica-00",
+              "pid": 279,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0022-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0023-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-replica-00/valkey.log",
+              "logical_id": "shard-0023-replica-00",
+              "pid": 287,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0023-replica-00/valkey.pid"
+            },
+            {
+              "config_artifact_file": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/node_configs/shard-0024-replica-00.conf",
+              "config_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-replica-00/valkey.conf",
+              "data_dir": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-replica-00",
+              "log_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-replica-00/valkey.log",
+              "logical_id": "shard-0024-replica-00",
+              "pid": 288,
+              "pid_file": "/tmp/valkey-scale-lab/P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628/shard-0024-replica-00/valkey.pid"
+            }
+          ],
+          "pidfile_collect_seconds": 0.07498,
+          "process_start_command_seconds": 0.264988
+        },
+        "process_start_command_seconds": 0.264988
+      },
+      "duration_seconds": 0.33999,
+      "name": "process_start",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "node_count": 50
+      },
+      "duration_seconds": 0.052205,
+      "name": "process_ready_wait",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "cluster_create_command_seconds": 23.282408,
+        "parallelism": 8,
+        "primary_convergence_seconds": 0.003651,
+        "primary_count": 25,
+        "primary_meet_seconds": 0.0,
+        "probe_slot_assignment_seconds": 0.014795,
+        "slot_assignment_scope": "inside_valkey_cli_cluster_create",
+        "slot_assignment_seconds": 0.0,
+        "strategy": "valkey_cli_cluster_create_primaries"
+      },
+      "duration_seconds": 23.300912,
+      "name": "primary_cluster_create",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "fanout": 4,
+        "meet_commands": 25,
+        "parallelism": 8,
+        "replica_count": 25
+      },
+      "duration_seconds": 6.092113,
+      "name": "replica_meet",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "bounded_parallelism": true,
+        "breakdown_semantics": "wall-clock stage durations from bounded parallel replica configuration plus per-replica timings",
+        "parallelism": 8,
+        "parallelism_source": "default",
+        "replica_count": 25,
+        "replica_diagnostics": [
+          {
+            "logical_id": "shard-0000-replica-00",
+            "master_id": "616496fdcf545e9948f6a9319577296bb337d16f",
+            "replica_knows_master_wait_seconds": 0.004341,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.009986,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.018879,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.033206,
+            "shard_id": "shard-0000",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0001-replica-00",
+            "master_id": "a37139c8a1b0aab6056e1ff0a7ea5f61ffa85ce7",
+            "replica_knows_master_wait_seconds": 0.003082,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.009988,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.006139,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.019209,
+            "shard_id": "shard-0001",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0002-replica-00",
+            "master_id": "67be330602904fe177574dee99cdddcb9bf80232",
+            "replica_knows_master_wait_seconds": 0.003704,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00827,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.008079,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.020053,
+            "shard_id": "shard-0002",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0003-replica-00",
+            "master_id": "aa5e5bd490b497d78d51fabb9e1534a50e836f2e",
+            "replica_knows_master_wait_seconds": 0.003435,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.007777,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.006619,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.017831,
+            "shard_id": "shard-0003",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0004-replica-00",
+            "master_id": "7d36283ccd5b536523412bb20cbb65ed67e53e50",
+            "replica_knows_master_wait_seconds": 0.003862,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.005821,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.007611,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.017294,
+            "shard_id": "shard-0004",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0005-replica-00",
+            "master_id": "6e46710bb35576777477ba1a9dc43902da2354c4",
+            "replica_knows_master_wait_seconds": 0.00285,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.009819,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.028604,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.041273,
+            "shard_id": "shard-0005",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0006-replica-00",
+            "master_id": "8405913bde4401702f9c40c831f14c8154fddada",
+            "replica_knows_master_wait_seconds": 0.003832,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00696,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.023802,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.034594,
+            "shard_id": "shard-0006",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0007-replica-00",
+            "master_id": "e1fdc012126270dc75b29953422c3eb325eb56d4",
+            "replica_knows_master_wait_seconds": 0.002931,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.007172,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.029484,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.039587,
+            "shard_id": "shard-0007",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0008-replica-00",
+            "master_id": "a1e5a83dab9016f5dfa4d34293fa4f6de20a7411",
+            "replica_knows_master_wait_seconds": 0.00301,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00396,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.036303,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.043273,
+            "shard_id": "shard-0008",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0009-replica-00",
+            "master_id": "c37d070d4a58cab152b5eb57be4163744e03f1c9",
+            "replica_knows_master_wait_seconds": 0.002911,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00274,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.033973,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.039624,
+            "shard_id": "shard-0009",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0010-replica-00",
+            "master_id": "802ca94e38ad31be0e3586c6da12326d3834f519",
+            "replica_knows_master_wait_seconds": 0.00361,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.002965,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.033026,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.039601,
+            "shard_id": "shard-0010",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0011-replica-00",
+            "master_id": "78e8e8cf941fb8b08a2d5cc45ca9c1428b1b8855",
+            "replica_knows_master_wait_seconds": 0.002707,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.002088,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.033215,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.03801,
+            "shard_id": "shard-0011",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0012-replica-00",
+            "master_id": "b0aee7ba8e8c5b6c0064fb4e43e90b867c87e735",
+            "replica_knows_master_wait_seconds": 0.002876,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00246,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.032005,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.037341,
+            "shard_id": "shard-0012",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0013-replica-00",
+            "master_id": "bca697bbd2febf0865b39cac5e899e34587c08b0",
+            "replica_knows_master_wait_seconds": 0.004156,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.005104,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.039682,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.048942,
+            "shard_id": "shard-0013",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0014-replica-00",
+            "master_id": "87f765fe4d5c298ae0c2f51218598521854f75a8",
+            "replica_knows_master_wait_seconds": 0.003528,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.004797,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.038148,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.046473,
+            "shard_id": "shard-0014",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0015-replica-00",
+            "master_id": "7c65f11cd28b8b238e3776f61f1e3a9bdd603943",
+            "replica_knows_master_wait_seconds": 0.003429,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.004705,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.030928,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.039062,
+            "shard_id": "shard-0015",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0016-replica-00",
+            "master_id": "00f231701eada87f204dc1c1d44495200e5d7a90",
+            "replica_knows_master_wait_seconds": 0.003009,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.003927,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.016645,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.023581,
+            "shard_id": "shard-0016",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0017-replica-00",
+            "master_id": "acc345ca109efac5e47c0039e54a9f8e392a46b6",
+            "replica_knows_master_wait_seconds": 0.004535,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.003657,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.039586,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.047778,
+            "shard_id": "shard-0017",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0018-replica-00",
+            "master_id": "6fc6a3953b7f58800655e143b66b3bfd3db2c625",
+            "replica_knows_master_wait_seconds": 0.004506,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.004541,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.036836,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.045883,
+            "shard_id": "shard-0018",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0019-replica-00",
+            "master_id": "bd90c32eb5689a261ff77296c30374d08b207456",
+            "replica_knows_master_wait_seconds": 0.003852,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.003611,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.034282,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.041745,
+            "shard_id": "shard-0019",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0020-replica-00",
+            "master_id": "4c18d9f991932800e86f3181669950d3374d05a1",
+            "replica_knows_master_wait_seconds": 0.003288,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.003601,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.026259,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.033148,
+            "shard_id": "shard-0020",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0021-replica-00",
+            "master_id": "24eecfc821fc6d8580c9f75772d77f925757cd84",
+            "replica_knows_master_wait_seconds": 0.002979,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.003945,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.034285,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.041209,
+            "shard_id": "shard-0021",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0022-replica-00",
+            "master_id": "d694aba2d5e85ea29717364ee6d69b3eb3372ad1",
+            "replica_knows_master_wait_seconds": 0.00356,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.002894,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.028097,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.034551,
+            "shard_id": "shard-0022",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0023-replica-00",
+            "master_id": "857fbd848dfc563bda07f00e9203b91387b4c191",
+            "replica_knows_master_wait_seconds": 0.002862,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00348,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.033144,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.039486,
+            "shard_id": "shard-0023",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0024-replica-00",
+            "master_id": "d7483a657716ed06383ec6a2aae78c829172b91c",
+            "replica_knows_master_wait_seconds": 0.002115,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.002421,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.022496,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.027032,
+            "shard_id": "shard-0024",
+            "status": "PASS"
+          }
+        ],
+        "replica_knows_master_wait_seconds": 0.012692,
+        "replica_primary_id_lookup_seconds": 0.012978,
+        "replica_replicaof_wait_seconds": 0.018858,
+        "replica_replicate_command_seconds": 0.099498,
+        "replica_replicate_total_seconds": 0.144213,
+        "slowest_count": 5,
+        "slowest_replicas": [
+          {
+            "logical_id": "shard-0013-replica-00",
+            "master_id": "bca697bbd2febf0865b39cac5e899e34587c08b0",
+            "replica_knows_master_wait_seconds": 0.004156,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.005104,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.039682,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.048942,
+            "shard_id": "shard-0013",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0017-replica-00",
+            "master_id": "acc345ca109efac5e47c0039e54a9f8e392a46b6",
+            "replica_knows_master_wait_seconds": 0.004535,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.003657,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.039586,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.047778,
+            "shard_id": "shard-0017",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0014-replica-00",
+            "master_id": "87f765fe4d5c298ae0c2f51218598521854f75a8",
+            "replica_knows_master_wait_seconds": 0.003528,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.004797,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.038148,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.046473,
+            "shard_id": "shard-0014",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0018-replica-00",
+            "master_id": "6fc6a3953b7f58800655e143b66b3bfd3db2c625",
+            "replica_knows_master_wait_seconds": 0.004506,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.004541,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.036836,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.045883,
+            "shard_id": "shard-0018",
+            "status": "PASS"
+          },
+          {
+            "logical_id": "shard-0008-replica-00",
+            "master_id": "a1e5a83dab9016f5dfa4d34293fa4f6de20a7411",
+            "replica_knows_master_wait_seconds": 0.00301,
+            "replica_knows_master_wait_seconds_result": "master_visible",
+            "replica_replicaof_wait_seconds": 0.00396,
+            "replica_replicaof_wait_seconds_result": "replicaof_confirmed",
+            "replica_replicate_command_seconds": 0.036303,
+            "replica_replicate_command_seconds_result": "replicate_command_sent",
+            "replica_replicate_total_seconds": 0.043273,
+            "shard_id": "shard-0008",
+            "status": "PASS"
+          }
+        ],
+        "supported_parallelism": [
+          8,
+          16,
+          32
+        ]
+      },
+      "duration_seconds": 0.144281,
+      "name": "replica_replicate",
+      "status": "PASS"
+    },
+    {
+      "count": 5,
+      "details": {
+        "predicate": "cluster clean snapshot did not converge",
+        "sample_count": 2,
+        "sample_scope": "representative"
+      },
+      "duration_seconds": 0.016128,
+      "name": "runtime_representative_probe",
+      "status": "PASS"
+    },
+    {
+      "count": 1,
+      "details": {
+        "predicate": "cluster clean snapshot did not converge",
+        "sample_count": 50,
+        "sample_scope": "all_nodes"
+      },
+      "duration_seconds": 0.024659,
+      "name": "runtime_final_full_probe",
+      "status": "PASS"
+    },
+    {
+      "count": 34,
+      "details": {
+        "mode": "diagnostic",
+        "predicate": "cluster clean snapshot did not converge",
+        "sample_count": 50,
+        "sample_scope": "all_nodes"
+      },
+      "duration_seconds": 1.75406,
+      "name": "runtime_diagnostic_full_probe",
+      "status": "FAIL"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": "MISSING",
+      "name": "wrapper_wait_cluster_ok",
+      "reason": "not recorded in this artifact producer",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": "MISSING",
+      "name": "wrapper_data_path_probe",
+      "reason": "not recorded in this artifact producer",
+      "status": "MISSING"
+    },
+    {
+      "count": 0,
+      "details": {
+        "reason": "not recorded in this artifact producer"
+      },
+      "duration_seconds": "MISSING",
+      "name": "cleanup",
+      "reason": "not recorded in this artifact producer",
+      "status": "MISSING"
+    }
+  ]
+}

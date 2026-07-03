@@ -21,7 +21,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "f9a1fa5debba9e4b034a5ce7205e736c1e902cbb4097d4f19a461a63c68c8a53"
+      "sha256": "9ff6b434f7d72d2fb4d935a7e02ef093c5a5741535c8ae8bc4fc5f7ea5362382"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -697,11 +697,11 @@
     },
     {
       "path": "scripts/valkey_e2e_gate.py",
-      "sha256": "409721dff467b209a6967a1b4fdb1600f6080876ccfcc43607c0a98005d0b850"
+      "sha256": "b5fa5929c39d303e1b1a3754a6ae808e5914c797fcbef11b4175b039258fd98c"
     },
     {
       "path": "scripts/valkey_probe_lib.py",
-      "sha256": "e74ce8411acfb428b6031bf74763996711650d3d4a70d9e7023156f7c5c63db2"
+      "sha256": "ecf706a6b3596aa22a1f64d6488759781c867cd95d8c1b0b1b4c150af69e473b"
     },
     {
       "path": "templates/artifacts/env_info.template.json",
@@ -797,11 +797,11 @@
     },
     {
       "path": "scripts/assert_quant_completeness.py",
-      "sha256": "bef57bd744cca48d874b391489394c7e922ce940cb456140bf48ff28a4df926a"
+      "sha256": "942ea3a26a0ce58c90417c5eeddc703e75875ad80ce5ab26a3795d5847d09e4b"
     },
     {
       "path": "scripts/assert_management_matrix_strict.py",
-      "sha256": "1405488bbdca499ea0a3064ff68ea83b66749d7a6ea4719667e1d00c2294c8ee"
+      "sha256": "a41fc36595f788f675e38fb169e91f4e48637d6591c72e4a69d3e1ba68b05dd4"
     },
     {
       "path": "scripts/assert_fault_matrix_strict.py",

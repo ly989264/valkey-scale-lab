@@ -1,0 +1,574 @@
+{
+  "artifact_refs": [
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/events.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/metrics_timeseries.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/workload_windows.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_ops_matrix.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_operation_results.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_workload_impact.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_topology_snapshots.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_command_log.jsonl",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/coverage_ledger.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/resource_preflight.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/cluster_plan.json",
+    "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/run_state.json"
+  ],
+  "artifact_type": "quant_summary",
+  "counts": {
+    "command_log_count": 1437,
+    "coverage_pass_count": 11,
+    "event_count": 154,
+    "metric_count": 1452,
+    "node_count": 50,
+    "operation_count": 11,
+    "topology_snapshot_count": 44,
+    "workload_window_count": 66
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_data": [
+    {
+      "field": "command_ms",
+      "reason": "create_cluster timing is captured in runtime_timing_breakdown and cluster setup operations before matrix row emission.",
+      "status": "MISSING"
+    },
+    {
+      "field": "command_ms",
+      "reason": "meet_nodes timing is captured in runtime_timing_breakdown and cluster setup operations before matrix row emission.",
+      "status": "MISSING"
+    },
+    {
+      "field": "command_ms",
+      "reason": "add_replica timing is captured in runtime_timing_breakdown and cluster setup operations before matrix row emission.",
+      "status": "MISSING"
+    },
+    {
+      "field": "bytes_migrated",
+      "reason": "Valkey MIGRATE byte count is not exposed by the command path.",
+      "status": "MISSING"
+    },
+    {
+      "field": "bytes_migrated",
+      "reason": "Valkey MIGRATE byte count is not exposed by the command path.",
+      "status": "MISSING"
+    },
+    {
+      "field": "bytes_migrated",
+      "reason": "Valkey MIGRATE byte count is not exposed by the command path.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "field": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P30_MANAGEMENT_MATRIX_50_REAL-strict_management_matrix_50-20260628",
+  "runtime_claims": {
+    "fault_runtime_claimed": false,
+    "management_runtime_claimed": true,
+    "real_valkey_claimed": true
+  },
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P30 executed all required management rows on an exact 50-node real Valkey cluster with workload, command, topology, convergence, coverage, and cleanup evidence."
+}

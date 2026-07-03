@@ -21,14 +21,22 @@ class ResourcePreflightError(RuntimeError):
     pass
 
 
-def run_resource_preflight(config_path: str | Path, out_path: str | Path, dry_run: bool = False) -> dict[str, Any]:
+def run_resource_preflight(
+    config_path: str | Path,
+    out_path: str | Path,
+    dry_run: bool = False,
+    *,
+    phase_id: str | None = None,
+    scenario: str | None = None,
+) -> dict[str, Any]:
     config = normalize_config(parse_config_file(config_path))
     if dry_run:
         config.setdefault("runtime", {})["dry_run"] = True
     node_count = int(config["cluster"]["shards"]) * (1 + int(config["cluster"]["replicas_per_shard"]))
     p21_exception = _is_p21_200_exception(config, node_count, dry_run)
     semantic_errors = _semantic_errors_for_preflight(config, allow_p21_200=p21_exception)
-    phase_id = _phase_for_node_count(node_count)
+    phase_id = phase_id or _phase_for_node_count(node_count)
+    scenario_name = scenario or _scenario_for_node_count(node_count)
     run_id = f"{phase_id}-resource-preflight-{node_count}-20260628"
     checks: list[dict[str, Any]] = []
 
@@ -65,7 +73,7 @@ def run_resource_preflight(config_path: str | Path, out_path: str | Path, dry_ru
     checks.append(_port_check(int(config["cluster"]["port_base"]), node_count, "client_ports"))
     checks.append(_port_check(int(config["cluster"]["cluster_bus_port_base"]), node_count, "cluster_bus_ports"))
     checks.append(_runtime_limit_check(node_count))
-    checks.append(_cleanup_state_check(phase_id, _scenario_for_node_count(node_count), node_count))
+    checks.append(_cleanup_state_check(phase_id, scenario_name, node_count))
 
     can_run = all(item["status"] == "PASS" for item in checks)
     report = {
@@ -77,7 +85,9 @@ def run_resource_preflight(config_path: str | Path, out_path: str | Path, dry_ru
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if can_run else "FAIL",
         "node_count": node_count,
+        "nodes_requested": node_count,
         "can_run": can_run,
+        "scenario_name": scenario_name,
         "config_path": str(config_path),
         "dry_run": dry_run,
         "bounded_exception": {
