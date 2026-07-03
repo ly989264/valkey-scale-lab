@@ -1,0 +1,294 @@
+{
+  "artifact_type": "final_report_index",
+  "coverage_summary": {
+    "cleanup": {
+      "resources_remaining": 0,
+      "status": "PASS_EXPECTED_FROM_REAL_SMOKE_GATE"
+    },
+    "failover": {
+      "required_rungs": [
+        30,
+        50,
+        100,
+        200
+      ],
+      "row_count": 8,
+      "sample_count_by_rung": {
+        "100": 3,
+        "200": 3,
+        "30": 3,
+        "50": 3
+      }
+    },
+    "fault": {
+      "present_rows": [
+        "primary_stop_failover",
+        "replica_stop",
+        "node_host_stop",
+        "az_stop",
+        "network_delay",
+        "network_loss",
+        "network_flap",
+        "network_partition",
+        "minority_partition",
+        "majority_partition",
+        "split_brain_window",
+        "fault_workload_impact"
+      ],
+      "required_rows": [
+        "primary_stop_failover",
+        "replica_stop",
+        "node_host_stop",
+        "az_stop",
+        "network_delay",
+        "network_loss",
+        "network_flap",
+        "network_partition",
+        "minority_partition",
+        "majority_partition",
+        "split_brain_window",
+        "fault_workload_impact"
+      ],
+      "row_count": 12
+    },
+    "management": {
+      "present_rows": [
+        "create_cluster",
+        "meet_nodes",
+        "add_replica",
+        "remove_replica",
+        "remove_primary_drained",
+        "remove_failed_node",
+        "reshard_slot_range",
+        "reshard_with_keys",
+        "rebalance_after_imbalance",
+        "rolling_restart_replica_first",
+        "rolling_restart_primary_safe"
+      ],
+      "required_rows": [
+        "create_cluster",
+        "meet_nodes",
+        "add_replica",
+        "remove_replica",
+        "remove_primary_drained",
+        "remove_failed_node",
+        "reshard_slot_range",
+        "reshard_with_keys",
+        "rebalance_after_imbalance",
+        "rolling_restart_replica_first",
+        "rolling_restart_primary_safe"
+      ],
+      "row_count": 11
+    },
+    "missing_data": {
+      "all_reasons_present": true,
+      "item_count": 434
+    },
+    "safety": {
+      "default_max_nodes": 100,
+      "p14_automatic": false,
+      "p21_bounded_exception_nodes": 200,
+      "source_scenarios_rerun": false
+    },
+    "workload": {
+      "p24_error_taxonomy_present": true,
+      "p24_row_count": 6,
+      "row_count": 49,
+      "source_row_counts": {
+        "failover": 12,
+        "fault": 21,
+        "management": 16,
+        "missing_rows": 0,
+        "p24_rows": 6,
+        "total": 49
+      }
+    }
+  },
+  "created_at": "2026-07-03T00:00:00Z",
+  "csv_export_index_ref": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/csv_export_index.json",
+  "derivation_policy": {
+    "allowed_metric_source_extensions": [
+      ".json",
+      ".jsonl"
+    ],
+    "artifact_only": true,
+    "log_parsing": false,
+    "rendered_views_as_metric_sources": false,
+    "source_scenarios_rerun": false
+  },
+  "exports": [
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/management_ops_matrix.csv",
+      "sha256": "f56aeacae0a88b1f4087201f378bbfb5b66b0b054b1f867fc00af6d057b2bcb2",
+      "table_name": "management_ops_matrix"
+    },
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/failover_latency_curve.csv",
+      "sha256": "da9b378900d6b6388e01b97f8ed754fa5e12cccc3d43e8048d9a27f05f56cbc4",
+      "table_name": "failover_latency_curve"
+    },
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/fault_matrix.csv",
+      "sha256": "dd1119955edf273f2641083e1b4c1da4ff44b1a3d73a0d11671ee768cdcb85e5",
+      "table_name": "fault_matrix"
+    },
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/workload_impact.csv",
+      "sha256": "c8dc1ef6b4e8cdaa1e7fc313f7cb2e5a4219bfd27decbb977b11c9788e33f3e4",
+      "table_name": "workload_impact"
+    }
+  ],
+  "generator_version": "0.0.0",
+  "phase_id": "P26_FINAL_REPORT_REGRESSION",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "reports": [
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/management_ops_matrix.md",
+      "sha256": "b197ca36fb474073a71db2c85c61da857eaa2f2f17a24e337aae430718f53971"
+    },
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/failover_latency_curve.md",
+      "sha256": "1e1618ee374e84543bb9992340654019df853aea68d1cd3e135c91944a23e97c"
+    },
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/fault_matrix.md",
+      "sha256": "2d5b5527cdcbf51b05f0129d58f5345e9a941e076d0dbcac59f33c5f14a6170a"
+    },
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/workload_impact.md",
+      "sha256": "bb87109b9587aaae8e2806f06a39fd0d6c33792e42a5deee78e845e9346ed793"
+    },
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/final_goal_loop_report.md",
+      "sha256": "cebde93a54505792689624ba18e56edbc223afe7007ba2c0b5f393900a922a6d"
+    }
+  ],
+  "run_id": "P26_FINAL_REPORT_REGRESSION-final-report-20260703",
+  "schema_version": "v1",
+  "source_artifacts": [
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+      "role": "p04_management",
+      "sha256": "3457e2b2e04b8ced543708158b2d10041f4aab6765963992df905f69aa3eef74"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/quant_summary.json",
+      "role": "p16_quant",
+      "sha256": "fe3f1efeb997792aaa5546e6ae9b9fbc0fa6e220f33fdf9f5906af0c438cffa7"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_ops_matrix.json",
+      "role": "p17_management_matrix",
+      "sha256": "9a92705dfa7db9abff8a1eb95e52d80b3a7234d1c73c0b8ba82b2a27b3c31b6e"
+    },
+    {
+      "artifact_type": "jsonl",
+      "path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_operation_results.jsonl",
+      "role": "p17_management_results",
+      "sha256": "dbf854ec59eaabfc2ff25a0365a2415f054d7e6b163d55fa1718a7cd4a55159b"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_ops_matrix.json",
+      "role": "p18_management_matrix",
+      "sha256": "0f883c728eecad29afa7fdde41641027ab5c6144149d2355d1061ab495d1d00d"
+    },
+    {
+      "artifact_type": "jsonl",
+      "path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_operation_results.jsonl",
+      "role": "p18_management_results",
+      "sha256": "7fba1f1b9c2a65a4e9bbe388d4d0c706a252c250e5e94fd65db9e2679e616558"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_ops_matrix.json",
+      "role": "p19_management_matrix",
+      "sha256": "153d12ccc953fcd2f85e416aaa1ab5dbb5d029e5b45ee65746aa53d124db53e2"
+    },
+    {
+      "artifact_type": "jsonl",
+      "path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_operation_results.jsonl",
+      "role": "p19_management_results",
+      "sha256": "0b329388810316f14d83b91b50dc6e86045b0be14101c2f09dd67f1216598cf0"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_curve.json",
+      "role": "p20_curve",
+      "sha256": "7e6d459beb96587f54bf92f3802a169cf694605f8499efa73098c612b947f1a7"
+    },
+    {
+      "artifact_type": "jsonl",
+      "path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_samples.jsonl",
+      "role": "p20_samples",
+      "sha256": "0f5533b1ca9c25c546712adf08adfc6ad765f59987454856c5d7c9c473c96063"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_curve_combined_30_50_100_200.json",
+      "role": "p21_curve",
+      "sha256": "c84f9b2fa84a38a12ac4938f456dd5f2003e4e58d565d346a6f245025325aba7"
+    },
+    {
+      "artifact_type": "jsonl",
+      "path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_samples_200.jsonl",
+      "role": "p21_samples",
+      "sha256": "92a1b4d9b56a43a545772ff027232c12f98241938c065ffd1aee3b1068f59b1c"
+    },
+    {
+      "artifact_type": "jsonl",
+      "path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_results.jsonl",
+      "role": "p22_faults",
+      "sha256": "3474d92134af840ae3dad289a69ff050264acb7da8f23f0c31a32597511d526c"
+    },
+    {
+      "artifact_type": "jsonl",
+      "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/fault_results.jsonl",
+      "role": "p23_faults",
+      "sha256": "dc5424ec71676893c54984a325234234c992f91ff3159074afc0eb22400b6953"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_report.json",
+      "role": "p23_network",
+      "sha256": "bc0b902f9be75f8b91537e8fc07e957a8b6d1cadcf46d327d104f29009f470f3"
+    },
+    {
+      "artifact_type": "jsonl",
+      "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_results.jsonl",
+      "role": "p24_faults",
+      "sha256": "e3f58df91ea8917a344fc958a7d5db2b37587e3077abbb236a684a0ae04e7204"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json",
+      "role": "p24_partition",
+      "sha256": "d4a36e27201e61bf4b346edee8c261238149beb2129e621de94a14c0e1a23e46"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json",
+      "role": "p24_split_brain",
+      "sha256": "db07e41bec06b019e51928d33d0a94d80cbc238467e0e0ca3ca2e6a1ae9b186a"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/missing_data_summary.json",
+      "role": "p25_missing",
+      "sha256": "dab96b59dbc1c3b577e869b90927d8716cb46ed4e344a568ec01c9e26e633949"
+    },
+    {
+      "artifact_type": "json",
+      "path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json",
+      "role": "p25_workload",
+      "sha256": "a503f3dfcc4bb839f34103851d76595711102a9cad5166e15d2cda64a010f011"
+    }
+  ],
+  "status": "PASS"
+}

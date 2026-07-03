@@ -1,0 +1,194 @@
+{
+  "artifact_type": "workload_windows",
+  "phase_id": "P26_FINAL_REPORT_REGRESSION",
+  "run_id": "P26_FINAL_REPORT_REGRESSION-final-report-20260703",
+  "schema_version": "v1",
+  "windows": [
+    {
+      "end_event_id": "p26-final-report-finish",
+      "metrics": {
+        "achieved_qps": "SKIPPED_WITH_REASON",
+        "ask_redirection_count": "SKIPPED_WITH_REASON",
+        "cluster_down_error_count": "SKIPPED_WITH_REASON",
+        "connection_error_count": "SKIPPED_WITH_REASON",
+        "error_ops": "SKIPPED_WITH_REASON",
+        "error_rate": "SKIPPED_WITH_REASON",
+        "latency_p50_ms": "SKIPPED_WITH_REASON",
+        "latency_p90_ms": "SKIPPED_WITH_REASON",
+        "latency_p95_ms": "SKIPPED_WITH_REASON",
+        "latency_p999_ms": "SKIPPED_WITH_REASON",
+        "latency_p99_ms": "SKIPPED_WITH_REASON",
+        "missing_reasons": {
+          "all": "P26 is an artifact-only final reporting stage; workload metrics are sourced from prior JSON artifacts rather than rerun."
+        },
+        "moved_redirection_count": "SKIPPED_WITH_REASON",
+        "ok_ops": "SKIPPED_WITH_REASON",
+        "readonly_error_count": "SKIPPED_WITH_REASON",
+        "requested_qps": "SKIPPED_WITH_REASON",
+        "sample_count": 0,
+        "timeout_count": "SKIPPED_WITH_REASON",
+        "tryagain_error_count": "SKIPPED_WITH_REASON",
+        "unknown_error_count": "SKIPPED_WITH_REASON"
+      },
+      "reason": "P26 final reporting does not run a workload window; prior workload artifacts are cited in reports.",
+      "start_event_id": "p26-final-report-start",
+      "status": "SKIPPED_WITH_REASON",
+      "window_name": "baseline"
+    },
+    {
+      "end_event_id": "p26-final-report-finish",
+      "metrics": {
+        "achieved_qps": "SKIPPED_WITH_REASON",
+        "ask_redirection_count": "SKIPPED_WITH_REASON",
+        "cluster_down_error_count": "SKIPPED_WITH_REASON",
+        "connection_error_count": "SKIPPED_WITH_REASON",
+        "error_ops": "SKIPPED_WITH_REASON",
+        "error_rate": "SKIPPED_WITH_REASON",
+        "latency_p50_ms": "SKIPPED_WITH_REASON",
+        "latency_p90_ms": "SKIPPED_WITH_REASON",
+        "latency_p95_ms": "SKIPPED_WITH_REASON",
+        "latency_p999_ms": "SKIPPED_WITH_REASON",
+        "latency_p99_ms": "SKIPPED_WITH_REASON",
+        "missing_reasons": {
+          "all": "P26 is an artifact-only final reporting stage; workload metrics are sourced from prior JSON artifacts rather than rerun."
+        },
+        "moved_redirection_count": "SKIPPED_WITH_REASON",
+        "ok_ops": "SKIPPED_WITH_REASON",
+        "readonly_error_count": "SKIPPED_WITH_REASON",
+        "requested_qps": "SKIPPED_WITH_REASON",
+        "sample_count": 0,
+        "timeout_count": "SKIPPED_WITH_REASON",
+        "tryagain_error_count": "SKIPPED_WITH_REASON",
+        "unknown_error_count": "SKIPPED_WITH_REASON"
+      },
+      "reason": "P26 final reporting does not run a workload window; prior workload artifacts are cited in reports.",
+      "start_event_id": "p26-final-report-start",
+      "status": "SKIPPED_WITH_REASON",
+      "window_name": "pre_event"
+    },
+    {
+      "end_event_id": "p26-final-report-finish",
+      "metrics": {
+        "achieved_qps": "SKIPPED_WITH_REASON",
+        "ask_redirection_count": "SKIPPED_WITH_REASON",
+        "cluster_down_error_count": "SKIPPED_WITH_REASON",
+        "connection_error_count": "SKIPPED_WITH_REASON",
+        "error_ops": "SKIPPED_WITH_REASON",
+        "error_rate": "SKIPPED_WITH_REASON",
+        "latency_p50_ms": "SKIPPED_WITH_REASON",
+        "latency_p90_ms": "SKIPPED_WITH_REASON",
+        "latency_p95_ms": "SKIPPED_WITH_REASON",
+        "latency_p999_ms": "SKIPPED_WITH_REASON",
+        "latency_p99_ms": "SKIPPED_WITH_REASON",
+        "missing_reasons": {
+          "all": "P26 is an artifact-only final reporting stage; workload metrics are sourced from prior JSON artifacts rather than rerun."
+        },
+        "moved_redirection_count": "SKIPPED_WITH_REASON",
+        "ok_ops": "SKIPPED_WITH_REASON",
+        "readonly_error_count": "SKIPPED_WITH_REASON",
+        "requested_qps": "SKIPPED_WITH_REASON",
+        "sample_count": 0,
+        "timeout_count": "SKIPPED_WITH_REASON",
+        "tryagain_error_count": "SKIPPED_WITH_REASON",
+        "unknown_error_count": "SKIPPED_WITH_REASON"
+      },
+      "reason": "P26 final reporting does not run a workload window; prior workload artifacts are cited in reports.",
+      "start_event_id": "p26-final-report-start",
+      "status": "SKIPPED_WITH_REASON",
+      "window_name": "event"
+    },
+    {
+      "end_event_id": "p26-final-report-finish",
+      "metrics": {
+        "achieved_qps": "SKIPPED_WITH_REASON",
+        "ask_redirection_count": "SKIPPED_WITH_REASON",
+        "cluster_down_error_count": "SKIPPED_WITH_REASON",
+        "connection_error_count": "SKIPPED_WITH_REASON",
+        "error_ops": "SKIPPED_WITH_REASON",
+        "error_rate": "SKIPPED_WITH_REASON",
+        "latency_p50_ms": "SKIPPED_WITH_REASON",
+        "latency_p90_ms": "SKIPPED_WITH_REASON",
+        "latency_p95_ms": "SKIPPED_WITH_REASON",
+        "latency_p999_ms": "SKIPPED_WITH_REASON",
+        "latency_p99_ms": "SKIPPED_WITH_REASON",
+        "missing_reasons": {
+          "all": "P26 is an artifact-only final reporting stage; workload metrics are sourced from prior JSON artifacts rather than rerun."
+        },
+        "moved_redirection_count": "SKIPPED_WITH_REASON",
+        "ok_ops": "SKIPPED_WITH_REASON",
+        "readonly_error_count": "SKIPPED_WITH_REASON",
+        "requested_qps": "SKIPPED_WITH_REASON",
+        "sample_count": 0,
+        "timeout_count": "SKIPPED_WITH_REASON",
+        "tryagain_error_count": "SKIPPED_WITH_REASON",
+        "unknown_error_count": "SKIPPED_WITH_REASON"
+      },
+      "reason": "P26 final reporting does not run a workload window; prior workload artifacts are cited in reports.",
+      "start_event_id": "p26-final-report-start",
+      "status": "SKIPPED_WITH_REASON",
+      "window_name": "recovery"
+    },
+    {
+      "end_event_id": "p26-final-report-finish",
+      "metrics": {
+        "achieved_qps": "SKIPPED_WITH_REASON",
+        "ask_redirection_count": "SKIPPED_WITH_REASON",
+        "cluster_down_error_count": "SKIPPED_WITH_REASON",
+        "connection_error_count": "SKIPPED_WITH_REASON",
+        "error_ops": "SKIPPED_WITH_REASON",
+        "error_rate": "SKIPPED_WITH_REASON",
+        "latency_p50_ms": "SKIPPED_WITH_REASON",
+        "latency_p90_ms": "SKIPPED_WITH_REASON",
+        "latency_p95_ms": "SKIPPED_WITH_REASON",
+        "latency_p999_ms": "SKIPPED_WITH_REASON",
+        "latency_p99_ms": "SKIPPED_WITH_REASON",
+        "missing_reasons": {
+          "all": "P26 is an artifact-only final reporting stage; workload metrics are sourced from prior JSON artifacts rather than rerun."
+        },
+        "moved_redirection_count": "SKIPPED_WITH_REASON",
+        "ok_ops": "SKIPPED_WITH_REASON",
+        "readonly_error_count": "SKIPPED_WITH_REASON",
+        "requested_qps": "SKIPPED_WITH_REASON",
+        "sample_count": 0,
+        "timeout_count": "SKIPPED_WITH_REASON",
+        "tryagain_error_count": "SKIPPED_WITH_REASON",
+        "unknown_error_count": "SKIPPED_WITH_REASON"
+      },
+      "reason": "P26 final reporting does not run a workload window; prior workload artifacts are cited in reports.",
+      "start_event_id": "p26-final-report-start",
+      "status": "SKIPPED_WITH_REASON",
+      "window_name": "post_recovery"
+    },
+    {
+      "end_event_id": "p26-final-report-finish",
+      "metrics": {
+        "achieved_qps": "SKIPPED_WITH_REASON",
+        "ask_redirection_count": "SKIPPED_WITH_REASON",
+        "cluster_down_error_count": "SKIPPED_WITH_REASON",
+        "connection_error_count": "SKIPPED_WITH_REASON",
+        "error_ops": "SKIPPED_WITH_REASON",
+        "error_rate": "SKIPPED_WITH_REASON",
+        "latency_p50_ms": "SKIPPED_WITH_REASON",
+        "latency_p90_ms": "SKIPPED_WITH_REASON",
+        "latency_p95_ms": "SKIPPED_WITH_REASON",
+        "latency_p999_ms": "SKIPPED_WITH_REASON",
+        "latency_p99_ms": "SKIPPED_WITH_REASON",
+        "missing_reasons": {
+          "all": "P26 is an artifact-only final reporting stage; workload metrics are sourced from prior JSON artifacts rather than rerun."
+        },
+        "moved_redirection_count": "SKIPPED_WITH_REASON",
+        "ok_ops": "SKIPPED_WITH_REASON",
+        "readonly_error_count": "SKIPPED_WITH_REASON",
+        "requested_qps": "SKIPPED_WITH_REASON",
+        "sample_count": 0,
+        "timeout_count": "SKIPPED_WITH_REASON",
+        "tryagain_error_count": "SKIPPED_WITH_REASON",
+        "unknown_error_count": "SKIPPED_WITH_REASON"
+      },
+      "reason": "P26 final reporting does not run a workload window; prior workload artifacts are cited in reports.",
+      "start_event_id": "p26-final-report-start",
+      "status": "SKIPPED_WITH_REASON",
+      "window_name": "all_run"
+    }
+  ]
+}

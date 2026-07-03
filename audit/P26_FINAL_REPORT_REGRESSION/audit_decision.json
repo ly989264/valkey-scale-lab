@@ -1,0 +1,42 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P26_FINAL_REPORT_REGRESSION",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context-codex-reviewer",
+  "created_at": "2026-07-03T05:22:00Z",
+  "gate_result_path": "artifacts/gates/P26_FINAL_REPORT_REGRESSION/gate_result.json",
+  "gate_result_sha256": "d3579cafbe44ef240147e608406c1d0b6b8dfe6777bda42d0343fb0a9bbd38c1",
+  "artifact_paths": [
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/phase_summary.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/valkey_e2e_evidence.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/cleanup_report.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/events.jsonl",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/metrics_timeseries.jsonl",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/workload_windows.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/quant_summary.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/report_index.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/csv_export_index.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/management_ops_matrix.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/failover_latency_curve.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/fault_matrix.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/workload_impact.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/final_goal_loop_report.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/management_ops_matrix.csv",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/failover_latency_curve.csv",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/fault_matrix.csv",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/workload_impact.csv",
+    "artifacts/goal_loop/P26_FINAL_REPORT_REGRESSION/REVIEW.md"
+  ],
+  "risks": [
+    {
+      "risk": "PASS report rows may render optional reason text cosmetically.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "Fresh review classified this as non-blocking; missing/skipped metrics carry explicit reasons."
+    }
+  ],
+  "rationale": "All manifest gates passed, the fresh-context review decision is PASS, required artifacts validated, final reports and exports derive from JSON/JSONL artifacts only, required coverage is present, P14 remains non-automatic, real Valkey 9.1.0 evidence passed, and cleanup has no remaining owned resources."
+}

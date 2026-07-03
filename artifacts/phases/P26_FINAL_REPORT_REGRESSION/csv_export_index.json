@@ -1,0 +1,41 @@
+{
+  "artifact_type": "csv_export_index",
+  "exports": [
+    {
+      "json_source_artifact": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+      "json_source_count": 8,
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/failover_latency_curve.csv",
+      "row_count": 8,
+      "sha256": "da9b378900d6b6388e01b97f8ed754fa5e12cccc3d43e8048d9a27f05f56cbc4",
+      "table_name": "failover_latency_curve"
+    },
+    {
+      "json_source_artifact": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+      "json_source_count": 12,
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/fault_matrix.csv",
+      "row_count": 12,
+      "sha256": "dd1119955edf273f2641083e1b4c1da4ff44b1a3d73a0d11671ee768cdcb85e5",
+      "table_name": "fault_matrix"
+    },
+    {
+      "json_source_artifact": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+      "json_source_count": 11,
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/management_ops_matrix.csv",
+      "row_count": 11,
+      "sha256": "f56aeacae0a88b1f4087201f378bbfb5b66b0b054b1f867fc00af6d057b2bcb2",
+      "table_name": "management_ops_matrix"
+    },
+    {
+      "json_source_artifact": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+      "json_source_count": 49,
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/workload_impact.csv",
+      "row_count": 49,
+      "sha256": "c8dc1ef6b4e8cdaa1e7fc313f7cb2e5a4219bfd27decbb977b11c9788e33f3e4",
+      "table_name": "workload_impact"
+    }
+  ],
+  "json_source_artifact": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+  "phase_id": "P26_FINAL_REPORT_REGRESSION",
+  "run_id": "P26_FINAL_REPORT_REGRESSION-final-report-20260703",
+  "schema_version": "v1"
+}

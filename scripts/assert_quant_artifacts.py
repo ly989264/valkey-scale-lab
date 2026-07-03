@@ -726,6 +726,75 @@ def assert_p25_semantics(base: Path, errors: list[str]) -> None:
         errors.append("P25 workload_windows.json missing")
 
 
+def assert_p26_semantics(base: Path, errors: list[str]) -> None:
+    events = read_jsonl(base / "events.jsonl", errors)
+    metrics = read_jsonl(base / "metrics_timeseries.jsonl", errors)
+    final_path = base / "final_report_index.json"
+    report_path = base / "report_index.json"
+    csv_path = base / "csv_export_index.json"
+    quant_path = base / "quant_summary.json"
+    workload_path = base / "workload_windows.json"
+    for path in [final_path, report_path, csv_path, quant_path, workload_path]:
+        if not path.exists():
+            errors.append(f"P26 required report artifact missing: {path.name}")
+            return
+    final_index = load_json(final_path)
+    report_index = load_json(report_path)
+    csv_index = load_json(csv_path)
+    quant = load_json(quant_path)
+    if report_index != final_index:
+        errors.append("P26 report_index.json must mirror final_report_index.json")
+    policy = final_index.get("derivation_policy", {})
+    if policy.get("artifact_only") is not True or policy.get("log_parsing") is not False:
+        errors.append("P26 final_report_index must record artifact-only/no-log derivation")
+    if policy.get("rendered_views_as_metric_sources") is not False or policy.get("source_scenarios_rerun") is not False:
+        errors.append("P26 final_report_index must reject rendered metric sources and source reruns")
+    for idx, source in enumerate(final_index.get("source_artifacts", [])):
+        if not isinstance(source, dict):
+            errors.append(f"P26 source_artifacts[{idx}] must be object")
+            continue
+        path = str(source.get("path", ""))
+        if not path.endswith((".json", ".jsonl")):
+            errors.append(f"P26 source_artifacts[{idx}] must be JSON/JSONL only: {path}")
+        if "P14_SCALE_1000_OPTIN_DRYRUN" in path:
+            errors.append("P26 must not consume P14 source artifacts")
+        if not source.get("sha256"):
+            errors.append(f"P26 source_artifacts[{idx}] missing sha256")
+    counts = quant.get("counts", {})
+    if counts.get("event_count") != len(events):
+        errors.append("P26 quant_summary counts.event_count must match events.jsonl line count")
+    if counts.get("metric_count") != len(metrics):
+        errors.append("P26 quant_summary counts.metric_count must match metrics_timeseries.jsonl line count")
+    if counts.get("report_count") != len(final_index.get("reports", [])):
+        errors.append("P26 quant_summary counts.report_count must match final_report_index reports")
+    if counts.get("csv_export_count") != len(csv_index.get("exports", [])):
+        errors.append("P26 quant_summary counts.csv_export_count must match csv_export_index exports")
+    refs = set(str(ref) for ref in quant.get("artifact_refs", []))
+    for required in [
+        "final_report_index.json",
+        "report_index.json",
+        "csv_export_index.json",
+        "reports/final_goal_loop_report.md",
+        "exports/workload_impact.csv",
+        "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json",
+    ]:
+        if not any(required in ref for ref in refs):
+            errors.append(f"P26 quant_summary artifact_refs missing {required}")
+    claims = quant.get("runtime_claims", {})
+    if claims.get("real_valkey_claimed") is not True:
+        errors.append("P26 quant_summary must claim current-stage real Valkey smoke evidence")
+    if claims.get("management_runtime_claimed") is not False or claims.get("fault_runtime_claimed") is not False:
+        errors.append("P26 quant_summary must not claim management/fault runtime reruns")
+    if claims.get("source_runtime_behavior_rerun") is not False:
+        errors.append("P26 quant_summary must record source_runtime_behavior_rerun=false")
+    table_names = {item.get("table_name") for item in csv_index.get("exports", []) if isinstance(item, dict)}
+    if table_names != {"management_ops_matrix", "failover_latency_curve", "fault_matrix", "workload_impact"}:
+        errors.append(f"P26 csv_export_index table set mismatch: {sorted(str(name) for name in table_names)}")
+    for window in load_json(workload_path).get("windows", []):
+        if window.get("status") == "SKIPPED_WITH_REASON" and not window.get("reason"):
+            errors.append(f"P26 workload window {window.get('window_name')}: skip requires reason")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -785,6 +854,8 @@ def main() -> int:
         assert_p24_semantics(base, errors)
     if args.phase == "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS":
         assert_p25_semantics(base, errors)
+    if args.phase == "P26_FINAL_REPORT_REGRESSION":
+        assert_p26_semantics(base, errors)
 
     if errors:
         for error in errors:

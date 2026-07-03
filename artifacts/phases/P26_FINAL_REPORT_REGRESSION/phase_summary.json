@@ -1,0 +1,43 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-07-03T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "Final reports cite P17-P25 artifact data instead.",
+      "metric": "p26.workload_runtime_windows",
+      "reason": "P26 does not rerun source workload scenarios; prior workload artifacts provide the metrics.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P26_FINAL_REPORT_REGRESSION",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/phase_summary.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/valkey_e2e_evidence.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/cleanup_report.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/events.jsonl",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/metrics_timeseries.jsonl",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/workload_windows.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/quant_summary.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/report_index.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/csv_export_index.json",
+    "reports/management_ops_matrix.md",
+    "reports/failover_latency_curve.md",
+    "reports/fault_matrix.md",
+    "reports/workload_impact.md",
+    "reports/final_goal_loop_report.md",
+    "exports/management_ops_matrix.csv",
+    "exports/failover_latency_curve.csv",
+    "exports/fault_matrix.csv",
+    "exports/workload_impact.csv"
+  ],
+  "risks": [],
+  "run_id": "P26_FINAL_REPORT_REGRESSION-final-report-20260703",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P26 final report/regression hardening produced artifact-only Markdown reports, CSV exports, indexes, and compact regression sidecars."
+}

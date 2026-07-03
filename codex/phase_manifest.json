@@ -3019,26 +3019,42 @@
           "required": true,
           "real_valkey": false
         },
-        {
-          "name": "real_valkey_e2e",
-          "kind": "real_valkey",
-          "command": "python3 scripts/valkey_e2e_gate.py --phase P26_FINAL_REPORT_REGRESSION --config templates/configs/single_mac_6node.yaml --scenario final_report_regression_smoke --out artifacts/phases/P26_FINAL_REPORT_REGRESSION/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
-          "timeout_seconds": 900,
-          "required": true,
-          "real_valkey": true
-        },
-        {
-          "name": "quant_artifact_assertion",
-          "kind": "schema",
-          "command": "python3 scripts/assert_quant_artifacts.py --phase P26_FINAL_REPORT_REGRESSION",
-          "timeout_seconds": 120,
-          "required": true,
-          "real_valkey": false
-        },
-        {
-          "name": "cleanup_report_check",
-          "kind": "cleanup",
-          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P26_FINAL_REPORT_REGRESSION/cleanup_report.json",
+    {
+      "name": "real_valkey_e2e",
+      "kind": "real_valkey",
+      "command": "python3 scripts/valkey_e2e_gate.py --phase P26_FINAL_REPORT_REGRESSION --config templates/configs/single_mac_6node.yaml --scenario final_report_regression_smoke --out artifacts/phases/P26_FINAL_REPORT_REGRESSION/valkey_e2e_evidence.json --min-nodes 6 --require-data-path",
+      "timeout_seconds": 900,
+      "required": true,
+      "real_valkey": true
+    },
+    {
+      "name": "p26_final_report_generation",
+      "kind": "report",
+      "command": "python3 -m valkey_scale_lab.cli report --kind final-goal-loop --input artifacts/phases --out-dir artifacts/phases/P26_FINAL_REPORT_REGRESSION --phase P26_FINAL_REPORT_REGRESSION",
+      "timeout_seconds": 120,
+      "required": true,
+      "real_valkey": false
+    },
+    {
+      "name": "quant_artifact_assertion",
+      "kind": "schema",
+      "command": "python3 scripts/assert_quant_artifacts.py --phase P26_FINAL_REPORT_REGRESSION",
+      "timeout_seconds": 120,
+      "required": true,
+      "real_valkey": false
+    },
+    {
+      "name": "final_report_regression_assertion",
+      "kind": "schema",
+      "command": "python3 scripts/assert_final_report_regression.py --phase P26_FINAL_REPORT_REGRESSION",
+      "timeout_seconds": 120,
+      "required": true,
+      "real_valkey": false
+    },
+    {
+      "name": "cleanup_report_check",
+      "kind": "cleanup",
+      "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P26_FINAL_REPORT_REGRESSION/cleanup_report.json",
           "timeout_seconds": 120,
           "required": true,
           "real_valkey": false
@@ -3080,14 +3096,19 @@
           "schema": "schemas/artifact/quant_summary.schema.json",
           "required": true
         },
-        {
-          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
-          "schema": "schemas/artifact/final_report_index.schema.json",
-          "required": true
-        },
-        {
-          "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/csv_export_index.json",
-          "schema": "schemas/artifact/csv_export_index.schema.json",
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+      "schema": "schemas/artifact/final_report_index.schema.json",
+      "required": true
+    },
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/report_index.json",
+      "schema": "schemas/artifact/final_report_index.schema.json",
+      "required": true
+    },
+    {
+      "path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/csv_export_index.json",
+      "schema": "schemas/artifact/csv_export_index.schema.json",
           "required": true
         }
       ],

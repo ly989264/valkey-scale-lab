@@ -1,0 +1,13 @@
+fault_row,status,node_counts,sample_count,implementation_paths,source_artifacts,reason
+primary_stop_failover,PASS,30;50;100;200,12,project_fault_api_node_stop_owned_container_or_process,artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_samples.jsonl;artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_samples_200.jsonl,MISSING (MISSING)
+replica_stop,PASS,10;30;6,3,owned_runtime_control,artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_results.jsonl,MISSING (MISSING)
+node_host_stop,PASS,10;30;6,3,owned_runtime_control,artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_results.jsonl,MISSING (MISSING)
+az_stop,PASS,10;30;6,3,owned_runtime_control,artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_results.jsonl,MISSING (MISSING)
+network_delay,PASS,10;6,2,sandbox_proxy,artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/fault_results.jsonl,MISSING (MISSING)
+network_loss,PASS,10;6,2,sandbox_proxy,artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/fault_results.jsonl,MISSING (MISSING)
+network_flap,PASS,10;6,2,sandbox_proxy,artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/fault_results.jsonl,MISSING (MISSING)
+network_partition,PASS,10;6,4,owned_docker_network_control,artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_results.jsonl,MISSING (MISSING)
+minority_partition,PASS,10;6,2,owned_docker_network_control,artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_results.jsonl,MISSING (MISSING)
+majority_partition,PASS,10;6,2,owned_docker_network_control,artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_results.jsonl,MISSING (MISSING)
+split_brain_window,PASS,10;6,6,owned_docker_network_control,artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_results.jsonl,MISSING (MISSING)
+fault_workload_impact,PASS,all_source_rows,21,artifact_only_p25_consolidation,artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json,MISSING (MISSING)

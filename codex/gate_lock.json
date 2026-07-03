@@ -21,7 +21,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "0f8af416b4c1a779daa0bb636e16aadbed80c32df3a650769d21681c1bb75e1f"
+      "sha256": "86305a8ad7823ef5adbd32e0208fdced9a7d712e32866415e7e2c6c8401b3137"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -110,6 +110,10 @@
     {
       "path": "docs/codex/goal-loop/RUNBOOK_PLACE_AND_LAUNCH.md",
       "sha256": "dcee3213db3d5a33a1b6f4a8ac60d22fbed94901ef9f31114c6a5159c5997d35"
+    },
+    {
+      "path": "docs/codex/goal-loop/RUN_COMPLETE_LOOP_LOCALLY.md",
+      "sha256": "8018f3049b3a043aff353568162c60db92b1c27f4bae3233a444e93c832c196e"
     },
     {
       "path": "docs/codex/goal-loop/prompts/DESIGN_SUBAGENT_PROMPT.md",
@@ -281,7 +285,7 @@
     },
     {
       "path": "schemas/artifact/final_report_index.schema.json",
-      "sha256": "996074ebd19358c76e50c9ebd292740ebbe9b71c700107ed8f4fc12b80508990"
+      "sha256": "2ace5cec81525ec89e2262e66955dd7d96aa78859aabf41cbdcbef16d2ec93dd"
     },
     {
       "path": "schemas/artifact/gate_result.schema.json",
@@ -584,6 +588,10 @@
       "sha256": "a979eafc76239a6b81b0d2d73d879196777420b0f3b8e64494df0a396d76a7da"
     },
     {
+      "path": "scripts/assert_final_report_regression.py",
+      "sha256": "8d2d58ed1e8e432b11a76b301b4bd83d405eb2f574be138cd4aedd1c801ea6dd"
+    },
+    {
       "path": "scripts/assert_goal_loop_stage.py",
       "sha256": "5e0a166f53cd8c7a183c46d1eed6a46d256e3b6fb2e8550d57067ccc60267ccb"
     },
@@ -597,7 +605,7 @@
     },
     {
       "path": "scripts/assert_quant_artifacts.py",
-      "sha256": "ce11c69bd33168d073bca617a5608f83a639ac38a63d9fe9e261f577da51570b"
+      "sha256": "4b3dcc0ca089148794b3b860577a2586aa0e52671d49c4175136aba5e2328d51"
     },
     {
       "path": "scripts/assert_split_brain_report.py",

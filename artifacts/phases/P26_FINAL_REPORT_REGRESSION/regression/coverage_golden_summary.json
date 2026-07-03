@@ -1,0 +1,104 @@
+{
+  "cleanup": {
+    "resources_remaining": 0,
+    "status": "PASS_EXPECTED_FROM_REAL_SMOKE_GATE"
+  },
+  "failover": {
+    "required_rungs": [
+      30,
+      50,
+      100,
+      200
+    ],
+    "row_count": 8,
+    "sample_count_by_rung": {
+      "100": 3,
+      "200": 3,
+      "30": 3,
+      "50": 3
+    }
+  },
+  "fault": {
+    "present_rows": [
+      "primary_stop_failover",
+      "replica_stop",
+      "node_host_stop",
+      "az_stop",
+      "network_delay",
+      "network_loss",
+      "network_flap",
+      "network_partition",
+      "minority_partition",
+      "majority_partition",
+      "split_brain_window",
+      "fault_workload_impact"
+    ],
+    "required_rows": [
+      "primary_stop_failover",
+      "replica_stop",
+      "node_host_stop",
+      "az_stop",
+      "network_delay",
+      "network_loss",
+      "network_flap",
+      "network_partition",
+      "minority_partition",
+      "majority_partition",
+      "split_brain_window",
+      "fault_workload_impact"
+    ],
+    "row_count": 12
+  },
+  "management": {
+    "present_rows": [
+      "create_cluster",
+      "meet_nodes",
+      "add_replica",
+      "remove_replica",
+      "remove_primary_drained",
+      "remove_failed_node",
+      "reshard_slot_range",
+      "reshard_with_keys",
+      "rebalance_after_imbalance",
+      "rolling_restart_replica_first",
+      "rolling_restart_primary_safe"
+    ],
+    "required_rows": [
+      "create_cluster",
+      "meet_nodes",
+      "add_replica",
+      "remove_replica",
+      "remove_primary_drained",
+      "remove_failed_node",
+      "reshard_slot_range",
+      "reshard_with_keys",
+      "rebalance_after_imbalance",
+      "rolling_restart_replica_first",
+      "rolling_restart_primary_safe"
+    ],
+    "row_count": 11
+  },
+  "missing_data": {
+    "all_reasons_present": true,
+    "item_count": 434
+  },
+  "safety": {
+    "default_max_nodes": 100,
+    "p14_automatic": false,
+    "p21_bounded_exception_nodes": 200,
+    "source_scenarios_rerun": false
+  },
+  "workload": {
+    "p24_error_taxonomy_present": true,
+    "p24_row_count": 6,
+    "row_count": 49,
+    "source_row_counts": {
+      "failover": 12,
+      "fault": 21,
+      "management": 16,
+      "missing_rows": 0,
+      "p24_rows": 6,
+      "total": 49
+    }
+  }
+}

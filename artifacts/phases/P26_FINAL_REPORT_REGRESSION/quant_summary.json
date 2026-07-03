@@ -1,0 +1,68 @@
+{
+  "artifact_refs": [
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/final_report_index.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/report_index.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/csv_export_index.json",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/management_ops_matrix.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/failover_latency_curve.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/fault_matrix.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/workload_impact.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/reports/final_goal_loop_report.md",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/management_ops_matrix.csv",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/failover_latency_curve.csv",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/fault_matrix.csv",
+    "artifacts/phases/P26_FINAL_REPORT_REGRESSION/exports/workload_impact.csv",
+    "artifacts/phases/P04_CLUSTER_MANAGEMENT_OPS/management_ops_report.json",
+    "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/quant_summary.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_ops_matrix.json",
+    "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_operation_results.jsonl",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_ops_matrix.json",
+    "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_operation_results.jsonl",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_ops_matrix.json",
+    "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_operation_results.jsonl",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_curve.json",
+    "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/failover_latency_samples.jsonl",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_curve_combined_30_50_100_200.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_samples_200.jsonl",
+    "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/fault_results.jsonl",
+    "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/fault_results.jsonl",
+    "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_report.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/fault_results.jsonl",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/partition_report.json",
+    "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json",
+    "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/missing_data_summary.json",
+    "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_impact_cross_stage.json"
+  ],
+  "artifact_type": "quant_summary",
+  "counts": {
+    "csv_export_count": 4,
+    "event_count": 2,
+    "metric_count": 4,
+    "report_count": 5,
+    "source_artifact_count": 20,
+    "workload_impact_row_count": 49
+  },
+  "created_at": "2026-07-03T00:00:00Z",
+  "missing_data": [
+    {
+      "field": "p26.workload_runtime_windows",
+      "reason": "P26 is an artifact-only final report stage and does not rerun workload scenarios.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P26_FINAL_REPORT_REGRESSION",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P26_FINAL_REPORT_REGRESSION-final-report-20260703",
+  "runtime_claims": {
+    "fault_runtime_claimed": false,
+    "management_runtime_claimed": false,
+    "real_valkey_claimed": true,
+    "source_runtime_behavior_rerun": false
+  },
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P26 generated final reports and regression sidecars from versioned JSON/JSONL artifacts only; current-stage real Valkey evidence is produced by the preceding smoke gate."
+}

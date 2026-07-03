@@ -1,0 +1,16 @@
+{
+  "artifact_type": "missing_data_rendering_cases",
+  "cases": [
+    {
+      "reason": "P24 partition matrix does not inject a primary stop or force promotion; no old-primary-after-promotion condition existed to measure.",
+      "source_artifact": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/split_brain_report.json",
+      "status": "MISSING"
+    },
+    {
+      "reason": "P26 does not rerun source workload scenarios; prior workload artifacts provide the metrics.",
+      "source_artifact": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/workload_windows.json",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "schema_version": "v1"
+}

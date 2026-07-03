@@ -1,0 +1,100 @@
+{
+  "cluster_id": "P26_FINAL_REPORT_REGRESSION-final_report_regression_smoke-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "5e76bd081542d02ac1d630d03200c2d51329ec3f92cfd00467a660656791ccd8",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p26-final-report-regression-final-report-regression-smoke-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 582,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "6c817d0f90d23d7c4b141ea9ef86c6d0fc62abf06807a7d5eb862877642ad498",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p26-final-report-regression-final-report-regression-smoke-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 661,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "468484589d499e3068c4e4a017ad03d14d169688ffa380aab81ce67d011c3d4d",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p26-final-report-regression-final-report-regression-smoke-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 737,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "971b5abd525b9361969242007a694b0171075256bc284aa0d7937239a05bdaa7",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p26-final-report-regression-final-report-regression-smoke-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 812,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "b4fc18dba008e28048d6d4c980d67a9c747cb6ef0337ae15146b8c68a65db8ed",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p26-final-report-regression-final-report-regression-smoke-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 888,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "333ca96c0a66942ff9d0aa26111ecc565260c7d2f1af830675c6f1d38762cabb",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p26-final-report-regression-final-report-regression-smoke-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 963,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P26_FINAL_REPORT_REGRESSION",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p26-final-report-regression-final_report_regression_smoke",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P26_FINAL_REPORT_REGRESSION-final_report_regression_smoke-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "final_report_regression_smoke",
+  "schema_version": "v1"
+}

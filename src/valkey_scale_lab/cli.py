@@ -11,7 +11,7 @@ from valkey_scale_lab.analysis import AnalysisError, WorkloadImpactError, build_
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
 from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
-from valkey_scale_lab.report import ReportError, render_report
+from valkey_scale_lab.report import FinalReportError, ReportError, build_final_goal_loop_report, render_report
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
@@ -186,8 +186,17 @@ def _analyze(args: argparse.Namespace) -> int:
 
 def _report(args: argparse.Namespace) -> int:
     try:
-        render_report(args.analysis, args.out_dir, args.index_out)
-    except ReportError as exc:
+        if args.kind == "final-goal-loop":
+            if not args.input:
+                print("ERROR: report: --input is required for final-goal-loop reports", file=sys.stderr)
+                return 2
+            build_final_goal_loop_report(args.input, args.out_dir, phase_id=args.phase)
+        else:
+            if not args.analysis or not args.index_out:
+                print("ERROR: report: --analysis and --index-out are required for summary reports", file=sys.stderr)
+                return 2
+            render_report(args.analysis, args.out_dir, args.index_out)
+    except (FinalReportError, ReportError) as exc:
         print(f"ERROR: report: {exc}", file=sys.stderr)
         return 1
     return 0
@@ -274,9 +283,12 @@ def build_parser() -> argparse.ArgumentParser:
     analyze.set_defaults(func=_analyze)
 
     report = sub.add_parser("report", help="Render reports from artifacts.")
-    report.add_argument("--analysis", required=True, help="Path to analysis_summary.json.")
+    report.add_argument("--kind", choices=["summary", "final-goal-loop"], default="summary")
+    report.add_argument("--analysis", help="Path to analysis_summary.json.")
+    report.add_argument("--input", help="Input artifact phase directory for final-goal-loop reports.")
     report.add_argument("--out-dir", required=True, help="Directory for rendered reports.")
-    report.add_argument("--index-out", required=True, help="Path for report_index.json.")
+    report.add_argument("--index-out", help="Path for report_index.json.")
+    report.add_argument("--phase", default="P26_FINAL_REPORT_REGRESSION")
     report.set_defaults(func=_report)
 
     resource = sub.add_parser("resource", help="Resource checks for scale rungs.")
