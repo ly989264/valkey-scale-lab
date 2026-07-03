@@ -21,6 +21,33 @@ def test_goal_loop_stage_assertion_cli_passes_for_p15() -> None:
     assert "PASS goal-loop stage assertion" in proc.stdout
 
 
+def test_strict_stage_assertion_cli_passes_for_p27() -> None:
+    env = os.environ.copy()
+    env["PYTHONPYCACHEPREFIX"] = str(Path(".pycache").resolve())
+    proc = subprocess.run(
+        ["python3", "scripts/assert_strict_stage_contract.py", "--phase", "P27_STRICT_MATRIX_REBASE_HARNESS"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "PASS strict stage contract" in proc.stdout
+
+
+def test_coverage_registry_bootstrap_cli_passes() -> None:
+    proc = subprocess.run(
+        ["python3", "scripts/assert_coverage_registry.py", "--bootstrap-only"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "PASS coverage bootstrap assertion" in proc.stdout
+
+
 def test_p25_manifest_generates_analysis_before_assertions() -> None:
     manifest = json.loads(Path("codex/phase_manifest.json").read_text(encoding="utf-8"))
     phase = next(item for item in manifest["phases"] if item["id"] == "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS")

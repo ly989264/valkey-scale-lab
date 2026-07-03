@@ -1,0 +1,47 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "harness_extension_report",
+  "phase_id": "P27_STRICT_MATRIX_REBASE_HARNESS",
+  "run_id": "p27-strict-harness-rebase",
+  "created_at": "2026-07-03T10:05:38.641358Z",
+  "status": "PASS",
+  "no_real_runtime_claimed": true,
+  "lock_update_reason": "P27 strengthened locked harness controls by adding strict P27-P40 discovery, reviews, assertions, schemas, and manifest entries.",
+  "harness_changes": [
+    "automatic_stop_after updated to P40_STRICT_FINAL_AUDIT_CLOSEOUT",
+    "P27-P40 strict stages appended in order",
+    "strict review path artifacts/goal_loop_strict/<STAGE_ID>/REVIEW.md enforced by postcheck",
+    "fail-closed strict assertion scripts added"
+  ],
+  "assertion_scripts": [
+    "scripts/assert_strict_stage_contract.py",
+    "scripts/assert_no_bypass.py",
+    "scripts/assert_coverage_registry.py",
+    "scripts/assert_exact_scale_real_evidence.py",
+    "scripts/assert_quant_completeness.py",
+    "scripts/assert_management_matrix_strict.py",
+    "scripts/assert_fault_matrix_strict.py",
+    "scripts/assert_full_flow_e2e.py",
+    "scripts/assert_200_plus_dry_run.py",
+    "scripts/assert_analysis_provenance.py",
+    "scripts/assert_report_quality.py",
+    "scripts/assert_final_strict_closeout.py"
+  ],
+  "coverage_ids": [
+    "strict.harness.manifest_p27_p40_appended",
+    "strict.harness.automatic_stop_after_p40",
+    "strict.harness.p14_non_automatic_preserved",
+    "strict.harness.default_max_nodes_100_preserved",
+    "strict.harness.bounded_200_exceptions_declared",
+    "strict.harness.strict_review_required",
+    "strict.harness.assertions_fail_closed",
+    "strict.harness.p37_dry_run_only_declared",
+    "strict.harness.no_real_runtime_claimed_by_p27"
+  ],
+  "runtime_claims": {
+    "real_valkey_claimed": false,
+    "management_runtime_claimed": false,
+    "fault_runtime_claimed": false,
+    "full_flow_runtime_claimed": false
+  }
+}

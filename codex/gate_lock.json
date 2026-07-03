@@ -21,7 +21,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "86305a8ad7823ef5adbd32e0208fdced9a7d712e32866415e7e2c6c8401b3137"
+      "sha256": "28c522f6130fcac3b24ce98f5018f0478c5f202210a704da6eee1990e110bf6b"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -593,7 +593,7 @@
     },
     {
       "path": "scripts/assert_goal_loop_stage.py",
-      "sha256": "5e0a166f53cd8c7a183c46d1eed6a46d256e3b6fb2e8550d57067ccc60267ccb"
+      "sha256": "1a71ed510170639538613d078361181cf07dec09b40a86bb02a0dcb34eb67573"
     },
     {
       "path": "scripts/assert_management_ops_coverage.py",
@@ -649,7 +649,7 @@
     },
     {
       "path": "scripts/codex_gate.py",
-      "sha256": "e245cc0c69e21dff54f2d90e70067cf952ff868d2de3622bfdb3e916624a15d7"
+      "sha256": "5142c646c0355e2e287f0ba49623353a585ed04bb492ec44fd72258289029a75"
     },
     {
       "path": "scripts/fault_failover_gate.py",
@@ -762,6 +762,244 @@
     {
       "path": "templates/phase/PHASE_HANDOFF_TEMPLATE.md",
       "sha256": "5471eff099bd2cb0940e0500e1b98ff5c0b69095e9c7ec342fb5df3034e7d2c3"
+    },
+    {
+      "path": "CODEX_STRICT_MATRIX_LOOP_START.md",
+      "sha256": "9fecc694a159900e41ad4c1dd9c72782f25199effd9d1f3fdf17159c6de5d5ad"
+    },
+    {
+      "path": "scripts/strict_harness_lib.py",
+      "sha256": "6d2287af8ed634c32c66857810194b51eb3265a6c19f59e144c171324a03ccad"
+    },
+    {
+      "path": "scripts/assert_strict_stage_contract.py",
+      "sha256": "658b09877f886cba8b18aad5a6ffb7cf74d494f3abc9e047742ed2d863818b75"
+    },
+    {
+      "path": "scripts/assert_no_bypass.py",
+      "sha256": "6ecea8b64da3a34f82ea8d278f812e24594d060e55c38aa7c38cf283fd67b567"
+    },
+    {
+      "path": "scripts/assert_coverage_registry.py",
+      "sha256": "e325186b7e4fce82d258e10b7887dfbae6cddc83cf2a5b09de0bff09573df5c4"
+    },
+    {
+      "path": "scripts/assert_exact_scale_real_evidence.py",
+      "sha256": "52e5678ab8125971b59148ecf65a0af3565b2f01a9ab79ae7ae2a0ef6cd4df29"
+    },
+    {
+      "path": "scripts/assert_quant_completeness.py",
+      "sha256": "39fdf0e5a8d8ae913ca37a344aeac0190947fca10c1d4fcfd3505da3d9b51c35"
+    },
+    {
+      "path": "scripts/assert_management_matrix_strict.py",
+      "sha256": "1405488bbdca499ea0a3064ff68ea83b66749d7a6ea4719667e1d00c2294c8ee"
+    },
+    {
+      "path": "scripts/assert_fault_matrix_strict.py",
+      "sha256": "5038d5795898a8b981e7568736981d4ae406cd995d4ee81512952fcea0c1b508"
+    },
+    {
+      "path": "scripts/assert_full_flow_e2e.py",
+      "sha256": "52b1988d7e7a9140ee75d691b832b128df43b29190884a87f90734ce5632b909"
+    },
+    {
+      "path": "scripts/assert_200_plus_dry_run.py",
+      "sha256": "53606d31ed0a57783437d0516a0eba4d73fadeab7bfad34e923fd3e445a0762e"
+    },
+    {
+      "path": "scripts/assert_analysis_provenance.py",
+      "sha256": "e8d8cd43a5a61bd0d6c491103fe56977a3f26609692a6152b56b008d16c34090"
+    },
+    {
+      "path": "scripts/assert_report_quality.py",
+      "sha256": "54df7eafe7e4fdfb09cf02cf13d785894c1e14512d46568b30c2dae52f377eeb"
+    },
+    {
+      "path": "scripts/assert_final_strict_closeout.py",
+      "sha256": "428ab7a14e9e49d27fa0c846e6e45e6afdf54f39d614ecd993eff934b2098162"
+    },
+    {
+      "path": "scripts/strict_harness_artifacts.py",
+      "sha256": "8fc3b0df1fb063a04d9289d661e49469b16e59e4d3e707fb83a0959aac4ddea5"
+    },
+    {
+      "path": "schemas/artifact/harness_extension_report.schema.json",
+      "sha256": "c3c5acdfa70475bb78a4a1b7f5f5e70146ef34e0c04dc00866d6c555138a5b04"
+    },
+    {
+      "path": "schemas/artifact/strict_manifest_report.schema.json",
+      "sha256": "9c6c2c19e8624726e76c4842191726f873b617e395d0f431995a68c4f191a4b1"
+    },
+    {
+      "path": "schemas/artifact/strict_coverage_registry.schema.json",
+      "sha256": "ebd0f63add13b49e4f26906c0eabbd699fa34ff90444fde235f058c6ecbd3a35"
+    },
+    {
+      "path": "schemas/artifact/no_runtime_created_proof.schema.json",
+      "sha256": "c87a404b32b6af7bb34b5bca4e39baf1eada6750e0f1cf0bdd7a95663d61d335"
+    },
+    {
+      "path": "schemas/artifact/strict_generic_report.schema.json",
+      "sha256": "1e345da573014c957bd6aa19292d3c783f9d3f43abbc2edebd3b035113cfa280"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/00_INDEX.md",
+      "sha256": "3410a7322c06d1f54587b5a347e1f6fd1432b275e7ff7c5a1e198f584942d54a"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/01_STRICT_GOAL_CONTRACT.md",
+      "sha256": "de75e5d0299da66850c375a49411030f56dab1ff96df432d74a1484fff863a4a"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/02_STRICT_STAGE_MANIFEST.md",
+      "sha256": "94bc31e4f613c3594d861eab9b3644b1d23b874969048f5b6aba0ad6c75d7ae8"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/03_MAIN_SUBAGENT_LOOP_PROTOCOL.md",
+      "sha256": "a066649a84004191814030170c6a5e35f310383117d6279d06186bdca13c4a9a"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/04_CONTEXT_LEDGER_PROTOCOL.md",
+      "sha256": "a2b0d19323884fa69fcb0c29ee38a71202e584146ee3959484e35638084a22fa"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/05_FAIL_CLOSED_HARNESS_CONTRACT.md",
+      "sha256": "d6647319d58b00665068ba71ee0b59f9969d063b1d9a54ddd682122a054460d0"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/06_COVERAGE_REGISTRY_SPEC.md",
+      "sha256": "227ce06e844d70cd6c0ce96c53a08930043eb598c297c11a9478799376d0b62e"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/07_QUANTIFICATION_DATA_CONTRACT.md",
+      "sha256": "6f83b80b004c817bccebf6aad6d36b184b77192c1c60cea74ae2ca97f0419075"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/08_MANAGEMENT_OPERATION_MATRIX_SPEC.md",
+      "sha256": "e406bb76053cf41ccf3ab93a9439dff98b419d3c844b7bcf6956e38d23143452"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/09_FAULT_FAILOVER_MATRIX_SPEC.md",
+      "sha256": "575b3216fac2acde73e36549d49b2c3c437a9636fd22e4b56d979751c6da6cf7"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/10_SCALE_EXECUTION_POLICY.md",
+      "sha256": "88c43864f29392da36651893347b7ede49095cfb72de356608e85fc262c23695"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/11_ANALYSIS_VISUAL_REPORT_SPEC.md",
+      "sha256": "7be5dc14331f136572235060078cecc68a19a7f6b75d72e9f13ef1dc2e67bbc2"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/12_AUDIT_COMMIT_NO_BYPASS_POLICY.md",
+      "sha256": "34ffca6f0dc17e24951c601b5c731b136e2d033f6f8daff69e2b2674fe829092"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/prompts/DESIGN_SUBAGENT_PROMPT.md",
+      "sha256": "b98423063e8af4634e6260cf0ec0d0e03c683e86e6d4599b6f5aaa4347ab1753"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/prompts/GOAL_MODE_STRICT_START_PROMPT.md",
+      "sha256": "d4c47413dd92968aabd5eaf5ac6fefbf79bb5352fd01f3a33fbb8eb555341332"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/prompts/REVIEW_SUBAGENT_PROMPT.md",
+      "sha256": "01e0390f3af9e09e5eb4901b63afd435762036980e52c79b815e67126f2df50c"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/prompts/WORKER_SUBAGENT_PROMPT.md",
+      "sha256": "0d3d3a2252ba0ecfeda7ac37bc38fa4caaa52cdf0e8dbbc13b6b03bc4a46cd01"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P27_STRICT_MATRIX_REBASE_HARNESS.md",
+      "sha256": "996810f4ea38fc9c423ca2f10e0ee04567fe765b0ad2f4a338c36e4d802f543d"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER.md",
+      "sha256": "038ef26ec914096ba01f3f36f55c2f0cad70e799263d1a78f5beeb00ed5bceb9"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING.md",
+      "sha256": "cd1315bd529911b197dad7c0be4caac61232e83bb8b68210a9e14f7ffb5fdd44"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P30_MANAGEMENT_MATRIX_50_REAL.md",
+      "sha256": "c6af7eb93175a7389730abdf31e700edf6875a104eafc29ee822603287a3043b"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P31_MANAGEMENT_MATRIX_100_REAL.md",
+      "sha256": "5da71ef693b9e1b8e9d6d4449f3f084c0ccd96e12ed5f364f9e24a7e10f4b3d9"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P32_MANAGEMENT_MATRIX_200_REAL.md",
+      "sha256": "7b768fbde95adb8882b8cd0a7a582260b0e372f266680dbe45776d0dbf9fb425"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P33_FAULT_FAILOVER_MATRIX_50_REAL.md",
+      "sha256": "b69387aad8bce2322411ce26698f033a21eca38977be8ea0d9e67bb6c33f1bfe"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P34_FAULT_FAILOVER_MATRIX_100_REAL.md",
+      "sha256": "1cbe1849785aae4fa44d07afc104ba9ba4cad88a1fef39f615af4535e200ba1a"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P35_FAULT_FAILOVER_MATRIX_200_REAL.md",
+      "sha256": "d54cd5ede623c5cd607c0cf15f6eae85b1d9838c4b8c542bf7b266c1ea82989f"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P36_FULL_FLOW_E2E_50_100_200_REAL.md",
+      "sha256": "e992464dbb044473e217fabacfc5a540b3da13529693315f5e6fe937ebdcd361"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P37_200_PLUS_DRY_RUN_SUPPORT.md",
+      "sha256": "8fd34c07ef117bdcd6b7b45fc9d2ab94c78dc89598cb08e0927ca88c54dfbaef"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P38_CROSS_SCALE_ANALYSIS_REGRESSION.md",
+      "sha256": "9a25c24535e2656b698b9be90a90334e2cb7681134c29f578aff0671dcb075cc"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P39_VISUAL_REPORT_QUALITY_GATE.md",
+      "sha256": "fe66979028732829fb8a53673e361420e9b7fc3c83cf555028ff862a5e1dbb2f"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/stages/P40_STRICT_FINAL_AUDIT_CLOSEOUT.md",
+      "sha256": "ab6a8069e10965dc943f24c2fa735547dd00fc1f9e9acf7a7bc957d8686209a6"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/templates/BLOCKED_STAGE_TEMPLATE.md",
+      "sha256": "00c5c754c60c7f6b3aa0c1a44e2e8b361ca54a71fcdca4d63b473ee566216a39"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/templates/CONTEXT_RELOAD_TEMPLATE.md",
+      "sha256": "5353c02c99bbade321a9e61b2f819d3fad388c21f65120beeb0cffcaf62655b1"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/templates/COVERAGE_LEDGER_TEMPLATE.md",
+      "sha256": "87cc82b937abf378f6a26f0c6f2422f130e4a38fce017de388613a12a9541743"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/templates/STAGE_COMPLETION_TEMPLATE.md",
+      "sha256": "5ae62375a3ad965a5ca9978f41b76bb49a7d392e8727d2b18f38da105f20de70"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/templates/STAGE_DESIGN_TEMPLATE.md",
+      "sha256": "1ab7b0fbbf182c0d0e64379eff0dd9f29d009d39a0608fb2c2ddad1e2326fa2e"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/templates/STAGE_REVIEW_TEMPLATE.md",
+      "sha256": "86de1b8ac124bdbd44d9106a83fbc32026f1535147b2c692f8d0e25c9aa2c656"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/templates/STAGE_WORKER_SUMMARY_TEMPLATE.md",
+      "sha256": "401267bd248bf1ad0c0f6a48661d2055102310393c4ffb4948377c084e1340cc"
+    },
+    {
+      "path": "docs/codex/goal-loop-strict/templates/VISUAL_QA_TEMPLATE.md",
+      "sha256": "ec562e2f222478eaf1439f18acf442b33ae004949ea56e2c4e3650db144053e6"
     }
-  ]
+  ],
+  "updated_by": "P27_STRICT_MATRIX_REBASE_HARNESS",
+  "update_reason": "Strict P27-P40 harness rebase: added strict stage discovery, fail-closed assertions, strict schemas, and strict review enforcement."
 }

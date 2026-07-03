@@ -22,8 +22,40 @@ STATE = ROOT / "codex" / "status" / "phase_state.json"
 
 GOAL_LOOP_FIRST = "P15_GOAL_REBASE_HARNESS_EXTENSION"
 GOAL_LOOP_LAST = "P26_FINAL_REPORT_REGRESSION"
-HARNESS_ONLY_NO_REAL_VALKEY = {"P15_GOAL_REBASE_HARNESS_EXTENSION"}
-BOUNDED_SCALE_EXCEPTIONS = {"P21_FAILOVER_LATENCY_CURVE_200": 200}
+STRICT_GOAL_LOOP_FIRST = "P27_STRICT_MATRIX_REBASE_HARNESS"
+STRICT_GOAL_LOOP_LAST = "P40_STRICT_FINAL_AUDIT_CLOSEOUT"
+LEGACY_HARNESS_ONLY_NO_REAL_VALKEY = {"P15_GOAL_REBASE_HARNESS_EXTENSION"}
+STRICT_NON_RUNTIME_NO_REAL_VALKEY = {
+    "P27_STRICT_MATRIX_REBASE_HARNESS",
+    "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
+    "P37_200_PLUS_DRY_RUN_SUPPORT",
+    "P38_CROSS_SCALE_ANALYSIS_REGRESSION",
+    "P39_VISUAL_REPORT_QUALITY_GATE",
+    "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
+}
+HARNESS_ONLY_NO_REAL_VALKEY = LEGACY_HARNESS_ONLY_NO_REAL_VALKEY | STRICT_NON_RUNTIME_NO_REAL_VALKEY
+BOUNDED_SCALE_EXCEPTIONS = {
+    "P21_FAILOVER_LATENCY_CURVE_200": 200,
+    "P32_MANAGEMENT_MATRIX_200_REAL": 200,
+    "P35_FAULT_FAILOVER_MATRIX_200_REAL": 200,
+    "P36_FULL_FLOW_E2E_50_100_200_REAL": 200,
+}
+STRICT_STAGE_IDS = [
+    "P27_STRICT_MATRIX_REBASE_HARNESS",
+    "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
+    "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+    "P30_MANAGEMENT_MATRIX_50_REAL",
+    "P31_MANAGEMENT_MATRIX_100_REAL",
+    "P32_MANAGEMENT_MATRIX_200_REAL",
+    "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+    "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+    "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+    "P36_FULL_FLOW_E2E_50_100_200_REAL",
+    "P37_200_PLUS_DRY_RUN_SUPPORT",
+    "P38_CROSS_SCALE_ANALYSIS_REGRESSION",
+    "P39_VISUAL_REPORT_QUALITY_GATE",
+    "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
+]
 
 sys.path.insert(0, str(ROOT / "scripts"))
 from schema_validator import load_json, validate  # noqa: E402
@@ -118,18 +150,27 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             errors.append(f"duplicate phase id: {pid}")
         ids.append(pid)
         max_nodes = int(phase.get("max_nodes", 0))
+        if max_nodes > 200 and phase.get("automatic", True):
+            errors.append(f"automatic phase {pid} exceeds absolute 200-node real-execution cap")
         if max_nodes > 100 and phase.get("automatic", True):
             if BOUNDED_SCALE_EXCEPTIONS.get(pid) != max_nodes:
                 errors.append(f"automatic phase {pid} exceeds default 100-node cap")
         if pid.startswith("P14") and phase.get("automatic", True):
             errors.append("P14 must not be automatic")
         if (
-            pid >= "P03"
+            phase_number(pid) >= 3
             and phase.get("automatic", True)
             and pid not in HARNESS_ONLY_NO_REAL_VALKEY
             and not phase.get("real_valkey_required")
         ):
             errors.append(f"{pid} must require real Valkey")
+        if pid in STRICT_NON_RUNTIME_NO_REAL_VALKEY and phase.get("real_valkey_required"):
+            errors.append(f"{pid} must not require live Valkey because it is a strict non-runtime stage")
+        if pid == "P37_200_PLUS_DRY_RUN_SUPPORT":
+            if phase.get("execution_mode") != "dry_run":
+                errors.append("P37 must declare execution_mode=dry_run")
+            if phase.get("dry_run_target_nodes") != [201, 250, 300, 500, 1000]:
+                errors.append("P37 dry_run_target_nodes must be exactly [201, 250, 300, 500, 1000]")
         gate_names = set()
         for gate in phase.get("gates", []):
             name = gate.get("name")
@@ -147,6 +188,10 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
                 errors.append(f"{pid}/{name}: suspicious PASS-only gate command")
             if gate.get("real_valkey") and "scripts/valkey_e2e_gate.py" not in cmd and "scripts/fault_" not in cmd:
                 errors.append(f"{pid}/{name}: real_valkey gate must use pre-authored wrapper")
+        if pid in {"P30_MANAGEMENT_MATRIX_50_REAL", "P31_MANAGEMENT_MATRIX_100_REAL", "P32_MANAGEMENT_MATRIX_200_REAL", "P33_FAULT_FAILOVER_MATRIX_50_REAL", "P34_FAULT_FAILOVER_MATRIX_100_REAL", "P35_FAULT_FAILOVER_MATRIX_200_REAL"}:
+            exact = f"assert_exact_scale_real_evidence.py --phase {pid} --nodes {max_nodes}"
+            if not any(exact in str(g.get("command", "")) for g in phase.get("gates", [])):
+                errors.append(f"{pid}: missing exact-scale evidence assertion for {max_nodes} nodes")
         for artifact in phase.get("required_artifacts", []):
             apath = artifact.get("path", "")
             if not apath.startswith("artifacts/phases/"):
@@ -154,9 +199,24 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
             schema = artifact.get("schema")
             if schema and not (ROOT / schema).exists():
                 errors.append(f"{pid}: artifact schema missing: {schema}")
-    if manifest.get("automatic_stop_after") != GOAL_LOOP_LAST:
-        errors.append(f"automatic_stop_after must be {GOAL_LOOP_LAST}")
+    strict_present = all(stage_id in ids for stage_id in STRICT_STAGE_IDS)
+    expected_stop_after = STRICT_GOAL_LOOP_LAST if strict_present else GOAL_LOOP_LAST
+    if manifest.get("automatic_stop_after") != expected_stop_after:
+        errors.append(f"automatic_stop_after must be {expected_stop_after}")
+    if strict_present:
+        positions = [ids.index(stage_id) for stage_id in STRICT_STAGE_IDS]
+        if positions != sorted(positions):
+            errors.append("strict P27-P40 stages must be in order")
+        elif ids[positions[0] : positions[-1] + 1] != STRICT_STAGE_IDS:
+            errors.append("strict P27-P40 stages must be contiguous")
     return errors
+
+
+def phase_number(phase_id: str) -> int:
+    try:
+        return int(phase_id[1:3])
+    except Exception:
+        return -1
 
 
 def precheck(args: argparse.Namespace) -> int:
@@ -413,11 +473,12 @@ def check_audit(phase: dict[str, Any], gate_result_path: Path) -> list[str]:
 
 
 def is_goal_loop_stage(phase_id: str) -> bool:
-    try:
-        number = int(phase_id[1:3])
-    except ValueError:
-        return False
+    number = phase_number(phase_id)
     return 15 <= number <= 26
+
+
+def is_strict_stage(phase_id: str) -> bool:
+    return phase_id in STRICT_STAGE_IDS
 
 
 def check_goal_loop_review(phase: dict[str, Any], gate_result_path: Path) -> list[str]:
@@ -444,6 +505,45 @@ def check_goal_loop_review(phase: dict[str, Any], gate_result_path: Path) -> lis
     return errors
 
 
+def check_strict_handoffs(phase: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    phase_id = phase["id"]
+    if not is_strict_stage(phase_id):
+        return errors
+    handoff_dir = ROOT / "artifacts" / "goal_loop_strict" / phase_id
+    for name in ["CONTEXT_RELOAD.md", "DESIGN_BRIEF.md", "WORKER_SUMMARY.md", "REVIEW.md"]:
+        path = handoff_dir / name
+        if not path.exists():
+            errors.append(f"strict handoff missing: {rel(path)}")
+    return errors
+
+
+def check_strict_review(phase: dict[str, Any], gate_result_path: Path) -> list[str]:
+    errors: list[str] = []
+    phase_id = phase["id"]
+    if not is_strict_stage(phase_id):
+        return errors
+    review_path = ROOT / "artifacts" / "goal_loop_strict" / phase_id / "REVIEW.md"
+    if not review_path.exists():
+        return [f"strict review missing: {rel(review_path)}"]
+    text = review_path.read_text(encoding="utf-8")
+    gate_sha = sha256_file(gate_result_path)
+    required_strings = [
+        "Decision: PASS",
+        rel(gate_result_path),
+        gate_sha,
+    ]
+    for item in required_strings:
+        if item not in text:
+            errors.append(f"strict review missing required text: {item}")
+    for artifact in phase.get("required_artifacts", []):
+        if artifact.get("required", True) and artifact["path"] not in text:
+            errors.append(f"strict review does not cite artifact: {artifact['path']}")
+    if phase_id not in {"P27_STRICT_MATRIX_REBASE_HARNESS", "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER"} and "Coverage IDs:" not in text:
+        errors.append("strict review must cite Coverage IDs for coverage-owning stages")
+    return errors
+
+
 def postcheck(args: argparse.Namespace) -> int:
     manifest = load_manifest()
     phase = phase_by_id(manifest, args.phase)
@@ -464,6 +564,8 @@ def postcheck(args: argparse.Namespace) -> int:
     if gate_result_path.exists():
         errors.extend(check_audit(phase, gate_result_path))
         errors.extend(check_goal_loop_review(phase, gate_result_path))
+        errors.extend(check_strict_handoffs(phase))
+        errors.extend(check_strict_review(phase, gate_result_path))
     if errors:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)

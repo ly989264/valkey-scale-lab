@@ -74,7 +74,9 @@ def test_goal_loop_assertion_stage_table_matches_manifest() -> None:
     phases = assertion.phase_map(manifest)
 
     expected_ids = [stage["id"] for stage in assertion.GOAL_STAGES]
-    assert expected_ids == [phase["id"] for phase in manifest["phases"][-12:]]
+    manifest_ids = [phase["id"] for phase in manifest["phases"]]
+    positions = [manifest_ids.index(stage_id) for stage_id in expected_ids]
+    assert positions == sorted(positions)
     assert phases["P15_GOAL_REBASE_HARNESS_EXTENSION"]["fake_only_allowed"] is True
     assert phases["P21_FAILOVER_LATENCY_CURVE_200"]["max_nodes"] == 200
     p21_real_gates = [gate for gate in phases["P21_FAILOVER_LATENCY_CURVE_200"]["gates"] if gate.get("real_valkey")]
@@ -84,6 +86,102 @@ def test_goal_loop_assertion_stage_table_matches_manifest() -> None:
         assert "scale_100.yaml" not in command
         assert "scale_200.yaml" in command
         assert "--min-nodes 200" in command
+
+
+def test_strict_manifest_policy_appends_p27_p40_and_preserves_caps() -> None:
+    gate = load_script("codex_gate")
+    strict = load_script("assert_strict_stage_contract")
+    manifest = gate.load_manifest()
+
+    assert gate.validate_manifest(manifest) == []
+    assert strict.validate_strict_contract("P27_STRICT_MATRIX_REBASE_HARNESS") == []
+
+    by_id = {phase["id"]: phase for phase in manifest["phases"]}
+    assert manifest["automatic_stop_after"] == "P40_STRICT_FINAL_AUDIT_CLOSEOUT"
+    assert manifest["default_max_nodes"] == 100
+    assert by_id["P14_SCALE_1000_OPTIN_DRYRUN"]["automatic"] is False
+    assert by_id["P32_MANAGEMENT_MATRIX_200_REAL"]["max_nodes"] == 200
+    assert by_id["P35_FAULT_FAILOVER_MATRIX_200_REAL"]["max_nodes"] == 200
+    assert by_id["P36_FULL_FLOW_E2E_50_100_200_REAL"]["max_nodes"] == 200
+    assert by_id["P37_200_PLUS_DRY_RUN_SUPPORT"]["execution_mode"] == "dry_run"
+    assert by_id["P37_200_PLUS_DRY_RUN_SUPPORT"]["dry_run_target_nodes"] == [201, 250, 300, 500, 1000]
+
+
+def test_strict_manifest_rejects_default_raise_and_extra_200_exception() -> None:
+    gate = load_script("codex_gate")
+    manifest = gate.load_manifest()
+
+    mutated = copy.deepcopy(manifest)
+    mutated["default_max_nodes"] = 200
+    errors = gate.validate_manifest(mutated)
+    assert any("default_max_nodes must be exactly 100" in error for error in errors)
+
+    mutated = copy.deepcopy(manifest)
+    by_id = {phase["id"]: phase for phase in mutated["phases"]}
+    by_id["P34_FAULT_FAILOVER_MATRIX_100_REAL"]["max_nodes"] = 200
+    errors = gate.validate_manifest(mutated)
+    assert any("P34_FAULT_FAILOVER_MATRIX_100_REAL exceeds default 100-node cap" in error for error in errors)
+
+
+def test_strict_contract_fails_closed_on_missing_stage(tmp_path: Path) -> None:
+    strict = load_script("assert_strict_stage_contract")
+    manifest = load_script("codex_gate").load_manifest()
+    mutated = copy.deepcopy(manifest)
+    mutated["phases"] = [phase for phase in mutated["phases"] if phase["id"] != "P40_STRICT_FINAL_AUDIT_CLOSEOUT"]
+    path = tmp_path / "manifest.json"
+    write_json(path, mutated)
+
+    errors = strict.validate_strict_contract("P27_STRICT_MATRIX_REBASE_HARNESS", path)
+
+    assert any("missing strict stages" in error for error in errors)
+
+
+def test_no_bypass_rejects_pass_only_gate_and_200_downshift(tmp_path: Path) -> None:
+    bypass = load_script("assert_no_bypass")
+    manifest = load_script("codex_gate").load_manifest()
+    mutated = copy.deepcopy(manifest)
+    by_id = {phase["id"]: phase for phase in mutated["phases"]}
+    by_id["P32_MANAGEMENT_MATRIX_200_REAL"]["gates"].append(
+        {
+            "name": "bad",
+            "kind": "harness",
+            "command": "echo PASS",
+            "timeout_seconds": 1,
+            "required": True,
+            "real_valkey": False,
+        }
+    )
+    for gate in by_id["P32_MANAGEMENT_MATRIX_200_REAL"]["gates"]:
+        gate["command"] = gate["command"].replace("--nodes 200", "--nodes 100")
+    path = tmp_path / "manifest.json"
+    write_json(path, mutated)
+
+    errors = bypass.validate_manifest_for_bypass("P32_MANAGEMENT_MATRIX_200_REAL", path)
+
+    assert any("PASS-only command" in error for error in errors)
+    assert any("downshift" in error for error in errors)
+
+
+def test_exact_scale_evidence_fails_closed_on_missing_artifacts() -> None:
+    import subprocess
+
+    proc = subprocess.run(
+        [
+            "python3",
+            "scripts/assert_exact_scale_real_evidence.py",
+            "--phase",
+            "P99_MISSING_STRICT_REAL_STAGE",
+            "--nodes",
+            "50",
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=120,
+    )
+
+    assert proc.returncode == 1
+    assert "real Valkey evidence missing" in proc.stderr
 
 
 def write_json(path: Path, obj: dict) -> None:

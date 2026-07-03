@@ -1,0 +1,47 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "quant_summary",
+  "phase_id": "P27_STRICT_MATRIX_REBASE_HARNESS",
+  "run_id": "p27-strict-harness-rebase",
+  "created_at": "2026-07-03T10:05:38.641358Z",
+  "producer": {
+    "name": "scripts/strict_harness_artifacts.py",
+    "version": "v1"
+  },
+  "status": "SKIPPED_WITH_REASON",
+  "summary": "Runtime quantification is skipped because P27 is a harness-only rebase.",
+  "artifact_refs": [
+    "artifacts/phases/P27_STRICT_MATRIX_REBASE_HARNESS/phase_summary.json",
+    "artifacts/phases/P27_STRICT_MATRIX_REBASE_HARNESS/quant_summary.json",
+    "artifacts/phases/P27_STRICT_MATRIX_REBASE_HARNESS/harness_extension_report.json",
+    "artifacts/phases/P27_STRICT_MATRIX_REBASE_HARNESS/strict_manifest_report.json"
+  ],
+  "missing_data": [
+    {
+      "field": "valkey_e2e_evidence",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P27 is harness/scaffolding only and must not claim real Valkey runtime evidence."
+    },
+    {
+      "field": "management_operation_metrics",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P27 is harness/scaffolding only and must not claim real Valkey runtime evidence."
+    },
+    {
+      "field": "fault_failover_metrics",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P27 is harness/scaffolding only and must not claim real Valkey runtime evidence."
+    },
+    {
+      "field": "workload_qps_latency_error_impact",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P27 is harness/scaffolding only and must not claim real Valkey runtime evidence."
+    }
+  ],
+  "runtime_claims": {
+    "real_valkey_claimed": false,
+    "management_runtime_claimed": false,
+    "fault_runtime_claimed": false,
+    "full_flow_runtime_claimed": false
+  }
+}

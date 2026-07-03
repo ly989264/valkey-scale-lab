@@ -1,0 +1,33 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P27_STRICT_MATRIX_REBASE_HARNESS",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context review subagent",
+  "created_at": "2026-07-03T10:09:41Z",
+  "gate_result_path": "artifacts/gates/P27_STRICT_MATRIX_REBASE_HARNESS/gate_result.json",
+  "gate_result_sha256": "b9615dabdf4c3add589bd026c149272d5d4ec3e755aa4f110d52af112b812a13",
+  "artifact_paths": [
+    "artifacts/phases/P27_STRICT_MATRIX_REBASE_HARNESS/phase_summary.json",
+    "artifacts/phases/P27_STRICT_MATRIX_REBASE_HARNESS/quant_summary.json",
+    "artifacts/phases/P27_STRICT_MATRIX_REBASE_HARNESS/harness_extension_report.json",
+    "artifacts/phases/P27_STRICT_MATRIX_REBASE_HARNESS/strict_manifest_report.json",
+    "artifacts/goal_loop_strict/P27_STRICT_MATRIX_REBASE_HARNESS/CONTEXT_RELOAD.md",
+    "artifacts/goal_loop_strict/P27_STRICT_MATRIX_REBASE_HARNESS/DESIGN_BRIEF.md",
+    "artifacts/goal_loop_strict/P27_STRICT_MATRIX_REBASE_HARNESS/WORKER_SUMMARY.md",
+    "artifacts/goal_loop_strict/P27_STRICT_MATRIX_REBASE_HARNESS/REVIEW.md",
+    "artifacts/gates/P27_STRICT_MATRIX_REBASE_HARNESS/gate_result.json",
+    "audit/P27_STRICT_MATRIX_REBASE_HARNESS/AUDIT.md",
+    "audit/P27_STRICT_MATRIX_REBASE_HARNESS/audit_decision.json"
+  ],
+  "risks": [
+    {
+      "risk": "Future strict real-execution stages still need exact-scale live Valkey evidence.",
+      "severity": "medium",
+      "required_before_next_phase": false,
+      "notes": "Not a P27 blocker because P27 is harness-only and does not claim runtime coverage."
+    }
+  ],
+  "rationale": "P27 appends and locks the strict P27-P40 harness, preserves P14 and default_max_nodes=100, limits 200-node real exceptions to P32/P35/P36, declares P37 dry-run-only, passes the recorded gate result, validates required P27 artifacts, and does not claim real Valkey runtime coverage."
+}

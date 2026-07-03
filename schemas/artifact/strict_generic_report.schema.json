@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Strict Generic Report",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "phase_id", "status"],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "minLength": 1},
+    "phase_id": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": true
+}

@@ -65,13 +65,15 @@ def main() -> int:
     manifest = load_json(ROOT / "codex" / "phase_manifest.json")
     phases = phase_map(manifest)
     errors: list[str] = []
+    all_ids = [phase.get("id") for phase in manifest.get("phases", [])]
 
     if manifest.get("default_max_nodes") != 100:
         errors.append("default_max_nodes must remain exactly 100")
-    if manifest.get("automatic_stop_after") != "P26_FINAL_REPORT_REGRESSION":
-        errors.append("automatic_stop_after must be P26_FINAL_REPORT_REGRESSION")
+    strict_present = "P40_STRICT_FINAL_AUDIT_CLOSEOUT" in all_ids
+    expected_stop_after = "P40_STRICT_FINAL_AUDIT_CLOSEOUT" if strict_present else "P26_FINAL_REPORT_REGRESSION"
+    if manifest.get("automatic_stop_after") != expected_stop_after:
+        errors.append(f"automatic_stop_after must be {expected_stop_after}")
 
-    all_ids = [phase.get("id") for phase in manifest.get("phases", [])]
     expected_ids = [stage["id"] for stage in GOAL_STAGES]
     positions = [all_ids.index(stage_id) for stage_id in expected_ids if stage_id in all_ids]
     missing = [stage_id for stage_id in expected_ids if stage_id not in all_ids]

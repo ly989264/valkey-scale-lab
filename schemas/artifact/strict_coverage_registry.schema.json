@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Strict Coverage Registry",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "rows"],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "strict_coverage_registry"},
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "coverage_id",
+          "scale",
+          "node_count",
+          "category",
+          "row_name",
+          "stage_owner",
+          "required",
+          "execution_mode",
+          "status",
+          "source_artifacts",
+          "validation_artifacts",
+          "metric_refs",
+          "cleanup_ref",
+          "review_ref"
+        ],
+        "properties": {
+          "coverage_id": {"type": "string", "minLength": 1},
+          "scale": {"type": ["string", "integer"]},
+          "node_count": {"type": ["integer", "string"]},
+          "category": {"type": "string", "minLength": 1},
+          "row_name": {"type": "string", "minLength": 1},
+          "stage_owner": {"type": "string", "minLength": 1},
+          "required": {"type": "boolean"},
+          "execution_mode": {"type": "string", "enum": ["real", "dry_run"]},
+          "status": {"type": "string", "enum": ["PENDING", "PASS", "FAIL", "BLOCKED", "DRY_RUN_PASS", "MISSING"]},
+          "source_artifacts": {"type": "array", "items": {"type": "string"}},
+          "validation_artifacts": {"type": "array", "items": {"type": "string"}},
+          "metric_refs": {"type": "array", "items": {"type": "string"}},
+          "cleanup_ref": {"type": "string"},
+          "review_ref": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
