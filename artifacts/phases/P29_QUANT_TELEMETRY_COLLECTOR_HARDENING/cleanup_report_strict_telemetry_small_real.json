@@ -1,0 +1,115 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+  "cleanup_actions": [
+    {
+      "action": "stop",
+      "id": "950e58e01d4b",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "950e58e01d4b",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "4277ba223120",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "4277ba223120",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "b6321090fcff",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "b6321090fcff",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "8a8f3757d444",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "8a8f3757d444",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "0e03190618b9",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "0e03190618b9",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "304d5a9978a1",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "304d5a9978a1",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "0c7dded12f6e",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "cleanup_remove_containers_seconds": 0.785545,
+    "cleanup_remove_networks_seconds": 0.225174,
+    "cleanup_residual_scan_seconds": 0.031012,
+    "cleanup_terminate_processes_seconds": 0.0,
+    "cleanup_verify_nodehost_empty_seconds": 0.0,
+    "cleanup_verify_process_exit_seconds": 0.0
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING-strict_telemetry_small_real-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

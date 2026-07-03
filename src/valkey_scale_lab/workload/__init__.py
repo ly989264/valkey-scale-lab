@@ -78,11 +78,15 @@ def run_windowed_workload(
             metadata={"window_name": window_name, "sample_count": metrics["sample_count"]},
         )
         events.append(end_event)
+        metrics["window_start_event_id"] = start_event["event_id"]
+        metrics["window_end_event_id"] = end_event["event_id"]
         measured_windows.append(
             {
                 "window_name": window_name,
                 "start_event_id": start_event["event_id"],
                 "end_event_id": end_event["event_id"],
+                "window_start_event_id": start_event["event_id"],
+                "window_end_event_id": end_event["event_id"],
                 "status": "PASS" if not errors else "FAIL",
                 "metrics": metrics,
             }
@@ -106,11 +110,15 @@ def run_windowed_workload(
         metadata={"window_name": "all_run", "sample_count": all_metrics["sample_count"]},
     )
     events.append(all_end_event)
+    all_metrics["window_start_event_id"] = all_start_event["event_id"]
+    all_metrics["window_end_event_id"] = all_end_event["event_id"]
     measured_windows.append(
         {
             "window_name": "all_run",
             "start_event_id": all_start_event["event_id"],
             "end_event_id": all_end_event["event_id"],
+            "window_start_event_id": all_start_event["event_id"],
+            "window_end_event_id": all_end_event["event_id"],
             "status": "PASS" if not all_errors else "FAIL",
             "metrics": all_metrics,
         }

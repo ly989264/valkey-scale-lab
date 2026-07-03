@@ -75,6 +75,23 @@ def test_p16_quant_telemetry_is_six_node_only() -> None:
     ) is False
 
 
+def test_p29_strict_telemetry_small_real_is_six_node_only() -> None:
+    assert docker_runtime._scenario_node_count_allowed(
+        "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+        "strict_telemetry_small_real",
+        6,
+    ) is True
+    assert docker_runtime._scenario_node_count_allowed(
+        "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+        "strict_telemetry_small_real",
+        50,
+    ) is False
+    assert docker_runtime._uses_docker_process_runtime(
+        "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+        "strict_telemetry_small_real",
+    ) is False
+
+
 def test_p25_smoke_runtime_is_six_node_only_and_not_process_runtime() -> None:
     assert docker_runtime._scenario_node_count_allowed(
         "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",

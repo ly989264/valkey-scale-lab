@@ -1,0 +1,48 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "No management operation performance claim is made by P29.",
+      "metric": "management_operation_timing",
+      "reason": "P29 is the strict telemetry foundation stage; management operation timing is required in P30-P32.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "impact": "No fault or failover performance claim is made by P29.",
+      "metric": "fault_or_failover_latency",
+      "reason": "P29 is the strict telemetry foundation stage; fault and failover latency are required in P33-P35.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/phase_summary.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/valkey_e2e_evidence.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/cleanup_report.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/events.jsonl",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/metrics_timeseries.jsonl",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/workload_windows.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/quant_summary.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/coverage_ledger.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/telemetry_completeness_report.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/topology_snapshots.jsonl"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "P29 remains a 6-node collector proof; later strict stages must execute their own 50/100/200 real matrix coverage.",
+      "severity": "medium"
+    }
+  ],
+  "run_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING-strict_telemetry_small_real-20260628",
+  "sample_errors": [],
+  "schema_version": "v1",
+  "stage_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+  "status": "PASS",
+  "summary": "P29 hardened strict quantitative telemetry collectors and validators with a bounded 6-node real Valkey proof; all strict 50/100/200 matrix rows remain pending."
+}

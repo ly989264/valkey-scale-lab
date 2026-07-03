@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -31,9 +32,18 @@ class TelemetryRun:
     scenario_name: str
     run_id: str
     sample_id: str = "sample-0001"
+    stage_id: str | None = None
+    coverage_id: str = "telemetry.collector_smoke"
+    scale: int | None = None
+    node_count: int | None = None
+    clock_source: str = "wall_time_unix_ms_and_python_monotonic"
     start_wall_unix_ms: int = field(default_factory=lambda: int(time.time() * 1000))
     start_monotonic: float = field(default_factory=time.monotonic)
     _event_counter: int = 0
+
+    def __post_init__(self) -> None:
+        if self.stage_id is None:
+            self.stage_id = self.phase_id
 
     def now_unix_ms(self) -> int:
         return int(time.time() * 1000)
@@ -58,12 +68,17 @@ class TelemetryRun:
             "schema_version": "v1",
             "run_id": self.run_id,
             "phase_id": self.phase_id,
+            "stage_id": self.stage_id,
+            "coverage_id": self.coverage_id,
+            "scale": self.scale if self.scale is not None else MISSING,
+            "node_count": self.node_count if self.node_count is not None else MISSING,
             "scenario_name": self.scenario_name,
             "sample_id": self.sample_id,
             "event_id": f"evt-{self._event_counter:04d}-{event_type}",
             "event_type": event_type,
             "timestamp_unix_ms": self.now_unix_ms(),
             "monotonic_ms": self.monotonic_ms(),
+            "clock_source": self.clock_source,
             "severity": severity,
             "subject_type": subject_type,
             "subject_id": subject_id,
@@ -90,10 +105,15 @@ class TelemetryRun:
             "schema_version": "v1",
             "run_id": self.run_id,
             "phase_id": self.phase_id,
+            "stage_id": self.stage_id,
+            "coverage_id": self.coverage_id,
+            "scale": self.scale if self.scale is not None else MISSING,
+            "node_count": self.node_count if self.node_count is not None else MISSING,
             "scenario_name": self.scenario_name,
             "sample_id": self.sample_id,
             "timestamp_unix_ms": self.now_unix_ms(),
             "monotonic_ms": self.monotonic_ms(),
+            "clock_source": self.clock_source,
             "source_type": source_type,
             "source_id": source_id,
             "metric_name": metric_name,
@@ -107,8 +127,25 @@ class TelemetryRun:
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
     if not rows:
         raise ValueError(f"refusing to write empty JSONL artifact {path}")
+    for index, row in enumerate(rows, start=1):
+        _reject_unsafe_json_values(row, f"{path}:line {index}")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n", encoding="utf-8")
+    path.write_text("\n".join(json.dumps(row, sort_keys=True, allow_nan=False) for row in rows) + "\n", encoding="utf-8")
+
+
+def _reject_unsafe_json_values(value: Any, path: str) -> None:
+    if value is None:
+        raise ValueError(f"{path}: null is not an allowed telemetry value")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{path}: non-finite telemetry number is not allowed")
+    if isinstance(value, str) and value.lower() in {"nan", "infinity", "-infinity", "undefined", "null"}:
+        raise ValueError(f"{path}: forbidden placeholder value {value!r}")
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _reject_unsafe_json_values(item, f"{path}.{key}")
+    elif isinstance(value, list):
+        for idx, item in enumerate(value):
+            _reject_unsafe_json_values(item, f"{path}[{idx}]")
 
 
 def percentile(values: list[float], pct: float) -> float:

@@ -697,7 +697,7 @@
     },
     {
       "path": "scripts/valkey_e2e_gate.py",
-      "sha256": "aadd52ea269b76ca07ff86956960a440fddc5f53957d578190412bb8cbc329d3"
+      "sha256": "409721dff467b209a6967a1b4fdb1600f6080876ccfcc43607c0a98005d0b850"
     },
     {
       "path": "scripts/valkey_probe_lib.py",
@@ -797,7 +797,7 @@
     },
     {
       "path": "scripts/assert_quant_completeness.py",
-      "sha256": "39fdf0e5a8d8ae913ca37a344aeac0190947fca10c1d4fcfd3505da3d9b51c35"
+      "sha256": "bef57bd744cca48d874b391489394c7e922ce940cb456140bf48ff28a4df926a"
     },
     {
       "path": "scripts/assert_management_matrix_strict.py",

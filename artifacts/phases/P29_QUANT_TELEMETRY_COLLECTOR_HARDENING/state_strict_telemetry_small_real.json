@@ -1,0 +1,100 @@
+{
+  "cluster_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING-strict_telemetry_small_real-20260628",
+  "nodes": [
+    {
+      "az_id": "az-local",
+      "client_port": 7000,
+      "container_id": "304d5a9978a18ad199ab8e4cb85b24f235f971b503744784bcda30e80e8ec872",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p29-quant-telemetry-collector-hardening-strict-telemetry-small-real-20260628-shard-0000-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-primary",
+      "pid": 3142,
+      "role": "primary",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7001,
+      "container_id": "0e03190618b912a9b6538a4e9b4d58b9fe04e94818d3c11c62eebe5edf1d5784",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p29-quant-telemetry-collector-hardening-strict-telemetry-small-real-20260628-shard-0001-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-primary",
+      "pid": 3217,
+      "role": "primary",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7002,
+      "container_id": "8a8f3757d4447bacb8b2c45e83e601f84a95354a37a6bea8268b78daaa2a59f1",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p29-quant-telemetry-collector-hardening-strict-telemetry-small-real-20260628-shard-0002-primary",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-primary",
+      "pid": 3292,
+      "role": "primary",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7003,
+      "container_id": "b6321090fcff8d885a4e64bae3fe58855474c485c183058ba2df67f864f9a0d3",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p29-quant-telemetry-collector-hardening-strict-telemetry-small-real-20260628-shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0000-replica-00",
+      "pid": 3365,
+      "role": "replica",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7004,
+      "container_id": "4277ba223120e6d2fd63f61955b51497b67114b5ece8bb1d2f5ccad101d1a47a",
+      "container_ip": "172.18.0.6",
+      "container_name": "vslab-p29-quant-telemetry-collector-hardening-strict-telemetry-small-real-20260628-shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0001-replica-00",
+      "pid": 3443,
+      "role": "replica",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-local",
+      "client_port": 7005,
+      "container_id": "950e58e01d4b9cff65bb15736fabb7a013c5d65937d157dba492f05354bf2356",
+      "container_ip": "172.18.0.7",
+      "container_name": "vslab-p29-quant-telemetry-collector-hardening-strict-telemetry-small-real-20260628-shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "logical_id": "shard-0002-replica-00",
+      "pid": 3518,
+      "role": "replica",
+      "shard_id": "shard-0002"
+    }
+  ],
+  "phase_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+  "runtime": {
+    "cluster_meet_fanout": 4,
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_containers_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "hosts": [
+      "local"
+    ],
+    "network_name": "vslab-p29-quant-telemetry-collector-hardening-strict_telemetry_small_real",
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "run_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING-strict_telemetry_small_real-20260628",
+    "sandbox_network": true,
+    "type": "docker"
+  },
+  "scenario": "strict_telemetry_small_real",
+  "schema_version": "v1"
+}

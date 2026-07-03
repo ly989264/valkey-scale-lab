@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -68,6 +69,53 @@ def run_cmd(cmd: list[str], timeout: int, env: dict[str, str] | None = None) -> 
 def write_json(path: Path, obj: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def refresh_p29_telemetry_report_hashes(artifact_dir: Path) -> None:
+    report_path = artifact_dir / "telemetry_completeness_report.json"
+    if not report_path.exists():
+        return
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    source_artifacts = report.get("provenance", {}).get("source_artifacts", [])
+    if not isinstance(source_artifacts, list):
+        return
+    refreshed: list[dict[str, Any]] = []
+    for entry in source_artifacts:
+        if not isinstance(entry, dict):
+            refreshed.append(entry)
+            continue
+        artifact_name = Path(str(entry.get("path", ""))).name
+        local_path = artifact_dir / artifact_name
+        updated = dict(entry)
+        if local_path.exists():
+            updated["sha256"] = sha256_file(local_path)
+            updated["status"] = "PASS"
+            updated.pop("reason", None)
+        refreshed.append(updated)
+    report.setdefault("provenance", {})["source_artifacts"] = refreshed
+    report["provenance"]["source_artifact_refs"] = [str(item.get("path")) for item in refreshed if isinstance(item, dict)]
+    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def encode_missing_nulls(value: Any, path: str = "$") -> Any:
+    if value is None:
+        return {
+            "status": "MISSING",
+            "reason": f"{path} was null in probe output; value is not applicable or unavailable",
+        }
+    if isinstance(value, dict):
+        return {key: encode_missing_nulls(item, f"{path}.{key}") for key, item in value.items()}
+    if isinstance(value, list):
+        return [encode_missing_nulls(item, f"{path}[{index}]") for index, item in enumerate(value)]
+    return value
 
 
 def write_text_timed(
@@ -611,7 +659,10 @@ def main() -> int:
         },
         "errors": errors,
     }
+    evidence = encode_missing_nulls(evidence)
     write_json(out, evidence)
+    if args.phase == "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING":
+        refresh_p29_telemetry_report_hashes(artifact_dir)
     if errors:
         for err in errors:
             print(f"FAIL: {err}", file=sys.stderr)

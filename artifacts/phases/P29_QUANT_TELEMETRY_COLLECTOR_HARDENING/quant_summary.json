@@ -1,0 +1,64 @@
+{
+  "artifact_refs": [
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/events.jsonl",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/metrics_timeseries.jsonl",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/workload_windows.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/cleanup_report.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/valkey_e2e_evidence.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/coverage_ledger.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/telemetry_completeness_report.json",
+    "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/topology_snapshots.jsonl"
+  ],
+  "artifact_type": "quant_summary",
+  "counts": {
+    "coverage_pass_count": 0,
+    "event_count": 32,
+    "metric_count": 252,
+    "node_count": 6,
+    "sample_error_count": 0,
+    "workload_window_count": 6,
+    "workload_windows_with_samples": [
+      "baseline",
+      "pre_event",
+      "event",
+      "recovery",
+      "post_recovery",
+      "all_run"
+    ]
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_data": [
+    {
+      "field": "management_operation_matrix",
+      "reason": "P29 only hardens telemetry collector behavior; strict management matrix execution begins in P30.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "field": "fault_matrix",
+      "reason": "P29 only hardens telemetry collector behavior; strict fault/failover matrix execution begins in P33.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "field": "large_scale_matrix_coverage",
+      "reason": "P29 is capped to a 6-node collector proof and leaves all 50/100/200 strict coverage rows PENDING.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING-strict_telemetry_small_real-20260628",
+  "runtime_claims": {
+    "fault_runtime_claimed": false,
+    "management_runtime_claimed": false,
+    "real_valkey_claimed": true
+  },
+  "sample_errors": [],
+  "scenario_name": "strict_telemetry_small_real",
+  "schema_version": "v1",
+  "stage_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+  "status": "PASS",
+  "summary": "P29 hardened strict telemetry collection with real 6-node Valkey collector smoke evidence and no large-scale matrix coverage claims."
+}

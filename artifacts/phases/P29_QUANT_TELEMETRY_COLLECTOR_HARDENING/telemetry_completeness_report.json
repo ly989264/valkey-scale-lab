@@ -1,0 +1,172 @@
+{
+  "artifact_type": "telemetry_completeness_report",
+  "blocking_findings": [],
+  "coverage_id": "p29.telemetry.strict_telemetry_small_real",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_data": {
+    "all_missing_metrics_have_reason": true,
+    "missing_metric_count": 0,
+    "missing_metric_refs": []
+  },
+  "node_count": 6,
+  "phase_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "provenance": {
+    "large_scale_coverage_claim": false,
+    "matrix_rows_remain_pending": true,
+    "source_artifact_refs": [
+      "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/events.jsonl",
+      "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/metrics_timeseries.jsonl",
+      "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/workload_windows.json",
+      "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/quant_summary.json",
+      "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/phase_summary.json",
+      "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/topology_snapshots.jsonl",
+      "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/coverage_ledger.json",
+      "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/valkey_e2e_evidence.json",
+      "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/cleanup_report.json"
+    ],
+    "source_artifacts": [
+      {
+        "path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/events.jsonl",
+        "sha256": "ff64e32f248747cf79621aef9c55fa5cda3eaf5c2474574940a76b0a43401311",
+        "status": "PASS"
+      },
+      {
+        "path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/metrics_timeseries.jsonl",
+        "sha256": "e7cabb31cb9c49f092a180003180c207390d5d049a2eb2699bbe2fa9dd002759",
+        "status": "PASS"
+      },
+      {
+        "path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/workload_windows.json",
+        "sha256": "9f1ba39a7febf8962aecc4e4caa79ef22ad04fd1b990cbfa67b6addbe8077ce5",
+        "status": "PASS"
+      },
+      {
+        "path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/quant_summary.json",
+        "sha256": "f895371e257eed244e8e1da3c3a8482d29a0b50a57f1df29823beef666090b96",
+        "status": "PASS"
+      },
+      {
+        "path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/phase_summary.json",
+        "sha256": "d56c86c66c90c70f4a96bd169d0b4cbfb5321458f46be94ca0530afbcef9ea9d",
+        "status": "PASS"
+      },
+      {
+        "path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/topology_snapshots.jsonl",
+        "sha256": "b1c45b5539f577ac27874e77e76c116c2a100dc29333c98fbc282b3c66fbed1c",
+        "status": "PASS"
+      },
+      {
+        "path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/coverage_ledger.json",
+        "sha256": "158421f033eea87c0d79e99e25c60fdc5a0c9558ac5a484c6ee7e13a262e0a17",
+        "status": "PASS"
+      },
+      {
+        "path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/valkey_e2e_evidence.json",
+        "sha256": "7babfbfcd8097e4d3c2b50b333c72031fe23a728f3b925a9951321559a9a0369",
+        "status": "PASS"
+      },
+      {
+        "path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/cleanup_report.json",
+        "sha256": "3477e852f66a26c82b807d0625442c256077d72bc0e0712d4668ee95b177ef04",
+        "status": "PASS"
+      }
+    ]
+  },
+  "run_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING-strict_telemetry_small_real-20260628",
+  "scale": 6,
+  "scenario_name": "strict_telemetry_small_real",
+  "schema_validations": [
+    {
+      "artifact": "events.jsonl",
+      "line_count": 32,
+      "schema": "schemas/artifact/goal_loop_event.schema.json",
+      "status": "PASS"
+    },
+    {
+      "artifact": "metrics_timeseries.jsonl",
+      "line_count": 252,
+      "schema": "schemas/artifact/goal_loop_metric_sample.schema.json",
+      "status": "PASS"
+    },
+    {
+      "artifact": "workload_windows.json",
+      "schema": "schemas/artifact/workload_windows.schema.json",
+      "status": "PASS",
+      "window_count": 6
+    }
+  ],
+  "schema_version": "v1",
+  "source_type_coverage": {
+    "cluster_info": {
+      "missing_count": 0,
+      "row_count": 24,
+      "source_ids": [
+        "shard-0000-primary",
+        "shard-0000-replica-00",
+        "shard-0001-primary",
+        "shard-0001-replica-00",
+        "shard-0002-primary",
+        "shard-0002-replica-00"
+      ],
+      "status": "PASS"
+    },
+    "cluster_nodes": {
+      "missing_count": 0,
+      "row_count": 18,
+      "source_ids": [
+        "shard-0000-primary",
+        "shard-0000-replica-00",
+        "shard-0001-primary",
+        "shard-0001-replica-00",
+        "shard-0002-primary",
+        "shard-0002-replica-00"
+      ],
+      "status": "PASS"
+    },
+    "docker_stats": {
+      "missing_count": 0,
+      "row_count": 42,
+      "source_ids": [
+        "shard-0000-primary",
+        "shard-0000-replica-00",
+        "shard-0001-primary",
+        "shard-0001-replica-00",
+        "shard-0002-primary",
+        "shard-0002-replica-00"
+      ],
+      "status": "PASS"
+    },
+    "valkey_info": {
+      "missing_count": 0,
+      "row_count": 36,
+      "source_ids": [
+        "shard-0000-primary",
+        "shard-0000-replica-00",
+        "shard-0001-primary",
+        "shard-0001-replica-00",
+        "shard-0002-primary",
+        "shard-0002-replica-00"
+      ],
+      "status": "PASS"
+    },
+    "workload": {
+      "missing_count": 0,
+      "row_count": 132,
+      "source_ids": [
+        "all_run",
+        "baseline",
+        "event",
+        "post_recovery",
+        "pre_event",
+        "recovery"
+      ],
+      "status": "PASS"
+    }
+  },
+  "stage_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+  "status": "PASS"
+}

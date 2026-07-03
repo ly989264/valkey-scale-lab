@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import sys
 from pathlib import Path
 from types import ModuleType
 
-from valkey_scale_lab.metrics import MISSING, TelemetryRun, workload_metrics
+from valkey_scale_lab.metrics import MISSING, TelemetryRun, workload_metrics, write_jsonl as metrics_write_jsonl
 
 
 def load_script(name: str) -> ModuleType:
@@ -350,6 +351,186 @@ def test_workload_metrics_encode_empty_latency_as_missing_with_reason() -> None:
 
     assert metrics["latency_p99_ms"] == MISSING
     assert metrics["missing_reasons"]["latency_p99_ms"]
+
+
+def test_strict_jsonl_writer_rejects_null_values(tmp_path: Path) -> None:
+    path = tmp_path / "bad.jsonl"
+
+    try:
+        metrics_write_jsonl(path, [{"schema_version": "v1", "bad": None}])
+    except ValueError as exc:
+        assert "null is not an allowed telemetry value" in str(exc)
+    else:
+        raise AssertionError("write_jsonl accepted a null telemetry value")
+
+
+def minimal_p29_artifacts(base: Path) -> None:
+    phase = "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
+    telemetry = TelemetryRun(
+        phase_id=phase,
+        scenario_name="strict_telemetry_small_real",
+        run_id="run-p29",
+        coverage_id="p29.telemetry.strict_telemetry_small_real",
+        scale=6,
+        node_count=6,
+    )
+    events = []
+    metric_rows = []
+    for source_type in ["valkey_info", "cluster_info", "cluster_nodes", "docker_stats"]:
+        metric_rows.append(
+            telemetry.metric(
+                source_type=source_type,
+                source_id="node-0",
+                metric_name=f"{source_type}_sample",
+                metric_value=True,
+                metric_unit="status",
+            )
+        )
+    window_start_events = []
+    window_finish_events = []
+    windows = []
+    for name in ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]:
+        start = telemetry.event(
+            "workload_window_started",
+            subject_type="workload_window",
+            subject_id=name,
+            message=f"{name} started",
+            metadata={"window_name": name},
+        )
+        end = telemetry.event(
+            "workload_window_finished",
+            subject_type="workload_window",
+            subject_id=name,
+            message=f"{name} finished",
+            metadata={"window_name": name},
+        )
+        events.extend([start, end])
+        window_start_events.append(start)
+        window_finish_events.append(end)
+        metrics = workload_metrics(requested_qps=1.0, duration_seconds=1.0, latencies_ms=[1.0, 2.0], error_texts=[])
+        metrics["window_start_event_id"] = start["event_id"]
+        metrics["window_end_event_id"] = end["event_id"]
+        windows.append(
+            {
+                "window_name": name,
+                "start_event_id": start["event_id"],
+                "end_event_id": end["event_id"],
+                "window_start_event_id": start["event_id"],
+                "window_end_event_id": end["event_id"],
+                "status": "PASS",
+                "metrics": metrics,
+            }
+        )
+        metric_rows.append(
+            telemetry.metric(
+                source_type="workload",
+                source_id=name,
+                metric_name="sample_count",
+                metric_value=2,
+                metric_unit="count",
+                labels={"window_name": name},
+            )
+        )
+    write_jsonl(base / "events.jsonl", events)
+    write_jsonl(base / "metrics_timeseries.jsonl", metric_rows)
+    write_json(
+        base / "workload_windows.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "workload_windows",
+            "phase_id": phase,
+            "stage_id": phase,
+            "run_id": "run-p29",
+            "windows": windows,
+        },
+    )
+    write_json(
+        base / "quant_summary.json",
+        {
+            "runtime_claims": {
+                "real_valkey_claimed": True,
+                "management_runtime_claimed": False,
+                "fault_runtime_claimed": False,
+            },
+            "counts": {
+                "node_count": 6,
+                "event_count": len(events),
+                "metric_count": len(metric_rows),
+                "coverage_pass_count": 0,
+            },
+            "missing_data": [{"field": "large_scale_matrix_coverage", "status": "SKIPPED_WITH_REASON", "reason": "P29 does not claim matrix coverage."}],
+        },
+    )
+    write_json(
+        base / "coverage_ledger.json",
+        {
+            "stage_id": phase,
+            "summary": {"real_runtime_claimed": False},
+            "rows": [{"coverage_id": "50.lifecycle.telemetry_collect", "node_count": 50, "status": "PENDING"}],
+        },
+    )
+    source_artifacts = []
+    for name in ["events.jsonl", "metrics_timeseries.jsonl", "workload_windows.json", "quant_summary.json", "coverage_ledger.json"]:
+        digest = hashlib.sha256((base / name).read_bytes()).hexdigest()
+        source_artifacts.append({"path": f"artifacts/phases/{phase}/{name}", "sha256": digest, "status": "PASS"})
+    write_json(
+        base / "telemetry_completeness_report.json",
+        {
+            "status": "PASS",
+            "node_count": 6,
+            "scale": 6,
+            "source_type_coverage": {
+                source_type: {"status": "PASS", "row_count": 1}
+                for source_type in ["valkey_info", "cluster_info", "cluster_nodes", "docker_stats", "workload"]
+            },
+            "schema_validations": [{"artifact": "events.jsonl", "status": "PASS"}],
+            "provenance": {
+                "source_artifacts": source_artifacts,
+                "large_scale_coverage_claim": False,
+                "matrix_rows_remain_pending": True,
+            },
+            "blocking_findings": [],
+        },
+    )
+    write_json(base / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": True, "nodes_observed": 6})
+    write_json(base / "cleanup_report.json", {"status": "PASS"})
+
+
+def test_p29_quant_completeness_accepts_strict_artifacts(tmp_path: Path) -> None:
+    assertion = load_script("assert_quant_completeness")
+    minimal_p29_artifacts(tmp_path)
+
+    errors: list[str] = []
+    assertion.assert_p29_semantics(tmp_path, errors)
+
+    assert errors == []
+
+
+def test_p29_quant_completeness_rejects_missing_metric_reason(tmp_path: Path) -> None:
+    assertion = load_script("assert_quant_completeness")
+    minimal_p29_artifacts(tmp_path)
+    rows = [json.loads(line) for line in (tmp_path / "metrics_timeseries.jsonl").read_text(encoding="utf-8").splitlines()]
+    rows[0]["metric_value"] = MISSING
+    rows[0]["missing_reason"] = ""
+    write_jsonl(tmp_path / "metrics_timeseries.jsonl", rows)
+
+    errors: list[str] = []
+    assertion.assert_p29_semantics(tmp_path, errors)
+
+    assert any("MISSING metric requires missing_reason" in error for error in errors)
+
+
+def test_p29_quant_completeness_rejects_coverage_pass_claim(tmp_path: Path) -> None:
+    assertion = load_script("assert_quant_completeness")
+    minimal_p29_artifacts(tmp_path)
+    ledger = json.loads((tmp_path / "coverage_ledger.json").read_text(encoding="utf-8"))
+    ledger["rows"][0]["status"] = "PASS"
+    write_json(tmp_path / "coverage_ledger.json", ledger)
+
+    errors: list[str] = []
+    assertion.assert_p29_semantics(tmp_path, errors)
+
+    assert any("must remain PENDING" in error for error in errors)
 
 
 def p17_management_row(operation_name: str, node_count: int) -> dict:
