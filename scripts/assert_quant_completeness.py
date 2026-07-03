@@ -16,6 +16,19 @@ from strict_harness_lib import load_jsonl, phase_dir, print_errors, rel, require
 
 P29 = "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
 P30 = "P30_MANAGEMENT_MATRIX_50_REAL"
+P31 = "P31_MANAGEMENT_MATRIX_100_REAL"
+STRICT_MANAGEMENT_STAGES = {
+    P30: {
+        "scale": 50,
+        "coverage_prefix": "50.management.",
+        "timing_artifact": "runtime_timing_breakdown_strict_management_matrix_50.json",
+    },
+    P31: {
+        "scale": 100,
+        "coverage_prefix": "100.management.",
+        "timing_artifact": "runtime_timing_breakdown_strict_management_matrix_100.json",
+    },
+}
 CANONICAL_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]
 STRICT_EVENT_FIELDS = [
     "schema_version",
@@ -107,8 +120,8 @@ def main() -> int:
             errors.append("fault_runtime_claimed must be true")
     if args.phase == P29:
         assert_p29_semantics(base, errors)
-    if args.phase == P30 and args.category == "management":
-        assert_p30_management_semantics(base, int(args.scale or 0), errors)
+    if args.phase in STRICT_MANAGEMENT_STAGES and args.category == "management":
+        assert_p30_management_semantics(base, args.phase, int(args.scale or 0), errors)
     if errors:
         return print_errors(errors)
     print(f"PASS quant completeness phase={args.phase}")
@@ -171,9 +184,12 @@ def assert_p29_semantics(base: Path, errors: list[str]) -> None:
         errors.append("cleanup_report.json: cleanup status must be PASS")
 
 
-def assert_p30_management_semantics(base: Path, scale: int, errors: list[str]) -> None:
-    if scale != 50:
-        errors.append("P30 quant completeness requires --scale 50")
+def assert_p30_management_semantics(base: Path, phase: str, scale: int, errors: list[str]) -> None:
+    spec = STRICT_MANAGEMENT_STAGES[phase]
+    expected_scale = int(spec["scale"])
+    coverage_prefix = str(spec["coverage_prefix"])
+    if scale != expected_scale:
+        errors.append(f"{phase} quant completeness requires --scale {expected_scale}")
     events = _load_jsonl_required(base / "events.jsonl", errors)
     metrics = _load_jsonl_required(base / "metrics_timeseries.jsonl", errors)
     workload = require_json(base / "workload_windows.json", errors, "workload windows") or {}
@@ -190,47 +206,55 @@ def assert_p30_management_semantics(base: Path, scale: int, errors: list[str]) -
         "management_workload_impact.json",
         "rebalance_summary.json",
         "rolling_restart_plan.json",
-        "runtime_timing_breakdown_strict_management_matrix_50.json",
+        str(spec["timing_artifact"]),
     ]:
         artifact = require_json(base / artifact_name, errors, artifact_name) or {}
         _assert_no_forbidden_values(artifact, artifact_name, errors)
     for index, row in enumerate(events, start=1):
         _assert_required_fields(row, STRICT_EVENT_FIELDS, f"events.jsonl:{index}", errors)
-        _assert_p30_dimensions(row, f"events.jsonl:{index}", errors)
+        _assert_p30_dimensions(row, phase, expected_scale, coverage_prefix, f"events.jsonl:{index}", errors)
         _assert_no_forbidden_values(row, f"events.jsonl:{index}", errors)
     metric_source_types = set()
     for index, row in enumerate(metrics, start=1):
         _assert_required_fields(row, STRICT_METRIC_FIELDS, f"metrics_timeseries.jsonl:{index}", errors)
-        _assert_p30_dimensions(row, f"metrics_timeseries.jsonl:{index}", errors)
+        _assert_p30_dimensions(row, phase, expected_scale, coverage_prefix, f"metrics_timeseries.jsonl:{index}", errors)
         _assert_no_forbidden_values(row, f"metrics_timeseries.jsonl:{index}", errors)
         metric_source_types.add(str(row.get("source_type")))
         if row.get("metric_value") == "MISSING" and not row.get("missing_reason"):
             errors.append(f"metrics_timeseries.jsonl:{index}: MISSING metric requires missing_reason")
     if "workload" not in metric_source_types:
-        errors.append("metrics_timeseries.jsonl: P30 requires workload metric rows")
+        errors.append(f"metrics_timeseries.jsonl: {phase} requires workload metric rows")
     _assert_p30_workload_windows(workload, {str(row.get("event_id")) for row in events}, errors)
     claims = quant_summary.get("runtime_claims", {})
     if claims.get("real_valkey_claimed") is not True or claims.get("management_runtime_claimed") is not True:
-        errors.append("quant_summary.json: P30 requires real Valkey and management runtime claims")
+        errors.append(f"quant_summary.json: {phase} requires real Valkey and management runtime claims")
     counts = quant_summary.get("counts", {})
-    if counts.get("node_count") != 50 or counts.get("operation_count") != 11 or counts.get("coverage_pass_count") != 11:
-        errors.append("quant_summary.json: P30 counts must record 50 nodes, 11 operations, and 11 coverage passes")
-    if evidence.get("status") != "PASS" or evidence.get("nodes_observed") != 50 or evidence.get("data_path_result") != "PASS":
-        errors.append("valkey_e2e_evidence.json: P30 requires PASS exact-50 data-path evidence")
+    if counts.get("node_count") != expected_scale or counts.get("operation_count") != 11 or counts.get("coverage_pass_count") != 11:
+        errors.append(f"quant_summary.json: {phase} counts must record {expected_scale} nodes, 11 operations, and 11 coverage passes")
+    if evidence.get("status") != "PASS" or evidence.get("nodes_observed") != expected_scale or evidence.get("data_path_result") != "PASS":
+        errors.append(f"valkey_e2e_evidence.json: {phase} requires PASS exact-{expected_scale} data-path evidence")
     if cleanup.get("status") != "PASS":
         errors.append("cleanup_report.json: cleanup status must be PASS")
-    if coverage_ledger.get("stage_id") != P30 or coverage_ledger.get("summary", {}).get("counts_by_status", {}).get("PASS") != 11:
-        errors.append("coverage_ledger.json: P30 ledger must contain exactly 11 PASS rows in the full strict registry")
+    stage_rows = [
+        row
+        for row in coverage_ledger.get("rows", [])
+        if isinstance(row, dict)
+        and row.get("stage_owner") == phase
+        and str(row.get("coverage_id", "")).startswith(coverage_prefix)
+        and row.get("category") == "management"
+    ]
+    if coverage_ledger.get("stage_id") != phase or len(stage_rows) != 11 or any(row.get("status") != "PASS" for row in stage_rows):
+        errors.append(f"coverage_ledger.json: {phase} ledger must contain exactly 11 PASS {coverage_prefix} rows")
 
 
-def _assert_p30_dimensions(row: dict[str, Any], label: str, errors: list[str]) -> None:
-    if row.get("phase_id") != P30 or row.get("stage_id") != P30:
-        errors.append(f"{label}: phase_id and stage_id must be {P30}")
+def _assert_p30_dimensions(row: dict[str, Any], phase: str, scale: int, coverage_prefix: str, label: str, errors: list[str]) -> None:
+    if row.get("phase_id") != phase or row.get("stage_id") != phase:
+        errors.append(f"{label}: phase_id and stage_id must be {phase}")
     coverage_id = str(row.get("coverage_id", ""))
-    if not coverage_id.startswith("50.management."):
-        errors.append(f"{label}: coverage_id must be a 50.management.* row")
-    if row.get("scale") != 50 or row.get("node_count") != 50:
-        errors.append(f"{label}: scale and node_count must be 50")
+    if not coverage_id.startswith(coverage_prefix):
+        errors.append(f"{label}: coverage_id must be a {coverage_prefix}* row")
+    if row.get("scale") != scale or row.get("node_count") != scale:
+        errors.append(f"{label}: scale and node_count must be {scale}")
 
 
 def _assert_p30_workload_windows(workload: dict[str, Any], event_ids: set[str], errors: list[str]) -> None:

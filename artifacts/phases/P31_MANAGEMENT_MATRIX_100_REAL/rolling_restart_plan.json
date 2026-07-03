@@ -1,0 +1,3252 @@
+{
+  "artifact_type": "rolling_restart_plan",
+  "created_at": "2026-06-28T00:00:00Z",
+  "health_gate": {
+    "cluster_state": "ok",
+    "max_concurrent_restarts": 1,
+    "required_after_each_restart": true,
+    "slots_assigned": 16384
+  },
+  "operations": [
+    {
+      "health_gate": {
+        "cluster_state": "ok",
+        "known_nodes": 100,
+        "required_after_each_restart": true,
+        "slots_assigned": 16384
+      },
+      "max_concurrent_restarts": 1,
+      "node_count": 100,
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "operation_name": "rolling_restart_replica_first",
+      "restart_order": [
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0000-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 1,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0001-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 2,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0002-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 3,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0003-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 4,
+          "shard_id": "shard-0003"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0004-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 5,
+          "shard_id": "shard-0004"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0005-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 6,
+          "shard_id": "shard-0005"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0006-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 7,
+          "shard_id": "shard-0006"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0007-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 8,
+          "shard_id": "shard-0007"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0008-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 9,
+          "shard_id": "shard-0008"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0009-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 10,
+          "shard_id": "shard-0009"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0010-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 11,
+          "shard_id": "shard-0010"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0011-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 12,
+          "shard_id": "shard-0011"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0012-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 13,
+          "shard_id": "shard-0012"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0013-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 14,
+          "shard_id": "shard-0013"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0014-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 15,
+          "shard_id": "shard-0014"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0015-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 16,
+          "shard_id": "shard-0015"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0016-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 17,
+          "shard_id": "shard-0016"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0017-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 18,
+          "shard_id": "shard-0017"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0018-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 19,
+          "shard_id": "shard-0018"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0019-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 20,
+          "shard_id": "shard-0019"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0020-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 21,
+          "shard_id": "shard-0020"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0021-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 22,
+          "shard_id": "shard-0021"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0022-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 23,
+          "shard_id": "shard-0022"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0023-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 24,
+          "shard_id": "shard-0023"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0024-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 25,
+          "shard_id": "shard-0024"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0025-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 26,
+          "shard_id": "shard-0025"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0026-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 27,
+          "shard_id": "shard-0026"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0027-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 28,
+          "shard_id": "shard-0027"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0028-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 29,
+          "shard_id": "shard-0028"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0029-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 30,
+          "shard_id": "shard-0029"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0030-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 31,
+          "shard_id": "shard-0030"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0031-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 32,
+          "shard_id": "shard-0031"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0032-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 33,
+          "shard_id": "shard-0032"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0033-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 34,
+          "shard_id": "shard-0033"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0034-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 35,
+          "shard_id": "shard-0034"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0035-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 36,
+          "shard_id": "shard-0035"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0036-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 37,
+          "shard_id": "shard-0036"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0037-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 38,
+          "shard_id": "shard-0037"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0038-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 39,
+          "shard_id": "shard-0038"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0039-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 40,
+          "shard_id": "shard-0039"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0040-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 41,
+          "shard_id": "shard-0040"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0041-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 42,
+          "shard_id": "shard-0041"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0042-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 43,
+          "shard_id": "shard-0042"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0043-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 44,
+          "shard_id": "shard-0043"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0044-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 45,
+          "shard_id": "shard-0044"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0045-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 46,
+          "shard_id": "shard-0045"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0046-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 47,
+          "shard_id": "shard-0046"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0047-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 48,
+          "shard_id": "shard-0047"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0048-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 49,
+          "shard_id": "shard-0048"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0049-replica-00",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "replica",
+          "sequence": 50,
+          "shard_id": "shard-0049"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0000-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 51,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0001-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 52,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0002-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 53,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0003-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 54,
+          "shard_id": "shard-0003"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0004-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 55,
+          "shard_id": "shard-0004"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0005-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 56,
+          "shard_id": "shard-0005"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0006-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 57,
+          "shard_id": "shard-0006"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0007-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 58,
+          "shard_id": "shard-0007"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0008-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 59,
+          "shard_id": "shard-0008"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0009-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 60,
+          "shard_id": "shard-0009"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0010-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 61,
+          "shard_id": "shard-0010"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0011-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 62,
+          "shard_id": "shard-0011"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0012-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 63,
+          "shard_id": "shard-0012"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0013-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 64,
+          "shard_id": "shard-0013"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0014-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 65,
+          "shard_id": "shard-0014"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0015-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 66,
+          "shard_id": "shard-0015"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0016-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 67,
+          "shard_id": "shard-0016"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0017-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 68,
+          "shard_id": "shard-0017"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0018-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 69,
+          "shard_id": "shard-0018"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0019-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 70,
+          "shard_id": "shard-0019"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0020-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 71,
+          "shard_id": "shard-0020"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0021-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 72,
+          "shard_id": "shard-0021"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0022-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 73,
+          "shard_id": "shard-0022"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0023-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 74,
+          "shard_id": "shard-0023"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0024-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 75,
+          "shard_id": "shard-0024"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0025-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 76,
+          "shard_id": "shard-0025"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0026-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 77,
+          "shard_id": "shard-0026"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0027-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 78,
+          "shard_id": "shard-0027"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0028-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 79,
+          "shard_id": "shard-0028"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0029-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 80,
+          "shard_id": "shard-0029"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0030-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 81,
+          "shard_id": "shard-0030"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0031-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 82,
+          "shard_id": "shard-0031"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0032-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 83,
+          "shard_id": "shard-0032"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0033-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 84,
+          "shard_id": "shard-0033"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0034-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 85,
+          "shard_id": "shard-0034"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0035-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 86,
+          "shard_id": "shard-0035"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0036-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 87,
+          "shard_id": "shard-0036"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0037-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 88,
+          "shard_id": "shard-0037"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0038-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 89,
+          "shard_id": "shard-0038"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0039-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 90,
+          "shard_id": "shard-0039"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0040-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 91,
+          "shard_id": "shard-0040"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0041-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 92,
+          "shard_id": "shard-0041"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0042-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 93,
+          "shard_id": "shard-0042"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0043-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 94,
+          "shard_id": "shard-0043"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0044-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 95,
+          "shard_id": "shard-0044"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0045-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 96,
+          "shard_id": "shard-0045"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0046-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 97,
+          "shard_id": "shard-0046"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0047-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 98,
+          "shard_id": "shard-0047"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0048-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 99,
+          "shard_id": "shard-0048"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0049-primary",
+          "operation_id": "p31-rolling_restart_replica_first-100",
+          "planned_role": "primary",
+          "sequence": 100,
+          "shard_id": "shard-0049"
+        }
+      ],
+      "status": "PASS"
+    },
+    {
+      "health_gate": {
+        "cluster_state": "ok",
+        "known_nodes": 100,
+        "required_after_each_restart": true,
+        "slots_assigned": 16384
+      },
+      "max_concurrent_restarts": 1,
+      "node_count": 100,
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "operation_name": "rolling_restart_primary_safe",
+      "restart_order": [
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0000-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 1,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0000-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 2,
+          "shard_id": "shard-0000"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0001-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 3,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0001-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 4,
+          "shard_id": "shard-0001"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0002-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 5,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0002-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 6,
+          "shard_id": "shard-0002"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0003-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 7,
+          "shard_id": "shard-0003"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0003-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 8,
+          "shard_id": "shard-0003"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0004-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 9,
+          "shard_id": "shard-0004"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0004-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 10,
+          "shard_id": "shard-0004"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0005-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 11,
+          "shard_id": "shard-0005"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0005-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 12,
+          "shard_id": "shard-0005"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0006-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 13,
+          "shard_id": "shard-0006"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0006-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 14,
+          "shard_id": "shard-0006"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0007-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 15,
+          "shard_id": "shard-0007"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0007-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 16,
+          "shard_id": "shard-0007"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0008-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 17,
+          "shard_id": "shard-0008"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0008-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 18,
+          "shard_id": "shard-0008"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0009-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 19,
+          "shard_id": "shard-0009"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0009-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 20,
+          "shard_id": "shard-0009"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0010-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 21,
+          "shard_id": "shard-0010"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0010-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 22,
+          "shard_id": "shard-0010"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0011-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 23,
+          "shard_id": "shard-0011"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0011-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 24,
+          "shard_id": "shard-0011"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0012-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 25,
+          "shard_id": "shard-0012"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0012-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 26,
+          "shard_id": "shard-0012"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0013-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 27,
+          "shard_id": "shard-0013"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0013-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 28,
+          "shard_id": "shard-0013"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0014-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 29,
+          "shard_id": "shard-0014"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0014-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 30,
+          "shard_id": "shard-0014"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0015-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 31,
+          "shard_id": "shard-0015"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0015-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 32,
+          "shard_id": "shard-0015"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0016-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 33,
+          "shard_id": "shard-0016"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0016-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 34,
+          "shard_id": "shard-0016"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0017-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 35,
+          "shard_id": "shard-0017"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0017-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 36,
+          "shard_id": "shard-0017"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0018-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 37,
+          "shard_id": "shard-0018"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0018-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 38,
+          "shard_id": "shard-0018"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0019-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 39,
+          "shard_id": "shard-0019"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0019-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 40,
+          "shard_id": "shard-0019"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0020-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 41,
+          "shard_id": "shard-0020"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0020-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 42,
+          "shard_id": "shard-0020"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0021-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 43,
+          "shard_id": "shard-0021"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0021-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 44,
+          "shard_id": "shard-0021"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0022-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 45,
+          "shard_id": "shard-0022"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0022-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 46,
+          "shard_id": "shard-0022"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0023-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 47,
+          "shard_id": "shard-0023"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0023-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 48,
+          "shard_id": "shard-0023"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0024-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 49,
+          "shard_id": "shard-0024"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0024-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 50,
+          "shard_id": "shard-0024"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0025-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 51,
+          "shard_id": "shard-0025"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0025-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 52,
+          "shard_id": "shard-0025"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0026-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 53,
+          "shard_id": "shard-0026"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0026-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 54,
+          "shard_id": "shard-0026"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0027-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 55,
+          "shard_id": "shard-0027"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0027-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 56,
+          "shard_id": "shard-0027"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0028-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 57,
+          "shard_id": "shard-0028"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0028-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 58,
+          "shard_id": "shard-0028"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0029-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 59,
+          "shard_id": "shard-0029"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0029-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 60,
+          "shard_id": "shard-0029"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0030-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 61,
+          "shard_id": "shard-0030"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0030-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 62,
+          "shard_id": "shard-0030"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0031-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 63,
+          "shard_id": "shard-0031"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0031-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 64,
+          "shard_id": "shard-0031"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0032-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 65,
+          "shard_id": "shard-0032"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0032-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 66,
+          "shard_id": "shard-0032"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0033-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 67,
+          "shard_id": "shard-0033"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0033-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 68,
+          "shard_id": "shard-0033"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0034-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 69,
+          "shard_id": "shard-0034"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0034-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 70,
+          "shard_id": "shard-0034"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0035-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 71,
+          "shard_id": "shard-0035"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0035-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 72,
+          "shard_id": "shard-0035"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0036-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 73,
+          "shard_id": "shard-0036"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0036-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 74,
+          "shard_id": "shard-0036"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0037-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 75,
+          "shard_id": "shard-0037"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0037-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 76,
+          "shard_id": "shard-0037"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0038-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 77,
+          "shard_id": "shard-0038"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0038-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 78,
+          "shard_id": "shard-0038"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0039-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 79,
+          "shard_id": "shard-0039"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0039-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 80,
+          "shard_id": "shard-0039"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0040-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 81,
+          "shard_id": "shard-0040"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0040-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 82,
+          "shard_id": "shard-0040"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0041-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 83,
+          "shard_id": "shard-0041"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0041-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 84,
+          "shard_id": "shard-0041"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0042-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 85,
+          "shard_id": "shard-0042"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0042-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 86,
+          "shard_id": "shard-0042"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0043-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 87,
+          "shard_id": "shard-0043"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0043-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 88,
+          "shard_id": "shard-0043"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0044-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 89,
+          "shard_id": "shard-0044"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0044-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 90,
+          "shard_id": "shard-0044"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0045-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 91,
+          "shard_id": "shard-0045"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0045-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 92,
+          "shard_id": "shard-0045"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0046-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 93,
+          "shard_id": "shard-0046"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0046-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 94,
+          "shard_id": "shard-0046"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0047-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 95,
+          "shard_id": "shard-0047"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0047-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 96,
+          "shard_id": "shard-0047"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0048-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 97,
+          "shard_id": "shard-0048"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0048-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 98,
+          "shard_id": "shard-0048"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+          "logical_node_id": "shard-0049-primary",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "primary",
+          "sequence": 99,
+          "shard_id": "shard-0049"
+        },
+        {
+          "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+          "logical_node_id": "shard-0049-replica-00",
+          "operation_id": "p31-rolling_restart_primary_safe-100",
+          "planned_role": "replica",
+          "sequence": 100,
+          "shard_id": "shard-0049"
+        }
+      ],
+      "status": "PASS"
+    }
+  ],
+  "phase_id": "P31_MANAGEMENT_MATRIX_100_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "restart_order": [
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0000-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 1,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0001-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 2,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0002-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 3,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0003-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 4,
+      "shard_id": "shard-0003"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0004-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 5,
+      "shard_id": "shard-0004"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0005-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 6,
+      "shard_id": "shard-0005"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0006-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 7,
+      "shard_id": "shard-0006"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0007-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 8,
+      "shard_id": "shard-0007"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0008-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 9,
+      "shard_id": "shard-0008"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0009-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 10,
+      "shard_id": "shard-0009"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0010-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 11,
+      "shard_id": "shard-0010"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0011-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 12,
+      "shard_id": "shard-0011"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0012-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 13,
+      "shard_id": "shard-0012"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0013-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 14,
+      "shard_id": "shard-0013"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0014-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 15,
+      "shard_id": "shard-0014"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0015-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 16,
+      "shard_id": "shard-0015"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0016-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 17,
+      "shard_id": "shard-0016"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0017-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 18,
+      "shard_id": "shard-0017"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0018-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 19,
+      "shard_id": "shard-0018"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0019-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 20,
+      "shard_id": "shard-0019"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0020-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 21,
+      "shard_id": "shard-0020"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0021-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 22,
+      "shard_id": "shard-0021"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0022-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 23,
+      "shard_id": "shard-0022"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0023-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 24,
+      "shard_id": "shard-0023"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0024-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 25,
+      "shard_id": "shard-0024"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0025-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 26,
+      "shard_id": "shard-0025"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0026-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 27,
+      "shard_id": "shard-0026"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0027-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 28,
+      "shard_id": "shard-0027"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0028-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 29,
+      "shard_id": "shard-0028"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0029-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 30,
+      "shard_id": "shard-0029"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0030-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 31,
+      "shard_id": "shard-0030"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0031-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 32,
+      "shard_id": "shard-0031"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0032-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 33,
+      "shard_id": "shard-0032"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0033-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 34,
+      "shard_id": "shard-0033"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0034-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 35,
+      "shard_id": "shard-0034"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0035-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 36,
+      "shard_id": "shard-0035"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0036-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 37,
+      "shard_id": "shard-0036"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0037-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 38,
+      "shard_id": "shard-0037"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0038-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 39,
+      "shard_id": "shard-0038"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0039-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 40,
+      "shard_id": "shard-0039"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0040-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 41,
+      "shard_id": "shard-0040"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0041-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 42,
+      "shard_id": "shard-0041"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0042-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 43,
+      "shard_id": "shard-0042"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0043-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 44,
+      "shard_id": "shard-0043"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0044-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 45,
+      "shard_id": "shard-0044"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0045-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 46,
+      "shard_id": "shard-0045"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0046-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 47,
+      "shard_id": "shard-0046"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0047-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 48,
+      "shard_id": "shard-0047"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0048-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 49,
+      "shard_id": "shard-0048"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0049-replica-00",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "replica",
+      "sequence": 50,
+      "shard_id": "shard-0049"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0000-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 51,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0001-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 52,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0002-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 53,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0003-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 54,
+      "shard_id": "shard-0003"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0004-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 55,
+      "shard_id": "shard-0004"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0005-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 56,
+      "shard_id": "shard-0005"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0006-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 57,
+      "shard_id": "shard-0006"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0007-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 58,
+      "shard_id": "shard-0007"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0008-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 59,
+      "shard_id": "shard-0008"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0009-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 60,
+      "shard_id": "shard-0009"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0010-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 61,
+      "shard_id": "shard-0010"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0011-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 62,
+      "shard_id": "shard-0011"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0012-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 63,
+      "shard_id": "shard-0012"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0013-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 64,
+      "shard_id": "shard-0013"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0014-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 65,
+      "shard_id": "shard-0014"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0015-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 66,
+      "shard_id": "shard-0015"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0016-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 67,
+      "shard_id": "shard-0016"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0017-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 68,
+      "shard_id": "shard-0017"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0018-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 69,
+      "shard_id": "shard-0018"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0019-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 70,
+      "shard_id": "shard-0019"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0020-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 71,
+      "shard_id": "shard-0020"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0021-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 72,
+      "shard_id": "shard-0021"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0022-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 73,
+      "shard_id": "shard-0022"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0023-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 74,
+      "shard_id": "shard-0023"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0024-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 75,
+      "shard_id": "shard-0024"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0025-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 76,
+      "shard_id": "shard-0025"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0026-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 77,
+      "shard_id": "shard-0026"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0027-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 78,
+      "shard_id": "shard-0027"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0028-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 79,
+      "shard_id": "shard-0028"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0029-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 80,
+      "shard_id": "shard-0029"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0030-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 81,
+      "shard_id": "shard-0030"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0031-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 82,
+      "shard_id": "shard-0031"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0032-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 83,
+      "shard_id": "shard-0032"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0033-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 84,
+      "shard_id": "shard-0033"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0034-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 85,
+      "shard_id": "shard-0034"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0035-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 86,
+      "shard_id": "shard-0035"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0036-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 87,
+      "shard_id": "shard-0036"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0037-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 88,
+      "shard_id": "shard-0037"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0038-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 89,
+      "shard_id": "shard-0038"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0039-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 90,
+      "shard_id": "shard-0039"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0040-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 91,
+      "shard_id": "shard-0040"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0041-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 92,
+      "shard_id": "shard-0041"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0042-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 93,
+      "shard_id": "shard-0042"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0043-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 94,
+      "shard_id": "shard-0043"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0044-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 95,
+      "shard_id": "shard-0044"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0045-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 96,
+      "shard_id": "shard-0045"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0046-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 97,
+      "shard_id": "shard-0046"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0047-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 98,
+      "shard_id": "shard-0047"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0048-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 99,
+      "shard_id": "shard-0048"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0049-primary",
+      "operation_id": "p31-rolling_restart_replica_first-100",
+      "planned_role": "primary",
+      "sequence": 100,
+      "shard_id": "shard-0049"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0000-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 1,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0000-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 2,
+      "shard_id": "shard-0000"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0001-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 3,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0001-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 4,
+      "shard_id": "shard-0001"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0002-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 5,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0002-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 6,
+      "shard_id": "shard-0002"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0003-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 7,
+      "shard_id": "shard-0003"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0003-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 8,
+      "shard_id": "shard-0003"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0004-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 9,
+      "shard_id": "shard-0004"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0004-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 10,
+      "shard_id": "shard-0004"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0005-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 11,
+      "shard_id": "shard-0005"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0005-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 12,
+      "shard_id": "shard-0005"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0006-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 13,
+      "shard_id": "shard-0006"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0006-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 14,
+      "shard_id": "shard-0006"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0007-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 15,
+      "shard_id": "shard-0007"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0007-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 16,
+      "shard_id": "shard-0007"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0008-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 17,
+      "shard_id": "shard-0008"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0008-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 18,
+      "shard_id": "shard-0008"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0009-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 19,
+      "shard_id": "shard-0009"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0009-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 20,
+      "shard_id": "shard-0009"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0010-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 21,
+      "shard_id": "shard-0010"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0010-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 22,
+      "shard_id": "shard-0010"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0011-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 23,
+      "shard_id": "shard-0011"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0011-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 24,
+      "shard_id": "shard-0011"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0012-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 25,
+      "shard_id": "shard-0012"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0012-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 26,
+      "shard_id": "shard-0012"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0013-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 27,
+      "shard_id": "shard-0013"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0013-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 28,
+      "shard_id": "shard-0013"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0014-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 29,
+      "shard_id": "shard-0014"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0014-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 30,
+      "shard_id": "shard-0014"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0015-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 31,
+      "shard_id": "shard-0015"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0015-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 32,
+      "shard_id": "shard-0015"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0016-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 33,
+      "shard_id": "shard-0016"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0016-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 34,
+      "shard_id": "shard-0016"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0017-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 35,
+      "shard_id": "shard-0017"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0017-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 36,
+      "shard_id": "shard-0017"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0018-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 37,
+      "shard_id": "shard-0018"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0018-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 38,
+      "shard_id": "shard-0018"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0019-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 39,
+      "shard_id": "shard-0019"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0019-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 40,
+      "shard_id": "shard-0019"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0020-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 41,
+      "shard_id": "shard-0020"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0020-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 42,
+      "shard_id": "shard-0020"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0021-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 43,
+      "shard_id": "shard-0021"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0021-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 44,
+      "shard_id": "shard-0021"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0022-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 45,
+      "shard_id": "shard-0022"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0022-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 46,
+      "shard_id": "shard-0022"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0023-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 47,
+      "shard_id": "shard-0023"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0023-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 48,
+      "shard_id": "shard-0023"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0024-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 49,
+      "shard_id": "shard-0024"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0024-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 50,
+      "shard_id": "shard-0024"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0025-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 51,
+      "shard_id": "shard-0025"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0025-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 52,
+      "shard_id": "shard-0025"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0026-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 53,
+      "shard_id": "shard-0026"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0026-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 54,
+      "shard_id": "shard-0026"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0027-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 55,
+      "shard_id": "shard-0027"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0027-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 56,
+      "shard_id": "shard-0027"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0028-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 57,
+      "shard_id": "shard-0028"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0028-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 58,
+      "shard_id": "shard-0028"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0029-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 59,
+      "shard_id": "shard-0029"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0029-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 60,
+      "shard_id": "shard-0029"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0030-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 61,
+      "shard_id": "shard-0030"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0030-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 62,
+      "shard_id": "shard-0030"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0031-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 63,
+      "shard_id": "shard-0031"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0031-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 64,
+      "shard_id": "shard-0031"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0032-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 65,
+      "shard_id": "shard-0032"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0032-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 66,
+      "shard_id": "shard-0032"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0033-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 67,
+      "shard_id": "shard-0033"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0033-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 68,
+      "shard_id": "shard-0033"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0034-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 69,
+      "shard_id": "shard-0034"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0034-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 70,
+      "shard_id": "shard-0034"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0035-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 71,
+      "shard_id": "shard-0035"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0035-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 72,
+      "shard_id": "shard-0035"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0036-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 73,
+      "shard_id": "shard-0036"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0036-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 74,
+      "shard_id": "shard-0036"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0037-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 75,
+      "shard_id": "shard-0037"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0037-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 76,
+      "shard_id": "shard-0037"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0038-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 77,
+      "shard_id": "shard-0038"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0038-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 78,
+      "shard_id": "shard-0038"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0039-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 79,
+      "shard_id": "shard-0039"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0039-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 80,
+      "shard_id": "shard-0039"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0040-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 81,
+      "shard_id": "shard-0040"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0040-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 82,
+      "shard_id": "shard-0040"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0041-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 83,
+      "shard_id": "shard-0041"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0041-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 84,
+      "shard_id": "shard-0041"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0042-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 85,
+      "shard_id": "shard-0042"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0042-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 86,
+      "shard_id": "shard-0042"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0043-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 87,
+      "shard_id": "shard-0043"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0043-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 88,
+      "shard_id": "shard-0043"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0044-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 89,
+      "shard_id": "shard-0044"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0044-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 90,
+      "shard_id": "shard-0044"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0045-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 91,
+      "shard_id": "shard-0045"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0045-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 92,
+      "shard_id": "shard-0045"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0046-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 93,
+      "shard_id": "shard-0046"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0046-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 94,
+      "shard_id": "shard-0046"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0047-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 95,
+      "shard_id": "shard-0047"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0047-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 96,
+      "shard_id": "shard-0047"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0048-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 97,
+      "shard_id": "shard-0048"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0048-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 98,
+      "shard_id": "shard-0048"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-b",
+      "logical_node_id": "shard-0049-primary",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "primary",
+      "sequence": 99,
+      "shard_id": "shard-0049"
+    },
+    {
+      "container_name": "vslab-p31-management-matrix-100-real-strict-management-matrix-100-20260628-nodehost-az-a",
+      "logical_node_id": "shard-0049-replica-00",
+      "operation_id": "p31-rolling_restart_primary_safe-100",
+      "planned_role": "replica",
+      "sequence": 100,
+      "shard_id": "shard-0049"
+    }
+  ],
+  "run_id": "P31_MANAGEMENT_MATRIX_100_REAL-strict_management_matrix_100-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

@@ -114,6 +114,24 @@ def test_p30_strict_management_matrix_is_exact_50_process_runtime() -> None:
     ) is True
 
 
+def test_p31_strict_management_matrix_is_exact_100_process_runtime() -> None:
+    assert docker_runtime._scenario_node_count_allowed(
+        "P31_MANAGEMENT_MATRIX_100_REAL",
+        "strict_management_matrix_100",
+        100,
+    ) is True
+    for rejected in [99, 50, 101]:
+        assert docker_runtime._scenario_node_count_allowed(
+            "P31_MANAGEMENT_MATRIX_100_REAL",
+            "strict_management_matrix_100",
+            rejected,
+        ) is False
+    assert docker_runtime._uses_docker_process_runtime(
+        "P31_MANAGEMENT_MATRIX_100_REAL",
+        "strict_management_matrix_100",
+    ) is True
+
+
 def test_p25_smoke_runtime_is_six_node_only_and_not_process_runtime() -> None:
     assert docker_runtime._scenario_node_count_allowed(
         "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",

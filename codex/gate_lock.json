@@ -21,7 +21,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "9ff6b434f7d72d2fb4d935a7e02ef093c5a5741535c8ae8bc4fc5f7ea5362382"
+      "sha256": "1d45d63c5ed75f22180d7bc60a842a6f31dad3e8bd82801adf3590f1dfea3b55"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -797,7 +797,7 @@
     },
     {
       "path": "scripts/assert_quant_completeness.py",
-      "sha256": "942ea3a26a0ce58c90417c5eeddc703e75875ad80ce5ab26a3795d5847d09e4b"
+      "sha256": "f7b11bf53f14bb43bb41e1046c3b91cb2f7b3ecc0960b8c3b8a514b0ffc0b748"
     },
     {
       "path": "scripts/assert_management_matrix_strict.py",

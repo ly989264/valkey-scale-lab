@@ -46,6 +46,9 @@ PROCESS_TOKEN_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 P30_STAGE = "P30_MANAGEMENT_MATRIX_50_REAL"
 P30_SCENARIO = "strict_management_matrix_50"
 P30_SCALE = 50
+P31_STAGE = "P31_MANAGEMENT_MATRIX_100_REAL"
+P31_SCENARIO = "strict_management_matrix_100"
+P31_SCALE = 100
 P30_REQUIRED_ROWS = [
     "create_cluster",
     "meet_nodes",
@@ -72,6 +75,41 @@ P30_EXECUTION_ROWS = [
     "remove_failed_node",
     "remove_primary_drained_or_safe_replaced",
 ]
+
+
+@dataclass(frozen=True)
+class StrictManagementProfile:
+    stage: str
+    scenario: str
+    scale: int
+    config_path: str
+    stage_label: str
+
+    @property
+    def coverage_prefix(self) -> str:
+        return f"{self.scale}.management"
+
+    @property
+    def operation_prefix(self) -> str:
+        return self.stage_label.lower()
+
+
+STRICT_MANAGEMENT_PROFILES = {
+    (P30_STAGE, P30_SCENARIO): StrictManagementProfile(
+        stage=P30_STAGE,
+        scenario=P30_SCENARIO,
+        scale=P30_SCALE,
+        config_path="templates/configs/scale_50.yaml",
+        stage_label="P30",
+    ),
+    (P31_STAGE, P31_SCENARIO): StrictManagementProfile(
+        stage=P31_STAGE,
+        scenario=P31_SCENARIO,
+        scale=P31_SCALE,
+        config_path="templates/configs/scale_100.yaml",
+        stage_label="P31",
+    ),
+}
 P13_TIMING_NAMES = [
     "nodehost_start",
     "process_config_prepare",
@@ -93,6 +131,10 @@ T = TypeVar("T")
 
 class DockerRuntimeError(RuntimeError):
     pass
+
+
+def _strict_management_profile(phase: str, scenario: str) -> StrictManagementProfile | None:
+    return STRICT_MANAGEMENT_PROFILES.get((phase, scenario))
 
 
 @dataclass(frozen=True)
@@ -177,6 +219,7 @@ def create_scenario(
         ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"),
         ("P29_QUANT_TELEMETRY_COLLECTOR_HARDENING", "strict_telemetry_small_real"),
         (P30_STAGE, P30_SCENARIO),
+        (P31_STAGE, P31_SCENARIO),
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"),
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
@@ -404,6 +447,7 @@ def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
         ("P13_SCALE_LADDER_50_100", "scale_50"),
         ("P13_SCALE_LADDER_50_100", "scale_100"),
         (P30_STAGE, P30_SCENARIO),
+        (P31_STAGE, P31_SCENARIO),
         }
     )
 
@@ -498,16 +542,17 @@ def _create_process_scenario(
     setup_timeline: SetupTimeline | None = None,
 ) -> dict[str, Any]:
     network_name = _network_name(phase, scenario)
-    if phase == P30_STAGE and scenario == P30_SCENARIO:
+    strict_management = _strict_management_profile(phase, scenario)
+    if strict_management:
         preflight = run_resource_preflight(
-            "templates/configs/scale_50.yaml",
+            strict_management.config_path,
             artifacts / "resource_preflight.json",
             phase_id=phase,
             scenario=scenario,
         )
         if preflight.get("can_run") is not True:
-            _write_p30_blocked_artifact(artifacts, preflight)
-            raise DockerRuntimeError("P30 resource preflight cannot support exactly 50 nodes; stage is blocked")
+            _write_strict_management_blocked_artifact(artifacts, preflight, strict_management)
+            raise DockerRuntimeError(f"{strict_management.stage_label} resource preflight cannot support exactly {strict_management.scale} nodes; stage is blocked")
     with _timeline_span(setup_timeline, "pre_cleanup_by_label", "docker_cleanup", {"run_id": run_id}):
         cleanup_by_label(phase=phase, run_id=run_id)
     with _timeline_span(setup_timeline, "docker_network_create", "docker_network", {"network_name": network_name}):
@@ -624,7 +669,7 @@ def _create_process_scenario(
         state["runtime"]["timings"] = _timing_entries(timings)
         with _timeline_span(setup_timeline, "state_write_after_cluster", "state_write", {"path": state_out.as_posix()}):
             _write_state(state_out, state)
-        if phase == P30_STAGE and scenario == P30_SCENARIO:
+        if strict_management:
             write_p30_management_matrix_artifacts(
                 artifacts=artifacts,
                 phase=phase,
@@ -636,7 +681,7 @@ def _create_process_scenario(
                 state=state,
             )
         with _timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
-            if phase != P30_STAGE:
+            if not strict_management:
                 write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         return state
     except Exception:
@@ -1542,7 +1587,7 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
         "phase": phase,
         "scenario": scenario,
     }
-    if phase in {"P13_SCALE_LADDER_50_100", P30_STAGE}:
+    if phase in {"P13_SCALE_LADDER_50_100", P30_STAGE, P31_STAGE}:
         spec["cluster_node_timeout"] = "600000"
     if phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
         spec["cluster_node_timeout"] = "5000"
@@ -3206,6 +3251,7 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
         ("P16_QUANT_TELEMETRY_UNIFICATION", "goal_loop_quant_telemetry"): {6},
         ("P29_QUANT_TELEMETRY_COLLECTOR_HARDENING", "strict_telemetry_small_real"): {6},
         (P30_STAGE, P30_SCENARIO): {P30_SCALE},
+        (P31_STAGE, P31_SCENARIO): {P31_SCALE},
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"): {6},
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"): {6},
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"): {6},
@@ -6731,18 +6777,19 @@ def _p19_restart_one_node(
     }
 
 
-def _write_p30_blocked_artifact(artifacts: Path, preflight: dict[str, Any]) -> None:
-    blocked_dir = Path("artifacts/goal_loop_strict") / P30_STAGE
+def _write_strict_management_blocked_artifact(artifacts: Path, preflight: dict[str, Any], profile: StrictManagementProfile) -> None:
+    blocked_dir = Path("artifacts/goal_loop_strict") / profile.stage
     blocked_dir.mkdir(parents=True, exist_ok=True)
     failed = [item for item in preflight.get("checks", []) if item.get("status") != "PASS"]
     lines = [
-        f"# BLOCKED - {P30_STAGE}",
+        f"# BLOCKED - {profile.stage}",
         "",
-        "Resource preflight could not support exactly 50 real Valkey nodes.",
+        f"Resource preflight could not support exactly {profile.scale} real Valkey nodes.",
         "",
         f"- preflight_status: {preflight.get('status', MISSING)}",
         f"- can_run: {preflight.get('can_run', MISSING)}",
         f"- nodes_requested: {preflight.get('nodes_requested', preflight.get('node_count', MISSING))}",
+        f"- config_path: {profile.config_path}",
         f"- failed_checks: {', '.join(str(item.get('name', MISSING)) for item in failed) or 'MISSING'}",
         "",
         "The stage is intentionally blocked rather than downshifted or faked.",
@@ -6761,8 +6808,11 @@ def write_p30_management_matrix_artifacts(
     nodehosts: list[dict[str, Any]],
     state: dict[str, Any],
 ) -> None:
-    if len(nodes) != P30_SCALE:
-        raise DockerRuntimeError(f"P30 requires exactly {P30_SCALE} nodes, got {len(nodes)}")
+    profile = _strict_management_profile(phase, scenario)
+    if profile is None:
+        raise DockerRuntimeError(f"{phase}/{scenario} is not a strict management matrix scenario")
+    if len(nodes) != profile.scale:
+        raise DockerRuntimeError(f"{profile.stage_label} requires exactly {profile.scale} nodes, got {len(nodes)}")
     artifacts.mkdir(parents=True, exist_ok=True)
     _write_p30_cluster_plan(artifacts / "cluster_plan.json", config, phase, scenario, run_id)
     _write_p30_run_state(artifacts / "run_state.json", phase, scenario, run_id, state)
@@ -6780,14 +6830,15 @@ def write_p30_management_matrix_artifacts(
     restart_results: list[dict[str, Any]] = []
 
     for row_index, operation_name in enumerate(P30_EXECUTION_ROWS):
-        operation_id = f"p30-{operation_name}-50"
+        operation_id = f"{profile.operation_prefix}-{operation_name}-{profile.scale}"
+        coverage_id = f"{profile.coverage_prefix}.{operation_name}"
         telemetry = TelemetryRun(
             phase_id=phase,
             scenario_name=scenario,
             run_id=run_id,
-            coverage_id=f"50.management.{operation_name}",
-            scale=P30_SCALE,
-            node_count=P30_SCALE,
+            coverage_id=coverage_id,
+            scale=profile.scale,
+            node_count=profile.scale,
         )
         events.append(
             telemetry.event(
@@ -6795,8 +6846,8 @@ def write_p30_management_matrix_artifacts(
                 subject_type="management_operation",
                 subject_id=operation_name,
                 operation_id=operation_id,
-                message=f"P30 {operation_name} real 50-node operation started.",
-                metadata={"row_index": row_index, "coverage_id": f"50.management.{operation_name}"},
+                message=f"{profile.stage_label} {operation_name} real {profile.scale}-node operation started.",
+                metadata={"row_index": row_index, "coverage_id": coverage_id},
             )
         )
         before_snapshot = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "before", nodes, nodes)
@@ -6826,8 +6877,8 @@ def write_p30_management_matrix_artifacts(
         matrix_rows.append(
             {
                 "operation_name": operation_name,
-                "coverage_id": f"50.management.{operation_name}",
-                "node_count": P30_SCALE,
+                "coverage_id": coverage_id,
+                "node_count": profile.scale,
                 "operation_status": result["operation_status"],
                 "workload_window_ref": result["workload_window_ref"],
                 "operation_id": operation_id,
@@ -6842,7 +6893,7 @@ def write_p30_management_matrix_artifacts(
                 subject_type="management_operation",
                 subject_id=operation_name,
                 operation_id=operation_id,
-                message=f"P30 {operation_name} real 50-node operation finished.",
+                message=f"{profile.stage_label} {operation_name} real {profile.scale}-node operation finished.",
                 metadata={"status": result["operation_status"], "wall_ms": result["wall_ms"]},
             )
         )
@@ -6878,7 +6929,7 @@ def write_p30_management_matrix_artifacts(
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if all(row["operation_status"] == "PASS" for row in operation_rows) else "FAIL",
         "operations": matrix_rows,
-        "required_rows": [{"operation_name": name, "node_count": P30_SCALE, "coverage_id": f"50.management.{name}"} for name in P30_REQUIRED_ROWS],
+        "required_rows": [{"operation_name": name, "node_count": profile.scale, "coverage_id": f"{profile.coverage_prefix}.{name}"} for name in P30_REQUIRED_ROWS],
     }
     (artifacts / "management_ops_matrix.json").write_text(json.dumps(_p30_encode_missing(matrix), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (artifacts / "rebalance_summary.json").write_text(json.dumps(_p30_encode_missing(_p18_rebalance_summary(phase, run_id, rebalance_rows, slot_movements)), indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -6917,7 +6968,7 @@ def write_p30_management_matrix_artifacts(
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if matrix["status"] == "PASS" and workload_artifact["status"] == "PASS" else "FAIL",
-        "summary": "P30 executed all required management rows on an exact 50-node real Valkey cluster with workload, command, topology, convergence, coverage, and cleanup evidence.",
+        "summary": f"{profile.stage_label} executed all required management rows on an exact {profile.scale}-node real Valkey cluster with workload, command, topology, convergence, coverage, and cleanup evidence.",
         "artifact_refs": [f"artifacts/phases/{phase}/{name}" for name in [
             "events.jsonl", "metrics_timeseries.jsonl", "workload_windows.json", "management_ops_matrix.json",
             "management_operation_results.jsonl", "management_workload_impact.json", "management_topology_snapshots.jsonl",
@@ -6927,7 +6978,7 @@ def write_p30_management_matrix_artifacts(
         "missing_data": [field for row in operation_rows for field in row.get("missing_fields", [])],
         "runtime_claims": {"real_valkey_claimed": True, "management_runtime_claimed": True, "fault_runtime_claimed": False},
         "counts": {
-            "node_count": P30_SCALE,
+            "node_count": profile.scale,
             "operation_count": len(operation_rows),
             "coverage_pass_count": sum(1 for row in operation_rows if row["operation_status"] == "PASS"),
             "event_count": len(events),
@@ -6946,7 +6997,7 @@ def write_p30_management_matrix_artifacts(
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": quant_summary["status"],
-        "summary": "P30 proves the strict 50-node management matrix with real Valkey operations and fail-closed telemetry artifacts.",
+        "summary": f"{profile.stage_label} proves the strict {profile.scale}-node management matrix with real Valkey operations and fail-closed telemetry artifacts.",
         "required_artifacts": [f"artifacts/phases/{phase}/{name}" for name in [
             "phase_summary.json", "valkey_e2e_evidence.json", "resource_preflight.json", "cluster_plan.json",
             "run_state.json", "cleanup_report.json", "events.jsonl", "metrics_timeseries.jsonl", "workload_windows.json",
@@ -6988,14 +7039,16 @@ def _p30_run_operation_with_workload(
     result: dict[str, Any] | None = None
     extras: dict[str, Any] = {"slot_movements": [], "restart_results": []}
     all_started = time.monotonic()
-    all_start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message="P30 all-run workload window started.", metadata={"window_name": "all_run", "operation_id": operation_id})
+    stage_label = phase.split("_", 1)[0]
+    node_count = len(nodes)
+    all_start = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message=f"{stage_label} all-run workload window started.", metadata={"window_name": "all_run", "operation_id": operation_id})
     events.append(all_start)
 
     def cluster_command(*args: Any, timeout: int = 10) -> str:
         return run_node_cluster_cli(_p30_first_live_node(nodes), *args, timeout=timeout)
 
     for window_name in CANONICAL_WINDOWS[:-1]:
-        start_event = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"P30 {window_name} workload window started.", metadata={"window_name": window_name, "operation_id": operation_id, "node_count": P30_SCALE})
+        start_event = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{stage_label} {window_name} workload window started.", metadata={"window_name": window_name, "operation_id": operation_id, "node_count": node_count})
         events.append(start_event)
         started = time.monotonic()
         latencies: list[float] = []
@@ -7016,7 +7069,7 @@ def _p30_run_operation_with_workload(
                 )
                 result["command_ms"] = round(max(time.monotonic() - op_started, 0.0) * 1000.0, 6)
                 topology.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, "during_after_command", nodes, nodes))
-            key = f"{{vslab-p30-{operation_name}-{window_name}-{op_index % 3}}}:k"
+            key = f"{{vslab-{stage_label.lower()}-{operation_name}-{window_name}-{op_index % 3}}}:k"
             value = f"value-{operation_id}-{window_name}-{op_index}"
             op_started = time.monotonic()
             try:
@@ -7032,7 +7085,7 @@ def _p30_run_operation_with_workload(
             except Exception as exc:  # noqa: BLE001
                 errors.append(repr(exc))
         window_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - started, 0.000001), latencies_ms=latencies, error_texts=errors)
-        end_event = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"P30 {window_name} workload window finished.", metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": window_metrics["sample_count"]})
+        end_event = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{stage_label} {window_name} workload window finished.", metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": window_metrics["sample_count"]})
         events.append(end_event)
         window_metrics["window_start_event_id"] = start_event["event_id"]
         window_metrics["window_end_event_id"] = end_event["event_id"]
@@ -7043,7 +7096,7 @@ def _p30_run_operation_with_workload(
     if result is None:
         result, extras = _p30_execute_operation(telemetry=telemetry, phase=phase, run_id=run_id, scenario=scenario, operation_name=operation_name, operation_id=operation_id, nodes=nodes, command_log=command_log)
     all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
-    all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message="P30 all-run workload window finished.", metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]})
+    all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message=f"{stage_label} all-run workload window finished.", metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]})
     events.append(all_end)
     all_metrics["window_start_event_id"] = all_start["event_id"]
     all_metrics["window_end_event_id"] = all_end["event_id"]
@@ -7088,8 +7141,8 @@ def _p30_workload_window(
         "status": status,
         "operation_id": operation_id,
         "coverage_id": coverage_id,
-        "node_count": P30_SCALE,
-        "scale": P30_SCALE,
+        "node_count": int(str(coverage_id).split(".", 1)[0]) if str(coverage_id).split(".", 1)[0].isdigit() else 0,
+        "scale": int(str(coverage_id).split(".", 1)[0]) if str(coverage_id).split(".", 1)[0].isdigit() else 0,
         "metrics": metrics,
     }
     for metric_name in WORKLOAD_WINDOW_REQUIRED_METRICS:
@@ -7219,9 +7272,11 @@ def _p30_execute_operation(
     command_log: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     del scenario
+    node_count = len(nodes)
+    stage_label = phase.split("_", 1)[0]
     before = _p17_cluster_health(nodes)
-    if before["cluster_state"] != "ok" or before["known_nodes"] != P30_SCALE or before["slots_assigned"] != 16384:
-        raise DockerRuntimeError(f"P30 operation requires clean exact 50-node cluster before {operation_name}: {before}")
+    if before["cluster_state"] != "ok" or before["known_nodes"] != node_count or before["slots_assigned"] != 16384:
+        raise DockerRuntimeError(f"{stage_label} operation requires clean exact {node_count}-node cluster before {operation_name}: {before}")
     slot_balance_before = _p30_slot_balance(nodes)
     started_ms = telemetry.now_unix_ms()
     monotonic_start_ms = telemetry.monotonic_ms()
@@ -7239,7 +7294,7 @@ def _p30_execute_operation(
             run_id=run_id,
             operation_name=operation_name,
             operation_id=operation_id,
-            node_count=P30_SCALE,
+            node_count=node_count,
             nodes=nodes,
             command_log=command_log,
         )
@@ -7260,7 +7315,7 @@ def _p30_execute_operation(
         extras["restart_results"] = restart_rows
         extras["restart_events"] = restart_events
     else:
-        raise DockerRuntimeError(f"unsupported P30 operation {operation_name}")
+        raise DockerRuntimeError(f"unsupported strict management operation {operation_name}")
     _p17_wait_clean_cluster(nodes, timeout=180.0)
     after = _p17_cluster_health(nodes)
     slot_balance_after = _p30_slot_balance(nodes)
@@ -7270,7 +7325,7 @@ def _p30_execute_operation(
     pass_status = bool(
         base.get("operation_status") == "PASS"
         and after["cluster_state"] == "ok"
-        and after["known_nodes"] == P30_SCALE
+        and after["known_nodes"] == node_count
         and after["slots_assigned"] == 16384
         and after["slots_ok"] == 16384
         and after["slots_fail"] == 0
@@ -7279,13 +7334,13 @@ def _p30_execute_operation(
         {
             "schema_version": "v1",
             "phase_id": phase,
-            "coverage_id": f"50.management.{operation_name}",
+            "coverage_id": f"{node_count}.management.{operation_name}",
             "operation_name": operation_name,
             "operation_id": operation_id,
-            "node_count": P30_SCALE,
-            "scale": P30_SCALE,
+            "node_count": node_count,
+            "scale": node_count,
             "operation_status": "PASS" if pass_status else "FAIL",
-            "status_reason": "Real exact-50 management operation executed and all verification checks passed." if pass_status else "Real exact-50 management operation did not satisfy verification checks.",
+            "status_reason": f"Real exact-{node_count} management operation executed and all verification checks passed." if pass_status else f"Real exact-{node_count} management operation did not satisfy verification checks.",
             "started_at_unix_ms": started_ms,
             "ended_at_unix_ms": ended_ms,
             "monotonic_start_ms": monotonic_start_ms,
@@ -7334,10 +7389,13 @@ def _p30_execute_operation(
 
 def _p30_verify_setup_row(phase: str, operation_name: str, operation_id: str, before: dict[str, Any]) -> dict[str, Any]:
     del phase
+    node_count = int(before["known_nodes"])
+    primary_count = int(before["primary_count"])
+    replica_count = int(before["replica_count"])
     details = {
-        "create_cluster": "process_runtime_cluster_create_observed_from_live_50_node_state",
-        "meet_nodes": "all_50_nodes_known_by_cluster_info_and_cluster_nodes",
-        "add_replica": "25_replicas_observed_replicating_for_25_primaries",
+        "create_cluster": f"process_runtime_cluster_create_observed_from_live_{node_count}_node_state",
+        "meet_nodes": f"all_{node_count}_nodes_known_by_cluster_info_and_cluster_nodes",
+        "add_replica": f"{replica_count}_replicas_observed_replicating_for_{primary_count}_primaries",
     }
     return {
         "operation_status": "PASS",
@@ -7363,6 +7421,7 @@ def _p30_remove_and_restore_row(
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    node_count = len(nodes)
     topology = _p19_live_topology(nodes)
     primaries = [node for node in nodes if topology.get(node["logical_id"], {}).get("role") == "primary"]
     replicas = [node for node in nodes if topology.get(node["logical_id"], {}).get("role") == "replica"]
@@ -7381,9 +7440,9 @@ def _p30_remove_and_restore_row(
     old_pid = target.get("pid", MISSING)
     _p30_stop_process(target, telemetry, phase, run_id, operation_id, command_log, command_kind="owned_valkey_process_stop")
     survivors = [node for node in nodes if node["logical_id"] != target["logical_id"]]
-    expected_primaries = 25
-    expected_replicas = 24 if restore_as_replica else 25
-    _p17_forget_until_absent(telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, survivors=survivors, removed_id=removed_id, expected_nodes=49, expected_primaries=expected_primaries, expected_replicas=expected_replicas, command_log=command_log)
+    expected_primaries = len(primaries)
+    expected_replicas = len(replicas) - 1 if restore_as_replica else len(replicas)
+    _p17_forget_until_absent(telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, survivors=survivors, removed_id=removed_id, expected_nodes=node_count - 1, expected_primaries=expected_primaries, expected_replicas=expected_replicas, command_log=command_log)
     absent = _p17_removed_absent(survivors, removed_id)
     _p30_start_process(target, telemetry, phase, run_id, operation_id, command_log, fresh_cluster_identity=True)
     _p30_rejoin_as_replica(target, nodes, telemetry, phase, run_id, operation_id, command_log)
@@ -7396,8 +7455,8 @@ def _p30_remove_and_restore_row(
         "removed_node_id": removed_id,
         "removed_node_absent": absent,
         "removed_resource_cleanup": {"status": "PASS", "process_pid_before": old_pid, "process_pid_after": target.get("pid", MISSING)},
-        "observed_nodes_after_removal": 49,
-        "observed_nodes_after_restore": 50,
+        "observed_nodes_after_removal": node_count - 1,
+        "observed_nodes_after_restore": node_count,
         "missing_fields": [],
     }
 
@@ -7412,15 +7471,17 @@ def _p30_execute_process_rolling_restart(
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
 ) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
+    node_count = len(nodes)
+    stage_label = phase.split("_", 1)[0]
     before = _p17_cluster_health(nodes)
     plan_entries = _p19_plan_entries(operation_name, operation_id, nodes)
     plan = {
         "operation_id": operation_id,
         "operation_name": operation_name,
-        "node_count": P30_SCALE,
+        "node_count": node_count,
         "status": "PASS",
         "max_concurrent_restarts": 1,
-        "health_gate": {"required_after_each_restart": True, "cluster_state": "ok", "slots_assigned": 16384, "known_nodes": P30_SCALE},
+        "health_gate": {"required_after_each_restart": True, "cluster_state": "ok", "slots_assigned": 16384, "known_nodes": node_count},
         "restart_order": plan_entries,
     }
     restart_rows: list[dict[str, Any]] = []
@@ -7432,7 +7493,7 @@ def _p30_execute_process_rolling_restart(
         if operation_name == "rolling_restart_primary_safe" and role_before == "primary":
             safe_details = _p19_make_primary_safe(telemetry=telemetry, phase=phase, run_id=run_id, operation_id=operation_id, target=target, nodes=nodes, command_log=command_log)
             role_before = _p19_current_role(target, nodes)
-        events.append(telemetry.event("node_restart_started", subject_type="valkey_node", subject_id=target["logical_id"], operation_id=operation_id, message="Owned Valkey process restart started for P30 rolling restart.", metadata={"sequence": entry["sequence"], "role_before_restart": role_before}))
+        events.append(telemetry.event("node_restart_started", subject_type="valkey_node", subject_id=target["logical_id"], operation_id=operation_id, message=f"Owned Valkey process restart started for {stage_label} rolling restart.", metadata={"sequence": entry["sequence"], "role_before_restart": role_before}))
         old_pid = target.get("pid", MISSING)
         restart_started = telemetry.now_unix_ms()
         restart_mono = time.monotonic()
@@ -7450,7 +7511,7 @@ def _p30_execute_process_rolling_restart(
             "run_id": run_id,
             "operation_id": operation_id,
             "operation_name": operation_name,
-            "node_count": P30_SCALE,
+            "node_count": node_count,
             "sequence": entry["sequence"],
             "node_logical_id": target["logical_id"],
             "shard_id": target["shard_id"],
@@ -7467,7 +7528,7 @@ def _p30_execute_process_rolling_restart(
             "health_gate_started_at_ms": health_started,
             "health_gate_completed_at_ms": health_completed,
             "health_gate_wall_ms": round(max(time.monotonic() - health_mono, 0.0) * 1000.0, 6),
-            "health_gate_status": "PASS" if health["cluster_state"] == "ok" and health["known_nodes"] == P30_SCALE and health["slots_assigned"] == 16384 else "FAIL",
+            "health_gate_status": "PASS" if health["cluster_state"] == "ok" and health["known_nodes"] == node_count and health["slots_assigned"] == 16384 else "FAIL",
             "cluster_state_after_gate": health["cluster_state"],
             "known_nodes_after_gate": health["known_nodes"],
             "slots_after_gate": health["slots_assigned"],
@@ -7479,9 +7540,9 @@ def _p30_execute_process_rolling_restart(
             "missing_fields": safe_details.get("missing_fields", []),
         }
         restart_rows.append(row)
-        events.append(telemetry.event("node_restart_completed", subject_type="valkey_node", subject_id=target["logical_id"], operation_id=operation_id, message="Owned Valkey process restart completed and health gate passed for P30 rolling restart.", metadata={"sequence": entry["sequence"], "health_gate_status": row["health_gate_status"]}))
+        events.append(telemetry.event("node_restart_completed", subject_type="valkey_node", subject_id=target["logical_id"], operation_id=operation_id, message=f"Owned Valkey process restart completed and health gate passed for {stage_label} rolling restart.", metadata={"sequence": entry["sequence"], "health_gate_status": row["health_gate_status"]}))
     after = _p17_cluster_health(nodes)
-    pass_status = bool(restart_rows and len(restart_rows) == P30_SCALE and all(row["health_gate_status"] == "PASS" for row in restart_rows) and before["cluster_state"] == "ok" and after["cluster_state"] == "ok")
+    pass_status = bool(restart_rows and len(restart_rows) == node_count and all(row["health_gate_status"] == "PASS" for row in restart_rows) and before["cluster_state"] == "ok" and after["cluster_state"] == "ok")
     return {
         "operation_status": "PASS" if pass_status else "FAIL",
         "restart_count": len(restart_rows),
@@ -7528,18 +7589,19 @@ def _p30_log_docker_exec(
     }
     command_log.append(entry)
     if check and result.returncode != 0:
-        raise DockerRuntimeError(f"P30 docker command failed {command_kind}: {result.stderr.strip()}")
+        raise DockerRuntimeError(f"{phase.split('_', 1)[0]} docker command failed {command_kind}: {result.stderr.strip()}")
     return result
 
 
 def _p30_wait_health_snapshot(nodes: list[dict[str, Any]], timeout: float) -> dict[str, Any]:
+    node_count = len(nodes)
     deadline = time.monotonic() + timeout
     last = _p17_cluster_health(nodes)
     while time.monotonic() < deadline:
         last = _p17_cluster_health(nodes)
         if (
             last["cluster_state"] == "ok"
-            and last["known_nodes"] == P30_SCALE
+            and last["known_nodes"] == node_count
             and last["slots_assigned"] == 16384
             and last["slots_ok"] == 16384
             and last["slots_fail"] == 0
@@ -7589,7 +7651,7 @@ def _p30_stop_process(
         check=False,
     )
     if not _wait_container_pid_gone(container, pid, timeout=30.0):
-        raise DockerRuntimeError(f"P30 process {target['logical_id']} pid={pid} did not stop")
+        raise DockerRuntimeError(f"{phase.split('_', 1)[0]} process {target['logical_id']} pid={pid} did not stop")
 
 
 def _p30_start_process(
@@ -7615,7 +7677,7 @@ def _p30_start_process(
         except Exception:
             pass
         time.sleep(0.5)
-    raise DockerRuntimeError(f"P30 process {target['logical_id']} did not restart")
+    raise DockerRuntimeError(f"{phase.split('_', 1)[0]} process {target['logical_id']} did not restart")
 
 
 def _p30_rejoin_as_replica(
@@ -7629,7 +7691,7 @@ def _p30_rejoin_as_replica(
 ) -> None:
     seed = _p30_first_live_node([node for node in nodes if node["logical_id"] != target["logical_id"]])
     _p17_log_node_command(command_log, telemetry=telemetry, phase=phase, parent_run_id=run_id, operation_id=operation_id, command_kind="cluster_meet_restored_node", target=seed, args=["CLUSTER", "MEET", _cluster_meet_address(target), _cluster_meet_port(target)], timeout=30)
-    _wait_process_known(nodes, expected=P30_SCALE, timeout=120.0, final_check=False)
+    _wait_process_known(nodes, expected=len(nodes), timeout=120.0, final_check=False)
     topology = _p19_live_topology(nodes)
     primary = next(node for node in nodes if node["shard_id"] == target["shard_id"] and node["logical_id"] != target["logical_id"] and topology.get(node["logical_id"], {}).get("role") == "primary")
     master_id = _node_command(primary, "CLUSTER", "MYID", timeout=30).strip()
@@ -7644,11 +7706,13 @@ def _p30_first_live_node(nodes: list[dict[str, Any]]) -> dict[str, Any]:
                 return node
         except Exception:
             continue
-    raise DockerRuntimeError("P30 could not find a live Valkey node")
+    raise DockerRuntimeError("strict management runtime could not find a live Valkey node")
 
 
 def _write_p30_cluster_plan(path: Path, config: dict[str, Any], phase: str, scenario: str, run_id: str) -> None:
-    plan = build_cluster_plan(config, config_path=Path("templates/configs/scale_50.yaml"))
+    profile = _strict_management_profile(phase, scenario)
+    config_path = Path(profile.config_path if profile else "templates/configs/scale_50.yaml")
+    plan = build_cluster_plan(config, config_path=config_path)
     plan["phase_id"] = phase
     plan["run_id"] = run_id
     plan["scenario_name"] = scenario
@@ -7675,6 +7739,7 @@ def _write_p30_run_state(path: Path, phase: str, scenario: str, run_id: str, sta
 
 
 def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    node_count = int(operation_rows[0]["node_count"]) if operation_rows else 0
     registry_path = Path("artifacts/coverage/strict_coverage_registry.json")
     if registry_path.exists():
         ledger = json.loads(registry_path.read_text(encoding="utf-8"))
@@ -7702,15 +7767,15 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
         rows.extend(
             {
                 "coverage_id": row["coverage_id"],
-                "scale": P30_SCALE,
-                "node_count": P30_SCALE,
+                "scale": node_count,
+                "node_count": node_count,
                 "category": "management",
                 "row_name": row["operation_name"],
                 "stage_owner": phase,
                 "required": True,
                 "execution_mode": "real",
                 "status": "PENDING",
-                "status_reason": "Fallback P30 coverage row pending before update.",
+                "status_reason": f"Fallback exact-{node_count} management coverage row pending before update.",
                 "source_artifacts": [],
                 "validation_artifacts": [],
                 "metric_refs": [],
@@ -7726,7 +7791,7 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
         if target is None:
             continue
         target["status"] = row["operation_status"]
-        target["status_reason"] = "Real exact-50 management operation executed and verified." if row["operation_status"] == "PASS" else "Real exact-50 management operation failed verification."
+        target["status_reason"] = f"Real exact-{node_count} management operation executed and verified." if row["operation_status"] == "PASS" else f"Real exact-{node_count} management operation failed verification."
         target["source_artifacts"] = row["source_evidence_refs"]
         target["validation_artifacts"] = [
             f"artifacts/phases/{phase}/management_ops_matrix.json",
@@ -7737,16 +7802,20 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
         target["cleanup_ref"] = f"artifacts/phases/{phase}/cleanup_report.json"
         target["review_ref"] = f"artifacts/goal_loop_strict/{phase}/REVIEW.md"
         target["commit_sha"] = "PENDING_REVIEW_AND_COMMIT"
-    _p30_refresh_registry_summary(ledger)
+    _p30_refresh_registry_summary(ledger, phase)
     return ledger
 
 
 def _p30_update_global_coverage_registry(operation_rows: list[dict[str, Any]]) -> None:
+    if not operation_rows:
+        return
+    phase = str(operation_rows[0]["phase_id"])
+    node_count = int(operation_rows[0]["node_count"])
     path = Path("artifacts/coverage/strict_coverage_registry.json")
     if not path.exists():
         return
     registry = json.loads(path.read_text(encoding="utf-8"))
-    registry["stage_id"] = P30_STAGE
+    registry["stage_id"] = phase
     registry.pop("phase_id", None)
     registry.pop("status", None)
     by_id = {row["coverage_id"]: row for row in operation_rows}
@@ -7756,22 +7825,22 @@ def _p30_update_global_coverage_registry(operation_rows: list[dict[str, Any]]) -
             continue
         result = by_id[coverage_id]
         row["status"] = result["operation_status"]
-        row["status_reason"] = "Real exact-50 management operation executed and verified." if result["operation_status"] == "PASS" else "Real exact-50 management operation failed verification."
+        row["status_reason"] = f"Real exact-{node_count} management operation executed and verified." if result["operation_status"] == "PASS" else f"Real exact-{node_count} management operation failed verification."
         row["source_artifacts"] = result["source_evidence_refs"]
         row["validation_artifacts"] = [
-            f"artifacts/phases/{P30_STAGE}/management_ops_matrix.json",
-            f"artifacts/phases/{P30_STAGE}/management_operation_results.jsonl",
-            f"artifacts/phases/{P30_STAGE}/management_workload_impact.json",
+            f"artifacts/phases/{phase}/management_ops_matrix.json",
+            f"artifacts/phases/{phase}/management_operation_results.jsonl",
+            f"artifacts/phases/{phase}/management_workload_impact.json",
         ]
-        row["metric_refs"] = [f"artifacts/phases/{P30_STAGE}/metrics_timeseries.jsonl"]
-        row["cleanup_ref"] = f"artifacts/phases/{P30_STAGE}/cleanup_report.json"
-        row["review_ref"] = f"artifacts/goal_loop_strict/{P30_STAGE}/REVIEW.md"
+        row["metric_refs"] = [f"artifacts/phases/{phase}/metrics_timeseries.jsonl"]
+        row["cleanup_ref"] = f"artifacts/phases/{phase}/cleanup_report.json"
+        row["review_ref"] = f"artifacts/goal_loop_strict/{phase}/REVIEW.md"
         row["commit_sha"] = "PENDING_REVIEW_AND_COMMIT"
-    _p30_refresh_registry_summary(registry)
+    _p30_refresh_registry_summary(registry, phase)
     path.write_text(json.dumps(_p30_encode_missing(registry), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _p30_refresh_registry_summary(registry: dict[str, Any]) -> None:
+def _p30_refresh_registry_summary(registry: dict[str, Any], stage: str) -> None:
     rows = registry.get("rows", [])
     counts_by_status: dict[str, int] = {}
     counts_by_category: dict[str, int] = {}
@@ -7794,7 +7863,7 @@ def _p30_refresh_registry_summary(registry: dict[str, Any]) -> None:
     summary.setdefault("dry_run_rows_initial_status", "PENDING")
     summary["real_runtime_claimed"] = False
     summary["real_execution_above_200_permitted"] = False
-    summary["last_updated_stage"] = P30_STAGE
+    summary["last_updated_stage"] = stage
 
 
 def _p30_rolling_plan(phase: str, run_id: str, restart_plans: list[dict[str, Any]]) -> dict[str, Any]:
