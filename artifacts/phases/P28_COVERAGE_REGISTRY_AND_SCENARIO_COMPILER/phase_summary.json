@@ -1,0 +1,50 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
+  "run_id": "p28-coverage-registry-static",
+  "created_at": "2026-07-03T00:00:00Z",
+  "producer": {
+    "name": "scripts/build_strict_coverage_registry.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P28 generated strict coverage registry, CSV export, and scenario plan without claiming real runtime evidence.",
+  "required_artifacts": [
+    "artifacts/coverage/strict_coverage_registry.json",
+    "artifacts/coverage/strict_required_matrix.csv",
+    "artifacts/coverage/strict_scenario_plan.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/coverage_registry_report.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/phase_summary.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/quant_summary.json"
+  ],
+  "missing_metrics": [
+    {
+      "metric": "valkey_e2e_evidence",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P28 is a non-runtime registry/compiler stage; later stages must produce exact-scale evidence."
+    },
+    {
+      "metric": "management_operation_metrics",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P28 is a non-runtime registry/compiler stage; later stages must produce exact-scale evidence."
+    },
+    {
+      "metric": "fault_failover_metrics",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P28 is a non-runtime registry/compiler stage; later stages must produce exact-scale evidence."
+    },
+    {
+      "metric": "workload_qps_latency_error_impact",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P28 is a non-runtime registry/compiler stage; later stages must produce exact-scale evidence."
+    }
+  ],
+  "risks": [
+    {
+      "risk": "Runtime rows remain pending.",
+      "mitigation": "All real 50/100/200 rows are PENDING until later exact-scale stages supply evidence."
+    }
+  ],
+  "real_runtime_claimed": false
+}

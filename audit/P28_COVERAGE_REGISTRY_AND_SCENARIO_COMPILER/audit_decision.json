@@ -1,0 +1,45 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "second fresh-context review subagent",
+  "created_at": "2026-07-03T11:10:33Z",
+  "gate_result_path": "artifacts/gates/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/gate_result.json",
+  "gate_result_sha256": "e70d9e9ed317f4e5415fce65871af31add6605a1ce05e8c352c3afd48279fb8e",
+  "artifact_paths": [
+    "artifacts/coverage/strict_coverage_registry.json",
+    "artifacts/coverage/strict_required_matrix.csv",
+    "artifacts/coverage/strict_scenario_plan.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/coverage_registry_report.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/phase_summary.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/quant_summary.json",
+    "artifacts/gates/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/gate_result.json",
+    "artifacts/goal_loop_strict/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/CONTEXT_RELOAD.md",
+    "artifacts/goal_loop_strict/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/DESIGN_BRIEF.md",
+    "artifacts/goal_loop_strict/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/WORKER_SUMMARY.md",
+    "artifacts/goal_loop_strict/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/FIX_LOG.md",
+    "artifacts/goal_loop_strict/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/REVIEW.md",
+    "audit/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/AUDIT.md",
+    "artifacts/goal_loop_strict/STRICT_STAGE_JOURNAL.md",
+    "codex/phase_manifest.json",
+    "codex/gate_lock.json",
+    "scripts/build_strict_coverage_registry.py",
+    "scripts/strict_coverage_defs.py",
+    "scripts/assert_coverage_registry.py",
+    "schemas/artifact/strict_coverage_registry.schema.json",
+    "schemas/artifact/strict_scenario_plan.schema.json",
+    "tests/unit/test_strict_coverage_registry.py",
+    "tests/integration/test_goal_loop_manifest.py"
+  ],
+  "risks": [
+    {
+      "risk": "P28 is non-runtime; all real exact-scale coverage remains pending for later stages.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "This is expected for P28. The registry and scenario compiler do not claim real Valkey coverage."
+    }
+  ],
+  "rationale": "PASS because the registry has the exact required 145 pending rows, the scenario plan has 14 scenarios mapping all coverage IDs, telemetry policy and required telemetry artifacts are present for all real scenarios, P28 remains non-runtime, and the gate/assertion surface fails closed for telemetry omissions."
+}

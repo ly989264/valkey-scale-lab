@@ -1,0 +1,90 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "coverage_registry_report",
+  "phase_id": "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
+  "run_id": "p28-coverage-registry-static",
+  "created_at": "2026-07-03T00:00:00Z",
+  "producer": {
+    "name": "scripts/build_strict_coverage_registry.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "Canonical strict coverage registry and deterministic scenario plan generated without runtime execution.",
+  "row_counts": {
+    "total_rows": 145,
+    "expected_total_rows": 145,
+    "expected_counts": {
+      "lifecycle": 36,
+      "management": 33,
+      "fault": 36,
+      "dry_run": 40
+    },
+    "counts_by_category": {
+      "dry_run": 40,
+      "fault": 36,
+      "lifecycle": 36,
+      "management": 33
+    },
+    "counts_by_execution_mode": {
+      "dry_run": 40,
+      "real": 105
+    },
+    "counts_by_status": {
+      "PENDING": 145
+    },
+    "counts_by_stage_owner": {
+      "P30_MANAGEMENT_MATRIX_50_REAL": 11,
+      "P31_MANAGEMENT_MATRIX_100_REAL": 11,
+      "P32_MANAGEMENT_MATRIX_200_REAL": 11,
+      "P33_FAULT_FAILOVER_MATRIX_50_REAL": 12,
+      "P34_FAULT_FAILOVER_MATRIX_100_REAL": 12,
+      "P35_FAULT_FAILOVER_MATRIX_200_REAL": 12,
+      "P36_FULL_FLOW_E2E_50_100_200_REAL": 36,
+      "P37_200_PLUS_DRY_RUN_SUPPORT": 40
+    },
+    "real_rows_initial_status": "PENDING",
+    "dry_run_rows_initial_status": "PENDING",
+    "real_runtime_claimed": false,
+    "real_execution_above_200_permitted": false
+  },
+  "expected_counts": {
+    "lifecycle": 36,
+    "management": 33,
+    "fault": 36,
+    "dry_run": 40,
+    "total": 145
+  },
+  "scenario_plan_summary": {
+    "scenario_count": 14,
+    "management_scenarios": 3,
+    "fault_scenarios": 3,
+    "full_flow_scenarios": 3,
+    "dry_run_scenarios": 5,
+    "real_execution_above_200_permitted": false
+  },
+  "generated_artifacts": [
+    "artifacts/coverage/strict_coverage_registry.json",
+    "artifacts/coverage/strict_required_matrix.csv",
+    "artifacts/coverage/strict_scenario_plan.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/coverage_registry_report.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/phase_summary.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/quant_summary.json"
+  ],
+  "schema_validation_status": "PENDING_EXTERNAL_VALIDATION",
+  "runtime_claims": {
+    "real_valkey_claimed": false,
+    "management_runtime_claimed": false,
+    "fault_runtime_claimed": false,
+    "full_flow_runtime_claimed": false,
+    "dry_run_runtime_claimed": false,
+    "real_execution_above_200_permitted": false
+  },
+  "coverage_id_samples": {
+    "first": "50.lifecycle.add_replica",
+    "last": "1000.dry_run.resource_preflight_dry_run",
+    "sample_management": "50.management.remove_replica",
+    "sample_fault": "100.fault.network_delay",
+    "sample_lifecycle": "200.lifecycle.cleanup_verify",
+    "sample_dry_run": "500.dry_run.no_runtime_created_proof"
+  }
+}

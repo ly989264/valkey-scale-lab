@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Strict Scenario Plan",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "stage_id",
+    "created_at",
+    "producer",
+    "source_spec_refs",
+    "summary",
+    "scenarios"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "strict_scenario_plan"},
+    "stage_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "created_at": {"type": "string", "minLength": 1},
+    "producer": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "source_spec_refs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "scenario_count",
+        "management_scenarios",
+        "fault_scenarios",
+        "full_flow_scenarios",
+        "dry_run_scenarios",
+        "real_execution_above_200_permitted"
+      ],
+      "properties": {
+        "scenario_count": {"type": "integer", "minimum": 1},
+        "management_scenarios": {"type": "integer", "minimum": 0},
+        "fault_scenarios": {"type": "integer", "minimum": 0},
+        "full_flow_scenarios": {"type": "integer", "minimum": 0},
+        "dry_run_scenarios": {"type": "integer", "minimum": 0},
+        "real_execution_above_200_permitted": {"type": "boolean", "const": false}
+      },
+      "additionalProperties": true
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "scenario_id",
+          "stage_owner",
+          "node_count",
+          "execution_mode",
+          "config_path",
+          "resource_preflight_required",
+          "workload_profile",
+          "telemetry_policy",
+          "operation_sequence",
+          "fault_sequence",
+          "timeout_policy",
+          "cleanup_policy",
+          "expected_artifacts",
+          "coverage_ids",
+          "safety_constraints"
+        ],
+        "properties": {
+          "scenario_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+          "stage_owner": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+          "node_count": {"type": "integer", "enum": [50, 100, 200, 201, 250, 300, 500, 1000]},
+          "execution_mode": {"type": "string", "enum": ["real", "dry_run"]},
+          "config_path": {"type": "string", "minLength": 1},
+          "resource_preflight_required": {"type": "boolean"},
+          "workload_profile": {"type": "object"},
+          "telemetry_policy": {
+            "type": "object",
+            "required": [
+              "required",
+              "events_jsonl_required",
+              "metrics_timeseries_jsonl_required",
+              "workload_windows_required",
+              "missing_values_policy"
+            ],
+            "properties": {
+              "required": {"type": "boolean"},
+              "events_jsonl_required": {"type": "boolean"},
+              "metrics_timeseries_jsonl_required": {"type": "boolean"},
+              "workload_windows_required": {"type": "boolean"},
+              "missing_values_policy": {"type": "string", "minLength": 1},
+              "dry_run_policy": {"type": "string"}
+            },
+            "additionalProperties": false
+          },
+          "operation_sequence": {"type": "array", "items": {"type": "string"}},
+          "fault_sequence": {"type": "array", "items": {"type": "string"}},
+          "timeout_policy": {"type": "object"},
+          "cleanup_policy": {"type": "object"},
+          "expected_artifacts": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string", "minLength": 1}
+          },
+          "coverage_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^(50|100|200|201|250|300|500|1000)\\.(lifecycle|management|fault|dry_run)\\.[a-z0-9_]+$"
+            }
+          },
+          "safety_constraints": {
+            "type": "array",
+            "minItems": 1,
+            "items": {"type": "string", "minLength": 1}
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

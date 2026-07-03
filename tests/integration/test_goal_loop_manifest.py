@@ -48,6 +48,24 @@ def test_coverage_registry_bootstrap_cli_passes() -> None:
     assert "PASS coverage bootstrap assertion" in proc.stdout
 
 
+def test_p28_manifest_generates_registry_before_assertion() -> None:
+    manifest = json.loads(Path("codex/phase_manifest.json").read_text(encoding="utf-8"))
+    phase = next(item for item in manifest["phases"] if item["id"] == "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER")
+    names = [gate["name"] for gate in phase["gates"]]
+
+    assert names.index("coverage_registry_generate") < names.index("coverage_registry")
+    generate = phase["gates"][names.index("coverage_registry_generate")]["command"]
+    assertion = phase["gates"][names.index("coverage_registry")]["command"]
+    assert generate == (
+        "python3 scripts/build_strict_coverage_registry.py --out-dir artifacts/coverage "
+        "--phase P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER"
+    )
+    assert assertion == (
+        "python3 scripts/assert_coverage_registry.py "
+        "--registry artifacts/coverage/strict_coverage_registry.json --require-all"
+    )
+
+
 def test_p25_manifest_generates_analysis_before_assertions() -> None:
     manifest = json.loads(Path("codex/phase_manifest.json").read_text(encoding="utf-8"))
     phase = next(item for item in manifest["phases"] if item["id"] == "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS")

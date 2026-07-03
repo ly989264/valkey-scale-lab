@@ -21,7 +21,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "28c522f6130fcac3b24ce98f5018f0478c5f202210a704da6eee1990e110bf6b"
+      "sha256": "f9a1fa5debba9e4b034a5ce7205e736c1e902cbb4097d4f19a461a63c68c8a53"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -781,7 +781,15 @@
     },
     {
       "path": "scripts/assert_coverage_registry.py",
-      "sha256": "e325186b7e4fce82d258e10b7887dfbae6cddc83cf2a5b09de0bff09573df5c4"
+      "sha256": "08481086024cc0fdc43d2c7e477588b6c5d62e9564894cf274ca75086731c6c5"
+    },
+    {
+      "path": "scripts/strict_coverage_defs.py",
+      "sha256": "09d54b718cb64df655f3d4ac5a5c749409a43c2e3c5a91561b843fb34c0af46b"
+    },
+    {
+      "path": "scripts/build_strict_coverage_registry.py",
+      "sha256": "a1e0f2b9ae0b431844fac6c6e754246e520fd94630a13fbcb5db280c27f079b2"
     },
     {
       "path": "scripts/assert_exact_scale_real_evidence.py",
@@ -833,7 +841,11 @@
     },
     {
       "path": "schemas/artifact/strict_coverage_registry.schema.json",
-      "sha256": "ebd0f63add13b49e4f26906c0eabbd699fa34ff90444fde235f058c6ecbd3a35"
+      "sha256": "a677b3e8d88b7c9f22da6f5b9b346b1281c344f666eacf5a493d69de7f064a1d"
+    },
+    {
+      "path": "schemas/artifact/strict_scenario_plan.schema.json",
+      "sha256": "0458bb9f767e7774a2f6a8fa58e025a2f827bd8c5d2f8fb385095d8e521c77f5"
     },
     {
       "path": "schemas/artifact/no_runtime_created_proof.schema.json",

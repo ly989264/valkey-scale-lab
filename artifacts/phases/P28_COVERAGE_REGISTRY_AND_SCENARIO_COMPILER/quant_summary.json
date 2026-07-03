@@ -1,0 +1,50 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "quant_summary",
+  "phase_id": "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
+  "run_id": "p28-coverage-registry-static",
+  "created_at": "2026-07-03T00:00:00Z",
+  "producer": {
+    "name": "scripts/build_strict_coverage_registry.py",
+    "version": "v1"
+  },
+  "status": "SKIPPED_WITH_REASON",
+  "summary": "Runtime quantification is intentionally skipped because P28 only compiles registry and scenario artifacts.",
+  "artifact_refs": [
+    "artifacts/coverage/strict_coverage_registry.json",
+    "artifacts/coverage/strict_required_matrix.csv",
+    "artifacts/coverage/strict_scenario_plan.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/coverage_registry_report.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/phase_summary.json",
+    "artifacts/phases/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/quant_summary.json"
+  ],
+  "missing_data": [
+    {
+      "field": "real_valkey_runtime_metrics",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P28 has no Docker, live Valkey, workload, management, or fault runtime execution."
+    },
+    {
+      "field": "management_operation_timings",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P28 has no Docker, live Valkey, workload, management, or fault runtime execution."
+    },
+    {
+      "field": "fault_failover_latency_samples",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P28 has no Docker, live Valkey, workload, management, or fault runtime execution."
+    },
+    {
+      "field": "workload_window_measurements",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "P28 has no Docker, live Valkey, workload, management, or fault runtime execution."
+    }
+  ],
+  "runtime_claims": {
+    "real_valkey_claimed": false,
+    "management_runtime_claimed": false,
+    "fault_runtime_claimed": false,
+    "full_flow_runtime_claimed": false,
+    "real_execution_above_200_claimed": false
+  }
+}

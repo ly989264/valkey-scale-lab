@@ -3283,9 +3283,17 @@
           "real_valkey": false
         },
         {
+          "name": "coverage_registry_generate",
+          "kind": "harness",
+          "command": "python3 scripts/build_strict_coverage_registry.py --out-dir artifacts/coverage --phase P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
           "name": "coverage_registry",
           "kind": "harness",
-          "command": "python3 scripts/assert_coverage_registry.py --phase P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
+          "command": "python3 scripts/assert_coverage_registry.py --registry artifacts/coverage/strict_coverage_registry.json --require-all",
           "timeout_seconds": 120,
           "required": true,
           "real_valkey": false
