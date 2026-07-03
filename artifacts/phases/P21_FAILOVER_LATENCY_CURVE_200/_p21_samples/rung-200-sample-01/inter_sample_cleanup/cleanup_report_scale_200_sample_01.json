@@ -1,0 +1,3465 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/_p21_samples/rung-200-sample-01/inter_sample_cleanup",
+  "cleanup_actions": [
+    {
+      "action": "terminate",
+      "id": "shard-0000-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 221,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0001-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 222,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0002-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 224,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0003-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 225,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0004-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 239,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0005-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 240,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0006-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 248,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0007-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 249,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0008-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 257,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0009-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 258,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0010-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 266,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0011-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 267,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0012-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 275,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0013-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 276,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0014-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 284,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0015-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 285,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0016-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 293,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0017-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 294,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0018-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 302,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0019-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 303,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0020-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 311,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0021-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 312,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0022-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 320,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0023-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 321,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0024-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 329,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0025-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 330,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0026-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 338,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0027-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 339,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0028-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 347,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0029-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 348,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0030-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 356,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0031-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 357,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0032-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 365,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0033-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 366,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0034-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 374,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0035-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 375,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0036-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 383,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0037-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 384,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0038-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 392,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0039-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 393,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0040-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 401,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0041-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 402,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0042-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 410,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0043-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 411,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0044-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 419,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0045-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 420,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0046-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 428,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0047-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 429,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0048-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 437,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0049-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 438,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0050-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 446,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0051-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 447,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0052-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 455,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0053-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 456,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0054-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 464,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0055-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 465,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0056-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 473,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0057-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 474,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0058-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 482,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0059-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 483,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0060-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 491,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0061-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 492,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0062-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 500,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0063-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 501,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0064-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 509,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0065-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 510,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0066-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 518,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0067-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 519,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0068-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 527,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0069-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 528,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0070-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 536,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0071-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 537,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0072-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 545,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0073-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 546,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0074-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 554,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0075-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 555,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0076-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 563,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0077-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 564,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0078-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 572,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0079-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 573,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0080-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 581,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0081-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 582,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0082-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 590,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0083-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 591,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0084-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 599,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0085-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 600,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0086-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 608,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0087-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 609,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0088-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 617,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0089-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 618,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0090-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 626,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0091-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 627,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0092-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 635,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0093-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 636,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0094-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 644,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0095-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 645,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0096-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 653,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0097-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 654,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0098-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 662,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0099-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 663,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0000-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 666,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0001-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 671,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0002-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 681,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0003-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 680,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0004-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 690,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0005-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 689,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0006-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 699,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0007-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 698,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0008-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 702,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0009-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 701,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0010-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 711,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0011-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 715,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0012-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 726,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0013-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 725,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0014-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 735,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0015-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 734,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0016-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 744,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0017-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 743,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0018-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 753,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0019-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 752,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0020-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 762,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0021-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 761,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0022-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 771,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0023-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 770,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0024-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 780,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0025-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 779,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0026-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 789,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0027-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 788,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0028-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 798,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0029-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 797,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0030-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 807,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0031-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 806,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0032-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 816,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0033-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 815,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0034-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 825,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0035-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 824,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0036-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 834,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0037-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 833,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0038-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 843,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0039-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 842,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0040-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 852,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0041-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 851,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0042-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 861,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0043-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 860,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0044-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 870,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0045-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 869,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0046-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 879,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0047-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 878,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0048-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 888,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0049-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 887,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0050-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 891,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0051-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 890,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0052-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 906,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0053-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 905,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0054-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 915,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0055-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 914,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0056-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 924,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0057-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 923,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0058-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 933,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0059-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 932,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0060-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 942,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0061-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 941,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0062-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 951,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0063-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 950,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0064-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 960,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0065-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 959,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0066-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 969,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0067-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 968,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0068-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 978,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0069-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 977,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0070-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 987,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0071-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 986,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0072-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 996,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0073-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 995,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0074-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1005,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0075-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1004,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0076-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1008,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0077-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1013,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0078-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1023,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0079-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1022,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0080-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1032,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0081-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1031,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0082-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1041,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0083-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1040,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0084-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1050,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0085-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1049,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0086-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1059,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0087-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1058,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0088-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1068,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0089-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1067,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0090-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1077,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0091-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1076,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0092-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1086,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0093-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1085,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0094-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1095,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0095-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1094,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0096-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1104,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0097-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1103,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0098-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1113,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "type": "valkey_process"
+    },
+    {
+      "action": "terminate",
+      "id": "shard-0099-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1112,
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0000-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 221,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0001-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 222,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0002-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 224,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0003-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 225,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0004-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 239,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0005-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 240,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0006-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 248,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0007-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 249,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0008-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 257,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0009-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 258,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0010-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 266,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0011-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 267,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0012-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 275,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0013-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 276,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0014-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 284,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0015-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 285,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0016-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 293,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0017-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 294,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0018-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 302,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0019-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 303,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0020-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 311,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0021-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 312,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0022-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 320,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0023-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 321,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0024-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 329,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0025-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 330,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0026-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 338,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0027-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 339,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0028-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 347,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0029-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 348,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0030-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 356,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0031-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 357,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0032-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 365,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0033-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 366,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0034-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 374,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0035-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 375,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0036-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 383,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0037-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 384,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0038-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 392,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0039-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 393,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0040-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 401,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0041-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 402,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0042-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 410,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0043-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 411,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0044-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 419,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0045-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 420,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0046-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 428,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0047-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 429,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0048-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 437,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0049-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 438,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0050-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 446,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0051-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 447,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0052-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 455,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0053-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 456,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0054-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 464,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0055-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 465,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0056-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 473,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0057-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 474,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0058-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 482,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0059-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 483,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0060-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 491,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0061-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 492,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0062-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 500,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0063-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 501,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0064-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 509,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0065-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 510,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0066-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 518,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0067-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 519,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0068-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 527,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0069-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 528,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0070-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 536,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0071-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 537,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0072-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 545,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0073-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 546,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0074-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 554,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0075-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 555,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0076-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 563,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0077-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 564,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0078-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 572,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0079-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 573,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0080-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 581,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0081-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 582,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0082-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 590,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0083-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 591,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0084-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 599,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0085-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 600,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0086-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 608,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0087-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 609,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0088-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 617,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0089-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 618,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0090-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 626,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0091-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 627,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0092-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 635,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0093-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 636,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0094-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 644,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0095-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 645,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0096-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 653,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0097-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 654,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0098-primary",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 662,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0099-primary",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 663,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0000-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 666,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0001-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 671,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0002-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 681,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0003-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 680,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0004-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 690,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0005-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 689,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0006-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 699,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0007-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 698,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0008-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 702,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0009-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 701,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0010-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 711,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0011-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 715,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0012-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 726,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0013-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 725,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0014-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 735,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0015-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 734,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0016-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 744,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0017-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 743,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0018-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 753,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0019-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 752,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0020-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 762,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0021-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 761,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0022-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 771,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0023-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 770,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0024-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 780,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0025-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 779,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0026-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 789,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0027-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 788,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0028-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 798,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0029-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 797,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0030-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 807,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0031-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 806,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0032-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 816,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0033-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 815,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0034-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 825,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0035-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 824,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0036-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 834,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0037-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 833,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0038-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 843,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0039-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 842,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0040-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 852,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0041-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 851,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0042-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 861,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0043-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 860,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0044-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 870,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0045-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 869,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0046-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 879,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0047-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 878,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0048-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 888,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0049-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 887,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0050-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 891,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0051-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 890,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0052-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 906,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0053-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 905,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0054-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 915,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0055-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 914,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0056-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 924,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0057-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 923,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0058-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 933,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0059-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 932,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0060-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 942,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0061-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 941,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0062-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 951,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0063-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 950,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0064-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 960,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0065-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 959,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0066-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 969,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0067-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 968,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0068-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 978,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0069-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 977,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0070-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 987,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0071-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 986,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0072-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 996,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0073-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 995,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0074-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1005,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0075-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1004,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0076-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1008,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0077-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1013,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0078-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1023,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0079-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1022,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0080-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1032,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0081-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1031,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0082-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1041,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0083-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1040,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0084-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1050,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0085-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1049,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0086-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1059,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0087-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1058,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0088-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1068,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0089-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1067,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0090-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1077,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0091-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1076,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0092-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1086,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0093-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1085,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0094-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1095,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0095-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1094,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0096-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1104,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0097-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1103,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0098-replica-00",
+      "nodehost_id": "nodehost-az-b",
+      "pid": 1113,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_exit",
+      "id": "shard-0099-replica-00",
+      "nodehost_id": "nodehost-az-a",
+      "pid": 1112,
+      "status": "PASS",
+      "type": "valkey_process"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "id": "nodehost-az-a",
+      "status": "PASS",
+      "stderr": "Error response from daemon: No such container: vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-a",
+      "stdout": "",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p21-failover-latency-curve-200-scale-200-sample-01-20260628-nodehost-az-b",
+      "id": "nodehost-az-b",
+      "status": "PASS",
+      "stderr": "Error response from daemon: container db0faee4da0f103acca9a3cc05b704f095d3f396c247bdf4dac5514d2416b892 is not running",
+      "stdout": "",
+      "type": "nodehost"
+    },
+    {
+      "action": "stop",
+      "id": "db0faee4da0f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "db0faee4da0f",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "9e82d29f397c",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "bounded_parallelism": true,
+    "cleanup_remove_containers_seconds": 0.043104,
+    "cleanup_remove_networks_seconds": 0.224255,
+    "cleanup_residual_scan_seconds": 0.032052,
+    "cleanup_terminate_processes_seconds": 0.743793,
+    "cleanup_verify_nodehost_empty_seconds": 0.021433,
+    "cleanup_verify_process_exit_seconds": 0.858736,
+    "parallelism": 8
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P21_FAILOVER_LATENCY_CURVE_200",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P21_FAILOVER_LATENCY_CURVE_200-scale_200_sample_01-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

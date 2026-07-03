@@ -146,7 +146,7 @@ def create_scenario(
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"),
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
-    } and _p20_scale_sample_node_count(phase, scenario) is None:
+    } and _curve_scale_sample_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
         run_id = _run_id(phase, scenario)
@@ -155,7 +155,7 @@ def create_scenario(
 
     with _timeline_span(setup_timeline, "config_parse_and_validate", "configuration", {"config_path": str(config_path)}):
         config = normalize_config(parse_config_file(config_path))
-        errors = validate_semantics(config)
+        errors = _runtime_semantic_errors(config, phase=phase, scenario=scenario)
         if errors:
             message = "; ".join(f"{item['code']}: {item['message']}" for item in errors)
             raise DockerRuntimeError(message)
@@ -355,12 +355,16 @@ def _runtime_state(
 
 
 def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
-    return _p20_scale_sample_node_count(phase, scenario) is not None or (phase, scenario) in {
+    return _curve_scale_sample_node_count(phase, scenario) is not None or (phase, scenario) in {
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
         ("P13_SCALE_LADDER_50_100", "scale_50"),
         ("P13_SCALE_LADDER_50_100", "scale_100"),
     }
+
+
+def _curve_scale_sample_node_count(phase: str, scenario: str) -> int | None:
+    return _p20_scale_sample_node_count(phase, scenario) or _p21_scale_sample_node_count(phase, scenario)
 
 
 def _p20_scale_sample_node_count(phase: str, scenario: str) -> int | None:
@@ -370,6 +374,44 @@ def _p20_scale_sample_node_count(phase: str, scenario: str) -> int | None:
     if not match:
         return None
     return int(match.group(1))
+
+
+def _p21_scale_sample_node_count(phase: str, scenario: str) -> int | None:
+    if phase != "P21_FAILOVER_LATENCY_CURVE_200":
+        return None
+    match = re.fullmatch(r"scale_200_sample_\d+", scenario)
+    if not match:
+        return None
+    return 200
+
+
+def _runtime_semantic_errors(config: dict[str, Any], *, phase: str, scenario: str) -> list[dict[str, Any]]:
+    errors = validate_semantics(config)
+    if not _is_p21_runtime_exception(config, phase=phase, scenario=scenario):
+        return errors
+    return [error for error in errors if error.get("code") != "NODE_CAP_EXCEEDED"]
+
+
+def _is_p21_runtime_exception(config: dict[str, Any], *, phase: str, scenario: str) -> bool:
+    scale_profile = config.get("scale_profile", {})
+    runtime = config.get("runtime", {})
+    safety = config.get("safety", {})
+    cluster = config.get("cluster", {})
+    try:
+        node_count = int(cluster.get("shards", 0) or 0) * (1 + int(cluster.get("replicas_per_shard", 0) or 0))
+    except (TypeError, ValueError):
+        node_count = 0
+    return (
+        phase == "P21_FAILOVER_LATENCY_CURVE_200"
+        and _p21_scale_sample_node_count(phase, scenario) == 200
+        and node_count == 200
+        and config.get("profile_name") == "scale_200"
+        and scale_profile.get("bounded_exception_phase") == "P21_FAILOVER_LATENCY_CURVE_200"
+        and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
+        and int(safety.get("default_max_nodes", 0) or 0) == 100
+        and safety.get("allow_1000_nodes") is False
+        and runtime.get("dry_run") is False
+    )
 
 
 def _create_process_scenario(
@@ -2992,9 +3034,9 @@ def _scale_timeout(nodes: list[dict[str, Any]], *, floor: float, per_node: float
 
 
 def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> bool:
-    p20_count = _p20_scale_sample_node_count(phase, scenario)
-    if p20_count is not None:
-        return node_count == p20_count
+    curve_count = _curve_scale_sample_node_count(phase, scenario)
+    if curve_count is not None:
+        return node_count == curve_count
     expected = {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},

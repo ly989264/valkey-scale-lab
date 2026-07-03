@@ -1,0 +1,167 @@
+{
+  "artifact_type": "resource_preflight",
+  "bounded_exception": {
+    "default_max_nodes": 100,
+    "node_count": 200,
+    "phase_id": "P21_FAILOVER_LATENCY_CURVE_200"
+  },
+  "can_run": true,
+  "checks": [
+    {
+      "details": {
+        "errors": []
+      },
+      "name": "config_semantics",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "bounded_exception_phase": "P21_FAILOVER_LATENCY_CURVE_200",
+        "default_cap": 100,
+        "node_count": 200
+      },
+      "name": "node_count_limit",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "dry_run": false,
+        "node_count": 200,
+        "profile_name": "scale_200",
+        "scale_profile": {
+          "automatic_default_cap_remains": 100,
+          "bounded_exception_nodes": 200,
+          "bounded_exception_phase": "P21_FAILOVER_LATENCY_CURVE_200"
+        }
+      },
+      "name": "p21_exact_200_exception",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "available": true,
+        "returncode": 0,
+        "server_version": "29.2.1",
+        "stderr": ""
+      },
+      "name": "docker_available",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "cpu_count": 10
+      },
+      "name": "cpu_count",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "node_memory_limit_mb": 32,
+        "required_memory_mb": 6400,
+        "status_note": "host-visible estimate"
+      },
+      "name": "memory_budget",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "free_mb": 297828,
+        "required_free_mb": 1024
+      },
+      "name": "disk_free",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "base": 7800,
+        "count": 200,
+        "unavailable": []
+      },
+      "name": "client_ports",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "base": 17800,
+        "count": 200,
+        "unavailable": []
+      },
+      "name": "cluster_bus_ports",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "hard": 9223372036854775807,
+        "node_count": 200,
+        "required_min": 1024,
+        "soft": 1048575
+      },
+      "name": "runtime_fd_limit",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "leftovers": [],
+        "node_count": 200,
+        "run_id": "P21_FAILOVER_LATENCY_CURVE_200-scale_200-20260628"
+      },
+      "name": "previous_cleanup_state",
+      "status": "PASS"
+    },
+    {
+      "name": "p21_exact_200_required",
+      "status": "PASS",
+      "details": {
+        "required_node_count": 200,
+        "reported_node_count": 200,
+        "reported_phase_id": "P21_FAILOVER_LATENCY_CURVE_200"
+      }
+    },
+    {
+      "name": "p21_no_dry_run",
+      "status": "PASS",
+      "details": {
+        "dry_run": false
+      }
+    }
+  ],
+  "config_path": "templates/configs/scale_200.yaml",
+  "created_at": "2026-07-03T00:01:38.583996Z",
+  "dry_run": false,
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "cpu_count": 10
+  },
+  "node_count": 200,
+  "phase_id": "P21_FAILOVER_LATENCY_CURVE_200",
+  "port_ranges": {
+    "client": {
+      "base": 7800,
+      "count": 200,
+      "last": 7999
+    },
+    "cluster_bus": {
+      "base": 17800,
+      "count": 200,
+      "last": 17999
+    }
+  },
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "resource_estimates": {
+    "memory_per_node_mb": 32,
+    "node_count": 200,
+    "required_disk_free_mb": 1024,
+    "required_memory_mb": 6400,
+    "workload_overhead": "low_nonzero_p21_profile"
+  },
+  "run_id": "P21_FAILOVER_LATENCY_CURVE_200-resource-preflight-200-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "p21_rung": 200,
+  "normalized_from_phase_id": "P21_FAILOVER_LATENCY_CURVE_200"
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "failover_report",
+  "phase_id": "P21_FAILOVER_LATENCY_CURVE_200",
+  "run_id": "P21_FAILOVER_LATENCY_CURVE_200-failover-curve-200-20260628",
+  "created_at": "2026-07-03T00:13:24.189049Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "failovers": [
+    {
+      "fault_id": "rung-200-sample-01-primary-stop",
+      "target_logical_id": "shard-0053-primary",
+      "old_primary_node_id": "7f175e608fd642618c8bc09245d8d70fd786f617",
+      "promoted_node_id": "16bc4585fa4a7d9cc62e9cf3a59336ca73f527a8",
+      "failover_latency_ms": 26817.553
+    },
+    {
+      "fault_id": "rung-200-sample-02-primary-stop",
+      "target_logical_id": "shard-0090-primary",
+      "old_primary_node_id": "01cdad830a1768272484906727754ba1121f2b50",
+      "promoted_node_id": "3744635512f5c2987e6deb613ce8da728276c6bd",
+      "failover_latency_ms": 26143.631
+    },
+    {
+      "fault_id": "rung-200-sample-03-primary-stop",
+      "target_logical_id": "shard-0075-primary",
+      "old_primary_node_id": "f60cd145aaeb199012cfa4b0ede2c4a9417928ea",
+      "promoted_node_id": "e142a889c689cdb87e06e101ad104e976e014512",
+      "failover_latency_ms": 23105.488
+    }
+  ],
+  "summary": {
+    "rungs": [
+      200
+    ],
+    "samples_per_rung": 3,
+    "errors": []
+  }
+}

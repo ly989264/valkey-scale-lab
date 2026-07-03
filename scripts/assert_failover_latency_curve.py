@@ -146,6 +146,152 @@ def validate_p20_semantics(base: Path, samples: list[dict[str, Any]], curve: dic
                     errors.append(f"curve {rung}/{metric}: {field}={series.get(field)!r} does not match raw {value}")
 
 
+def validate_p21_semantics(base: Path, samples: list[dict[str, Any]], curve: dict[str, Any], errors: list[str]) -> None:
+    preflight = base / "resource_preflight_200.json"
+    if not preflight.exists():
+        errors.append("P21 requires resource_preflight_200.json")
+    else:
+        report = load_json(preflight)
+        if report.get("status") != "PASS" or report.get("can_run") is not True or report.get("node_count") != 200:
+            errors.append("P21 resource preflight must PASS with exact node_count=200")
+        if report.get("dry_run") is not False:
+            errors.append("P21 resource preflight must be non-dry-run")
+
+    expected_ids = {f"rung-200-sample-{idx:02d}" for idx in [1, 2, 3]}
+    sample_ids = {str(sample.get("sample_id")) for sample in samples if sample.get("sample_id")}
+    if sample_ids != expected_ids:
+        errors.append(f"P21 requires exactly sample IDs {sorted(expected_ids)}, got {sorted(sample_ids)}")
+    if len(samples) != 3:
+        errors.append(f"P21 requires exactly 3 sample rows, got {len(samples)}")
+
+    seen_run_ids: set[str] = set()
+    seen_state_refs: set[str] = set()
+    timing_signatures: set[tuple[Any, ...]] = set()
+    for sample in samples:
+        sample_id = str(sample.get("sample_id", "MISSING"))
+        if sample.get("phase_id") != "P21_FAILOVER_LATENCY_CURVE_200":
+            errors.append(f"{sample_id}: phase_id must be P21_FAILOVER_LATENCY_CURVE_200")
+        if sample.get("status") != "PASS":
+            errors.append(f"{sample_id}: status must be PASS")
+        if sample.get("real_valkey") is not True:
+            errors.append(f"{sample_id}: real_valkey must be true")
+        if sample.get("node_count") != 200 or sample.get("rung") != 200:
+            errors.append(f"{sample_id}: node_count and rung must both be 200")
+        try:
+            sample_index = int(sample.get("sample_index", 0) or 0)
+        except (TypeError, ValueError):
+            sample_index = 0
+        if sample.get("scenario_name") != f"scale_200_sample_{sample_index:02d}_fault_failover":
+            errors.append(f"{sample_id}: scenario_name must match the sample index")
+        for field in [
+            "run_id",
+            "state_ref",
+            "evidence_ref",
+            "cleanup_ref",
+            "target_primary_node_id",
+            "target_primary_az_id",
+            "target_primary_host_id",
+            "fault_injection_method",
+            "promotion_detection_method",
+            "slot_coverage_detection_method",
+            "workload_impact_ref",
+        ]:
+            if not sample.get(field) or sample.get(field) == "MISSING":
+                errors.append(f"{sample_id}: {field} required")
+        if sample.get("cleanup_status") != "PASS":
+            errors.append(f"{sample_id}: cleanup_status must be PASS")
+        if not sample.get("replica_candidates"):
+            errors.append(f"{sample_id}: replica_candidates required")
+        run_id = str(sample.get("run_id", ""))
+        state_ref = str(sample.get("state_ref", ""))
+        if run_id in seen_run_ids:
+            errors.append(f"{sample_id}: run_id reused: {run_id}")
+        if state_ref in seen_state_refs:
+            errors.append(f"{sample_id}: state_ref reused: {state_ref}")
+        seen_run_ids.add(run_id)
+        seen_state_refs.add(state_ref)
+
+        fault = require_numeric(sample, "fault_injected_at_ms", errors)
+        promoted = require_numeric(sample, "replica_promoted_at_ms", errors)
+        coverage = require_numeric(sample, "slot_coverage_ok_at_ms", errors)
+        first_read = require_numeric(sample, "first_successful_read_at_ms", errors)
+        first_write = require_numeric(sample, "first_successful_write_at_ms", errors)
+        promotion_latency = require_numeric(sample, "promotion_latency_ms", errors)
+        recovery_latency = require_numeric(sample, "cluster_recovery_latency_ms", errors)
+        if None not in {fault, promoted, coverage, first_read, first_write, promotion_latency, recovery_latency}:
+            if not (fault <= promoted <= coverage <= max(first_read, first_write, coverage)):
+                errors.append(f"{sample_id}: timestamps are not ordered from fault to recovery/data path")
+            if abs((promoted - fault) - promotion_latency) > LATENCY_TIMESTAMP_TOLERANCE_MS:
+                errors.append(f"{sample_id}: promotion_latency_ms does not match timestamps")
+            if abs((coverage - fault) - recovery_latency) > LATENCY_TIMESTAMP_TOLERANCE_MS:
+                errors.append(f"{sample_id}: cluster_recovery_latency_ms does not match timestamps")
+            signature = (promoted, coverage, first_read, first_write)
+            if signature in timing_signatures:
+                errors.append(f"{sample_id}: duplicate timing signature suggests sample reuse")
+            timing_signatures.add(signature)
+
+    if set(curve.get("sample_refs", [])) != sample_ids:
+        errors.append("P21 curve sample_refs must exactly match raw sample IDs")
+    if curve.get("status") != "PASS":
+        errors.append("P21 curve status must be PASS")
+    if curve.get("rungs") != [200]:
+        errors.append("P21 curve rungs must be [200]")
+    derived = curve.get("derived_series", [])
+    if not isinstance(derived, list):
+        errors.append("P21 curve derived_series must be a list")
+        return
+    series_by_key = {(item.get("rung"), item.get("metric")): item for item in derived if isinstance(item, dict)}
+    for metric in ["promotion_latency_ms", "cluster_recovery_latency_ms"]:
+        values = [float(sample[metric]) for sample in samples if isinstance(sample.get(metric), (int, float))]
+        series = series_by_key.get((200, metric))
+        if not series:
+            errors.append(f"P21 curve missing derived series for metric={metric}")
+            continue
+        if int(series.get("sample_count", -1)) != 3:
+            errors.append(f"P21 curve {metric}: sample_count must be 3")
+        if set(series.get("sample_refs", [])) != sample_ids:
+            errors.append(f"P21 curve {metric}: sample_refs must match samples")
+        expected = {
+            "p50_ms": percentile(values, 0.50),
+            "p95_ms": percentile(values, 0.95),
+            "max_ms": round(max(values), 3),
+        }
+        for field, value in expected.items():
+            if round(float(series.get(field, -1)), 3) != value:
+                errors.append(f"P21 curve {metric}: {field}={series.get(field)!r} does not match raw {value}")
+
+    validate_p21_combined_curve(base, curve, errors)
+
+
+def validate_p21_combined_curve(base: Path, curve_200: dict[str, Any], errors: list[str]) -> None:
+    combined_path = base / "failover_latency_curve_combined_30_50_100_200.json"
+    if not combined_path.exists():
+        errors.append("P21 requires failover_latency_curve_combined_30_50_100_200.json")
+        return
+    errors.extend(validate_artifact(combined_path, ROOT / "schemas/artifact/failover_latency_curve.schema.json"))
+    combined = load_json(combined_path)
+    if combined.get("status") != "PASS":
+        errors.append("P21 combined curve status must be PASS")
+    if combined.get("rungs") != [30, 50, 100, 200]:
+        errors.append("P21 combined curve rungs must be [30, 50, 100, 200]")
+    p20_path = ROOT / "artifacts" / "phases" / "P20_FAILOVER_LATENCY_CURVE_30_50_100" / "failover_latency_curve.json"
+    if not p20_path.exists():
+        errors.append("P21 combined curve requires P20 failover_latency_curve.json")
+        return
+    p20_curve = load_json(p20_path)
+    if p20_curve.get("rungs") != [30, 50, 100] or p20_curve.get("status") not in {"PASS", None}:
+        errors.append("P21 combined curve source P20 curve must contain rungs [30, 50, 100]")
+    expected_series = list(p20_curve.get("derived_series", [])) + list(curve_200.get("derived_series", []))
+    if combined.get("derived_series") != expected_series:
+        errors.append("P21 combined curve derived_series must preserve P20 series and append P21 200 series")
+    expected_refs = list(p20_curve.get("sample_refs", [])) + list(curve_200.get("sample_refs", []))
+    if combined.get("sample_refs") != expected_refs:
+        errors.append("P21 combined curve sample_refs must preserve P20 refs and append P21 refs")
+    sources = combined.get("source_artifacts", [])
+    if not isinstance(sources, list) or len(sources) != 2:
+        errors.append("P21 combined curve must record exactly two source_artifacts")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -195,6 +341,8 @@ def main() -> int:
         errors.append("P21 samples must not downshift below 200 nodes")
     if args.phase == "P20_FAILOVER_LATENCY_CURVE_30_50_100":
         validate_p20_semantics(base, samples, curve, errors)
+    if args.phase == "P21_FAILOVER_LATENCY_CURVE_200":
+        validate_p21_semantics(base, samples, curve, errors)
 
     if errors:
         for error in errors:

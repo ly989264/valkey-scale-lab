@@ -221,6 +221,85 @@ def assert_p20_semantics(base: Path, errors: list[str]) -> None:
             errors.append("P20 quant_summary must claim real Valkey fault runtime")
 
 
+def assert_p21_semantics(base: Path, errors: list[str]) -> None:
+    events = read_jsonl(base / "events.jsonl", errors)
+    metrics = read_jsonl(base / "metrics_timeseries.jsonl", errors)
+    samples = read_jsonl(base / "failover_latency_samples_200.jsonl", errors)
+    expected_ids = {f"rung-200-sample-{idx:02d}" for idx in [1, 2, 3]}
+    sample_ids = {str(sample.get("sample_id")) for sample in samples if sample.get("sample_id")}
+    if sample_ids != expected_ids or len(samples) != 3:
+        errors.append(f"P21 requires exactly 3 200-node failover sample IDs, got {sorted(sample_ids)} rows={len(samples)}")
+    for sample in samples:
+        sid = sample.get("sample_id", "MISSING")
+        if sample.get("phase_id") != "P21_FAILOVER_LATENCY_CURVE_200":
+            errors.append(f"{sid}: wrong phase_id {sample.get('phase_id')!r}")
+        if sample.get("node_count") != 200 or sample.get("rung") != 200:
+            errors.append(f"{sid}: P21 sample must record node_count=rung=200")
+        if sample.get("real_valkey") is not True:
+            errors.append(f"{sid}: P21 sample must be real Valkey evidence")
+        if sample.get("cleanup_status") != "PASS":
+            errors.append(f"{sid}: cleanup_status must be PASS")
+    event_sample_ids = {str(event.get("sample_id")) for event in events if event.get("sample_id")}
+    metric_sample_ids = {str(metric.get("sample_id")) for metric in metrics if metric.get("sample_id")}
+    missing_events = sorted(sample_ids - event_sample_ids)
+    missing_metrics = sorted(sample_ids - metric_sample_ids)
+    if missing_events:
+        errors.append(f"P21 events.jsonl missing sample IDs: {missing_events}")
+    if missing_metrics:
+        errors.append(f"P21 metrics_timeseries.jsonl missing sample IDs: {missing_metrics}")
+    for idx, event in enumerate(events, start=1):
+        if event.get("phase_id") != "P21_FAILOVER_LATENCY_CURVE_200":
+            errors.append(f"P21 events.jsonl:{idx}: wrong phase_id {event.get('phase_id')!r}")
+        if event.get("sample_id") and event.get("sample_id") not in expected_ids:
+            errors.append(f"P21 events.jsonl:{idx}: unexpected sample_id {event.get('sample_id')!r}")
+    for idx, metric in enumerate(metrics, start=1):
+        if metric.get("phase_id") != "P21_FAILOVER_LATENCY_CURVE_200":
+            errors.append(f"P21 metrics_timeseries.jsonl:{idx}: wrong phase_id {metric.get('phase_id')!r}")
+        if metric.get("sample_id") and metric.get("sample_id") not in expected_ids:
+            errors.append(f"P21 metrics_timeseries.jsonl:{idx}: unexpected sample_id {metric.get('sample_id')!r}")
+        if metric.get("metric_value") == "MISSING" and not metric.get("missing_reason"):
+            errors.append(f"P21 metrics_timeseries.jsonl:{idx}: MISSING metric_value requires missing_reason")
+    preflight_path = base / "resource_preflight_200.json"
+    if preflight_path.exists():
+        preflight = load_json(preflight_path)
+        if preflight.get("status") != "PASS" or preflight.get("can_run") is not True:
+            errors.append("P21 resource_preflight_200 must PASS")
+        if preflight.get("dry_run") is not False:
+            errors.append("P21 resource_preflight_200 must be non-dry-run")
+        if preflight.get("node_count") != 200:
+            errors.append("P21 resource_preflight_200 must record node_count=200")
+    else:
+        errors.append("P21 resource_preflight_200.json missing")
+    evidence_path = base / "valkey_e2e_evidence.json"
+    if evidence_path.exists():
+        evidence = load_json(evidence_path)
+        if evidence.get("status") != "PASS":
+            errors.append("P21 valkey_e2e_evidence status must be PASS")
+        if evidence.get("real_valkey") is not True:
+            errors.append("P21 valkey_e2e_evidence must be real Valkey")
+        if int(evidence.get("nodes_observed", 0) or 0) != 200:
+            errors.append("P21 valkey_e2e_evidence must observe exactly 200 nodes")
+        if len(evidence.get("sample_refs", [])) != 3:
+            errors.append("P21 valkey_e2e_evidence must reference exactly 3 samples")
+    else:
+        errors.append("P21 valkey_e2e_evidence.json missing")
+    quant_path = base / "quant_summary.json"
+    if quant_path.exists():
+        quant = load_json(quant_path)
+        counts = quant.get("counts", {})
+        if counts.get("event_count") != len(events):
+            errors.append("P21 quant_summary counts.event_count must match events.jsonl line count")
+        if counts.get("metric_count") != len(metrics):
+            errors.append("P21 quant_summary counts.metric_count must match metrics_timeseries.jsonl line count")
+        if counts.get("sample_count") != len(samples) or counts.get("sample_count") != 3:
+            errors.append("P21 quant_summary counts.sample_count must be 3 and match samples")
+        if counts.get("node_count") != 200:
+            errors.append("P21 quant_summary counts.node_count must be 200")
+        claims = quant.get("runtime_claims", {})
+        if claims.get("real_valkey_claimed") is not True or claims.get("fault_runtime_claimed") is not True:
+            errors.append("P21 quant_summary must claim real Valkey fault runtime")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--phase", required=True)
@@ -270,6 +349,8 @@ def main() -> int:
         assert_p16_semantics(base, errors)
     if args.phase == "P20_FAILOVER_LATENCY_CURVE_30_50_100":
         assert_p20_semantics(base, errors)
+    if args.phase == "P21_FAILOVER_LATENCY_CURVE_200":
+        assert_p21_semantics(base, errors)
 
     if errors:
         for error in errors:

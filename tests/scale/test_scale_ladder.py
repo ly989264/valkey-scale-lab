@@ -8,7 +8,7 @@ from valkey_scale_lab.runtime import docker_runtime
 
 
 def test_resource_preflight_reports_port_and_cleanup_checks(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(resource, "_docker_available", lambda: True)
+    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
     monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
     monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
 
@@ -18,6 +18,34 @@ def test_resource_preflight_reports_port_and_cleanup_checks(tmp_path: Path, monk
     assert report["node_count"] == 10
     assert report["phase_id"] == "P12_SCALE_LADDER_10_30"
     assert {check["name"] for check in report["checks"]} >= {"docker_available", "client_ports", "cluster_bus_ports"}
+
+
+def test_p21_resource_preflight_allows_only_exact_200_exception(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
+    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count, "phase_id": phase_id, "scenario": scenario}))
+    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+
+    report = resource.run_resource_preflight("templates/configs/scale_200.yaml", tmp_path / "preflight.json")
+
+    assert report["status"] == "PASS"
+    assert report["phase_id"] == "P21_FAILOVER_LATENCY_CURVE_200"
+    assert report["node_count"] == 200
+    assert report["dry_run"] is False
+    assert report["bounded_exception"]["default_max_nodes"] == 100
+
+
+def test_resource_preflight_rejects_unmarked_real_200_config(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
+    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
+    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+    raw = Path("templates/configs/scale_200.yaml").read_text(encoding="utf-8")
+    bad_config = tmp_path / "bad_scale_200.yaml"
+    bad_config.write_text(raw.replace("bounded_exception_phase: P21_FAILOVER_LATENCY_CURVE_200", "bounded_exception_phase: P22_FAULT_REPLICA_HOST_AZ_STOP"), encoding="utf-8")
+
+    report = resource.run_resource_preflight(bad_config, tmp_path / "bad_preflight.json")
+
+    assert report["status"] == "FAIL"
+    assert any(check["name"] == "p21_exact_200_exception" and check["status"] == "FAIL" for check in report["checks"])
 
 
 def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -> None:

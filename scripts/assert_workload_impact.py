@@ -85,6 +85,31 @@ def main() -> int:
         missing_comparisons = sorted(sample_ids - comparison_ids)
         if missing_comparisons:
             errors.append(f"P20 comparisons missing sample IDs: {missing_comparisons}")
+    if args.phase == "P21_FAILOVER_LATENCY_CURVE_200":
+        expected_ids = {f"rung-200-sample-{idx:02d}" for idx in [1, 2, 3]}
+        sample_ids = {row.get("sample_id") for row in rows if row.get("sample_id")}
+        if sample_ids != expected_ids:
+            errors.append(f"P21 workload impact must cover exactly {sorted(expected_ids)}, got {sorted(sample_ids)}")
+        windows_by_sample: dict[Any, set[Any]] = {}
+        for row in rows:
+            sid = row.get("sample_id")
+            if row.get("rung") != 200 or row.get("node_count") != 200:
+                errors.append(f"{row.get('window_name', 'unknown')}: invalid P21 rung/node_count {row.get('rung')!r}/{row.get('node_count')!r}")
+            if sid not in expected_ids:
+                errors.append(f"{row.get('window_name', 'unknown')}: unexpected P21 sample_id {sid!r}")
+            windows_by_sample.setdefault(sid, set()).add(row.get("window_name"))
+        for sid in expected_ids:
+            missing = sorted(WINDOWS - windows_by_sample.get(sid, set()))
+            if missing:
+                errors.append(f"P21 sample {sid} missing workload windows: {missing}")
+        comparisons = report.get("comparisons", [])
+        comparison_ids = {item.get("sample_id") for item in comparisons if isinstance(item, dict)}
+        missing_comparisons = sorted(expected_ids - comparison_ids)
+        if missing_comparisons:
+            errors.append(f"P21 comparisons missing sample IDs: {missing_comparisons}")
+        for item in comparisons:
+            if isinstance(item, dict) and (item.get("rung") != 200 or item.get("node_count") != 200):
+                errors.append(f"P21 comparison {item.get('sample_id')}: rung/node_count must be 200")
     if errors:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)

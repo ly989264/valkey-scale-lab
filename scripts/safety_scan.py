@@ -82,6 +82,16 @@ def scan_default_node_caps() -> list[str]:
         if m_shards and m_rep:
             nodes = int(m_shards.group(1)) * (1 + int(m_rep.group(1)))
             if nodes > 100:
+                p21_exception = (
+                    path.name == "scale_200.yaml"
+                    and nodes == 200
+                    and "bounded_exception_phase: P21_FAILOVER_LATENCY_CURVE_200" in text
+                    and "bounded_exception_nodes: 200" in text
+                    and "allow_1000_nodes: false" in text
+                    and "default_max_nodes: 100" in text
+                )
+                if p21_exception:
+                    continue
                 errors.append(f"{rel}: default config creates {nodes} nodes (>100)")
     return errors
 

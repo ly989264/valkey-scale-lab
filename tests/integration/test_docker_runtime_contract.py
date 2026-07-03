@@ -58,6 +58,7 @@ def test_p13_defaults_to_docker_process_runtime() -> None:
     assert docker_runtime._uses_docker_process_runtime("P12_SCALE_LADDER_10_30", "scale_30") is True
     assert docker_runtime._uses_docker_process_runtime("P13_SCALE_LADDER_50_100", "scale_50") is True
     assert docker_runtime._uses_docker_process_runtime("P13_SCALE_LADDER_50_100", "scale_100") is True
+    assert docker_runtime._uses_docker_process_runtime("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01") is True
     assert docker_runtime._uses_docker_process_runtime("P11_STABILITY_SOAK", "stability_soak_smoke") is False
 
 
@@ -72,6 +73,25 @@ def test_p16_quant_telemetry_is_six_node_only() -> None:
         "goal_loop_quant_telemetry",
         10,
     ) is False
+
+
+def test_p21_runtime_allows_only_exact_200_sample_scenarios() -> None:
+    assert docker_runtime._p21_scale_sample_node_count("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01") == 200
+    assert docker_runtime._scenario_node_count_allowed("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01", 200) is True
+    assert docker_runtime._scenario_node_count_allowed("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01", 100) is False
+    assert docker_runtime._scenario_node_count_allowed("P21_FAILOVER_LATENCY_CURVE_200", "scale_200_sample_01", 201) is False
+    assert docker_runtime._uses_docker_process_runtime("P22_FAULT_REPLICA_HOST_AZ_STOP", "scale_200_sample_01") is False
+    assert docker_runtime._scenario_node_count_allowed("P22_FAULT_REPLICA_HOST_AZ_STOP", "scale_200_sample_01", 200) is False
+
+
+def test_p21_runtime_semantic_exception_is_narrow() -> None:
+    config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
+
+    assert docker_runtime._runtime_semantic_errors(config, phase="P21_FAILOVER_LATENCY_CURVE_200", scenario="scale_200_sample_01") == []
+    assert any(
+        error["code"] == "NODE_CAP_EXCEEDED"
+        for error in docker_runtime._runtime_semantic_errors(config, phase="P22_FAULT_REPLICA_HOST_AZ_STOP", scenario="scale_200_sample_01")
+    )
 
 
 def test_p13_runtime_timing_names_split_diagnostic_probe() -> None:

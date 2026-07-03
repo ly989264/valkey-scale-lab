@@ -1,0 +1,42 @@
+{
+  "artifact_type": "fault_report",
+  "created_at": "2026-06-28T00:00:00Z",
+  "faults": [
+    {
+      "apply_status": "PASS",
+      "clear_status": "PASS",
+      "ended_at": "2026-06-28T00:00:00Z",
+      "expected_impact": {
+        "description": "Sandbox-scoped fault lifecycle is recorded without host network mutation.",
+        "kind": "node_stop"
+      },
+      "fault_id": "fault-primary-stop",
+      "fault_type": "node_stop",
+      "observed_impact": {
+        "action": "process_restart",
+        "config_file": "/tmp/valkey-scale-lab/P21_FAILOVER_LATENCY_CURVE_200-scale_200_sample_02-20260628/shard-0090-primary/valkey.conf",
+        "nodehost_container_name": "vslab-p21-failover-latency-curve-200-scale-200-sample-02-20260628-nodehost-az-a",
+        "status": "PASS",
+        "stderr": "",
+        "stdout": ""
+      },
+      "scope": "owned_container_or_process",
+      "started_at": "2026-06-28T00:00:00Z",
+      "target_logical_id": "shard-0090-primary"
+    }
+  ],
+  "phase_id": "P21_FAILOVER_LATENCY_CURVE_200",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P21_FAILOVER_LATENCY_CURVE_200-scale_200_sample_02-20260628",
+  "safety_checks": {
+    "fault_state_cleared": true,
+    "global_firewall_mutated": false,
+    "host_network_mutated": false,
+    "sandbox_only": true
+  },
+  "schema_version": "v1",
+  "status": "PASS"
+}

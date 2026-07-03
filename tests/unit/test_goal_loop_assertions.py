@@ -633,6 +633,7 @@ def test_p19_management_assertion_rejects_overlapping_restart_health_gate(tmp_pa
 
 
 P20_PHASE = "P20_FAILOVER_LATENCY_CURVE_30_50_100"
+P21_PHASE = "P21_FAILOVER_LATENCY_CURVE_200"
 
 
 def p20_sample(rung: int, sample_index: int) -> dict:
@@ -767,6 +768,436 @@ def test_p20_failover_curve_assertion_rejects_non_derived_curve_value(tmp_path: 
     monkeypatch.setattr(sys, "argv", ["assert_failover_latency_curve.py", "--phase", P20_PHASE])
 
     assert assertion.main() == 1
+
+
+def p21_sample(sample_index: int) -> dict:
+    base = 20000000 + sample_index * 10000
+    promotion = 500 + sample_index
+    recovery = 800 + sample_index
+    sample_id = f"rung-200-sample-{sample_index:02d}"
+    return {
+        "schema_version": "v1",
+        "phase_id": P21_PHASE,
+        "run_id": f"{P21_PHASE}-scale-200-sample-{sample_index:02d}",
+        "scenario_name": f"scale_200_sample_{sample_index:02d}_fault_failover",
+        "node_count": 200,
+        "rung": 200,
+        "sample_index": sample_index,
+        "sample_id": sample_id,
+        "status": "PASS",
+        "real_valkey": True,
+        "state_ref": f"artifacts/phases/{P21_PHASE}/_p21_samples/{sample_id}/state.json",
+        "evidence_ref": f"artifacts/phases/{P21_PHASE}/_p21_samples/{sample_id}/valkey_e2e_evidence.json",
+        "cleanup_ref": f"artifacts/phases/{P21_PHASE}/_p21_samples/{sample_id}/cleanup_report.json",
+        "cleanup_status": "PASS",
+        "target_primary_logical_id": f"shard-{sample_index:04d}-primary",
+        "target_primary_node_id": f"node-200-{sample_index}",
+        "target_primary_az_id": "az-a",
+        "target_primary_host_id": "local",
+        "replica_candidates": [f"replica-200-{sample_index}"],
+        "promoted_node_id": f"replica-200-{sample_index}",
+        "fault_injection_method": "project_fault_api_node_stop_owned_container_or_process",
+        "promotion_detection_method": "live_cluster_nodes_expected_replica_primary",
+        "slot_coverage_detection_method": "live_cluster_info_cluster_state_ok",
+        "fault_injected_at_ms": base,
+        "primary_unreachable_at_ms": base + 1,
+        "replica_promoted_at_ms": base + promotion,
+        "cluster_state_ok_at_ms": base + recovery,
+        "slot_coverage_ok_at_ms": base + recovery,
+        "first_successful_read_at_ms": base + recovery + 1,
+        "first_successful_write_at_ms": base + recovery + 2,
+        "fault_cleared_at_ms": base + recovery + 10,
+        "old_primary_rejoined_at_ms": "MISSING",
+        "promotion_latency_ms": promotion,
+        "cluster_recovery_latency_ms": recovery,
+        "read_unavailability_ms": recovery + 1,
+        "write_unavailability_ms": recovery + 2,
+        "split_brain_window_ms": "MISSING",
+        "workload_impact_ref": f"artifacts/phases/{P21_PHASE}/workload_impact_report.json#{sample_id}",
+    }
+
+
+def p21_curve_payload(samples: list[dict]) -> dict:
+    derived = []
+    for metric in ["promotion_latency_ms", "cluster_recovery_latency_ms"]:
+        values = sorted(float(sample[metric]) for sample in samples)
+        derived.append(
+            {
+                "rung": 200,
+                "node_count": 200,
+                "metric": metric,
+                "unit": "ms",
+                "sample_count": len(values),
+                "percentile_method": "nearest_rank_round_index",
+                "sample_refs": [sample["sample_id"] for sample in samples],
+                "p50_ms": values[1],
+                "p95_ms": values[2],
+                "max_ms": values[2],
+            }
+        )
+    return {
+        "schema_version": "v1",
+        "artifact_type": "failover_latency_curve",
+        "phase_id": P21_PHASE,
+        "run_id": "p21-curve",
+        "status": "PASS",
+        "rungs": [200],
+        "sample_refs": [sample["sample_id"] for sample in samples],
+        "derived_series": derived,
+    }
+
+
+def write_p21_curve_bundle(tmp_path: Path, samples: list[dict]) -> Path:
+    p20_dir = tmp_path / "artifacts" / "phases" / P20_PHASE
+    p20_samples = [p20_sample(rung, index) for rung in [30, 50, 100] for index in [1, 2, 3]]
+    write_p20_curve_bundle(p20_dir, p20_samples)
+    p21_dir = tmp_path / "artifacts" / "phases" / P21_PHASE
+    p21_dir.mkdir(parents=True, exist_ok=True)
+    write_json(
+        p21_dir / "resource_preflight_200.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "resource_preflight",
+            "phase_id": P21_PHASE,
+            "run_id": "p21-preflight",
+            "created_at": "2026-06-28T00:00:00Z",
+            "producer": {"name": "test", "version": "v1"},
+            "status": "PASS",
+            "can_run": True,
+            "node_count": 200,
+            "dry_run": False,
+            "checks": [{"name": "ok", "status": "PASS"}],
+        },
+    )
+    write_jsonl(p21_dir / "failover_latency_samples_200.jsonl", samples)
+    curve = p21_curve_payload(samples)
+    write_json(p21_dir / "failover_latency_curve_200.json", curve)
+    p20_curve = json.loads((p20_dir / "failover_latency_curve.json").read_text(encoding="utf-8"))
+    write_json(
+        p21_dir / "failover_latency_curve_combined_30_50_100_200.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "failover_latency_curve",
+            "phase_id": P21_PHASE,
+            "run_id": "combined",
+            "status": "PASS",
+            "rungs": [30, 50, 100, 200],
+            "sample_refs": p20_curve["sample_refs"] + curve["sample_refs"],
+            "source_artifacts": [
+                f"artifacts/phases/{P20_PHASE}/failover_latency_curve.json",
+                f"artifacts/phases/{P21_PHASE}/failover_latency_curve_200.json",
+            ],
+            "derived_series": p20_curve["derived_series"] + curve["derived_series"],
+        },
+    )
+    return p21_dir
+
+
+def run_p21_curve_assertion(tmp_path: Path, monkeypatch, samples: list[dict]) -> int:
+    assertion = load_script("assert_failover_latency_curve")
+    write_p21_curve_bundle(tmp_path, samples)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_failover_latency_curve.py", "--phase", P21_PHASE])
+    return assertion.main()
+
+
+def test_p21_failover_curve_assertion_accepts_real_200_bundle(tmp_path: Path, monkeypatch) -> None:
+    assert run_p21_curve_assertion(tmp_path, monkeypatch, [p21_sample(index) for index in [1, 2, 3]]) == 0
+
+
+def test_p21_failover_curve_assertion_rejects_downshifted_sample(tmp_path: Path, monkeypatch) -> None:
+    samples = [p21_sample(index) for index in [1, 2, 3]]
+    samples[0]["node_count"] = 100
+
+    assert run_p21_curve_assertion(tmp_path, monkeypatch, samples) == 1
+
+
+def test_p21_failover_curve_assertion_rejects_duplicate_state_ref(tmp_path: Path, monkeypatch) -> None:
+    samples = [p21_sample(index) for index in [1, 2, 3]]
+    samples[1]["state_ref"] = samples[0]["state_ref"]
+
+    assert run_p21_curve_assertion(tmp_path, monkeypatch, samples) == 1
+
+
+def test_p21_failover_curve_assertion_rejects_fake_or_unclean_sample(tmp_path: Path, monkeypatch) -> None:
+    samples = [p21_sample(index) for index in [1, 2, 3]]
+    samples[0]["real_valkey"] = False
+    samples[1]["cleanup_status"] = "FAIL"
+
+    assert run_p21_curve_assertion(tmp_path, monkeypatch, samples) == 1
+
+
+def test_p21_failover_curve_assertion_rejects_bad_combined_curve(tmp_path: Path, monkeypatch) -> None:
+    samples = [p21_sample(index) for index in [1, 2, 3]]
+    p21_dir = write_p21_curve_bundle(tmp_path, samples)
+    combined = json.loads((p21_dir / "failover_latency_curve_combined_30_50_100_200.json").read_text(encoding="utf-8"))
+    combined["rungs"] = [30, 50, 100]
+    write_json(p21_dir / "failover_latency_curve_combined_30_50_100_200.json", combined)
+    assertion = load_script("assert_failover_latency_curve")
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_failover_latency_curve.py", "--phase", P21_PHASE])
+
+    assert assertion.main() == 1
+
+
+def test_failover_project_cleanup_retries_until_report_passes(tmp_path: Path, monkeypatch) -> None:
+    gate = load_script("fault_failover_gate")
+    state_path = tmp_path / "state.json"
+    write_json(state_path, {"schema_version": "v1", "nodes": []})
+    attempts = []
+
+    def fake_run_cmd(cmd: list[str], timeout: int):
+        attempts.append((cmd, timeout))
+        out_path = Path(cmd[cmd.index("--out") + 1])
+        status = "FAIL" if len(attempts) == 1 else "PASS"
+        write_json(out_path, {
+            "schema_version": "v1",
+            "artifact_type": "cleanup_report",
+            "phase_id": P21_PHASE,
+            "run_id": "cleanup",
+            "status": status,
+            "resources_remaining": [] if status == "PASS" else [{"type": "container", "reason": "timeout"}],
+            "cleanup_actions": [],
+        })
+        return type("Proc", (), {"returncode": 0 if status == "PASS" else 1, "stderr": "timeout"})()
+
+    monkeypatch.setattr(gate, "run_cmd", fake_run_cmd)
+
+    status, cleanup_path = gate.project_cleanup(P21_PHASE, state_path, tmp_path / "cleanup", tmp_path / "published.json")
+
+    assert status == "PASS"
+    assert cleanup_path == tmp_path / "published.json"
+    assert json.loads(cleanup_path.read_text(encoding="utf-8"))["status"] == "PASS"
+    assert (tmp_path / "cleanup" / "cleanup_retry_01_report.json").exists()
+    assert len(attempts) == 2
+    assert all(timeout == 420 for _, timeout in attempts)
+
+
+def test_p21_single_sample_runs_inter_sample_cleanup_when_child_leaves_state(tmp_path: Path, monkeypatch) -> None:
+    gate = load_script("fault_failover_gate")
+    monkeypatch.setattr(gate, "p21_config_path", lambda: tmp_path / "scale_200.yaml")
+    (tmp_path / "scale_200.yaml").write_text("profile_name: scale_200\n", encoding="utf-8")
+
+    def fake_run_cmd(cmd: list[str], timeout: int):
+        sample_dir = tmp_path / "_p21_samples" / "rung-200-sample-01"
+        work_dir = sample_dir / "_fault_failover_work_scale_200_sample_01_fault_failover"
+        work_dir.mkdir(parents=True, exist_ok=True)
+        write_json(work_dir / "state_failover.json", {"schema_version": "v1", "nodes": []})
+        write_json(sample_dir / "cleanup_report.json", {"schema_version": "v1", "artifact_type": "cleanup_report", "status": "FAIL"})
+        return type("Proc", (), {"returncode": 1, "stdout": "", "stderr": "child failed"})()
+
+    cleanup_calls = []
+
+    def fake_cleanup(phase, state_path, artifact_dir, cleanup_path=None):
+        cleanup_calls.append((phase, state_path, artifact_dir, cleanup_path))
+        write_json(cleanup_path, {"schema_version": "v1", "artifact_type": "cleanup_report", "phase_id": phase, "status": "PASS"})
+        return "PASS", cleanup_path
+
+    monkeypatch.setattr(gate, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(gate, "project_cleanup", fake_cleanup)
+    args = type("Args", (), {
+        "phase": P21_PHASE,
+        "wait_after_fault": 1,
+        "failover_node_timeout_ms": 15000,
+        "require_data_path": True,
+    })()
+
+    run = gate.run_p21_single_sample(args, tmp_path, 1)
+
+    assert run["returncode"] == 1
+    assert run["inter_sample_cleanup_status"] == "PASS"
+    assert cleanup_calls
+    assert cleanup_calls[0][1].name == "state_failover.json"
+
+
+def test_p21_cleanup_salvage_only_accepts_cleanup_only_failure(tmp_path: Path) -> None:
+    gate = load_script("fault_failover_gate")
+    paths = {
+        "evidence": tmp_path / "evidence.json",
+        "cleanup_report": tmp_path / "cleanup.json",
+        "failover_report": tmp_path / "failover.json",
+        "fault_report": tmp_path / "fault.json",
+        "workload_report": tmp_path / "workload.json",
+    }
+    write_json(paths["evidence"], {
+        "schema_version": "v1",
+        "artifact_type": "valkey_e2e_evidence",
+        "status": "FAIL",
+        "probe_result": "FAIL",
+        "errors": ["cleanup failed"],
+        "cleanup": {"status": "FAIL"},
+    })
+    for key in ["failover_report", "fault_report", "workload_report"]:
+        write_json(paths[key], {"schema_version": "v1", "artifact_type": key, "status": "FAIL"})
+    retry = tmp_path / "retry_cleanup.json"
+    write_json(retry, {"schema_version": "v1", "artifact_type": "cleanup_report", "status": "PASS", "resources_remaining": []})
+
+    assert gate.salvage_p21_cleanup_only_failure(paths, retry) is True
+    assert json.loads(paths["evidence"].read_text(encoding="utf-8"))["status"] == "PASS"
+    assert json.loads(paths["cleanup_report"].read_text(encoding="utf-8"))["status"] == "PASS"
+
+    write_json(paths["evidence"], {"status": "FAIL", "errors": ["cleanup failed", "promotion missing"]})
+    assert gate.salvage_p21_cleanup_only_failure(paths, retry) is False
+
+
+def p21_workload_rows() -> list[dict]:
+    rows = []
+    for sample in [p21_sample(index) for index in [1, 2, 3]]:
+        for window_name in ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]:
+            rows.append(
+                {
+                    "window_name": window_name,
+                    "sample_id": sample["sample_id"],
+                    "rung": 200,
+                    "node_count": 200,
+                    "start_event_id": f"{sample['sample_id']}-{window_name}-start",
+                    "end_event_id": f"{sample['sample_id']}-{window_name}-end",
+                    "start_time_unix_ms": sample["fault_injected_at_ms"],
+                    "end_time_unix_ms": sample["slot_coverage_ok_at_ms"],
+                    "metrics": {
+                        "requested_qps": 1.0,
+                        "achieved_qps": 1.0,
+                        "ok_ops": 1,
+                        "error_ops": 0,
+                        "error_rate": 0.0,
+                        "latency_p50_ms": 1.0,
+                        "latency_p90_ms": "MISSING",
+                        "latency_p95_ms": 1.0,
+                        "latency_p99_ms": 1.0,
+                        "latency_p999_ms": "MISSING",
+                        "timeout_count": 0,
+                        "connection_error_count": 0,
+                        "moved_redirection_count": 0,
+                        "ask_redirection_count": 0,
+                        "cluster_down_error_count": 0,
+                        "readonly_error_count": 0,
+                        "tryagain_error_count": 0,
+                        "unknown_error_count": 0,
+                        "sample_count": 1,
+                        "missing_reasons": {
+                            "latency_p90_ms": "not captured in synthetic test",
+                            "latency_p999_ms": "not captured in synthetic test",
+                        },
+                    },
+                }
+            )
+    return rows
+
+
+def test_p21_workload_impact_assertion_requires_three_200_samples(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_workload_impact")
+    phase_dir = tmp_path / "artifacts" / "phases" / P21_PHASE
+    phase_dir.mkdir(parents=True)
+    rows = p21_workload_rows()
+    write_json(
+        phase_dir / "workload_impact_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "workload_impact_report",
+            "phase_id": P21_PHASE,
+            "run_id": "workload",
+            "status": "PASS",
+            "windows": rows,
+            "comparisons": [{"sample_id": f"rung-200-sample-{idx:02d}", "rung": 200, "node_count": 200} for idx in [1, 2, 3]],
+        },
+    )
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_workload_impact.py", "--phase", P21_PHASE])
+
+    assert assertion.main() == 0
+
+    rows[0]["node_count"] = 100
+    write_json(
+        phase_dir / "workload_impact_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "workload_impact_report",
+            "phase_id": P21_PHASE,
+            "run_id": "workload",
+            "status": "PASS",
+            "windows": rows,
+            "comparisons": [{"sample_id": f"rung-200-sample-{idx:02d}", "rung": 200, "node_count": 200} for idx in [1, 2, 3]],
+        },
+    )
+
+    assert assertion.main() == 1
+
+
+def test_p21_quant_assertion_checks_counts_and_real_runtime(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_quant_artifacts")
+    codex_dir = tmp_path / "codex"
+    codex_dir.mkdir()
+    write_json(
+        codex_dir / "phase_manifest.json",
+        {
+            "phases": [
+                {
+                    "id": P21_PHASE,
+                    "real_valkey_required": True,
+                    "required_artifacts": [],
+                }
+            ]
+        },
+    )
+    phase_dir = tmp_path / "artifacts" / "phases" / P21_PHASE
+    samples = [p21_sample(index) for index in [1, 2, 3]]
+    write_p21_curve_bundle(tmp_path, samples)
+    rows = p21_workload_rows()
+    events = [
+        {
+            "schema_version": "v1",
+            "run_id": sample["run_id"],
+            "phase_id": P21_PHASE,
+            "scenario_name": "failover_curve_200",
+            "sample_id": sample["sample_id"],
+            "event_id": f"{sample['sample_id']}-fault",
+            "event_type": "fault_injected",
+            "timestamp_unix_ms": sample["fault_injected_at_ms"],
+            "monotonic_ms": sample["fault_injected_at_ms"],
+            "severity": "INFO",
+            "subject_type": "failover_sample",
+            "subject_id": sample["target_primary_logical_id"],
+            "operation_id": "",
+            "fault_id": "fault-primary-stop",
+            "message": "fault",
+            "metadata": {"rung": 200},
+        }
+        for sample in samples
+    ]
+    metrics = [
+        {
+            "schema_version": "v1",
+            "run_id": sample["run_id"],
+            "phase_id": P21_PHASE,
+            "scenario_name": "failover_curve_200",
+            "sample_id": sample["sample_id"],
+            "timestamp_unix_ms": sample["slot_coverage_ok_at_ms"],
+            "monotonic_ms": sample["slot_coverage_ok_at_ms"],
+            "source_type": "harness",
+            "source_id": sample["sample_id"],
+            "metric_name": "promotion_latency_ms",
+            "metric_value": sample["promotion_latency_ms"],
+            "metric_unit": "ms",
+            "labels": {"rung": 200},
+            "missing_reason": "",
+        }
+        for sample in samples
+    ]
+    write_jsonl(phase_dir / "events.jsonl", events)
+    write_jsonl(phase_dir / "metrics_timeseries.jsonl", metrics)
+    write_json(phase_dir / "workload_windows.json", {"schema_version": "v1", "artifact_type": "workload_windows", "phase_id": P21_PHASE, "run_id": "workload", "status": "PASS", "windows": rows})
+    write_json(phase_dir / "cleanup_report.json", {"schema_version": "v1", "artifact_type": "cleanup_report", "phase_id": P21_PHASE, "run_id": "cleanup", "status": "PASS", "resources_remaining": [], "cleanup_actions": []})
+    write_json(phase_dir / "valkey_e2e_evidence.json", {"schema_version": "v1", "artifact_type": "valkey_e2e_evidence", "phase_id": P21_PHASE, "run_id": "evidence", "status": "PASS", "real_valkey": True, "nodes_observed": 200, "sample_refs": [sample["sample_id"] for sample in samples]})
+    write_json(phase_dir / "quant_summary.json", {"schema_version": "v1", "artifact_type": "quant_summary", "phase_id": P21_PHASE, "run_id": "quant", "status": "PASS", "missing_data": [], "counts": {"event_count": len(events), "metric_count": len(metrics), "sample_count": 3, "node_count": 200}, "runtime_claims": {"real_valkey_claimed": True, "fault_runtime_claimed": True, "management_runtime_claimed": False}})
+    write_json(phase_dir / "phase_summary.json", {"schema_version": "v1", "artifact_type": "phase_summary", "phase_id": P21_PHASE, "run_id": "phase", "status": "PASS", "missing_metrics": []})
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    monkeypatch.setattr(assertion, "validate_artifact", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(sys, "argv", ["assert_quant_artifacts.py", "--phase", P21_PHASE])
+
+    assert assertion.main() == 0
 
 
 def test_p19_management_assertion_rejects_failed_health_gate(tmp_path: Path, monkeypatch) -> None:

@@ -1,0 +1,36 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "P21_FAILOVER_LATENCY_CURVE_200",
+  "run_id": "P21_FAILOVER_LATENCY_CURVE_200-failover-curve-200-20260628",
+  "created_at": "2026-07-03T00:13:24.201583Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P21 runs exactly three real 200-node primary-stop failover samples after resource preflight and appends them to the 30/50/100 latency curve.",
+  "required_artifacts": [
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/phase_summary.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/valkey_e2e_evidence.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/cleanup_report.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/events.jsonl",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/metrics_timeseries.jsonl",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_windows.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/quant_summary.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/resource_preflight_200.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_samples_200.jsonl",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_curve_200.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/failover_latency_curve_combined_30_50_100_200.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/fault_matrix_report.json",
+    "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_impact_report.json"
+  ],
+  "missing_metrics": [],
+  "risks": [
+    {
+      "risk": "200-node real Valkey samples depend on local Docker resources and may block at preflight.",
+      "severity": "medium",
+      "required_before_next_phase": false
+    }
+  ]
+}

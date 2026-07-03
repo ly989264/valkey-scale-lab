@@ -577,7 +577,7 @@
     },
     {
       "path": "scripts/assert_failover_latency_curve.py",
-      "sha256": "97eeb2e1cdf67d527a56f15d7f97b102ca3a821448eb678a4ac6347b9c8da2f7"
+      "sha256": "26ba5d3eb84b1746ed4aa2f6d9a39aedc4c4526855095841cd8a305a1440b9b8"
     },
     {
       "path": "scripts/assert_fault_matrix_coverage.py",
@@ -597,7 +597,7 @@
     },
     {
       "path": "scripts/assert_quant_artifacts.py",
-      "sha256": "94020f8f46d4880b35eac57094f7809a48f44865b0545b3f17ce8b26190a91f8"
+      "sha256": "4607a2fb00b5d26fc3142ff93e729f57b74eafe2d9b989b23863232e5880f4bf"
     },
     {
       "path": "scripts/assert_split_brain_report.py",
@@ -605,7 +605,7 @@
     },
     {
       "path": "scripts/assert_workload_impact.py",
-      "sha256": "3090feb6d3061340f5fd16cae470efa452f07470c071b094447d4fb05740c55e"
+      "sha256": "f55dfe0ffd1da410da21ac264d557c1b5c1172ad8b201281e18e432d39b4cf59"
     },
     {
       "path": "scripts/audit_committed_artifacts.py",
@@ -645,7 +645,7 @@
     },
     {
       "path": "scripts/fault_failover_gate.py",
-      "sha256": "abbd8b2f460c8ba93fd1067e50bb30fe1136a56595dc859d286afb63bec1fa7a"
+      "sha256": "1986c62568e3c502fd20440b5954324d4a212887ab7f7efafdc156f8aaedf2cf"
     },
     {
       "path": "scripts/fault_safety_gate.py",
@@ -677,7 +677,7 @@
     },
     {
       "path": "scripts/safety_scan.py",
-      "sha256": "3925edf949eb31922f27f2346563523a2ce622acd4b78ac7c9f1d20372d034ab"
+      "sha256": "438f7f0b2c4d1f3fbec9086bdce34ca93b2d768e69b0a98ae1122f093598cce7"
     },
     {
       "path": "scripts/schema_validator.py",
@@ -734,6 +734,10 @@
     {
       "path": "templates/configs/scale_1000_dryrun_optin.yaml",
       "sha256": "fe68b7983d8fd34192cf754096f17eb17362a4ab64674b662b376dbc7b88b0ad"
+    },
+    {
+      "path": "templates/configs/scale_200.yaml",
+      "sha256": "dd484c0922e8946629221a37fcf30704a677bd52f62fc8e50de8589641423455"
     },
     {
       "path": "templates/configs/scale_30.yaml",
