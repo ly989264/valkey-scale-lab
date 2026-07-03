@@ -1,0 +1,2470 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "command_ms",
+      "reason": "create_cluster timing is captured in runtime_timing_breakdown and cluster setup operations before matrix row emission.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "command_ms",
+      "reason": "meet_nodes timing is captured in runtime_timing_breakdown and cluster setup operations before matrix row emission.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "command_ms",
+      "reason": "add_replica timing is captured in runtime_timing_breakdown and cluster setup operations before matrix row emission.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "bytes_migrated",
+      "reason": "Valkey MIGRATE byte count is not exposed by the command path.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "bytes_migrated",
+      "reason": "Valkey MIGRATE byte count is not exposed by the command path.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "bytes_migrated",
+      "reason": "Valkey MIGRATE byte count is not exposed by the command path.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "read_unavailability_ms",
+      "reason": "No read outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Encoded as missing with reason; no value was invented.",
+      "metric": "write_unavailability_ms",
+      "reason": "No write outage was observed during controlled primary handoff.",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/phase_summary.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/valkey_e2e_evidence.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/resource_preflight.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/cluster_plan.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/run_state.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/cleanup_report.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/events.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/metrics_timeseries.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/workload_windows.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/quant_summary.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/coverage_ledger.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_ops_matrix.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_operation_results.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_topology_snapshots.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_command_log.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_workload_impact.json"
+  ],
+  "risks": [],
+  "run_id": "P32_MANAGEMENT_MATRIX_200_REAL-strict_management_matrix_200-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P32 proves the strict 200-node management matrix with real Valkey operations and fail-closed telemetry artifacts."
+}

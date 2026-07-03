@@ -15,6 +15,10 @@ from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.config.validation import normalize_config, validate_semantics
 
 CREATED_AT = "2026-06-28T00:00:00Z"
+P21_STAGE = "P21_FAILOVER_LATENCY_CURVE_200"
+P32_STAGE = "P32_MANAGEMENT_MATRIX_200_REAL"
+P32_SCENARIO = "strict_management_matrix_200"
+EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE}
 
 
 class ResourcePreflightError(RuntimeError):
@@ -33,10 +37,10 @@ def run_resource_preflight(
     if dry_run:
         config.setdefault("runtime", {})["dry_run"] = True
     node_count = int(config["cluster"]["shards"]) * (1 + int(config["cluster"]["replicas_per_shard"]))
-    p21_exception = _is_p21_200_exception(config, node_count, dry_run)
-    semantic_errors = _semantic_errors_for_preflight(config, allow_p21_200=p21_exception)
     phase_id = phase_id or _phase_for_node_count(node_count)
     scenario_name = scenario or _scenario_for_node_count(node_count)
+    exact_200_exception = _is_exact_200_bounded_exception(config, node_count, dry_run, phase_id=phase_id, scenario=scenario_name)
+    semantic_errors = _semantic_errors_for_preflight(config, allow_exact_200=exact_200_exception)
     run_id = f"{phase_id}-resource-preflight-{node_count}-20260628"
     checks: list[dict[str, Any]] = []
 
@@ -44,21 +48,23 @@ def run_resource_preflight(
     checks.append(
         _check(
             "node_count_limit",
-            node_count <= 100 or dry_run or p21_exception,
+            node_count <= 100 or dry_run or exact_200_exception,
             {
                 "node_count": node_count,
                 "default_cap": 100,
-                "bounded_exception_phase": "P21_FAILOVER_LATENCY_CURVE_200" if p21_exception else "MISSING",
+                "bounded_exception_phase": phase_id if exact_200_exception else "MISSING",
             },
         )
     )
     if node_count == 200:
         checks.append(
             _check(
-                "p21_exact_200_exception",
-                p21_exception,
+                "exact_200_bounded_exception",
+                exact_200_exception,
                 {
                     "node_count": node_count,
+                    "phase_id": phase_id,
+                    "scenario_name": scenario_name,
                     "profile_name": config.get("profile_name", "MISSING"),
                     "dry_run": dry_run or config.get("runtime", {}).get("dry_run") is True,
                     "scale_profile": config.get("scale_profile", {}),
@@ -91,9 +97,11 @@ def run_resource_preflight(
         "config_path": str(config_path),
         "dry_run": dry_run,
         "bounded_exception": {
-            "phase_id": "P21_FAILOVER_LATENCY_CURVE_200" if p21_exception else "MISSING",
-            "node_count": 200 if p21_exception else "MISSING",
+            "phase_id": phase_id if exact_200_exception else "MISSING",
+            "scenario_name": scenario_name if exact_200_exception else "MISSING",
+            "node_count": 200 if exact_200_exception else "MISSING",
             "default_max_nodes": 100,
+            "config_marker_phase": config.get("scale_profile", {}).get("bounded_exception_phase", "MISSING"),
         },
         "host": _host_facts(),
         "resource_estimates": _resource_estimates(node_count, int(config["cluster"].get("node_memory_limit_mb") or 0)),
@@ -118,13 +126,31 @@ def run_resource_preflight(
 
 
 def _is_p21_200_exception(config: dict[str, Any], node_count: int, dry_run_arg: bool) -> bool:
+    return _is_exact_200_bounded_exception(
+        config,
+        node_count,
+        dry_run_arg,
+        phase_id=P21_STAGE,
+        scenario=_scenario_for_node_count(node_count),
+    )
+
+
+def _is_exact_200_bounded_exception(
+    config: dict[str, Any],
+    node_count: int,
+    dry_run_arg: bool,
+    *,
+    phase_id: str,
+    scenario: str,
+) -> bool:
     scale_profile = config.get("scale_profile", {})
     runtime = config.get("runtime", {})
     safety = config.get("safety", {})
     return (
         node_count == 200
+        and _exact_200_phase_scenario_allowed(phase_id, scenario)
         and config.get("profile_name") == "scale_200"
-        and scale_profile.get("bounded_exception_phase") == "P21_FAILOVER_LATENCY_CURVE_200"
+        and scale_profile.get("bounded_exception_phase") in EXACT_200_CONFIG_MARKER_PHASES
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
@@ -133,9 +159,15 @@ def _is_p21_200_exception(config: dict[str, Any], node_count: int, dry_run_arg: 
     )
 
 
-def _semantic_errors_for_preflight(config: dict[str, Any], *, allow_p21_200: bool) -> list[dict[str, Any]]:
+def _exact_200_phase_scenario_allowed(phase_id: str, scenario: str) -> bool:
+    if phase_id == P21_STAGE:
+        return scenario == "scale_200" or scenario.startswith("scale_200_sample_")
+    return phase_id == P32_STAGE and scenario == P32_SCENARIO
+
+
+def _semantic_errors_for_preflight(config: dict[str, Any], *, allow_exact_200: bool) -> list[dict[str, Any]]:
     errors = validate_semantics(config)
-    if not allow_p21_200:
+    if not allow_exact_200:
         return errors
     filtered: list[dict[str, Any]] = []
     for error in errors:

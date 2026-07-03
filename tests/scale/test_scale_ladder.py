@@ -31,7 +31,44 @@ def test_p21_resource_preflight_allows_only_exact_200_exception(tmp_path: Path, 
     assert report["phase_id"] == "P21_FAILOVER_LATENCY_CURVE_200"
     assert report["node_count"] == 200
     assert report["dry_run"] is False
+    assert report["bounded_exception"]["phase_id"] == "P21_FAILOVER_LATENCY_CURVE_200"
     assert report["bounded_exception"]["default_max_nodes"] == 100
+
+
+def test_p32_resource_preflight_allows_exact_200_stage_exception(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
+    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count, "phase_id": phase_id, "scenario": scenario}))
+    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_200.yaml",
+        tmp_path / "p32_preflight.json",
+        phase_id="P32_MANAGEMENT_MATRIX_200_REAL",
+        scenario="strict_management_matrix_200",
+    )
+
+    assert report["status"] == "PASS"
+    assert report["phase_id"] == "P32_MANAGEMENT_MATRIX_200_REAL"
+    assert report["scenario_name"] == "strict_management_matrix_200"
+    assert report["node_count"] == 200
+    assert report["bounded_exception"]["phase_id"] == "P32_MANAGEMENT_MATRIX_200_REAL"
+    assert report["bounded_exception"]["default_max_nodes"] == 100
+
+
+def test_p32_resource_preflight_rejects_wrong_200_scenario(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
+    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
+    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_200.yaml",
+        tmp_path / "bad_p32_preflight.json",
+        phase_id="P32_MANAGEMENT_MATRIX_200_REAL",
+        scenario="strict_management_matrix_199",
+    )
+
+    assert report["status"] == "FAIL"
+    assert any(check["name"] == "exact_200_bounded_exception" and check["status"] == "FAIL" for check in report["checks"])
 
 
 def test_resource_preflight_rejects_unmarked_real_200_config(tmp_path: Path, monkeypatch) -> None:
@@ -45,7 +82,7 @@ def test_resource_preflight_rejects_unmarked_real_200_config(tmp_path: Path, mon
     report = resource.run_resource_preflight(bad_config, tmp_path / "bad_preflight.json")
 
     assert report["status"] == "FAIL"
-    assert any(check["name"] == "p21_exact_200_exception" and check["status"] == "FAIL" for check in report["checks"])
+    assert any(check["name"] == "exact_200_bounded_exception" and check["status"] == "FAIL" for check in report["checks"])
 
 
 def test_scale_ladder_artifacts_compare_two_rungs(tmp_path: Path, monkeypatch) -> None:

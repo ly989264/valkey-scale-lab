@@ -34,7 +34,14 @@ def create_plan_file(config_path: str | Path, out_path: str | Path, dry_run: boo
     return plan
 
 
-def build_cluster_plan(config: dict[str, Any], config_path: Path | None = None, force_dry_run: bool = False) -> dict[str, Any]:
+def build_cluster_plan(
+    config: dict[str, Any],
+    config_path: Path | None = None,
+    force_dry_run: bool = False,
+    *,
+    bounded_exception_phase: str | None = None,
+    bounded_exception_scenario: str | None = None,
+) -> dict[str, Any]:
     cluster = config["cluster"]
     network = config["network"]
     runtime = config["runtime"]
@@ -49,6 +56,13 @@ def build_cluster_plan(config: dict[str, Any], config_path: Path | None = None, 
     host_ids = [host["host_id"] for host in hosts]
     dry_run = bool(force_dry_run or runtime.get("dry_run"))
     opt_in_1000 = bool(safety.get("allow_1000_nodes") and scale_profile.get("opt_in_1000"))
+    exact_200_bounded_exception = _is_p32_exact_200_bounded_exception(
+        config,
+        node_count=node_count,
+        dry_run=dry_run,
+        phase=bounded_exception_phase,
+        scenario=bounded_exception_scenario,
+    )
 
     if network.get("virtual_az_mode") == "single" and replicas_per_shard > 0:
         if not config.get("cluster", {}).get("non_ha_allowed"):
@@ -97,6 +111,7 @@ def build_cluster_plan(config: dict[str, Any], config_path: Path | None = None, 
         "default_node_cap": int(safety["default_max_nodes"]),
         "dry_run": dry_run,
         "opt_in_1000": opt_in_1000,
+        "exact_200_bounded_exception": exact_200_bounded_exception,
         "no_execution": dry_run,
         "port_collision_checked": _ports_unique_per_host(planned_nodes),
         "az_balanced": _az_balanced(planned_nodes),
@@ -106,7 +121,10 @@ def build_cluster_plan(config: dict[str, Any], config_path: Path | None = None, 
         "allow_1000_env": safety.get("require_1000_env") if opt_in_1000 else None,
         "required_1000_env_value": REQUIRED_1000_ENV_VALUE if opt_in_1000 else None,
     }
-    if node_count > int(safety["default_max_nodes"]) and not opt_in_1000:
+    if exact_200_bounded_exception:
+        constraints["bounded_exception_phase"] = bounded_exception_phase
+        constraints["bounded_exception_scenario"] = bounded_exception_scenario
+    if node_count > int(safety["default_max_nodes"]) and not opt_in_1000 and not exact_200_bounded_exception:
         raise PlannerError("node count exceeds default cap without 1000 opt-in")
     if node_count >= 1000 and not dry_run:
         raise PlannerError("1000-node plans must be dry-run only")
@@ -154,6 +172,31 @@ def build_cluster_plan(config: dict[str, Any], config_path: Path | None = None, 
         "nodes": planned_nodes,
         "constraints": constraints,
     }
+
+
+def _is_p32_exact_200_bounded_exception(
+    config: dict[str, Any],
+    *,
+    node_count: int,
+    dry_run: bool,
+    phase: str | None,
+    scenario: str | None,
+) -> bool:
+    scale_profile = config.get("scale_profile", {})
+    safety = config.get("safety", {})
+    runtime = config.get("runtime", {})
+    return (
+        phase == "P32_MANAGEMENT_MATRIX_200_REAL"
+        and scenario == "strict_management_matrix_200"
+        and node_count == 200
+        and config.get("profile_name") == "scale_200"
+        and int(safety.get("default_max_nodes", 0) or 0) == 100
+        and safety.get("allow_1000_nodes") is False
+        and runtime.get("dry_run") is False
+        and dry_run is False
+        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", "P32_MANAGEMENT_MATRIX_200_REAL"}
+        and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
+    )
 
 
 def write_phase_summary(path: str | Path) -> None:

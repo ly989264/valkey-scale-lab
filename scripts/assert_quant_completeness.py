@@ -17,6 +17,7 @@ from strict_harness_lib import load_jsonl, phase_dir, print_errors, rel, require
 P29 = "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
 P30 = "P30_MANAGEMENT_MATRIX_50_REAL"
 P31 = "P31_MANAGEMENT_MATRIX_100_REAL"
+P32 = "P32_MANAGEMENT_MATRIX_200_REAL"
 STRICT_MANAGEMENT_STAGES = {
     P30: {
         "scale": 50,
@@ -27,6 +28,11 @@ STRICT_MANAGEMENT_STAGES = {
         "scale": 100,
         "coverage_prefix": "100.management.",
         "timing_artifact": "runtime_timing_breakdown_strict_management_matrix_100.json",
+    },
+    P32: {
+        "scale": 200,
+        "coverage_prefix": "200.management.",
+        "timing_artifact": "runtime_timing_breakdown_strict_management_matrix_200.json",
     },
 }
 CANONICAL_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]

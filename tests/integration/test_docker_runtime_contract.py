@@ -132,6 +132,53 @@ def test_p31_strict_management_matrix_is_exact_100_process_runtime() -> None:
     ) is True
 
 
+def test_p32_strict_management_matrix_is_exact_200_process_runtime() -> None:
+    assert docker_runtime._scenario_node_count_allowed(
+        "P32_MANAGEMENT_MATRIX_200_REAL",
+        "strict_management_matrix_200",
+        200,
+    ) is True
+    for rejected in [100, 199, 201]:
+        assert docker_runtime._scenario_node_count_allowed(
+            "P32_MANAGEMENT_MATRIX_200_REAL",
+            "strict_management_matrix_200",
+            rejected,
+        ) is False
+    assert docker_runtime._uses_docker_process_runtime(
+        "P32_MANAGEMENT_MATRIX_200_REAL",
+        "strict_management_matrix_200",
+    ) is True
+
+
+def test_p32_node_specs_use_slow_cluster_failure_timeout() -> None:
+    config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
+    nodes = docker_runtime._node_specs(config, "P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200")
+
+    assert len(nodes) == 200
+    assert {node["cluster_node_timeout"] for node in nodes} == {"600000"}
+
+
+def test_p32_cluster_plan_writer_allows_only_exact_stage_exception(tmp_path: Path) -> None:
+    config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
+    out = tmp_path / "cluster_plan.json"
+
+    docker_runtime._write_p30_cluster_plan(
+        out,
+        config,
+        "P32_MANAGEMENT_MATRIX_200_REAL",
+        "strict_management_matrix_200",
+        "p32-test-run",
+    )
+
+    plan = docker_runtime.json.loads(out.read_text(encoding="utf-8"))
+    assert plan["phase_id"] == "P32_MANAGEMENT_MATRIX_200_REAL"
+    assert plan["scenario_name"] == "strict_management_matrix_200"
+    assert plan["node_count"] == 200
+    assert plan["constraints"]["default_node_cap"] == 100
+    assert plan["constraints"]["opt_in_1000"] is False
+    assert plan["constraints"]["exact_200_bounded_exception"] is True
+
+
 def test_p25_smoke_runtime_is_six_node_only_and_not_process_runtime() -> None:
     assert docker_runtime._scenario_node_count_allowed(
         "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
@@ -197,9 +244,14 @@ def test_p21_runtime_semantic_exception_is_narrow() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
 
     assert docker_runtime._runtime_semantic_errors(config, phase="P21_FAILOVER_LATENCY_CURVE_200", scenario="scale_200_sample_01") == []
+    assert docker_runtime._runtime_semantic_errors(config, phase="P32_MANAGEMENT_MATRIX_200_REAL", scenario="strict_management_matrix_200") == []
     assert any(
         error["code"] == "NODE_CAP_EXCEEDED"
         for error in docker_runtime._runtime_semantic_errors(config, phase="P22_FAULT_REPLICA_HOST_AZ_STOP", scenario="scale_200_sample_01")
+    )
+    assert any(
+        error["code"] == "NODE_CAP_EXCEEDED"
+        for error in docker_runtime._runtime_semantic_errors(config, phase="P32_MANAGEMENT_MATRIX_200_REAL", scenario="strict_management_matrix_199")
     )
 
 
@@ -1195,6 +1247,7 @@ def test_cleanup_removes_fault_state_files(tmp_path: Path, monkeypatch: pytest.M
 
 def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     labels: list[str] = []
+    calls: list[list[str]] = []
     state = {
         "schema_version": "v1",
         "cluster_id": "test",
@@ -1218,11 +1271,12 @@ def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: P
         return [worker(item) for item in work]
 
     def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        calls.append(args)
         if args[:2] == ["exec", "nodehost-a"] or args[:2] == ["exec", "nodehost-b"]:
-            if args[2:4] == ["kill", "-TERM"]:
+            if args[2:4] == ["sh", "-c"]:
+                if "kill -TERM" in args[4]:
+                    return docker_runtime.DockerResult("signaled=1 already_stopped=0 failed=0\n", "", 0)
                 return docker_runtime.DockerResult("", "", 0)
-            if args[2:4] == ["kill", "-0"]:
-                return docker_runtime.DockerResult("", "gone", 1)
             if args[2:4] == ["pgrep", "-x"]:
                 return docker_runtime.DockerResult("", "", 1)
         return docker_runtime.DockerResult("", "", 0)
@@ -1243,10 +1297,12 @@ def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: P
 
     assert report["status"] == "PASS"
     assert labels == [
-        "Valkey process termination",
-        "Valkey process exit verification",
+        "nodehost Valkey process termination",
+        "nodehost Valkey process exit verification",
         "nodehost Valkey residual check",
     ]
+    assert len([call for call in calls if call[:3] == ["exec", call[1], "sh"] and "kill -TERM" in call[-1]]) == 2
+    assert not any(call[:4] == ["exec", call[1], "kill", "-TERM"] for call in calls)
     for field in [
         "cleanup_terminate_processes_seconds",
         "cleanup_verify_process_exit_seconds",
@@ -1257,6 +1313,89 @@ def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: P
     ]:
         assert report["cleanup_timing"][field] >= 0.0
     assert report["cleanup_timing"]["bounded_parallelism"] is True
+
+
+def test_process_cleanup_tolerates_slow_bulk_termination_when_residuals_clear(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    state = {
+        "schema_version": "v1",
+        "cluster_id": "test",
+        "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
+        "scenario": "strict_management_matrix_200",
+        "runtime": {"type": "docker_process", "run_id": "test-run"},
+        "nodehosts": [
+            {"nodehost_id": "nodehost-az-a", "container_name": "nodehost-a"},
+        ],
+        "nodes": [
+            {"logical_id": "n0", "nodehost_id": "nodehost-az-a", "nodehost_container_name": "nodehost-a", "pid": 101},
+            {"logical_id": "n1", "nodehost_id": "nodehost-az-a", "nodehost_container_name": "nodehost-a", "pid": 102},
+        ],
+    }
+
+    def fake_parallel(items, worker, *, parallelism, timeout, label):
+        return [worker(item) for item in list(items)]
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        if args[:4] == ["exec", "nodehost-a", "sh", "-c"]:
+            if "kill -TERM" in args[4]:
+                raise DockerRuntimeError("docker exec nodehost-a kill batch timed out after 60 seconds")
+            return docker_runtime.DockerResult("", "", 0)
+        if args[:4] == ["exec", "nodehost-a", "pgrep", "-x"]:
+            return docker_runtime.DockerResult("", "", 1)
+        return docker_runtime.DockerResult("", "", 0)
+
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_cleanup_resources_by_label",
+        lambda *, phase, run_id: (
+            [{"type": "container", "id": "nodehost-a", "action": "remove", "status": "PASS"}],
+            {"cleanup_remove_containers_seconds": 0.01, "cleanup_remove_networks_seconds": 0.02},
+        ),
+    )
+    monkeypatch.setattr(docker_runtime, "owned_resources", lambda *, phase, run_id: [])
+
+    report = docker_runtime._cleanup_process_scenario(state=state, artifacts_dir=tmp_path, out_path=tmp_path / "cleanup.json")
+
+    assert report["status"] == "PASS"
+    terminate_actions = [action for action in report["cleanup_actions"] if action.get("action") == "terminate"]
+    assert terminate_actions[0]["status"] == "SKIPPED_WITH_REASON"
+    assert "timed out" in terminate_actions[0]["stderr"]
+    assert report["resources_remaining"] == []
+
+
+def test_container_cleanup_timeout_budget_matches_stop_and_remove(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, float] = {}
+
+    def fake_ids(args: list[str]) -> list[str]:
+        if args[:3] == ["ps", "-a", "-q"]:
+            return ["cid-a", "cid-b"]
+        return []
+
+    def fake_parallel(items, worker, *, parallelism, timeout, label):
+        captured[label] = timeout
+        return [worker(item) for item in list(items)]
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        if args[0] == "stop":
+            raise DockerRuntimeError("slow stop")
+        if args[0] == "rm":
+            return docker_runtime.DockerResult("", "", 0)
+        raise AssertionError(f"unexpected docker command: {args}")
+
+    monkeypatch.setattr(docker_runtime, "_docker_ids", fake_ids)
+    monkeypatch.setattr(docker_runtime, "_bounded_parallel", fake_parallel)
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    actions, _timing = docker_runtime._cleanup_resources_by_label(phase="P32_MANAGEMENT_MATRIX_200_REAL", run_id="test-run")
+
+    assert captured["owned container cleanup"] >= docker_runtime.CONTAINER_STOP_TIMEOUT_SECONDS + docker_runtime.CONTAINER_REMOVE_TIMEOUT_SECONDS
+    assert [action["status"] for action in actions] == [
+        "SKIPPED_WITH_REASON",
+        "PASS",
+        "SKIPPED_WITH_REASON",
+        "PASS",
+    ]
 
 
 def test_p10_cleanup_appends_orchestrator_stop(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

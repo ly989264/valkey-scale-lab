@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
+from valkey_scale_lab.config.simple_yaml import parse_config_file
+from valkey_scale_lab.config.validation import normalize_config
+from valkey_scale_lab.planner.plan import PlannerError, build_cluster_plan, create_plan_file
 
 
 def test_multi_az_plan_places_replicas_apart(tmp_path: Path) -> None:
@@ -72,6 +74,55 @@ def test_1000_node_plan_is_opt_in_dry_run(tmp_path: Path) -> None:
     assert plan["constraints"]["dry_run"] is True
     assert plan["constraints"]["two_virtual_azs"] is True
     assert all(node["dry_run"] is True for node in plan["nodes"])
+
+
+def test_p32_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None:
+    config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
+
+    plan = build_cluster_plan(
+        config,
+        config_path=Path("templates/configs/scale_200.yaml"),
+        bounded_exception_phase="P32_MANAGEMENT_MATRIX_200_REAL",
+        bounded_exception_scenario="strict_management_matrix_200",
+    )
+
+    assert plan["node_count"] == 200
+    assert plan["constraints"]["default_node_cap"] == 100
+    assert plan["constraints"]["opt_in_1000"] is False
+    assert plan["constraints"]["exact_200_bounded_exception"] is True
+    assert plan["constraints"]["bounded_exception_phase"] == "P32_MANAGEMENT_MATRIX_200_REAL"
+    assert plan["constraints"]["bounded_exception_scenario"] == "strict_management_matrix_200"
+    assert plan["runtime"]["dry_run"] is False
+
+
+def test_p32_exact_200_plan_rejects_wrong_scenario() -> None:
+    config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
+
+    with pytest.raises(PlannerError, match="node count exceeds default cap"):
+        build_cluster_plan(
+            config,
+            config_path=Path("templates/configs/scale_200.yaml"),
+            bounded_exception_phase="P32_MANAGEMENT_MATRIX_200_REAL",
+            bounded_exception_scenario="strict_management_matrix_199",
+        )
+
+
+def test_p32_bounded_exception_rejects_non_200_node_count() -> None:
+    config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
+    config["cluster"]["shards"] = 99
+
+    with pytest.raises(PlannerError, match="node count exceeds default cap"):
+        build_cluster_plan(
+            config,
+            config_path=Path("templates/configs/scale_200.yaml"),
+            bounded_exception_phase="P32_MANAGEMENT_MATRIX_200_REAL",
+            bounded_exception_scenario="strict_management_matrix_200",
+        )
+
+
+def test_plain_scale_200_plan_still_requires_existing_opt_in(tmp_path: Path) -> None:
+    with pytest.raises(PlannerError, match="NODE_CAP_EXCEEDED"):
+        create_plan_file("templates/configs/scale_200.yaml", tmp_path / "plain_scale_200_plan.json")
 
 
 def test_single_az_replicas_rejected_without_non_ha_marker(tmp_path: Path) -> None:

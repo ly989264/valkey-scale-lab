@@ -1,0 +1,288 @@
+{
+  "artifact_type": "workload_impact_report",
+  "comparisons": [
+    {
+      "baseline": 15.319246,
+      "delta": -15.295129,
+      "event": 0.024117,
+      "metric": "achieved_qps"
+    },
+    {
+      "baseline": 0.0,
+      "delta": 0.0,
+      "event": 0.0,
+      "metric": "error_rate"
+    },
+    {
+      "baseline": 70.264847,
+      "delta": 4.851303,
+      "event": 75.11615,
+      "metric": "latency_p95_ms"
+    }
+  ],
+  "created_at": "2026-06-28T00:00:00Z",
+  "operation_window_count": 66,
+  "operations": [
+    {
+      "coverage_id": "200.management.create_cluster",
+      "operation_id": "p32-create_cluster-200",
+      "operation_name": "create_cluster",
+      "window_refs": [
+        "p32-create_cluster-200:baseline",
+        "p32-create_cluster-200:pre_event",
+        "p32-create_cluster-200:event",
+        "p32-create_cluster-200:recovery",
+        "p32-create_cluster-200:post_recovery",
+        "p32-create_cluster-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.meet_nodes",
+      "operation_id": "p32-meet_nodes-200",
+      "operation_name": "meet_nodes",
+      "window_refs": [
+        "p32-meet_nodes-200:baseline",
+        "p32-meet_nodes-200:pre_event",
+        "p32-meet_nodes-200:event",
+        "p32-meet_nodes-200:recovery",
+        "p32-meet_nodes-200:post_recovery",
+        "p32-meet_nodes-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.add_replica",
+      "operation_id": "p32-add_replica-200",
+      "operation_name": "add_replica",
+      "window_refs": [
+        "p32-add_replica-200:baseline",
+        "p32-add_replica-200:pre_event",
+        "p32-add_replica-200:event",
+        "p32-add_replica-200:recovery",
+        "p32-add_replica-200:post_recovery",
+        "p32-add_replica-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.reshard_slot_range",
+      "operation_id": "p32-reshard_slot_range-200",
+      "operation_name": "reshard_slot_range",
+      "window_refs": [
+        "p32-reshard_slot_range-200:baseline",
+        "p32-reshard_slot_range-200:pre_event",
+        "p32-reshard_slot_range-200:event",
+        "p32-reshard_slot_range-200:recovery",
+        "p32-reshard_slot_range-200:post_recovery",
+        "p32-reshard_slot_range-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.reshard_with_keys",
+      "operation_id": "p32-reshard_with_keys-200",
+      "operation_name": "reshard_with_keys",
+      "window_refs": [
+        "p32-reshard_with_keys-200:baseline",
+        "p32-reshard_with_keys-200:pre_event",
+        "p32-reshard_with_keys-200:event",
+        "p32-reshard_with_keys-200:recovery",
+        "p32-reshard_with_keys-200:post_recovery",
+        "p32-reshard_with_keys-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.rebalance_after_imbalance",
+      "operation_id": "p32-rebalance_after_imbalance-200",
+      "operation_name": "rebalance_after_imbalance",
+      "window_refs": [
+        "p32-rebalance_after_imbalance-200:baseline",
+        "p32-rebalance_after_imbalance-200:pre_event",
+        "p32-rebalance_after_imbalance-200:event",
+        "p32-rebalance_after_imbalance-200:recovery",
+        "p32-rebalance_after_imbalance-200:post_recovery",
+        "p32-rebalance_after_imbalance-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.rolling_restart_replica_first",
+      "operation_id": "p32-rolling_restart_replica_first-200",
+      "operation_name": "rolling_restart_replica_first",
+      "window_refs": [
+        "p32-rolling_restart_replica_first-200:baseline",
+        "p32-rolling_restart_replica_first-200:pre_event",
+        "p32-rolling_restart_replica_first-200:event",
+        "p32-rolling_restart_replica_first-200:recovery",
+        "p32-rolling_restart_replica_first-200:post_recovery",
+        "p32-rolling_restart_replica_first-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.rolling_restart_primary_safe",
+      "operation_id": "p32-rolling_restart_primary_safe-200",
+      "operation_name": "rolling_restart_primary_safe",
+      "window_refs": [
+        "p32-rolling_restart_primary_safe-200:baseline",
+        "p32-rolling_restart_primary_safe-200:pre_event",
+        "p32-rolling_restart_primary_safe-200:event",
+        "p32-rolling_restart_primary_safe-200:recovery",
+        "p32-rolling_restart_primary_safe-200:post_recovery",
+        "p32-rolling_restart_primary_safe-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.remove_replica",
+      "operation_id": "p32-remove_replica-200",
+      "operation_name": "remove_replica",
+      "window_refs": [
+        "p32-remove_replica-200:baseline",
+        "p32-remove_replica-200:pre_event",
+        "p32-remove_replica-200:event",
+        "p32-remove_replica-200:recovery",
+        "p32-remove_replica-200:post_recovery",
+        "p32-remove_replica-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.remove_failed_node",
+      "operation_id": "p32-remove_failed_node-200",
+      "operation_name": "remove_failed_node",
+      "window_refs": [
+        "p32-remove_failed_node-200:baseline",
+        "p32-remove_failed_node-200:pre_event",
+        "p32-remove_failed_node-200:event",
+        "p32-remove_failed_node-200:recovery",
+        "p32-remove_failed_node-200:post_recovery",
+        "p32-remove_failed_node-200:all_run"
+      ]
+    },
+    {
+      "coverage_id": "200.management.remove_primary_drained_or_safe_replaced",
+      "operation_id": "p32-remove_primary_drained_or_safe_replaced-200",
+      "operation_name": "remove_primary_drained_or_safe_replaced",
+      "window_refs": [
+        "p32-remove_primary_drained_or_safe_replaced-200:baseline",
+        "p32-remove_primary_drained_or_safe_replaced-200:pre_event",
+        "p32-remove_primary_drained_or_safe_replaced-200:event",
+        "p32-remove_primary_drained_or_safe_replaced-200:recovery",
+        "p32-remove_primary_drained_or_safe_replaced-200:post_recovery",
+        "p32-remove_primary_drained_or_safe_replaced-200:all_run"
+      ]
+    }
+  ],
+  "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P32_MANAGEMENT_MATRIX_200_REAL-strict_management_matrix_200-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "windows": [
+    {
+      "metrics": {
+        "achieved_qps": 15.319246,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 65.553282,
+        "latency_p95_ms": 70.264847,
+        "latency_p99_ms": 70.677348,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 44,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 11,
+      "window_name": "baseline"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 14.918976,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 67.296909,
+        "latency_p95_ms": 72.442881,
+        "latency_p99_ms": 72.964819,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 44,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 11,
+      "window_name": "pre_event"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 0.024117,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 69.330701,
+        "latency_p95_ms": 75.11615,
+        "latency_p99_ms": 75.656424,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 44,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 11,
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 14.801314,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 67.069907,
+        "latency_p95_ms": 75.482041,
+        "latency_p99_ms": 76.416499,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 44,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 11,
+      "window_name": "recovery"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 14.764234,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 67.462214,
+        "latency_p95_ms": 73.814424,
+        "latency_p99_ms": 74.386306,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 44,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 11,
+      "window_name": "post_recovery"
+    },
+    {
+      "metrics": {
+        "achieved_qps": 0.119813,
+        "ask_redirection_count": 0,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 67.249254,
+        "latency_p95_ms": 77.079928,
+        "latency_p99_ms": 80.999564,
+        "missing_reasons": {},
+        "moved_redirection_count": 0,
+        "ok_ops": 220,
+        "requested_qps": 200.0,
+        "timeout_count": 0
+      },
+      "operation_count": 11,
+      "window_name": "all_run"
+    }
+  ]
+}

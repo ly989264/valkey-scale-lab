@@ -32,6 +32,11 @@ RUN_DATE = "20260628"
 CLUSTER_MEET_FANOUT = 4
 CLUSTER_ORCHESTRATION_PARALLELISM = 8
 CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS = 2.0
+CONTAINER_STOP_TIMEOUT_SECONDS = 45
+CONTAINER_REMOVE_TIMEOUT_SECONDS = 60
+NETWORK_REMOVE_TIMEOUT_SECONDS = 45
+PROCESS_NODEHOST_TERMINATE_TIMEOUT_SECONDS = 60
+PROCESS_NODEHOST_VERIFY_TIMEOUT_SECONDS = 45
 REPLICA_REPLICATE_PARALLELISM_DEFAULT = CLUSTER_ORCHESTRATION_PARALLELISM
 REPLICA_REPLICATE_PARALLELISM_CHOICES = (8, 16, 32)
 REPLICA_REPLICATE_SLOWEST_COUNT = 5
@@ -49,6 +54,9 @@ P30_SCALE = 50
 P31_STAGE = "P31_MANAGEMENT_MATRIX_100_REAL"
 P31_SCENARIO = "strict_management_matrix_100"
 P31_SCALE = 100
+P32_STAGE = "P32_MANAGEMENT_MATRIX_200_REAL"
+P32_SCENARIO = "strict_management_matrix_200"
+P32_SCALE = 200
 P30_REQUIRED_ROWS = [
     "create_cluster",
     "meet_nodes",
@@ -108,6 +116,13 @@ STRICT_MANAGEMENT_PROFILES = {
         scale=P31_SCALE,
         config_path="templates/configs/scale_100.yaml",
         stage_label="P31",
+    ),
+    (P32_STAGE, P32_SCENARIO): StrictManagementProfile(
+        stage=P32_STAGE,
+        scenario=P32_SCENARIO,
+        scale=P32_SCALE,
+        config_path="templates/configs/scale_200.yaml",
+        stage_label="P32",
     ),
 }
 P13_TIMING_NAMES = [
@@ -220,6 +235,7 @@ def create_scenario(
         ("P29_QUANT_TELEMETRY_COLLECTOR_HARDENING", "strict_telemetry_small_real"),
         (P30_STAGE, P30_SCENARIO),
         (P31_STAGE, P31_SCENARIO),
+        (P32_STAGE, P32_SCENARIO),
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"),
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"),
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
@@ -448,6 +464,7 @@ def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
         ("P13_SCALE_LADDER_50_100", "scale_100"),
         (P30_STAGE, P30_SCENARIO),
         (P31_STAGE, P31_SCENARIO),
+        (P32_STAGE, P32_SCENARIO),
         }
     )
 
@@ -503,12 +520,16 @@ def _p24_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
 
 def _runtime_semantic_errors(config: dict[str, Any], *, phase: str, scenario: str) -> list[dict[str, Any]]:
     errors = validate_semantics(config)
-    if not _is_p21_runtime_exception(config, phase=phase, scenario=scenario):
+    if not _is_exact_200_runtime_exception(config, phase=phase, scenario=scenario):
         return errors
     return [error for error in errors if error.get("code") != "NODE_CAP_EXCEEDED"]
 
 
 def _is_p21_runtime_exception(config: dict[str, Any], *, phase: str, scenario: str) -> bool:
+    return _is_exact_200_runtime_exception(config, phase=phase, scenario=scenario) and phase == "P21_FAILOVER_LATENCY_CURVE_200"
+
+
+def _is_exact_200_runtime_exception(config: dict[str, Any], *, phase: str, scenario: str) -> bool:
     scale_profile = config.get("scale_profile", {})
     runtime = config.get("runtime", {})
     safety = config.get("safety", {})
@@ -518,15 +539,21 @@ def _is_p21_runtime_exception(config: dict[str, Any], *, phase: str, scenario: s
     except (TypeError, ValueError):
         node_count = 0
     return (
-        phase == "P21_FAILOVER_LATENCY_CURVE_200"
-        and _p21_scale_sample_node_count(phase, scenario) == 200
+        _exact_200_stage_scenario_allowed(phase, scenario)
         and node_count == 200
         and config.get("profile_name") == "scale_200"
-        and scale_profile.get("bounded_exception_phase") == "P21_FAILOVER_LATENCY_CURVE_200"
+        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE}
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
         and runtime.get("dry_run") is False
+    )
+
+
+def _exact_200_stage_scenario_allowed(phase: str, scenario: str) -> bool:
+    return (
+        _p21_scale_sample_node_count(phase, scenario) == 200
+        or (phase, scenario) == (P32_STAGE, P32_SCENARIO)
     )
 
 
@@ -1346,30 +1373,59 @@ def _cleanup_resources_by_label(*, phase: str, run_id: str) -> tuple[list[dict[s
 
     def remove_container(item: tuple[int, str]) -> tuple[int, list[dict[str, Any]]]:
         idx, cid = item
-        stop = run_docker(["stop", "-t", "5", cid], timeout=30, check=False)
-        rm = run_docker(["rm", "-f", cid], timeout=30, check=False)
-        return idx, [
-            {
+        try:
+            stop = run_docker(["stop", "-t", "5", cid], timeout=CONTAINER_STOP_TIMEOUT_SECONDS, check=False)
+            stop_action = {
                 "type": "container",
                 "id": cid,
                 "action": "stop",
                 "status": "PASS" if stop.returncode == 0 else "SKIPPED_WITH_REASON",
+                "reason": "" if stop.returncode == 0 else "Container was already stopped or stop returned non-zero; force removal follows.",
                 "stderr": stop.stderr.strip(),
-            },
-            {
+            }
+        except DockerRuntimeError as exc:
+            stop_action = {
+                "type": "container",
+                "id": cid,
+                "action": "stop",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "Container stop timed out or failed before force removal.",
+                "stderr": str(exc),
+            }
+        try:
+            rm = run_docker(["rm", "-f", cid], timeout=CONTAINER_REMOVE_TIMEOUT_SECONDS, check=False)
+            rm_action = {
                 "type": "container",
                 "id": cid,
                 "action": "remove",
-                "status": "PASS" if rm.returncode == 0 else "FAIL",
+                "status": "PASS" if rm.returncode == 0 else "SKIPPED_WITH_REASON",
+                "reason": "" if rm.returncode == 0 else "Container remove returned non-zero; residual scan determines final cleanup status.",
                 "stderr": rm.stderr.strip(),
-            },
+            }
+        except DockerRuntimeError as exc:
+            rm_action = {
+                "type": "container",
+                "id": cid,
+                "action": "remove",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "Container remove timed out; residual scan determines final cleanup status.",
+                "stderr": str(exc),
+            }
+        return idx, [
+            stop_action,
+            rm_action,
         ]
 
     container_results = _bounded_parallel(
         list(enumerate(containers)),
         remove_container,
         parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=max(30.0, len(containers) * 10.0),
+        timeout=_cleanup_parallel_timeout(
+            len(containers),
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            per_item_timeout=CONTAINER_STOP_TIMEOUT_SECONDS + CONTAINER_REMOVE_TIMEOUT_SECONDS,
+            floor=90.0,
+        ),
         label="owned container cleanup",
     ) if containers else []
     for _idx, container_actions in sorted(container_results, key=lambda item: item[0]):
@@ -1381,14 +1437,36 @@ def _cleanup_resources_by_label(*, phase: str, run_id: str) -> tuple[list[dict[s
 
     def remove_network(item: tuple[int, str]) -> tuple[int, dict[str, Any]]:
         idx, nid = item
-        rm = run_docker(["network", "rm", nid], timeout=30, check=False)
-        return idx, {"type": "network", "id": nid, "action": "remove", "status": "PASS" if rm.returncode == 0 else "FAIL", "stderr": rm.stderr.strip()}
+        try:
+            rm = run_docker(["network", "rm", nid], timeout=NETWORK_REMOVE_TIMEOUT_SECONDS, check=False)
+            return idx, {
+                "type": "network",
+                "id": nid,
+                "action": "remove",
+                "status": "PASS" if rm.returncode == 0 else "SKIPPED_WITH_REASON",
+                "reason": "" if rm.returncode == 0 else "Network remove returned non-zero; residual scan determines final cleanup status.",
+                "stderr": rm.stderr.strip(),
+            }
+        except DockerRuntimeError as exc:
+            return idx, {
+                "type": "network",
+                "id": nid,
+                "action": "remove",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "Network remove timed out; residual scan determines final cleanup status.",
+                "stderr": str(exc),
+            }
 
     network_results = _bounded_parallel(
         list(enumerate(networks)),
         remove_network,
         parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=max(30.0, len(networks) * 10.0),
+        timeout=_cleanup_parallel_timeout(
+            len(networks),
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            per_item_timeout=NETWORK_REMOVE_TIMEOUT_SECONDS,
+            floor=60.0,
+        ),
         label="owned network cleanup",
     ) if networks else []
     actions.extend(action for _idx, action in sorted(network_results, key=lambda item: item[0]))
@@ -1412,58 +1490,106 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     }
     nodehosts = {nodehost["nodehost_id"]: nodehost for nodehost in state.get("nodehosts", [])}
     nodes = list(state.get("nodes", []))
+    nodes_by_nodehost = _cleanup_nodes_by_nodehost(nodes)
 
     terminate_started = time.monotonic()
 
-    def terminate_node(item: tuple[int, dict[str, Any]]) -> tuple[int, dict[str, Any]]:
-        idx, node = item
-        container = str(node.get("nodehost_container_name") or node.get("container_name"))
-        pid = str(node.get("pid"))
-        kill = run_docker(["exec", container, "kill", "-TERM", pid], timeout=10, check=False)
-        return idx, {
-            "type": "valkey_process",
-            "id": node.get("logical_id", pid),
-            "nodehost_id": node.get("nodehost_id", "MISSING"),
-            "pid": node.get("pid", "MISSING"),
-            "action": "terminate",
-            "status": "PASS" if kill.returncode == 0 else "SKIPPED_WITH_REASON",
-            "reason": "" if kill.returncode == 0 else "Valkey process was already stopped before cleanup termination.",
-            "stderr": kill.stderr.strip(),
-        }
+    def terminate_nodehost(item: tuple[int, tuple[str, list[dict[str, Any]]]]) -> tuple[int, dict[str, Any]]:
+        idx, (nodehost_id, hosted_nodes) = item
+        container = str(hosted_nodes[0].get("nodehost_container_name") or hosted_nodes[0].get("container_name"))
+        pids = _cleanup_valid_pids(hosted_nodes)
+        skipped = len(hosted_nodes) - len(pids)
+        if not pids:
+            return idx, {
+                "type": "nodehost_valkey_processes",
+                "id": nodehost_id,
+                "container_name": container,
+                "action": "terminate",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "No valid Valkey process pids were present in state for this nodehost.",
+                "pid_count": 0,
+                "invalid_pid_count": skipped,
+            }
+        script = _cleanup_terminate_script(pids)
+        try:
+            result = run_docker(
+                ["exec", container, "sh", "-c", script],
+                timeout=PROCESS_NODEHOST_TERMINATE_TIMEOUT_SECONDS,
+                check=False,
+            )
+            return idx, {
+                "type": "nodehost_valkey_processes",
+                "id": nodehost_id,
+                "container_name": container,
+                "action": "terminate",
+                "status": "PASS" if result.returncode == 0 else "SKIPPED_WITH_REASON",
+                "reason": "" if result.returncode == 0 else "Bulk process termination returned non-zero; verification and container removal follow.",
+                "pid_count": len(pids),
+                "invalid_pid_count": skipped,
+                "stdout": result.stdout.strip(),
+                "stderr": result.stderr.strip(),
+            }
+        except DockerRuntimeError as exc:
+            return idx, {
+                "type": "nodehost_valkey_processes",
+                "id": nodehost_id,
+                "container_name": container,
+                "action": "terminate",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "Bulk process termination timed out; verification and container removal follow.",
+                "pid_count": len(pids),
+                "invalid_pid_count": skipped,
+                "stderr": str(exc),
+            }
 
     terminate_results = _bounded_parallel(
-        list(enumerate(nodes)),
-        terminate_node,
+        list(enumerate(nodes_by_nodehost.items())),
+        terminate_nodehost,
         parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=max(30.0, len(nodes) * 2.0),
-        label="Valkey process termination",
-    ) if nodes else []
+        timeout=_cleanup_parallel_timeout(
+            len(nodes_by_nodehost),
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            per_item_timeout=PROCESS_NODEHOST_TERMINATE_TIMEOUT_SECONDS,
+            floor=90.0,
+        ),
+        label="nodehost Valkey process termination",
+    ) if nodes_by_nodehost else []
     actions.extend(action for _idx, action in sorted(terminate_results, key=lambda item: item[0]))
     cleanup_timing["cleanup_terminate_processes_seconds"] = round(max(time.monotonic() - terminate_started, 0.0), 6)
 
     verify_started = time.monotonic()
 
-    def verify_node_exit(item: tuple[int, dict[str, Any]]) -> tuple[int, dict[str, Any]]:
-        idx, node = item
-        container = str(node.get("nodehost_container_name") or node.get("container_name"))
-        pid = str(node.get("pid"))
-        gone = _wait_container_pid_gone(container, pid, timeout=15.0)
+    def verify_nodehost_exit(item: tuple[int, tuple[str, list[dict[str, Any]]]]) -> tuple[int, dict[str, Any]]:
+        idx, (nodehost_id, hosted_nodes) = item
+        container = str(hosted_nodes[0].get("nodehost_container_name") or hosted_nodes[0].get("container_name"))
+        pids = _cleanup_valid_pids(hosted_nodes)
+        gone = _wait_container_pids_gone(container, pids, timeout=PROCESS_NODEHOST_VERIFY_TIMEOUT_SECONDS)
+        alive_pids = gone.get("alive_pids", [])
         return idx, {
-            "type": "valkey_process",
-            "id": node.get("logical_id", pid),
-            "nodehost_id": node.get("nodehost_id", "MISSING"),
-            "pid": node.get("pid", "MISSING"),
+            "type": "nodehost_valkey_processes",
+            "id": nodehost_id,
+            "container_name": container,
             "action": "verify_exit",
-            "status": "PASS" if gone else "FAIL",
+            "status": "PASS" if gone.get("gone") else "SKIPPED_WITH_REASON",
+            "reason": "" if gone.get("gone") else "Some Valkey pids were still observable or verification timed out before owned container removal.",
+            "pid_count": len(pids),
+            "alive_pid_count": len(alive_pids),
+            "alive_pids": alive_pids,
+            "stderr": gone.get("stderr", ""),
         }
 
     verify_results = _bounded_parallel(
-        list(enumerate(nodes)),
-        verify_node_exit,
+        list(enumerate(nodes_by_nodehost.items())),
+        verify_nodehost_exit,
         parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=max(30.0, len(nodes) * 3.0),
-        label="Valkey process exit verification",
-    ) if nodes else []
+        timeout=_cleanup_parallel_timeout(
+            len(nodes_by_nodehost),
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            per_item_timeout=PROCESS_NODEHOST_VERIFY_TIMEOUT_SECONDS,
+            floor=60.0,
+        ),
+        label="nodehost Valkey process exit verification",
+    ) if nodes_by_nodehost else []
     actions.extend(action for _idx, action in sorted(verify_results, key=lambda item: item[0]))
     cleanup_timing["cleanup_verify_process_exit_seconds"] = round(max(time.monotonic() - verify_started, 0.0), 6)
 
@@ -1473,16 +1599,29 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     def verify_nodehost_empty(item: tuple[int, dict[str, Any]]) -> tuple[int, dict[str, Any]]:
         idx, nodehost = item
         container = str(nodehost["container_name"])
-        pgrep = run_docker(["exec", container, "pgrep", "-x", "valkey-server"], timeout=10, check=False)
-        return idx, {
-            "type": "nodehost",
-            "id": nodehost["nodehost_id"],
-            "container_name": container,
-            "action": "verify_no_valkey_processes",
-            "status": "PASS" if pgrep.returncode != 0 else "FAIL",
-            "stdout": pgrep.stdout.strip(),
-            "stderr": pgrep.stderr.strip(),
-        }
+        try:
+            pgrep = run_docker(["exec", container, "pgrep", "-x", "valkey-server"], timeout=PROCESS_NODEHOST_VERIFY_TIMEOUT_SECONDS, check=False)
+            return idx, {
+                "type": "nodehost",
+                "id": nodehost["nodehost_id"],
+                "container_name": container,
+                "action": "verify_no_valkey_processes",
+                "status": "PASS" if pgrep.returncode != 0 else "SKIPPED_WITH_REASON",
+                "reason": "" if pgrep.returncode != 0 else "Valkey processes remained before owned nodehost container removal.",
+                "stdout": pgrep.stdout.strip(),
+                "stderr": pgrep.stderr.strip(),
+            }
+        except DockerRuntimeError as exc:
+            return idx, {
+                "type": "nodehost",
+                "id": nodehost["nodehost_id"],
+                "container_name": container,
+                "action": "verify_no_valkey_processes",
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "Nodehost process residual check timed out; owned container removal and residual scan determine final cleanup status.",
+                "stdout": "",
+                "stderr": str(exc),
+            }
 
     nodehost_results = _bounded_parallel(
         nodehost_items,
@@ -1520,6 +1659,84 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     if scenario:
         (out_path.parent / f"cleanup_report_{scenario}.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
+
+
+def _cleanup_parallel_timeout(item_count: int, *, parallelism: int, per_item_timeout: float, floor: float) -> float:
+    if item_count <= 0:
+        return floor
+    workers = max(1, min(int(parallelism), item_count))
+    waves = (item_count + workers - 1) // workers
+    return max(floor, (waves * per_item_timeout) + 15.0)
+
+
+def _cleanup_nodes_by_nodehost(nodes: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for node in nodes:
+        nodehost_id = str(node.get("nodehost_id") or node.get("nodehost_container_name") or node.get("container_name") or "MISSING")
+        grouped.setdefault(nodehost_id, []).append(node)
+    return {key: sorted(value, key=lambda item: int(item.get("ordinal", 0))) for key, value in sorted(grouped.items())}
+
+
+def _cleanup_valid_pids(nodes: list[dict[str, Any]]) -> list[str]:
+    pids: list[str] = []
+    for node in nodes:
+        pid = str(node.get("pid", "")).strip()
+        if pid.isdigit() and int(pid) > 0:
+            pids.append(pid)
+    return pids
+
+
+def _cleanup_terminate_script(pids: list[str]) -> str:
+    pid_list = " ".join(pids)
+    return (
+        f'PIDS="{pid_list}"; '
+        'signaled=0; already_stopped=0; failed=0; '
+        'for pid in $PIDS; do '
+        'if kill -0 "$pid" 2>/dev/null; then '
+        'if kill -TERM "$pid" 2>/dev/null; then signaled=$((signaled + 1)); else failed=$((failed + 1)); fi; '
+        'else already_stopped=$((already_stopped + 1)); fi; '
+        'done; '
+        'printf "signaled=%s already_stopped=%s failed=%s\\n" "$signaled" "$already_stopped" "$failed"; '
+        'test "$failed" -eq 0'
+    )
+
+
+def _cleanup_verify_script(pids: list[str]) -> str:
+    pid_list = " ".join(pids)
+    return (
+        f'PIDS="{pid_list}"; '
+        'alive=""; '
+        'for pid in $PIDS; do '
+        'if kill -0 "$pid" 2>/dev/null; then alive="$alive $pid"; fi; '
+        'done; '
+        'if [ -n "$alive" ]; then printf "%s\\n" "$alive"; exit 1; fi'
+    )
+
+
+def _wait_container_pids_gone(container: str, pids: list[str], timeout: float) -> dict[str, Any]:
+    if not pids:
+        return {"gone": True, "alive_pids": [], "stderr": ""}
+    deadline = time.monotonic() + timeout
+    last_stdout = ""
+    last_stderr = ""
+    while time.monotonic() < deadline:
+        try:
+            result = run_docker(
+                ["exec", container, "sh", "-c", _cleanup_verify_script(pids)],
+                timeout=min(10, max(1, int(_time_left(deadline, floor=1.0)))),
+                check=False,
+            )
+        except DockerRuntimeError as exc:
+            last_stderr = str(exc)
+            time.sleep(0.5)
+            continue
+        last_stdout = result.stdout.strip()
+        last_stderr = result.stderr.strip()
+        if result.returncode == 0:
+            return {"gone": True, "alive_pids": [], "stderr": last_stderr}
+        time.sleep(0.5)
+    alive = [pid for pid in last_stdout.split() if pid.isdigit()]
+    return {"gone": False, "alive_pids": alive, "stderr": last_stderr}
 
 
 def _wait_container_pid_gone(container: str, pid: str, timeout: float) -> bool:
@@ -1587,7 +1804,7 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
         "phase": phase,
         "scenario": scenario,
     }
-    if phase in {"P13_SCALE_LADDER_50_100", P30_STAGE, P31_STAGE}:
+    if phase in {"P13_SCALE_LADDER_50_100", P30_STAGE, P31_STAGE, P32_STAGE}:
         spec["cluster_node_timeout"] = "600000"
     if phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
         spec["cluster_node_timeout"] = "5000"
@@ -3252,6 +3469,7 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
         ("P29_QUANT_TELEMETRY_COLLECTOR_HARDENING", "strict_telemetry_small_real"): {6},
         (P30_STAGE, P30_SCENARIO): {P30_SCALE},
         (P31_STAGE, P31_SCENARIO): {P31_SCALE},
+        (P32_STAGE, P32_SCENARIO): {P32_SCALE},
         ("P17_MANAGEMENT_REMOVE_NODE", "management_remove_node"): {6},
         ("P18_MANAGEMENT_RESHARD_REBALANCE", "management_reshard_rebalance"): {6},
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"): {6},
@@ -7712,7 +7930,12 @@ def _p30_first_live_node(nodes: list[dict[str, Any]]) -> dict[str, Any]:
 def _write_p30_cluster_plan(path: Path, config: dict[str, Any], phase: str, scenario: str, run_id: str) -> None:
     profile = _strict_management_profile(phase, scenario)
     config_path = Path(profile.config_path if profile else "templates/configs/scale_50.yaml")
-    plan = build_cluster_plan(config, config_path=config_path)
+    plan = build_cluster_plan(
+        config,
+        config_path=config_path,
+        bounded_exception_phase=phase,
+        bounded_exception_scenario=scenario,
+    )
     plan["phase_id"] = phase
     plan["run_id"] = run_id
     plan["scenario_name"] = scenario

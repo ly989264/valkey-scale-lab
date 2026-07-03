@@ -1,0 +1,118 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL",
+  "cleanup_actions": [
+    {
+      "action": "terminate",
+      "container_name": "vslab-p32-management-matrix-200-real-strict-management-matrix-200-20260628-nodehost-az-a",
+      "id": "nodehost-az-a",
+      "invalid_pid_count": 0,
+      "pid_count": 100,
+      "reason": "Bulk process termination returned non-zero; verification and container removal follow.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: {\"message\":\"No such container: vslab-p32-management-matrix-200-real-strict-management-matrix-200-20260628-nodehost-az-a\"}",
+      "stdout": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p32-management-matrix-200-real-strict-management-matrix-200-20260628-nodehost-az-b",
+      "id": "nodehost-az-b",
+      "invalid_pid_count": 0,
+      "pid_count": 100,
+      "reason": "Bulk process termination returned non-zero; verification and container removal follow.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container e92821f62c14dd29d5f766ec19df370e643166adfd229c0149071f5d43c115e3 is not running",
+      "stdout": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 0,
+      "alive_pids": [],
+      "container_name": "vslab-p32-management-matrix-200-real-strict-management-matrix-200-20260628-nodehost-az-a",
+      "id": "nodehost-az-a",
+      "pid_count": 100,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: No such container: vslab-p32-management-matrix-200-real-strict-management-matrix-200-20260628-nodehost-az-a",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 0,
+      "alive_pids": [],
+      "container_name": "vslab-p32-management-matrix-200-real-strict-management-matrix-200-20260628-nodehost-az-b",
+      "id": "nodehost-az-b",
+      "pid_count": 100,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "Error response from daemon: container e92821f62c14dd29d5f766ec19df370e643166adfd229c0149071f5d43c115e3 is not running",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p32-management-matrix-200-real-strict-management-matrix-200-20260628-nodehost-az-a",
+      "id": "nodehost-az-a",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "Error response from daemon: No such container: vslab-p32-management-matrix-200-real-strict-management-matrix-200-20260628-nodehost-az-a",
+      "stdout": "",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p32-management-matrix-200-real-strict-management-matrix-200-20260628-nodehost-az-b",
+      "id": "nodehost-az-b",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "Error response from daemon: container e92821f62c14dd29d5f766ec19df370e643166adfd229c0149071f5d43c115e3 is not running",
+      "stdout": "",
+      "type": "nodehost"
+    },
+    {
+      "action": "stop",
+      "id": "e92821f62c14",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "e92821f62c14",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "5633ad383adf",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "bounded_parallelism": true,
+    "cleanup_remove_containers_seconds": 0.069557,
+    "cleanup_remove_networks_seconds": 0.229185,
+    "cleanup_residual_scan_seconds": 0.061241,
+    "cleanup_terminate_processes_seconds": 1.408333,
+    "cleanup_verify_nodehost_empty_seconds": 0.046717,
+    "cleanup_verify_process_exit_seconds": 45.114027,
+    "parallelism": 8
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P32_MANAGEMENT_MATRIX_200_REAL-strict_management_matrix_200-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

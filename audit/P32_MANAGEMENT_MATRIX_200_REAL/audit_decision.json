@@ -1,0 +1,51 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "Rawls review subagent",
+  "created_at": "2026-07-03T23:21:03Z",
+  "gate_result_path": "artifacts/gates/P32_MANAGEMENT_MATRIX_200_REAL/gate_result.json",
+  "gate_result_sha256": "d8539e5b5bb13dc49c0cf6942edbc6e608cfd22a2b7c2ba52cd868b72f7ca2e8",
+  "artifact_paths": [
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/phase_summary.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/valkey_e2e_evidence.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/cleanup_report.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/events.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/metrics_timeseries.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/workload_windows.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/quant_summary.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/coverage_ledger.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/resource_preflight.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/cluster_plan.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/run_state.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_ops_matrix.json",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_operation_results.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_topology_snapshots.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_command_log.jsonl",
+    "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_workload_impact.json"
+  ],
+  "coverage_ids": [
+    "200.management.create_cluster",
+    "200.management.meet_nodes",
+    "200.management.add_replica",
+    "200.management.remove_replica",
+    "200.management.remove_primary_drained_or_safe_replaced",
+    "200.management.remove_failed_node",
+    "200.management.reshard_slot_range",
+    "200.management.reshard_with_keys",
+    "200.management.rebalance_after_imbalance",
+    "200.management.rolling_restart_replica_first",
+    "200.management.rolling_restart_primary_safe"
+  ],
+  "risks": [
+    {
+      "risk": "P32 exact 200-node management runtime is resource intensive and uses a P32-only bounded setup timeout to allow completion.",
+      "severity": "medium",
+      "required_before_next_phase": false,
+      "notes": "Final gate, cleanup assertion, and review passed; no remaining P32 Docker resources were observed."
+    }
+  ],
+  "rationale": "P32 passed all manifest gates with exact 200-node real Valkey 9.1.0 evidence, all required management rows PASS, strict quant artifacts complete, coverage registry updated for 200.management rows, and cleanup PASS."
+}
