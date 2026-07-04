@@ -20,7 +20,9 @@ P32_STAGE = "P32_MANAGEMENT_MATRIX_200_REAL"
 P32_SCENARIO = "strict_management_matrix_200"
 P35_STAGE = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
 P35_SCENARIO = "strict_fault_matrix_200"
-EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE}
+P36_STAGE = "P36_FULL_FLOW_E2E_50_100_200_REAL"
+P36_SCENARIO = "strict_full_flow_200"
+EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE, P36_STAGE}
 
 
 class ResourcePreflightError(RuntimeError):
@@ -167,6 +169,7 @@ def _exact_200_phase_scenario_allowed(phase_id: str, scenario: str) -> bool:
     return (phase_id, scenario) in {
         (P32_STAGE, P32_SCENARIO),
         (P35_STAGE, P35_SCENARIO),
+        (P36_STAGE, P36_SCENARIO),
     }
 
 

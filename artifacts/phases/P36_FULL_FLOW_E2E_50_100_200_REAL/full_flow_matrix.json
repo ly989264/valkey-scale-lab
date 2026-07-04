@@ -1,0 +1,595 @@
+{
+  "artifact_type": "full_flow_matrix",
+  "created_at": "2026-06-28T00:00:00Z",
+  "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_scales": [
+    50,
+    100,
+    200
+  ],
+  "required_steps": [
+    "config_validate",
+    "resource_preflight",
+    "plan_cluster",
+    "create_cluster",
+    "meet_nodes",
+    "assign_slots",
+    "add_replica",
+    "baseline_workload",
+    "telemetry_collect",
+    "analysis_build",
+    "report_render",
+    "cleanup_verify"
+  ],
+  "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-aggregate-20260628",
+  "scales": [
+    {
+      "analysis_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/analysis_summary.json",
+      "artifact_scope": "full_flow_50",
+      "artifact_type": "full_flow_result",
+      "cleanup_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/cleanup_report.json",
+      "cleanup_status": "PASS",
+      "data_path_result": "PASS",
+      "evidence_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/valkey_e2e_evidence.json",
+      "evidence_status": "PASS",
+      "fault_execution_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/fault_sequence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/fault_command_log.jsonl"
+      ],
+      "management_execution_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/management_sequence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/management_command_log.jsonl"
+      ],
+      "node_count": 50,
+      "nodes_observed": 50,
+      "nodes_requested": 50,
+      "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+      "real_valkey": true,
+      "report_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/report_index.json",
+      "required_steps": [
+        "config_validate",
+        "resource_preflight",
+        "plan_cluster",
+        "create_cluster",
+        "meet_nodes",
+        "assign_slots",
+        "add_replica",
+        "baseline_workload",
+        "telemetry_collect",
+        "analysis_build",
+        "report_render",
+        "cleanup_verify"
+      ],
+      "scale": 50,
+      "scenario_name": "strict_full_flow_50",
+      "schema_version": "v1",
+      "scoped_result_status": "PASS",
+      "source_artifacts": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/full_flow_result.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/events.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/metrics_timeseries.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/workload_windows.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/valkey_e2e_evidence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/cleanup_report.json"
+      ],
+      "stage_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+      "status": "PASS",
+      "steps": [
+        {
+          "coverage_id": "50.lifecycle.config_validate",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/config_validation_report.json"
+          ],
+          "status": "PASS",
+          "step_name": "config_validate"
+        },
+        {
+          "coverage_id": "50.lifecycle.resource_preflight",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/resource_preflight.json"
+          ],
+          "status": "PASS",
+          "step_name": "resource_preflight"
+        },
+        {
+          "coverage_id": "50.lifecycle.plan_cluster",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/cluster_plan.json"
+          ],
+          "status": "PASS",
+          "step_name": "plan_cluster"
+        },
+        {
+          "coverage_id": "50.lifecycle.create_cluster",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/run_state.json",
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/cluster_snapshots_strict_full_flow_50.json"
+          ],
+          "status": "PASS",
+          "step_name": "create_cluster"
+        },
+        {
+          "coverage_id": "50.lifecycle.meet_nodes",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/run_state.json"
+          ],
+          "status": "PASS",
+          "step_name": "meet_nodes"
+        },
+        {
+          "coverage_id": "50.lifecycle.assign_slots",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/run_state.json"
+          ],
+          "status": "PASS",
+          "step_name": "assign_slots"
+        },
+        {
+          "coverage_id": "50.lifecycle.add_replica",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/run_state.json"
+          ],
+          "status": "PASS",
+          "step_name": "add_replica"
+        },
+        {
+          "coverage_id": "50.lifecycle.baseline_workload",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/workload_windows.json",
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/events.jsonl"
+          ],
+          "status": "PASS",
+          "step_name": "baseline_workload"
+        },
+        {
+          "coverage_id": "50.lifecycle.telemetry_collect",
+          "fault_execution_refs": [
+            "fault_sequence.json",
+            "fault_command_log.jsonl",
+            "full_flow_topology_snapshots.jsonl",
+            "workload_windows.json"
+          ],
+          "management_execution_refs": [
+            "management_sequence.json",
+            "management_command_log.jsonl",
+            "full_flow_topology_snapshots.jsonl",
+            "workload_windows.json"
+          ],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/events.jsonl",
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/metrics_timeseries.jsonl"
+          ],
+          "status": "PASS",
+          "step_name": "telemetry_collect"
+        },
+        {
+          "coverage_id": "50.lifecycle.analysis_build",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/analysis_summary.json"
+          ],
+          "status": "PASS",
+          "step_name": "analysis_build"
+        },
+        {
+          "coverage_id": "50.lifecycle.report_render",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/report_index.json"
+          ],
+          "status": "PASS",
+          "step_name": "report_render"
+        },
+        {
+          "coverage_id": "50.lifecycle.cleanup_verify",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/cleanup_report.json"
+          ],
+          "status": "PASS",
+          "step_name": "cleanup_verify"
+        }
+      ]
+    },
+    {
+      "analysis_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/analysis_summary.json",
+      "artifact_scope": "full_flow_100",
+      "artifact_type": "full_flow_result",
+      "cleanup_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cleanup_report.json",
+      "cleanup_status": "PASS",
+      "data_path_result": "PASS",
+      "evidence_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/valkey_e2e_evidence.json",
+      "evidence_status": "PASS",
+      "fault_execution_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/fault_sequence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/fault_command_log.jsonl"
+      ],
+      "management_execution_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/management_sequence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/management_command_log.jsonl"
+      ],
+      "node_count": 100,
+      "nodes_observed": 100,
+      "nodes_requested": 100,
+      "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+      "real_valkey": true,
+      "report_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/report_index.json",
+      "required_steps": [
+        "config_validate",
+        "resource_preflight",
+        "plan_cluster",
+        "create_cluster",
+        "meet_nodes",
+        "assign_slots",
+        "add_replica",
+        "baseline_workload",
+        "telemetry_collect",
+        "analysis_build",
+        "report_render",
+        "cleanup_verify"
+      ],
+      "scale": 100,
+      "scenario_name": "strict_full_flow_100",
+      "schema_version": "v1",
+      "scoped_result_status": "PASS",
+      "source_artifacts": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/full_flow_result.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/events.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/metrics_timeseries.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/workload_windows.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/valkey_e2e_evidence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cleanup_report.json"
+      ],
+      "stage_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+      "status": "PASS",
+      "steps": [
+        {
+          "coverage_id": "100.lifecycle.config_validate",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/config_validation_report.json"
+          ],
+          "status": "PASS",
+          "step_name": "config_validate"
+        },
+        {
+          "coverage_id": "100.lifecycle.resource_preflight",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/resource_preflight.json"
+          ],
+          "status": "PASS",
+          "step_name": "resource_preflight"
+        },
+        {
+          "coverage_id": "100.lifecycle.plan_cluster",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cluster_plan.json"
+          ],
+          "status": "PASS",
+          "step_name": "plan_cluster"
+        },
+        {
+          "coverage_id": "100.lifecycle.create_cluster",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/run_state.json",
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cluster_snapshots_strict_full_flow_100.json"
+          ],
+          "status": "PASS",
+          "step_name": "create_cluster"
+        },
+        {
+          "coverage_id": "100.lifecycle.meet_nodes",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/run_state.json"
+          ],
+          "status": "PASS",
+          "step_name": "meet_nodes"
+        },
+        {
+          "coverage_id": "100.lifecycle.assign_slots",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/run_state.json"
+          ],
+          "status": "PASS",
+          "step_name": "assign_slots"
+        },
+        {
+          "coverage_id": "100.lifecycle.add_replica",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/run_state.json"
+          ],
+          "status": "PASS",
+          "step_name": "add_replica"
+        },
+        {
+          "coverage_id": "100.lifecycle.baseline_workload",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/workload_windows.json",
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/events.jsonl"
+          ],
+          "status": "PASS",
+          "step_name": "baseline_workload"
+        },
+        {
+          "coverage_id": "100.lifecycle.telemetry_collect",
+          "fault_execution_refs": [
+            "fault_sequence.json",
+            "fault_command_log.jsonl",
+            "full_flow_topology_snapshots.jsonl",
+            "workload_windows.json"
+          ],
+          "management_execution_refs": [
+            "management_sequence.json",
+            "management_command_log.jsonl",
+            "full_flow_topology_snapshots.jsonl",
+            "workload_windows.json"
+          ],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/events.jsonl",
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/metrics_timeseries.jsonl"
+          ],
+          "status": "PASS",
+          "step_name": "telemetry_collect"
+        },
+        {
+          "coverage_id": "100.lifecycle.analysis_build",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/analysis_summary.json"
+          ],
+          "status": "PASS",
+          "step_name": "analysis_build"
+        },
+        {
+          "coverage_id": "100.lifecycle.report_render",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/report_index.json"
+          ],
+          "status": "PASS",
+          "step_name": "report_render"
+        },
+        {
+          "coverage_id": "100.lifecycle.cleanup_verify",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cleanup_report.json"
+          ],
+          "status": "PASS",
+          "step_name": "cleanup_verify"
+        }
+      ]
+    },
+    {
+      "analysis_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/analysis_summary.json",
+      "artifact_scope": "full_flow_200",
+      "artifact_type": "full_flow_result",
+      "cleanup_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/cleanup_report.json",
+      "cleanup_status": "PASS",
+      "data_path_result": "PASS",
+      "evidence_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/valkey_e2e_evidence.json",
+      "evidence_status": "PASS",
+      "fault_execution_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/fault_sequence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/fault_command_log.jsonl"
+      ],
+      "management_execution_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/management_sequence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/management_command_log.jsonl"
+      ],
+      "node_count": 200,
+      "nodes_observed": 200,
+      "nodes_requested": 200,
+      "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+      "real_valkey": true,
+      "report_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/report_index.json",
+      "required_steps": [
+        "config_validate",
+        "resource_preflight",
+        "plan_cluster",
+        "create_cluster",
+        "meet_nodes",
+        "assign_slots",
+        "add_replica",
+        "baseline_workload",
+        "telemetry_collect",
+        "analysis_build",
+        "report_render",
+        "cleanup_verify"
+      ],
+      "scale": 200,
+      "scenario_name": "strict_full_flow_200",
+      "schema_version": "v1",
+      "scoped_result_status": "PASS",
+      "source_artifacts": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/full_flow_result.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/events.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/metrics_timeseries.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/workload_windows.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/valkey_e2e_evidence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/cleanup_report.json"
+      ],
+      "stage_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+      "status": "PASS",
+      "steps": [
+        {
+          "coverage_id": "200.lifecycle.config_validate",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/config_validation_report.json"
+          ],
+          "status": "PASS",
+          "step_name": "config_validate"
+        },
+        {
+          "coverage_id": "200.lifecycle.resource_preflight",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/resource_preflight.json"
+          ],
+          "status": "PASS",
+          "step_name": "resource_preflight"
+        },
+        {
+          "coverage_id": "200.lifecycle.plan_cluster",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/cluster_plan.json"
+          ],
+          "status": "PASS",
+          "step_name": "plan_cluster"
+        },
+        {
+          "coverage_id": "200.lifecycle.create_cluster",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/run_state.json",
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/cluster_snapshots_strict_full_flow_200.json"
+          ],
+          "status": "PASS",
+          "step_name": "create_cluster"
+        },
+        {
+          "coverage_id": "200.lifecycle.meet_nodes",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/run_state.json"
+          ],
+          "status": "PASS",
+          "step_name": "meet_nodes"
+        },
+        {
+          "coverage_id": "200.lifecycle.assign_slots",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/run_state.json"
+          ],
+          "status": "PASS",
+          "step_name": "assign_slots"
+        },
+        {
+          "coverage_id": "200.lifecycle.add_replica",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/run_state.json"
+          ],
+          "status": "PASS",
+          "step_name": "add_replica"
+        },
+        {
+          "coverage_id": "200.lifecycle.baseline_workload",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/workload_windows.json",
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/events.jsonl"
+          ],
+          "status": "PASS",
+          "step_name": "baseline_workload"
+        },
+        {
+          "coverage_id": "200.lifecycle.telemetry_collect",
+          "fault_execution_refs": [
+            "fault_sequence.json",
+            "fault_command_log.jsonl",
+            "full_flow_topology_snapshots.jsonl",
+            "workload_windows.json"
+          ],
+          "management_execution_refs": [
+            "management_sequence.json",
+            "management_command_log.jsonl",
+            "full_flow_topology_snapshots.jsonl",
+            "workload_windows.json"
+          ],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/events.jsonl",
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/metrics_timeseries.jsonl"
+          ],
+          "status": "PASS",
+          "step_name": "telemetry_collect"
+        },
+        {
+          "coverage_id": "200.lifecycle.analysis_build",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/analysis_summary.json"
+          ],
+          "status": "PASS",
+          "step_name": "analysis_build"
+        },
+        {
+          "coverage_id": "200.lifecycle.report_render",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/report_index.json"
+          ],
+          "status": "PASS",
+          "step_name": "report_render"
+        },
+        {
+          "coverage_id": "200.lifecycle.cleanup_verify",
+          "fault_execution_refs": [],
+          "management_execution_refs": [],
+          "source_evidence_refs": [
+            "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/cleanup_report.json"
+          ],
+          "status": "PASS",
+          "step_name": "cleanup_verify"
+        }
+      ]
+    }
+  ],
+  "schema_version": "v1",
+  "stage_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+  "status": "PASS"
+}

@@ -95,6 +95,25 @@ def test_p32_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None
     assert plan["runtime"]["dry_run"] is False
 
 
+def test_p36_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None:
+    config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
+
+    plan = build_cluster_plan(
+        config,
+        config_path=Path("templates/configs/scale_200.yaml"),
+        bounded_exception_phase="P36_FULL_FLOW_E2E_50_100_200_REAL",
+        bounded_exception_scenario="strict_full_flow_200",
+    )
+
+    assert plan["node_count"] == 200
+    assert plan["constraints"]["default_node_cap"] == 100
+    assert plan["constraints"]["opt_in_1000"] is False
+    assert plan["constraints"]["exact_200_bounded_exception"] is True
+    assert plan["constraints"]["bounded_exception_phase"] == "P36_FULL_FLOW_E2E_50_100_200_REAL"
+    assert plan["constraints"]["bounded_exception_scenario"] == "strict_full_flow_200"
+    assert plan["runtime"]["dry_run"] is False
+
+
 def test_p32_exact_200_plan_rejects_wrong_scenario() -> None:
     config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
 

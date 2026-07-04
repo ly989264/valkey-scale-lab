@@ -185,16 +185,23 @@ def _is_p32_exact_200_bounded_exception(
     scale_profile = config.get("scale_profile", {})
     safety = config.get("safety", {})
     runtime = config.get("runtime", {})
+    allowed_exact_200 = {
+        ("P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200"),
+        ("P36_FULL_FLOW_E2E_50_100_200_REAL", "strict_full_flow_200"),
+    }
     return (
-        phase == "P32_MANAGEMENT_MATRIX_200_REAL"
-        and scenario == "strict_management_matrix_200"
+        (phase, scenario) in allowed_exact_200
         and node_count == 200
         and config.get("profile_name") == "scale_200"
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
         and runtime.get("dry_run") is False
         and dry_run is False
-        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", "P32_MANAGEMENT_MATRIX_200_REAL"}
+        and scale_profile.get("bounded_exception_phase") in {
+            "P21_FAILOVER_LATENCY_CURVE_200",
+            "P32_MANAGEMENT_MATRIX_200_REAL",
+            "P36_FULL_FLOW_E2E_50_100_200_REAL",
+        }
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
     )
 

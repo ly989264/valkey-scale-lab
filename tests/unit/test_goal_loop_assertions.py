@@ -2659,3 +2659,131 @@ def test_p24_fault_matrix_assertion_rejects_host_network_mutation_evidence(tmp_p
     monkeypatch.setattr(sys, "argv", ["assert_fault_matrix_coverage.py", "--phase", P24_PHASE])
 
     assert assertion.main() == 1
+
+
+def write_p36_full_flow_bundle(base: Path) -> None:
+    phase = "P36_FULL_FLOW_E2E_50_100_200_REAL"
+    required_steps = [
+        "config_validate",
+        "resource_preflight",
+        "plan_cluster",
+        "create_cluster",
+        "meet_nodes",
+        "assign_slots",
+        "add_replica",
+        "baseline_workload",
+        "telemetry_collect",
+        "analysis_build",
+        "report_render",
+        "cleanup_verify",
+    ]
+    base.mkdir(parents=True, exist_ok=True)
+    scale_rows = []
+    result_rows = []
+    for scale in [50, 100, 200]:
+        scope = f"full_flow_{scale}"
+        scoped = base / scope
+        scoped.mkdir(parents=True)
+        for name in [
+            "config_validation_report.json",
+            "resource_preflight.json",
+            "cluster_plan.json",
+            "run_state.json",
+            f"cluster_snapshots_strict_full_flow_{scale}.json",
+            "analysis_summary.json",
+            "report_index.json",
+            "management_sequence.json",
+            "fault_sequence.json",
+            "cleanup_report.json",
+            "valkey_e2e_evidence.json",
+        ]:
+            write_json(scoped / name, {"status": "PASS", "phase_id": phase, "scale": scale})
+        for name in ["events.jsonl", "metrics_timeseries.jsonl", "workload_windows.json", "management_command_log.jsonl", "fault_command_log.jsonl"]:
+            path = scoped / name
+            if name.endswith(".jsonl"):
+                write_jsonl(path, [{"status": "PASS", "phase_id": phase, "scale": scale}])
+            else:
+                write_json(path, {"status": "PASS", "windows": [{"window_name": "baseline", "start_event_id": "evt-1", "end_event_id": "evt-2", "metrics": {}}]})
+        steps = [
+            {
+                "step_name": step,
+                "coverage_id": f"{scale}.lifecycle.{step}",
+                "status": "PASS",
+                "source_evidence_refs": [
+                    f"artifacts/phases/{phase}/{scope}/config_validation_report.json"
+                    if step == "config_validate"
+                    else f"artifacts/phases/{phase}/{scope}/run_state.json"
+                ],
+            }
+            for step in required_steps
+        ]
+        row = {
+            "schema_version": "v1",
+            "phase_id": phase,
+            "stage_id": phase,
+            "scale": scale,
+            "node_count": scale,
+            "nodes_requested": scale,
+            "nodes_observed": scale,
+            "scenario_name": f"strict_full_flow_{scale}",
+            "artifact_scope": scope,
+            "status": "PASS",
+            "real_valkey": True,
+            "data_path_result": "PASS",
+            "steps": steps,
+            "required_steps": required_steps,
+            "management_execution_refs": [
+                f"artifacts/phases/{phase}/{scope}/management_sequence.json",
+                f"artifacts/phases/{phase}/{scope}/management_command_log.jsonl",
+            ],
+            "fault_execution_refs": [
+                f"artifacts/phases/{phase}/{scope}/fault_sequence.json",
+                f"artifacts/phases/{phase}/{scope}/fault_command_log.jsonl",
+            ],
+            "analysis_ref": f"artifacts/phases/{phase}/{scope}/analysis_summary.json",
+            "report_ref": f"artifacts/phases/{phase}/{scope}/report_index.json",
+            "evidence_ref": f"artifacts/phases/{phase}/{scope}/valkey_e2e_evidence.json",
+            "cleanup_ref": f"artifacts/phases/{phase}/{scope}/cleanup_report.json",
+        }
+        scale_rows.append(row)
+        result_rows.append(row)
+    write_json(
+        base / "full_flow_matrix.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "full_flow_matrix",
+            "phase_id": phase,
+            "stage_id": phase,
+            "status": "PASS",
+            "required_steps": required_steps,
+            "scales": scale_rows,
+        },
+    )
+    write_jsonl(base / "full_flow_results.jsonl", result_rows)
+
+
+def test_p36_full_flow_assertion_accepts_complete_scoped_bundle(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_full_flow_e2e")
+    phase = "P36_FULL_FLOW_E2E_50_100_200_REAL"
+    phase_dir = tmp_path / "artifacts" / "phases" / phase
+    write_p36_full_flow_bundle(phase_dir)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    assertion.phase_dir.__globals__["ROOT"] = tmp_path
+    monkeypatch.setattr(sys, "argv", ["assert_full_flow_e2e.py", "--phase", phase, "--scales", "50,100,200"])
+
+    assert assertion.main() == 0
+
+
+def test_p36_full_flow_assertion_rejects_missing_fault_refs(tmp_path: Path, monkeypatch) -> None:
+    assertion = load_script("assert_full_flow_e2e")
+    phase = "P36_FULL_FLOW_E2E_50_100_200_REAL"
+    phase_dir = tmp_path / "artifacts" / "phases" / phase
+    write_p36_full_flow_bundle(phase_dir)
+    rows = [json.loads(line) for line in (phase_dir / "full_flow_results.jsonl").read_text(encoding="utf-8").splitlines()]
+    rows[0]["fault_execution_refs"] = []
+    write_jsonl(phase_dir / "full_flow_results.jsonl", rows)
+    monkeypatch.setattr(assertion, "ROOT", tmp_path)
+    assertion.phase_dir.__globals__["ROOT"] = tmp_path
+    monkeypatch.setattr(sys, "argv", ["assert_full_flow_e2e.py", "--phase", phase, "--scales", "50,100,200"])
+
+    assert assertion.main() == 1

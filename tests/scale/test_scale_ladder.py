@@ -92,6 +92,27 @@ def test_p35_resource_preflight_allows_exact_200_fault_stage_exception(tmp_path:
     assert report["bounded_exception"]["default_max_nodes"] == 100
 
 
+def test_p36_resource_preflight_allows_exact_200_full_flow_exception(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
+    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count, "phase_id": phase_id, "scenario": scenario}))
+    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+
+    report = resource.run_resource_preflight(
+        "templates/configs/scale_200.yaml",
+        tmp_path / "p36_preflight.json",
+        phase_id="P36_FULL_FLOW_E2E_50_100_200_REAL",
+        scenario="strict_full_flow_200",
+    )
+
+    assert report["status"] == "PASS"
+    assert report["phase_id"] == "P36_FULL_FLOW_E2E_50_100_200_REAL"
+    assert report["scenario_name"] == "strict_full_flow_200"
+    assert report["node_count"] == 200
+    assert report["bounded_exception"]["phase_id"] == "P36_FULL_FLOW_E2E_50_100_200_REAL"
+    assert report["bounded_exception"]["scenario_name"] == "strict_full_flow_200"
+    assert report["bounded_exception"]["default_max_nodes"] == 100
+
+
 def test_p35_resource_preflight_rejects_wrong_200_fault_scenario(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
     monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))

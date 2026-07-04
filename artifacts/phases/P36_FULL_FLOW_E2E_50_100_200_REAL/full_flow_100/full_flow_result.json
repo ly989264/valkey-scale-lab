@@ -1,0 +1,164 @@
+{
+  "analysis_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/analysis_summary.json",
+  "artifact_type": "full_flow_result",
+  "cleanup_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cleanup_report.json",
+  "created_at": "2026-06-28T00:00:00Z",
+  "evidence_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/valkey_e2e_evidence.json",
+  "fault_execution_refs": [
+    "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/fault_sequence.json",
+    "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/fault_command_log.jsonl"
+  ],
+  "management_execution_refs": [
+    "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/management_sequence.json",
+    "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/management_command_log.jsonl"
+  ],
+  "nodes_observed": 100,
+  "nodes_requested": 100,
+  "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "report_ref": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/report_index.json",
+  "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-strict_full_flow_100-20260628",
+  "scale": 100,
+  "scenario_name": "strict_full_flow_100",
+  "schema_version": "v1",
+  "stage_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+  "status": "PASS",
+  "steps": [
+    {
+      "coverage_id": "100.lifecycle.config_validate",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/config_validation_report.json"
+      ],
+      "status": "PASS",
+      "step_name": "config_validate"
+    },
+    {
+      "coverage_id": "100.lifecycle.resource_preflight",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/resource_preflight.json"
+      ],
+      "status": "PASS",
+      "step_name": "resource_preflight"
+    },
+    {
+      "coverage_id": "100.lifecycle.plan_cluster",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cluster_plan.json"
+      ],
+      "status": "PASS",
+      "step_name": "plan_cluster"
+    },
+    {
+      "coverage_id": "100.lifecycle.create_cluster",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/run_state.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cluster_snapshots_strict_full_flow_100.json"
+      ],
+      "status": "PASS",
+      "step_name": "create_cluster"
+    },
+    {
+      "coverage_id": "100.lifecycle.meet_nodes",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/run_state.json"
+      ],
+      "status": "PASS",
+      "step_name": "meet_nodes"
+    },
+    {
+      "coverage_id": "100.lifecycle.assign_slots",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/run_state.json"
+      ],
+      "status": "PASS",
+      "step_name": "assign_slots"
+    },
+    {
+      "coverage_id": "100.lifecycle.add_replica",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/run_state.json"
+      ],
+      "status": "PASS",
+      "step_name": "add_replica"
+    },
+    {
+      "coverage_id": "100.lifecycle.baseline_workload",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/workload_windows.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/events.jsonl"
+      ],
+      "status": "PASS",
+      "step_name": "baseline_workload"
+    },
+    {
+      "coverage_id": "100.lifecycle.telemetry_collect",
+      "fault_execution_refs": [
+        "fault_sequence.json",
+        "fault_command_log.jsonl",
+        "full_flow_topology_snapshots.jsonl",
+        "workload_windows.json"
+      ],
+      "management_execution_refs": [
+        "management_sequence.json",
+        "management_command_log.jsonl",
+        "full_flow_topology_snapshots.jsonl",
+        "workload_windows.json"
+      ],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/events.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/metrics_timeseries.jsonl"
+      ],
+      "status": "PASS",
+      "step_name": "telemetry_collect"
+    },
+    {
+      "coverage_id": "100.lifecycle.analysis_build",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/analysis_summary.json"
+      ],
+      "status": "PASS",
+      "step_name": "analysis_build"
+    },
+    {
+      "coverage_id": "100.lifecycle.report_render",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/report_index.json"
+      ],
+      "status": "PASS",
+      "step_name": "report_render"
+    },
+    {
+      "coverage_id": "100.lifecycle.cleanup_verify",
+      "fault_execution_refs": [],
+      "management_execution_refs": [],
+      "source_evidence_refs": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cleanup_report.json"
+      ],
+      "status": "PASS",
+      "step_name": "cleanup_verify"
+    }
+  ]
+}

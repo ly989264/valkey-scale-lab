@@ -234,8 +234,19 @@ def selected_rows(rows: list[dict[str, Any]], args: argparse.Namespace) -> list[
 def final_status_errors(rows: list[dict[str, Any]], args: argparse.Namespace) -> list[str]:
     errors: list[str] = []
     if args.phase or args.category or args.scale or args.scales:
-        if not selected_rows(rows, args):
+        selected = selected_rows(rows, args)
+        if not selected:
             errors.append("coverage selection matched no rows")
+        if args.phase == "P36_FULL_FLOW_E2E_50_100_200_REAL" and args.category == "lifecycle":
+            expected_scales = set(split_csv(args.scales) or ([str(args.scale)] if args.scale else []))
+            if expected_scales == {"50", "100", "200"}:
+                if len(selected) != 36:
+                    errors.append(f"P36 lifecycle selection must match 36 rows, found {len(selected)}")
+                for row in selected:
+                    if row.get("status") != "PASS":
+                        errors.append(f"{row['coverage_id']}: P36 lifecycle row must be PASS")
+                    if not row.get("source_artifacts") or not row.get("validation_artifacts") or not row.get("metric_refs") or not row.get("cleanup_ref") or not row.get("review_ref"):
+                        errors.append(f"{row['coverage_id']}: P36 PASS requires source, validation, metric, cleanup, and review refs")
     if args.require_final_real_scales:
         for row in rows:
             if row.get("execution_mode") == "real" and row.get("category") in {"lifecycle", "management", "fault"}:

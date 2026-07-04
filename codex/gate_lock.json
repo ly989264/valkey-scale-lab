@@ -697,7 +697,7 @@
     },
     {
       "path": "scripts/valkey_e2e_gate.py",
-      "sha256": "b5fa5929c39d303e1b1a3754a6ae808e5914c797fcbef11b4175b039258fd98c"
+      "sha256": "c67a7f99b4699e3f256d2c1cdfd2304668ee96f310df2923d2471fa29f933a84"
     },
     {
       "path": "scripts/valkey_probe_lib.py",
@@ -781,7 +781,7 @@
     },
     {
       "path": "scripts/assert_coverage_registry.py",
-      "sha256": "08481086024cc0fdc43d2c7e477588b6c5d62e9564894cf274ca75086731c6c5"
+      "sha256": "8ace06191f0c0c53383fa5f9404f5efc545816a14ea77231afe6867ddc906680"
     },
     {
       "path": "scripts/strict_coverage_defs.py",
@@ -793,11 +793,11 @@
     },
     {
       "path": "scripts/assert_exact_scale_real_evidence.py",
-      "sha256": "52e5678ab8125971b59148ecf65a0af3565b2f01a9ab79ae7ae2a0ef6cd4df29"
+      "sha256": "de486f4a9ecb33b708beb0b85377ac315dd14b8674d55460aaeeb6ae69bfd3b1"
     },
     {
       "path": "scripts/assert_quant_completeness.py",
-      "sha256": "6f2f51e28ed2c30d885f9176d53ff5d51612721e3c3babb7890d7170a4bcff31"
+      "sha256": "1c8477cab6a56b2ac20d334d73e998d91d528398d409774bfac18c9011c94b03"
     },
     {
       "path": "scripts/assert_management_matrix_strict.py",
@@ -809,7 +809,7 @@
     },
     {
       "path": "scripts/assert_full_flow_e2e.py",
-      "sha256": "52b1988d7e7a9140ee75d691b832b128df43b29190884a87f90734ce5632b909"
+      "sha256": "49d44bc4f3e70c00d2d9adb635a50c1c7b49a27e169d609e7869ec04b289be77"
     },
     {
       "path": "scripts/assert_200_plus_dry_run.py",

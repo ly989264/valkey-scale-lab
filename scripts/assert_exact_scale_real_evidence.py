@@ -53,8 +53,20 @@ def main() -> int:
             errors.append(f"{rel(path)}: valkey_versions must not be empty")
         elif not all(str(version).startswith("9.1.") for version in versions if version):
             errors.append(f"{rel(path)}: all observed Valkey versions must start with 9.1.")
+        if args.artifact_scope and args.phase == "P36_FULL_FLOW_E2E_50_100_200_REAL" and args.nodes is not None:
+            expected_scope = f"full_flow_{args.nodes}"
+            expected_scenario = f"strict_full_flow_{args.nodes}"
+            if args.artifact_scope != expected_scope:
+                errors.append(f"{rel(path)}: artifact scope must be {expected_scope}")
+            if evidence.get("scenario") != expected_scenario:
+                errors.append(f"{rel(path)}: scenario must be {expected_scenario}")
     if cleanup and cleanup.get("status") != "PASS":
         errors.append(f"{rel(phase_dir(args.phase) / 'cleanup_report.json')}: cleanup status must be PASS")
+    if cleanup and args.artifact_scope and args.phase == "P36_FULL_FLOW_E2E_50_100_200_REAL" and args.nodes is not None:
+        reports = cleanup.get("scale_cleanup_reports", [])
+        match = next((item for item in reports if isinstance(item, dict) and item.get("scale") == args.nodes), None)
+        if not match or match.get("status") != "PASS":
+            errors.append(f"{rel(phase_dir(args.phase) / 'cleanup_report.json')}: missing PASS cleanup entry for scale {args.nodes}")
     if errors:
         return print_errors(errors)
     print(f"PASS exact-scale real evidence phase={args.phase}")
@@ -63,4 +75,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

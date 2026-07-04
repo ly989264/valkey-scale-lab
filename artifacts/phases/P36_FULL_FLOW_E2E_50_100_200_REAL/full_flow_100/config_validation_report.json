@@ -1,0 +1,22 @@
+{
+  "artifact_type": "config_validation_report",
+  "bounded_exception": {
+    "allowed": false,
+    "phase_id": "SKIPPED_WITH_REASON",
+    "reason": "No bounded exception required for this scale.",
+    "scenario_name": "SKIPPED_WITH_REASON"
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "errors": [],
+  "node_count": 100,
+  "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-strict_full_flow_100-20260628",
+  "scenario_name": "strict_full_flow_100",
+  "schema_version": "v1",
+  "stage_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+  "status": "PASS"
+}

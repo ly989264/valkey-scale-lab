@@ -14,6 +14,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "src"))
 from valkey_probe_lib import endpoints_from_state, execute_cluster_command, load_state, probe_endpoint, wait_for_cluster_ok  # noqa: E402
 
 P13_TIMING_NAMES = [
@@ -682,6 +683,10 @@ def main() -> int:
     }
     evidence = encode_missing_nulls(evidence)
     write_json(out, evidence)
+    if args.phase == "P36_FULL_FLOW_E2E_50_100_200_REAL":
+        from valkey_scale_lab.runtime.docker_runtime import refresh_p36_full_flow_aggregate  # noqa: PLC0415
+
+        refresh_p36_full_flow_aggregate(artifact_dir.parent)
     if args.phase == "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING":
         refresh_p29_telemetry_report_hashes(artifact_dir)
     if errors:

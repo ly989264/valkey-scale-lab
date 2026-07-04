@@ -1,0 +1,139 @@
+{
+  "artifact_type": "resource_preflight",
+  "bounded_exception": {
+    "config_marker_phase": "MISSING",
+    "default_max_nodes": 100,
+    "node_count": "MISSING",
+    "phase_id": "MISSING",
+    "scenario_name": "MISSING"
+  },
+  "can_run": true,
+  "checks": [
+    {
+      "details": {
+        "errors": []
+      },
+      "name": "config_semantics",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "bounded_exception_phase": "MISSING",
+        "default_cap": 100,
+        "node_count": 50
+      },
+      "name": "node_count_limit",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "available": true,
+        "returncode": 0,
+        "server_version": "29.2.1",
+        "stderr": ""
+      },
+      "name": "docker_available",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "cpu_count": 10
+      },
+      "name": "cpu_count",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "node_memory_limit_mb": 64,
+        "required_memory_mb": 3200,
+        "status_note": "host-visible estimate"
+      },
+      "name": "memory_budget",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "free_mb": 294527,
+        "required_free_mb": 1024
+      },
+      "name": "disk_free",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "base": 7400,
+        "count": 50,
+        "unavailable": []
+      },
+      "name": "client_ports",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "base": 17400,
+        "count": 50,
+        "unavailable": []
+      },
+      "name": "cluster_bus_ports",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "hard": 9223372036854775807,
+        "node_count": 50,
+        "required_min": 1024,
+        "soft": 1048575
+      },
+      "name": "runtime_fd_limit",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "leftovers": [],
+        "node_count": 50,
+        "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-strict_full_flow_50-20260628"
+      },
+      "name": "previous_cleanup_state",
+      "status": "PASS"
+    }
+  ],
+  "config_path": "templates/configs/scale_50.yaml",
+  "created_at": "2026-06-28T00:00:00Z",
+  "dry_run": false,
+  "host": {
+    "cpu_count": 10,
+    "machine": "arm64",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "system": "Darwin"
+  },
+  "node_count": 50,
+  "nodes_requested": 50,
+  "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+  "port_ranges": {
+    "client": {
+      "base": 7400,
+      "count": 50,
+      "last": 7449
+    },
+    "cluster_bus": {
+      "base": 17400,
+      "count": 50,
+      "last": 17449
+    }
+  },
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resource_estimates": {
+    "memory_per_node_mb": 64,
+    "node_count": 50,
+    "required_disk_free_mb": 1024,
+    "required_memory_mb": 3200,
+    "workload_overhead": "standard_profile"
+  },
+  "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-resource-preflight-50-20260628",
+  "scenario_name": "strict_full_flow_50",
+  "schema_version": "v1",
+  "status": "PASS"
+}

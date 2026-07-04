@@ -21,6 +21,7 @@ P32 = "P32_MANAGEMENT_MATRIX_200_REAL"
 P33 = "P33_FAULT_FAILOVER_MATRIX_50_REAL"
 P34 = "P34_FAULT_FAILOVER_MATRIX_100_REAL"
 P35 = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
+P36 = "P36_FULL_FLOW_E2E_50_100_200_REAL"
 STRICT_MANAGEMENT_STAGES = {
     P30: {
         "scale": 50,
@@ -186,12 +187,21 @@ def main() -> int:
             errors.append("management_runtime_claimed must be true")
         if args.category == "fault" and claims.get("fault_runtime_claimed") is not True:
             errors.append("fault_runtime_claimed must be true")
+        if args.category == "full_flow":
+            if claims.get("management_runtime_claimed") is not True:
+                errors.append("management_runtime_claimed must be true for full_flow")
+            if claims.get("fault_runtime_claimed") is not True:
+                errors.append("fault_runtime_claimed must be true for full_flow")
+            if claims.get("full_flow_runtime_claimed") is not True:
+                errors.append("full_flow_runtime_claimed must be true")
     if args.phase == P29:
         assert_p29_semantics(base, errors)
     if args.phase in STRICT_MANAGEMENT_STAGES and args.category == "management":
         assert_p30_management_semantics(base, args.phase, int(args.scale or 0), errors)
     if args.phase in STRICT_FAULT_STAGES and args.category == "fault":
         assert_strict_fault_semantics(base, args.phase, int(args.scale or 0), errors)
+    if args.phase == P36 and args.category == "full_flow":
+        assert_p36_full_flow_semantics(base, errors)
     if errors:
         return print_errors(errors)
     print(f"PASS quant completeness phase={args.phase}")
@@ -430,6 +440,121 @@ def assert_strict_fault_semantics(base: Path, phase: str, scale: int, errors: li
     if counts.get("node_count") != expected_scale or counts.get("fault_row_count") != len(required_rows) or counts.get("failover_sample_count", 0) < min_failover_samples:
         errors.append("quant_summary.json: counts must record exact scale, all fault rows, and enough failover samples")
     _assert_strict_fault_coverage_ledger(coverage_ledger, phase, expected_scale, required_rows, errors)
+
+
+def assert_p36_full_flow_semantics(base: Path, errors: list[str]) -> None:
+    phase = P36
+    expected_scales = {50, 100, 200}
+    events = _load_jsonl_required(base / "events.jsonl", errors)
+    metrics = _load_jsonl_required(base / "metrics_timeseries.jsonl", errors)
+    results = _load_jsonl_required(base / "full_flow_results.jsonl", errors)
+    matrix = require_json(base / "full_flow_matrix.json", errors, "full flow matrix") or {}
+    workload = require_json(base / "workload_windows.json", errors, "workload windows") or {}
+    quant_summary = require_json(base / "quant_summary.json", errors, "quant summary") or {}
+    coverage_ledger = require_json(base / "coverage_ledger.json", errors, "coverage ledger") or {}
+    cleanup = require_json(base / "cleanup_report.json", errors, "cleanup report") or {}
+    phase_summary = require_json(base / "phase_summary.json", errors, "phase summary") or {}
+    for artifact_name, artifact in {
+        "full_flow_matrix.json": matrix,
+        "workload_windows.json": workload,
+        "quant_summary.json": quant_summary,
+        "coverage_ledger.json": coverage_ledger,
+        "cleanup_report.json": cleanup,
+        "phase_summary.json": phase_summary,
+    }.items():
+        _assert_no_forbidden_values(artifact, artifact_name, errors)
+    if matrix.get("status") != "PASS":
+        errors.append("full_flow_matrix.json: status must be PASS")
+    result_scales = {int(row.get("scale", 0) or 0) for row in results}
+    if result_scales != expected_scales:
+        errors.append(f"full_flow_results.jsonl: scales must be exactly {sorted(expected_scales)}, got {sorted(result_scales)}")
+    for row in results:
+        scale = int(row.get("scale", 0) or 0)
+        label = f"full_flow_results:{scale}"
+        if row.get("status") != "PASS" or row.get("real_valkey") is not True:
+            errors.append(f"{label}: PASS real_valkey row required")
+        if row.get("nodes_requested") != scale or row.get("nodes_observed") != scale:
+            errors.append(f"{label}: requested and observed nodes must equal scale")
+        if row.get("data_path_result") != "PASS":
+            errors.append(f"{label}: data_path_result must be PASS")
+        if not row.get("management_execution_refs") or not row.get("fault_execution_refs"):
+            errors.append(f"{label}: management and fault execution refs are required")
+        if not row.get("analysis_ref") or not row.get("report_ref"):
+            errors.append(f"{label}: analysis and report refs are required")
+    event_scales = {int(row.get("scale", 0) or 0) for row in events}
+    metric_scales = {int(row.get("scale", 0) or 0) for row in metrics}
+    if not expected_scales.issubset(event_scales):
+        errors.append(f"events.jsonl: missing full-flow event scales {sorted(expected_scales - event_scales)}")
+    if not expected_scales.issubset(metric_scales):
+        errors.append(f"metrics_timeseries.jsonl: missing full-flow metric scales {sorted(expected_scales - metric_scales)}")
+    for index, row in enumerate(events, start=1):
+        _assert_required_fields(row, STRICT_EVENT_FIELDS, f"events.jsonl:{index}", errors)
+        _assert_p36_dimensions(row, phase, f"events.jsonl:{index}", errors)
+        _assert_no_forbidden_values(row, f"events.jsonl:{index}", errors)
+    metric_source_types = set()
+    for index, row in enumerate(metrics, start=1):
+        _assert_required_fields(row, STRICT_METRIC_FIELDS, f"metrics_timeseries.jsonl:{index}", errors)
+        _assert_p36_dimensions(row, phase, f"metrics_timeseries.jsonl:{index}", errors)
+        _assert_no_forbidden_values(row, f"metrics_timeseries.jsonl:{index}", errors)
+        metric_source_types.add(str(row.get("source_type")))
+        if row.get("metric_value") == "MISSING" and not row.get("missing_reason"):
+            errors.append(f"metrics_timeseries.jsonl:{index}: MISSING metric requires missing_reason")
+    if "workload" not in metric_source_types:
+        errors.append("metrics_timeseries.jsonl: full_flow requires workload metric rows")
+    windows = workload.get("windows")
+    if not isinstance(windows, list) or not windows:
+        errors.append("workload_windows.json: non-empty windows list required")
+    else:
+        window_scales = {int(row.get("scale", row.get("node_count", 0)) or 0) for row in windows if isinstance(row, dict)}
+        if not expected_scales.issubset(window_scales):
+            errors.append(f"workload_windows.json: missing window scales {sorted(expected_scales - window_scales)}")
+        for index, window in enumerate(windows, start=1):
+            if not isinstance(window, dict):
+                errors.append(f"workload_windows.json:{index}: window must be an object")
+                continue
+            _assert_no_forbidden_values(window, f"workload_windows.json:{index}", errors)
+            metrics_obj = window.get("metrics")
+            if not isinstance(metrics_obj, dict):
+                errors.append(f"workload_windows.json:{index}: metrics object required")
+                metrics_obj = {}
+            for field in WORKLOAD_METRICS:
+                if field not in window:
+                    errors.append(f"workload_windows.json:{index}: missing top-level workload metric {field}")
+                if field not in metrics_obj:
+                    errors.append(f"workload_windows.json:{index}: missing nested workload metric {field}")
+    claims = quant_summary.get("runtime_claims", {})
+    if claims.get("real_valkey_claimed") is not True or claims.get("management_runtime_claimed") is not True or claims.get("fault_runtime_claimed") is not True or claims.get("full_flow_runtime_claimed") is not True:
+        errors.append("quant_summary.json: full-flow runtime claims must all be true")
+    counts = quant_summary.get("counts", {})
+    if counts.get("scale_count") != 3 or counts.get("required_scale_count") != 3 or sorted(counts.get("node_counts", [])) != [50, 100, 200]:
+        errors.append("quant_summary.json: counts must record all 50/100/200 full-flow scales")
+    if counts.get("event_count") != len(events) or counts.get("metric_count") != len(metrics) or counts.get("workload_window_count") != len(windows or []):
+        errors.append("quant_summary.json: event/metric/window counts must match artifacts")
+    if cleanup.get("status") != "PASS":
+        errors.append("cleanup_report.json: cleanup status must be PASS")
+    stage_rows = [
+        row
+        for row in coverage_ledger.get("rows", [])
+        if isinstance(row, dict) and row.get("stage_owner") == phase and row.get("category") == "lifecycle" and row.get("scale") in expected_scales
+    ]
+    if len(stage_rows) != 36:
+        errors.append(f"coverage_ledger.json: expected 36 P36 lifecycle rows, got {len(stage_rows)}")
+    for row in stage_rows:
+        if row.get("status") != "PASS":
+            errors.append(f"coverage_ledger.json: {row.get('coverage_id')} must be PASS")
+        if not row.get("source_artifacts") or not row.get("validation_artifacts") or not row.get("metric_refs") or not row.get("cleanup_ref"):
+            errors.append(f"coverage_ledger.json: {row.get('coverage_id')} requires source, validation, metric, and cleanup refs")
+
+
+def _assert_p36_dimensions(row: dict[str, Any], phase: str, label: str, errors: list[str]) -> None:
+    if row.get("phase_id") != phase or row.get("stage_id") != phase:
+        errors.append(f"{label}: phase_id and stage_id must be {phase}")
+    scale = row.get("scale")
+    if scale not in {50, 100, 200} or row.get("node_count") != scale:
+        errors.append(f"{label}: scale and node_count must be one of 50, 100, 200 and match")
+    coverage_id = str(row.get("coverage_id", ""))
+    if not coverage_id.startswith(f"{scale}.lifecycle."):
+        errors.append(f"{label}: coverage_id must be a {scale}.lifecycle.* row")
 
 
 def _assert_p30_dimensions(row: dict[str, Any], phase: str, scale: int, coverage_prefix: str, label: str, errors: list[str]) -> None:

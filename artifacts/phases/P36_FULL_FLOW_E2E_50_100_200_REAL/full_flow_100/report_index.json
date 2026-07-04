@@ -1,0 +1,27 @@
+{
+  "artifact_type": "p36_report_index",
+  "created_at": "2026-06-28T00:00:00Z",
+  "node_count": 100,
+  "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "rendered_from": [
+    "analysis_summary.json"
+  ],
+  "run_id": "P36_FULL_FLOW_E2E_50_100_200_REAL-strict_full_flow_100-20260628",
+  "scale": 100,
+  "scenario_name": "strict_full_flow_100",
+  "schema_version": "v1",
+  "stage_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+  "status": "PASS",
+  "views": [
+    {
+      "format": "json",
+      "path": "report_index.json",
+      "source_analysis_status": "PASS",
+      "status": "PASS"
+    }
+  ]
+}
