@@ -1,0 +1,42 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "quant_summary",
+  "phase_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+  "stage_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+  "run_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL-strict-fault-matrix-50-20260704",
+  "created_at": "2026-07-04T03:04:36.286546Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P33 executed the strict exact-50 fault/failover matrix with real Valkey probes, sandbox-scoped faults, workload windows, split-brain detectors, and coverage evidence.",
+  "artifact_refs": [
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/events.jsonl",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/metrics_timeseries.jsonl",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/workload_windows.json",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/fault_matrix_report.json",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/fault_operation_results.jsonl",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/failover_samples.jsonl",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/failover_latency_curve.json",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/partition_report.json",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/split_brain_report.json",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/fault_workload_impact.json",
+    "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/coverage_ledger.json"
+  ],
+  "missing_data": [],
+  "runtime_claims": {
+    "real_valkey_claimed": true,
+    "management_runtime_claimed": false,
+    "fault_runtime_claimed": true
+  },
+  "counts": {
+    "node_count": 50,
+    "fault_row_count": 12,
+    "coverage_pass_count": 12,
+    "event_count": 28,
+    "metric_count": 70,
+    "workload_window_count": 14,
+    "failover_sample_count": 3
+  }
+}

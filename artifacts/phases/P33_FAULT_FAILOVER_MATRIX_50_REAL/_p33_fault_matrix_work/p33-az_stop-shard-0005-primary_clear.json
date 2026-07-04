@@ -1,0 +1,27 @@
+{
+  "artifact_type": "fault_clear",
+  "cleared": true,
+  "created_at": "2026-06-28T00:00:00Z",
+  "fault_id": "p33-az_stop-shard-0005-primary",
+  "observed_impact": {
+    "action": "process_restart",
+    "config_file": "/tmp/valkey-scale-lab/P33_FAULT_FAILOVER_MATRIX_50_REAL-strict_fault_matrix_50-20260628/shard-0005-primary/valkey.conf",
+    "nodehost_container_name": "vslab-p33-fault-failover-matrix-50-real-strict-fault-matrix-50-20260628-nodehost-az-b",
+    "status": "PASS",
+    "stderr": "",
+    "stdout": ""
+  },
+  "phase_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL-strict_fault_matrix_50-20260628",
+  "safety_checks": {
+    "global_firewall_mutated": false,
+    "host_network_mutated": false,
+    "sandbox_only": true
+  },
+  "schema_version": "v1",
+  "status": "PASS"
+}

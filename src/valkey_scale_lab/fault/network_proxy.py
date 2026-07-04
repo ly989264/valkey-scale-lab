@@ -146,6 +146,10 @@ class SandboxNetworkProxy:
                     with self._lock:
                         self._flap_rejections += 1
                     return True
+        if self.rule.fault_type == "network_partition":
+            with self._lock:
+                self._dropped += 1
+            return True
         return False
 
     def _handle_client(self, client: socket.socket) -> None:

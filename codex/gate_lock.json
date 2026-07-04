@@ -581,7 +581,7 @@
     },
     {
       "path": "scripts/assert_failover_latency_curve.py",
-      "sha256": "26ba5d3eb84b1746ed4aa2f6d9a39aedc4c4526855095841cd8a305a1440b9b8"
+      "sha256": "03e30155e326682e6ff5beff71a0830ab3ef89281a308bd3cf6fa1d795c419fc"
     },
     {
       "path": "scripts/assert_fault_matrix_coverage.py",
@@ -609,7 +609,7 @@
     },
     {
       "path": "scripts/assert_split_brain_report.py",
-      "sha256": "79661af9407858156d2fa5e5a235bcedeeecd2338cdec3ad37ccb63149006a3b"
+      "sha256": "cb2c97dfa86b8dddf02d71c407a24c615043434c06cb706a39872f3f2b83d4d3"
     },
     {
       "path": "scripts/assert_workload_impact.py",
@@ -653,7 +653,7 @@
     },
     {
       "path": "scripts/fault_failover_gate.py",
-      "sha256": "1986c62568e3c502fd20440b5954324d4a212887ab7f7efafdc156f8aaedf2cf"
+      "sha256": "a0d7c22b3c9b69a927da9b876ced420b84eaeb926209b8eb444511b3f0fbcb65"
     },
     {
       "path": "scripts/fault_safety_gate.py",
@@ -797,7 +797,7 @@
     },
     {
       "path": "scripts/assert_quant_completeness.py",
-      "sha256": "614ccfcd0cd9c72cf3db3b50b4ce771e9e14b5fd460e31534dacfc6e502a3fc6"
+      "sha256": "44fd382c728081310400a7d2f77af031804ade77587fe6eb2c46af60ad75b71b"
     },
     {
       "path": "scripts/assert_management_matrix_strict.py",
@@ -805,7 +805,7 @@
     },
     {
       "path": "scripts/assert_fault_matrix_strict.py",
-      "sha256": "5038d5795898a8b981e7568736981d4ae406cd995d4ee81512952fcea0c1b508"
+      "sha256": "38dd2159ecc7a985efe2fc4f891eda5607888cd1b3259d17ca7fa02a6594f32d"
     },
     {
       "path": "scripts/assert_full_flow_e2e.py",

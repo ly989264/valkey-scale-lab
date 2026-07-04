@@ -1,0 +1,35 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "failover_report",
+  "phase_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+  "run_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL-strict-fault-matrix-50-20260704",
+  "created_at": "2026-07-04T03:04:36.277075Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "failovers": [
+    {
+      "fault_id": "p33-primary-stop-sample-01",
+      "target_logical_id": "shard-0000-primary",
+      "old_primary_node_id": "15076c138f48e119589288d7444fe98cc42cbcf4",
+      "promoted_node_id": "d49e0ecb1bf3768eed6c408f5a27a84e5f9bb40a",
+      "failover_latency_ms": 102835
+    },
+    {
+      "fault_id": "p33-primary-stop-sample-02",
+      "target_logical_id": "shard-0018-primary",
+      "old_primary_node_id": "a04660c2408ebe59db1808e3f7d289a06d23f3ad",
+      "promoted_node_id": "fe2f61b4315df513a6b6514d40becceccc671899",
+      "failover_latency_ms": 99355
+    },
+    {
+      "fault_id": "p33-primary-stop-sample-03",
+      "target_logical_id": "shard-0012-primary",
+      "old_primary_node_id": "d10e908020ce13a59cea14a6c1d6ec442ad5a711",
+      "promoted_node_id": "6775d7a055c9b38bd317ee35c0ea11322e66cf3c",
+      "failover_latency_ms": 104485
+    }
+  ]
+}

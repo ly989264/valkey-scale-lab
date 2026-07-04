@@ -1,0 +1,550 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "valkey_e2e_evidence",
+  "phase_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+  "stage_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+  "run_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL-strict-fault-matrix-50-20260704",
+  "created_at": "2026-07-04T03:04:36.285800Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "scenario": "strict_fault_matrix_50_fault_failover",
+  "real_valkey": true,
+  "valkey_version_prefix_required": "9.1.",
+  "probe_result": "PASS",
+  "nodes_requested": 50,
+  "nodes_observed": 50,
+  "cluster_state_observed": "ok",
+  "data_path_result": "PASS",
+  "valkey_versions": [
+    "9.1.0"
+  ],
+  "probes": [
+    {
+      "logical_id": "shard-0000-primary",
+      "host": "127.0.0.1",
+      "port": 7400,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "host": "127.0.0.1",
+      "port": 7401,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "host": "127.0.0.1",
+      "port": 7402,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0003-primary",
+      "host": "127.0.0.1",
+      "port": 7403,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0004-primary",
+      "host": "127.0.0.1",
+      "port": 7404,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0005-primary",
+      "host": "127.0.0.1",
+      "port": 7405,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0006-primary",
+      "host": "127.0.0.1",
+      "port": 7406,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0007-primary",
+      "host": "127.0.0.1",
+      "port": 7407,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0008-primary",
+      "host": "127.0.0.1",
+      "port": 7408,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0009-primary",
+      "host": "127.0.0.1",
+      "port": 7409,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0010-primary",
+      "host": "127.0.0.1",
+      "port": 7410,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0011-primary",
+      "host": "127.0.0.1",
+      "port": 7411,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0012-primary",
+      "host": "127.0.0.1",
+      "port": 7412,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0013-primary",
+      "host": "127.0.0.1",
+      "port": 7413,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0014-primary",
+      "host": "127.0.0.1",
+      "port": 7414,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0015-primary",
+      "host": "127.0.0.1",
+      "port": 7415,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0016-primary",
+      "host": "127.0.0.1",
+      "port": 7416,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0017-primary",
+      "host": "127.0.0.1",
+      "port": 7417,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0018-primary",
+      "host": "127.0.0.1",
+      "port": 7418,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0019-primary",
+      "host": "127.0.0.1",
+      "port": 7419,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0020-primary",
+      "host": "127.0.0.1",
+      "port": 7420,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0021-primary",
+      "host": "127.0.0.1",
+      "port": 7421,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0022-primary",
+      "host": "127.0.0.1",
+      "port": 7422,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0023-primary",
+      "host": "127.0.0.1",
+      "port": 7423,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0024-primary",
+      "host": "127.0.0.1",
+      "port": 7424,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "primary"
+    },
+    {
+      "logical_id": "shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "port": 7425,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "port": 7426,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "port": 7427,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0003-replica-00",
+      "host": "127.0.0.1",
+      "port": 7428,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0004-replica-00",
+      "host": "127.0.0.1",
+      "port": 7429,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0005-replica-00",
+      "host": "127.0.0.1",
+      "port": 7430,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0006-replica-00",
+      "host": "127.0.0.1",
+      "port": 7431,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0007-replica-00",
+      "host": "127.0.0.1",
+      "port": 7432,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0008-replica-00",
+      "host": "127.0.0.1",
+      "port": 7433,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0009-replica-00",
+      "host": "127.0.0.1",
+      "port": 7434,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0010-replica-00",
+      "host": "127.0.0.1",
+      "port": 7435,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0011-replica-00",
+      "host": "127.0.0.1",
+      "port": 7436,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0012-replica-00",
+      "host": "127.0.0.1",
+      "port": 7437,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0013-replica-00",
+      "host": "127.0.0.1",
+      "port": 7438,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0014-replica-00",
+      "host": "127.0.0.1",
+      "port": 7439,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0015-replica-00",
+      "host": "127.0.0.1",
+      "port": 7440,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0016-replica-00",
+      "host": "127.0.0.1",
+      "port": 7441,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0017-replica-00",
+      "host": "127.0.0.1",
+      "port": 7442,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0018-replica-00",
+      "host": "127.0.0.1",
+      "port": 7443,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0019-replica-00",
+      "host": "127.0.0.1",
+      "port": 7444,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0020-replica-00",
+      "host": "127.0.0.1",
+      "port": 7445,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0021-replica-00",
+      "host": "127.0.0.1",
+      "port": 7446,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0022-replica-00",
+      "host": "127.0.0.1",
+      "port": 7447,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0023-replica-00",
+      "host": "127.0.0.1",
+      "port": 7448,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-a",
+      "role": "replica"
+    },
+    {
+      "logical_id": "shard-0024-replica-00",
+      "host": "127.0.0.1",
+      "port": 7449,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok",
+      "az_id": "az-b",
+      "role": "replica"
+    }
+  ],
+  "fault_rows_observed": [
+    "az_stop",
+    "fault_period_workload_impact",
+    "majority_partition",
+    "minority_partition",
+    "network_delay",
+    "network_flap",
+    "network_loss",
+    "network_partition",
+    "node_host_stop",
+    "primary_stop_failover",
+    "replica_stop",
+    "split_brain_window_detection"
+  ],
+  "sample_refs": [
+    "p33-primary-stop-sample-01",
+    "p33-primary-stop-sample-02",
+    "p33-primary-stop-sample-03"
+  ],
+  "cleanup": {
+    "status": "PASS",
+    "path": "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/cleanup_report.json"
+  },
+  "errors": []
+}

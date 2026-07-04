@@ -18,6 +18,7 @@ P29 = "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
 P30 = "P30_MANAGEMENT_MATRIX_50_REAL"
 P31 = "P31_MANAGEMENT_MATRIX_100_REAL"
 P32 = "P32_MANAGEMENT_MATRIX_200_REAL"
+P33 = "P33_FAULT_FAILOVER_MATRIX_50_REAL"
 STRICT_MANAGEMENT_STAGES = {
     P30: {
         "scale": 50,
@@ -33,6 +34,27 @@ STRICT_MANAGEMENT_STAGES = {
         "scale": 200,
         "coverage_prefix": "200.management.",
         "timing_artifact": "runtime_timing_breakdown_strict_management_matrix_200.json",
+    },
+}
+STRICT_FAULT_STAGES = {
+    P33: {
+        "scale": 50,
+        "coverage_prefix": "50.fault.",
+        "required_rows": {
+            "primary_stop_failover",
+            "replica_stop",
+            "node_host_stop",
+            "az_stop",
+            "network_delay",
+            "network_loss",
+            "network_flap",
+            "network_partition",
+            "minority_partition",
+            "majority_partition",
+            "split_brain_window_detection",
+            "fault_period_workload_impact",
+        },
+        "min_failover_samples": 3,
     },
 }
 CANONICAL_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]
@@ -128,6 +150,8 @@ def main() -> int:
         assert_p29_semantics(base, errors)
     if args.phase in STRICT_MANAGEMENT_STAGES and args.category == "management":
         assert_p30_management_semantics(base, args.phase, int(args.scale or 0), errors)
+    if args.phase in STRICT_FAULT_STAGES and args.category == "fault":
+        assert_strict_fault_semantics(base, args.phase, int(args.scale or 0), errors)
     if errors:
         return print_errors(errors)
     print(f"PASS quant completeness phase={args.phase}")
@@ -253,6 +277,119 @@ def assert_p30_management_semantics(base: Path, phase: str, scale: int, errors: 
         errors.append(f"coverage_ledger.json: {phase} ledger must contain exactly 11 PASS {coverage_prefix} rows")
 
 
+def assert_strict_fault_semantics(base: Path, phase: str, scale: int, errors: list[str]) -> None:
+    spec = STRICT_FAULT_STAGES[phase]
+    expected_scale = int(spec["scale"])
+    coverage_prefix = str(spec["coverage_prefix"])
+    required_rows = set(spec["required_rows"])
+    min_failover_samples = int(spec["min_failover_samples"])
+    if scale != expected_scale:
+        errors.append(f"{phase} quant completeness requires --scale {expected_scale}")
+    events = _load_jsonl_required(base / "events.jsonl", errors)
+    metrics = _load_jsonl_required(base / "metrics_timeseries.jsonl", errors)
+    fault_results = _load_jsonl_required(base / "fault_operation_results.jsonl", errors)
+    failover_samples = _load_jsonl_required(base / "failover_samples.jsonl", errors)
+    topology = _load_jsonl_required(base / "fault_topology_snapshots.jsonl", errors)
+    command_log = _load_jsonl_required(base / "fault_command_log.jsonl", errors)
+    workload = require_json(base / "workload_windows.json", errors, "workload windows") or {}
+    quant_summary = require_json(base / "quant_summary.json", errors, "quant summary") or {}
+    coverage_ledger = require_json(base / "coverage_ledger.json", errors, "coverage ledger") or {}
+    evidence = require_json(base / "valkey_e2e_evidence.json", errors, "real Valkey evidence") or {}
+    cleanup = require_json(base / "cleanup_report.json", errors, "cleanup report") or {}
+    required_json = {
+        "phase_summary.json": require_json(base / "phase_summary.json", errors, "phase summary") or {},
+        "resource_preflight.json": require_json(base / "resource_preflight.json", errors, "resource preflight") or {},
+        "cluster_plan.json": require_json(base / "cluster_plan.json", errors, "cluster plan") or {},
+        "run_state.json": require_json(base / "run_state.json", errors, "run state") or {},
+        "fault_matrix_report.json": require_json(base / "fault_matrix_report.json", errors, "fault matrix report") or {},
+        "failover_latency_curve.json": require_json(base / "failover_latency_curve.json", errors, "failover latency curve") or {},
+        "partition_report.json": require_json(base / "partition_report.json", errors, "partition report") or {},
+        "split_brain_report.json": require_json(base / "split_brain_report.json", errors, "split brain report") or {},
+        "fault_workload_impact.json": require_json(base / "fault_workload_impact.json", errors, "fault workload impact") or {},
+    }
+    for artifact_name, artifact in required_json.items():
+        _assert_no_forbidden_values(artifact, artifact_name, errors)
+
+    event_ids: set[str] = set()
+    for index, row in enumerate(events, start=1):
+        _assert_required_fields(row, STRICT_EVENT_FIELDS, f"events.jsonl:{index}", errors)
+        _assert_strict_fault_dimensions(row, phase, expected_scale, coverage_prefix, f"events.jsonl:{index}", errors)
+        _assert_no_forbidden_values(row, f"events.jsonl:{index}", errors)
+        event_ids.add(str(row.get("event_id", "")))
+
+    metric_source_types = set()
+    for index, row in enumerate(metrics, start=1):
+        _assert_required_fields(row, STRICT_METRIC_FIELDS, f"metrics_timeseries.jsonl:{index}", errors)
+        _assert_strict_fault_dimensions(row, phase, expected_scale, coverage_prefix, f"metrics_timeseries.jsonl:{index}", errors)
+        _assert_no_forbidden_values(row, f"metrics_timeseries.jsonl:{index}", errors)
+        metric_source_types.add(str(row.get("source_type")))
+        if row.get("metric_value") == "MISSING" and not row.get("missing_reason"):
+            errors.append(f"metrics_timeseries.jsonl:{index}: MISSING metric requires missing_reason")
+    if "workload" not in metric_source_types:
+        errors.append("metrics_timeseries.jsonl: strict fault stage requires workload metric rows")
+
+    observed_rows = {str(row.get("row_name") or row.get("fault_type")) for row in fault_results}
+    missing_rows = sorted(required_rows - observed_rows)
+    if missing_rows:
+        errors.append(f"fault_operation_results.jsonl missing rows: {missing_rows}")
+    for index, row in enumerate(fault_results, start=1):
+        label = f"fault_operation_results.jsonl:{index}:{row.get('row_name', row.get('fault_type', 'MISSING'))}"
+        _assert_no_forbidden_values(row, label, errors)
+        row_name = str(row.get("row_name") or row.get("fault_type") or "")
+        if row_name not in required_rows:
+            errors.append(f"{label}: unexpected fault row")
+        if row.get("coverage_id") != f"{expected_scale}.fault.{row_name}":
+            errors.append(f"{label}: coverage_id must be {expected_scale}.fault.{row_name}")
+        if row.get("status") != "PASS" or row.get("real_execution_verified") is not True:
+            errors.append(f"{label}: status PASS and real_execution_verified=true required")
+        if row.get("scale") != expected_scale or row.get("node_count") != expected_scale:
+            errors.append(f"{label}: scale and node_count must be {expected_scale}")
+        if not row.get("workload_impact_ref") or row.get("cleanup_verified") is not True:
+            errors.append(f"{label}: workload_impact_ref and cleanup_verified=true required")
+        if not isinstance(row.get("source_evidence_refs"), list) or not row.get("source_evidence_refs"):
+            errors.append(f"{label}: source_evidence_refs required")
+
+    if len(failover_samples) < min_failover_samples:
+        errors.append(f"failover_samples.jsonl requires at least {min_failover_samples} samples")
+    for index, sample in enumerate(failover_samples, start=1):
+        label = f"failover_samples.jsonl:{index}:{sample.get('sample_id', 'MISSING')}"
+        _assert_no_forbidden_values(sample, label, errors)
+        if sample.get("status") != "PASS" or sample.get("real_valkey") is not True:
+            errors.append(f"{label}: status PASS and real_valkey=true required")
+        if sample.get("scale") != expected_scale or sample.get("node_count") != expected_scale or sample.get("rung") != expected_scale:
+            errors.append(f"{label}: scale, node_count, and rung must be {expected_scale}")
+        for field in ["promotion_latency_ms", "cluster_recovery_latency_ms", "fault_injected_at_ms", "replica_promoted_at_ms", "slot_coverage_ok_at_ms"]:
+            if not isinstance(sample.get(field), (int, float)):
+                errors.append(f"{label}: {field} must be numeric")
+
+    _assert_strict_fault_workload_windows(workload, event_ids, required_rows, errors)
+    for index, row in enumerate(topology, start=1):
+        for field in ["schema_version", "phase_id", "run_id", "snapshot_id", "timestamp_unix_ms", "nodes", "slots"]:
+            if field not in row:
+                errors.append(f"fault_topology_snapshots.jsonl:{index}: missing {field}")
+        _assert_no_forbidden_values(row, f"fault_topology_snapshots.jsonl:{index}", errors)
+    for index, row in enumerate(command_log, start=1):
+        for field in ["schema_version", "phase_id", "run_id", "command_id", "command_kind", "started_at_unix_ms", "ended_at_unix_ms", "status"]:
+            if field not in row:
+                errors.append(f"fault_command_log.jsonl:{index}: missing {field}")
+        _assert_no_forbidden_values(row, f"fault_command_log.jsonl:{index}", errors)
+
+    if evidence.get("status") != "PASS" or evidence.get("nodes_observed") != expected_scale or evidence.get("data_path_result") != "PASS":
+        errors.append(f"valkey_e2e_evidence.json: {phase} requires PASS evidence, exact {expected_scale} nodes, and data path PASS")
+    if cleanup.get("status") != "PASS":
+        errors.append("cleanup_report.json: cleanup status must be PASS")
+    for artifact_name in ["fault_matrix_report.json", "failover_latency_curve.json", "partition_report.json", "split_brain_report.json", "fault_workload_impact.json"]:
+        if required_json[artifact_name].get("status") != "PASS":
+            errors.append(f"{artifact_name}: status must be PASS")
+    claims = quant_summary.get("runtime_claims", {})
+    if claims.get("real_valkey_claimed") is not True or claims.get("fault_runtime_claimed") is not True:
+        errors.append("quant_summary.json: real Valkey and fault runtime claims required")
+    counts = quant_summary.get("counts", {})
+    if counts.get("node_count") != expected_scale or counts.get("fault_row_count") != len(required_rows) or counts.get("failover_sample_count", 0) < min_failover_samples:
+        errors.append("quant_summary.json: counts must record exact scale, all fault rows, and enough failover samples")
+    _assert_strict_fault_coverage_ledger(coverage_ledger, phase, expected_scale, required_rows, errors)
+
+
 def _assert_p30_dimensions(row: dict[str, Any], phase: str, scale: int, coverage_prefix: str, label: str, errors: list[str]) -> None:
     if row.get("phase_id") != phase or row.get("stage_id") != phase:
         errors.append(f"{label}: phase_id and stage_id must be {phase}")
@@ -261,6 +398,82 @@ def _assert_p30_dimensions(row: dict[str, Any], phase: str, scale: int, coverage
         errors.append(f"{label}: coverage_id must be a {coverage_prefix}* row")
     if row.get("scale") != scale or row.get("node_count") != scale:
         errors.append(f"{label}: scale and node_count must be {scale}")
+
+
+def _assert_strict_fault_dimensions(row: dict[str, Any], phase: str, scale: int, coverage_prefix: str, label: str, errors: list[str]) -> None:
+    if row.get("phase_id") != phase or row.get("stage_id") != phase:
+        errors.append(f"{label}: phase_id and stage_id must be {phase}")
+    coverage_id = str(row.get("coverage_id", ""))
+    if not coverage_id.startswith(coverage_prefix):
+        errors.append(f"{label}: coverage_id must be a {coverage_prefix}* row")
+    if row.get("scale") != scale or row.get("node_count") != scale:
+        errors.append(f"{label}: scale and node_count must be {scale}")
+
+
+def _assert_strict_fault_workload_windows(workload: dict[str, Any], event_ids: set[str], required_rows: set[str], errors: list[str]) -> None:
+    windows = workload.get("windows")
+    if not isinstance(windows, list):
+        errors.append("workload_windows.json: windows must be a list")
+        return
+    rows_with_windows = set()
+    for index, window in enumerate(windows, start=1):
+        if not isinstance(window, dict):
+            errors.append(f"workload_windows.json:{index}: each window must be an object")
+            continue
+        row_name = str(window.get("fault_type") or window.get("sample_id") or "")
+        label = f"workload_windows.json:{index}:{row_name}"
+        _assert_no_forbidden_values(window, label, errors)
+        if row_name:
+            rows_with_windows.add(row_name)
+        if window.get("window_name") != "event":
+            errors.append(f"{label}: strict fault row windows must record the event window")
+        metrics = window.get("metrics")
+        if not isinstance(metrics, dict):
+            errors.append(f"{label}: metrics must be an object")
+            metrics = {}
+        for field in WORKLOAD_METRICS:
+            if field not in window:
+                errors.append(f"{label}: missing top-level workload metric {field}")
+            if field not in metrics:
+                errors.append(f"{label}: missing nested workload metric {field}")
+            value = window.get(field)
+            if value == "MISSING":
+                reason = metrics.get("missing_reasons", {}).get(field) or window.get("missing_reasons", {}).get(field)
+                if not reason:
+                    errors.append(f"{label}: MISSING metric {field} requires reason")
+        if window.get("window_start_event_id") not in event_ids or window.get("window_end_event_id") not in event_ids:
+            errors.append(f"{label}: workload event IDs must link to events.jsonl")
+        if not isinstance(window.get("sample_count"), int) or int(window.get("sample_count", 0)) <= 0:
+            errors.append(f"{label}: sample_count must be positive")
+    missing = sorted(required_rows - rows_with_windows)
+    if missing:
+        errors.append(f"workload_windows.json: missing workload event windows for rows {missing}")
+
+
+def _assert_strict_fault_coverage_ledger(ledger: dict[str, Any], phase: str, scale: int, required_rows: set[str], errors: list[str]) -> None:
+    rows = ledger.get("rows", [])
+    if ledger.get("stage_id") != phase:
+        errors.append(f"coverage_ledger.json: stage_id must be {phase}")
+    stage_rows = [
+        row
+        for row in rows
+        if isinstance(row, dict)
+        and row.get("stage_owner") == phase
+        and row.get("category") == "fault"
+        and row.get("scale") == scale
+    ]
+    if len(stage_rows) != len(required_rows):
+        errors.append(f"coverage_ledger.json: expected {len(required_rows)} P33 fault rows, got {len(stage_rows)}")
+    for row in stage_rows:
+        row_name = str(row.get("row_name", ""))
+        if row_name not in required_rows:
+            errors.append(f"coverage_ledger.json: unexpected row {row.get('coverage_id')}")
+        if row.get("coverage_id") != f"{scale}.fault.{row_name}":
+            errors.append(f"coverage_ledger.json: malformed coverage id for {row_name}")
+        if row.get("status") != "PASS":
+            errors.append(f"coverage_ledger.json: {row.get('coverage_id')} must be PASS")
+        if not row.get("source_artifacts") or not row.get("validation_artifacts") or not row.get("metric_refs") or not row.get("cleanup_ref"):
+            errors.append(f"coverage_ledger.json: {row.get('coverage_id')} requires source, validation, metric, and cleanup refs")
 
 
 def _assert_p30_workload_windows(workload: dict[str, Any], event_ids: set[str], errors: list[str]) -> None:
