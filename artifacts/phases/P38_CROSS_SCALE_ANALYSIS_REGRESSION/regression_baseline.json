@@ -1,0 +1,226 @@
+{
+  "artifact_type": "regression_baseline",
+  "baseline_scope": "current validated P30-P37 artifacts",
+  "created_at": "2026-07-04T00:00:00Z",
+  "failover_delta_p95_ms": {
+    "cluster_recovery_latency_ms": {
+      "100": 14837.0,
+      "200": 6828.0,
+      "50": "SKIPPED_WITH_REASON"
+    },
+    "promotion_latency_ms": {
+      "100": 14837.0,
+      "200": 6828.0,
+      "50": "SKIPPED_WITH_REASON"
+    }
+  },
+  "failover_p95_ms": {
+    "cluster_recovery_latency_ms": {
+      "100": 119322.0,
+      "200": 126150.0,
+      "50": 104485.0
+    },
+    "promotion_latency_ms": {
+      "100": 119322.0,
+      "200": 126150.0,
+      "50": 104485.0
+    }
+  },
+  "fault_impact_availability_percent": {
+    "az_stop": {
+      "100": 100.0,
+      "200": 100.0,
+      "50": 100.0
+    },
+    "fault_period_workload_impact": {
+      "100": 100.0,
+      "200": 100.0,
+      "50": 100.0
+    },
+    "majority_partition": {
+      "100": 0.0,
+      "200": 0.0,
+      "50": 0.0
+    },
+    "minority_partition": {
+      "100": 0.0,
+      "200": 0.0,
+      "50": 0.0
+    },
+    "network_delay": {
+      "100": 100.0,
+      "200": 100.0,
+      "50": 100.0
+    },
+    "network_flap": {
+      "100": 66.667,
+      "200": 33.333,
+      "50": 50.0
+    },
+    "network_loss": {
+      "100": 50.0,
+      "200": 50.0,
+      "50": 50.0
+    },
+    "network_partition": {
+      "100": 0.0,
+      "200": 0.0,
+      "50": 0.0
+    },
+    "node_host_stop": {
+      "100": 100.0,
+      "200": 100.0,
+      "50": 12.5
+    },
+    "primary_stop_failover": {
+      "100": 75.0,
+      "200": 75.0,
+      "50": 100.0
+    },
+    "replica_stop": {
+      "100": 100.0,
+      "200": 100.0,
+      "50": 0.0
+    },
+    "split_brain_window_detection": {
+      "100": 100.0,
+      "200": 100.0,
+      "50": 100.0
+    }
+  },
+  "management_convergence_ms": {
+    "add_replica": {
+      "100": 0.0,
+      "200": 0.0,
+      "50": 0.0
+    },
+    "create_cluster": {
+      "100": 0.0,
+      "200": 0.0,
+      "50": 0.0
+    },
+    "meet_nodes": {
+      "100": 0.0,
+      "200": 0.0,
+      "50": 0.0
+    },
+    "rebalance_after_imbalance": {
+      "100": 26066.990708,
+      "200": 50462.750125,
+      "50": 3465.751875
+    },
+    "remove_failed_node": {
+      "100": 43563.054625,
+      "200": 52315.70225,
+      "50": 38574.096625
+    },
+    "remove_primary_drained_or_safe_replaced": {
+      "100": 57942.232041,
+      "200": 62475.186541,
+      "50": 36556.047209
+    },
+    "remove_replica": {
+      "100": 46364.865083,
+      "200": 68012.212708,
+      "50": 51358.224209
+    },
+    "reshard_slot_range": {
+      "100": 1349.27625,
+      "200": 10067.084167,
+      "50": 757.0625
+    },
+    "reshard_with_keys": {
+      "100": 1896.890958,
+      "200": 4333.217542,
+      "50": 1385.535333
+    },
+    "rolling_restart_primary_safe": {
+      "100": 216236.385834,
+      "200": 862123.109041,
+      "50": 51423.109834
+    },
+    "rolling_restart_replica_first": {
+      "100": 227852.370333,
+      "200": 682512.53625,
+      "50": 93018.926
+    }
+  },
+  "management_latency_ms": {
+    "add_replica": {
+      "100": 360.151458,
+      "200": 767.308584,
+      "50": 167.249375
+    },
+    "create_cluster": {
+      "100": 343.989542,
+      "200": 741.642292,
+      "50": 195.09025
+    },
+    "meet_nodes": {
+      "100": 334.044584,
+      "200": 782.405834,
+      "50": 181.923125
+    },
+    "rebalance_after_imbalance": {
+      "100": 26666.747375,
+      "200": 51922.408458,
+      "50": 3736.893416
+    },
+    "remove_failed_node": {
+      "100": 43561.341458,
+      "200": 52313.539792,
+      "50": 38573.315334
+    },
+    "remove_primary_drained_or_safe_replaced": {
+      "100": 57940.794208,
+      "200": 62472.679708,
+      "50": 36555.270334
+    },
+    "remove_replica": {
+      "100": 46363.598,
+      "200": 68009.642375,
+      "50": 51357.639875
+    },
+    "reshard_slot_range": {
+      "100": 1903.337875,
+      "200": 14544.435,
+      "50": 1054.57475
+    },
+    "reshard_with_keys": {
+      "100": 2466.906292,
+      "200": 6959.79325,
+      "50": 1678.922875
+    },
+    "rolling_restart_primary_safe": {
+      "100": 216235.07225,
+      "200": 862120.50775,
+      "50": 51422.7935
+    },
+    "rolling_restart_replica_first": {
+      "100": 227851.240375,
+      "200": 682510.399125,
+      "50": 93018.311042
+    }
+  },
+  "methods": {
+    "failover_delta": "delta_from_previous_scale = current p95_ms - previous real scale p95_ms",
+    "failover_percentiles": "p50_ms/p95_ms/max_ms copied from failover_latency_curve.json derived_series; source declares nearest_rank_round_index",
+    "fault_impact": "event-window availability/error/latency fields copied from fault_workload_impact.json",
+    "management_convergence": "convergence_ms copied from management_operation_results.jsonl by coverage_id and scale",
+    "management_latency": "duration_ms copied from management_operation_results.jsonl by coverage_id and scale"
+  },
+  "phase_id": "P38_CROSS_SCALE_ANALYSIS_REGRESSION",
+  "producer": {
+    "name": "scripts/p38_cross_scale_analysis.py",
+    "version": "v1"
+  },
+  "run_id": "P38_CROSS_SCALE_ANALYSIS_REGRESSION-analysis-20260704",
+  "schema_version": "v1",
+  "source_tables": [
+    "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv",
+    "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_convergence_table.csv",
+    "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv",
+    "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/fault_impact_table.csv"
+  ],
+  "status": "PASS"
+}

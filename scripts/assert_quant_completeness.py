@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import math
 import sys
 from pathlib import Path
@@ -22,6 +23,35 @@ P33 = "P33_FAULT_FAILOVER_MATRIX_50_REAL"
 P34 = "P34_FAULT_FAILOVER_MATRIX_100_REAL"
 P35 = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
 P36 = "P36_FULL_FLOW_E2E_50_100_200_REAL"
+P37 = "P37_200_PLUS_DRY_RUN_SUPPORT"
+P38 = "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+P38_REQUIRED_OUTPUTS = [
+    "phase_summary.json",
+    "cross_scale_analysis_summary.json",
+    "coverage_heatmap_table.csv",
+    "management_latency_table.csv",
+    "management_convergence_table.csv",
+    "failover_curve_table.csv",
+    "fault_impact_table.csv",
+    "workload_window_table.csv",
+    "resource_usage_table.csv",
+    "cleanup_table.csv",
+    "missing_data_table.csv",
+    "analysis_provenance.json",
+    "regression_baseline.json",
+    "quant_summary.json",
+]
+P38_REQUIRED_TABLE_MIN_ROWS = {
+    "coverage_heatmap_table.csv": 145,
+    "management_latency_table.csv": 33,
+    "management_convergence_table.csv": 33,
+    "failover_curve_table.csv": 6,
+    "fault_impact_table.csv": 36,
+    "workload_window_table.csv": 1,
+    "resource_usage_table.csv": 14,
+    "cleanup_table.csv": 14,
+    "missing_data_table.csv": 1,
+}
 STRICT_MANAGEMENT_STAGES = {
     P30: {
         "scale": 50,
@@ -165,6 +195,7 @@ WORKLOAD_METRICS = [
     "window_end_event_id",
 ]
 FORBIDDEN_STRINGS = {"nan", "infinity", "-infinity", "undefined", "null"}
+ALLOWED_MISSING_STATUSES = {"MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON"}
 
 
 def main() -> int:
@@ -176,9 +207,10 @@ def main() -> int:
     base = phase_dir(args.phase)
     errors: list[str] = []
     summary = require_json(base / "quant_summary.json", errors, "quant summary")
-    require_file(base / "events.jsonl", errors, "events")
-    require_file(base / "metrics_timeseries.jsonl", errors, "metrics timeseries")
-    require_json(base / "workload_windows.json", errors, "workload windows")
+    if args.category != "analysis":
+        require_file(base / "events.jsonl", errors, "events")
+        require_file(base / "metrics_timeseries.jsonl", errors, "metrics timeseries")
+        require_json(base / "workload_windows.json", errors, "workload windows")
     if summary:
         claims = summary.get("runtime_claims", {})
         if args.category in {"management", "fault", "full_flow"} and claims.get("real_valkey_claimed") is not True:
@@ -202,10 +234,200 @@ def main() -> int:
         assert_strict_fault_semantics(base, args.phase, int(args.scale or 0), errors)
     if args.phase == P36 and args.category == "full_flow":
         assert_p36_full_flow_semantics(base, errors)
+    if args.phase == P38 and args.category == "analysis":
+        assert_p38_analysis_semantics(base, errors)
     if errors:
         return print_errors(errors)
     print(f"PASS quant completeness phase={args.phase}")
     return 0
+
+
+def assert_p38_analysis_semantics(base: Path, errors: list[str]) -> None:
+    phase = P38
+    for artifact_name in P38_REQUIRED_OUTPUTS:
+        path = base / artifact_name
+        if artifact_name.endswith(".json"):
+            artifact = require_json(path, errors, artifact_name) or {}
+            _assert_no_forbidden_values(artifact, artifact_name, errors)
+        else:
+            require_file(path, errors, artifact_name)
+
+    summary = require_json(base / "cross_scale_analysis_summary.json", errors, "cross scale analysis summary") or {}
+    quant_summary = require_json(base / "quant_summary.json", errors, "quant summary") or {}
+    provenance = require_json(base / "analysis_provenance.json", errors, "analysis provenance") or {}
+    baseline = require_json(base / "regression_baseline.json", errors, "regression baseline") or {}
+    for label, artifact in [
+        ("cross_scale_analysis_summary.json", summary),
+        ("quant_summary.json", quant_summary),
+        ("analysis_provenance.json", provenance),
+        ("regression_baseline.json", baseline),
+    ]:
+        if artifact.get("status") != "PASS":
+            errors.append(f"{label}: status must be PASS")
+        if artifact.get("phase_id") != phase:
+            errors.append(f"{label}: phase_id must be {phase}")
+
+    claims = quant_summary.get("runtime_claims", {})
+    if claims.get("real_valkey_claimed") is not False:
+        errors.append("quant_summary.json: P38 must not claim real Valkey runtime")
+    if claims.get("management_runtime_claimed") is not False:
+        errors.append("quant_summary.json: P38 must not claim management runtime")
+    if claims.get("fault_runtime_claimed") is not False:
+        errors.append("quant_summary.json: P38 must not claim fault runtime")
+    if claims.get("analysis_only") is not True:
+        errors.append("quant_summary.json: analysis_only=true required")
+
+    tables = {name: _load_csv_required(base / name, errors) for name in P38_REQUIRED_TABLE_MIN_ROWS}
+    for name, min_rows in P38_REQUIRED_TABLE_MIN_ROWS.items():
+        if len(tables[name]) < min_rows:
+            errors.append(f"{name}: expected at least {min_rows} rows, got {len(tables[name])}")
+        for index, row in enumerate(tables[name], start=2):
+            _assert_no_forbidden_values(row, f"{name}:{index}", errors)
+            if not row.get("coverage_id") or row.get("coverage_id") == "MISSING":
+                errors.append(f"{name}:{index}: coverage_id required")
+            if not row.get("source_artifact"):
+                errors.append(f"{name}:{index}: source_artifact required")
+            if not row.get("method") or row.get("method") == "MISSING":
+                errors.append(f"{name}:{index}: method required")
+
+    heatmap = tables["coverage_heatmap_table.csv"]
+    real_rows = [row for row in heatmap if row.get("category") in {"management", "fault", "lifecycle"}]
+    dry_rows = [row for row in heatmap if row.get("category") == "dry_run"]
+    if len(real_rows) != 105:
+        errors.append(f"coverage_heatmap_table.csv: expected 105 real coverage rows, got {len(real_rows)}")
+    if len(dry_rows) != 40:
+        errors.append(f"coverage_heatmap_table.csv: expected 40 dry-run rows, got {len(dry_rows)}")
+    for row in real_rows:
+        if int(row.get("scale", "0")) not in {50, 100, 200}:
+            errors.append(f"coverage_heatmap_table.csv: real row has unexpected scale {row.get('coverage_id')}")
+        if row.get("execution_mode") != "real" or row.get("status") != "PASS":
+            errors.append(f"coverage_heatmap_table.csv: real row must be PASS real: {row.get('coverage_id')}")
+    for row in dry_rows:
+        if int(row.get("scale", "0")) <= 200:
+            errors.append(f"coverage_heatmap_table.csv: dry-run row must be above 200: {row.get('coverage_id')}")
+        if row.get("execution_mode") != "dry_run" or row.get("status") != "DRY_RUN_PASS":
+            errors.append(f"coverage_heatmap_table.csv: dry-run row must be DRY_RUN_PASS dry_run: {row.get('coverage_id')}")
+
+    management_ids = {row.get("coverage_id") for row in tables["management_latency_table.csv"]}
+    convergence_ids = {row.get("coverage_id") for row in tables["management_convergence_table.csv"]}
+    expected_management = {
+        f"{scale}.management.{row}"
+        for scale in [50, 100, 200]
+        for row in [
+            "create_cluster",
+            "meet_nodes",
+            "add_replica",
+            "reshard_slot_range",
+            "reshard_with_keys",
+            "rebalance_after_imbalance",
+            "remove_replica",
+            "remove_primary_drained_or_safe_replaced",
+            "remove_failed_node",
+            "rolling_restart_replica_first",
+            "rolling_restart_primary_safe",
+        ]
+    }
+    missing_management = sorted(expected_management - management_ids)
+    missing_convergence = sorted(expected_management - convergence_ids)
+    if missing_management:
+        errors.append(f"management_latency_table.csv missing coverage rows: {missing_management}")
+    if missing_convergence:
+        errors.append(f"management_convergence_table.csv missing coverage rows: {missing_convergence}")
+
+    expected_faults = {
+        f"{scale}.fault.{row}"
+        for scale in [50, 100, 200]
+        for row in STRICT_FAULT_STAGES[P33]["required_rows"]
+    }
+    fault_impact_ids = {row.get("coverage_id") for row in tables["fault_impact_table.csv"]}
+    missing_faults = sorted(expected_faults - fault_impact_ids)
+    if missing_faults:
+        errors.append(f"fault_impact_table.csv missing coverage rows: {missing_faults}")
+
+    failover_scales = {int(row.get("scale", "0")) for row in tables["failover_curve_table.csv"]}
+    if failover_scales != {50, 100, 200}:
+        errors.append(f"failover_curve_table.csv: scales must be 50/100/200, got {sorted(failover_scales)}")
+    for index, row in enumerate(tables["failover_curve_table.csv"], start=2):
+        if not row.get("percentile_method") or row.get("percentile_method") == "MISSING":
+            errors.append(f"failover_curve_table.csv:{index}: percentile_method required")
+        if not row.get("delta_method") or row.get("delta_method") == "MISSING":
+            errors.append(f"failover_curve_table.csv:{index}: delta_method required")
+        if int(row.get("scale", "0")) in {100, 200} and row.get("delta_from_previous_scale_ms") in {"MISSING", "SKIPPED_WITH_REASON"}:
+            errors.append(f"failover_curve_table.csv:{index}: real delta required for scale {row.get('scale')}")
+
+    missing_rows = tables["missing_data_table.csv"]
+    for index, row in enumerate(missing_rows, start=2):
+        if row.get("status") not in ALLOWED_MISSING_STATUSES:
+            errors.append(f"missing_data_table.csv:{index}: invalid missing status {row.get('status')}")
+        if not row.get("reason") or row.get("reason") == "MISSING":
+            errors.append(f"missing_data_table.csv:{index}: reason required")
+    _assert_p38_missing_marker_coverage(tables, errors)
+    quant_missing = quant_summary.get("missing_data")
+    if not isinstance(quant_missing, list) or len(quant_missing) != len(missing_rows):
+        errors.append("quant_summary.json: missing_data count must match missing_data_table.csv")
+
+    counts = summary.get("counts", {})
+    expected_counts = {
+        "coverage_rows": len(tables["coverage_heatmap_table.csv"]),
+        "management_latency_rows": len(tables["management_latency_table.csv"]),
+        "management_convergence_rows": len(tables["management_convergence_table.csv"]),
+        "failover_curve_rows": len(tables["failover_curve_table.csv"]),
+        "fault_impact_rows": len(tables["fault_impact_table.csv"]),
+        "workload_window_rows": len(tables["workload_window_table.csv"]),
+        "resource_usage_rows": len(tables["resource_usage_table.csv"]),
+        "cleanup_rows": len(tables["cleanup_table.csv"]),
+        "missing_data_rows": len(tables["missing_data_table.csv"]),
+    }
+    for key, expected in expected_counts.items():
+        if counts.get(key) != expected:
+            errors.append(f"cross_scale_analysis_summary.json: counts.{key} expected {expected}, got {counts.get(key)}")
+    quant_counts = quant_summary.get("counts", {})
+    for key, expected in expected_counts.items():
+        if quant_counts.get(key) != expected:
+            errors.append(f"quant_summary.json: counts.{key} expected {expected}, got {quant_counts.get(key)}")
+
+    baseline_methods = baseline.get("methods")
+    if not isinstance(baseline_methods, dict) or "failover_delta" not in baseline_methods:
+        errors.append("regression_baseline.json: derived delta method must be declared")
+
+
+def _load_csv_required(path: Path, errors: list[str]) -> list[dict[str, str]]:
+    if not path.exists():
+        errors.append(f"{rel(path)}: missing CSV table")
+        return []
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    if not rows:
+        errors.append(f"{rel(path)}: CSV table must be non-empty")
+    return rows
+
+
+def _assert_p38_missing_marker_coverage(tables: dict[str, list[dict[str, str]]], errors: list[str]) -> None:
+    missing_keys = {
+        (
+            row.get("source_artifact", ""),
+            row.get("coverage_id", ""),
+            row.get("field", ""),
+            row.get("status", ""),
+        )
+        for row in tables.get("missing_data_table.csv", [])
+        if row.get("reason") and row.get("status") in ALLOWED_MISSING_STATUSES
+    }
+    for table_name, rows in tables.items():
+        if table_name == "missing_data_table.csv":
+            continue
+        for line_no, row in enumerate(rows, start=2):
+            source_artifact = row.get("source_artifact", "")
+            coverage_id = row.get("coverage_id", "")
+            for field, value in row.items():
+                if value not in ALLOWED_MISSING_STATUSES:
+                    continue
+                key = (source_artifact, coverage_id, field, value)
+                if key not in missing_keys:
+                    errors.append(
+                        f"{table_name}:{line_no}: {field}={value} requires matching "
+                        "missing_data_table.csv row with source_artifact, coverage_id, field, status, and reason"
+                    )
 
 
 def assert_p29_semantics(base: Path, errors: list[str]) -> None:

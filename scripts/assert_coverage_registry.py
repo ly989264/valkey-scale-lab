@@ -233,7 +233,14 @@ def selected_rows(rows: list[dict[str, Any]], args: argparse.Namespace) -> list[
 
 def final_status_errors(rows: list[dict[str, Any]], args: argparse.Namespace) -> list[str]:
     errors: list[str] = []
-    if args.phase or args.category or args.scale or args.scales:
+    p38_global_analysis_check = (
+        args.phase == "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+        and args.require_final_real_scales
+        and not args.category
+        and not args.scale
+        and not args.scales
+    )
+    if (args.phase or args.category or args.scale or args.scales) and not p38_global_analysis_check:
         selected = selected_rows(rows, args)
         if not selected:
             errors.append("coverage selection matched no rows")

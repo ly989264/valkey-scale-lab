@@ -1,0 +1,32 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P38_CROSS_SCALE_ANALYSIS_REGRESSION",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context review/audit formatting subagent",
+  "created_at": "2026-07-04T23:14:32Z",
+  "gate_result_path": "artifacts/gates/P38_CROSS_SCALE_ANALYSIS_REGRESSION/gate_result.json",
+  "gate_result_sha256": "271c2fcaedabd30dc2d51b6ac370ce9946d3b1eb52867c8717f2269c28b2c883",
+  "artifact_paths": [
+    "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/phase_summary.json",
+    "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/analysis_provenance.json",
+    "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/regression_baseline.json",
+    "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/quant_summary.json"
+  ],
+  "risks": [
+    {
+      "risk": "P38 is derived analysis; regenerated source artifacts require rerunning P38 analysis and gates.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "Current P38 gate result is PASS and required artifacts exist."
+    },
+    {
+      "risk": "Above-200 entries are dry-run-only and must not be treated as runtime Valkey proof.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "This is expected for P38 and is encoded in reviewed coverage examples."
+    }
+  ],
+  "rationale": "PASS: verified current gate result PASS, current gate result sha256, and all required manifest artifacts. Prior missing-data gap is fixed: independent CSV audit found 35 missing/skipped markers and 0 uncovered markers. P38 is analysis-only, uses source artifacts from P30-P37 plus the coverage registry, and preserves dry-run semantics for above-200 coverage."
+}

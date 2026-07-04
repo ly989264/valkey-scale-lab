@@ -781,7 +781,7 @@
     },
     {
       "path": "scripts/assert_coverage_registry.py",
-      "sha256": "8ace06191f0c0c53383fa5f9404f5efc545816a14ea77231afe6867ddc906680"
+      "sha256": "e338107a17bb2866a54bc2b7ca260660691521703acd9cb5d2174b46d1a84c9d"
     },
     {
       "path": "scripts/strict_coverage_defs.py",
@@ -797,7 +797,7 @@
     },
     {
       "path": "scripts/assert_quant_completeness.py",
-      "sha256": "1c8477cab6a56b2ac20d334d73e998d91d528398d409774bfac18c9011c94b03"
+      "sha256": "ab0ea04b7a349a838f6fad034298e4fad4e9ddf11af243c8d498df2682a36aa8"
     },
     {
       "path": "scripts/assert_management_matrix_strict.py",
@@ -821,7 +821,7 @@
     },
     {
       "path": "scripts/assert_analysis_provenance.py",
-      "sha256": "e8d8cd43a5a61bd0d6c491103fe56977a3f26609692a6152b56b008d16c34090"
+      "sha256": "a5d613e9ac254cb84432a8e3ac552838d5536996b97842dc4e5aa4bc696bec89"
     },
     {
       "path": "scripts/assert_report_quality.py",
