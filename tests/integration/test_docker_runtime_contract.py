@@ -150,6 +150,36 @@ def test_p32_strict_management_matrix_is_exact_200_process_runtime() -> None:
     ) is True
 
 
+def test_p34_strict_fault_matrix_is_exact_100_process_runtime() -> None:
+    assert docker_runtime._p33_fault_matrix_node_count(
+        "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+        "strict_fault_matrix_50",
+    ) == 50
+    assert docker_runtime._strict_fault_matrix_node_count(
+        "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+        "strict_fault_matrix_100",
+    ) == 100
+    assert docker_runtime._scenario_node_count_allowed(
+        "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+        "strict_fault_matrix_100",
+        100,
+    ) is True
+    for rejected in [50, 99, 101, 200]:
+        assert docker_runtime._scenario_node_count_allowed(
+            "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+            "strict_fault_matrix_100",
+            rejected,
+        ) is False
+    assert docker_runtime._uses_docker_process_runtime(
+        "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+        "strict_fault_matrix_100",
+    ) is True
+    assert docker_runtime._uses_docker_process_runtime(
+        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+        "strict_fault_matrix_200",
+    ) is False
+
+
 def test_p32_node_specs_use_slow_cluster_failure_timeout() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
     nodes = docker_runtime._node_specs(config, "P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200")

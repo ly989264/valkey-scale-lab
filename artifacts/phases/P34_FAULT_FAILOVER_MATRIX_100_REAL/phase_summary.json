@@ -1,0 +1,39 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+  "stage_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+  "run_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL-strict-fault-matrix-100-20260704",
+  "created_at": "2026-07-04T05:15:12.216522Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P34 strict exact-100 fault/failover matrix gate.",
+  "required_artifacts": [
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/phase_summary.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/valkey_e2e_evidence.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/resource_preflight.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/cluster_plan.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/run_state.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/cleanup_report.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/events.jsonl",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/metrics_timeseries.jsonl",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/workload_windows.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/quant_summary.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/coverage_ledger.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/fault_matrix_report.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/fault_operation_results.jsonl",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/failover_samples.jsonl",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/failover_latency_curve.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/partition_report.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/split_brain_report.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/fault_workload_impact.json",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/fault_topology_snapshots.jsonl",
+    "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/fault_command_log.jsonl"
+  ],
+  "missing_metrics": [],
+  "risks": [],
+  "errors": []
+}

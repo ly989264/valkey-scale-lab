@@ -1,0 +1,1 @@
+PASS P34 strict fault/failover matrix out=artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/valkey_e2e_evidence.json

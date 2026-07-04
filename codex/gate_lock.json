@@ -653,7 +653,7 @@
     },
     {
       "path": "scripts/fault_failover_gate.py",
-      "sha256": "a0d7c22b3c9b69a927da9b876ced420b84eaeb926209b8eb444511b3f0fbcb65"
+      "sha256": "42ef8e82c61958c480d5225e9492c20e55a4f5efc50be7a65470081f0cd6e630"
     },
     {
       "path": "scripts/fault_safety_gate.py",
@@ -797,7 +797,7 @@
     },
     {
       "path": "scripts/assert_quant_completeness.py",
-      "sha256": "44fd382c728081310400a7d2f77af031804ade77587fe6eb2c46af60ad75b71b"
+      "sha256": "9b4211969b86fde471a9d2cba99d5b6f4f6006e046a2c565f3b10bd9dc648c8e"
     },
     {
       "path": "scripts/assert_management_matrix_strict.py",

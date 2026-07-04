@@ -241,7 +241,7 @@ def create_scenario(
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
         ("P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "fault_workload_impact_analysis"),
         ("P26_FINAL_REPORT_REGRESSION", "final_report_regression_smoke"),
-    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _p33_fault_matrix_node_count(phase, scenario) is None:
+    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
         run_id = _run_id(phase, scenario)
@@ -457,7 +457,7 @@ def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
         or _p22_fault_matrix_node_count(phase, scenario) is not None
         or _p23_fault_matrix_node_count(phase, scenario) is not None
         or _p24_fault_matrix_node_count(phase, scenario) is not None
-        or _p33_fault_matrix_node_count(phase, scenario) is not None
+        or _strict_fault_matrix_node_count(phase, scenario) is not None
         or (phase, scenario) in {
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
@@ -520,11 +520,15 @@ def _p24_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
 
 
 def _p33_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
-    if phase != "P33_FAULT_FAILOVER_MATRIX_50_REAL":
-        return None
-    if scenario != "strict_fault_matrix_50":
-        return None
-    return 50
+    return _strict_fault_matrix_node_count(phase, scenario)
+
+
+def _strict_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
+    strict_fault_scenarios = {
+        ("P33_FAULT_FAILOVER_MATRIX_50_REAL", "strict_fault_matrix_50"): 50,
+        ("P34_FAULT_FAILOVER_MATRIX_100_REAL", "strict_fault_matrix_100"): 100,
+    }
+    return strict_fault_scenarios.get((phase, scenario))
 
 
 def _runtime_semantic_errors(config: dict[str, Any], *, phase: str, scenario: str) -> list[dict[str, Any]]:
@@ -3460,9 +3464,9 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
     p24_count = _p24_fault_matrix_node_count(phase, scenario)
     if p24_count is not None:
         return node_count == p24_count and p24_count <= 100
-    p33_count = _p33_fault_matrix_node_count(phase, scenario)
-    if p33_count is not None:
-        return node_count == p33_count
+    strict_fault_count = _strict_fault_matrix_node_count(phase, scenario)
+    if strict_fault_count is not None:
+        return node_count == strict_fault_count
     expected = {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},

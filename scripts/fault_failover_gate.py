@@ -1598,6 +1598,8 @@ def run_p21_controller(args: argparse.Namespace) -> int:
 
 P33_PHASE = "P33_FAULT_FAILOVER_MATRIX_50_REAL"
 P33_SETUP_SCENARIO = "strict_fault_matrix_50"
+P34_PHASE = "P34_FAULT_FAILOVER_MATRIX_100_REAL"
+P34_SETUP_SCENARIO = "strict_fault_matrix_100"
 P33_REQUIRED_ROWS = [
     "primary_stop_failover",
     "replica_stop",
@@ -1621,8 +1623,82 @@ P33_DETECTORS = [
 ]
 
 
-def p33_config_path() -> Path:
-    return ROOT / "templates" / "configs" / "scale_50.yaml"
+class StrictFaultProfile:
+    def __init__(
+        self,
+        *,
+        phase: str,
+        setup_scenario: str,
+        wrapper_scenario: str,
+        scale: int,
+        config_name: str,
+        stage_label: str,
+        work_dir_name: str,
+        state_file_name: str,
+    ) -> None:
+        self.phase = phase
+        self.setup_scenario = setup_scenario
+        self.wrapper_scenario = wrapper_scenario
+        self.scale = scale
+        self.config_name = config_name
+        self.stage_label = stage_label
+        self.work_dir_name = work_dir_name
+        self.state_file_name = state_file_name
+
+    @property
+    def label_lower(self) -> str:
+        return self.stage_label.lower()
+
+    @property
+    def coverage_prefix(self) -> str:
+        return f"{self.scale}.fault."
+
+    @property
+    def config_path(self) -> Path:
+        return ROOT / "templates" / "configs" / self.config_name
+
+    @property
+    def primary_coverage_id(self) -> str:
+        return f"{self.coverage_prefix}primary_stop_failover"
+
+
+STRICT_FAULT_PROFILES = {
+    (P33_PHASE, "strict_fault_matrix_50_fault_failover"): StrictFaultProfile(
+        phase=P33_PHASE,
+        setup_scenario=P33_SETUP_SCENARIO,
+        wrapper_scenario="strict_fault_matrix_50_fault_failover",
+        scale=50,
+        config_name="scale_50.yaml",
+        stage_label="P33",
+        work_dir_name="_p33_fault_matrix_work",
+        state_file_name="state_fault_matrix_50.json",
+    ),
+    (P34_PHASE, "strict_fault_matrix_100_fault_failover"): StrictFaultProfile(
+        phase=P34_PHASE,
+        setup_scenario=P34_SETUP_SCENARIO,
+        wrapper_scenario="strict_fault_matrix_100_fault_failover",
+        scale=100,
+        config_name="scale_100.yaml",
+        stage_label="P34",
+        work_dir_name="_p34_fault_matrix_work",
+        state_file_name="state_fault_matrix_100.json",
+    ),
+}
+
+
+def strict_fault_profile(phase: str, scenario: str) -> StrictFaultProfile | None:
+    return STRICT_FAULT_PROFILES.get((phase, scenario))
+
+
+def _strict_fault_profile_for_phase(phase: str) -> StrictFaultProfile:
+    for profile in STRICT_FAULT_PROFILES.values():
+        if profile.phase == phase:
+            return profile
+    return STRICT_FAULT_PROFILES[(P33_PHASE, "strict_fault_matrix_50_fault_failover")]
+
+
+def p33_config_path(profile: StrictFaultProfile | None = None) -> Path:
+    return (profile or _strict_fault_profile_for_phase(P33_PHASE)).config_path
 
 
 def p33_missing(field: str, reason: str) -> dict[str, str]:
@@ -1631,7 +1707,7 @@ def p33_missing(field: str, reason: str) -> dict[str, str]:
 
 def p33_encode(value: Any, path: str = "$") -> Any:
     if value is None:
-        return p33_missing(path, f"{path} was unavailable or not applicable for this P33 artifact.")
+        return p33_missing(path, f"{path} was unavailable or not applicable for this strict fault artifact.")
     if isinstance(value, dict):
         return {str(key): p33_encode(item, f"{path}.{key}") for key, item in value.items()}
     if isinstance(value, list):
@@ -1639,13 +1715,14 @@ def p33_encode(value: Any, path: str = "$") -> Any:
     return value
 
 
-def write_p33_blocked(phase: str, reasons: list[str]) -> None:
+def write_p33_blocked(phase: str, reasons: list[str], profile: StrictFaultProfile | None = None) -> None:
+    profile = profile or _strict_fault_profile_for_phase(phase)
     blocked_dir = ROOT / "artifacts" / "goal_loop_strict" / phase
     blocked_dir.mkdir(parents=True, exist_ok=True)
     lines = [
         f"# BLOCKED - {phase}",
         "",
-        "P33 cannot pass unless exactly 50 real Valkey 9.1.x nodes can run and the full fault/failover matrix can execute.",
+        f"{profile.stage_label} cannot pass unless exactly {profile.scale} real Valkey 9.1.x nodes can run and the full fault/failover matrix can execute.",
         "",
         "Blocking reasons:",
         *[f"- {reason}" for reason in reasons],
@@ -1656,25 +1733,26 @@ def write_p33_blocked(phase: str, reasons: list[str]) -> None:
     (blocked_dir / "BLOCKED.md").write_text("\n".join(lines), encoding="utf-8")
 
 
-def run_p33_resource_preflight(phase: str, artifact_dir: Path) -> tuple[bool, Path]:
+def run_p33_resource_preflight(phase: str, artifact_dir: Path, profile: StrictFaultProfile | None = None) -> tuple[bool, Path]:
+    profile = profile or _strict_fault_profile_for_phase(phase)
     source_path = artifact_dir / "resource_preflight.source.json"
     normalized_path = artifact_dir / "resource_preflight.json"
     proc = run_cmd(
         [
             sys.executable, "-m", "valkey_scale_lab.cli", "resource", "preflight",
-            "--config", str(p33_config_path()), "--out", str(source_path),
+            "--config", str(profile.config_path), "--out", str(source_path),
         ],
         timeout=180,
     )
     report = load_json_if_exists(source_path)
     checks = list(report.get("checks", [])) if isinstance(report.get("checks"), list) else []
     checks.append({
-        "name": "p33_exact_50_required",
-        "status": "PASS" if report.get("node_count") == 50 else "FAIL",
-        "details": {"required_node_count": 50, "reported_node_count": report.get("node_count", "MISSING")},
+        "name": f"{profile.label_lower}_exact_{profile.scale}_required",
+        "status": "PASS" if report.get("node_count") == profile.scale else "FAIL",
+        "details": {"required_node_count": profile.scale, "reported_node_count": report.get("node_count", "MISSING")},
     })
     checks.append({
-        "name": "p33_no_host_network_mutation",
+        "name": f"{profile.label_lower}_no_host_network_mutation",
         "status": "PASS",
         "details": {"host_network_mutation_permitted": False, "network_fault_paths": ["sandbox_proxy", "container_netns_tc"]},
     })
@@ -1691,14 +1769,14 @@ def run_p33_resource_preflight(phase: str, artifact_dir: Path) -> tuple[bool, Pa
         "artifact_type": "resource_preflight",
         "phase_id": phase,
         "stage_id": phase,
-        "run_id": f"{phase}-resource-preflight-50-20260704",
+        "run_id": f"{phase}-resource-preflight-{profile.scale}-20260704",
         "created_at": utc_now(),
         "producer": {"name": "scripts/fault_failover_gate.py", "version": "v1"},
         "status": "PASS" if can_run else "FAIL",
-        "node_count": 50,
-        "nodes_requested": 50,
+        "node_count": profile.scale,
+        "nodes_requested": profile.scale,
         "can_run": can_run,
-        "config_path": rel_path(p33_config_path()),
+        "config_path": rel_path(profile.config_path),
         "dry_run": False,
         "host": {
             "system": platform.system(),
@@ -1860,7 +1938,14 @@ def p33_workload_logical_for_target(target_node: dict[str, Any], probes: list[di
     return str(id_to_logical.get(master_id) or target_logical)
 
 
-def p33_proxy_window(row_name: str, endpoints: list[Any], probes: list[dict[str, Any]], target_logical_id: str, run_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+def p33_proxy_window(
+    row_name: str,
+    endpoints: list[Any],
+    probes: list[dict[str, Any]],
+    target_logical_id: str,
+    run_id: str,
+    profile: StrictFaultProfile,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     target_ep = endpoint_by_logical(endpoints, target_logical_id) or endpoints[0]
     rules = {
         "network_delay": ProxyRule("network_delay", delay_ms=75, jitter_ms=5),
@@ -1887,8 +1972,8 @@ def p33_proxy_window(row_name: str, endpoints: list[Any], probes: list[dict[str,
             "source_logical_id": target_logical_id,
             "source_node_id": "MISSING",
             "slot_range": [0, 16383],
-            "slot_key": f"{row_name}:{{p33-proxy}}",
-            "slot": key_slot(f"{row_name}:{{p33-proxy}}"),
+            "slot_key": f"{row_name}:{{{profile.label_lower}-proxy}}",
+            "slot": key_slot(f"{row_name}:{{{profile.label_lower}-proxy}}"),
             "entry_logical_id": target_logical_id,
         }
         window = workload_window("event", [proxy_ep], 6, f"{run_id}:{row_name}", target)
@@ -1913,18 +1998,25 @@ def p33_metric_shape(window: dict[str, Any]) -> dict[str, Any]:
     return metrics
 
 
-def p33_workload_artifact_window(row_name: str, coverage_id: str, window: dict[str, Any], start_event_id: str, end_event_id: str) -> dict[str, Any]:
+def p33_workload_artifact_window(
+    row_name: str,
+    coverage_id: str,
+    window: dict[str, Any],
+    start_event_id: str,
+    end_event_id: str,
+    profile: StrictFaultProfile,
+) -> dict[str, Any]:
     metrics = p33_metric_shape(window)
     metrics["window_start_event_id"] = start_event_id
     metrics["window_end_event_id"] = end_event_id
     shaped = {
         "window_name": "event",
         "fault_type": row_name,
-        "operation_id": f"p33-{row_name}",
-        "fault_id": f"p33-{row_name}",
+        "operation_id": f"{profile.label_lower}-{row_name}",
+        "fault_id": f"{profile.label_lower}-{row_name}",
         "coverage_id": coverage_id,
-        "node_count": 50,
-        "scale": 50,
+        "node_count": profile.scale,
+        "scale": profile.scale,
         "status": "PASS" if window.get("status") == "MEASURED" else "FAIL",
         "start_event_id": start_event_id,
         "end_event_id": end_event_id,
@@ -1938,14 +2030,14 @@ def p33_workload_artifact_window(row_name: str, coverage_id: str, window: dict[s
     return p33_encode(shaped)
 
 
-def p33_curve(sample_rows: list[dict[str, Any]], phase: str, run_id: str) -> dict[str, Any]:
+def p33_curve(sample_rows: list[dict[str, Any]], phase: str, run_id: str, profile: StrictFaultProfile) -> dict[str, Any]:
     derived = []
     for metric in ["promotion_latency_ms", "cluster_recovery_latency_ms"]:
         values = [float(row[metric]) for row in sample_rows if isinstance(row.get(metric), (int, float))]
         derived.append({
-            "rung": 50,
-            "node_count": 50,
-            "scale": 50,
+            "rung": profile.scale,
+            "node_count": profile.scale,
+            "scale": profile.scale,
             "metric": metric,
             "unit": "ms",
             "sample_count": len(values),
@@ -1962,9 +2054,9 @@ def p33_curve(sample_rows: list[dict[str, Any]], phase: str, run_id: str) -> dic
         "created_at": utc_now(),
         "producer": {"name": "scripts/fault_failover_gate.py", "version": "v1"},
         "status": "PASS" if len(sample_rows) >= 3 and all(row.get("status") == "PASS" for row in sample_rows) else "FAIL",
-        "rungs": [50],
-        "scale": 50,
-        "node_count": 50,
+        "rungs": [profile.scale],
+        "scale": profile.scale,
+        "node_count": profile.scale,
         "sample_count": len(sample_rows),
         "sample_refs": [row["sample_id"] for row in sample_rows],
         "sample_source": "failover_samples.jsonl",
@@ -1972,7 +2064,7 @@ def p33_curve(sample_rows: list[dict[str, Any]], phase: str, run_id: str) -> dic
     }
 
 
-def p33_coverage_ledger(phase: str, fault_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def p33_coverage_ledger(phase: str, fault_rows: list[dict[str, Any]], profile: StrictFaultProfile) -> dict[str, Any]:
     registry_path = ROOT / "artifacts" / "coverage" / "strict_coverage_registry.json"
     registry = load_json_if_exists(registry_path)
     rows = registry.get("rows", [])
@@ -1983,7 +2075,7 @@ def p33_coverage_ledger(phase: str, fault_rows: list[dict[str, Any]]) -> dict[st
             continue
         result = by_id[coverage_id]
         row["status"] = result["status"]
-        row["status_reason"] = "Real exact-50 fault/failover row executed and verified." if result["status"] == "PASS" else "Real exact-50 fault/failover row failed verification."
+        row["status_reason"] = f"Real exact-{profile.scale} fault/failover row executed and verified." if result["status"] == "PASS" else f"Real exact-{profile.scale} fault/failover row failed verification."
         row["source_artifacts"] = result["source_evidence_refs"]
         row["validation_artifacts"] = [
             f"artifacts/phases/{phase}/fault_matrix_report.json",
@@ -2099,7 +2191,7 @@ def p33_evidence_probes(probes: list[dict[str, Any]], endpoints: list[Any]) -> l
     return shaped
 
 
-def p33_cluster_plan(phase: str, run_id: str, scenario: str, state: dict[str, Any]) -> dict[str, Any]:
+def p33_cluster_plan(phase: str, run_id: str, scenario: str, state: dict[str, Any], profile: StrictFaultProfile) -> dict[str, Any]:
     state_nodes = list(state.get("nodes", []))
     nodehosts = list(state.get("nodehosts", []))
     hosts = sorted({str(node.get("host_id", "local")) for node in state_nodes} or {"local"})
@@ -2132,23 +2224,23 @@ def p33_cluster_plan(phase: str, run_id: str, scenario: str, state: dict[str, An
         "run_id": run_id,
         "created_at": utc_now(),
         "producer": {"name": "scripts/fault_failover_gate.py", "version": "v1"},
-        "status": "PASS" if len(nodes) == 50 else "FAIL",
+        "status": "PASS" if len(nodes) == profile.scale else "FAIL",
         "scenario_name": scenario,
         "node_count": len(nodes),
-        "nodes_requested": 50,
+        "nodes_requested": profile.scale,
         "shard_count": len(shard_ids) or primary_count,
         "replicas_per_shard": replicas_per_shard,
         "hosts": hosts,
         "azs": azs,
         "nodehosts": nodehosts,
         "nodes": nodes,
-        "config_path": rel_path(p33_config_path()),
+        "config_path": rel_path(profile.config_path),
         "constraints": {
             "primary_replica_distinct_az": True,
             "default_node_cap": 100,
             "dry_run": False,
             "opt_in_1000": False,
-            "exact_node_count_required": 50,
+            "exact_node_count_required": profile.scale,
             "host_network_mutation_allowed": False,
             "network_fault_paths": ["sandbox_proxy", "container_netns_tc"],
         },
@@ -2164,52 +2256,56 @@ def p33_int_sample_bound(samples: list[dict[str, Any]], field: str, *, want_max:
 
 def run_p33_controller(args: argparse.Namespace) -> int:
     phase = args.phase
+    profile = strict_fault_profile(args.phase, args.scenario)
+    if profile is None:
+        print(f"FAIL: strict fault controller does not implement {args.phase}/{args.scenario}", file=sys.stderr)
+        return 1
     artifact_dir = Path(args.out).parent
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    run_id = f"{phase}-strict-fault-matrix-50-20260704"
-    work_dir = artifact_dir / "_p33_fault_matrix_work"
+    run_id = f"{phase}-strict-fault-matrix-{profile.scale}-20260704"
+    work_dir = artifact_dir / profile.work_dir_name
     work_dir.mkdir(parents=True, exist_ok=True)
-    state_path = work_dir / "state_fault_matrix_50.json"
+    state_path = work_dir / profile.state_file_name
     errors: list[str] = []
     blocked: list[str] = []
-    if int(args.min_nodes) != 50:
-        blocked.append(f"P33 requires --min-nodes 50, got {args.min_nodes}")
-    if Path(args.config).resolve() != p33_config_path().resolve():
-        blocked.append(f"P33 requires config {rel_path(p33_config_path())}, got {args.config}")
-    can_run, preflight_path = run_p33_resource_preflight(phase, artifact_dir)
+    if int(args.min_nodes) != profile.scale:
+        blocked.append(f"{profile.stage_label} requires --min-nodes {profile.scale}, got {args.min_nodes}")
+    if Path(args.config).resolve() != profile.config_path.resolve():
+        blocked.append(f"{profile.stage_label} requires config {rel_path(profile.config_path)}, got {args.config}")
+    can_run, preflight_path = run_p33_resource_preflight(phase, artifact_dir, profile)
     if not can_run:
-        blocked.append(f"resource preflight failed for 50 nodes: {rel_path(preflight_path)}")
+        blocked.append(f"resource preflight failed for {profile.scale} nodes: {rel_path(preflight_path)}")
     if blocked:
-        write_p33_blocked(phase, blocked)
+        write_p33_blocked(phase, blocked, profile)
         for reason in blocked:
             print(f"FAIL: {reason}", file=sys.stderr)
         return 1
 
     setup = run_cmd([
         sys.executable, "-m", "valkey_scale_lab.cli", "gate", "scenario",
-        "--phase", phase, "--scenario", P33_SETUP_SCENARIO,
-        "--config", str(p33_config_path()), "--artifacts-dir", str(work_dir), "--state-out", str(state_path),
+        "--phase", phase, "--scenario", profile.setup_scenario,
+        "--config", str(profile.config_path), "--artifacts-dir", str(work_dir), "--state-out", str(state_path),
     ], timeout=1200)
     (work_dir / "setup.stdout.log").write_text(setup.stdout, encoding="utf-8", errors="replace")
     (work_dir / "setup.stderr.log").write_text(setup.stderr, encoding="utf-8", errors="replace")
     if setup.returncode != 0:
         errors.append(f"setup failed exit={setup.returncode}: {setup.stderr[-1000:]}")
     if not state_path.exists():
-        errors.append("setup did not write P33 state file")
+        errors.append(f"setup did not write {profile.stage_label} state file")
     if errors:
-        write_p33_blocked(phase, errors)
+        write_p33_blocked(phase, errors, profile)
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
 
     state = load_state(state_path)
     endpoints = endpoints_from_state(state)
-    ok, probes = wait_for_stable_cluster_ok(endpoints, 50, timeout_seconds=240, interval=2)
-    if not ok or observed_count(probes) != 50:
-        errors.append(f"exact 50-node cluster did not become stable; observed={observed_count(probes)}")
+    ok, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=240, interval=2)
+    if not ok or observed_count(probes) != profile.scale:
+        errors.append(f"exact {profile.scale}-node cluster did not become stable; observed={observed_count(probes)}")
     valkey_versions = sorted({str(p["version"]) for p in probes if p.get("status") == "PASS" and p.get("version")})
     if not valkey_versions or any(not version.startswith("9.1.") for version in valkey_versions):
-        errors.append(f"P33 requires Valkey 9.1.x versions, got {valkey_versions}")
+        errors.append(f"{profile.stage_label} requires Valkey 9.1.x versions, got {valkey_versions}")
 
     fault_rows: list[dict[str, Any]] = []
     failover_samples: list[dict[str, Any]] = []
@@ -2232,20 +2328,20 @@ def run_p33_controller(args: argparse.Namespace) -> int:
             "phase_id": phase,
             "stage_id": phase,
             "coverage_id": coverage_id,
-            "scale": 50,
-            "node_count": 50,
+            "scale": profile.scale,
+            "node_count": profile.scale,
             "scenario_name": args.scenario,
             "sample_id": row_name,
-            "event_id": f"p33-{event_counter:04d}-{row_name}-{event_type}",
+            "event_id": f"{profile.label_lower}-{event_counter:04d}-{row_name}-{event_type}",
             "event_type": event_type,
             "timestamp_unix_ms": unix_ms(),
             "monotonic_ms": monotonic_ms(),
             "severity": "INFO",
             "subject_type": "fault_row",
             "subject_id": subject_id,
-            "operation_id": f"p33-{row_name}",
-            "fault_id": f"p33-{row_name}",
-            "message": f"P33 {row_name} {event_type}",
+            "operation_id": f"{profile.label_lower}-{row_name}",
+            "fault_id": f"{profile.label_lower}-{row_name}",
+            "message": f"{profile.stage_label} {row_name} {event_type}",
             "metadata": metadata or {},
         }
         events.append(event)
@@ -2261,8 +2357,8 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 "phase_id": phase,
                 "stage_id": phase,
                 "coverage_id": coverage_id,
-                "scale": 50,
-                "node_count": 50,
+                "scale": profile.scale,
+                "node_count": profile.scale,
                 "scenario_name": args.scenario,
                 "sample_id": row_name,
                 "timestamp_unix_ms": unix_ms(),
@@ -2280,7 +2376,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         if errors:
             raise RuntimeError("; ".join(errors))
         for sample_index in [1, 2, 3]:
-            ok, probes = wait_for_stable_cluster_ok(endpoints, 50, timeout_seconds=180, interval=2)
+            ok, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=180, interval=2)
             if not ok:
                 raise RuntimeError(f"cluster not stable before primary failover sample {sample_index}")
             selection = find_primary_with_replica(probes, [
@@ -2290,13 +2386,13 @@ def run_p33_controller(args: argparse.Namespace) -> int:
             if not selection:
                 selection = find_primary_with_replica(probes, state.get("nodes", []))
             if not selection:
-                raise RuntimeError("could not find primary with replica for P33 primary sample")
+                raise RuntimeError(f"could not find primary with replica for {profile.stage_label} primary sample")
             target_logical, old_primary_id, expected_replica_id = selection
             used_primary_targets.add(target_logical)
             target = next(node for node in state.get("nodes", []) if node.get("logical_id") == target_logical)
-            coverage_id = "50.fault.primary_stop_failover"
+            coverage_id = profile.primary_coverage_id
             row_name = "primary_stop_failover"
-            sample_id = f"p33-primary-stop-sample-{sample_index:02d}"
+            sample_id = f"{profile.label_lower}-primary-stop-sample-{sample_index:02d}"
             start_event = add_event(row_name, "started", target_logical, coverage_id, {"sample_id": sample_id})
             workload_target = workload_target_for_logical(endpoints, probes, target_logical)
             before = workload_window("baseline", endpoints, 4, sample_id, workload_target)
@@ -2315,7 +2411,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
             recovered_at_ms: int | str = "MISSING"
             recovery_probes: list[dict[str, Any]] = []
             while time.monotonic() < deadline:
-                ok_after, current = wait_for_cluster_ok(endpoints, 49, timeout_seconds=5, interval=1)
+                ok_after, current = wait_for_cluster_ok(endpoints, profile.scale - 1, timeout_seconds=5, interval=1)
                 recovery_probes = current
                 promoted = promoted_from_old_primary(current, old_primary_id, expected_replica_id)
                 if promoted and (ok_after or any(p.get("cluster_state") == "ok" for p in current if p.get("status") == "PASS")):
@@ -2330,10 +2426,10 @@ def run_p33_controller(args: argparse.Namespace) -> int:
             p33_refresh_state_pids(state_path, [target_logical])
             state = load_state(state_path)
             endpoints = endpoints_from_state(state)
-            ok_clear, probes = wait_for_stable_cluster_ok(endpoints, 50, timeout_seconds=240, interval=2)
+            ok_clear, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=240, interval=2)
             after = workload_window("post_recovery", endpoints, 4, sample_id, workload_target)
             end_event = add_event(row_name, "finished", target_logical, coverage_id, {"sample_id": sample_id, "promoted_node_id": promoted_id})
-            window_row = p33_workload_artifact_window(row_name, coverage_id, during, start_event["event_id"], end_event["event_id"])
+            window_row = p33_workload_artifact_window(row_name, coverage_id, during, start_event["event_id"], end_event["event_id"], profile)
             workload_windows_rows.append(window_row)
             add_metrics(row_name, coverage_id, window_row)
             promotion_latency = recovered_at_ms - fault_started_ms if isinstance(recovered_at_ms, int) else "MISSING"
@@ -2345,9 +2441,9 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 "scenario_name": args.scenario,
                 "sample_id": sample_id,
                 "sample_index": sample_index,
-                "node_count": 50,
-                "scale": 50,
-                "rung": 50,
+                "node_count": profile.scale,
+                "scale": profile.scale,
+                "rung": profile.scale,
                 "status": "PASS" if promoted_id != "MISSING" and ok_clear and apply_report.get("status") == "PASS" and clear_report.get("status") == "PASS" else "FAIL",
                 "real_valkey": True,
                 "state_ref": f"{rel_path(state_path)}#{sample_id}",
@@ -2373,7 +2469,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 "first_successful_write_at_ms": after.get("first_successful_write_at_ms", "MISSING"),
                 "fault_cleared_at_ms": fault_cleared_ms,
                 "old_primary_rejoined_at_ms": "MISSING",
-                "old_primary_rejoined_missing_reason": "old primary restart is verified through exact-50 post-clear cluster health, not a separate rejoin timestamp",
+                "old_primary_rejoined_missing_reason": f"old primary restart is verified through exact-{profile.scale} post-clear cluster health, not a separate rejoin timestamp",
                 "promotion_latency_ms": metric_value(promotion_latency),
                 "cluster_recovery_latency_ms": metric_value(promotion_latency),
                 "read_unavailability_ms": metric_value(after.get("first_successful_read_at_ms", "MISSING") - fault_started_ms if isinstance(after.get("first_successful_read_at_ms"), int) else "MISSING"),
@@ -2418,12 +2514,12 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                     "phase_id": phase,
                     "stage_id": phase,
                     "run_id": run_id,
-                    "fault_id": "p33-primary-stop-failover",
+                    "fault_id": f"{profile.label_lower}-primary-stop-failover",
                     "fault_type": row_name,
                     "row_name": row_name,
-                    "coverage_id": "50.fault.primary_stop_failover",
-                    "scale": 50,
-                    "node_count": 50,
+                    "coverage_id": profile.primary_coverage_id,
+                    "scale": profile.scale,
+                    "node_count": profile.scale,
                     "status": status,
                     "real_execution_verified": status == "PASS",
                     "scope": "owned_runtime_control",
@@ -2444,7 +2540,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 }
                 fault_rows.append(p33_encode(row))
                 continue
-            coverage_id = f"50.fault.{row_name}"
+            coverage_id = f"{profile.coverage_prefix}{row_name}"
             start_target_probes = probes
             target_node = p33_target_for_row(row_name, state, start_target_probes)
             target_logical = str(target_node.get("logical_id"))
@@ -2461,7 +2557,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 target_group = [str(node["logical_id"]) for node in state.get("nodes", []) if node.get(key) == value]
             if row_name in P33_NETWORK_ROWS:
                 proxy_start_ms = unix_ms()
-                proxy_window, proxy_snapshot = p33_proxy_window(row_name, endpoints, probes, target_logical, run_id)
+                proxy_window, proxy_snapshot = p33_proxy_window(row_name, endpoints, probes, target_logical, run_id, profile)
                 proxy_end_ms = unix_ms()
                 proxy_snapshots.append(proxy_snapshot)
                 observed_effect = proxy_snapshot
@@ -2469,7 +2565,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 command_log.append(p33_command_log_entry(
                     phase=phase,
                     run_id=run_id,
-                    command_id=f"p33-{row_name}-sandbox-proxy",
+                    command_id=f"{profile.label_lower}-{row_name}-sandbox-proxy",
                     command_kind="sandbox_proxy_apply_clear",
                     started_at_ms=proxy_start_ms,
                     ended_at_ms=proxy_end_ms,
@@ -2481,8 +2577,8 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                         "fault_type": row_name,
                         "coverage_id": coverage_id,
                         "implementation_path": "sandbox_proxy",
-                        "majority_group": [node.get("logical_id") for node in state.get("nodes", [])[:26]],
-                        "minority_group": [node.get("logical_id") for node in state.get("nodes", [])[26:]],
+                        "majority_group": [node.get("logical_id") for node in state.get("nodes", [])[: (profile.scale // 2) + 1]],
+                        "minority_group": [node.get("logical_id") for node in state.get("nodes", [])[(profile.scale // 2) + 1:]],
                         "isolated_group": target_group,
                         "traffic_policy": "sandbox_proxy_rejects_client_path_between_selected_side_and_target",
                         "side_probe_status": "PASS",
@@ -2497,7 +2593,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
             else:
                 event_window = workload_window("event", endpoints, 4, run_id, workload_target)
                 for logical_id in target_group:
-                    fault_id = f"p33-{row_name}-{logical_id}"
+                    fault_id = f"{profile.label_lower}-{row_name}-{logical_id}"
                     apply_report, clear_report, _started_ms, _cleared_ms = p33_apply_fault(
                         phase=phase,
                         state_path=state_path,
@@ -2521,10 +2617,10 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 state = load_state(state_path)
                 endpoints = endpoints_from_state(state)
                 restore_timeout = 600 if row_name in {"node_host_stop", "az_stop"} else 240
-                ok_restore, probes = wait_for_stable_cluster_ok(endpoints, 50, timeout_seconds=restore_timeout, interval=2)
+                ok_restore, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=restore_timeout, interval=2)
                 observed_effect = {"status": "PASS" if ok_restore else "FAIL", "target_group_count": len(target_group), "cluster_restored": ok_restore}
             end_event = add_event(row_name, "finished", target_logical, coverage_id, {"implementation_path": implementation_path})
-            window_row = p33_workload_artifact_window(row_name, coverage_id, event_window, start_event["event_id"], end_event["event_id"])
+            window_row = p33_workload_artifact_window(row_name, coverage_id, event_window, start_event["event_id"], end_event["event_id"], profile)
             workload_windows_rows.append(window_row)
             add_metrics(row_name, coverage_id, window_row)
             status = "PASS" if observed_effect.get("status") == "PASS" and event_window.get("status") == "MEASURED" else "FAIL"
@@ -2533,12 +2629,12 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 "phase_id": phase,
                 "stage_id": phase,
                 "run_id": run_id,
-                "fault_id": f"p33-{row_name}",
+                "fault_id": f"{profile.label_lower}-{row_name}",
                 "fault_type": row_name,
                 "row_name": row_name,
                 "coverage_id": coverage_id,
-                "scale": 50,
-                "node_count": 50,
+                "scale": profile.scale,
+                "node_count": profile.scale,
                 "status": status,
                 "real_execution_verified": status == "PASS",
                 "scope": implementation_path,
@@ -2561,7 +2657,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 "cleanup_verified": True,
                 "safety_checks": {"host_network_mutated": False, "global_firewall_mutated": False, "sandbox_only": True},
             }))
-            topology_rows.append(p33_topology_snapshot(f"p33-{row_name}-after", phase, run_id, probes))
+            topology_rows.append(p33_topology_snapshot(f"{profile.label_lower}-{row_name}-after", phase, run_id, probes))
     except Exception as exc:  # noqa: BLE001
         errors.append(repr(exc))
     finally:
@@ -2572,21 +2668,21 @@ def run_p33_controller(args: argparse.Namespace) -> int:
     row_names = {row.get("row_name") for row in fault_rows}
     missing_rows = [name for name in P33_REQUIRED_ROWS if name not in row_names]
     if missing_rows:
-        errors.append(f"missing P33 fault rows: {missing_rows}")
+        errors.append(f"missing {profile.stage_label} fault rows: {missing_rows}")
     if any(row.get("status") != "PASS" for row in fault_rows):
-        errors.append("one or more P33 fault rows failed")
+        errors.append(f"one or more {profile.stage_label} fault rows failed")
     status = "PASS" if not errors else "FAIL"
     if status != "PASS":
-        write_p33_blocked(phase, errors)
+        write_p33_blocked(phase, errors, profile)
 
-    curve = p33_curve(failover_samples, phase, run_id)
+    curve = p33_curve(failover_samples, phase, run_id, profile)
     if curve.get("status") != "PASS":
         status = "FAIL"
-    write_jsonl(artifact_dir / "fault_operation_results.jsonl", fault_rows or [{"schema_version": "v1", "phase_id": phase, "stage_id": phase, "run_id": run_id, "fault_id": "p33-no-rows", "fault_type": "MISSING", "row_name": "MISSING", "coverage_id": "50.fault.primary_stop_failover", "scale": 50, "node_count": 50, "status": "FAIL", "real_execution_verified": False}])
-    write_jsonl(artifact_dir / "failover_samples.jsonl", failover_samples or [{"schema_version": "v1", "phase_id": phase, "stage_id": phase, "run_id": run_id, "scenario_name": args.scenario, "sample_id": "p33-no-sample", "node_count": 50, "scale": 50, "rung": 50, "status": "FAIL", "real_valkey": True}])
+    write_jsonl(artifact_dir / "fault_operation_results.jsonl", fault_rows or [{"schema_version": "v1", "phase_id": phase, "stage_id": phase, "run_id": run_id, "fault_id": f"{profile.label_lower}-no-rows", "fault_type": "MISSING", "row_name": "MISSING", "coverage_id": profile.primary_coverage_id, "scale": profile.scale, "node_count": profile.scale, "status": "FAIL", "real_execution_verified": False}])
+    write_jsonl(artifact_dir / "failover_samples.jsonl", failover_samples or [{"schema_version": "v1", "phase_id": phase, "stage_id": phase, "run_id": run_id, "scenario_name": args.scenario, "sample_id": f"{profile.label_lower}-no-sample", "node_count": profile.scale, "scale": profile.scale, "rung": profile.scale, "status": "FAIL", "real_valkey": True}])
     write_json(artifact_dir / "failover_latency_curve.json", p33_encode(curve))
-    write_jsonl(artifact_dir / "events.jsonl", events or [{"schema_version": "v1", "run_id": run_id, "phase_id": phase, "stage_id": phase, "coverage_id": "50.fault.primary_stop_failover", "scale": 50, "node_count": 50, "scenario_name": args.scenario, "sample_id": "p33-no-event", "event_id": "p33-no-event", "event_type": "stage_failed_before_rows", "timestamp_unix_ms": unix_ms(), "monotonic_ms": monotonic_ms(), "severity": "ERROR", "subject_type": "fault_row", "subject_id": "P33", "operation_id": "p33", "fault_id": "p33", "message": "P33 failed before row events", "metadata": {}}])
-    write_jsonl(artifact_dir / "metrics_timeseries.jsonl", metrics or [{"schema_version": "v1", "run_id": run_id, "phase_id": phase, "stage_id": phase, "coverage_id": "50.fault.primary_stop_failover", "scale": 50, "node_count": 50, "scenario_name": args.scenario, "sample_id": "p33-no-metric", "timestamp_unix_ms": unix_ms(), "monotonic_ms": monotonic_ms(), "source_type": "workload", "source_id": "p33", "metric_name": "sample_count", "metric_value": "MISSING", "metric_unit": "count", "labels": {}, "missing_reason": "P33 failed before metrics were collected"}])
+    write_jsonl(artifact_dir / "events.jsonl", events or [{"schema_version": "v1", "run_id": run_id, "phase_id": phase, "stage_id": phase, "coverage_id": profile.primary_coverage_id, "scale": profile.scale, "node_count": profile.scale, "scenario_name": args.scenario, "sample_id": f"{profile.label_lower}-no-event", "event_id": f"{profile.label_lower}-no-event", "event_type": "stage_failed_before_rows", "timestamp_unix_ms": unix_ms(), "monotonic_ms": monotonic_ms(), "severity": "ERROR", "subject_type": "fault_row", "subject_id": profile.stage_label, "operation_id": profile.label_lower, "fault_id": profile.label_lower, "message": f"{profile.stage_label} failed before row events", "metadata": {}}])
+    write_jsonl(artifact_dir / "metrics_timeseries.jsonl", metrics or [{"schema_version": "v1", "run_id": run_id, "phase_id": phase, "stage_id": phase, "coverage_id": profile.primary_coverage_id, "scale": profile.scale, "node_count": profile.scale, "scenario_name": args.scenario, "sample_id": f"{profile.label_lower}-no-metric", "timestamp_unix_ms": unix_ms(), "monotonic_ms": monotonic_ms(), "source_type": "workload", "source_id": profile.label_lower, "metric_name": "sample_count", "metric_value": "MISSING", "metric_unit": "count", "labels": {}, "missing_reason": f"{profile.stage_label} failed before metrics were collected"}])
     workload_artifact = {
         "schema_version": "v1",
         "artifact_type": "workload_windows",
@@ -2626,8 +2722,8 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         "created_at": utc_now(),
         "producer": {"name": "scripts/fault_failover_gate.py", "version": "v1"},
         "status": status,
-        "scale": 50,
-        "node_count": 50,
+        "scale": profile.scale,
+        "node_count": profile.scale,
         "required_rows": P33_REQUIRED_ROWS,
         "fault_rows": fault_rows,
         "safety_checks": {"host_network_mutated": False, "global_firewall_mutated": False, "sandbox_only": True},
@@ -2653,8 +2749,8 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         "created_at": utc_now(),
         "producer": {"name": "scripts/fault_failover_gate.py", "version": "v1"},
         "status": "PASS" if partition_rows else "FAIL",
-        "scale": 50,
-        "node_count": 50,
+        "scale": profile.scale,
+        "node_count": profile.scale,
         "groups": {
             "majority": partition_rows[0]["majority_group"] if partition_rows else [],
             "minority": partition_rows[0]["minority_group"] if partition_rows else [],
@@ -2688,8 +2784,8 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         "created_at": utc_now(),
         "producer": {"name": "scripts/fault_failover_gate.py", "version": "v1"},
         "status": "PASS",
-        "scale": 50,
-        "node_count": 50,
+        "scale": profile.scale,
+        "node_count": profile.scale,
         "split_brain_window_ms": 0,
         "indicator_start_ms": 0,
         "indicator_end_ms": 0,
@@ -2706,19 +2802,19 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         "conflicting_write_keys": [],
     }
     write_json(artifact_dir / "split_brain_report.json", p33_encode(split_report))
-    write_jsonl(artifact_dir / "fault_topology_snapshots.jsonl", topology_rows or [p33_topology_snapshot("p33-no-topology", phase, run_id, probes)])
+    write_jsonl(artifact_dir / "fault_topology_snapshots.jsonl", topology_rows or [p33_topology_snapshot(f"{profile.label_lower}-no-topology", phase, run_id, probes)])
     write_jsonl(artifact_dir / "fault_command_log.jsonl", command_log or [p33_command_log_entry(
         phase=phase,
         run_id=run_id,
-        command_id="p33-no-command",
+        command_id=f"{profile.label_lower}-no-command",
         command_kind="stage_failed_before_command",
         started_at_ms=unix_ms(),
         ended_at_ms=unix_ms(),
         status="FAIL",
-        details={"fault_id": "p33", "fault_type": "MISSING", "host_network_mutated": False},
+        details={"fault_id": profile.label_lower, "fault_type": "MISSING", "host_network_mutated": False},
     )])
-    write_json(artifact_dir / "cluster_plan.json", p33_encode(p33_cluster_plan(phase, run_id, args.scenario, state)))
-    write_json(artifact_dir / "run_state.json", p33_encode({"schema_version": "v1", "artifact_type": "strict_run_state", "phase_id": phase, "stage_id": phase, "run_id": run_id, "scenario_name": args.scenario, "status": status, "node_count": 50, "state_ref": rel_path(state_path), "runtime": state.get("runtime", {}), "nodehosts": state.get("nodehosts", []), "nodes": state.get("nodes", [])}))
+    write_json(artifact_dir / "cluster_plan.json", p33_encode(p33_cluster_plan(phase, run_id, args.scenario, state, profile)))
+    write_json(artifact_dir / "run_state.json", p33_encode({"schema_version": "v1", "artifact_type": "strict_run_state", "phase_id": phase, "stage_id": phase, "run_id": run_id, "scenario_name": args.scenario, "status": status, "node_count": profile.scale, "state_ref": rel_path(state_path), "runtime": state.get("runtime", {}), "nodehosts": state.get("nodehosts", []), "nodes": state.get("nodes", [])}))
     evidence = {
         "schema_version": "v1",
         "artifact_type": "valkey_e2e_evidence",
@@ -2732,8 +2828,8 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         "real_valkey": True,
         "valkey_version_prefix_required": "9.1.",
         "probe_result": "PASS" if status == "PASS" else "FAIL",
-        "nodes_requested": 50,
-        "nodes_observed": 50 if status == "PASS" else observed_count(probes),
+        "nodes_requested": profile.scale,
+        "nodes_observed": profile.scale if status == "PASS" else observed_count(probes),
         "cluster_state_observed": "ok" if status == "PASS" else cluster_state_from_probes(probes),
         "data_path_result": "PASS" if status == "PASS" else "FAIL",
         "valkey_versions": valkey_versions,
@@ -2753,14 +2849,14 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         "created_at": utc_now(),
         "producer": {"name": "scripts/fault_failover_gate.py", "version": "v1"},
         "status": status,
-        "summary": "P33 executed the strict exact-50 fault/failover matrix with real Valkey probes, sandbox-scoped faults, workload windows, split-brain detectors, and coverage evidence.",
+        "summary": f"{profile.stage_label} executed the strict exact-{profile.scale} fault/failover matrix with real Valkey probes, sandbox-scoped faults, workload windows, split-brain detectors, and coverage evidence.",
         "artifact_refs": [f"artifacts/phases/{phase}/{name}" for name in ["events.jsonl", "metrics_timeseries.jsonl", "workload_windows.json", "fault_matrix_report.json", "fault_operation_results.jsonl", "failover_samples.jsonl", "failover_latency_curve.json", "partition_report.json", "split_brain_report.json", "fault_workload_impact.json", "coverage_ledger.json"]],
         "missing_data": [],
         "runtime_claims": {"real_valkey_claimed": True, "management_runtime_claimed": False, "fault_runtime_claimed": True},
-        "counts": {"node_count": 50, "fault_row_count": len(fault_rows), "coverage_pass_count": sum(1 for row in fault_rows if row.get("status") == "PASS"), "event_count": len(events), "metric_count": len(metrics), "workload_window_count": len(workload_windows_rows), "failover_sample_count": len(failover_samples)},
+        "counts": {"node_count": profile.scale, "fault_row_count": len(fault_rows), "coverage_pass_count": sum(1 for row in fault_rows if row.get("status") == "PASS"), "event_count": len(events), "metric_count": len(metrics), "workload_window_count": len(workload_windows_rows), "failover_sample_count": len(failover_samples)},
     }
     write_json(artifact_dir / "quant_summary.json", p33_encode(quant_summary))
-    ledger = p33_coverage_ledger(phase, fault_rows)
+    ledger = p33_coverage_ledger(phase, fault_rows, profile)
     write_json(artifact_dir / "coverage_ledger.json", p33_encode(ledger))
     if status == "PASS":
         p33_update_global_coverage(ledger)
@@ -2773,7 +2869,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         "created_at": utc_now(),
         "producer": {"name": "scripts/fault_failover_gate.py", "version": "v1"},
         "status": status,
-        "summary": "P33 strict exact-50 fault/failover matrix gate.",
+        "summary": f"{profile.stage_label} strict exact-{profile.scale} fault/failover matrix gate.",
         "required_artifacts": [f"artifacts/phases/{phase}/{name}" for name in ["phase_summary.json", "valkey_e2e_evidence.json", "resource_preflight.json", "cluster_plan.json", "run_state.json", "cleanup_report.json", "events.jsonl", "metrics_timeseries.jsonl", "workload_windows.json", "quant_summary.json", "coverage_ledger.json", "fault_matrix_report.json", "fault_operation_results.jsonl", "failover_samples.jsonl", "failover_latency_curve.json", "partition_report.json", "split_brain_report.json", "fault_workload_impact.json", "fault_topology_snapshots.jsonl", "fault_command_log.jsonl"]],
         "missing_metrics": [],
         "risks": [],
@@ -2783,7 +2879,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
-    print(f"PASS P33 strict fault/failover matrix out={args.out}")
+    print(f"PASS {profile.stage_label} strict fault/failover matrix out={args.out}")
     return 0
 
 
@@ -2813,9 +2909,10 @@ def main() -> int:
             print("FAIL: P21 controller requires fault, workload, and cleanup report paths", file=sys.stderr)
             return 1
         return run_p21_controller(args)
-    if args.phase == P33_PHASE and args.scenario == "strict_fault_matrix_50_fault_failover":
+    profile = strict_fault_profile(args.phase, args.scenario)
+    if profile is not None:
         if not args.fault_report or not args.workload_window_report or not args.cleanup_report:
-            print("FAIL: P33 controller requires fault, workload, and cleanup report paths", file=sys.stderr)
+            print(f"FAIL: {profile.stage_label} controller requires fault, workload, and cleanup report paths", file=sys.stderr)
             return 1
         return run_p33_controller(args)
 

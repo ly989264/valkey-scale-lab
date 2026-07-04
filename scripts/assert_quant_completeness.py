@@ -19,6 +19,7 @@ P30 = "P30_MANAGEMENT_MATRIX_50_REAL"
 P31 = "P31_MANAGEMENT_MATRIX_100_REAL"
 P32 = "P32_MANAGEMENT_MATRIX_200_REAL"
 P33 = "P33_FAULT_FAILOVER_MATRIX_50_REAL"
+P34 = "P34_FAULT_FAILOVER_MATRIX_100_REAL"
 STRICT_MANAGEMENT_STAGES = {
     P30: {
         "scale": 50,
@@ -40,6 +41,25 @@ STRICT_FAULT_STAGES = {
     P33: {
         "scale": 50,
         "coverage_prefix": "50.fault.",
+        "required_rows": {
+            "primary_stop_failover",
+            "replica_stop",
+            "node_host_stop",
+            "az_stop",
+            "network_delay",
+            "network_loss",
+            "network_flap",
+            "network_partition",
+            "minority_partition",
+            "majority_partition",
+            "split_brain_window_detection",
+            "fault_period_workload_impact",
+        },
+        "min_failover_samples": 3,
+    },
+    P34: {
+        "scale": 100,
+        "coverage_prefix": "100.fault.",
         "required_rows": {
             "primary_stop_failover",
             "replica_stop",
@@ -463,7 +483,7 @@ def _assert_strict_fault_coverage_ledger(ledger: dict[str, Any], phase: str, sca
         and row.get("scale") == scale
     ]
     if len(stage_rows) != len(required_rows):
-        errors.append(f"coverage_ledger.json: expected {len(required_rows)} P33 fault rows, got {len(stage_rows)}")
+        errors.append(f"coverage_ledger.json: expected {len(required_rows)} strict fault rows, got {len(stage_rows)}")
     for row in stage_rows:
         row_name = str(row.get("row_name", ""))
         if row_name not in required_rows:

@@ -1,0 +1,409 @@
+{
+  "bundle_name": "vslab-bundle-P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628-nodehost-az-b",
+  "node_count": 50,
+  "nodehost_id": "nodehost-az-b",
+  "nodes": [
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0001-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0001-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0001-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0001-primary/valkey.log",
+      "logical_id": "shard-0001-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0001-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0003-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0003-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0003-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0003-primary/valkey.log",
+      "logical_id": "shard-0003-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0003-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0005-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0005-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0005-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0005-primary/valkey.log",
+      "logical_id": "shard-0005-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0005-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0007-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0007-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0007-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0007-primary/valkey.log",
+      "logical_id": "shard-0007-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0007-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0009-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0009-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0009-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0009-primary/valkey.log",
+      "logical_id": "shard-0009-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0009-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0011-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0011-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0011-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0011-primary/valkey.log",
+      "logical_id": "shard-0011-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0011-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0013-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0013-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0013-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0013-primary/valkey.log",
+      "logical_id": "shard-0013-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0013-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0015-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0015-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0015-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0015-primary/valkey.log",
+      "logical_id": "shard-0015-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0015-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0017-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0017-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0017-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0017-primary/valkey.log",
+      "logical_id": "shard-0017-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0017-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0019-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0019-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0019-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0019-primary/valkey.log",
+      "logical_id": "shard-0019-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0019-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0021-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0021-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0021-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0021-primary/valkey.log",
+      "logical_id": "shard-0021-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0021-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0023-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0023-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0023-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0023-primary/valkey.log",
+      "logical_id": "shard-0023-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0023-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0025-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0025-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0025-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0025-primary/valkey.log",
+      "logical_id": "shard-0025-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0025-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0027-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0027-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0027-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0027-primary/valkey.log",
+      "logical_id": "shard-0027-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0027-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0029-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0029-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0029-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0029-primary/valkey.log",
+      "logical_id": "shard-0029-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0029-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0031-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0031-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0031-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0031-primary/valkey.log",
+      "logical_id": "shard-0031-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0031-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0033-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0033-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0033-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0033-primary/valkey.log",
+      "logical_id": "shard-0033-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0033-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0035-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0035-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0035-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0035-primary/valkey.log",
+      "logical_id": "shard-0035-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0035-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0037-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0037-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0037-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0037-primary/valkey.log",
+      "logical_id": "shard-0037-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0037-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0039-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0039-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0039-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0039-primary/valkey.log",
+      "logical_id": "shard-0039-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0039-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0041-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0041-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0041-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0041-primary/valkey.log",
+      "logical_id": "shard-0041-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0041-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0043-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0043-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0043-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0043-primary/valkey.log",
+      "logical_id": "shard-0043-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0043-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0045-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0045-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0045-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0045-primary/valkey.log",
+      "logical_id": "shard-0045-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0045-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0047-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0047-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0047-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0047-primary/valkey.log",
+      "logical_id": "shard-0047-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0047-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0049-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0049-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0049-primary",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0049-primary/valkey.log",
+      "logical_id": "shard-0049-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0049-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0000-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0000-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0000-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0000-replica-00/valkey.log",
+      "logical_id": "shard-0000-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0000-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0002-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0002-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0002-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0002-replica-00/valkey.log",
+      "logical_id": "shard-0002-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0002-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0004-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0004-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0004-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0004-replica-00/valkey.log",
+      "logical_id": "shard-0004-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0004-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0006-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0006-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0006-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0006-replica-00/valkey.log",
+      "logical_id": "shard-0006-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0006-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0008-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0008-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0008-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0008-replica-00/valkey.log",
+      "logical_id": "shard-0008-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0008-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0010-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0010-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0010-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0010-replica-00/valkey.log",
+      "logical_id": "shard-0010-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0010-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0012-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0012-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0012-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0012-replica-00/valkey.log",
+      "logical_id": "shard-0012-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0012-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0014-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0014-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0014-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0014-replica-00/valkey.log",
+      "logical_id": "shard-0014-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0014-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0016-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0016-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0016-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0016-replica-00/valkey.log",
+      "logical_id": "shard-0016-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0016-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0018-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0018-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0018-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0018-replica-00/valkey.log",
+      "logical_id": "shard-0018-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0018-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0020-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0020-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0020-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0020-replica-00/valkey.log",
+      "logical_id": "shard-0020-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0020-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0022-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0022-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0022-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0022-replica-00/valkey.log",
+      "logical_id": "shard-0022-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0022-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0024-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0024-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0024-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0024-replica-00/valkey.log",
+      "logical_id": "shard-0024-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0024-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0026-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0026-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0026-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0026-replica-00/valkey.log",
+      "logical_id": "shard-0026-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0026-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0028-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0028-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0028-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0028-replica-00/valkey.log",
+      "logical_id": "shard-0028-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0028-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0030-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0030-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0030-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0030-replica-00/valkey.log",
+      "logical_id": "shard-0030-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0030-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0032-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0032-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0032-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0032-replica-00/valkey.log",
+      "logical_id": "shard-0032-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0032-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0034-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0034-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0034-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0034-replica-00/valkey.log",
+      "logical_id": "shard-0034-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0034-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0036-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0036-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0036-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0036-replica-00/valkey.log",
+      "logical_id": "shard-0036-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0036-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0038-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0038-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0038-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0038-replica-00/valkey.log",
+      "logical_id": "shard-0038-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0038-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0040-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0040-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0040-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0040-replica-00/valkey.log",
+      "logical_id": "shard-0040-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0040-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0042-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0042-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0042-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0042-replica-00/valkey.log",
+      "logical_id": "shard-0042-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0042-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0044-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0044-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0044-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0044-replica-00/valkey.log",
+      "logical_id": "shard-0044-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0044-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0046-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0046-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0046-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0046-replica-00/valkey.log",
+      "logical_id": "shard-0046-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0046-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/node_configs/shard-0048-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0048-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0048-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0048-replica-00/valkey.log",
+      "logical_id": "shard-0048-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628/shard-0048-replica-00/valkey.pid"
+    }
+  ],
+  "run_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628",
+  "schema_version": "v1"
+}

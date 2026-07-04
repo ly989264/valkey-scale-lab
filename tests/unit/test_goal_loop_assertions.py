@@ -551,6 +551,264 @@ def test_p29_quant_completeness_rejects_coverage_pass_claim(tmp_path: Path) -> N
     assert any("must remain PENDING" in error for error in errors)
 
 
+P34_PHASE = "P34_FAULT_FAILOVER_MATRIX_100_REAL"
+P34_ROWS = [
+    "primary_stop_failover",
+    "replica_stop",
+    "node_host_stop",
+    "az_stop",
+    "network_delay",
+    "network_loss",
+    "network_flap",
+    "network_partition",
+    "minority_partition",
+    "majority_partition",
+    "split_brain_window_detection",
+    "fault_period_workload_impact",
+]
+P34_WORKLOAD_METRICS = [
+    "requested_qps",
+    "achieved_qps",
+    "ok_ops",
+    "error_ops",
+    "error_rate",
+    "latency_p50_ms",
+    "latency_p90_ms",
+    "latency_p95_ms",
+    "latency_p99_ms",
+    "latency_p999_ms",
+    "timeout_count",
+    "connection_error_count",
+    "moved_redirection_count",
+    "ask_redirection_count",
+    "cluster_down_error_count",
+    "readonly_error_count",
+    "tryagain_error_count",
+    "unknown_error_count",
+    "sample_count",
+    "window_start_event_id",
+    "window_end_event_id",
+]
+
+
+def p34_workload_metrics(start_event_id: str, end_event_id: str) -> dict:
+    return {
+        "requested_qps": 10.0,
+        "achieved_qps": 9.5,
+        "ok_ops": 19,
+        "error_ops": 1,
+        "error_rate": 0.05,
+        "latency_p50_ms": 1.0,
+        "latency_p90_ms": 2.0,
+        "latency_p95_ms": 3.0,
+        "latency_p99_ms": 4.0,
+        "latency_p999_ms": 5.0,
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_redirection_count": 1,
+        "ask_redirection_count": 0,
+        "cluster_down_error_count": 0,
+        "readonly_error_count": 0,
+        "tryagain_error_count": 0,
+        "unknown_error_count": 0,
+        "sample_count": 20,
+        "window_start_event_id": start_event_id,
+        "window_end_event_id": end_event_id,
+        "missing_reasons": {},
+    }
+
+
+def minimal_p34_strict_fault_artifacts(base: Path, *, sample_count: int = 3) -> None:
+    phase = P34_PHASE
+    events = []
+    metrics_rows = []
+    windows = []
+    fault_rows = []
+    for index, row_name in enumerate(P34_ROWS, start=1):
+        coverage_id = f"100.fault.{row_name}"
+        start_event_id = f"p34-{index:02d}-start"
+        end_event_id = f"p34-{index:02d}-end"
+        for event_id, event_type in [(start_event_id, "started"), (end_event_id, "finished")]:
+            events.append({
+                "schema_version": "v1",
+                "run_id": "p34-run",
+                "phase_id": phase,
+                "stage_id": phase,
+                "coverage_id": coverage_id,
+                "scale": 100,
+                "node_count": 100,
+                "scenario_name": "strict_fault_matrix_100_fault_failover",
+                "sample_id": row_name,
+                "event_id": event_id,
+                "event_type": event_type,
+                "timestamp_unix_ms": 1000 + index,
+                "monotonic_ms": 1000.0 + index,
+                "severity": "INFO",
+                "subject_type": "fault_row",
+                "subject_id": row_name,
+                "operation_id": f"p34-{row_name}",
+                "fault_id": f"p34-{row_name}",
+                "message": f"P34 {row_name} {event_type}",
+                "metadata": {},
+            })
+        workload = p34_workload_metrics(start_event_id, end_event_id)
+        window = {
+            "window_name": "event",
+            "fault_type": row_name,
+            "operation_id": f"p34-{row_name}",
+            "fault_id": f"p34-{row_name}",
+            "coverage_id": coverage_id,
+            "node_count": 100,
+            "scale": 100,
+            "status": "PASS",
+            "start_event_id": start_event_id,
+            "end_event_id": end_event_id,
+            "window_start_event_id": start_event_id,
+            "window_end_event_id": end_event_id,
+            "metrics": workload,
+        }
+        for metric_name in P34_WORKLOAD_METRICS:
+            window[metric_name] = workload[metric_name]
+        windows.append(window)
+        metrics_rows.append({
+            "schema_version": "v1",
+            "run_id": "p34-run",
+            "phase_id": phase,
+            "stage_id": phase,
+            "coverage_id": coverage_id,
+            "scale": 100,
+            "node_count": 100,
+            "scenario_name": "strict_fault_matrix_100_fault_failover",
+            "sample_id": row_name,
+            "timestamp_unix_ms": 1000 + index,
+            "monotonic_ms": 1000.0 + index,
+            "source_type": "workload",
+            "source_id": f"{row_name}:event",
+            "metric_name": "sample_count",
+            "metric_value": 20,
+            "metric_unit": "count",
+            "labels": {"fault_type": row_name},
+            "missing_reason": "",
+        })
+        fault_rows.append({
+            "schema_version": "v1",
+            "phase_id": phase,
+            "stage_id": phase,
+            "run_id": "p34-run",
+            "fault_id": f"p34-{row_name}",
+            "fault_type": row_name,
+            "row_name": row_name,
+            "coverage_id": coverage_id,
+            "scale": 100,
+            "node_count": 100,
+            "status": "PASS",
+            "real_execution_verified": True,
+            "workload_impact_ref": f"artifacts/phases/{phase}/fault_workload_impact.json#{row_name}",
+            "cleanup_verified": True,
+            "source_evidence_refs": [f"artifacts/phases/{phase}/fault_operation_results.jsonl"],
+        })
+    failover_samples = [
+        {
+            "schema_version": "v1",
+            "phase_id": phase,
+            "stage_id": phase,
+            "run_id": f"p34-run-sample-{index}",
+            "scenario_name": "strict_fault_matrix_100_fault_failover",
+            "sample_id": f"p34-primary-stop-sample-{index:02d}",
+            "node_count": 100,
+            "scale": 100,
+            "rung": 100,
+            "status": "PASS",
+            "real_valkey": True,
+            "promotion_latency_ms": 100.0 + index,
+            "cluster_recovery_latency_ms": 120.0 + index,
+            "fault_injected_at_ms": 1000 + index,
+            "replica_promoted_at_ms": 1100 + index,
+            "slot_coverage_ok_at_ms": 1120 + index,
+        }
+        for index in range(1, sample_count + 1)
+    ]
+    write_jsonl(base / "events.jsonl", events)
+    write_jsonl(base / "metrics_timeseries.jsonl", metrics_rows)
+    write_jsonl(base / "fault_operation_results.jsonl", fault_rows)
+    write_jsonl(base / "failover_samples.jsonl", failover_samples)
+    write_jsonl(base / "fault_topology_snapshots.jsonl", [{"schema_version": "v1", "phase_id": phase, "run_id": "p34-run", "snapshot_id": "snapshot-1", "timestamp_unix_ms": 1000, "nodes": [], "slots": {}}])
+    write_jsonl(base / "fault_command_log.jsonl", [{"schema_version": "v1", "phase_id": phase, "run_id": "p34-run", "command_id": "cmd-1", "command_kind": "fault_apply_clear", "started_at_unix_ms": 1000, "ended_at_unix_ms": 1001, "status": "PASS"}])
+    for name in ["phase_summary", "resource_preflight", "cluster_plan", "run_state"]:
+        write_json(base / f"{name}.json", {"schema_version": "v1", "phase_id": phase, "stage_id": phase, "status": "PASS"})
+    write_json(base / "workload_windows.json", {"schema_version": "v1", "artifact_type": "workload_windows", "phase_id": phase, "stage_id": phase, "windows": windows})
+    write_json(base / "fault_matrix_report.json", {"schema_version": "v1", "status": "PASS", "scale": 100, "node_count": 100})
+    write_json(base / "failover_latency_curve.json", {"schema_version": "v1", "status": "PASS", "scale": 100, "node_count": 100})
+    write_json(base / "partition_report.json", {"schema_version": "v1", "status": "PASS", "scale": 100, "node_count": 100})
+    write_json(base / "split_brain_report.json", {"schema_version": "v1", "status": "PASS", "scale": 100, "node_count": 100})
+    write_json(base / "fault_workload_impact.json", {"schema_version": "v1", "status": "PASS", "scale": 100, "node_count": 100})
+    write_json(base / "valkey_e2e_evidence.json", {"schema_version": "v1", "status": "PASS", "nodes_observed": 100, "data_path_result": "PASS"})
+    write_json(base / "cleanup_report.json", {"schema_version": "v1", "status": "PASS"})
+    write_json(
+        base / "quant_summary.json",
+        {
+            "schema_version": "v1",
+            "status": "PASS",
+            "runtime_claims": {"real_valkey_claimed": True, "management_runtime_claimed": False, "fault_runtime_claimed": True},
+            "counts": {"node_count": 100, "fault_row_count": len(P34_ROWS), "failover_sample_count": sample_count},
+        },
+    )
+    write_json(
+        base / "coverage_ledger.json",
+        {
+            "stage_id": phase,
+            "rows": [
+                {
+                    "coverage_id": f"100.fault.{row_name}",
+                    "stage_owner": phase,
+                    "category": "fault",
+                    "scale": 100,
+                    "row_name": row_name,
+                    "status": "PASS",
+                    "source_artifacts": ["fault_operation_results.jsonl"],
+                    "validation_artifacts": ["fault_matrix_report.json"],
+                    "metric_refs": ["metrics_timeseries.jsonl"],
+                    "cleanup_ref": "cleanup_report.json",
+                }
+                for row_name in P34_ROWS
+            ],
+        },
+    )
+
+
+def test_p34_quant_completeness_accepts_strict_fault_artifacts(tmp_path: Path) -> None:
+    assertion = load_script("assert_quant_completeness")
+    minimal_p34_strict_fault_artifacts(tmp_path)
+    errors: list[str] = []
+
+    assertion.assert_strict_fault_semantics(tmp_path, P34_PHASE, 100, errors)
+
+    assert errors == []
+
+
+def test_p34_quant_completeness_rejects_wrong_scale_prefix(tmp_path: Path) -> None:
+    assertion = load_script("assert_quant_completeness")
+    minimal_p34_strict_fault_artifacts(tmp_path)
+    rows = [json.loads(line) for line in (tmp_path / "events.jsonl").read_text(encoding="utf-8").splitlines()]
+    rows[0]["coverage_id"] = "50.fault.primary_stop_failover"
+    write_jsonl(tmp_path / "events.jsonl", rows)
+    errors: list[str] = []
+
+    assertion.assert_strict_fault_semantics(tmp_path, P34_PHASE, 100, errors)
+
+    assert any("coverage_id must be a 100.fault.* row" in error for error in errors)
+
+
+def test_p34_quant_completeness_rejects_insufficient_failover_samples(tmp_path: Path) -> None:
+    assertion = load_script("assert_quant_completeness")
+    minimal_p34_strict_fault_artifacts(tmp_path, sample_count=2)
+    errors: list[str] = []
+
+    assertion.assert_strict_fault_semantics(tmp_path, P34_PHASE, 100, errors)
+
+    assert any("requires at least 3 samples" in error for error in errors)
+
+
 def p17_management_row(operation_name: str, node_count: int) -> dict:
     operation_id = f"{operation_name}-{node_count:02d}"
     return {

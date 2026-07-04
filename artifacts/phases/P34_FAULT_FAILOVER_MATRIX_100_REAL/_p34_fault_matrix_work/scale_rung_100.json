@@ -1,0 +1,352 @@
+{
+  "artifact_type": "scale_rung_summary",
+  "az_distribution": {
+    "az-a": 50,
+    "az-b": 50
+  },
+  "client_port_range": {
+    "max": 7599,
+    "min": 7500
+  },
+  "cluster_known_nodes_observed": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100
+  ],
+  "cluster_states": [
+    "ok"
+  ],
+  "config_path": "scale_100",
+  "created_at": "2026-06-28T00:00:00Z",
+  "errors": [],
+  "evidence_path": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/valkey_e2e_evidence_100.json",
+  "host_distribution": {
+    "local": 100
+  },
+  "management": {
+    "cluster_known_nodes_expected": 100,
+    "cluster_known_nodes_max": 100,
+    "cluster_known_nodes_min": 100,
+    "slot_ranges": [
+      {
+        "end": 8183,
+        "start": 7856
+      },
+      {
+        "end": 8511,
+        "start": 8184
+      },
+      {
+        "end": 8839,
+        "start": 8512
+      },
+      {
+        "end": 9167,
+        "start": 8840
+      },
+      {
+        "end": 9495,
+        "start": 9168
+      },
+      {
+        "end": 9823,
+        "start": 9496
+      },
+      {
+        "end": 10151,
+        "start": 9824
+      },
+      {
+        "end": 10479,
+        "start": 10152
+      },
+      {
+        "end": 10807,
+        "start": 10480
+      },
+      {
+        "end": 11135,
+        "start": 10808
+      },
+      {
+        "end": 11463,
+        "start": 11136
+      },
+      {
+        "end": 11791,
+        "start": 11464
+      },
+      {
+        "end": 12119,
+        "start": 11792
+      },
+      {
+        "end": 12447,
+        "start": 12120
+      },
+      {
+        "end": 12775,
+        "start": 12448
+      },
+      {
+        "end": 13103,
+        "start": 12776
+      },
+      {
+        "end": 13431,
+        "start": 13104
+      },
+      {
+        "end": 13759,
+        "start": 13432
+      },
+      {
+        "end": 14087,
+        "start": 13760
+      },
+      {
+        "end": 14415,
+        "start": 14088
+      },
+      {
+        "end": 14743,
+        "start": 14416
+      },
+      {
+        "end": 15071,
+        "start": 14744
+      },
+      {
+        "end": 15399,
+        "start": 15072
+      },
+      {
+        "end": 15727,
+        "start": 15400
+      },
+      {
+        "end": 16055,
+        "start": 15728
+      },
+      {
+        "end": 16383,
+        "start": 16056
+      },
+      {
+        "end": 326,
+        "start": 0
+      },
+      {
+        "end": 653,
+        "start": 327
+      },
+      {
+        "end": 980,
+        "start": 654
+      },
+      {
+        "end": 1307,
+        "start": 981
+      },
+      {
+        "end": 1634,
+        "start": 1308
+      },
+      {
+        "end": 1961,
+        "start": 1635
+      },
+      {
+        "end": 2288,
+        "start": 1962
+      },
+      {
+        "end": 2615,
+        "start": 2289
+      },
+      {
+        "end": 2942,
+        "start": 2616
+      },
+      {
+        "end": 3269,
+        "start": 2943
+      },
+      {
+        "end": 3596,
+        "start": 3270
+      },
+      {
+        "end": 3923,
+        "start": 3597
+      },
+      {
+        "end": 4250,
+        "start": 3924
+      },
+      {
+        "end": 4577,
+        "start": 4251
+      },
+      {
+        "end": 4904,
+        "start": 4578
+      },
+      {
+        "end": 5231,
+        "start": 4905
+      },
+      {
+        "end": 5559,
+        "start": 5232
+      },
+      {
+        "end": 5887,
+        "start": 5560
+      },
+      {
+        "end": 6215,
+        "start": 5888
+      },
+      {
+        "end": 6543,
+        "start": 6216
+      },
+      {
+        "end": 6871,
+        "start": 6544
+      },
+      {
+        "end": 7199,
+        "start": 6872
+      },
+      {
+        "end": 7527,
+        "start": 7200
+      },
+      {
+        "end": 7855,
+        "start": 7528
+      }
+    ],
+    "slots_assigned": 16384
+  },
+  "metrics": {
+    "avg_used_memory": 3543097.52,
+    "total_commands_processed": 2537,
+    "total_used_memory": 354309752
+  },
+  "node_count": 100,
+  "phase_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+  "primary_count": 50,
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "replica_count": 50,
+  "run_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL-strict_fault_matrix_100-20260628",
+  "rung": 100,
+  "scenario": "strict_fault_matrix_100",
+  "schema_version": "v1",
+  "status": "PASS",
+  "valkey_versions": [
+    "9.1.0"
+  ]
+}
