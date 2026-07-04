@@ -1,0 +1,2036 @@
+{
+  "artifact_type": "p37_placement_schedule",
+  "az_counts": {
+    "az-a": 101,
+    "az-b": 100
+  },
+  "created_at": "2026-07-04T00:00:00Z",
+  "execution_mode": "dry_run",
+  "host_counts": {
+    "local-a": 101,
+    "local-b": 100
+  },
+  "phase_id": "P37_200_PLUS_DRY_RUN_SUPPORT",
+  "placement_schedule_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/placement_schedule_201.json",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P37_200_PLUS_DRY_RUN_SUPPORT-dry-run-20260704",
+  "runtime_resources_created": false,
+  "schedule": [
+    {
+      "az_id": "az-a",
+      "client_port": 12000,
+      "cluster_bus_port": 22000,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0000-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0000-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12001,
+      "cluster_bus_port": 22001,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0001-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0001-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12002,
+      "cluster_bus_port": 22002,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0002-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0002-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12003,
+      "cluster_bus_port": 22003,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0003-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0003-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12004,
+      "cluster_bus_port": 22004,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0004-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0004-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12005,
+      "cluster_bus_port": 22005,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0005-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0005-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12006,
+      "cluster_bus_port": 22006,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0006-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0006-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12007,
+      "cluster_bus_port": 22007,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0007-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0007-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12008,
+      "cluster_bus_port": 22008,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0008-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0008-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12009,
+      "cluster_bus_port": 22009,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0009-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0009-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12010,
+      "cluster_bus_port": 22010,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0010-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0010-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12011,
+      "cluster_bus_port": 22011,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0011-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0011-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12012,
+      "cluster_bus_port": 22012,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0012-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0012-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12013,
+      "cluster_bus_port": 22013,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0013-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0013-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12014,
+      "cluster_bus_port": 22014,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0014-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0014-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12015,
+      "cluster_bus_port": 22015,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0015-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0015-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12016,
+      "cluster_bus_port": 22016,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0016-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0016-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12017,
+      "cluster_bus_port": 22017,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0017-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0017-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12018,
+      "cluster_bus_port": 22018,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0018-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0018-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12019,
+      "cluster_bus_port": 22019,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0019-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0019-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12020,
+      "cluster_bus_port": 22020,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0020-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0020-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12021,
+      "cluster_bus_port": 22021,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0021-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0021-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12022,
+      "cluster_bus_port": 22022,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0022-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0022-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12023,
+      "cluster_bus_port": 22023,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0023-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0023-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12024,
+      "cluster_bus_port": 22024,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0024-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0024-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12025,
+      "cluster_bus_port": 22025,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0025-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0025-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12026,
+      "cluster_bus_port": 22026,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0026-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0026-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12027,
+      "cluster_bus_port": 22027,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0027-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0027-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12028,
+      "cluster_bus_port": 22028,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0028-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0028-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12029,
+      "cluster_bus_port": 22029,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0029-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0029-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12030,
+      "cluster_bus_port": 22030,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0030-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0030-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12031,
+      "cluster_bus_port": 22031,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0031-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0031-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12032,
+      "cluster_bus_port": 22032,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0032-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0032-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12033,
+      "cluster_bus_port": 22033,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0033-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0033-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12034,
+      "cluster_bus_port": 22034,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0034-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0034-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12035,
+      "cluster_bus_port": 22035,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0035-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0035-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12036,
+      "cluster_bus_port": 22036,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0036-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0036-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12037,
+      "cluster_bus_port": 22037,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0037-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0037-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12038,
+      "cluster_bus_port": 22038,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0038-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0038-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12039,
+      "cluster_bus_port": 22039,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0039-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0039-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12040,
+      "cluster_bus_port": 22040,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0040-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0040-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12041,
+      "cluster_bus_port": 22041,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0041-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0041-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12042,
+      "cluster_bus_port": 22042,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0042-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0042-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12043,
+      "cluster_bus_port": 22043,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0043-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0043-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12044,
+      "cluster_bus_port": 22044,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0044-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0044-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12045,
+      "cluster_bus_port": 22045,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0045-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0045-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12046,
+      "cluster_bus_port": 22046,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0046-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0046-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12047,
+      "cluster_bus_port": 22047,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0047-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0047-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12048,
+      "cluster_bus_port": 22048,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0048-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0048-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12049,
+      "cluster_bus_port": 22049,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0049-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0049-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12050,
+      "cluster_bus_port": 22050,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0050-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0050-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12051,
+      "cluster_bus_port": 22051,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0051-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0051-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12052,
+      "cluster_bus_port": 22052,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0052-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0052-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12053,
+      "cluster_bus_port": 22053,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0053-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0053-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12054,
+      "cluster_bus_port": 22054,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0054-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0054-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12055,
+      "cluster_bus_port": 22055,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0055-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0055-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12056,
+      "cluster_bus_port": 22056,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0056-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0056-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12057,
+      "cluster_bus_port": 22057,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0057-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0057-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12058,
+      "cluster_bus_port": 22058,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0058-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0058-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12059,
+      "cluster_bus_port": 22059,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0059-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0059-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12060,
+      "cluster_bus_port": 22060,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0060-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0060-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12061,
+      "cluster_bus_port": 22061,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0061-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0061-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12062,
+      "cluster_bus_port": 22062,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0062-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0062-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12063,
+      "cluster_bus_port": 22063,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0063-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0063-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12064,
+      "cluster_bus_port": 22064,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0064-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0064-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12065,
+      "cluster_bus_port": 22065,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0065-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0065-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12066,
+      "cluster_bus_port": 22066,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0066-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0066-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12067,
+      "cluster_bus_port": 22067,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0067-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0067-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12068,
+      "cluster_bus_port": 22068,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0068-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0068-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12069,
+      "cluster_bus_port": 22069,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0069-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0069-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12070,
+      "cluster_bus_port": 22070,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0070-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0070-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12071,
+      "cluster_bus_port": 22071,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0071-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0071-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12072,
+      "cluster_bus_port": 22072,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0072-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0072-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12073,
+      "cluster_bus_port": 22073,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0073-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0073-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12074,
+      "cluster_bus_port": 22074,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0074-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0074-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12075,
+      "cluster_bus_port": 22075,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0075-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0075-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12076,
+      "cluster_bus_port": 22076,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0076-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0076-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12077,
+      "cluster_bus_port": 22077,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0077-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0077-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12078,
+      "cluster_bus_port": 22078,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0078-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0078-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12079,
+      "cluster_bus_port": 22079,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0079-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0079-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12080,
+      "cluster_bus_port": 22080,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0080-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0080-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12081,
+      "cluster_bus_port": 22081,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0081-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0081-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12082,
+      "cluster_bus_port": 22082,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0082-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0082-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12083,
+      "cluster_bus_port": 22083,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0083-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0083-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12084,
+      "cluster_bus_port": 22084,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0084-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0084-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12085,
+      "cluster_bus_port": 22085,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0085-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0085-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12086,
+      "cluster_bus_port": 22086,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0086-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0086-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12087,
+      "cluster_bus_port": 22087,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0087-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0087-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12088,
+      "cluster_bus_port": 22088,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0088-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0088-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12089,
+      "cluster_bus_port": 22089,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0089-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0089-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12090,
+      "cluster_bus_port": 22090,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0090-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0090-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12091,
+      "cluster_bus_port": 22091,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0091-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0091-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12092,
+      "cluster_bus_port": 22092,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0092-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0092-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12093,
+      "cluster_bus_port": 22093,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0093-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0093-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12094,
+      "cluster_bus_port": 22094,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0094-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0094-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12095,
+      "cluster_bus_port": 22095,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0095-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0095-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12096,
+      "cluster_bus_port": 22096,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0096-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0096-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12097,
+      "cluster_bus_port": 22097,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0097-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0097-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12098,
+      "cluster_bus_port": 22098,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0098-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0098-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12099,
+      "cluster_bus_port": 22099,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0099-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0099-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12100,
+      "cluster_bus_port": 22100,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0100-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0100-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12101,
+      "cluster_bus_port": 22101,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0101-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0101-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12102,
+      "cluster_bus_port": 22102,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0102-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0102-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12103,
+      "cluster_bus_port": 22103,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0103-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0103-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12104,
+      "cluster_bus_port": 22104,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0104-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0104-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12105,
+      "cluster_bus_port": 22105,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0105-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0105-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12106,
+      "cluster_bus_port": 22106,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0106-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0106-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12107,
+      "cluster_bus_port": 22107,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0107-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0107-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12108,
+      "cluster_bus_port": 22108,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0108-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0108-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12109,
+      "cluster_bus_port": 22109,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0109-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0109-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12110,
+      "cluster_bus_port": 22110,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0110-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0110-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12111,
+      "cluster_bus_port": 22111,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0111-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0111-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12112,
+      "cluster_bus_port": 22112,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0112-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0112-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12113,
+      "cluster_bus_port": 22113,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0113-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0113-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12114,
+      "cluster_bus_port": 22114,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0114-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0114-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12115,
+      "cluster_bus_port": 22115,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0115-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0115-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12116,
+      "cluster_bus_port": 22116,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0116-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0116-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12117,
+      "cluster_bus_port": 22117,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0117-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0117-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12118,
+      "cluster_bus_port": 22118,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0118-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0118-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12119,
+      "cluster_bus_port": 22119,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0119-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0119-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12120,
+      "cluster_bus_port": 22120,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0120-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0120-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12121,
+      "cluster_bus_port": 22121,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0121-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0121-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12122,
+      "cluster_bus_port": 22122,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0122-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0122-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12123,
+      "cluster_bus_port": 22123,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0123-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0123-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12124,
+      "cluster_bus_port": 22124,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0124-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0124-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12125,
+      "cluster_bus_port": 22125,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0125-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0125-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12126,
+      "cluster_bus_port": 22126,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0126-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0126-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12127,
+      "cluster_bus_port": 22127,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0127-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0127-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12128,
+      "cluster_bus_port": 22128,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0128-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0128-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12129,
+      "cluster_bus_port": 22129,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0129-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0129-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12130,
+      "cluster_bus_port": 22130,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0130-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0130-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12131,
+      "cluster_bus_port": 22131,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0131-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0131-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12132,
+      "cluster_bus_port": 22132,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0132-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0132-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12133,
+      "cluster_bus_port": 22133,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0133-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0133-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12134,
+      "cluster_bus_port": 22134,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0134-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0134-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12135,
+      "cluster_bus_port": 22135,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0135-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0135-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12136,
+      "cluster_bus_port": 22136,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0136-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0136-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12137,
+      "cluster_bus_port": 22137,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0137-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0137-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12138,
+      "cluster_bus_port": 22138,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0138-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0138-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12139,
+      "cluster_bus_port": 22139,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0139-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0139-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12140,
+      "cluster_bus_port": 22140,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0140-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0140-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12141,
+      "cluster_bus_port": 22141,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0141-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0141-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12142,
+      "cluster_bus_port": 22142,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0142-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0142-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12143,
+      "cluster_bus_port": 22143,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0143-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0143-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12144,
+      "cluster_bus_port": 22144,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0144-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0144-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12145,
+      "cluster_bus_port": 22145,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0145-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0145-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12146,
+      "cluster_bus_port": 22146,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0146-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0146-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12147,
+      "cluster_bus_port": 22147,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0147-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0147-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12148,
+      "cluster_bus_port": 22148,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0148-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0148-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12149,
+      "cluster_bus_port": 22149,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0149-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0149-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12150,
+      "cluster_bus_port": 22150,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0150-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0150-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12151,
+      "cluster_bus_port": 22151,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0151-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0151-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12152,
+      "cluster_bus_port": 22152,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0152-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0152-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12153,
+      "cluster_bus_port": 22153,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0153-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0153-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12154,
+      "cluster_bus_port": 22154,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0154-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0154-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12155,
+      "cluster_bus_port": 22155,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0155-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0155-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12156,
+      "cluster_bus_port": 22156,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0156-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0156-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12157,
+      "cluster_bus_port": 22157,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0157-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0157-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12158,
+      "cluster_bus_port": 22158,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0158-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0158-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12159,
+      "cluster_bus_port": 22159,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0159-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0159-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12160,
+      "cluster_bus_port": 22160,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0160-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0160-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12161,
+      "cluster_bus_port": 22161,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0161-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0161-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12162,
+      "cluster_bus_port": 22162,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0162-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0162-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12163,
+      "cluster_bus_port": 22163,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0163-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0163-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12164,
+      "cluster_bus_port": 22164,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0164-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0164-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12165,
+      "cluster_bus_port": 22165,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0165-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0165-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12166,
+      "cluster_bus_port": 22166,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0166-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0166-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12167,
+      "cluster_bus_port": 22167,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0167-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0167-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12168,
+      "cluster_bus_port": 22168,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0168-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0168-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12169,
+      "cluster_bus_port": 22169,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0169-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0169-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12170,
+      "cluster_bus_port": 22170,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0170-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0170-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12171,
+      "cluster_bus_port": 22171,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0171-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0171-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12172,
+      "cluster_bus_port": 22172,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0172-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0172-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12173,
+      "cluster_bus_port": 22173,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0173-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0173-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12174,
+      "cluster_bus_port": 22174,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0174-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0174-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12175,
+      "cluster_bus_port": 22175,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0175-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0175-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12176,
+      "cluster_bus_port": 22176,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0176-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0176-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12177,
+      "cluster_bus_port": 22177,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0177-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0177-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12178,
+      "cluster_bus_port": 22178,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0178-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0178-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12179,
+      "cluster_bus_port": 22179,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0179-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0179-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12180,
+      "cluster_bus_port": 22180,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0180-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0180-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12181,
+      "cluster_bus_port": 22181,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0181-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0181-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12182,
+      "cluster_bus_port": 22182,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0182-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0182-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12183,
+      "cluster_bus_port": 22183,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0183-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0183-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12184,
+      "cluster_bus_port": 22184,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0184-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0184-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12185,
+      "cluster_bus_port": 22185,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0185-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0185-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12186,
+      "cluster_bus_port": 22186,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0186-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0186-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12187,
+      "cluster_bus_port": 22187,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0187-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0187-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12188,
+      "cluster_bus_port": 22188,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0188-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0188-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12189,
+      "cluster_bus_port": 22189,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0189-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0189-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12190,
+      "cluster_bus_port": 22190,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0190-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0190-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12191,
+      "cluster_bus_port": 22191,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0191-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0191-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12192,
+      "cluster_bus_port": 22192,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0192-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0192-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12193,
+      "cluster_bus_port": 22193,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0193-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0193-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12194,
+      "cluster_bus_port": 22194,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0194-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0194-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12195,
+      "cluster_bus_port": 22195,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0195-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0195-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12196,
+      "cluster_bus_port": 22196,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0196-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0196-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12197,
+      "cluster_bus_port": 22197,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0197-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0197-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12198,
+      "cluster_bus_port": 22198,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0198-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0198-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 12199,
+      "cluster_bus_port": 22199,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0199-primary",
+      "dry_run": true,
+      "host_id": "local-b",
+      "logical_id": "shard-0199-primary",
+      "role": "primary"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 12200,
+      "cluster_bus_port": 22200,
+      "data_dir": "artifacts/runtime/P02_PLANNER-local-20260628/data/shard-0200-primary",
+      "dry_run": true,
+      "host_id": "local-a",
+      "logical_id": "shard-0200-primary",
+      "role": "primary"
+    }
+  ],
+  "schema_version": "v1",
+  "status": "DRY_RUN_PASS",
+  "target_nodes": 201
+}

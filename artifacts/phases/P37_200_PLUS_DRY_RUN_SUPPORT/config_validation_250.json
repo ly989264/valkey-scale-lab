@@ -1,0 +1,20 @@
+{
+  "artifact_type": "p37_config_validation",
+  "config_path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_250_dry_run.yaml",
+  "created_at": "2026-07-04T00:00:00Z",
+  "errors": [],
+  "execution_mode": "dry_run",
+  "live_endpoint_claimed": false,
+  "phase_id": "P37_200_PLUS_DRY_RUN_SUPPORT",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P37_200_PLUS_DRY_RUN_SUPPORT-dry-run-20260704",
+  "runtime_resources_created": false,
+  "schema_version": "v1",
+  "status": "DRY_RUN_PASS",
+  "target_nodes": 250,
+  "valid": true,
+  "workload_executed": false
+}

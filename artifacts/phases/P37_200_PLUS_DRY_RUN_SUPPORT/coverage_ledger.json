@@ -1,0 +1,1039 @@
+{
+  "artifact_type": "strict_coverage_registry",
+  "created_at": "2026-07-04T00:00:00Z",
+  "producer": {
+    "name": "scripts/p37_200_plus_dry_run_artifacts.py",
+    "version": "v1"
+  },
+  "rows": [
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "201.dry_run.config_validate_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 201,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "config_validate_dry_run",
+      "scale": 201,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_201_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 201 completed dry-run-only config_validate_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/config_validation_201.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "201.dry_run.resource_preflight_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 201,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "resource_preflight_dry_run",
+      "scale": 201,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_201_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 201 completed dry-run-only resource_preflight_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/resource_estimate_201.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "201.dry_run.plan_cluster_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 201,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "plan_cluster_dry_run",
+      "scale": 201,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_201_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 201 completed dry-run-only plan_cluster_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_plan_201.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "201.dry_run.placement_schedule_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 201,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "placement_schedule_dry_run",
+      "scale": 201,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_201_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 201 completed dry-run-only placement_schedule_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/placement_schedule_201.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "201.dry_run.port_directory_collision_check_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 201,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "port_directory_collision_check_dry_run",
+      "scale": 201,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_201_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 201 completed dry-run-only port_directory_collision_check_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/collision_check_201.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "201.dry_run.artifact_schema_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 201,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "artifact_schema_projection_dry_run",
+      "scale": 201,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_201_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 201 completed dry-run-only artifact_schema_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/artifact_schema_projection_201.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "201.dry_run.no_runtime_created_proof",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 201,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "no_runtime_created_proof",
+      "scale": 201,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_201_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 201 completed dry-run-only no_runtime_created_proof with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof_201.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "201.dry_run.report_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 201,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "report_projection_dry_run",
+      "scale": 201,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_201_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 201 completed dry-run-only report_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/report_projection_201.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "250.dry_run.config_validate_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 250,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "config_validate_dry_run",
+      "scale": 250,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_250_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 250 completed dry-run-only config_validate_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/config_validation_250.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "250.dry_run.resource_preflight_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 250,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "resource_preflight_dry_run",
+      "scale": 250,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_250_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 250 completed dry-run-only resource_preflight_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/resource_estimate_250.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "250.dry_run.plan_cluster_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 250,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "plan_cluster_dry_run",
+      "scale": 250,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_250_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 250 completed dry-run-only plan_cluster_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_plan_250.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "250.dry_run.placement_schedule_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 250,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "placement_schedule_dry_run",
+      "scale": 250,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_250_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 250 completed dry-run-only placement_schedule_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/placement_schedule_250.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "250.dry_run.port_directory_collision_check_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 250,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "port_directory_collision_check_dry_run",
+      "scale": 250,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_250_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 250 completed dry-run-only port_directory_collision_check_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/collision_check_250.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "250.dry_run.artifact_schema_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 250,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "artifact_schema_projection_dry_run",
+      "scale": 250,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_250_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 250 completed dry-run-only artifact_schema_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/artifact_schema_projection_250.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "250.dry_run.no_runtime_created_proof",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 250,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "no_runtime_created_proof",
+      "scale": 250,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_250_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 250 completed dry-run-only no_runtime_created_proof with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof_250.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "250.dry_run.report_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 250,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "report_projection_dry_run",
+      "scale": 250,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_250_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 250 completed dry-run-only report_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/report_projection_250.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "300.dry_run.config_validate_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 300,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "config_validate_dry_run",
+      "scale": 300,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_300_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 300 completed dry-run-only config_validate_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/config_validation_300.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "300.dry_run.resource_preflight_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 300,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "resource_preflight_dry_run",
+      "scale": 300,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_300_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 300 completed dry-run-only resource_preflight_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/resource_estimate_300.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "300.dry_run.plan_cluster_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 300,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "plan_cluster_dry_run",
+      "scale": 300,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_300_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 300 completed dry-run-only plan_cluster_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_plan_300.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "300.dry_run.placement_schedule_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 300,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "placement_schedule_dry_run",
+      "scale": 300,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_300_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 300 completed dry-run-only placement_schedule_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/placement_schedule_300.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "300.dry_run.port_directory_collision_check_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 300,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "port_directory_collision_check_dry_run",
+      "scale": 300,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_300_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 300 completed dry-run-only port_directory_collision_check_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/collision_check_300.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "300.dry_run.artifact_schema_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 300,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "artifact_schema_projection_dry_run",
+      "scale": 300,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_300_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 300 completed dry-run-only artifact_schema_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/artifact_schema_projection_300.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "300.dry_run.no_runtime_created_proof",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 300,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "no_runtime_created_proof",
+      "scale": 300,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_300_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 300 completed dry-run-only no_runtime_created_proof with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof_300.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "300.dry_run.report_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 300,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "report_projection_dry_run",
+      "scale": 300,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_300_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 300 completed dry-run-only report_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/report_projection_300.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "500.dry_run.config_validate_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 500,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "config_validate_dry_run",
+      "scale": 500,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_500_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 500 completed dry-run-only config_validate_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/config_validation_500.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "500.dry_run.resource_preflight_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 500,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "resource_preflight_dry_run",
+      "scale": 500,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_500_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 500 completed dry-run-only resource_preflight_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/resource_estimate_500.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "500.dry_run.plan_cluster_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 500,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "plan_cluster_dry_run",
+      "scale": 500,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_500_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 500 completed dry-run-only plan_cluster_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_plan_500.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "500.dry_run.placement_schedule_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 500,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "placement_schedule_dry_run",
+      "scale": 500,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_500_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 500 completed dry-run-only placement_schedule_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/placement_schedule_500.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "500.dry_run.port_directory_collision_check_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 500,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "port_directory_collision_check_dry_run",
+      "scale": 500,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_500_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 500 completed dry-run-only port_directory_collision_check_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/collision_check_500.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "500.dry_run.artifact_schema_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 500,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "artifact_schema_projection_dry_run",
+      "scale": 500,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_500_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 500 completed dry-run-only artifact_schema_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/artifact_schema_projection_500.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "500.dry_run.no_runtime_created_proof",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 500,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "no_runtime_created_proof",
+      "scale": 500,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_500_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 500 completed dry-run-only no_runtime_created_proof with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof_500.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "500.dry_run.report_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 500,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "report_projection_dry_run",
+      "scale": 500,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_500_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 500 completed dry-run-only report_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/report_projection_500.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "1000.dry_run.config_validate_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 1000,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "config_validate_dry_run",
+      "scale": 1000,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_1000_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 1000 completed dry-run-only config_validate_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/config_validation_1000.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "1000.dry_run.resource_preflight_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 1000,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "resource_preflight_dry_run",
+      "scale": 1000,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_1000_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 1000 completed dry-run-only resource_preflight_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/resource_estimate_1000.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "1000.dry_run.plan_cluster_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 1000,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "plan_cluster_dry_run",
+      "scale": 1000,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_1000_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 1000 completed dry-run-only plan_cluster_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_plan_1000.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "1000.dry_run.placement_schedule_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 1000,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "placement_schedule_dry_run",
+      "scale": 1000,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_1000_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 1000 completed dry-run-only placement_schedule_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/placement_schedule_1000.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "1000.dry_run.port_directory_collision_check_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 1000,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "port_directory_collision_check_dry_run",
+      "scale": 1000,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_1000_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 1000 completed dry-run-only port_directory_collision_check_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/collision_check_1000.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "1000.dry_run.artifact_schema_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 1000,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "artifact_schema_projection_dry_run",
+      "scale": 1000,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_1000_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 1000 completed dry-run-only artifact_schema_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/artifact_schema_projection_1000.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "1000.dry_run.no_runtime_created_proof",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 1000,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "no_runtime_created_proof",
+      "scale": 1000,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_1000_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 1000 completed dry-run-only no_runtime_created_proof with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof_1000.json"
+      ]
+    },
+    {
+      "category": "dry_run",
+      "cleanup_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+      "commit_sha": "PENDING_STAGE_COMMIT",
+      "coverage_id": "1000.dry_run.report_projection_dry_run",
+      "execution_mode": "dry_run",
+      "metric_refs": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+      ],
+      "node_count": 1000,
+      "required": true,
+      "review_ref": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "row_name": "report_projection_dry_run",
+      "scale": 1000,
+      "source_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_1000_dry_run.yaml"
+      ],
+      "stage_owner": "P37_200_PLUS_DRY_RUN_SUPPORT",
+      "status": "DRY_RUN_PASS",
+      "status_reason": "P37 target 1000 completed dry-run-only report_projection_dry_run with no runtime resources created.",
+      "validation_artifacts": [
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+        "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/report_projection_1000.json"
+      ]
+    }
+  ],
+  "schema_version": "v1",
+  "source_spec_refs": [
+    "docs/codex/goal-loop-strict/06_COVERAGE_REGISTRY_SPEC.md",
+    "docs/codex/goal-loop-strict/stages/P37_200_PLUS_DRY_RUN_SUPPORT.md"
+  ],
+  "stage_id": "P37_200_PLUS_DRY_RUN_SUPPORT",
+  "summary": {
+    "counts_by_category": {
+      "dry_run": 40
+    },
+    "counts_by_execution_mode": {
+      "dry_run": 40
+    },
+    "counts_by_stage_owner": {
+      "P37_200_PLUS_DRY_RUN_SUPPORT": 40
+    },
+    "counts_by_status": {
+      "DRY_RUN_PASS": 40
+    },
+    "dry_run_rows_initial_status": "PENDING",
+    "expected_counts": {
+      "dry_run": 40
+    },
+    "expected_total_rows": 40,
+    "real_execution_above_200_permitted": false,
+    "real_rows_initial_status": "PENDING",
+    "real_runtime_claimed": false,
+    "total_rows": 40
+  }
+}

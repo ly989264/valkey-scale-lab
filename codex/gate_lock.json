@@ -813,7 +813,11 @@
     },
     {
       "path": "scripts/assert_200_plus_dry_run.py",
-      "sha256": "53606d31ed0a57783437d0516a0eba4d73fadeab7bfad34e923fd3e445a0762e"
+      "sha256": "63b39be26aab482e13850ddffe57d56fe51e0b40050d8e54fdfaaeb4eb2c6714"
+    },
+    {
+      "path": "scripts/p37_200_plus_dry_run_artifacts.py",
+      "sha256": "901e71740f751711293001634288c7d8583e15f27d74dd84c84acfda9b7fd039"
     },
     {
       "path": "scripts/assert_analysis_provenance.py",

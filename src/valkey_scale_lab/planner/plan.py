@@ -6,7 +6,12 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
-from valkey_scale_lab.config.validation import REQUIRED_1000_ENV_VALUE, normalize_config, validate_semantics
+from valkey_scale_lab.config.validation import (
+    REQUIRED_1000_ENV_VALUE,
+    is_p37_200_plus_dry_run_profile,
+    normalize_config,
+    validate_semantics,
+)
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 
 PHASE_ID = "P02_PLANNER"
@@ -56,6 +61,7 @@ def build_cluster_plan(
     host_ids = [host["host_id"] for host in hosts]
     dry_run = bool(force_dry_run or runtime.get("dry_run"))
     opt_in_1000 = bool(safety.get("allow_1000_nodes") and scale_profile.get("opt_in_1000"))
+    p37_200_plus_dry_run = is_p37_200_plus_dry_run_profile(config)
     exact_200_bounded_exception = _is_p32_exact_200_bounded_exception(
         config,
         node_count=node_count,
@@ -111,6 +117,8 @@ def build_cluster_plan(
         "default_node_cap": int(safety["default_max_nodes"]),
         "dry_run": dry_run,
         "opt_in_1000": opt_in_1000,
+        "p37_200_plus_dry_run": p37_200_plus_dry_run,
+        "above_200_dry_run_only": node_count > 200,
         "exact_200_bounded_exception": exact_200_bounded_exception,
         "no_execution": dry_run,
         "port_collision_checked": _ports_unique_per_host(planned_nodes),
@@ -124,7 +132,11 @@ def build_cluster_plan(
     if exact_200_bounded_exception:
         constraints["bounded_exception_phase"] = bounded_exception_phase
         constraints["bounded_exception_scenario"] = bounded_exception_scenario
-    if node_count > int(safety["default_max_nodes"]) and not opt_in_1000 and not exact_200_bounded_exception:
+    if node_count > 200 and not dry_run:
+        raise PlannerError("plans above 200 nodes must be dry-run only")
+    if node_count > 200 and dry_run and not p37_200_plus_dry_run and not opt_in_1000:
+        raise PlannerError("above-200 dry-run plans require explicit P37 dry-run markers")
+    if node_count > int(safety["default_max_nodes"]) and not opt_in_1000 and not exact_200_bounded_exception and not p37_200_plus_dry_run:
         raise PlannerError("node count exceeds default cap without 1000 opt-in")
     if node_count >= 1000 and not dry_run:
         raise PlannerError("1000-node plans must be dry-run only")

@@ -76,6 +76,28 @@ def test_1000_node_plan_is_opt_in_dry_run(tmp_path: Path) -> None:
     assert all(node["dry_run"] is True for node in plan["nodes"])
 
 
+def test_p37_250_node_plan_is_dry_run_only(tmp_path: Path) -> None:
+    config = tmp_path / "scale_250_p37.yaml"
+    config.write_text(p37_config_text(250, dry_run=True), encoding="utf-8")
+
+    plan = create_plan_file(config, tmp_path / "scale_250.json", dry_run=True)
+
+    assert plan["node_count"] == 250
+    assert plan["runtime"]["dry_run"] is True
+    assert plan["constraints"]["p37_200_plus_dry_run"] is True
+    assert plan["constraints"]["above_200_dry_run_only"] is True
+    assert plan["constraints"]["no_execution"] is True
+    assert all(node["dry_run"] is True for node in plan["nodes"])
+
+
+def test_p37_planner_rejects_real_above_200(tmp_path: Path) -> None:
+    config = tmp_path / "scale_250_real.yaml"
+    config.write_text(p37_config_text(250, dry_run=False), encoding="utf-8")
+
+    with pytest.raises(PlannerError, match="REAL_EXECUTION_ABOVE_200_FORBIDDEN"):
+        create_plan_file(config, tmp_path / "scale_250_real.json")
+
+
 def test_p32_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None:
     config = normalize_config(parse_config_file("templates/configs/scale_200.yaml"))
 
@@ -175,3 +197,47 @@ def test_numeric_host_capacity_can_pass(tmp_path: Path) -> None:
     plan = create_plan_file(config, tmp_path / "numeric_memory.json")
     assert plan["constraints"]["host_capacity_checked"] is True
     assert plan["constraints"]["host_capacity"][0]["status"] == "PASS"
+
+
+def p37_config_text(target: int, *, dry_run: bool) -> str:
+    return f"""
+schema_version: v1
+profile_name: scale_{target}_p37_dry_run
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: docker
+  valkey_image: valkey/valkey:9.1.0
+  sandbox_mode: container_namespace
+  dry_run: {str(dry_run).lower()}
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: {target}
+  replicas_per_shard: 0
+  port_base: 12000
+  cluster_bus_port_base: 22000
+  node_memory_limit_mb: 32
+scale_profile:
+  dry_run_only: true
+  p37_dry_run_target: true
+  target_nodes: {target}
+  execution_mode: dry_run
+workload:
+  enabled: false
+faults: []
+""".strip() + "\n"

@@ -124,6 +124,116 @@ def test_1000_dry_run_template_validates(tmp_path: Path) -> None:
     assert report["total_nodes"] == 1000
 
 
+def test_p37_200_plus_dry_run_profile_validates(tmp_path: Path) -> None:
+    config = tmp_path / "scale_250_p37.yaml"
+    config.write_text(
+        """
+schema_version: v1
+profile_name: scale_250_p37_dry_run
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: docker
+  valkey_image: valkey/valkey:9.1.0
+  sandbox_mode: container_namespace
+  dry_run: true
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: 250
+  replicas_per_shard: 0
+  port_base: 12000
+  cluster_bus_port_base: 22000
+  node_memory_limit_mb: 32
+scale_profile:
+  dry_run_only: true
+  p37_dry_run_target: true
+  target_nodes: 250
+  execution_mode: dry_run
+workload:
+  enabled: false
+faults: []
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = validate_config_file(config, tmp_path / "report.json")
+
+    assert report["valid"] is True
+    assert report["total_nodes"] == 250
+
+
+def test_rejects_real_execution_above_200(tmp_path: Path) -> None:
+    config = tmp_path / "scale_250_real.yaml"
+    config.write_text(
+        """
+schema_version: v1
+profile_name: scale_250_real
+safety:
+  default_max_nodes: 100
+  allow_1000_nodes: false
+  require_sandbox_network: true
+  forbid_host_network_mutation: true
+  cleanup_on_error: true
+runtime:
+  provider: docker
+  valkey_image: valkey/valkey:9.1.0
+  sandbox_mode: container_namespace
+  dry_run: false
+hosts:
+  - host_id: local
+    os: auto
+    arch: auto
+    ip: 127.0.0.1
+    docker_endpoint: local
+    memory_gb: auto
+    disk_gb: auto
+    labels: [controller]
+network:
+  virtual_az_mode: multi
+  azs: [az-a, az-b]
+cluster:
+  shards: 250
+  replicas_per_shard: 0
+  port_base: 12000
+  cluster_bus_port_base: 22000
+  node_memory_limit_mb: 32
+scale_profile:
+  dry_run_only: true
+  p37_dry_run_target: true
+  target_nodes: 250
+  execution_mode: dry_run
+workload:
+  enabled: false
+faults: []
+""".strip()
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = validate_config_file(config, tmp_path / "report.json")
+
+    codes = {error["code"] for error in report["errors"]}
+    assert report["valid"] is False
+    assert "REAL_EXECUTION_ABOVE_200_FORBIDDEN" in codes
+    assert "MISSING_200_PLUS_DRY_RUN_PROFILE" in codes
+
+
 def test_rejects_three_virtual_az_multi_mode(tmp_path: Path) -> None:
     config = tmp_path / "three_az.yaml"
     text = Path("templates/configs/local_az_3x2.yaml").read_text(encoding="utf-8")

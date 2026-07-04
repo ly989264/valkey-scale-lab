@@ -169,10 +169,31 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
     default_cap = safety.get("default_max_nodes", 100)
     allow_1000 = safety.get("allow_1000_nodes") is True
     dry_run = runtime.get("dry_run") is True
+    p37_dry_run = is_p37_200_plus_dry_run_profile(config)
+    legacy_1000_dry_run = (
+        total_nodes >= 1000
+        and allow_1000
+        and dry_run
+        and safety.get("require_1000_env") == "VSLAB_ALLOW_1000_DRYRUN"
+        and scale_profile.get("opt_in_1000") is True
+        and scale_profile.get("dry_run_only") is True
+    )
 
     if default_cap != 100:
         errors.append(_err("DEFAULT_NODE_CAP", "safety.default_max_nodes must be exactly 100 for development phases"))
-    if total_nodes > default_cap and not allow_1000:
+    if total_nodes > 200:
+        if not dry_run:
+            errors.append(_err("REAL_EXECUTION_ABOVE_200_FORBIDDEN", "configs above 200 nodes must use runtime.dry_run: true"))
+        if not p37_dry_run and not legacy_1000_dry_run:
+            errors.append(
+                _err(
+                    "MISSING_200_PLUS_DRY_RUN_PROFILE",
+                    "configs above 200 nodes require an explicit P37 dry-run profile or the legacy 1000-node dry-run opt-in",
+                )
+            )
+        if workload.get("enabled") is True:
+            errors.append(_err("WORKLOAD_ABOVE_200_FORBIDDEN", "configs above 200 nodes must not enable workload execution"))
+    if total_nodes > default_cap and not allow_1000 and not p37_dry_run:
         errors.append(_err("NODE_CAP_EXCEEDED", f"config creates {total_nodes} nodes above default cap {default_cap}"))
     if total_nodes >= 1000:
         if not allow_1000:
@@ -200,6 +221,25 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
     errors.extend(_validate_workload(workload))
     errors.extend(_validate_faults(faults))
     return errors
+
+
+def is_p37_200_plus_dry_run_profile(config: dict[str, Any]) -> bool:
+    total_nodes = _total_nodes(config)
+    safety = _obj(config, "safety")
+    runtime = _obj(config, "runtime")
+    scale_profile = _obj(config, "scale_profile")
+    workload = _obj(config, "workload")
+    return (
+        total_nodes > 200
+        and runtime.get("dry_run") is True
+        and scale_profile.get("dry_run_only") is True
+        and scale_profile.get("p37_dry_run_target") is True
+        and scale_profile.get("execution_mode") == "dry_run"
+        and int(scale_profile.get("target_nodes", 0) or 0) == total_nodes
+        and workload.get("enabled") is not True
+        and safety.get("require_sandbox_network") is True
+        and safety.get("forbid_host_network_mutation") is True
+    )
 
 
 def _validate_hosts(hosts: Any) -> list[dict[str, Any]]:

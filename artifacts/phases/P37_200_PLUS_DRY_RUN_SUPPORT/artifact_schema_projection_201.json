@@ -1,0 +1,65 @@
+{
+  "artifact_type": "p37_artifact_schema_projection",
+  "created_at": "2026-07-04T00:00:00Z",
+  "execution_mode": "dry_run",
+  "phase_id": "P37_200_PLUS_DRY_RUN_SUPPORT",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "projected_artifacts": [
+    {
+      "execution_mode": "dry_run",
+      "path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/phase_summary.json"
+    },
+    {
+      "execution_mode": "dry_run",
+      "path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_targets.json"
+    },
+    {
+      "execution_mode": "dry_run",
+      "path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_results.jsonl"
+    },
+    {
+      "execution_mode": "dry_run",
+      "path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/resource_estimates.json"
+    },
+    {
+      "execution_mode": "dry_run",
+      "path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/placement_schedules.json"
+    },
+    {
+      "execution_mode": "dry_run",
+      "path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json"
+    },
+    {
+      "execution_mode": "dry_run",
+      "path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/report_projection_index.json"
+    },
+    {
+      "execution_mode": "dry_run",
+      "path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/coverage_ledger.json"
+    },
+    {
+      "execution_mode": "dry_run",
+      "path": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+    }
+  ],
+  "run_id": "P37_200_PLUS_DRY_RUN_SUPPORT-dry-run-20260704",
+  "runtime_resources_created": false,
+  "schema_projection_only": true,
+  "schema_version": "v1",
+  "status": "DRY_RUN_PASS",
+  "target_nodes": 201,
+  "target_refs": {
+    "artifact_schema_projection_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/artifact_schema_projection_201.json",
+    "collision_check_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/collision_check_201.json",
+    "config_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/generated_configs/scale_201_dry_run.yaml",
+    "config_validation_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/config_validation_201.json",
+    "no_runtime_created_proof_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof_201.json",
+    "placement_schedule_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/placement_schedule_201.json",
+    "plan_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_plan_201.json",
+    "report_projection_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/report_projection_201.json",
+    "resource_estimate_ref": "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/resource_estimate_201.json"
+  }
+}

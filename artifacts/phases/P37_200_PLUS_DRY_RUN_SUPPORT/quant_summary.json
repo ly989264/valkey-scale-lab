@@ -1,0 +1,45 @@
+{
+  "artifact_refs": [
+    "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/phase_summary.json",
+    "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_targets.json",
+    "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/dry_run_results.jsonl",
+    "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/resource_estimates.json",
+    "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/placement_schedules.json",
+    "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/no_runtime_created_proof.json",
+    "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/report_projection_index.json",
+    "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/coverage_ledger.json",
+    "artifacts/phases/P37_200_PLUS_DRY_RUN_SUPPORT/quant_summary.json"
+  ],
+  "artifact_type": "quant_summary",
+  "created_at": "2026-07-04T00:00:00Z",
+  "execution_mode": "dry_run",
+  "missing_data": [
+    {
+      "field": "live_valkey_metrics",
+      "reason": "Above-200 nodes are dry-run-only in P37; no live endpoints or workload samples are allowed.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P37_200_PLUS_DRY_RUN_SUPPORT",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P37_200_PLUS_DRY_RUN_SUPPORT-dry-run-20260704",
+  "runtime_claims": {
+    "fault_runtime_claimed": false,
+    "management_runtime_claimed": false,
+    "real_valkey_claimed": false,
+    "workload_runtime_claimed": false
+  },
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P37 quantification is projection-only: target counts, resource estimates, placement counts, collision checks, schema projections, and no-runtime inventory proof are recorded for every required target.",
+  "target_nodes": [
+    201,
+    250,
+    300,
+    500,
+    1000
+  ]
+}

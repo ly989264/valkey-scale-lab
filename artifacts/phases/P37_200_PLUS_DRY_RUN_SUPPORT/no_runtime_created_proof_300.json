@@ -1,0 +1,67 @@
+{
+  "after_inventory": {
+    "docker": {
+      "containers": {
+        "collection_status": "SKIPPED_WITH_REASON",
+        "ids": [],
+        "reason": "Docker inventory command failed with exit 1: permission denied while trying to connect to the docker API at unix:///Users/allgood/.docker/run/docker.sock"
+      },
+      "networks": {
+        "collection_status": "SKIPPED_WITH_REASON",
+        "ids": [],
+        "reason": "Docker inventory command failed with exit 1: permission denied while trying to connect to the docker API at unix:///Users/allgood/.docker/run/docker.sock"
+      },
+      "volumes": {
+        "collection_status": "SKIPPED_WITH_REASON",
+        "ids": [],
+        "reason": "Docker inventory command failed with exit 1: permission denied while trying to connect to the docker API at unix:///Users/allgood/.docker/run/docker.sock"
+      }
+    },
+    "execution_mode": "dry_run",
+    "filesystem": {
+      "runtime_paths": []
+    },
+    "scope": "owned P37 valkey-scale-lab resources only"
+  },
+  "artifact_type": "no_runtime_created_proof",
+  "before_inventory": {
+    "docker": {
+      "containers": {
+        "collection_status": "SKIPPED_WITH_REASON",
+        "ids": [],
+        "reason": "Docker inventory command failed with exit 1: permission denied while trying to connect to the docker API at unix:///Users/allgood/.docker/run/docker.sock"
+      },
+      "networks": {
+        "collection_status": "SKIPPED_WITH_REASON",
+        "ids": [],
+        "reason": "Docker inventory command failed with exit 1: permission denied while trying to connect to the docker API at unix:///Users/allgood/.docker/run/docker.sock"
+      },
+      "volumes": {
+        "collection_status": "SKIPPED_WITH_REASON",
+        "ids": [],
+        "reason": "Docker inventory command failed with exit 1: permission denied while trying to connect to the docker API at unix:///Users/allgood/.docker/run/docker.sock"
+      }
+    },
+    "execution_mode": "dry_run",
+    "filesystem": {
+      "runtime_paths": []
+    },
+    "scope": "owned P37 valkey-scale-lab resources only"
+  },
+  "created_at": "2026-07-04T00:00:00Z",
+  "created_resources": [],
+  "execution_mode": "dry_run",
+  "live_endpoint_claimed": false,
+  "phase_id": "P37_200_PLUS_DRY_RUN_SUPPORT",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "real_valkey_claimed": false,
+  "run_id": "P37_200_PLUS_DRY_RUN_SUPPORT-dry-run-20260704",
+  "runtime_resources_created": false,
+  "schema_version": "v1",
+  "status": "PASS",
+  "target_nodes": 300,
+  "workload_executed": false
+}
