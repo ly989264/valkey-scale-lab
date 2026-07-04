@@ -7,6 +7,7 @@ import json
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -1600,6 +1601,8 @@ P33_PHASE = "P33_FAULT_FAILOVER_MATRIX_50_REAL"
 P33_SETUP_SCENARIO = "strict_fault_matrix_50"
 P34_PHASE = "P34_FAULT_FAILOVER_MATRIX_100_REAL"
 P34_SETUP_SCENARIO = "strict_fault_matrix_100"
+P35_PHASE = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
+P35_SETUP_SCENARIO = "strict_fault_matrix_200"
 P33_REQUIRED_ROWS = [
     "primary_stop_failover",
     "replica_stop",
@@ -1635,6 +1638,11 @@ class StrictFaultProfile:
         stage_label: str,
         work_dir_name: str,
         state_file_name: str,
+        setup_timeout_seconds: int = 1200,
+        stable_timeout_seconds: int = 240,
+        restore_timeout_seconds: int = 240,
+        nodehost_restore_timeout_seconds: int | None = None,
+        failover_wait_after_fault_seconds: float | None = None,
     ) -> None:
         self.phase = phase
         self.setup_scenario = setup_scenario
@@ -1644,6 +1652,11 @@ class StrictFaultProfile:
         self.stage_label = stage_label
         self.work_dir_name = work_dir_name
         self.state_file_name = state_file_name
+        self.setup_timeout_seconds = setup_timeout_seconds
+        self.stable_timeout_seconds = stable_timeout_seconds
+        self.restore_timeout_seconds = restore_timeout_seconds
+        self.nodehost_restore_timeout_seconds = nodehost_restore_timeout_seconds or max(restore_timeout_seconds, 600)
+        self.failover_wait_after_fault_seconds = failover_wait_after_fault_seconds
 
     @property
     def label_lower(self) -> str:
@@ -1682,6 +1695,21 @@ STRICT_FAULT_PROFILES = {
         stage_label="P34",
         work_dir_name="_p34_fault_matrix_work",
         state_file_name="state_fault_matrix_100.json",
+    ),
+    (P35_PHASE, "strict_fault_matrix_200_fault_failover"): StrictFaultProfile(
+        phase=P35_PHASE,
+        setup_scenario=P35_SETUP_SCENARIO,
+        wrapper_scenario="strict_fault_matrix_200_fault_failover",
+        scale=200,
+        config_name="scale_200.yaml",
+        stage_label="P35",
+        work_dir_name="_p35_fault_matrix_work",
+        state_file_name="state_fault_matrix_200.json",
+        setup_timeout_seconds=2400,
+        stable_timeout_seconds=420,
+        restore_timeout_seconds=420,
+        nodehost_restore_timeout_seconds=1800,
+        failover_wait_after_fault_seconds=180.0,
     ),
 }
 
@@ -1741,6 +1769,8 @@ def run_p33_resource_preflight(phase: str, artifact_dir: Path, profile: StrictFa
         [
             sys.executable, "-m", "valkey_scale_lab.cli", "resource", "preflight",
             "--config", str(profile.config_path), "--out", str(source_path),
+            "--phase", phase,
+            "--scenario", profile.setup_scenario,
         ],
         timeout=180,
     )
@@ -1845,12 +1875,13 @@ def p33_apply_fault(
     if apply.returncode != 0:
         raise RuntimeError(f"{fault_id} apply failed exit={apply.returncode}: {apply.stderr[-500:]}")
     clear_started = unix_ms()
+    clear_timeout = 420 if phase == P35_PHASE else 180
     clear = run_cmd([
         sys.executable, "-m", "valkey_scale_lab.cli", "fault", "clear",
         "--state", str(state_path),
         "--fault-id", fault_id,
         "--out", str(work_dir / f"{fault_id}_clear.json"),
-    ], timeout=180)
+    ], timeout=clear_timeout)
     clear_ended = unix_ms()
     (work_dir / f"{fault_id}_clear.stdout.log").write_text(clear.stdout, encoding="utf-8", errors="replace")
     (work_dir / f"{fault_id}_clear.stderr.log").write_text(clear.stderr, encoding="utf-8", errors="replace")
@@ -2264,6 +2295,8 @@ def run_p33_controller(args: argparse.Namespace) -> int:
     artifact_dir.mkdir(parents=True, exist_ok=True)
     run_id = f"{phase}-strict-fault-matrix-{profile.scale}-20260704"
     work_dir = artifact_dir / profile.work_dir_name
+    if work_dir.exists():
+        shutil.rmtree(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
     state_path = work_dir / profile.state_file_name
     errors: list[str] = []
@@ -2285,7 +2318,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         sys.executable, "-m", "valkey_scale_lab.cli", "gate", "scenario",
         "--phase", phase, "--scenario", profile.setup_scenario,
         "--config", str(profile.config_path), "--artifacts-dir", str(work_dir), "--state-out", str(state_path),
-    ], timeout=1200)
+    ], timeout=profile.setup_timeout_seconds)
     (work_dir / "setup.stdout.log").write_text(setup.stdout, encoding="utf-8", errors="replace")
     (work_dir / "setup.stderr.log").write_text(setup.stderr, encoding="utf-8", errors="replace")
     if setup.returncode != 0:
@@ -2300,7 +2333,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
 
     state = load_state(state_path)
     endpoints = endpoints_from_state(state)
-    ok, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=240, interval=2)
+    ok, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=profile.stable_timeout_seconds, interval=2)
     if not ok or observed_count(probes) != profile.scale:
         errors.append(f"exact {profile.scale}-node cluster did not become stable; observed={observed_count(probes)}")
     valkey_versions = sorted({str(p["version"]) for p in probes if p.get("status") == "PASS" and p.get("version")})
@@ -2376,7 +2409,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
         if errors:
             raise RuntimeError("; ".join(errors))
         for sample_index in [1, 2, 3]:
-            ok, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=180, interval=2)
+            ok, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=profile.stable_timeout_seconds, interval=2)
             if not ok:
                 raise RuntimeError(f"cluster not stable before primary failover sample {sample_index}")
             selection = find_primary_with_replica(probes, [
@@ -2406,7 +2439,8 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 implementation_path="owned_runtime_control",
             )
             during = workload_window("event", endpoints, 4, sample_id, workload_target)
-            deadline = time.monotonic() + args.wait_after_fault
+            wait_after_fault = max(args.wait_after_fault, profile.failover_wait_after_fault_seconds or args.wait_after_fault)
+            deadline = time.monotonic() + wait_after_fault
             promoted_id = "MISSING"
             recovered_at_ms: int | str = "MISSING"
             recovery_probes: list[dict[str, Any]] = []
@@ -2426,7 +2460,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
             p33_refresh_state_pids(state_path, [target_logical])
             state = load_state(state_path)
             endpoints = endpoints_from_state(state)
-            ok_clear, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=240, interval=2)
+            ok_clear, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=profile.restore_timeout_seconds, interval=2)
             after = workload_window("post_recovery", endpoints, 4, sample_id, workload_target)
             end_event = add_event(row_name, "finished", target_logical, coverage_id, {"sample_id": sample_id, "promoted_node_id": promoted_id})
             window_row = p33_workload_artifact_window(row_name, coverage_id, during, start_event["event_id"], end_event["event_id"], profile)
@@ -2440,6 +2474,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 "run_id": f"{run_id}-{sample_id}",
                 "scenario_name": args.scenario,
                 "sample_id": sample_id,
+                "coverage_id": coverage_id,
                 "sample_index": sample_index,
                 "node_count": profile.scale,
                 "scale": profile.scale,
@@ -2616,7 +2651,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                 p33_refresh_state_pids(state_path, target_group)
                 state = load_state(state_path)
                 endpoints = endpoints_from_state(state)
-                restore_timeout = 600 if row_name in {"node_host_stop", "az_stop"} else 240
+                restore_timeout = profile.nodehost_restore_timeout_seconds if row_name in {"node_host_stop", "az_stop"} else profile.restore_timeout_seconds
                 ok_restore, probes = wait_for_stable_cluster_ok(endpoints, profile.scale, timeout_seconds=restore_timeout, interval=2)
                 observed_effect = {"status": "PASS" if ok_restore else "FAIL", "target_group_count": len(target_group), "cluster_restored": ok_restore}
             end_event = add_event(row_name, "finished", target_logical, coverage_id, {"implementation_path": implementation_path})
@@ -2679,7 +2714,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
     if curve.get("status") != "PASS":
         status = "FAIL"
     write_jsonl(artifact_dir / "fault_operation_results.jsonl", fault_rows or [{"schema_version": "v1", "phase_id": phase, "stage_id": phase, "run_id": run_id, "fault_id": f"{profile.label_lower}-no-rows", "fault_type": "MISSING", "row_name": "MISSING", "coverage_id": profile.primary_coverage_id, "scale": profile.scale, "node_count": profile.scale, "status": "FAIL", "real_execution_verified": False}])
-    write_jsonl(artifact_dir / "failover_samples.jsonl", failover_samples or [{"schema_version": "v1", "phase_id": phase, "stage_id": phase, "run_id": run_id, "scenario_name": args.scenario, "sample_id": f"{profile.label_lower}-no-sample", "node_count": profile.scale, "scale": profile.scale, "rung": profile.scale, "status": "FAIL", "real_valkey": True}])
+    write_jsonl(artifact_dir / "failover_samples.jsonl", failover_samples or [{"schema_version": "v1", "phase_id": phase, "stage_id": phase, "run_id": run_id, "scenario_name": args.scenario, "sample_id": f"{profile.label_lower}-no-sample", "coverage_id": profile.primary_coverage_id, "node_count": profile.scale, "scale": profile.scale, "rung": profile.scale, "status": "FAIL", "real_valkey": True}])
     write_json(artifact_dir / "failover_latency_curve.json", p33_encode(curve))
     write_jsonl(artifact_dir / "events.jsonl", events or [{"schema_version": "v1", "run_id": run_id, "phase_id": phase, "stage_id": phase, "coverage_id": profile.primary_coverage_id, "scale": profile.scale, "node_count": profile.scale, "scenario_name": args.scenario, "sample_id": f"{profile.label_lower}-no-event", "event_id": f"{profile.label_lower}-no-event", "event_type": "stage_failed_before_rows", "timestamp_unix_ms": unix_ms(), "monotonic_ms": monotonic_ms(), "severity": "ERROR", "subject_type": "fault_row", "subject_id": profile.stage_label, "operation_id": profile.label_lower, "fault_id": profile.label_lower, "message": f"{profile.stage_label} failed before row events", "metadata": {}}])
     write_jsonl(artifact_dir / "metrics_timeseries.jsonl", metrics or [{"schema_version": "v1", "run_id": run_id, "phase_id": phase, "stage_id": phase, "coverage_id": profile.primary_coverage_id, "scale": profile.scale, "node_count": profile.scale, "scenario_name": args.scenario, "sample_id": f"{profile.label_lower}-no-metric", "timestamp_unix_ms": unix_ms(), "monotonic_ms": monotonic_ms(), "source_type": "workload", "source_id": profile.label_lower, "metric_name": "sample_count", "metric_value": "MISSING", "metric_unit": "count", "labels": {}, "missing_reason": f"{profile.stage_label} failed before metrics were collected"}])

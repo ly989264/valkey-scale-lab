@@ -204,7 +204,7 @@ def _report(args: argparse.Namespace) -> int:
 
 def _resource_preflight(args: argparse.Namespace) -> int:
     try:
-        report = run_resource_preflight(args.config, args.out, dry_run=args.dry_run)
+        report = run_resource_preflight(args.config, args.out, dry_run=args.dry_run, phase_id=args.phase, scenario=args.scenario)
     except ResourcePreflightError as exc:
         print(f"ERROR: resource preflight: {exc}", file=sys.stderr)
         return 1
@@ -297,6 +297,8 @@ def build_parser() -> argparse.ArgumentParser:
     preflight.add_argument("--config", required=True)
     preflight.add_argument("--out", required=True)
     preflight.add_argument("--dry-run", action="store_true")
+    preflight.add_argument("--phase")
+    preflight.add_argument("--scenario")
     preflight.set_defaults(func=_resource_preflight)
     _add_unimplemented(resource, "resource")
 

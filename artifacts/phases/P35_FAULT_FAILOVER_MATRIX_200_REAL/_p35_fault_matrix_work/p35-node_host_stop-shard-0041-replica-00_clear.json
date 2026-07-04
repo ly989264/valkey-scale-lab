@@ -1,0 +1,29 @@
+{
+  "artifact_type": "fault_clear",
+  "cleared": true,
+  "created_at": "2026-06-28T00:00:00Z",
+  "fault_id": "p35-node_host_stop-shard-0041-replica-00",
+  "observed_impact": {
+    "action": "process_restart",
+    "config_file": "/tmp/valkey-scale-lab/P35_FAULT_FAILOVER_MATRIX_200_REAL-strict_fault_matrix_200-20260628/shard-0041-replica-00/valkey.conf",
+    "nodehost_container_name": "vslab-p35-fault-failover-matrix-200-real-strict-fault-matrix-200-20260628-nodehost-az-a",
+    "pid": 8540,
+    "restart_attempts": 1,
+    "status": "PASS",
+    "stderr": "",
+    "stdout": ""
+  },
+  "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL-strict_fault_matrix_200-20260628",
+  "safety_checks": {
+    "global_firewall_mutated": false,
+    "host_network_mutated": false,
+    "sandbox_only": true
+  },
+  "schema_version": "v1",
+  "status": "PASS"
+}

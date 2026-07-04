@@ -174,8 +174,39 @@ def test_p34_strict_fault_matrix_is_exact_100_process_runtime() -> None:
         "P34_FAULT_FAILOVER_MATRIX_100_REAL",
         "strict_fault_matrix_100",
     ) is True
+
+
+def test_p35_strict_fault_matrix_is_exact_200_process_runtime() -> None:
+    assert docker_runtime._strict_fault_matrix_node_count(
+        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+        "strict_fault_matrix_200",
+    ) == 200
+    assert docker_runtime._scenario_node_count_allowed(
+        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+        "strict_fault_matrix_200",
+        200,
+    ) is True
+    for rejected in [100, 199, 201]:
+        assert docker_runtime._scenario_node_count_allowed(
+            "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+            "strict_fault_matrix_200",
+            rejected,
+        ) is False
+    assert docker_runtime._scenario_node_count_allowed(
+        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+        "strict_fault_matrix_199",
+        200,
+    ) is False
     assert docker_runtime._uses_docker_process_runtime(
         "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+        "strict_fault_matrix_200",
+    ) is True
+    assert docker_runtime._uses_docker_process_runtime(
+        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+        "strict_fault_matrix_199",
+    ) is False
+    assert docker_runtime._uses_docker_process_runtime(
+        "P34_FAULT_FAILOVER_MATRIX_100_REAL",
         "strict_fault_matrix_200",
     ) is False
 
@@ -275,6 +306,7 @@ def test_p21_runtime_semantic_exception_is_narrow() -> None:
 
     assert docker_runtime._runtime_semantic_errors(config, phase="P21_FAILOVER_LATENCY_CURVE_200", scenario="scale_200_sample_01") == []
     assert docker_runtime._runtime_semantic_errors(config, phase="P32_MANAGEMENT_MATRIX_200_REAL", scenario="strict_management_matrix_200") == []
+    assert docker_runtime._runtime_semantic_errors(config, phase="P35_FAULT_FAILOVER_MATRIX_200_REAL", scenario="strict_fault_matrix_200") == []
     assert any(
         error["code"] == "NODE_CAP_EXCEEDED"
         for error in docker_runtime._runtime_semantic_errors(config, phase="P22_FAULT_REPLICA_HOST_AZ_STOP", scenario="scale_200_sample_01")
@@ -282,6 +314,10 @@ def test_p21_runtime_semantic_exception_is_narrow() -> None:
     assert any(
         error["code"] == "NODE_CAP_EXCEEDED"
         for error in docker_runtime._runtime_semantic_errors(config, phase="P32_MANAGEMENT_MATRIX_200_REAL", scenario="strict_management_matrix_199")
+    )
+    assert any(
+        error["code"] == "NODE_CAP_EXCEEDED"
+        for error in docker_runtime._runtime_semantic_errors(config, phase="P35_FAULT_FAILOVER_MATRIX_200_REAL", scenario="strict_fault_matrix_199")
     )
 
 

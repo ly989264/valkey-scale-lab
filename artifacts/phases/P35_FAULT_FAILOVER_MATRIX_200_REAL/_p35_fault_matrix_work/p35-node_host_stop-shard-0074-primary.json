@@ -1,0 +1,8 @@
+{
+  "fault_id": "p35-node_host_stop-shard-0074-primary",
+  "type": "node_stop",
+  "scope": "owned_runtime_control",
+  "implementation_path": "owned_runtime_control",
+  "forbid_host_network_mutation": true,
+  "target_logical_id": "shard-0074-primary"
+}

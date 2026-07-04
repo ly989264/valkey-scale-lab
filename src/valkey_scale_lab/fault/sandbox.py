@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shlex
+import time
 from pathlib import Path
 from typing import Any
 
@@ -161,18 +162,36 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
         config_file = target.get("config_file")
         if not nodehost or not config_file:
             raise FaultError("node_stop process clear requires nodehost_container_name and config_file in fault state")
+        pid_file = target.get("pid_file")
         command = f"valkey-server {shlex.quote(str(config_file))}"
-        result = run_docker(["exec", str(nodehost), "sh", "-c", command], timeout=30, check=False)
-        if result.returncode != 0:
-            raise FaultError(f"node_stop process restart failed for {target.get('logical_id')}: {result.stderr.strip()}")
-        return {
-            "status": "PASS",
-            "action": "process_restart",
-            "nodehost_container_name": nodehost,
-            "config_file": config_file,
-            "stdout": result.stdout.strip(),
-            "stderr": result.stderr.strip(),
-        }
+        timeout_seconds = _process_restart_timeout_seconds(existing)
+        stable_seconds = _process_restart_stable_seconds(existing)
+        attempts = _process_restart_attempts(existing)
+        last_error = ""
+        for attempt in range(1, attempts + 1):
+            if pid_file:
+                run_docker(["exec", str(nodehost), "rm", "-f", str(pid_file)], timeout=10, check=False)
+            result = run_docker(["exec", str(nodehost), "sh", "-c", command], timeout=30, check=False)
+            if result.returncode != 0:
+                last_error = f"attempt={attempt} restart_rc={result.returncode} stderr={result.stderr.strip()!r}"
+            else:
+                try:
+                    new_pid = _wait_for_process_restart(target, str(nodehost), timeout_seconds=timeout_seconds, stable_seconds=stable_seconds)
+                    return {
+                        "status": "PASS",
+                        "action": "process_restart",
+                        "nodehost_container_name": nodehost,
+                        "config_file": config_file,
+                        "pid": new_pid,
+                        "restart_attempts": attempt,
+                        "stdout": result.stdout.strip(),
+                        "stderr": result.stderr.strip(),
+                    }
+                except FaultError as exc:
+                    last_error = f"attempt={attempt} {exc}"
+            if attempt < attempts:
+                time.sleep(1.0)
+        raise FaultError(f"node_stop process restart failed for {target.get('logical_id')} after {attempts} attempts: {last_error}")
     if observed.get("action") == "container_stop":
         container_name = target.get("container_name") or observed.get("container_name")
         if not container_name:
@@ -191,6 +210,58 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
         "status": "SKIPPED_WITH_REASON",
         "reason": "Fault state had no destructive node_stop impact to restore.",
     }
+
+
+def _wait_for_process_restart(target: dict[str, Any], nodehost: str, *, timeout_seconds: float = 20.0, stable_seconds: float = 0.0) -> int:
+    pid_file = target.get("pid_file")
+    port = target.get("client_port")
+    if not pid_file or port is None:
+        raise FaultError(f"node_stop process clear requires pid_file and client_port for {target.get('logical_id')}")
+    deadline = time.monotonic() + timeout_seconds
+    last_error = ""
+    ready_since: float | None = None
+    ready_pid: int | None = None
+    while time.monotonic() < deadline:
+        pid_result = run_docker(["exec", nodehost, "cat", str(pid_file)], timeout=5, check=False)
+        ping_result = run_docker(["exec", nodehost, "valkey-cli", "-p", str(port), "PING"], timeout=5, check=False)
+        pid_text = pid_result.stdout.strip()
+        if pid_result.returncode == 0 and pid_text.isdigit() and ping_result.returncode == 0 and ping_result.stdout.strip() == "PONG":
+            if stable_seconds <= 0:
+                return int(pid_text)
+            now = time.monotonic()
+            if ready_since is None or ready_pid != int(pid_text):
+                ready_since = now
+                ready_pid = int(pid_text)
+            if now - ready_since >= stable_seconds:
+                return int(pid_text)
+        else:
+            ready_since = None
+            ready_pid = None
+        last_error = (
+            f"pid_rc={pid_result.returncode} pid_stdout={pid_result.stdout.strip()!r} "
+            f"pid_stderr={pid_result.stderr.strip()!r} ping_rc={ping_result.returncode} "
+            f"ping_stdout={ping_result.stdout.strip()!r} ping_stderr={ping_result.stderr.strip()!r}"
+        )
+        time.sleep(0.5)
+    raise FaultError(f"node_stop process restart did not become ready for {target.get('logical_id')}: {last_error}")
+
+
+def _process_restart_timeout_seconds(existing: dict[str, Any]) -> float:
+    if existing.get("phase_id") == "P35_FAULT_FAILOVER_MATRIX_200_REAL":
+        return 90.0
+    return 20.0
+
+
+def _process_restart_stable_seconds(existing: dict[str, Any]) -> float:
+    if existing.get("phase_id") == "P35_FAULT_FAILOVER_MATRIX_200_REAL":
+        return 2.0
+    return 0.0
+
+
+def _process_restart_attempts(existing: dict[str, Any]) -> int:
+    if existing.get("phase_id") == "P35_FAULT_FAILOVER_MATRIX_200_REAL":
+        return 2
+    return 1
 
 
 def _write_fault_report(path: Path, phase: str, run_id: str, faults: list[dict[str, Any]], status: str) -> None:

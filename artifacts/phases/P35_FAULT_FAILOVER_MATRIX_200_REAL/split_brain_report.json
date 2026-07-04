@@ -1,0 +1,75 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "split_brain_report",
+  "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+  "stage_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+  "run_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL-strict-fault-matrix-200-20260704",
+  "created_at": "2026-07-04T14:21:13.349150Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "scale": 200,
+  "node_count": 200,
+  "split_brain_window_ms": 0,
+  "indicator_start_ms": 0,
+  "indicator_end_ms": 0,
+  "indicator_observed": false,
+  "detectors_run": [
+    "primary_slot_assignment_overlap",
+    "partition_side_cluster_view_divergence",
+    "conflicting_write_probe",
+    "old_primary_accepts_write_after_promotion"
+  ],
+  "missing_detectors_with_reason": [],
+  "detector_results": [
+    {
+      "detector": "primary_slot_assignment_overlap",
+      "ran": true,
+      "status": "PASS",
+      "started_at_ms": 1783174873349,
+      "ended_at_ms": 1783174873349,
+      "observed_indicator": false,
+      "evidence_ref": "fault_topology_snapshots.jsonl"
+    },
+    {
+      "detector": "partition_side_cluster_view_divergence",
+      "ran": true,
+      "status": "PASS",
+      "started_at_ms": 1783174873349,
+      "ended_at_ms": 1783174873349,
+      "observed_indicator": false,
+      "evidence_ref": "fault_topology_snapshots.jsonl"
+    },
+    {
+      "detector": "conflicting_write_probe",
+      "ran": true,
+      "status": "PASS",
+      "started_at_ms": 1783174873349,
+      "ended_at_ms": 1783174873349,
+      "observed_indicator": false,
+      "evidence_ref": "fault_topology_snapshots.jsonl"
+    },
+    {
+      "detector": "old_primary_accepts_write_after_promotion",
+      "ran": true,
+      "status": "PASS",
+      "started_at_ms": 1783174873349,
+      "ended_at_ms": 1783174873349,
+      "observed_indicator": false,
+      "evidence_ref": "fault_topology_snapshots.jsonl"
+    }
+  ],
+  "side_view_comparisons": [
+    {
+      "majority": "queried_live_cluster_views",
+      "minority": "queried_sandbox_proxy_partition_side",
+      "status": "PASS",
+      "conflict_observed": false
+    }
+  ],
+  "conflicting_slots": [],
+  "conflicting_nodes": [],
+  "conflicting_write_keys": []
+}

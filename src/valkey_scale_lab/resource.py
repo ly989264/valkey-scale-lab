@@ -18,7 +18,9 @@ CREATED_AT = "2026-06-28T00:00:00Z"
 P21_STAGE = "P21_FAILOVER_LATENCY_CURVE_200"
 P32_STAGE = "P32_MANAGEMENT_MATRIX_200_REAL"
 P32_SCENARIO = "strict_management_matrix_200"
-EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE}
+P35_STAGE = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
+P35_SCENARIO = "strict_fault_matrix_200"
+EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE}
 
 
 class ResourcePreflightError(RuntimeError):
@@ -162,7 +164,10 @@ def _is_exact_200_bounded_exception(
 def _exact_200_phase_scenario_allowed(phase_id: str, scenario: str) -> bool:
     if phase_id == P21_STAGE:
         return scenario == "scale_200" or scenario.startswith("scale_200_sample_")
-    return phase_id == P32_STAGE and scenario == P32_SCENARIO
+    return (phase_id, scenario) in {
+        (P32_STAGE, P32_SCENARIO),
+        (P35_STAGE, P35_SCENARIO),
+    }
 
 
 def _semantic_errors_for_preflight(config: dict[str, Any], *, allow_exact_200: bool) -> list[dict[str, Any]]:

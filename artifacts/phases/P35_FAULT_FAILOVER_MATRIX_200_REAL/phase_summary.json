@@ -1,0 +1,39 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+  "stage_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+  "run_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL-strict-fault-matrix-200-20260704",
+  "created_at": "2026-07-04T14:21:13.384565Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "summary": "P35 strict exact-200 fault/failover matrix gate.",
+  "required_artifacts": [
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/phase_summary.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/valkey_e2e_evidence.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/resource_preflight.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/cluster_plan.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/run_state.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/cleanup_report.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/events.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/metrics_timeseries.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/workload_windows.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/quant_summary.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/coverage_ledger.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_matrix_report.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_operation_results.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/failover_samples.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/failover_latency_curve.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/partition_report.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/split_brain_report.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_workload_impact.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_topology_snapshots.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_command_log.jsonl"
+  ],
+  "missing_metrics": [],
+  "risks": [],
+  "errors": []
+}

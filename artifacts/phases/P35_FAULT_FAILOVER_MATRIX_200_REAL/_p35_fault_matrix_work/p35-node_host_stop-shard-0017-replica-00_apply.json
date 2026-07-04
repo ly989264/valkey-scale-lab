@@ -1,0 +1,24 @@
+{
+  "artifact_type": "fault_apply",
+  "created_at": "2026-06-28T00:00:00Z",
+  "fault_id": "p35-node_host_stop-shard-0017-replica-00",
+  "fault_type": "node_stop",
+  "implementation_path": "owned_runtime_control",
+  "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL-strict_fault_matrix_200-20260628",
+  "safety_checks": {
+    "global_firewall_mutated": false,
+    "host_network_mutated": false,
+    "sandbox_only": true,
+    "scope": "owned Docker/container namespace or sandbox proxy"
+  },
+  "schema_version": "v1",
+  "scope": "owned_runtime_control",
+  "state_path": "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/_p35_fault_matrix_work/fault_state_p35-node_host_stop-shard-0017-replica-00.json",
+  "status": "PASS",
+  "target_logical_id": "shard-0017-replica-00"
+}

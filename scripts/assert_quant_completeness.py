@@ -20,6 +20,7 @@ P31 = "P31_MANAGEMENT_MATRIX_100_REAL"
 P32 = "P32_MANAGEMENT_MATRIX_200_REAL"
 P33 = "P33_FAULT_FAILOVER_MATRIX_50_REAL"
 P34 = "P34_FAULT_FAILOVER_MATRIX_100_REAL"
+P35 = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
 STRICT_MANAGEMENT_STAGES = {
     P30: {
         "scale": 50,
@@ -60,6 +61,25 @@ STRICT_FAULT_STAGES = {
     P34: {
         "scale": 100,
         "coverage_prefix": "100.fault.",
+        "required_rows": {
+            "primary_stop_failover",
+            "replica_stop",
+            "node_host_stop",
+            "az_stop",
+            "network_delay",
+            "network_loss",
+            "network_flap",
+            "network_partition",
+            "minority_partition",
+            "majority_partition",
+            "split_brain_window_detection",
+            "fault_period_workload_impact",
+        },
+        "min_failover_samples": 3,
+    },
+    P35: {
+        "scale": 200,
+        "coverage_prefix": "200.fault.",
         "required_rows": {
             "primary_stop_failover",
             "replica_stop",
@@ -378,6 +398,8 @@ def assert_strict_fault_semantics(base: Path, phase: str, scale: int, errors: li
             errors.append(f"{label}: status PASS and real_valkey=true required")
         if sample.get("scale") != expected_scale or sample.get("node_count") != expected_scale or sample.get("rung") != expected_scale:
             errors.append(f"{label}: scale, node_count, and rung must be {expected_scale}")
+        if sample.get("coverage_id") != f"{expected_scale}.fault.primary_stop_failover":
+            errors.append(f"{label}: coverage_id must be {expected_scale}.fault.primary_stop_failover")
         for field in ["promotion_latency_ms", "cluster_recovery_latency_ms", "fault_injected_at_ms", "replica_promoted_at_ms", "slot_coverage_ok_at_ms"]:
             if not isinstance(sample.get(field), (int, float)):
                 errors.append(f"{label}: {field} must be numeric")

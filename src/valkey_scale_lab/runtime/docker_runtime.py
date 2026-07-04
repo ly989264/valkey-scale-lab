@@ -57,6 +57,9 @@ P31_SCALE = 100
 P32_STAGE = "P32_MANAGEMENT_MATRIX_200_REAL"
 P32_SCENARIO = "strict_management_matrix_200"
 P32_SCALE = 200
+P35_STAGE = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
+P35_SCENARIO = "strict_fault_matrix_200"
+P35_SCALE = 200
 P30_REQUIRED_ROWS = [
     "create_cluster",
     "meet_nodes",
@@ -527,6 +530,7 @@ def _strict_fault_matrix_node_count(phase: str, scenario: str) -> int | None:
     strict_fault_scenarios = {
         ("P33_FAULT_FAILOVER_MATRIX_50_REAL", "strict_fault_matrix_50"): 50,
         ("P34_FAULT_FAILOVER_MATRIX_100_REAL", "strict_fault_matrix_100"): 100,
+        (P35_STAGE, P35_SCENARIO): P35_SCALE,
     }
     return strict_fault_scenarios.get((phase, scenario))
 
@@ -555,7 +559,7 @@ def _is_exact_200_runtime_exception(config: dict[str, Any], *, phase: str, scena
         _exact_200_stage_scenario_allowed(phase, scenario)
         and node_count == 200
         and config.get("profile_name") == "scale_200"
-        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE}
+        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE, P35_STAGE}
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
@@ -567,6 +571,7 @@ def _exact_200_stage_scenario_allowed(phase: str, scenario: str) -> bool:
     return (
         _p21_scale_sample_node_count(phase, scenario) == 200
         or (phase, scenario) == (P32_STAGE, P32_SCENARIO)
+        or (phase, scenario) == (P35_STAGE, P35_SCENARIO)
     )
 
 

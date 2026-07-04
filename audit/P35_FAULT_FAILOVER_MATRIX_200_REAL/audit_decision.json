@@ -1,0 +1,48 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "fresh-context review subagent",
+  "created_at": "2026-07-04T14:41:39Z",
+  "gate_result_path": "artifacts/gates/P35_FAULT_FAILOVER_MATRIX_200_REAL/gate_result.json",
+  "gate_result_sha256": "c791a20aa98ffb62c3db48ec07055b32420519291e9364386b3a520be186548f",
+  "artifact_paths": [
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/phase_summary.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/valkey_e2e_evidence.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/cleanup_report.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/events.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/metrics_timeseries.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/workload_windows.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/quant_summary.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/coverage_ledger.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/resource_preflight.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/cluster_plan.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/run_state.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_matrix_report.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_operation_results.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/failover_samples.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/failover_latency_curve.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/partition_report.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/split_brain_report.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_workload_impact.json",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_topology_snapshots.jsonl",
+    "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_command_log.jsonl"
+  ],
+  "risks": [
+    {
+      "risk": "The exact 200-node real Valkey run is resource-intensive and must remain bounded to explicit 200-node strict stages.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "Reviewed resource/runtime changes keep P35 exact to P35_FAULT_FAILOVER_MATRIX_200_REAL with scenario strict_fault_matrix_200, and default_max_nodes remains 100."
+    },
+    {
+      "risk": "The cleanup report run label and final wrapper evidence run label differ.",
+      "severity": "low",
+      "required_before_next_phase": false,
+      "notes": "cleanup_report.json status is PASS with resources_remaining=[], assert_cleanup passed, and docker ps checks for both run labels plus the P35 phase label returned no containers."
+    }
+  ],
+  "rationale": "PASS is supported by fresh-context review of the P35 strict stage prompt, stage document, context reload, design and worker summaries, gate result, schemas, diffs, harness exception, and phase artifacts. The gate result at artifacts/gates/P35_FAULT_FAILOVER_MATRIX_200_REAL/gate_result.json has SHA-256 c791a20aa98ffb62c3db48ec07055b32420519291e9364386b3a520be186548f and status PASS. Required artifacts show nodes_requested=200, nodes_observed=200, real Valkey 9.1.0 evidence, data_path_result=PASS, all 12 200.fault.* rows PASS, node_host_stop and az_stop target_group_count=100 with cluster_restored=true, three primary-stop failover samples with coverage_id=200.fault.primary_stop_failover, split-brain detectors ran, workload and telemetry artifacts are present, sandbox-scoped network faults avoided host-level mutation, coverage registry checks passed, and cleanup completed with no owned containers remaining."
+}
