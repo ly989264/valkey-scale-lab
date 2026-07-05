@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from strict_harness_lib import phase_dir, print_errors, require_json  # noqa: E402
 
 P38 = "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+P39 = "P39_VISUAL_REPORT_QUALITY_GATE"
 P38_TABLES = [
     "coverage_heatmap_table.csv",
     "management_latency_table.csv",
@@ -55,8 +56,9 @@ def main() -> int:
     base = phase_dir(args.phase)
     errors: list[str] = []
     provenance = require_json(base / "analysis_provenance.json", errors, "analysis provenance")
+    report_index = None
     if args.report_index:
-        require_json(ROOT / args.report_index, errors, "report index")
+        report_index = require_json(ROOT / args.report_index, errors, "report index")
     if provenance:
         refs = provenance.get("source_artifacts")
         if not isinstance(refs, list) or not refs:
@@ -64,14 +66,172 @@ def main() -> int:
         for ref in refs or []:
             if isinstance(ref, str) and not (ROOT / ref).exists():
                 errors.append(f"analysis source artifact missing: {ref}")
+            elif isinstance(ref, dict):
+                path_text = ref.get("path")
+                sha = ref.get("sha256")
+                if not isinstance(path_text, str) or not path_text:
+                    errors.append("analysis source artifact object missing path")
+                    continue
+                path = ROOT / path_text
+                if not path.exists():
+                    errors.append(f"analysis source artifact missing: {path_text}")
+                elif sha and sha != sha256_file(path):
+                    errors.append(f"analysis source artifact sha256 mismatch: {path_text}")
+                if path_text.endswith(".log"):
+                    errors.append(f"analysis source must not be a raw log: {path_text}")
+            else:
+                errors.append("analysis_provenance source_artifacts must contain strings or objects")
         if provenance.get("invented_values_present") not in {False, 0}:
             errors.append("analysis_provenance must assert invented_values_present=false")
         if args.phase == P38:
             assert_p38_provenance(base, provenance, errors)
+        if args.phase == P39:
+            assert_p39_provenance(base, provenance, report_index, errors)
     if errors:
         return print_errors(errors)
     print(f"PASS analysis provenance phase={args.phase}")
     return 0
+
+
+def assert_p39_provenance(
+    base: Path,
+    provenance: dict[str, Any],
+    report_index: dict[str, Any] | None,
+    errors: list[str],
+) -> None:
+    if provenance.get("analysis_only") is not True or provenance.get("runtime_started") is not False:
+        errors.append("analysis_provenance.json: P39 must assert analysis_only=true and runtime_started=false")
+    for key in ["docker_started", "valkey_gate_started", "fault_injection_started", "unvalidated_logs_read", "invented_values_present"]:
+        if provenance.get(key) not in {False, 0}:
+            errors.append(f"analysis_provenance.json: P39 must assert {key}=false")
+    if provenance.get("report_only") is not True:
+        errors.append("analysis_provenance.json: P39 must assert report_only=true")
+
+    source_artifacts = provenance.get("source_artifacts")
+    if not isinstance(source_artifacts, list) or not source_artifacts:
+        errors.append("analysis_provenance.json: P39 source_artifacts must be non-empty objects")
+        source_artifacts = []
+    source_paths: set[str] = set()
+    for index, artifact in enumerate(source_artifacts, start=1):
+        if not isinstance(artifact, dict):
+            errors.append(f"P39 source_artifacts[{index}] must be an object")
+            continue
+        path_text = artifact.get("path")
+        stage = artifact.get("source_stage")
+        sha = artifact.get("sha256")
+        if not isinstance(path_text, str) or not path_text:
+            errors.append(f"P39 source_artifacts[{index}] missing path")
+            continue
+        if not path_text.startswith(f"artifacts/phases/{P38}/"):
+            errors.append(f"P39 source must be a P38 artifact: {path_text}")
+        if path_text.endswith((".log", ".stdout", ".stderr")):
+            errors.append(f"P39 source must not be a raw log/runtime stream: {path_text}")
+        path = ROOT / path_text
+        if not path.exists():
+            errors.append(f"P39 source artifact missing: {path_text}")
+        elif sha != sha256_file(path):
+            errors.append(f"P39 source artifact sha256 mismatch: {path_text}")
+        if stage != P38:
+            errors.append(f"P39 source artifact source_stage must be {P38}: {path_text}")
+        source_paths.add(path_text)
+
+    required_sources = {f"artifacts/phases/{P38}/{name}" for name in [*P38_TABLES, *P38_REQUIRED_JSON]}
+    missing_sources = sorted(required_sources - source_paths)
+    if missing_sources:
+        errors.append(f"P39 source_artifacts missing required P38 artifacts: {missing_sources}")
+
+    preserved = provenance.get("preserved_p38_source_artifacts")
+    if not isinstance(preserved, list) or not preserved:
+        errors.append("analysis_provenance.json: P39 must preserve P38 P30-P37 source provenance")
+    else:
+        for index, artifact in enumerate(preserved, start=1):
+            if not isinstance(artifact, dict):
+                errors.append(f"preserved_p38_source_artifacts[{index}] must be an object")
+                continue
+            path_text = artifact.get("path")
+            stage = artifact.get("source_stage")
+            if not isinstance(path_text, str) or not path_text:
+                errors.append(f"preserved_p38_source_artifacts[{index}] missing path")
+                continue
+            if path_text.endswith((".log", ".stdout", ".stderr")):
+                errors.append(f"P39 preserved source must not be raw log/runtime stream: {path_text}")
+            if stage not in ALLOWED_SOURCE_STAGES:
+                errors.append(f"P39 preserved source has disallowed source_stage {stage!r}: {path_text}")
+            if not (ROOT / path_text).exists():
+                errors.append(f"P39 preserved source artifact missing: {path_text}")
+
+    output_artifacts = provenance.get("output_artifacts")
+    if not isinstance(output_artifacts, list):
+        errors.append("analysis_provenance.json: P39 output_artifacts must be a list")
+        output_artifacts = []
+    output_paths = {item.get("path") for item in output_artifacts if isinstance(item, dict)}
+    required_outputs = {
+        f"artifacts/phases/{P39}/phase_summary.json",
+        f"artifacts/phases/{P39}/report_index.json",
+        f"artifacts/phases/{P39}/report_quality_report.json",
+        f"artifacts/phases/{P39}/final_report.md",
+        f"artifacts/phases/{P39}/final_report.html",
+        f"artifacts/phases/{P39}/visual_qa.md",
+        f"artifacts/phases/{P39}/analysis_provenance.json",
+        f"artifacts/phases/{P39}/quant_summary.json",
+    }
+    if report_index:
+        for chart in report_index.get("charts", []):
+            if isinstance(chart, dict) and isinstance(chart.get("path"), str):
+                required_outputs.add(chart["path"])
+    missing_outputs = sorted(required_outputs - output_paths)
+    if missing_outputs:
+        errors.append(f"P39 output_artifacts missing required outputs: {missing_outputs}")
+    for artifact in output_artifacts:
+        if not isinstance(artifact, dict):
+            errors.append("P39 output_artifacts entries must be objects")
+            continue
+        path_text = artifact.get("path")
+        if not isinstance(path_text, str) or not path_text:
+            errors.append("P39 output artifact missing path")
+            continue
+        path = ROOT / path_text
+        if not path.exists():
+            errors.append(f"P39 output artifact missing: {path_text}")
+        if path_text.endswith("analysis_provenance.json"):
+            if artifact.get("sha256_status") != "SKIPPED_WITH_REASON" or not artifact.get("reason"):
+                errors.append("P39 self-referential analysis_provenance output hash must be skipped with reason")
+        elif path.exists() and artifact.get("sha256") != sha256_file(path):
+            errors.append(f"P39 output artifact sha256 mismatch: {path_text}")
+
+    if not report_index:
+        errors.append("P39 requires --report-index for provenance validation")
+        return
+    if report_index.get("phase_id") != P39:
+        errors.append("P39 report index phase_id mismatch")
+    declared_report_sources = set()
+    for item in report_index.get("source_artifacts", []):
+        if isinstance(item, dict) and isinstance(item.get("path"), str):
+            declared_report_sources.add(item["path"])
+    if declared_report_sources != source_paths:
+        errors.append("P39 report_index source_artifacts must match analysis_provenance source_artifacts")
+    for collection_name in ["sections", "charts", "tables"]:
+        collection = report_index.get(collection_name, [])
+        if not isinstance(collection, list):
+            errors.append(f"P39 report_index {collection_name} must be a list")
+            continue
+        for index, item in enumerate(collection, start=1):
+            if not isinstance(item, dict):
+                errors.append(f"P39 report_index {collection_name}[{index}] must be object")
+                continue
+            sources = item.get("source_artifacts")
+            if not isinstance(sources, list) or not sources:
+                errors.append(f"P39 report_index {collection_name}[{index}] missing source_artifacts")
+                continue
+            for source in sources:
+                if source not in source_paths:
+                    errors.append(f"P39 report_index {collection_name}[{index}] source not declared in provenance: {source}")
+
+    p38_summary_path = ROOT / f"artifacts/phases/{P38}/cross_scale_analysis_summary.json"
+    if p38_summary_path.exists() and isinstance(report_index.get("coverage_totals"), dict):
+        p38_summary = require_json(p38_summary_path, errors, "P38 cross-scale summary")
+        if p38_summary and report_index["coverage_totals"] != p38_summary.get("counts"):
+            errors.append("P39 report_index coverage_totals must match P38 counts")
 
 
 def assert_p38_provenance(base: Path, provenance: dict[str, Any], errors: list[str]) -> None:

@@ -1,0 +1,244 @@
+{
+  "artifact_type": "report_quality_report",
+  "coverage_totals_check": {
+    "p38_coverage_rows": 145,
+    "rendered_coverage_rows": 145,
+    "status": "PASS"
+  },
+  "created_at": "2026-07-04T00:00:00Z",
+  "forbidden_token_scan": {
+    "checked_token_ids": [
+      "not_a_number_marker",
+      "infinite_number_marker",
+      "unbound_javascript_value_marker",
+      "python_exception_marker",
+      "unfinished_work_marker",
+      "placeholder_marker"
+    ],
+    "hits": [],
+    "status": "PASS"
+  },
+  "missing_data_reason_checks": [
+    {
+      "checked_rows": 1687,
+      "reason_policy": "Every missing-data table row has non-empty reason; report renders preview with reasons.",
+      "source": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/missing_data_table.csv",
+      "status": "PASS"
+    }
+  ],
+  "phase_id": "P39_VISUAL_REPORT_QUALITY_GATE",
+  "producer": {
+    "name": "scripts/p39_visual_report.py",
+    "version": "v1"
+  },
+  "required_charts_checked": [
+    {
+      "bytes": 4935,
+      "chart_id": "coverage_heatmap",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/coverage_heatmap.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "bytes": 5580,
+      "chart_id": "management_wall_ms_by_operation_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_wall_ms_by_operation_and_scale.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "bytes": 5565,
+      "chart_id": "management_convergence_ms_by_operation_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_convergence_ms_by_operation_and_scale.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_convergence_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "bytes": 1076,
+      "chart_id": "failover_promotion_latency_curve_50_100_200",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_promotion_latency_curve_50_100_200.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "bytes": 1083,
+      "chart_id": "failover_cluster_recovery_latency_curve_50_100_200",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_cluster_recovery_latency_curve_50_100_200.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "bytes": 902,
+      "chart_id": "workload_qps_ratio_by_fault_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_qps_ratio_by_fault_and_scale.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "bytes": 888,
+      "chart_id": "workload_p99_delta_by_fault_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_p99_delta_by_fault_and_scale.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "bytes": 898,
+      "chart_id": "error_rate_delta_by_fault_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/error_rate_delta_by_fault_and_scale.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "bytes": 2112,
+      "chart_id": "resource_usage_by_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/resource_usage_by_scale.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/resource_usage_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "bytes": 1785,
+      "chart_id": "cleanup_status_by_stage",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/cleanup_status_by_stage.svg",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cleanup_table.csv"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "required_sections_checked": [
+    {
+      "section_id": "executive_summary",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cross_scale_analysis_summary.json"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "strict_coverage_heatmap",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "resource_preflight_and_scale_feasibility",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/resource_usage_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "cluster_lifecycle_summary",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "management_operation_matrix",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "management_latency_and_convergence_charts",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv",
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_convergence_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "fault_failover_matrix",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "failover_latency_curves_for_50_100_200",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "fault_period_workload_impact",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/fault_impact_table.csv",
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "partition_and_split_brain_findings",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/fault_impact_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "telemetry_completeness",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/quant_summary.json"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "cleanup_and_leftover_resource_summary",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cleanup_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "above_200_dry_run_support_summary",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv",
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/resource_usage_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "missing_data_and_blocked_row_appendix",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/missing_data_table.csv"
+      ],
+      "status": "PASS"
+    },
+    {
+      "section_id": "source_artifact_provenance_index",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/analysis_provenance.json"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "run_id": "P39_VISUAL_REPORT_QUALITY_GATE-report-20260704",
+  "schema_version": "v1",
+  "status": "PASS",
+  "visual_qa": {
+    "method": "static file inspection for required sections, non-empty SVG assets, image references, table sources, and forbidden display states",
+    "report": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/visual_qa.md",
+    "status": "PASS"
+  }
+}

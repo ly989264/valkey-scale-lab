@@ -820,12 +820,16 @@
       "sha256": "901e71740f751711293001634288c7d8583e15f27d74dd84c84acfda9b7fd039"
     },
     {
+      "path": "scripts/p39_visual_report.py",
+      "sha256": "4fecd3d597c2de320a4834b7e3d709eb58a58fcb3f4e71d14ed2f3e578d3075b"
+    },
+    {
       "path": "scripts/assert_analysis_provenance.py",
-      "sha256": "a5d613e9ac254cb84432a8e3ac552838d5536996b97842dc4e5aa4bc696bec89"
+      "sha256": "76bf8a70f77ed673165b167ace2a1f7a3e10a369b9bb14d80f3e59be49bbe4a2"
     },
     {
       "path": "scripts/assert_report_quality.py",
-      "sha256": "54df7eafe7e4fdfb09cf02cf13d785894c1e14512d46568b30c2dae52f377eeb"
+      "sha256": "af7040369ef7d56636aef33fb8d78a6a3a7c5b8cde1db2ffc31e2a2d351f5092"
     },
     {
       "path": "scripts/assert_final_strict_closeout.py",

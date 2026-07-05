@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="520" viewBox="0 0 980 520" role="img">
+<style>text{font-family:Arial,Helvetica,sans-serif;font-size:12px;fill:#24313a}.title{font-size:18px;font-weight:700}.small{font-size:10px;fill:#53616b}.axis{stroke:#53616b;stroke-width:1}.grid{stroke:#d8e0e6;stroke-width:1}</style>
+<text x="24" y="32" class="title">Management Convergence By Operation And Scale</text>
+<line x1="70" y1="430" x2="930" y2="430" class="axis"/>
+<line x1="70" y1="80" x2="70" y2="430" class="axis"/>
+<text x="72" y="58" class="small">Average convergence_ms by operation and exact real scale.</text>
+<rect x="94" y="429" width="13" height="1" fill="#4f8fba"/>
+<text x="92" y="425" class="small">0</text>
+<rect x="110" y="429" width="13" height="1" fill="#d77a61"/>
+<text x="108" y="425" class="small">0</text>
+<rect x="126" y="429" width="13" height="1" fill="#6a9f58"/>
+<text x="124" y="425" class="small">0</text>
+<text transform="translate(112,502) rotate(-55)" class="small">add replica</text>
+<rect x="172" y="429" width="13" height="1" fill="#4f8fba"/>
+<text x="170" y="425" class="small">0</text>
+<rect x="188" y="429" width="13" height="1" fill="#d77a61"/>
+<text x="186" y="425" class="small">0</text>
+<rect x="204" y="429" width="13" height="1" fill="#6a9f58"/>
+<text x="202" y="425" class="small">0</text>
+<text transform="translate(190,502) rotate(-55)" class="small">create cluster</text>
+<rect x="250" y="429" width="13" height="1" fill="#4f8fba"/>
+<text x="248" y="425" class="small">0</text>
+<rect x="266" y="429" width="13" height="1" fill="#d77a61"/>
+<text x="264" y="425" class="small">0</text>
+<rect x="282" y="429" width="13" height="1" fill="#6a9f58"/>
+<text x="280" y="425" class="small">0</text>
+<text transform="translate(268,502) rotate(-55)" class="small">meet nodes</text>
+<rect x="328" y="429" width="13" height="1" fill="#4f8fba"/>
+<text x="326" y="425" class="small">3466</text>
+<rect x="344" y="421" width="13" height="9" fill="#d77a61"/>
+<text x="342" y="417" class="small">26067</text>
+<rect x="360" y="411" width="13" height="19" fill="#6a9f58"/>
+<text x="358" y="407" class="small">50463</text>
+<text transform="translate(346,502) rotate(-55)" class="small">rebalance after imbalance</text>
+<rect x="406" y="416" width="13" height="14" fill="#4f8fba"/>
+<text x="404" y="412" class="small">38574</text>
+<rect x="422" y="414" width="13" height="16" fill="#d77a61"/>
+<text x="420" y="410" class="small">43563</text>
+<rect x="438" y="410" width="13" height="20" fill="#6a9f58"/>
+<text x="436" y="406" class="small">52316</text>
+<text transform="translate(424,502) rotate(-55)" class="small">remove failed node</text>
+<rect x="484" y="417" width="13" height="13" fill="#4f8fba"/>
+<text x="482" y="413" class="small">36556</text>
+<rect x="500" y="408" width="13" height="22" fill="#d77a61"/>
+<text x="498" y="404" class="small">57942</text>
+<rect x="516" y="407" width="13" height="23" fill="#6a9f58"/>
+<text x="514" y="403" class="small">62475</text>
+<text transform="translate(502,502) rotate(-55)" class="small">remove primary drained or safe replaced</text>
+<rect x="562" y="411" width="13" height="19" fill="#4f8fba"/>
+<text x="560" y="407" class="small">51358</text>
+<rect x="578" y="413" width="13" height="17" fill="#d77a61"/>
+<text x="576" y="409" class="small">46365</text>
+<rect x="594" y="404" width="13" height="26" fill="#6a9f58"/>
+<text x="592" y="400" class="small">68012</text>
+<text transform="translate(580,502) rotate(-55)" class="small">remove replica</text>
+<rect x="640" y="429" width="13" height="1" fill="#4f8fba"/>
+<text x="638" y="425" class="small">757</text>
+<rect x="656" y="429" width="13" height="1" fill="#d77a61"/>
+<text x="654" y="425" class="small">1349</text>
+<rect x="672" y="427" width="13" height="3" fill="#6a9f58"/>
+<text x="670" y="423" class="small">10067</text>
+<text transform="translate(658,502) rotate(-55)" class="small">reshard slot range</text>
+<rect x="718" y="429" width="13" height="1" fill="#4f8fba"/>
+<text x="716" y="425" class="small">1386</text>
+<rect x="734" y="429" width="13" height="1" fill="#d77a61"/>
+<text x="732" y="425" class="small">1897</text>
+<rect x="750" y="429" width="13" height="1" fill="#6a9f58"/>
+<text x="748" y="425" class="small">4333</text>
+<text transform="translate(736,502) rotate(-55)" class="small">reshard with keys</text>
+<rect x="796" y="411" width="13" height="19" fill="#4f8fba"/>
+<text x="794" y="407" class="small">51423</text>
+<rect x="812" y="348" width="13" height="82" fill="#d77a61"/>
+<text x="810" y="344" class="small">216236</text>
+<rect x="828" y="100" width="13" height="330" fill="#6a9f58"/>
+<text x="826" y="96" class="small">862123</text>
+<text transform="translate(814,502) rotate(-55)" class="small">rolling restart primary safe</text>
+<rect x="874" y="395" width="13" height="35" fill="#4f8fba"/>
+<text x="872" y="391" class="small">93019</text>
+<rect x="890" y="343" width="13" height="87" fill="#d77a61"/>
+<text x="888" y="339" class="small">227852</text>
+<rect x="906" y="169" width="13" height="261" fill="#6a9f58"/>
+<text x="904" y="165" class="small">682513</text>
+<text transform="translate(892,502) rotate(-55)" class="small">rolling restart replica first</text>
+<rect x="720" y="46" width="12" height="12" fill="#4f8fba"/>
+<text x="736" y="57" class="small">50</text>
+<rect x="790" y="46" width="12" height="12" fill="#d77a61"/>
+<text x="806" y="57" class="small">100</text>
+<rect x="860" y="46" width="12" height="12" fill="#6a9f58"/>
+<text x="876" y="57" class="small">200</text>
+</svg>

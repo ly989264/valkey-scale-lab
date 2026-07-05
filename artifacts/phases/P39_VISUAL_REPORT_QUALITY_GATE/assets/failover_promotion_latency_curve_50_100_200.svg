@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="520" viewBox="0 0 980 520" role="img">
+<style>text{font-family:Arial,Helvetica,sans-serif;font-size:12px;fill:#24313a}.title{font-size:18px;font-weight:700}.small{font-size:10px;fill:#53616b}.axis{stroke:#53616b;stroke-width:1}.grid{stroke:#d8e0e6;stroke-width:1}</style>
+<text x="24" y="32" class="title">Failover Promotion Latency Curve 50/100/200</text>
+<line x1="90" y1="410" x2="860" y2="410" class="axis"/>
+<line x1="90" y1="90" x2="90" y2="410" class="axis"/>
+<text x="92" y="64" class="small">P95 milliseconds copied from P38 failover_curve_table.csv</text>
+<circle cx="120" cy="170" r="6" fill="#3b75af"/>
+<text x="98" y="158">104485</text>
+<text x="110" y="438">50</text>
+<circle cx="420" cy="136" r="6" fill="#3b75af"/>
+<text x="398" y="124">119322</text>
+<text x="410" y="438">100</text>
+<circle cx="780" cy="120" r="6" fill="#3b75af"/>
+<text x="758" y="108">126150</text>
+<text x="770" y="438">200</text>
+<polyline points="120,170 420,136 780,120" fill="none" stroke="#3b75af" stroke-width="3"/>
+</svg>

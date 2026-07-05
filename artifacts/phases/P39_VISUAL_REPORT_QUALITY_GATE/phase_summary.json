@@ -1,0 +1,64 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-07-04T00:00:00Z",
+  "missing_metrics": [
+    {
+      "field": "workload_qps_ratio_by_fault_and_scale",
+      "impact": "Chart renders explicit missing state with source and reason.",
+      "metric": "workload_qps_ratio_by_fault_and_scale",
+      "reason": "P38 provides fault-period achieved_qps but no fault-specific baseline_qps field needed for a ratio.",
+      "status": "MISSING"
+    },
+    {
+      "field": "workload_p99_delta_by_fault_and_scale",
+      "impact": "Chart renders explicit missing state with source and reason.",
+      "metric": "workload_p99_delta_by_fault_and_scale",
+      "reason": "P38 provides latency_p95_ms, not latency_p99_ms; P39 does not substitute p95 for p99.",
+      "status": "MISSING"
+    },
+    {
+      "field": "error_rate_delta_by_fault_and_scale",
+      "impact": "Chart renders explicit missing state with source and reason.",
+      "metric": "error_rate_delta_by_fault_and_scale",
+      "reason": "P38 provides event error_rate but no fault-specific baseline_error_rate field needed for a delta.",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "P39_VISUAL_REPORT_QUALITY_GATE",
+  "producer": {
+    "name": "scripts/p39_visual_report.py",
+    "version": "v1"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/phase_summary.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_index.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_quality_report.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/final_report.md",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/final_report.html",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/visual_qa.md",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/analysis_provenance.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/quant_summary.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/coverage_heatmap.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_wall_ms_by_operation_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_convergence_ms_by_operation_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_promotion_latency_curve_50_100_200.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_cluster_recovery_latency_curve_50_100_200.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_qps_ratio_by_fault_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_p99_delta_by_fault_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/error_rate_delta_by_fault_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/resource_usage_by_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/cleanup_status_by_stage.svg"
+  ],
+  "risks": [
+    {
+      "mitigation": "report_quality_report.json validates section, asset, source, coverage, and forbidden-token invariants.",
+      "risk": "Visual QA is static file QA; browser rendering review remains a human review focus."
+    }
+  ],
+  "run_id": "P39_VISUAL_REPORT_QUALITY_GATE-report-20260704",
+  "runtime_started": false,
+  "schema_version": "v1",
+  "source_phase": "P38_CROSS_SCALE_ANALYSIS_REGRESSION",
+  "status": "PASS",
+  "summary": "Generated deterministic P39 Markdown, HTML, SVG visual assets, report index, quality report, and provenance from P38 analysis artifacts only."
+}

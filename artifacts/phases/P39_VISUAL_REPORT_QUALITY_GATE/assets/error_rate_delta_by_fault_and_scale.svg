@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="520" viewBox="0 0 980 520" role="img">
+<style>text{font-family:Arial,Helvetica,sans-serif;font-size:12px;fill:#24313a}.title{font-size:18px;font-weight:700}.small{font-size:10px;fill:#53616b}.axis{stroke:#53616b;stroke-width:1}.grid{stroke:#d8e0e6;stroke-width:1}</style>
+<text x="24" y="32" class="title">Error Rate Delta By Fault And Scale</text>
+<rect x="48" y="88" width="880" height="300" fill="#f7f1df" stroke="#c99a45"/>
+<text x="72" y="132" class="title">MISSING</text>
+<text x="72" y="174">P38 provides event error_rate but no fault-specific baseline_error_rate field needed for a delta.</text>
+<text x="72" y="220" class="small">Source: artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv</text>
+<text x="72" y="260" class="small">No replacement value was calculated or inferred in P39.</text>
+</svg>

@@ -1,0 +1,558 @@
+{
+  "artifact_type": "strict_visual_report_index",
+  "assets": [
+    {
+      "chart_id": "coverage_heatmap",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/coverage_heatmap.svg",
+      "sha256": "9cf0ea8a9f8da77c98862764c9fe8dbfbca89644bc9d8788ed9d253c0caa4279"
+    },
+    {
+      "chart_id": "management_wall_ms_by_operation_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_wall_ms_by_operation_and_scale.svg",
+      "sha256": "d764ad703a2e1ae2ebcbd579d5fd5b890ee2ed937fba8f626cc575ac106a1b97"
+    },
+    {
+      "chart_id": "management_convergence_ms_by_operation_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_convergence_ms_by_operation_and_scale.svg",
+      "sha256": "a100954cd16e316cf9e177ac2fea071b85a027d5ea6a1035061734b2e8dbb68e"
+    },
+    {
+      "chart_id": "failover_promotion_latency_curve_50_100_200",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_promotion_latency_curve_50_100_200.svg",
+      "sha256": "6134d850a7fab0ff20ee87aaa805f716ffe952324cd2d7286d31c0325b560e97"
+    },
+    {
+      "chart_id": "failover_cluster_recovery_latency_curve_50_100_200",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_cluster_recovery_latency_curve_50_100_200.svg",
+      "sha256": "b5f395c5202968c2f345771afb6b10b1f76feccfd709783d325f24e9453da8f6"
+    },
+    {
+      "chart_id": "workload_qps_ratio_by_fault_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_qps_ratio_by_fault_and_scale.svg",
+      "sha256": "9f75ded2c4834a9b7ff22abf5e5af535c5f2595447b4e69040b8d09bd354a573"
+    },
+    {
+      "chart_id": "workload_p99_delta_by_fault_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_p99_delta_by_fault_and_scale.svg",
+      "sha256": "782e35bc118fa4db549a65a04fe086a0568fe5f18fa96f9985ca6f819e1931e4"
+    },
+    {
+      "chart_id": "error_rate_delta_by_fault_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/error_rate_delta_by_fault_and_scale.svg",
+      "sha256": "700a4039e5c89581bba1b0d556999dd4fbe3fb58922818e0f812625493581a06"
+    },
+    {
+      "chart_id": "resource_usage_by_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/resource_usage_by_scale.svg",
+      "sha256": "fbc00c9da9c0011514e0437f57472f43474c4fe639eea6238d68ead37f8c8b74"
+    },
+    {
+      "chart_id": "cleanup_status_by_stage",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/cleanup_status_by_stage.svg",
+      "sha256": "9636bb424b0f04a052010db89fc6480370fc07c74fa999616f87f2682ce42533"
+    }
+  ],
+  "charts": [
+    {
+      "chart_id": "coverage_heatmap",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/coverage_heatmap.svg",
+      "row_count": 145,
+      "sha256": "9cf0ea8a9f8da77c98862764c9fe8dbfbca89644bc9d8788ed9d253c0caa4279",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv"
+      ],
+      "source_table": "coverage_heatmap_table.csv",
+      "status": "PASS",
+      "title": "Strict Coverage Heatmap"
+    },
+    {
+      "chart_id": "management_wall_ms_by_operation_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_wall_ms_by_operation_and_scale.svg",
+      "row_count": 33,
+      "sha256": "d764ad703a2e1ae2ebcbd579d5fd5b890ee2ed937fba8f626cc575ac106a1b97",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv"
+      ],
+      "source_table": "management_latency_table.csv",
+      "status": "PASS",
+      "title": "Management Wall Time By Operation And Scale"
+    },
+    {
+      "chart_id": "management_convergence_ms_by_operation_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_convergence_ms_by_operation_and_scale.svg",
+      "row_count": 33,
+      "sha256": "a100954cd16e316cf9e177ac2fea071b85a027d5ea6a1035061734b2e8dbb68e",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_convergence_table.csv"
+      ],
+      "source_table": "management_convergence_table.csv",
+      "status": "PASS",
+      "title": "Management Convergence By Operation And Scale"
+    },
+    {
+      "chart_id": "failover_promotion_latency_curve_50_100_200",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_promotion_latency_curve_50_100_200.svg",
+      "row_count": 6,
+      "sha256": "6134d850a7fab0ff20ee87aaa805f716ffe952324cd2d7286d31c0325b560e97",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv"
+      ],
+      "source_table": "failover_curve_table.csv",
+      "status": "PASS",
+      "title": "Failover Promotion Latency Curve 50/100/200"
+    },
+    {
+      "chart_id": "failover_cluster_recovery_latency_curve_50_100_200",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_cluster_recovery_latency_curve_50_100_200.svg",
+      "row_count": 6,
+      "sha256": "b5f395c5202968c2f345771afb6b10b1f76feccfd709783d325f24e9453da8f6",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv"
+      ],
+      "source_table": "failover_curve_table.csv",
+      "status": "PASS",
+      "title": "Failover Cluster Recovery Latency Curve 50/100/200"
+    },
+    {
+      "chart_id": "workload_qps_ratio_by_fault_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_qps_ratio_by_fault_and_scale.svg",
+      "row_count": 279,
+      "sha256": "9f75ded2c4834a9b7ff22abf5e5af535c5f2595447b4e69040b8d09bd354a573",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv"
+      ],
+      "source_table": "workload_window_table.csv",
+      "status": "PASS",
+      "title": "Workload QPS Ratio By Fault And Scale"
+    },
+    {
+      "chart_id": "workload_p99_delta_by_fault_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_p99_delta_by_fault_and_scale.svg",
+      "row_count": 279,
+      "sha256": "782e35bc118fa4db549a65a04fe086a0568fe5f18fa96f9985ca6f819e1931e4",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv"
+      ],
+      "source_table": "workload_window_table.csv",
+      "status": "PASS",
+      "title": "Workload P99 Delta By Fault And Scale"
+    },
+    {
+      "chart_id": "error_rate_delta_by_fault_and_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/error_rate_delta_by_fault_and_scale.svg",
+      "row_count": 279,
+      "sha256": "700a4039e5c89581bba1b0d556999dd4fbe3fb58922818e0f812625493581a06",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv"
+      ],
+      "source_table": "workload_window_table.csv",
+      "status": "PASS",
+      "title": "Error Rate Delta By Fault And Scale"
+    },
+    {
+      "chart_id": "resource_usage_by_scale",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/resource_usage_by_scale.svg",
+      "row_count": 14,
+      "sha256": "fbc00c9da9c0011514e0437f57472f43474c4fe639eea6238d68ead37f8c8b74",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/resource_usage_table.csv"
+      ],
+      "source_table": "resource_usage_table.csv",
+      "status": "PASS",
+      "title": "Resource Usage By Scale"
+    },
+    {
+      "chart_id": "cleanup_status_by_stage",
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/cleanup_status_by_stage.svg",
+      "row_count": 14,
+      "sha256": "9636bb424b0f04a052010db89fc6480370fc07c74fa999616f87f2682ce42533",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cleanup_table.csv"
+      ],
+      "source_table": "cleanup_table.csv",
+      "status": "PASS",
+      "title": "Cleanup Status By Stage"
+    }
+  ],
+  "coverage_totals": {
+    "cleanup_rows": 14,
+    "coverage_by_category": {
+      "dry_run": 40,
+      "fault": 36,
+      "lifecycle": 36,
+      "management": 33
+    },
+    "coverage_rows": 145,
+    "dry_run_scales": [
+      201,
+      250,
+      300,
+      500,
+      1000
+    ],
+    "failover_curve_rows": 6,
+    "fault_impact_rows": 42,
+    "management_convergence_rows": 33,
+    "management_latency_rows": 33,
+    "missing_data_rows": 1687,
+    "real_scales": [
+      50,
+      100,
+      200
+    ],
+    "resource_usage_rows": 14,
+    "workload_window_rows": 279
+  },
+  "coverage_totals_source": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cross_scale_analysis_summary.json",
+  "created_at": "2026-07-04T00:00:00Z",
+  "derivation_policy": {
+    "artifact_only": true,
+    "invented_values_present": false,
+    "log_parsing": false,
+    "rendered_views_as_metric_sources": false,
+    "runtime_started": false,
+    "source_phase": "P38_CROSS_SCALE_ANALYSIS_REGRESSION",
+    "source_scenarios_rerun": false
+  },
+  "phase_id": "P39_VISUAL_REPORT_QUALITY_GATE",
+  "producer": {
+    "name": "scripts/p39_visual_report.py",
+    "version": "v1"
+  },
+  "provenance": {
+    "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/analysis_provenance.json"
+  },
+  "reports": [
+    {
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/final_report.md",
+      "sha256": "5a3a06e849067cfe0a1d780690cadda13f0e9718d4dc01700f5bc2bb51465c9c"
+    },
+    {
+      "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/final_report.html",
+      "sha256": "8c970e9c234f197bf387a2e1c1c2e9cb041c84cf7a5ba9697517b8de10149587"
+    }
+  ],
+  "run_id": "P39_VISUAL_REPORT_QUALITY_GATE-report-20260704",
+  "schema_version": "v1",
+  "sections": [
+    {
+      "anchor": "executive_summary",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "executive_summary",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cross_scale_analysis_summary.json"
+      ],
+      "status": "PASS",
+      "title": "Executive summary"
+    },
+    {
+      "anchor": "strict_coverage_heatmap",
+      "coverage_rows": 145,
+      "reason": "Copied from P38 counts.",
+      "section_id": "strict_coverage_heatmap",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Strict coverage heatmap"
+    },
+    {
+      "anchor": "resource_preflight_and_scale_feasibility",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "resource_preflight_and_scale_feasibility",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/resource_usage_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Resource preflight and scale feasibility"
+    },
+    {
+      "anchor": "cluster_lifecycle_summary",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "cluster_lifecycle_summary",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Cluster lifecycle summary"
+    },
+    {
+      "anchor": "management_operation_matrix",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "management_operation_matrix",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Management operation matrix"
+    },
+    {
+      "anchor": "management_latency_and_convergence_charts",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "management_latency_and_convergence_charts",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv",
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_convergence_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Management latency and convergence charts"
+    },
+    {
+      "anchor": "fault_failover_matrix",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "fault_failover_matrix",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Fault/failover matrix"
+    },
+    {
+      "anchor": "failover_latency_curves_for_50_100_200",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "failover_latency_curves_for_50_100_200",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Failover latency curves for 50/100/200"
+    },
+    {
+      "anchor": "fault_period_workload_impact",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "fault_period_workload_impact",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/fault_impact_table.csv",
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Fault-period workload impact"
+    },
+    {
+      "anchor": "partition_and_split_brain_findings",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "partition_and_split_brain_findings",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/fault_impact_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Partition and split-brain findings"
+    },
+    {
+      "anchor": "telemetry_completeness",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "telemetry_completeness",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/quant_summary.json"
+      ],
+      "status": "PASS",
+      "title": "Telemetry completeness"
+    },
+    {
+      "anchor": "cleanup_and_leftover_resource_summary",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "cleanup_and_leftover_resource_summary",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cleanup_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Cleanup and leftover-resource summary"
+    },
+    {
+      "anchor": "above_200_dry_run_support_summary",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "above_200_dry_run_support_summary",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv",
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/resource_usage_table.csv"
+      ],
+      "status": "PASS",
+      "title": ">200 dry-run support summary"
+    },
+    {
+      "anchor": "missing_data_and_blocked_row_appendix",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "missing_data_and_blocked_row_appendix",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/missing_data_table.csv"
+      ],
+      "status": "PASS",
+      "title": "Missing-data and blocked-row appendix"
+    },
+    {
+      "anchor": "source_artifact_provenance_index",
+      "coverage_rows": "SKIPPED_WITH_REASON",
+      "reason": "Coverage rows apply to the heatmap section only.",
+      "section_id": "source_artifact_provenance_index",
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/analysis_provenance.json"
+      ],
+      "status": "PASS",
+      "title": "Source artifact provenance index"
+    }
+  ],
+  "source_artifacts": [
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv",
+      "sha256": "92985692d67efdc5969f4753e8f66d3193a854dad90d462fb77ab791fa134ef6",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv",
+      "sha256": "e905947fb7a216c1b6390090fc84d8e543ee25017260c0b3f92ef2df4cd75895",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_convergence_table.csv",
+      "sha256": "6b3d99132ac4eaa3d24841d26c6c3588d2f0b8b056f1d410ca77ca486b79fc16",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv",
+      "sha256": "2859e99080d6f31e066257a6df023ccbcafe3d5c64cd3736b0ebb318e65cbf48",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/fault_impact_table.csv",
+      "sha256": "2baab4c06b54c3076595e9723c9ec455667c1aa644d48174ab4d44e628a8023e",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv",
+      "sha256": "61fa086ae995e03905f5348d029437f0e0c8040c3c24efc91ad70b603ba61ba1",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/resource_usage_table.csv",
+      "sha256": "a5da43a6d11b3e43b26c7b0ca55f724603e0f934cd510602b96a58550c85c267",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cleanup_table.csv",
+      "sha256": "02661ebdc50332951e81df662a966aafaec6edaf970988294706a481edf71f56",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/missing_data_table.csv",
+      "sha256": "2024c619875d8be5b5b4aac90a2f90b0a718e8eaccfba908976b9137272f771b",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/phase_summary.json",
+      "sha256": "9ac0bc466464737df198953c8d0f123a41b551457b703ac09f17dffd510293be",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cross_scale_analysis_summary.json",
+      "sha256": "f838c69781e931b86493e74bb08e25950c57685481cc427cb3eedd873b74df0e",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/analysis_provenance.json",
+      "sha256": "040106a81552d0d945e265f185508f4db6d12955c9c415c2bbd0ffc7026c527a",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/regression_baseline.json",
+      "sha256": "e8ce4001a7ab929db685e8b426453b756fea5c42aa7a31b525c43a14c58e1ae5",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/quant_summary.json",
+      "sha256": "d991c7c060f297b4ddbd28a4215d74176f046beab961a8460713adbf4347faff",
+      "source_stage": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    }
+  ],
+  "status": "PASS",
+  "tables": [
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cleanup_table.csv",
+      "row_count": 14,
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/cleanup_table.csv"
+      ],
+      "table_id": "cleanup_table"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv",
+      "row_count": 145,
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/coverage_heatmap_table.csv"
+      ],
+      "table_id": "coverage_heatmap_table"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv",
+      "row_count": 6,
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/failover_curve_table.csv"
+      ],
+      "table_id": "failover_curve_table"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/fault_impact_table.csv",
+      "row_count": 42,
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/fault_impact_table.csv"
+      ],
+      "table_id": "fault_impact_table"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_convergence_table.csv",
+      "row_count": 33,
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_convergence_table.csv"
+      ],
+      "table_id": "management_convergence_table"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv",
+      "row_count": 33,
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/management_latency_table.csv"
+      ],
+      "table_id": "management_latency_table"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/missing_data_table.csv",
+      "row_count": 1687,
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/missing_data_table.csv"
+      ],
+      "table_id": "missing_data_table"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/resource_usage_table.csv",
+      "row_count": 14,
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/resource_usage_table.csv"
+      ],
+      "table_id": "resource_usage_table"
+    },
+    {
+      "path": "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv",
+      "row_count": 279,
+      "source_artifacts": [
+        "artifacts/phases/P38_CROSS_SCALE_ANALYSIS_REGRESSION/workload_window_table.csv"
+      ],
+      "table_id": "workload_window_table"
+    }
+  ],
+  "visual_qa": {
+    "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/visual_qa.md",
+    "sha256": "86c9783d766862f83db20e744b9da48b9a724a2a2529de4e195070eb2955fffe"
+  }
+}

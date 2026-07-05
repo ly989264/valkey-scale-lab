@@ -1,0 +1,103 @@
+{
+  "artifact_refs": [
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/phase_summary.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_index.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_quality_report.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/final_report.md",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/final_report.html",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/visual_qa.md",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/analysis_provenance.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/quant_summary.json",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/coverage_heatmap.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_wall_ms_by_operation_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/management_convergence_ms_by_operation_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_promotion_latency_curve_50_100_200.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/failover_cluster_recovery_latency_curve_50_100_200.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_qps_ratio_by_fault_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/workload_p99_delta_by_fault_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/error_rate_delta_by_fault_and_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/resource_usage_by_scale.svg",
+    "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/assets/cleanup_status_by_stage.svg"
+  ],
+  "artifact_type": "quant_summary",
+  "chart_ids": [
+    "coverage_heatmap",
+    "management_wall_ms_by_operation_and_scale",
+    "management_convergence_ms_by_operation_and_scale",
+    "failover_promotion_latency_curve_50_100_200",
+    "failover_cluster_recovery_latency_curve_50_100_200",
+    "workload_qps_ratio_by_fault_and_scale",
+    "workload_p99_delta_by_fault_and_scale",
+    "error_rate_delta_by_fault_and_scale",
+    "resource_usage_by_scale",
+    "cleanup_status_by_stage"
+  ],
+  "created_at": "2026-07-04T00:00:00Z",
+  "missing_data": [
+    {
+      "field": "workload_qps_ratio_by_fault_and_scale",
+      "impact": "Chart renders explicit missing state with source and reason.",
+      "metric": "workload_qps_ratio_by_fault_and_scale",
+      "reason": "P38 provides fault-period achieved_qps but no fault-specific baseline_qps field needed for a ratio.",
+      "status": "MISSING"
+    },
+    {
+      "field": "workload_p99_delta_by_fault_and_scale",
+      "impact": "Chart renders explicit missing state with source and reason.",
+      "metric": "workload_p99_delta_by_fault_and_scale",
+      "reason": "P38 provides latency_p95_ms, not latency_p99_ms; P39 does not substitute p95 for p99.",
+      "status": "MISSING"
+    },
+    {
+      "field": "error_rate_delta_by_fault_and_scale",
+      "impact": "Chart renders explicit missing state with source and reason.",
+      "metric": "error_rate_delta_by_fault_and_scale",
+      "reason": "P38 provides event error_rate but no fault-specific baseline_error_rate field needed for a delta.",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "P39_VISUAL_REPORT_QUALITY_GATE",
+  "producer": {
+    "name": "scripts/p39_visual_report.py",
+    "version": "v1"
+  },
+  "run_id": "P39_VISUAL_REPORT_QUALITY_GATE-report-20260704",
+  "runtime_claims": {
+    "fault_runtime_claimed": false,
+    "management_runtime_claimed": false,
+    "real_valkey_claimed": false,
+    "report_only": true
+  },
+  "schema_version": "v1",
+  "source_counts": {
+    "cleanup_rows": 14,
+    "coverage_by_category": {
+      "dry_run": 40,
+      "fault": 36,
+      "lifecycle": 36,
+      "management": 33
+    },
+    "coverage_rows": 145,
+    "dry_run_scales": [
+      201,
+      250,
+      300,
+      500,
+      1000
+    ],
+    "failover_curve_rows": 6,
+    "fault_impact_rows": 42,
+    "management_convergence_rows": 33,
+    "management_latency_rows": 33,
+    "missing_data_rows": 1687,
+    "real_scales": [
+      50,
+      100,
+      200
+    ],
+    "resource_usage_rows": 14,
+    "workload_window_rows": 279
+  },
+  "status": "PASS",
+  "summary": "P39 rendered report views from P38 quantitative artifacts without starting runtime or inventing values."
+}
