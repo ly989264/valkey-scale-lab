@@ -1,0 +1,24 @@
+{
+  "artifact_paths": [
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/phase_summary.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_strict_audit_report.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_coverage_verdict.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_artifact_manifest.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_no_bypass_report.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_report_quality_verdict.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/analysis_provenance.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/quant_summary.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/FINAL_STRICT_SUMMARY.md"
+  ],
+  "artifact_type": "audit_decision",
+  "auditor": "fresh-context review subagent",
+  "created_at": "2026-07-05T02:39:01Z",
+  "decision": "PASS",
+  "fresh_context": true,
+  "gate_result_path": "artifacts/gates/P40_STRICT_FINAL_AUDIT_CLOSEOUT/gate_result.json",
+  "gate_result_sha256": "b6205aca55251e725e23fe391de84e03c97c79845d787d56c0c9f5529ecd8ce4",
+  "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
+  "rationale": "PASS: verified the current P40 gate result SHA, stage scope, audit-only runtime claims, final coverage totals, real and dry-run status split, artifact hashes and provenance, no-bypass boundaries, P39 report-quality handoff, cleanup refs, schemas, and commit readiness. No blocking findings remain before main-agent postcheck.",
+  "risks": [],
+  "schema_version": "v1"
+}

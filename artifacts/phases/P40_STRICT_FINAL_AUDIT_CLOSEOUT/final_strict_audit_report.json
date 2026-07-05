@@ -1,0 +1,371 @@
+{
+  "artifact_type": "final_strict_audit_report",
+  "audit_only": true,
+  "blocking_findings": [],
+  "coverage_status": "PASS",
+  "created_at": "2026-07-05T00:00:00Z",
+  "invented_values_present": false,
+  "no_bypass_status": "PASS",
+  "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
+  "prior_stage_statuses": [
+    {
+      "audit_decision": {
+        "bytes": 1905,
+        "exists": true,
+        "path": "audit/P27_STRICT_MATRIX_REBASE_HARNESS/audit_decision.json",
+        "required": true,
+        "sha256": "7e46166eab7def3093ce5faf6fb14e718ad5f7154eb808e24ab99655347a9172"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P27_STRICT_MATRIX_REBASE_HARNESS/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 6552,
+        "exists": true,
+        "path": "artifacts/gates/P27_STRICT_MATRIX_REBASE_HARNESS/gate_result.json",
+        "required": true,
+        "sha256": "b9615dabdf4c3add589bd026c149272d5d4ec3e755aa4f110d52af112b812a13"
+      },
+      "gate_sha256": "b9615dabdf4c3add589bd026c149272d5d4ec3e755aa4f110d52af112b812a13",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P27_STRICT_MATRIX_REBASE_HARNESS/REVIEW.md",
+      "stage_id": "P27_STRICT_MATRIX_REBASE_HARNESS"
+    },
+    {
+      "audit_decision": {
+        "bytes": 2642,
+        "exists": true,
+        "path": "audit/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/audit_decision.json",
+        "required": true,
+        "sha256": "bbae70ceea5343a4570c66116fe6bdd6de83036a44e9e60b1c35e8066b8b4592"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 6853,
+        "exists": true,
+        "path": "artifacts/gates/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/gate_result.json",
+        "required": true,
+        "sha256": "e70d9e9ed317f4e5415fce65871af31add6605a1ce05e8c352c3afd48279fb8e"
+      },
+      "gate_sha256": "e70d9e9ed317f4e5415fce65871af31add6605a1ce05e8c352c3afd48279fb8e",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER/REVIEW.md",
+      "stage_id": "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER"
+    },
+    {
+      "audit_decision": {
+        "bytes": 2153,
+        "exists": true,
+        "path": "audit/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/audit_decision.json",
+        "required": true,
+        "sha256": "c7fbd5ce9d6c45406644fbb1b07445e326213d7e6d801682a946638b7a535a1b"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 8544,
+        "exists": true,
+        "path": "artifacts/gates/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/gate_result.json",
+        "required": true,
+        "sha256": "145f82be54759a16c7822a437b051912db0842afa88a1ea4042ffdbde4cd3155"
+      },
+      "gate_sha256": "145f82be54759a16c7822a437b051912db0842afa88a1ea4042ffdbde4cd3155",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/REVIEW.md",
+      "stage_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING"
+    },
+    {
+      "audit_decision": {
+        "bytes": 2417,
+        "exists": true,
+        "path": "audit/P30_MANAGEMENT_MATRIX_50_REAL/audit_decision.json",
+        "required": true,
+        "sha256": "977201d161cac7bc756bcf86b6af61f75ff1e9726589581c3f67fae40068ac0b"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P30_MANAGEMENT_MATRIX_50_REAL/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 9915,
+        "exists": true,
+        "path": "artifacts/gates/P30_MANAGEMENT_MATRIX_50_REAL/gate_result.json",
+        "required": true,
+        "sha256": "a60d0e132e882fb7ba8b57f84c200fdddaad7da91fc25c39bd5b95c601df27da"
+      },
+      "gate_sha256": "a60d0e132e882fb7ba8b57f84c200fdddaad7da91fc25c39bd5b95c601df27da",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P30_MANAGEMENT_MATRIX_50_REAL/REVIEW.md",
+      "stage_id": "P30_MANAGEMENT_MATRIX_50_REAL"
+    },
+    {
+      "audit_decision": {
+        "bytes": 2703,
+        "exists": true,
+        "path": "audit/P31_MANAGEMENT_MATRIX_100_REAL/audit_decision.json",
+        "required": true,
+        "sha256": "0d84117b5a6e1a42eb67d06b20d9a32bc9380d9e05d9fb2e5bd0e9840b95e90b"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P31_MANAGEMENT_MATRIX_100_REAL/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 9956,
+        "exists": true,
+        "path": "artifacts/gates/P31_MANAGEMENT_MATRIX_100_REAL/gate_result.json",
+        "required": true,
+        "sha256": "0cddf5b1855fe156e41f85d92abeae8f4534bac069c6a37a153a1ca2106bc8cb"
+      },
+      "gate_sha256": "0cddf5b1855fe156e41f85d92abeae8f4534bac069c6a37a153a1ca2106bc8cb",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P31_MANAGEMENT_MATRIX_100_REAL/REVIEW.md",
+      "stage_id": "P31_MANAGEMENT_MATRIX_100_REAL"
+    },
+    {
+      "audit_decision": {
+        "bytes": 2796,
+        "exists": true,
+        "path": "audit/P32_MANAGEMENT_MATRIX_200_REAL/audit_decision.json",
+        "required": true,
+        "sha256": "8078554b9f04a0679f9a614b3efeebe7a34d3df2e401caef248271b90cca1904"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P32_MANAGEMENT_MATRIX_200_REAL/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 9978,
+        "exists": true,
+        "path": "artifacts/gates/P32_MANAGEMENT_MATRIX_200_REAL/gate_result.json",
+        "required": true,
+        "sha256": "d8539e5b5bb13dc49c0cf6942edbc6e608cfd22a2b7c2ba52cd868b72f7ca2e8"
+      },
+      "gate_sha256": "d8539e5b5bb13dc49c0cf6942edbc6e608cfd22a2b7c2ba52cd868b72f7ca2e8",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P32_MANAGEMENT_MATRIX_200_REAL/REVIEW.md",
+      "stage_id": "P32_MANAGEMENT_MATRIX_200_REAL"
+    },
+    {
+      "audit_decision": {
+        "bytes": 2382,
+        "exists": true,
+        "path": "audit/P33_FAULT_FAILOVER_MATRIX_50_REAL/audit_decision.json",
+        "required": true,
+        "sha256": "1708b92b8b76898203e42b02f4bce959bbe9aab4e39dc6314c88b071d1de6700"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P33_FAULT_FAILOVER_MATRIX_50_REAL/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 12015,
+        "exists": true,
+        "path": "artifacts/gates/P33_FAULT_FAILOVER_MATRIX_50_REAL/gate_result.json",
+        "required": true,
+        "sha256": "bbd56388833c1f7bd015b13fd69cb1bce339c843169d15fee2c1f0c121f1f0e4"
+      },
+      "gate_sha256": "bbd56388833c1f7bd015b13fd69cb1bce339c843169d15fee2c1f0c121f1f0e4",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P33_FAULT_FAILOVER_MATRIX_50_REAL/REVIEW.md",
+      "stage_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL"
+    },
+    {
+      "audit_decision": {
+        "bytes": 3519,
+        "exists": true,
+        "path": "audit/P34_FAULT_FAILOVER_MATRIX_100_REAL/audit_decision.json",
+        "required": true,
+        "sha256": "5bb6e6a154488bba823dcb96ed0c3959097b18fad3cdd89ed8236cdf05854e0a"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P34_FAULT_FAILOVER_MATRIX_100_REAL/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 12069,
+        "exists": true,
+        "path": "artifacts/gates/P34_FAULT_FAILOVER_MATRIX_100_REAL/gate_result.json",
+        "required": true,
+        "sha256": "53bd4b27de759c598759a21218e10d467628ab0997112474ca9c20bcc8ef6503"
+      },
+      "gate_sha256": "53bd4b27de759c598759a21218e10d467628ab0997112474ca9c20bcc8ef6503",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P34_FAULT_FAILOVER_MATRIX_100_REAL/REVIEW.md",
+      "stage_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL"
+    },
+    {
+      "audit_decision": {
+        "bytes": 3809,
+        "exists": true,
+        "path": "audit/P35_FAULT_FAILOVER_MATRIX_200_REAL/audit_decision.json",
+        "required": true,
+        "sha256": "1bfd24bb3aa1f049d837cec4653ba3464f4232b4b14cb25a913019f85f1c8e66"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P35_FAULT_FAILOVER_MATRIX_200_REAL/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 12070,
+        "exists": true,
+        "path": "artifacts/gates/P35_FAULT_FAILOVER_MATRIX_200_REAL/gate_result.json",
+        "required": true,
+        "sha256": "c791a20aa98ffb62c3db48ec07055b32420519291e9364386b3a520be186548f"
+      },
+      "gate_sha256": "c791a20aa98ffb62c3db48ec07055b32420519291e9364386b3a520be186548f",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P35_FAULT_FAILOVER_MATRIX_200_REAL/REVIEW.md",
+      "stage_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL"
+    },
+    {
+      "audit_decision": {
+        "bytes": 2130,
+        "exists": true,
+        "path": "audit/P36_FULL_FLOW_E2E_50_100_200_REAL/audit_decision.json",
+        "required": true,
+        "sha256": "4f5cdd42fd8237dc280c8833c8c1c5c7da6e872000c0191879df1b4b9c32201d"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P36_FULL_FLOW_E2E_50_100_200_REAL/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 13703,
+        "exists": true,
+        "path": "artifacts/gates/P36_FULL_FLOW_E2E_50_100_200_REAL/gate_result.json",
+        "required": true,
+        "sha256": "f52aaa19ef0abb35eb92081b9ff7ce65802e57d42a00387fa826229d0ebd88d1"
+      },
+      "gate_sha256": "f52aaa19ef0abb35eb92081b9ff7ce65802e57d42a00387fa826229d0ebd88d1",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P36_FULL_FLOW_E2E_50_100_200_REAL/REVIEW.md",
+      "stage_id": "P36_FULL_FLOW_E2E_50_100_200_REAL"
+    },
+    {
+      "audit_decision": {
+        "bytes": 1858,
+        "exists": true,
+        "path": "audit/P37_200_PLUS_DRY_RUN_SUPPORT/audit_decision.json",
+        "required": true,
+        "sha256": "50cb235bfab39bb8d41ed93b92e00eeea10ff97cc50eb9b956513077177d2bf8"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 6526,
+        "exists": true,
+        "path": "artifacts/gates/P37_200_PLUS_DRY_RUN_SUPPORT/gate_result.json",
+        "required": true,
+        "sha256": "21ea6c7b85a6631eeeeb8136daefc9318469403659bb3ad3ec8cb9f5ba878ed0"
+      },
+      "gate_sha256": "21ea6c7b85a6631eeeeb8136daefc9318469403659bb3ad3ec8cb9f5ba878ed0",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P37_200_PLUS_DRY_RUN_SUPPORT/REVIEW.md",
+      "stage_id": "P37_200_PLUS_DRY_RUN_SUPPORT"
+    },
+    {
+      "audit_decision": {
+        "bytes": 1747,
+        "exists": true,
+        "path": "audit/P38_CROSS_SCALE_ANALYSIS_REGRESSION/audit_decision.json",
+        "required": true,
+        "sha256": "089483968be758d19d20af29e6135327e9aa9e019917de8982080188c6ef0399"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P38_CROSS_SCALE_ANALYSIS_REGRESSION/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 7432,
+        "exists": true,
+        "path": "artifacts/gates/P38_CROSS_SCALE_ANALYSIS_REGRESSION/gate_result.json",
+        "required": true,
+        "sha256": "271c2fcaedabd30dc2d51b6ac370ce9946d3b1eb52867c8717f2269c28b2c883"
+      },
+      "gate_sha256": "271c2fcaedabd30dc2d51b6ac370ce9946d3b1eb52867c8717f2269c28b2c883",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P38_CROSS_SCALE_ANALYSIS_REGRESSION/REVIEW.md",
+      "stage_id": "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
+    },
+    {
+      "audit_decision": {
+        "bytes": 2914,
+        "exists": true,
+        "path": "audit/P39_VISUAL_REPORT_QUALITY_GATE/audit_decision.json",
+        "required": true,
+        "sha256": "7effa44949fca3374d5a315f814feaf7c22f4105e6b90ac6da4f84ca737c65c4"
+      },
+      "audit_fresh_context": true,
+      "audit_status": "PASS",
+      "completed_by_phase_state": true,
+      "completion_path": "artifacts/goal_loop_strict/P39_VISUAL_REPORT_QUALITY_GATE/COMPLETION.md",
+      "completion_record_present": true,
+      "completion_records_commit_and_push": true,
+      "gate_result": {
+        "bytes": 6637,
+        "exists": true,
+        "path": "artifacts/gates/P39_VISUAL_REPORT_QUALITY_GATE/gate_result.json",
+        "required": true,
+        "sha256": "56620247aad7640cb0cafb71b2e917fe65ccf4bcd6b673e9d981d593aaeca198"
+      },
+      "gate_sha256": "56620247aad7640cb0cafb71b2e917fe65ccf4bcd6b673e9d981d593aaeca198",
+      "gate_status": "PASS",
+      "review_decision_pass": true,
+      "review_path": "artifacts/goal_loop_strict/P39_VISUAL_REPORT_QUALITY_GATE/REVIEW.md",
+      "stage_id": "P39_VISUAL_REPORT_QUALITY_GATE"
+    }
+  ],
+  "producer": {
+    "name": "scripts/p40_final_closeout.py",
+    "version": "v1"
+  },
+  "report_quality_status": "PASS",
+  "runtime_started": false,
+  "schema_version": "v1",
+  "status": "PASS"
+}

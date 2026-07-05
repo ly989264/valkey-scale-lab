@@ -5388,7 +5388,7 @@
         {
           "name": "coverage_registry",
           "kind": "harness",
-          "command": "python3 scripts/assert_coverage_registry.py --phase P40_STRICT_FINAL_AUDIT_CLOSEOUT --require-final-real-scales",
+          "command": "python3 scripts/assert_coverage_registry.py --phase P40_STRICT_FINAL_AUDIT_CLOSEOUT --require-final-real-scales --require-dry-run-200-plus",
           "timeout_seconds": 120,
           "required": true,
           "real_valkey": false
@@ -5404,7 +5404,7 @@
         {
           "name": "report_quality",
           "kind": "harness",
-          "command": "python3 scripts/assert_report_quality.py --report-index artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_index.json",
+          "command": "python3 scripts/assert_report_quality.py --phase P39_VISUAL_REPORT_QUALITY_GATE --report-index artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_index.json",
           "timeout_seconds": 120,
           "required": true,
           "real_valkey": false

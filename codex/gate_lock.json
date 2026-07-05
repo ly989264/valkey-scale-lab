@@ -21,7 +21,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+      "sha256": "b8b5b03cdd1b72af90ccf8155a0bd8e3a1241938f280fce10ef4ef83f09d2033"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -781,7 +781,7 @@
     },
     {
       "path": "scripts/assert_coverage_registry.py",
-      "sha256": "e338107a17bb2866a54bc2b7ca260660691521703acd9cb5d2174b46d1a84c9d"
+      "sha256": "7c6986f0ff5c38295678628986000a0a2b39020e1c47cac579b65c8b75b3d67c"
     },
     {
       "path": "scripts/strict_coverage_defs.py",
@@ -825,7 +825,7 @@
     },
     {
       "path": "scripts/assert_analysis_provenance.py",
-      "sha256": "76bf8a70f77ed673165b167ace2a1f7a3e10a369b9bb14d80f3e59be49bbe4a2"
+      "sha256": "7b0bf8fa8e1e97f7a4cb0baecdbde0401df791edfe77af3f250459ab7217aed0"
     },
     {
       "path": "scripts/assert_report_quality.py",
@@ -833,7 +833,7 @@
     },
     {
       "path": "scripts/assert_final_strict_closeout.py",
-      "sha256": "428ab7a14e9e49d27fa0c846e6e45e6afdf54f39d614ecd993eff934b2098162"
+      "sha256": "645e923b5c02934fd4b1e6ded3d28b388cf26fd23d1b38f8dcf5940781add931"
     },
     {
       "path": "scripts/strict_harness_artifacts.py",
@@ -1018,6 +1018,10 @@
     {
       "path": "docs/codex/goal-loop-strict/templates/VISUAL_QA_TEMPLATE.md",
       "sha256": "ec562e2f222478eaf1439f18acf442b33ae004949ea56e2c4e3650db144053e6"
+    },
+    {
+      "path": "scripts/p40_final_closeout.py",
+      "sha256": "9280fef72359ccaa65128f12fb8fd14a515a1d992525558febf28ad6d6c96ea8"
     }
   ],
   "updated_by": "P27_STRICT_MATRIX_REBASE_HARNESS",

@@ -1,0 +1,39 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-07-05T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "No new runtime metrics are expected for P40.",
+      "metric": "runtime_qps",
+      "reason": "P40 is audit-only and does not run workloads.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "impact": "Uses prior exact-scale evidence hashes instead.",
+      "metric": "valkey_probe",
+      "reason": "P40 validates existing evidence and must not probe live Valkey endpoints.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
+  "producer": {
+    "name": "scripts/p40_final_closeout.py",
+    "version": "v1"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/phase_summary.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_strict_audit_report.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_coverage_verdict.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_artifact_manifest.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_no_bypass_report.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_report_quality_verdict.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/analysis_provenance.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/quant_summary.json",
+    "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/FINAL_STRICT_SUMMARY.md"
+  ],
+  "risks": [],
+  "run_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT-audit-only-20260705",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "Final strict audit closeout over P27-P39; audit-only, no runtime started."
+}

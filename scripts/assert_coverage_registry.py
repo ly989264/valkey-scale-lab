@@ -240,7 +240,14 @@ def final_status_errors(rows: list[dict[str, Any]], args: argparse.Namespace) ->
         and not args.scale
         and not args.scales
     )
-    if (args.phase or args.category or args.scale or args.scales) and not p38_global_analysis_check:
+    p40_final_closeout_check = (
+        args.phase == "P40_STRICT_FINAL_AUDIT_CLOSEOUT"
+        and (args.require_final_real_scales or args.require_dry_run_200_plus)
+        and not args.category
+        and not args.scale
+        and not args.scales
+    )
+    if (args.phase or args.category or args.scale or args.scales) and not p38_global_analysis_check and not p40_final_closeout_check:
         selected = selected_rows(rows, args)
         if not selected:
             errors.append("coverage selection matched no rows")

@@ -1,0 +1,52 @@
+{
+  "artifact_type": "final_report_quality_verdict",
+  "chart_count": 10,
+  "coverage_totals": {
+    "cleanup_rows": 14,
+    "coverage_by_category": {
+      "dry_run": 40,
+      "fault": 36,
+      "lifecycle": 36,
+      "management": 33
+    },
+    "coverage_rows": 145,
+    "dry_run_scales": [
+      201,
+      250,
+      300,
+      500,
+      1000
+    ],
+    "failover_curve_rows": 6,
+    "fault_impact_rows": 42,
+    "management_convergence_rows": 33,
+    "management_latency_rows": 33,
+    "missing_data_rows": 1687,
+    "real_scales": [
+      50,
+      100,
+      200
+    ],
+    "resource_usage_rows": 14,
+    "workload_window_rows": 279
+  },
+  "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
+  "report_count": 2,
+  "report_index": {
+    "bytes": 23072,
+    "exists": true,
+    "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_index.json",
+    "required": true,
+    "sha256": "89874f41b1f221f7bf9ac8906b62f90ab6588dfbb2cde3cdc661fb0e8540c7e5"
+  },
+  "report_quality_report": {
+    "bytes": 8432,
+    "exists": true,
+    "path": "artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_quality_report.json",
+    "required": true,
+    "sha256": "08509e7a52695fd28aa64f3064b42c0339e22ac90a27c28df824858546dcbe9e"
+  },
+  "schema_version": "v1",
+  "status": "PASS",
+  "validated_command": "python3 scripts/assert_report_quality.py --phase P39_VISUAL_REPORT_QUALITY_GATE --report-index artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_index.json"
+}

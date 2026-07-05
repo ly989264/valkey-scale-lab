@@ -16,6 +16,7 @@ from strict_harness_lib import phase_dir, print_errors, require_json  # noqa: E4
 
 P38 = "P38_CROSS_SCALE_ANALYSIS_REGRESSION"
 P39 = "P39_VISUAL_REPORT_QUALITY_GATE"
+P40 = "P40_STRICT_FINAL_AUDIT_CLOSEOUT"
 P38_TABLES = [
     "coverage_heatmap_table.csv",
     "management_latency_table.csv",
@@ -87,6 +88,8 @@ def main() -> int:
             assert_p38_provenance(base, provenance, errors)
         if args.phase == P39:
             assert_p39_provenance(base, provenance, report_index, errors)
+        if args.phase == P40:
+            assert_p40_provenance(base, provenance, errors)
     if errors:
         return print_errors(errors)
     print(f"PASS analysis provenance phase={args.phase}")
@@ -232,6 +235,122 @@ def assert_p39_provenance(
         p38_summary = require_json(p38_summary_path, errors, "P38 cross-scale summary")
         if p38_summary and report_index["coverage_totals"] != p38_summary.get("counts"):
             errors.append("P39 report_index coverage_totals must match P38 counts")
+
+
+def assert_p40_provenance(base: Path, provenance: dict[str, Any], errors: list[str]) -> None:
+    expected_flags = {
+        "analysis_only": True,
+        "audit_only": True,
+        "runtime_started": False,
+        "docker_started": False,
+        "valkey_gate_started": False,
+        "fault_injection_started": False,
+        "workload_started": False,
+        "unvalidated_logs_read": False,
+        "raw_log_sources_present": False,
+        "invented_values_present": False,
+    }
+    for key, expected in expected_flags.items():
+        if provenance.get(key) is not expected:
+            errors.append(f"analysis_provenance.json: P40 must assert {key}={expected}")
+
+    source_artifacts = provenance.get("source_artifacts")
+    if not isinstance(source_artifacts, list) or not source_artifacts:
+        errors.append("analysis_provenance.json: P40 source_artifacts must be non-empty objects")
+        source_artifacts = []
+    source_paths: set[str] = set()
+    for index, artifact in enumerate(source_artifacts, start=1):
+        if not isinstance(artifact, dict):
+            errors.append(f"P40 source_artifacts[{index}] must be an object")
+            continue
+        path_text = artifact.get("path")
+        sha = artifact.get("sha256")
+        if not isinstance(path_text, str) or not path_text:
+            errors.append(f"P40 source_artifacts[{index}] missing path")
+            continue
+        if path_text.endswith((".log", ".stdout", ".stderr")) or "/stdout/" in path_text or "/stderr/" in path_text:
+            errors.append(f"P40 source must not be a raw log/runtime stream: {path_text}")
+        path = ROOT / path_text
+        if not path.exists():
+            errors.append(f"P40 source artifact missing: {path_text}")
+        elif sha != sha256_file(path):
+            errors.append(f"P40 source artifact sha256 mismatch: {path_text}")
+        source_paths.add(path_text)
+
+    required_sources = {
+        "codex/phase_manifest.json",
+        "codex/status/phase_state.json",
+        "artifacts/coverage/strict_coverage_registry.json",
+        "artifacts/goal_loop_strict/STRICT_STAGE_JOURNAL.md",
+        f"artifacts/phases/{P38}/cross_scale_analysis_summary.json",
+        f"artifacts/phases/{P38}/analysis_provenance.json",
+        f"artifacts/phases/{P39}/report_index.json",
+        f"artifacts/phases/{P39}/report_quality_report.json",
+        f"artifacts/phases/{P39}/analysis_provenance.json",
+    }
+    for stage_id in [
+        "P27_STRICT_MATRIX_REBASE_HARNESS",
+        "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
+        "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+        "P30_MANAGEMENT_MATRIX_50_REAL",
+        "P31_MANAGEMENT_MATRIX_100_REAL",
+        "P32_MANAGEMENT_MATRIX_200_REAL",
+        "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+        "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+        "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+        "P36_FULL_FLOW_E2E_50_100_200_REAL",
+        "P37_200_PLUS_DRY_RUN_SUPPORT",
+        P38,
+        P39,
+    ]:
+        required_sources.update(
+            {
+                f"artifacts/gates/{stage_id}/gate_result.json",
+                f"artifacts/goal_loop_strict/{stage_id}/REVIEW.md",
+                f"artifacts/goal_loop_strict/{stage_id}/COMPLETION.md",
+                f"audit/{stage_id}/audit_decision.json",
+            }
+        )
+    missing_sources = sorted(required_sources - source_paths)
+    if missing_sources:
+        errors.append(f"P40 source_artifacts missing required sources: {missing_sources}")
+
+    output_artifacts = provenance.get("output_artifacts")
+    if not isinstance(output_artifacts, list):
+        errors.append("analysis_provenance.json: P40 output_artifacts must be a list")
+        output_artifacts = []
+    output_paths = {item.get("path") for item in output_artifacts if isinstance(item, dict)}
+    required_outputs = {
+        f"artifacts/phases/{P40}/phase_summary.json",
+        f"artifacts/phases/{P40}/final_strict_audit_report.json",
+        f"artifacts/phases/{P40}/final_coverage_verdict.json",
+        f"artifacts/phases/{P40}/final_artifact_manifest.json",
+        f"artifacts/phases/{P40}/final_no_bypass_report.json",
+        f"artifacts/phases/{P40}/final_report_quality_verdict.json",
+        f"artifacts/phases/{P40}/analysis_provenance.json",
+        f"artifacts/phases/{P40}/quant_summary.json",
+        f"artifacts/phases/{P40}/FINAL_STRICT_SUMMARY.md",
+    }
+    missing_outputs = sorted(required_outputs - output_paths)
+    if missing_outputs:
+        errors.append(f"P40 output_artifacts missing required outputs: {missing_outputs}")
+    for artifact in output_artifacts:
+        if not isinstance(artifact, dict):
+            errors.append("P40 output_artifacts entries must be objects")
+            continue
+        path_text = artifact.get("path")
+        if not isinstance(path_text, str) or not path_text:
+            errors.append("P40 output artifact missing path")
+            continue
+        path = ROOT / path_text
+        if not path.exists():
+            errors.append(f"P40 output artifact missing: {path_text}")
+            continue
+        if path_text.endswith("analysis_provenance.json"):
+            if artifact.get("sha256_status") != "SKIPPED_WITH_REASON" or not artifact.get("reason"):
+                errors.append("P40 self-referential analysis_provenance output hash must be skipped with reason")
+        elif artifact.get("sha256") != sha256_file(path):
+            errors.append(f"P40 output artifact sha256 mismatch: {path_text}")
 
 
 def assert_p38_provenance(base: Path, provenance: dict[str, Any], errors: list[str]) -> None:

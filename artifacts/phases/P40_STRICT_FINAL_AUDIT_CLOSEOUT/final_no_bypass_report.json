@@ -1,0 +1,32 @@
+{
+  "artifact_type": "final_no_bypass_report",
+  "audit_only": true,
+  "coverage_registry_gate_command": "python3 scripts/assert_coverage_registry.py --phase P40_STRICT_FINAL_AUDIT_CLOSEOUT --require-final-real-scales --require-dry-run-200-plus",
+  "manifest": {
+    "bytes": 211830,
+    "exists": true,
+    "path": "codex/phase_manifest.json",
+    "required": true,
+    "sha256": "b8b5b03cdd1b72af90ccf8155a0bd8e3a1241938f280fce10ef4ef83f09d2033"
+  },
+  "manual_gate_state_edit_check": "PASS",
+  "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
+  "phase_state": {
+    "bytes": 1524,
+    "exists": true,
+    "path": "codex/status/phase_state.json",
+    "required": true,
+    "sha256": "5ffdd1dd81a5925ceae870135ae07777af7dc67174001835f8850ace15943a89"
+  },
+  "report_quality_gate_command": "python3 scripts/assert_report_quality.py --phase P39_VISUAL_REPORT_QUALITY_GATE --report-index artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_index.json",
+  "runtime_started": false,
+  "schema_version": "v1",
+  "status": "PASS",
+  "strict_journal": {
+    "bytes": 20292,
+    "exists": true,
+    "path": "artifacts/goal_loop_strict/STRICT_STAGE_JOURNAL.md",
+    "required": true,
+    "sha256": "747e63fbfe79b53efda7e81abcc7e48d1c7c1774986e04d2f0325e955808ae44"
+  }
+}
