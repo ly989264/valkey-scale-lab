@@ -1,6 +1,15 @@
 runtime:
+  server_profile: one_b_dev
+  valkey:
+    io_threads: 1
+    io_threads_auto: false
+    io_threads_max_per_node: 2
+    io_threads_max_total: 256
+    log_format: text
   nodehost_strategy: density_limited
   max_nodehosts: 64
   nodehosts_per_az: 2
   max_logical_nodes_per_nodehost: 25
   nodehost_distribution: round_robin_by_az
+cluster:
+  node_memory_limit_mb: 64

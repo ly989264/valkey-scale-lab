@@ -123,7 +123,6 @@ cluster:
   replicas_per_shard: 0
   port_base: 12000
   cluster_bus_port_base: 22000
-  node_memory_limit_mb: 32
   non_ha_allowed: true
 scale_profile:
   dry_run_only: true
@@ -217,7 +216,8 @@ def resource_estimate(target: int, config_path: Path) -> dict[str, Any]:
         "resource_estimate_only": True,
         "estimates": {
             "logical_nodes": target,
-            "projected_node_memory_mb": target * 32,
+            "node_memory_limit_mb": 64,
+            "projected_node_memory_mb": target * 64,
             "projected_file_descriptors_min": max(1024, target * 4),
             "projected_client_ports": target,
             "projected_cluster_bus_ports": target,

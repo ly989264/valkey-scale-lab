@@ -1,0 +1,105 @@
+{
+  "bundle_name": "vslab-bundle-P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628-nodehost-az-a-01",
+  "node_count": 12,
+  "nodehost_id": "nodehost-az-a-01",
+  "nodes": [
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0002-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0002-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0002-primary",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0002-primary/valkey.log",
+      "logical_id": "shard-0002-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0002-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0006-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0006-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0006-primary",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0006-primary/valkey.log",
+      "logical_id": "shard-0006-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0006-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0010-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0010-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0010-primary",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0010-primary/valkey.log",
+      "logical_id": "shard-0010-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0010-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0014-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0014-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0014-primary",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0014-primary/valkey.log",
+      "logical_id": "shard-0014-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0014-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0018-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0018-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0018-primary",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0018-primary/valkey.log",
+      "logical_id": "shard-0018-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0018-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0022-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0022-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0022-primary",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0022-primary/valkey.log",
+      "logical_id": "shard-0022-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0022-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0001-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0001-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0001-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0001-replica-00/valkey.log",
+      "logical_id": "shard-0001-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0001-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0005-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0005-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0005-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0005-replica-00/valkey.log",
+      "logical_id": "shard-0005-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0005-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0009-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0009-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0009-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0009-replica-00/valkey.log",
+      "logical_id": "shard-0009-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0009-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0013-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0013-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0013-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0013-replica-00/valkey.log",
+      "logical_id": "shard-0013-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0013-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0017-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0017-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0017-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0017-replica-00/valkey.log",
+      "logical_id": "shard-0017-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0017-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/node_configs/p42_server_profile_scale_50/shard-0021-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0021-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0021-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0021-replica-00/valkey.log",
+      "logical_id": "shard-0021-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628/shard-0021-replica-00/valkey.pid"
+    }
+  ],
+  "run_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-p42_server_profile_scale_50-20260628",
+  "schema_version": "v1"
+}

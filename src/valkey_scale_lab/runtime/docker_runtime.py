@@ -25,6 +25,7 @@ from valkey_scale_lab.orchestrator.local import write_phase_summary as write_p10
 from valkey_scale_lab.planner.plan import build_cluster_plan
 from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
+from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields, valkey_config_lines
 from valkey_scale_lab.workload import CANONICAL_WINDOWS, run_windowed_workload
 
 PROJECT = "valkey-scale-lab"
@@ -66,6 +67,7 @@ P36_SCENARIO_50 = "strict_full_flow_50"
 P36_SCENARIO_100 = "strict_full_flow_100"
 P36_SCENARIO_200 = "strict_full_flow_200"
 P41_STAGE = "P41_NODEHOST_DENSITY_GLOBAL_CONFIG"
+P42_STAGE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
 P36_FULL_FLOW_STEPS = [
     "config_validate",
     "resource_preflight",
@@ -289,7 +291,7 @@ def create_scenario(
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
         ("P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "fault_workload_impact_analysis"),
         ("P26_FINAL_REPORT_REGRESSION", "final_report_regression_smoke"),
-    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None and _strict_full_flow_node_count(phase, scenario) is None and _p41_nodehost_density_node_count(phase, scenario) is None:
+    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None and _strict_full_flow_node_count(phase, scenario) is None and _p41_nodehost_density_node_count(phase, scenario) is None and _p42_server_profile_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
         run_id = _run_id(phase, scenario)
@@ -366,6 +368,7 @@ def create_scenario(
             node["container_ip"] = _container_ip(container_id, network_name)
             started.append(node)
         state = _runtime_state(phase, scenario, run_id, network_name, config, nodes)
+        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", phase, scenario, run_id, state)
         _write_state(Path(state_out), state)
         operations = _configure_cluster(nodes)
         if phase == "P04_CLUSTER_MANAGEMENT_OPS":
@@ -465,6 +468,7 @@ def _runtime_state(
     nodes: list[dict[str, Any]],
 ) -> dict[str, Any]:
     density = _legacy_container_density(config, nodes)
+    effective_profile = compute_effective_server_profile(config, nodehost_count=len(nodes))
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
@@ -481,9 +485,14 @@ def _runtime_state(
             "cluster_startup_parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
             "replica_replicate_parallelism": _replica_replicate_parallelism(),
             "cluster_meet_fanout": CLUSTER_MEET_FANOUT,
+            "server_profile": effective_profile,
+            "effective_io_threads": effective_profile["effective_io_threads"],
+            "effective_node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
+            "runtime_memory_limit_enforced": effective_profile["runtime_memory_limit_enforced"],
             **density,
         },
         "nodehost_density": density,
+        "effective_server_profile": effective_profile,
         "nodes": [
             {
                 "logical_id": node["logical_id"],
@@ -497,6 +506,7 @@ def _runtime_state(
                 "container_ip": node["container_ip"],
                 "pid": node["pid"],
                 "shard_id": node["shard_id"],
+                **node_effective_fields(effective_profile),
             }
             for node in nodes
         ],
@@ -527,6 +537,7 @@ def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
         or _strict_fault_matrix_node_count(phase, scenario) is not None
         or _strict_full_flow_node_count(phase, scenario) is not None
         or _p41_nodehost_density_node_count(phase, scenario) is not None
+        or _p42_server_profile_node_count(phase, scenario) is not None
         or (phase, scenario) in {
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
@@ -615,6 +626,22 @@ def _p41_nodehost_density_node_count(phase: str, scenario: str) -> int | None:
     return int(match.group(1))
 
 
+def _p42_server_profile_node_count(phase: str, scenario: str) -> int | None:
+    if phase != P42_STAGE:
+        return None
+    match = re.fullmatch(r"p42_server_profile_scale_(10|30|50|100|200)", scenario)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
+def _p42_server_profile_config_path(phase: str, scenario: str) -> str | None:
+    node_count = _p42_server_profile_node_count(phase, scenario)
+    if node_count is None:
+        return None
+    return f"templates/configs/scale_{node_count}.yaml"
+
+
 def _runtime_semantic_errors(config: dict[str, Any], *, phase: str, scenario: str) -> list[dict[str, Any]]:
     errors = validate_semantics(config)
     if not _is_exact_200_runtime_exception(config, phase=phase, scenario=scenario):
@@ -639,7 +666,7 @@ def _is_exact_200_runtime_exception(config: dict[str, Any], *, phase: str, scena
         _exact_200_stage_scenario_allowed(phase, scenario)
         and node_count == 200
         and config.get("profile_name") == "scale_200"
-        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE, P35_STAGE, P36_STAGE}
+        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE}
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
@@ -654,6 +681,7 @@ def _exact_200_stage_scenario_allowed(phase: str, scenario: str) -> bool:
         or (phase, scenario) == (P35_STAGE, P35_SCENARIO)
         or (phase, scenario) == (P36_STAGE, P36_SCENARIO_200)
         or _p41_nodehost_density_node_count(phase, scenario) == 200
+        or _p42_server_profile_node_count(phase, scenario) == 200
     )
 
 
@@ -691,6 +719,16 @@ def _create_process_scenario(
         if preflight.get("can_run") is not True:
             _write_strict_full_flow_blocked_artifact(artifacts, preflight, strict_full_flow)
             raise DockerRuntimeError(f"P36 resource preflight cannot support exactly {strict_full_flow.scale} nodes; stage is blocked")
+    p42_config_path = _p42_server_profile_config_path(phase, scenario)
+    if p42_config_path:
+        preflight = run_resource_preflight(
+            p42_config_path,
+            artifacts / "resource_preflight.json",
+            phase_id=phase,
+            scenario=scenario,
+        )
+        if preflight.get("can_run") is not True:
+            raise DockerRuntimeError(f"P42 resource preflight cannot support {scenario}; stage is blocked")
     with _timeline_span(setup_timeline, "pre_cleanup_by_label", "docker_cleanup", {"run_id": run_id}):
         cleanup_by_label(phase=phase, run_id=run_id)
     with _timeline_span(setup_timeline, "docker_network_create", "docker_network", {"network_name": network_name}):
@@ -755,6 +793,7 @@ def _create_process_scenario(
             ),
             config_prepare_details,
         )
+        _write_generated_valkey_configs_manifest(artifacts / "generated_valkey_configs_manifest.json", phase, scenario, run_id, nodes)
 
         process_start_details: dict[str, Any] = {}
         _run_timed_step(
@@ -791,6 +830,7 @@ def _create_process_scenario(
         )
         state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
+        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", phase, scenario, run_id, state)
         with _timeline_span(setup_timeline, "state_write_before_cluster", "state_write", {"path": state_out.as_posix()}):
             _write_state(state_out, state)
         operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
@@ -806,6 +846,7 @@ def _create_process_scenario(
             _write_runtime_timing_breakdown(timing_path, phase, scenario, run_id, nodes, timings, status="PASS")
         state["runtime"]["timing_breakdown_path"] = timing_path.as_posix()
         state["runtime"]["timings"] = _timing_entries(timings)
+        _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", phase, scenario, run_id, state)
         with _timeline_span(setup_timeline, "state_write_after_cluster", "state_write", {"path": state_out.as_posix()}):
             _write_state(state_out, state)
         if strict_management:
@@ -967,6 +1008,10 @@ def _process_bundle_name(run_id: str, nodehost_id: str) -> str:
 def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any]) -> str:
     data_dir = _process_data_dir(str(node["run_id"]), str(node["logical_id"]))
     log_file = f"{data_dir}/valkey.log"
+    profile = {
+        "effective_io_threads": int(node.get("effective_io_threads", 1) or 1),
+        "effective_node_memory_limit_mb": int(node.get("effective_node_memory_limit_mb", 0) or 0),
+    }
     return "\n".join(
         [
             f"port {node['client_port']}",
@@ -980,6 +1025,7 @@ def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any]) -> str:
             f"cluster-announce-port {node['client_port']}",
             f"cluster-announce-bus-port {node['cluster_bus_port']}",
             "appendonly no",
+            *valkey_config_lines(profile),
             f"dir {data_dir}",
             "daemonize yes",
             f"pidfile {data_dir}/valkey.pid",
@@ -1000,7 +1046,8 @@ def _prepare_process_node_metadata(node: dict[str, Any], nodehost: dict[str, Any
     config_file = f"{data_dir}/valkey.conf"
     log_file = f"{data_dir}/valkey.log"
     pid_file = f"{data_dir}/valkey.pid"
-    local_config_dir = artifacts / "node_configs"
+    scenario = str(node.get("scenario", ""))
+    local_config_dir = artifacts / "node_configs" / scenario if str(node.get("phase")) == P42_STAGE else artifacts / "node_configs"
     local_config_dir.mkdir(parents=True, exist_ok=True)
     local_config = local_config_dir / f"{logical_id}.conf"
     local_config.write_text(_process_config_text(node, nodehost), encoding="utf-8")
@@ -1382,6 +1429,7 @@ def _process_runtime_state(
     snapshots: list[dict[str, Any]],
 ) -> dict[str, Any]:
     density = _runtime_density_from_nodehosts(config, nodehosts, nodes)
+    effective_profile = compute_effective_server_profile(config, nodehost_count=len(nodehosts))
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
@@ -1401,9 +1449,14 @@ def _process_runtime_state(
             "cluster_startup_parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
             "replica_replicate_parallelism": _replica_replicate_parallelism(),
             "cluster_meet_fanout": CLUSTER_MEET_FANOUT,
+            "server_profile": effective_profile,
+            "effective_io_threads": effective_profile["effective_io_threads"],
+            "effective_node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
+            "runtime_memory_limit_enforced": effective_profile["runtime_memory_limit_enforced"],
             **density,
         },
         "nodehost_density": density,
+        "effective_server_profile": effective_profile,
         "config_sources": config.get("_config_sources", {}),
         "nodehosts": [
             {
@@ -1440,6 +1493,7 @@ def _process_runtime_state(
                 "container_ip": node["nodehost_container_ip"],
                 "nodehost_container_name": node["nodehost_container_name"],
                 "nodehost_container_ip": node["nodehost_container_ip"],
+                **node_effective_fields(effective_profile),
             }
             for node in nodes
         ],
@@ -1468,6 +1522,58 @@ def _runtime_density_from_nodehosts(config: dict[str, Any], nodehosts: list[dict
 def _write_state(path: Path, state: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_effective_server_profile_artifact(path: Path, phase: str, scenario: str, run_id: str, state: dict[str, Any]) -> None:
+    profile = dict(state.get("effective_server_profile") or state.get("runtime", {}).get("server_profile") or {})
+    profile.update(
+        {
+            "schema_version": "v1",
+            "artifact_type": "effective_server_profile",
+            "phase_id": phase,
+            "scenario_name": scenario,
+            "run_id": run_id,
+            "status": "PASS" if profile.get("io_thread_budget_status") in {"PASS", "DEGRADED_WITH_REASON"} else "FAIL",
+            "node_count": len(state.get("nodes", [])),
+            "config_sources": state.get("config_sources", {}),
+        }
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(profile, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_generated_valkey_configs_manifest(path: Path, phase: str, scenario: str, run_id: str, nodes: list[dict[str, Any]]) -> None:
+    entries: list[dict[str, Any]] = []
+    for node in nodes:
+        config_path = Path(str(node.get("config_artifact_file", "")))
+        text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+        effective_io = int(node.get("effective_io_threads", 1) or 1)
+        memory_mb = int(node.get("effective_node_memory_limit_mb", 0) or 0)
+        entries.append(
+            {
+                "logical_id": node.get("logical_id", "MISSING"),
+                "config_artifact_file": config_path.as_posix() if config_path else "MISSING",
+                "effective_io_threads": effective_io,
+                "effective_node_memory_limit_mb": memory_mb,
+                "io_threads_line_present": f"io-threads {effective_io}" in text if effective_io > 1 else "SKIPPED_WITH_REASON",
+                "io_threads_line_required": effective_io > 1,
+                "maxmemory_line_present": f"maxmemory {memory_mb}mb" in text if memory_mb > 0 else False,
+                "runtime_memory_limit_enforced": bool(node.get("runtime_memory_limit_enforced")),
+                "runtime_memory_limit_method": node.get("runtime_memory_limit_method", "MISSING"),
+            }
+        )
+    report = {
+        "schema_version": "v1",
+        "artifact_type": "generated_valkey_configs_manifest",
+        "phase_id": phase,
+        "scenario_name": scenario,
+        "run_id": run_id,
+        "status": "PASS" if entries and all((entry["io_threads_line_present"] is True or entry["io_threads_line_required"] is False) and entry["maxmemory_line_present"] for entry in entries) else "FAIL",
+        "node_count": len(entries),
+        "entries": entries,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _append_p10_orchestrator_cleanup(artifacts_dir: Path, resources_remaining: list[dict[str, Any]]) -> None:
@@ -1920,15 +2026,19 @@ def _node_specs(config: dict[str, Any], phase: str, scenario: str, run_id: str |
     replicas = int(cluster["replicas_per_shard"])
     specs: list[dict[str, Any]] = []
     ordinal = 0
+    effective_profile = compute_effective_server_profile(config)
+    effective_node_fields = node_effective_fields(effective_profile)
     for shard in range(shards):
         shard_id = f"shard-{shard:04d}"
         specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, "primary", azs[shard % len(azs)], host_ids[ordinal % len(host_ids)], run_id))
+        specs[-1].update(effective_node_fields)
         ordinal += 1
     for shard in range(shards):
         for replica in range(replicas):
             shard_id = f"shard-{shard:04d}"
             az = azs[(shard + replica + 1) % len(azs)]
             specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, f"replica-{replica:02d}", az, host_ids[ordinal % len(host_ids)], run_id))
+            specs[-1].update(effective_node_fields)
             ordinal += 1
     return specs
 
@@ -1998,6 +2108,14 @@ def _start_container(node: dict[str, Any], network_name: str, image: str, phase:
         "--cluster-announce-bus-port",
         "16379",
     ]
+    for line in valkey_config_lines(
+        {
+            "effective_io_threads": int(node.get("effective_io_threads", 1) or 1),
+            "effective_node_memory_limit_mb": int(node.get("effective_node_memory_limit_mb", 0) or 0),
+        }
+    ):
+        key, value = line.split(maxsplit=1)
+        args.extend([f"--{key}", value])
     return run_docker(args, timeout=180).stdout.strip()
 
 
@@ -3606,6 +3724,9 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
     p41_count = _p41_nodehost_density_node_count(phase, scenario)
     if p41_count is not None:
         return node_count == p41_count
+    p42_count = _p42_server_profile_node_count(phase, scenario)
+    if p42_count is not None:
+        return node_count == p42_count
     expected = {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},

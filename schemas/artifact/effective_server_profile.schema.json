@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "effective_server_profile",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "status",
+    "server_profile",
+    "requested_io_threads",
+    "effective_io_threads",
+    "requested_node_memory_limit_mb",
+    "effective_node_memory_limit_mb",
+    "io_thread_budget_status",
+    "memory_budget_status"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "effective_server_profile"},
+    "phase_id": {"type": "string"},
+    "run_id": {"type": "string"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "DEGRADED_WITH_REASON", "SKIPPED_WITH_REASON"]},
+    "server_profile": {"type": "string", "enum": ["correctness", "one_b_dev", "one_b_perf"]},
+    "requested_io_threads": {"type": "integer", "minimum": 1},
+    "effective_io_threads": {"type": "integer", "minimum": 1},
+    "io_threads_auto": {"type": "boolean"},
+    "io_threads_max_per_node": {"type": "integer", "minimum": 1},
+    "io_threads_max_total": {"type": "integer", "minimum": 1},
+    "total_valkey_threads": {"type": "integer", "minimum": 1},
+    "requested_node_memory_limit_mb": {"type": "integer", "minimum": 1},
+    "effective_node_memory_limit_mb": {"type": "integer", "minimum": 1},
+    "io_thread_budget_status": {"type": "string"},
+    "memory_budget_status": {"type": "string"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,36 @@
+{
+  "artifact_type": "effective_server_profile",
+  "created_at": "2026-07-06T00:00:00Z",
+  "effective_io_threads": 1,
+  "effective_node_memory_limit_mb": 64,
+  "host_cpu_count": 10,
+  "io_thread_budget_reason": [
+    "within per-node and total io-thread budget"
+  ],
+  "io_thread_budget_status": "PASS",
+  "io_threads_auto": false,
+  "io_threads_auto_candidate": "SKIPPED_WITH_REASON",
+  "io_threads_max_per_node": 2,
+  "io_threads_max_total": 256,
+  "log_format": "text",
+  "logical_node_count": 100,
+  "memory_budget_status": "PENDING_PREFLIGHT",
+  "node_count": 100,
+  "nodehost_count": 4,
+  "phase_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "requested_io_threads": 1,
+  "requested_node_memory_limit_mb": 64,
+  "run_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-server-profile-20260706",
+  "runtime_memory_limit_enforced": true,
+  "runtime_memory_limit_method": "valkey_maxmemory",
+  "scenario_name": "p42_server_profile_scale_100",
+  "schema_version": "v1",
+  "server_profile": "one_b_dev",
+  "stage_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+  "status": "PASS",
+  "total_valkey_threads": 100
+}

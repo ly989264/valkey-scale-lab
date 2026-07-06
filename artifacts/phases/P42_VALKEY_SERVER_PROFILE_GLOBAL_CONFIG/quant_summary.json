@@ -1,0 +1,50 @@
+{
+  "artifact_refs": [
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/effective_server_profile.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/config_validation_report.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/resource_preflight.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/cluster_plan.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/coverage_ledger.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/dry_run_gt_200_projection.json"
+  ],
+  "artifact_type": "quant_summary",
+  "created_at": "2026-07-06T00:00:00Z",
+  "metrics": [
+    {
+      "name": "effective_io_threads",
+      "status": "PASS",
+      "unit": "threads_per_node",
+      "value": 1
+    },
+    {
+      "name": "effective_node_memory_limit_mb",
+      "status": "PASS",
+      "unit": "MiB",
+      "value": 64
+    }
+  ],
+  "missing_data": [],
+  "phase_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-server-profile-20260706",
+  "runtime_claims": {
+    "fault_runtime_claimed": false,
+    "management_runtime_claimed": false,
+    "real_valkey_claimed": true
+  },
+  "schema_version": "v1",
+  "source_artifacts": [
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/effective_server_profile.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/config_validation_report.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/resource_preflight.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/cluster_plan.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/coverage_ledger.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/dry_run_gt_200_projection.json"
+  ],
+  "stage_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+  "status": "PASS",
+  "summary": "P42 server-profile quantitative summary derived from validation, preflight, generated config, real evidence, and projection artifacts."
+}

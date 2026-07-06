@@ -79,6 +79,42 @@
         "dry_run": {
           "type": "boolean"
         },
+        "server_profile": {
+          "type": "string",
+          "enum": [
+            "correctness",
+            "one_b_dev",
+            "one_b_perf"
+          ]
+        },
+        "valkey": {
+          "type": "object",
+          "properties": {
+            "io_threads": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "io_threads_auto": {
+              "type": "boolean"
+            },
+            "io_threads_max_per_node": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "io_threads_max_total": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "log_format": {
+              "type": "string",
+              "enum": [
+                "text",
+                "json"
+              ]
+            }
+          },
+          "additionalProperties": true
+        },
         "nodehost_strategy": {
           "type": "string",
           "enum": [

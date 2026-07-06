@@ -348,6 +348,12 @@ def node_processes_from_state(state: dict[str, Any]) -> list[dict[str, Any]]:
         "data_dir",
         "log_file",
         "config_file",
+        "config_artifact_file",
+        "effective_server_profile",
+        "effective_io_threads",
+        "effective_node_memory_limit_mb",
+        "runtime_memory_limit_enforced",
+        "runtime_memory_limit_method",
     ]
     return [{key: node.get(key, "MISSING") for key in keys} for node in state.get("nodes", [])]
 
@@ -455,7 +461,7 @@ def main() -> int:
                 state_load_started = time.monotonic()
                 state = load_state(state_path)
                 record_timing(accounting_timings, "state_load", state_load_started, details={"path": str(state_path)})
-                if args.phase == "P30_MANAGEMENT_MATRIX_50_REAL":
+                if args.phase in {"P30_MANAGEMENT_MATRIX_50_REAL", "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"}:
                     run_state_path = artifact_dir / "run_state.json"
                     if not run_state_path.exists():
                         write_json(

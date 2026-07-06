@@ -25,7 +25,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "e94d8b1d953f7496b99c35bfd1502121109474b5a26c728297860b2012b305a5"
+      "sha256": "055be29c4a1fd715fcb0463ce0699416dc6c9766c212855d99e72b2e8dcb33b4"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -344,6 +344,10 @@
       "sha256": "0b9a87f95edf14ab22f10588ad8cb68f9c3e9b9217a3936684c0f9dce0705055"
     },
     {
+      "path": "docs/codex/goal-loop/stages/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG.md",
+      "sha256": "1e4891cd45610e910598556b09d9fb2f5dbd2b8a6675576b584e80ad4de2d14d"
+    },
+    {
       "path": "docs/codex/goal-loop/templates/BLOCKED_STAGE_TEMPLATE.md",
       "sha256": "e18da55b4f638ec0a3b0f6197a91c9aed4c47ef88f633c35a1c26b6c0ea42f1e"
     },
@@ -406,6 +410,10 @@
     {
       "path": "schemas/artifact/csv_export_index.schema.json",
       "sha256": "a910674b2aa04e9723184e91e692a415f2c9fd8166ae8d956877f1106dfbaf5b"
+    },
+    {
+      "path": "schemas/artifact/effective_server_profile.schema.json",
+      "sha256": "b80b469672f2d7f7ec1b9f76bdba40bd3164bd67c97209a6418a6d4d49423b26"
     },
     {
       "path": "schemas/artifact/env_info.schema.json",
@@ -733,7 +741,7 @@
     },
     {
       "path": "schemas/config/run_config.schema.json",
-      "sha256": "463a2c054e78e6f6a5e79930c99fe1e7c92b448479332ddb2bd314cebb296c2f"
+      "sha256": "9293edefbdbf695d32543ab8bb8849d11898edb077ba9c10b21d8b75cd24b104"
     },
     {
       "path": "schemas/loop_engineering/command_log_entry.schema.json",
@@ -816,6 +824,10 @@
       "sha256": "1a71ed510170639538613d078361181cf07dec09b40a86bb02a0dcb34eb67573"
     },
     {
+      "path": "scripts/assert_io_thread_memory_evidence.py",
+      "sha256": "0e45a49b0f15b6af112e286c446deeb0413b378f3afe9fd5903cfd934e0b1ce5"
+    },
+    {
       "path": "scripts/assert_management_matrix_strict.py",
       "sha256": "a41fc36595f788f675e38fb169e91f4e48637d6591c72e4a69d3e1ba68b05dd4"
     },
@@ -830,6 +842,10 @@
     {
       "path": "scripts/assert_no_nodehost_partial_coverage.py",
       "sha256": "a061fc306a6e2c4c027f0f65208676bfa460e717fbb4a3e899fd9c7a24b3e8dd"
+    },
+    {
+      "path": "scripts/assert_no_server_profile_partial_coverage.py",
+      "sha256": "d62d978fe8fbbffc656608e6b86b7ad45d74895400595a5fab04f06ba0c21a78"
     },
     {
       "path": "scripts/assert_nodehost_density_config.py",
@@ -854,6 +870,10 @@
     {
       "path": "scripts/assert_runtime_nodehost_distribution.py",
       "sha256": "7b922800fb87c6aa2b76f94df1239ef1ac5b99166778b5faa306277d6084bdd6"
+    },
+    {
+      "path": "scripts/assert_server_profile_config.py",
+      "sha256": "0a4491102fa9b60744ba204531b5bb54033e9b90e741803c4d6a7cb25aa2f246"
     },
     {
       "path": "scripts/assert_split_brain_report.py",
@@ -933,7 +953,7 @@
     },
     {
       "path": "scripts/p37_200_plus_dry_run_artifacts.py",
-      "sha256": "901e71740f751711293001634288c7d8583e15f27d74dd84c84acfda9b7fd039"
+      "sha256": "d4a6b1c3391604a9fc0f72ee2f0f460264905c2788a0480751ceb5720aef2ace"
     },
     {
       "path": "scripts/p39_visual_report.py",
@@ -946,6 +966,10 @@
     {
       "path": "scripts/p41_nodehost_density_artifacts.py",
       "sha256": "6dc4d138774961d8e8ae597ecf2824c76fcbc2aa57f508b7942164ad317e88d3"
+    },
+    {
+      "path": "scripts/p42_server_profile_artifacts.py",
+      "sha256": "b9b0315e53d9ec8c01d186f8cfd1a04d8353f629caddff2b4edbb66f21020dd7"
     },
     {
       "path": "scripts/render_audit_report.py",
@@ -981,7 +1005,7 @@
     },
     {
       "path": "scripts/valkey_e2e_gate.py",
-      "sha256": "c67a7f99b4699e3f256d2c1cdfd2304668ee96f310df2923d2471fa29f933a84"
+      "sha256": "d7f973ae73ca87b4c5d72eb751089dce764c917dc14e5c673c846797d3416b5c"
     },
     {
       "path": "scripts/valkey_probe_lib.py",
@@ -1017,27 +1041,27 @@
     },
     {
       "path": "templates/configs/scale_10.yaml",
-      "sha256": "c3a4ae9e193bd7e411ad8444b0e0f10b4074fde2b70d2e8fe424ceee10d85bcb"
+      "sha256": "09d9b0c127bb6b344787338143ecbecae309f22450cf5dceec1212d8752afa55"
     },
     {
       "path": "templates/configs/scale_100.yaml",
-      "sha256": "518bf796b89ae66ec10dcef02c007f043a52feff4dde5d8076606ba4cb09529d"
+      "sha256": "79c3973d1120847adaad8059500976b20e73ccc439e4b5c793d0aff14069d93d"
     },
     {
       "path": "templates/configs/scale_1000_dryrun_optin.yaml",
-      "sha256": "fe68b7983d8fd34192cf754096f17eb17362a4ab64674b662b376dbc7b88b0ad"
+      "sha256": "4da521a4340fd15c4a0300b4d3f9daa6afa0f97fc90b45491bfb8e604ef8f9b5"
     },
     {
       "path": "templates/configs/scale_200.yaml",
-      "sha256": "dd484c0922e8946629221a37fcf30704a677bd52f62fc8e50de8589641423455"
+      "sha256": "fcd00d3a316dcb1f64f18225ea9e31fdec80087fc5efb1be04b37b2d0e47fa25"
     },
     {
       "path": "templates/configs/scale_30.yaml",
-      "sha256": "2fadfe2cacec2adf2517fef25bb7e65e1ae9b5254b30afda4bc063cc8bb188b5"
+      "sha256": "01ad9ccf7733cabb0430608dae90f707edc38dd32cf2eac8acecd2a3cf035e59"
     },
     {
       "path": "templates/configs/scale_50.yaml",
-      "sha256": "6bdf843f88d64b3dcc7022ce76b2a1d49ed58e96820dc7cc42e5ee9568b67a17"
+      "sha256": "7fec7ee242b0405f773990ba48e337ff1ee31da0c8f317597991a4b936927ffd"
     },
     {
       "path": "templates/configs/single_mac_6node.yaml",
@@ -1048,6 +1072,6 @@
       "sha256": "5471eff099bd2cb0940e0500e1b98ff5c0b69095e9c7ec342fb5df3034e7d2c3"
     }
   ],
-  "updated_by": "P27_STRICT_MATRIX_REBASE_HARNESS",
-  "update_reason": "Strict P27-P40 harness rebase: added strict stage discovery, fail-closed assertions, strict schemas, and strict review enforcement."
+  "updated_by": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+  "update_reason": "P42 server profile global config: added profile schemas/assertions and refreshed hashes after strengthening locked harness files."
 }

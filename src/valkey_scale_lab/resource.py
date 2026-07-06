@@ -13,6 +13,7 @@ from typing import Any
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.validation import load_effective_config, validate_semantics
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
+from valkey_scale_lab.server_profile import compute_effective_server_profile
 
 CREATED_AT = "2026-06-28T00:00:00Z"
 P21_STAGE = "P21_FAILOVER_LATENCY_CURVE_200"
@@ -22,7 +23,8 @@ P35_STAGE = "P35_FAULT_FAILOVER_MATRIX_200_REAL"
 P35_SCENARIO = "strict_fault_matrix_200"
 P36_STAGE = "P36_FULL_FLOW_E2E_50_100_200_REAL"
 P36_SCENARIO = "strict_full_flow_200"
-EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE, P36_STAGE}
+P42_STAGE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
+EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE}
 
 
 class ResourcePreflightError(RuntimeError):
@@ -91,7 +93,31 @@ def run_resource_preflight(
     docker_details = _docker_details()
     checks.append(_check("docker_available", docker_details["available"], docker_details))
     checks.append(_check("cpu_count", (os.cpu_count() or 0) >= 2, {"cpu_count": os.cpu_count() or "MISSING"}))
-    checks.append(_memory_check(node_count, int(config["cluster"].get("node_memory_limit_mb") or 0)))
+    effective_profile = compute_effective_server_profile(
+        config,
+        nodehost_count=int((density_plan or {}).get("actual_nodehost_count", 0) or 0) or None,
+    )
+    memory_check = _memory_check(
+        node_count,
+        int(effective_profile["effective_node_memory_limit_mb"]),
+        density_plan=density_plan,
+    )
+    effective_profile["memory_budget_status"] = memory_check["status"]
+    effective_profile["memory_budget_reason"] = memory_check["details"].get("reason", memory_check["details"].get("status_note", "within memory budget"))
+    checks.append(memory_check)
+    checks.append(
+        _check(
+            "io_thread_budget",
+            effective_profile["io_thread_budget_status"] in {"PASS", "DEGRADED_WITH_REASON"},
+            {
+                "requested_io_threads": effective_profile["requested_io_threads"],
+                "effective_io_threads": effective_profile["effective_io_threads"],
+                "total_valkey_threads": effective_profile["total_valkey_threads"],
+                "io_threads_max_total": effective_profile["io_threads_max_total"],
+                "reason": effective_profile["io_thread_budget_reason"],
+            },
+        )
+    )
     checks.append(_disk_check(Path("artifacts")))
     checks.append(_total_port_count_check(config, node_count))
     checks.append(_port_check(int(config["cluster"]["port_base"]), node_count, "client_ports"))
@@ -123,7 +149,26 @@ def run_resource_preflight(
             "config_marker_phase": config.get("scale_profile", {}).get("bounded_exception_phase", "MISSING"),
         },
         "host": _host_facts(),
-        "resource_estimates": _resource_estimates(node_count, int(config["cluster"].get("node_memory_limit_mb") or 0)),
+        "resource_estimates": _resource_estimates(
+            node_count,
+            int(effective_profile["effective_node_memory_limit_mb"]),
+            density_plan=density_plan,
+        ),
+        "server_profile": effective_profile,
+        "requested_io_threads": effective_profile["requested_io_threads"],
+        "effective_io_threads": effective_profile["effective_io_threads"],
+        "requested_node_memory_limit_mb": effective_profile["requested_node_memory_limit_mb"],
+        "effective_node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
+        "io_thread_budget_status": effective_profile["io_thread_budget_status"],
+        "memory_budget_status": effective_profile["memory_budget_status"],
+        "node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
+        "projected_node_memory_mb": node_count * int(effective_profile["effective_node_memory_limit_mb"]),
+        "projected_nodehost_memory_mb": _projected_nodehost_memory(
+            int(effective_profile["effective_node_memory_limit_mb"]),
+            density_plan,
+            node_count,
+        ),
+        "host_available_memory_mb": _host_available_memory_mb(),
         "nodehost_density": (density_plan or {}).get("nodehost_density", {}),
         "nodehost_density_plan": density_plan or {
             "status": "FAIL",
@@ -197,7 +242,7 @@ def _exact_200_phase_scenario_allowed(phase_id: str, scenario: str) -> bool:
         (P32_STAGE, P32_SCENARIO),
         (P35_STAGE, P35_SCENARIO),
         (P36_STAGE, P36_SCENARIO),
-    }
+    } or (phase_id == P42_STAGE and scenario == "p42_server_profile_scale_200")
 
 
 def _semantic_errors_for_preflight(config: dict[str, Any], *, allow_exact_200: bool) -> list[dict[str, Any]]:
@@ -250,13 +295,24 @@ def _docker_details() -> dict[str, Any]:
     }
 
 
-def _memory_check(node_count: int, memory_limit_mb: int) -> dict[str, Any]:
-    required_mb = max(node_count * max(memory_limit_mb, 1), node_count * 32)
-    # Mac Docker memory limits are owned by Docker Desktop and not always visible here, so this is a conservative floor.
+def _memory_check(node_count: int, memory_limit_mb: int, *, density_plan: dict[str, Any] | None = None) -> dict[str, Any]:
+    required_mb = node_count * max(memory_limit_mb, 1)
+    host_available = _host_available_memory_mb()
+    projected_nodehost = _projected_nodehost_memory(memory_limit_mb, density_plan, node_count)
+    ok = isinstance(host_available, int) and required_mb <= host_available
     return _check(
         "memory_budget",
-        required_mb <= 8192,
-        {"required_memory_mb": required_mb, "node_memory_limit_mb": memory_limit_mb, "status_note": "host-visible estimate"},
+        ok,
+        {
+            "required_memory_mb": required_mb,
+            "node_count_times_node_memory_limit_mb": required_mb,
+            "node_memory_limit_mb": memory_limit_mb,
+            "projected_nodehost_memory_mb": projected_nodehost,
+            "host_available_memory_mb": host_available,
+            "can_run": ok,
+            "reason": "required memory exceeds host available memory" if not ok else "within host-visible memory budget",
+            "status_note": "host-visible estimate",
+        },
     )
 
 
@@ -280,15 +336,41 @@ def _host_facts() -> dict[str, Any]:
     }
 
 
-def _resource_estimates(node_count: int, memory_limit_mb: int) -> dict[str, Any]:
-    required_memory_mb = max(node_count * max(memory_limit_mb, 1), node_count * 32)
+def _resource_estimates(node_count: int, memory_limit_mb: int, *, density_plan: dict[str, Any] | None = None) -> dict[str, Any]:
+    required_memory_mb = node_count * max(memory_limit_mb, 1)
     return {
         "node_count": node_count,
-        "memory_per_node_mb": max(memory_limit_mb, 32),
+        "memory_per_node_mb": memory_limit_mb,
         "required_memory_mb": required_memory_mb,
+        "node_count_times_node_memory_limit_mb": required_memory_mb,
+        "projected_nodehost_memory_mb": _projected_nodehost_memory(memory_limit_mb, density_plan, node_count),
+        "host_available_memory_mb": _host_available_memory_mb(),
         "required_disk_free_mb": 1024,
         "workload_overhead": "low_nonzero_p21_profile" if node_count == 200 else "standard_profile",
     }
+
+
+def _projected_nodehost_memory(memory_limit_mb: int, density_plan: dict[str, Any] | None, node_count: int) -> dict[str, int]:
+    counts = (density_plan or {}).get("nodehost_density", {}).get("logical_nodes_per_nodehost", {})
+    if not isinstance(counts, dict) or not counts:
+        counts = {"single-nodehost-projection": node_count}
+    return {str(key): int(value) * int(memory_limit_mb) for key, value in counts.items()}
+
+
+def _host_available_memory_mb() -> int | str:
+    try:
+        if platform.system() == "Darwin":
+            proc = subprocess.run(["sysctl", "-n", "hw.memsize"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+            if proc.returncode == 0 and proc.stdout.strip().isdigit():
+                return int(proc.stdout.strip()) // (1024 * 1024)
+        page_size = os.sysconf("SC_PAGE_SIZE")
+        try:
+            pages = os.sysconf("SC_AVPHYS_PAGES")
+        except (ValueError, OSError, AttributeError):
+            pages = os.sysconf("SC_PHYS_PAGES")
+        return int(page_size * pages) // (1024 * 1024)
+    except Exception:
+        return "MISSING"
 
 
 def _total_port_count_check(config: dict[str, Any], node_count: int) -> dict[str, Any]:

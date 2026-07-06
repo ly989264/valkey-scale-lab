@@ -14,6 +14,7 @@ from valkey_scale_lab.config.validation import (
     validate_semantics,
 )
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
+from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields
 
 PHASE_ID = "P02_PLANNER"
 RUN_ID = "P02_PLANNER-local-20260628"
@@ -118,6 +119,9 @@ def build_cluster_plan(
         density_plan = build_nodehost_density_plan(config=config, nodes=planned_nodes, run_id=RUN_ID, assign=True)
     except NodehostDensityError as exc:
         raise PlannerError(str(exc)) from exc
+    effective_profile = compute_effective_server_profile(config, nodehost_count=int(density_plan.get("actual_nodehost_count", 0) or 0))
+    for node in planned_nodes:
+        node.update(node_effective_fields(effective_profile))
     nodehosts = density_plan["nodehosts"]
     density = density_plan["nodehost_density"]
     capacity = _check_host_capacity(config, planned_nodes)
@@ -194,6 +198,10 @@ def build_cluster_plan(
             "container_strategy": "density_limited_nodehosts_with_valkey_processes",
             "valkey_image": runtime["valkey_image"],
             "dry_run": dry_run,
+            "server_profile": effective_profile,
+            "effective_io_threads": effective_profile["effective_io_threads"],
+            "effective_node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
+            "runtime_memory_limit_enforced": effective_profile["runtime_memory_limit_enforced"],
             **density,
         },
         "directories": {
@@ -201,6 +209,7 @@ def build_cluster_plan(
             "state_dir": f"artifacts/runtime/{RUN_ID}/state",
         },
         "nodehost_density": density,
+        "effective_server_profile": effective_profile,
         "config_sources": config.get("_config_sources", {}),
         "nodehosts": nodehosts,
         "nodes": planned_nodes,

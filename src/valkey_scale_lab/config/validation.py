@@ -11,6 +11,7 @@ from valkey_scale_lab import __version__
 from valkey_scale_lab.config.schema import load_schema, validate
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan, density_runtime_config
+from valkey_scale_lab.server_profile import normalize_server_profile_config
 
 PHASE_ID = "P01_CONFIG_SCHEMA"
 RUN_ID = "P01_CONFIG_SCHEMA-local-20260628"
@@ -29,6 +30,14 @@ BUILT_IN_DEFAULTS: dict[str, Any] = {
         "provider": "docker",
         "sandbox_mode": "container_namespace",
         "dry_run": False,
+        "server_profile": "one_b_dev",
+        "valkey": {
+            "io_threads": 1,
+            "io_threads_auto": False,
+            "io_threads_max_per_node": 2,
+            "io_threads_max_total": 256,
+            "log_format": "text",
+        },
         "nodehost_strategy": "density_limited",
         "max_nodehosts": 64,
         "nodehosts_per_az": 2,
@@ -36,6 +45,7 @@ BUILT_IN_DEFAULTS: dict[str, Any] = {
         "nodehost_distribution": "round_robin_by_az",
     },
     "workload": {"enabled": False},
+    "cluster": {"node_memory_limit_mb": 64},
     "faults": [],
     "scale_profile": {},
     "metadata": {},
@@ -101,7 +111,20 @@ def validate_config_file(
         "valkey_version_required_prefix": "9.1.",
         "config_sources": normalized.get("_config_sources", {}) if normalized else {},
         "nodehost_density": _nodehost_density_report(normalized) if normalized else {},
+        "server_profile": normalized.get("_effective_server_profile", {}) if normalized else {},
     }
+    if normalized:
+        effective_profile = normalized.get("_effective_server_profile", {})
+        report.update(
+            {
+                "requested_io_threads": effective_profile.get("requested_io_threads", "MISSING"),
+                "effective_io_threads": effective_profile.get("effective_io_threads", "MISSING"),
+                "requested_node_memory_limit_mb": effective_profile.get("requested_node_memory_limit_mb", "MISSING"),
+                "effective_node_memory_limit_mb": effective_profile.get("effective_node_memory_limit_mb", "MISSING"),
+                "io_thread_budget_status": effective_profile.get("io_thread_budget_status", "MISSING"),
+                "memory_budget_status": effective_profile.get("memory_budget_status", "MISSING"),
+            }
+        )
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
 
@@ -205,6 +228,8 @@ def normalize_config(
     runtime.setdefault("provider", "docker")
     runtime.setdefault("sandbox_mode", "container_namespace")
     runtime.setdefault("dry_run", False)
+    runtime.setdefault("server_profile", "one_b_dev")
+    runtime.setdefault("valkey", {})
     runtime.setdefault("nodehost_strategy", "density_limited")
     runtime.setdefault("max_nodehosts", 64)
     runtime.setdefault("nodehosts_per_az", 2)
@@ -216,6 +241,7 @@ def normalize_config(
     if workload.get("enabled"):
         workload.setdefault("pipeline", 1)
         workload.setdefault("timing", "all_run")
+    normalize_server_profile_config(config)
     config["_config_sources"] = {
         "merge_order": ["built-in defaults", "global config", "scenario config", "CLI override"],
         "built_in_defaults": "valkey_scale_lab.config.validation.BUILT_IN_DEFAULTS",
@@ -299,6 +325,20 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
         errors.append(_err("RUNTIME_PROVIDER", "runtime.provider must be docker"))
     if runtime.get("sandbox_mode") not in {"container_namespace", "sandbox_proxy"}:
         errors.append(_err("SANDBOX_MODE", "runtime.sandbox_mode must be container_namespace or sandbox_proxy"))
+    if runtime.get("server_profile") not in {"correctness", "one_b_dev", "one_b_perf"}:
+        errors.append(_err("SERVER_PROFILE", "runtime.server_profile must be correctness, one_b_dev, or one_b_perf"))
+    valkey_runtime = _obj(runtime, "valkey")
+    if valkey_runtime.get("log_format") not in {"text", "json"}:
+        errors.append(_err("VALKEY_LOG_FORMAT", "runtime.valkey.log_format must be text or json"))
+    for key in ["io_threads", "io_threads_max_per_node", "io_threads_max_total"]:
+        try:
+            value = int(valkey_runtime.get(key, 0) or 0)
+        except (TypeError, ValueError):
+            value = 0
+        if value < 1:
+            errors.append(_err("VALKEY_IO_THREADS", f"runtime.valkey.{key} must be an integer >= 1"))
+    if not isinstance(valkey_runtime.get("io_threads_auto", False), bool):
+        errors.append(_err("VALKEY_IO_THREADS_AUTO", "runtime.valkey.io_threads_auto must be boolean"))
     if ":9.1." not in str(runtime.get("valkey_image", "")):
         errors.append(_err("VALKEY_VERSION", "runtime.valkey_image must use a 9.1.x tag"))
     errors.extend(_validate_nodehost_density(config))

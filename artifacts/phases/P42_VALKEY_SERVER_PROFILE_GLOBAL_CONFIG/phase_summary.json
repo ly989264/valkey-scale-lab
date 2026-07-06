@@ -1,0 +1,32 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-07-06T00:00:00Z",
+  "missing_metrics": [],
+  "phase_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/effective_server_profile.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/config_validation_report.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/resource_preflight.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/cluster_plan.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/coverage_ledger.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/dry_run_gt_200_projection.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/generated_valkey_configs_manifest.json",
+    "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/run_state.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "P42 real evidence is bounded to the explicit 10/30/50/100/200 scale matrix; greater-than-200 remains projection-only.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-server-profile-20260706",
+  "schema_version": "v1",
+  "stage_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+  "status": "PASS",
+  "summary": "P42 validates the global Valkey server profile, io-thread budgets, memory evidence, real scale coverage, and greater-than-200 dry-run projection."
+}

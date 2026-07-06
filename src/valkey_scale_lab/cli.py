@@ -234,11 +234,27 @@ def _nodehost_cli_overrides(args: argparse.Namespace) -> dict[str, object] | Non
             value = getattr(args, attr)
             if value is not None:
                 runtime[attr] = value
+    if hasattr(args, "server_profile") and args.server_profile is not None:
+        runtime["server_profile"] = args.server_profile
+    valkey: dict[str, object] = {}
+    for attr in ["io_threads", "io_threads_auto", "io_threads_max_per_node", "io_threads_max_total", "log_format"]:
+        if hasattr(args, attr):
+            value = getattr(args, attr)
+            if value is not None:
+                valkey[attr] = value
+    if valkey:
+        runtime["valkey"] = valkey
     return {"runtime": runtime} if runtime else None
 
 
 def _add_nodehost_overrides(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--global-config", help="Path to repository-level global config override.")
+    parser.add_argument("--server-profile", choices=["correctness", "one_b_dev", "one_b_perf"])
+    parser.add_argument("--io-threads", type=int)
+    parser.add_argument("--io-threads-auto", action="store_true", default=None)
+    parser.add_argument("--io-threads-max-per-node", type=int)
+    parser.add_argument("--io-threads-max-total", type=int)
+    parser.add_argument("--log-format", choices=["text", "json"])
     parser.add_argument("--nodehost-strategy", choices=["density_limited"])
     parser.add_argument("--max-nodehosts", type=int)
     parser.add_argument("--nodehosts-per-az", type=int)

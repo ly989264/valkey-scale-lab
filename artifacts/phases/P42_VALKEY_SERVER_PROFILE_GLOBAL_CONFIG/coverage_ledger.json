@@ -1,0 +1,71 @@
+{
+  "artifact_type": "coverage_ledger",
+  "created_at": "2026-07-06T00:00:00Z",
+  "phase_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "rows": [
+    {
+      "artifact_refs": [
+        "tests/unit/test_server_profile_assertions.py"
+      ],
+      "coverage_id": "fake_schema_unit",
+      "execution_mode": "unit_schema",
+      "status": "PASS"
+    },
+    {
+      "artifact_refs": [
+        "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/valkey_e2e_evidence.json"
+      ],
+      "coverage_id": "smoke_10",
+      "execution_mode": "real_valkey",
+      "status": "PASS"
+    },
+    {
+      "artifact_refs": [
+        "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/valkey_e2e_evidence_30.json"
+      ],
+      "coverage_id": "real_30",
+      "execution_mode": "real_valkey",
+      "status": "PASS"
+    },
+    {
+      "artifact_refs": [
+        "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/valkey_e2e_evidence_50.json"
+      ],
+      "coverage_id": "real_50",
+      "execution_mode": "real_valkey",
+      "status": "PASS"
+    },
+    {
+      "artifact_refs": [
+        "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/valkey_e2e_evidence_100.json"
+      ],
+      "coverage_id": "real_100",
+      "execution_mode": "real_valkey",
+      "status": "PASS"
+    },
+    {
+      "artifact_refs": [
+        "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/valkey_e2e_evidence_200.json"
+      ],
+      "coverage_id": "real_200",
+      "execution_mode": "real_valkey",
+      "status": "PASS"
+    },
+    {
+      "artifact_refs": [
+        "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/dry_run_gt_200_projection.json"
+      ],
+      "coverage_id": "dry_run_gt_200",
+      "execution_mode": "dry_run_projection",
+      "status": "DRY_RUN_PASS"
+    }
+  ],
+  "run_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG-server-profile-20260706",
+  "schema_version": "v1",
+  "stage_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+  "status": "PASS"
+}
