@@ -5464,6 +5464,163 @@
         "md_path": "audit/P40_STRICT_FINAL_AUDIT_CLOSEOUT/AUDIT.md",
         "decision_json_path": "audit/P40_STRICT_FINAL_AUDIT_CLOSEOUT/audit_decision.json"
       }
+    },
+    {
+      "id": "P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
+      "title": "Global nodehost density configuration",
+      "automatic": false,
+      "fake_only_allowed": false,
+      "real_valkey_required": false,
+      "max_nodes": 200,
+      "objectives": [
+        "Add repository-level nodehost density config",
+        "Route planner, process runtime, and resource preflight through shared density logic",
+        "Emit nodehost density artifacts and fail-closed assertions"
+      ],
+      "gates": [
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "PYTHONPYCACHEPREFIX=/tmp/vslab_pyc python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "nodehost_density_tests",
+          "kind": "unit",
+          "command": "PYTHONPYCACHEPREFIX=/tmp/vslab_pyc python3 -m pytest -q tests/unit/test_nodehost_density.py tests/unit/test_nodehost_density_assertions.py tests/config tests/planner tests/integration/test_docker_runtime_contract.py tests/scale/test_scale_ladder.py",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "nodehost_density_smoke_10_real",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P41_NODEHOST_DENSITY_GLOBAL_CONFIG --config templates/configs/scale_10.yaml --scenario p41_nodehost_density_scale_10 --out artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/smoke_10_valkey_e2e_evidence.json --min-nodes 10 --require-data-path --probe-timeout 10",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "nodehost_density_scale_30_real",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P41_NODEHOST_DENSITY_GLOBAL_CONFIG --config templates/configs/scale_30.yaml --scenario p41_nodehost_density_scale_30 --out artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/valkey_e2e_evidence_30.json --min-nodes 30 --require-data-path --probe-timeout 10",
+          "timeout_seconds": 900,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "nodehost_density_scale_50_real",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P41_NODEHOST_DENSITY_GLOBAL_CONFIG --config templates/configs/scale_50.yaml --scenario p41_nodehost_density_scale_50 --out artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/valkey_e2e_evidence_50.json --min-nodes 50 --require-data-path --probe-timeout 10",
+          "timeout_seconds": 1200,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "nodehost_density_scale_100_real",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P41_NODEHOST_DENSITY_GLOBAL_CONFIG --config templates/configs/scale_100.yaml --scenario p41_nodehost_density_scale_100 --out artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/valkey_e2e_evidence_100.json --min-nodes 100 --require-data-path --probe-timeout 10",
+          "timeout_seconds": 1800,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "nodehost_density_scale_200_real",
+          "kind": "real_valkey",
+          "command": "python3 scripts/valkey_e2e_gate.py --phase P41_NODEHOST_DENSITY_GLOBAL_CONFIG --config templates/configs/scale_200.yaml --scenario p41_nodehost_density_scale_200 --out artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/valkey_e2e_evidence_200.json --min-nodes 200 --require-data-path --setup-timeout 2400 --probe-timeout 10",
+          "timeout_seconds": 3000,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "build_nodehost_density_artifacts",
+          "kind": "artifact",
+          "command": "python3 scripts/p41_nodehost_density_artifacts.py",
+          "timeout_seconds": 300,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "nodehost_density_config",
+          "kind": "harness",
+          "command": "python3 scripts/assert_nodehost_density_config.py --phase P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "runtime_nodehost_distribution",
+          "kind": "harness",
+          "command": "python3 scripts/assert_runtime_nodehost_distribution.py --phase P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "no_nodehost_partial_coverage",
+          "kind": "harness",
+          "command": "python3 scripts/assert_no_nodehost_partial_coverage.py --phase P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/nodehost_density_plan.json",
+          "schema": "schemas/artifact/nodehost_density_plan.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/resource_preflight.json",
+          "schema": "schemas/artifact/resource_preflight.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/run_state.json",
+          "schema": "schemas/artifact/strict_generic_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/cluster_plan.json",
+          "schema": "schemas/artifact/cluster_plan.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/coverage_ledger.json",
+          "schema": "schemas/artifact/strict_generic_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/analysis_summary.json",
+          "schema": "schemas/artifact/analysis_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/report_index.json",
+          "schema": "schemas/artifact/report_index.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/AUDIT.md",
+        "decision_json_path": "audit/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/audit_decision.json"
+      }
     }
   ]
 }

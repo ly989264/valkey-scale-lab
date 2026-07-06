@@ -34,7 +34,7 @@ def _unimplemented(args: argparse.Namespace) -> int:
 
 
 def _config_validate(args: argparse.Namespace) -> int:
-    report = validate_config_file(args.config, args.out)
+    report = validate_config_file(args.config, args.out, global_config_path=args.global_config, cli_overrides=_nodehost_cli_overrides(args))
     return 0 if report["valid"] else 1
 
 
@@ -45,7 +45,7 @@ def _config_emit_schema(args: argparse.Namespace) -> int:
 
 def _plan(args: argparse.Namespace) -> int:
     try:
-        create_plan_file(args.config, args.out, dry_run=args.dry_run)
+        create_plan_file(args.config, args.out, dry_run=args.dry_run, global_config_path=args.global_config, cli_overrides=_nodehost_cli_overrides(args))
     except PlannerError as exc:
         print(f"ERROR: plan: {exc}", file=sys.stderr)
         return 1
@@ -65,6 +65,8 @@ def _gate_scenario(args: argparse.Namespace) -> int:
             artifacts_dir=args.artifacts_dir,
             state_out=args.state_out,
             setup_timeline=setup_timeline,
+            global_config_path=args.global_config,
+            cli_overrides=_nodehost_cli_overrides(args),
         )
     except DockerRuntimeError as exc:
         print(f"ERROR: gate scenario: {exc}", file=sys.stderr)
@@ -204,11 +206,44 @@ def _report(args: argparse.Namespace) -> int:
 
 def _resource_preflight(args: argparse.Namespace) -> int:
     try:
-        report = run_resource_preflight(args.config, args.out, dry_run=args.dry_run, phase_id=args.phase, scenario=args.scenario)
+        report = run_resource_preflight(
+            args.config,
+            args.out,
+            dry_run=args.dry_run,
+            phase_id=args.phase,
+            scenario=args.scenario,
+            global_config_path=args.global_config,
+            cli_overrides=_nodehost_cli_overrides(args),
+        )
     except ResourcePreflightError as exc:
         print(f"ERROR: resource preflight: {exc}", file=sys.stderr)
         return 1
     return 0 if report["can_run"] else 1
+
+
+def _nodehost_cli_overrides(args: argparse.Namespace) -> dict[str, object] | None:
+    runtime: dict[str, object] = {}
+    for attr in [
+        "nodehost_strategy",
+        "max_nodehosts",
+        "nodehosts_per_az",
+        "max_logical_nodes_per_nodehost",
+        "nodehost_distribution",
+    ]:
+        if hasattr(args, attr):
+            value = getattr(args, attr)
+            if value is not None:
+                runtime[attr] = value
+    return {"runtime": runtime} if runtime else None
+
+
+def _add_nodehost_overrides(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--global-config", help="Path to repository-level global config override.")
+    parser.add_argument("--nodehost-strategy", choices=["density_limited"])
+    parser.add_argument("--max-nodehosts", type=int)
+    parser.add_argument("--nodehosts-per-az", type=int)
+    parser.add_argument("--max-logical-nodes-per-nodehost", type=int)
+    parser.add_argument("--nodehost-distribution", choices=["round_robin_by_az"])
 
 
 def _add_unimplemented(parser: argparse.ArgumentParser, command: str) -> None:
@@ -231,6 +266,7 @@ def build_parser() -> argparse.ArgumentParser:
     validate = config_sub.add_parser("validate", help="Validate a run config.")
     validate.add_argument("--config", required=True, help="Path to a run configuration file.")
     validate.add_argument("--out", required=True, help="Path for the validation report JSON.")
+    _add_nodehost_overrides(validate)
     validate.set_defaults(func=_config_validate)
     emit_schema = config_sub.add_parser("emit-schema", help="Emit the config schema report.")
     emit_schema.add_argument("--out", required=True, help="Path for the schema report JSON.")
@@ -241,6 +277,7 @@ def build_parser() -> argparse.ArgumentParser:
     plan.add_argument("--config", required=True, help="Path to a run configuration file.")
     plan.add_argument("--out", required=True, help="Path for cluster_plan.json.")
     plan.add_argument("--dry-run", action="store_true", help="Plan without starting processes.")
+    _add_nodehost_overrides(plan)
     plan.set_defaults(func=_plan)
 
     gate = sub.add_parser("gate", help="Run gate lifecycle scenarios.")
@@ -251,6 +288,7 @@ def build_parser() -> argparse.ArgumentParser:
     scenario.add_argument("--config", required=True)
     scenario.add_argument("--artifacts-dir", required=True)
     scenario.add_argument("--state-out", required=True)
+    _add_nodehost_overrides(scenario)
     scenario.set_defaults(func=_gate_scenario)
     cleanup = gate_sub.add_parser("cleanup", help="Cleanup a scenario from state.")
     cleanup.add_argument("--state", required=True)
@@ -299,6 +337,7 @@ def build_parser() -> argparse.ArgumentParser:
     preflight.add_argument("--dry-run", action="store_true")
     preflight.add_argument("--phase")
     preflight.add_argument("--scenario")
+    _add_nodehost_overrides(preflight)
     preflight.set_defaults(func=_resource_preflight)
     _add_unimplemented(resource, "resource")
 

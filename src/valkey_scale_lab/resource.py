@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
-from valkey_scale_lab.config.simple_yaml import parse_config_file
-from valkey_scale_lab.config.validation import normalize_config, validate_semantics
+from valkey_scale_lab.config.validation import load_effective_config, validate_semantics
+from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 
 CREATED_AT = "2026-06-28T00:00:00Z"
 P21_STAGE = "P21_FAILOVER_LATENCY_CURVE_200"
@@ -36,8 +36,10 @@ def run_resource_preflight(
     *,
     phase_id: str | None = None,
     scenario: str | None = None,
+    global_config_path: str | Path | None = None,
+    cli_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    config = normalize_config(parse_config_file(config_path))
+    config = load_effective_config(config_path, global_config_path=global_config_path, cli_overrides=cli_overrides)
     if dry_run:
         config.setdefault("runtime", {})["dry_run"] = True
     node_count = int(config["cluster"]["shards"]) * (1 + int(config["cluster"]["replicas_per_shard"]))
@@ -47,6 +49,17 @@ def run_resource_preflight(
     semantic_errors = _semantic_errors_for_preflight(config, allow_exact_200=exact_200_exception)
     run_id = f"{phase_id}-resource-preflight-{node_count}-20260628"
     checks: list[dict[str, Any]] = []
+    density_plan: dict[str, Any] | None = None
+    density_error: str | None = None
+    try:
+        density_plan = build_nodehost_density_plan(
+            config=config,
+            nodes=_preflight_density_nodes(config),
+            run_id=run_id,
+            assign=True,
+        )
+    except NodehostDensityError as exc:
+        density_error = str(exc)
 
     checks.append(_check("config_semantics", not semantic_errors, {"errors": semantic_errors}))
     checks.append(
@@ -80,9 +93,11 @@ def run_resource_preflight(
     checks.append(_check("cpu_count", (os.cpu_count() or 0) >= 2, {"cpu_count": os.cpu_count() or "MISSING"}))
     checks.append(_memory_check(node_count, int(config["cluster"].get("node_memory_limit_mb") or 0)))
     checks.append(_disk_check(Path("artifacts")))
+    checks.append(_total_port_count_check(config, node_count))
     checks.append(_port_check(int(config["cluster"]["port_base"]), node_count, "client_ports"))
     checks.append(_port_check(int(config["cluster"]["cluster_bus_port_base"]), node_count, "cluster_bus_ports"))
-    checks.append(_runtime_limit_check(node_count))
+    checks.append(_runtime_limit_check(node_count, density_plan=density_plan))
+    checks.extend(_nodehost_density_checks(config, density_plan, density_error))
     checks.append(_cleanup_state_check(phase_id, scenario_name, node_count))
 
     can_run = all(item["status"] == "PASS" for item in checks)
@@ -109,6 +124,11 @@ def run_resource_preflight(
         },
         "host": _host_facts(),
         "resource_estimates": _resource_estimates(node_count, int(config["cluster"].get("node_memory_limit_mb") or 0)),
+        "nodehost_density": (density_plan or {}).get("nodehost_density", {}),
+        "nodehost_density_plan": density_plan or {
+            "status": "FAIL",
+            "reason": density_error or "nodehost density plan unavailable",
+        },
         "port_ranges": {
             "client": {
                 "base": int(config["cluster"]["port_base"]),
@@ -119,6 +139,13 @@ def run_resource_preflight(
                 "base": int(config["cluster"]["cluster_bus_port_base"]),
                 "last": int(config["cluster"]["cluster_bus_port_base"]) + node_count - 1,
                 "count": node_count,
+            },
+            "total": {
+                "count": node_count * 2,
+                "max_port": max(
+                    int(config["cluster"]["port_base"]) + node_count - 1,
+                    int(config["cluster"]["cluster_bus_port_base"]) + node_count - 1,
+                ),
             },
         },
         "checks": checks,
@@ -233,14 +260,15 @@ def _memory_check(node_count: int, memory_limit_mb: int) -> dict[str, Any]:
     )
 
 
-def _runtime_limit_check(node_count: int) -> dict[str, Any]:
+def _runtime_limit_check(node_count: int, *, density_plan: dict[str, Any] | None = None) -> dict[str, Any]:
     try:
         soft, hard = os_resource.getrlimit(os_resource.RLIMIT_NOFILE)
     except Exception as exc:  # noqa: BLE001
         return _check("runtime_fd_limit", False, {"reason": repr(exc), "node_count": node_count})
-    required = max(1024, node_count * 4)
+    nodehost_count = int((density_plan or {}).get("actual_nodehost_count", 0) or 0)
+    required = max(1024, node_count * 8 + nodehost_count * 32)
     ok = soft == os_resource.RLIM_INFINITY or int(soft) >= required
-    return _check("runtime_fd_limit", ok, {"soft": soft, "hard": hard, "required_min": required, "node_count": node_count})
+    return _check("runtime_fd_limit", ok, {"soft": soft, "hard": hard, "required_min": required, "node_count": node_count, "nodehost_count": nodehost_count})
 
 
 def _host_facts() -> dict[str, Any]:
@@ -261,6 +289,95 @@ def _resource_estimates(node_count: int, memory_limit_mb: int) -> dict[str, Any]
         "required_disk_free_mb": 1024,
         "workload_overhead": "low_nonzero_p21_profile" if node_count == 200 else "standard_profile",
     }
+
+
+def _total_port_count_check(config: dict[str, Any], node_count: int) -> dict[str, Any]:
+    client_last = int(config["cluster"]["port_base"]) + max(node_count - 1, 0)
+    bus_last = int(config["cluster"]["cluster_bus_port_base"]) + max(node_count - 1, 0)
+    ok = node_count > 0 and client_last <= 65535 and bus_last <= 65535 and int(config["cluster"]["port_base"]) != int(config["cluster"]["cluster_bus_port_base"])
+    return _check(
+        "total_port_count",
+        ok,
+        {
+            "logical_node_count": node_count,
+            "total_ports": node_count * 2,
+            "client_last": client_last,
+            "cluster_bus_last": bus_last,
+            "max_port": 65535,
+        },
+    )
+
+
+def _nodehost_density_checks(
+    config: dict[str, Any],
+    density_plan: dict[str, Any] | None,
+    density_error: str | None,
+) -> list[dict[str, Any]]:
+    if density_plan is None:
+        return [_check("nodehost_density_plan", False, {"reason": density_error or "density plan missing"})]
+    density = density_plan["nodehost_density"]
+    max_nodehosts = int(density["max_nodehosts"])
+    actual = int(density["actual_nodehost_count"])
+    max_per = int(density["max_logical_nodes_per_nodehost"])
+    logical_counts = {str(key): int(value) for key, value in density["logical_nodes_per_nodehost"].items()}
+    return [
+        _check("nodehost_density_plan", True, density),
+        _check("nodehost_count_limit", actual <= max_nodehosts, {"actual_nodehost_count": actual, "max_nodehosts": max_nodehosts}),
+        _check(
+            "nodehost_process_density",
+            all(count <= max_per for count in logical_counts.values()),
+            {"max_logical_nodes_per_nodehost": max_per, "logical_nodes_per_nodehost": logical_counts},
+        ),
+    ]
+
+
+def _preflight_density_nodes(config: dict[str, Any]) -> list[dict[str, Any]]:
+    cluster = config["cluster"]
+    azs = list(config["network"]["azs"])
+    host_ids = [host["host_id"] for host in config.get("hosts", [{"host_id": "local"}])]
+    shards = int(cluster["shards"])
+    replicas = int(cluster["replicas_per_shard"])
+    nodes: list[dict[str, Any]] = []
+    ordinal = 0
+    for shard in range(shards):
+        shard_id = f"shard-{shard:04d}"
+        nodes.append(
+            {
+                "logical_id": f"{shard_id}-primary",
+                "shard_id": shard_id,
+                "role": "primary",
+                "az_id": azs[shard % len(azs)],
+                "host_id": host_ids[ordinal % len(host_ids)],
+                "ordinal": ordinal,
+                "client_port": int(cluster["port_base"]) + ordinal,
+                "cluster_bus_port": int(cluster.get("cluster_bus_port_base", int(cluster["port_base"]) + 10000)) + ordinal,
+            }
+        )
+        ordinal += 1
+    for shard in range(shards):
+        for replica in range(replicas):
+            shard_id = f"shard-{shard:04d}"
+            nodes.append(
+                {
+                    "logical_id": f"{shard_id}-replica-{replica:02d}",
+                    "shard_id": shard_id,
+                    "role": "replica",
+                    "az_id": _preflight_replica_az(azs, azs[shard % len(azs)], shard, replica),
+                    "host_id": host_ids[ordinal % len(host_ids)],
+                    "ordinal": ordinal,
+                    "client_port": int(cluster["port_base"]) + ordinal,
+                    "cluster_bus_port": int(cluster.get("cluster_bus_port_base", int(cluster["port_base"]) + 10000)) + ordinal,
+                }
+            )
+            ordinal += 1
+    return nodes
+
+
+def _preflight_replica_az(azs: list[str], primary_az: str, shard: int, replica: int) -> str:
+    if len(azs) == 1:
+        return azs[0]
+    candidates = [az for az in azs if az != primary_az]
+    return candidates[(shard + replica) % len(candidates)]
 
 
 def _disk_check(path: Path) -> dict[str, Any]:

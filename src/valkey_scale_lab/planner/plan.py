@@ -9,10 +9,11 @@ from valkey_scale_lab import __version__
 from valkey_scale_lab.config.validation import (
     REQUIRED_1000_ENV_VALUE,
     is_p37_200_plus_dry_run_profile,
+    load_effective_config,
     normalize_config,
     validate_semantics,
 )
-from valkey_scale_lab.config.simple_yaml import parse_config_file
+from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 
 PHASE_ID = "P02_PLANNER"
 RUN_ID = "P02_PLANNER-local-20260628"
@@ -23,9 +24,15 @@ class PlannerError(ValueError):
     pass
 
 
-def create_plan_file(config_path: str | Path, out_path: str | Path, dry_run: bool = False) -> dict[str, Any]:
-    raw = parse_config_file(config_path)
-    config = normalize_config(raw)
+def create_plan_file(
+    config_path: str | Path,
+    out_path: str | Path,
+    dry_run: bool = False,
+    *,
+    global_config_path: str | Path | None = None,
+    cli_overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    config = load_effective_config(config_path, global_config_path=global_config_path, cli_overrides=cli_overrides)
     if dry_run:
         config.setdefault("runtime", {})["dry_run"] = True
     errors = validate_semantics(config)
@@ -107,6 +114,12 @@ def build_cluster_plan(
                 )
             )
 
+    try:
+        density_plan = build_nodehost_density_plan(config=config, nodes=planned_nodes, run_id=RUN_ID, assign=True)
+    except NodehostDensityError as exc:
+        raise PlannerError(str(exc)) from exc
+    nodehosts = density_plan["nodehosts"]
+    density = density_plan["nodehost_density"]
     capacity = _check_host_capacity(config, planned_nodes)
     constraints = {
         "primary_replica_distinct_az": _primary_replica_distinct_az(planned_nodes)
@@ -125,6 +138,12 @@ def build_cluster_plan(
         "az_balanced": _az_balanced(planned_nodes),
         "host_capacity_checked": capacity["ok"],
         "host_capacity": capacity["hosts"],
+        "nodehost_density_configured": True,
+        "nodehost_density_within_limit": all(
+            int(count) <= int(density["max_logical_nodes_per_nodehost"])
+            for count in density["logical_nodes_per_nodehost"].values()
+        ),
+        "nodehost_count_within_limit": int(density["actual_nodehost_count"]) <= int(density["max_nodehosts"]),
         "non_ha_single_az": _explicit_non_ha_single_az(config),
         "allow_1000_env": safety.get("require_1000_env") if opt_in_1000 else None,
         "required_1000_env_value": REQUIRED_1000_ENV_VALUE if opt_in_1000 else None,
@@ -148,6 +167,8 @@ def build_cluster_plan(
             constraints["port_collision_checked"],
             constraints["az_balanced"],
             constraints["host_capacity_checked"],
+            constraints["nodehost_density_within_limit"],
+            constraints["nodehost_count_within_limit"],
         ]
     ):
         raise PlannerError("planner constraints failed")
@@ -170,17 +191,18 @@ def build_cluster_plan(
             "provider": runtime["provider"],
             "sandbox_mode": runtime["sandbox_mode"],
             "network_mode": "container_namespace",
-            "container_strategy": "virtual_az_nodehost_with_valkey_processes"
-            if network.get("virtual_az_mode") == "multi"
-            else "single_az_nodehost_with_valkey_processes",
+            "container_strategy": "density_limited_nodehosts_with_valkey_processes",
             "valkey_image": runtime["valkey_image"],
             "dry_run": dry_run,
+            **density,
         },
         "directories": {
             "run_root": f"artifacts/runtime/{RUN_ID}",
             "state_dir": f"artifacts/runtime/{RUN_ID}/state",
         },
-        "nodehosts": _nodehost_summaries(planned_nodes, RUN_ID),
+        "nodehost_density": density,
+        "config_sources": config.get("_config_sources", {}),
+        "nodehosts": nodehosts,
         "nodes": planned_nodes,
         "constraints": constraints,
     }
@@ -270,8 +292,6 @@ def _node(
     suffix = "primary" if role == "primary" else f"replica-{replica_index:02d}"
     logical_id = f"{shard_id}-{suffix}"
     run_root = f"artifacts/runtime/{RUN_ID}"
-    nodehost_id = f"nodehost-{az_id}"
-    safe_run = RUN_ID.lower().replace("_", "-")
     return {
         "logical_id": logical_id,
         "host_id": host_id,
@@ -279,8 +299,8 @@ def _node(
         "role": role,
         "shard_id": shard_id,
         "runtime_type": "docker_process",
-        "nodehost_id": nodehost_id,
-        "nodehost_container_name": f"vslab-{safe_run}-{nodehost_id}",
+        "nodehost_id": "MISSING",
+        "nodehost_container_name": "MISSING",
         "process_name": logical_id,
         "client_port": int(cluster["port_base"]) + ordinal,
         "cluster_bus_port": int(cluster["cluster_bus_port_base"]) + ordinal,

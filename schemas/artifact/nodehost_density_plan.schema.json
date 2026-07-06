@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Nodehost Density Plan",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "status",
+    "run_id",
+    "nodehost_strategy",
+    "max_nodehosts",
+    "nodehosts_per_az",
+    "max_logical_nodes_per_nodehost",
+    "actual_nodehost_count",
+    "logical_nodes_per_nodehost",
+    "nodehost_distribution",
+    "nodehosts"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^v1$"
+    },
+    "artifact_type": {
+      "type": "string",
+      "const": "nodehost_density_plan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "SKIPPED_WITH_REASON"
+      ]
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nodehost_strategy": {
+      "type": "string",
+      "const": "density_limited"
+    },
+    "max_nodehosts": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "nodehosts_per_az": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "max_logical_nodes_per_nodehost": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "actual_nodehost_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "logical_nodes_per_nodehost": {
+      "type": "object"
+    },
+    "nodehost_distribution": {
+      "type": "string",
+      "const": "round_robin_by_az"
+    },
+    "nodehost_density": {
+      "type": "object"
+    },
+    "nodehosts": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": true
+}

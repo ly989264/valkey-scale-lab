@@ -78,6 +78,30 @@
         },
         "dry_run": {
           "type": "boolean"
+        },
+        "nodehost_strategy": {
+          "type": "string",
+          "enum": [
+            "density_limited"
+          ]
+        },
+        "max_nodehosts": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "nodehosts_per_az": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_logical_nodes_per_nodehost": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "nodehost_distribution": {
+          "type": "string",
+          "enum": [
+            "round_robin_by_az"
+          ]
         }
       },
       "additionalProperties": true

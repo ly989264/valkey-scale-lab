@@ -1,0 +1,263 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
+  "cleanup_actions": [
+    {
+      "action": "terminate",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-a-00",
+      "id": "nodehost-az-a-00",
+      "invalid_pid_count": 0,
+      "pid_count": 3,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=3 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-a-01",
+      "id": "nodehost-az-a-01",
+      "invalid_pid_count": 0,
+      "pid_count": 2,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=2 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-b-00",
+      "id": "nodehost-az-b-00",
+      "invalid_pid_count": 0,
+      "pid_count": 3,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=3 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-b-01",
+      "id": "nodehost-az-b-01",
+      "invalid_pid_count": 0,
+      "pid_count": 2,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=2 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 3,
+      "alive_pids": [
+        "28",
+        "37",
+        "46"
+      ],
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-a-00",
+      "id": "nodehost-az-a-00",
+      "pid_count": 3,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 2,
+      "alive_pids": [
+        "26",
+        "35"
+      ],
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-a-01",
+      "id": "nodehost-az-a-01",
+      "pid_count": 2,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 3,
+      "alive_pids": [
+        "28",
+        "37",
+        "40"
+      ],
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-b-00",
+      "id": "nodehost-az-b-00",
+      "pid_count": 3,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 2,
+      "alive_pids": [
+        "26",
+        "35"
+      ],
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-b-01",
+      "id": "nodehost-az-b-01",
+      "pid_count": 2,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-a-00",
+      "id": "nodehost-az-a-00",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-a-01",
+      "id": "nodehost-az-a-01",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-b-00",
+      "id": "nodehost-az-b-00",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p12-scale-ladder-10-30-scale-10-20260628-nodehost-az-b-01",
+      "id": "nodehost-az-b-01",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "stop",
+      "id": "ed7fb463481d",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "ed7fb463481d",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "d4ef5ef9f1ed",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "d4ef5ef9f1ed",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "b63af1443957",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "b63af1443957",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "080c5f7cc354",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "080c5f7cc354",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "5cd67c35b520",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "bounded_parallelism": true,
+    "cleanup_remove_containers_seconds": 7.224199,
+    "cleanup_remove_networks_seconds": 0.204409,
+    "cleanup_residual_scan_seconds": 0.052272,
+    "cleanup_terminate_processes_seconds": 0.053507,
+    "cleanup_verify_nodehost_empty_seconds": 0.108535,
+    "cleanup_verify_process_exit_seconds": 45.19193,
+    "parallelism": 8
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "nodehost_density": {
+    "actual_nodehost_count": 4,
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 3,
+      "nodehost-az-a-01": 2,
+      "nodehost-az-b-00": 3,
+      "nodehost-az-b-01": 2
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 10,
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
+  "phase_id": "P12_SCALE_LADDER_10_30",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P12_SCALE_LADDER_10_30-scale_10-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

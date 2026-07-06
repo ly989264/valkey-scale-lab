@@ -10,11 +10,36 @@ from typing import Any
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.schema import load_schema, validate
 from valkey_scale_lab.config.simple_yaml import parse_config_file
+from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan, density_runtime_config
 
 PHASE_ID = "P01_CONFIG_SCHEMA"
 RUN_ID = "P01_CONFIG_SCHEMA-local-20260628"
 CREATED_AT = "2026-06-28T00:00:00Z"
 REQUIRED_1000_ENV_VALUE = "I_UNDERSTAND_THIS_IS_NOT_A_DEFAULT_GATE"
+GLOBAL_CONFIG_PATH = Path("config/valkey_scale_lab_global.yaml")
+BUILT_IN_DEFAULTS: dict[str, Any] = {
+    "safety": {
+        "default_max_nodes": 100,
+        "allow_1000_nodes": False,
+        "require_sandbox_network": True,
+        "forbid_host_network_mutation": True,
+        "cleanup_on_error": True,
+    },
+    "runtime": {
+        "provider": "docker",
+        "sandbox_mode": "container_namespace",
+        "dry_run": False,
+        "nodehost_strategy": "density_limited",
+        "max_nodehosts": 64,
+        "nodehosts_per_az": 2,
+        "max_logical_nodes_per_nodehost": 25,
+        "nodehost_distribution": "round_robin_by_az",
+    },
+    "workload": {"enabled": False},
+    "faults": [],
+    "scale_profile": {},
+    "metadata": {},
+}
 
 
 def utc_now() -> str:
@@ -25,7 +50,13 @@ def producer() -> dict[str, str]:
     return {"name": "valkey-scale-lab", "version": __version__}
 
 
-def validate_config_file(config_path: str | Path, out_path: str | Path) -> dict[str, Any]:
+def validate_config_file(
+    config_path: str | Path,
+    out_path: str | Path,
+    *,
+    global_config_path: str | Path | None = None,
+    cli_overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     config_path = Path(config_path)
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -35,7 +66,12 @@ def validate_config_file(config_path: str | Path, out_path: str | Path) -> dict[
 
     try:
         raw = parse_config_file(config_path)
-        normalized = normalize_config(raw)
+        normalized = normalize_config(
+            raw,
+            scenario_config_path=config_path,
+            global_config_path=global_config_path,
+            cli_overrides=cli_overrides,
+        )
         schema = load_schema(Path("schemas/config/run_config.schema.json"))
         for message in validate(normalized, schema):
             errors.append({"code": "SCHEMA_VALIDATION", "message": message})
@@ -63,6 +99,8 @@ def validate_config_file(config_path: str | Path, out_path: str | Path) -> dict[
         "normalized_config_path": normalized_path.as_posix(),
         "total_nodes": _total_nodes(normalized) if normalized else None,
         "valkey_version_required_prefix": "9.1.",
+        "config_sources": normalized.get("_config_sources", {}) if normalized else {},
+        "nodehost_density": _nodehost_density_report(normalized) if normalized else {},
     }
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
@@ -86,6 +124,11 @@ def emit_schema_report(out_path: str | Path) -> dict[str, Any]:
             "runtime.provider": "docker",
             "runtime.sandbox_mode": "container_namespace",
             "runtime.dry_run": False,
+            "runtime.nodehost_strategy": "density_limited",
+            "runtime.max_nodehosts": 64,
+            "runtime.nodehosts_per_az": 2,
+            "runtime.max_logical_nodes_per_nodehost": 25,
+            "runtime.nodehost_distribution": "round_robin_by_az",
             "safety.allow_1000_nodes": False,
             "workload.enabled": False,
             "faults": [],
@@ -117,6 +160,11 @@ def emit_schema_report(out_path: str | Path) -> dict[str, Any]:
                 "status": "PASS",
             },
             {
+                "name": "nodehost_density_global_merge",
+                "description": "Nodehost density config merge order is built-in defaults < global config < scenario config < CLI override.",
+                "status": "PASS",
+            },
+            {
                 "name": "workload_ratios",
                 "description": "Enabled workloads must have read_ratio + write_ratio equal to 1.0.",
                 "status": "PASS",
@@ -127,8 +175,20 @@ def emit_schema_report(out_path: str | Path) -> dict[str, Any]:
     return report
 
 
-def normalize_config(raw: dict[str, Any]) -> dict[str, Any]:
-    config = deepcopy(raw)
+def normalize_config(
+    raw: dict[str, Any],
+    *,
+    scenario_config_path: str | Path | None = None,
+    global_config_path: str | Path | None = None,
+    cli_overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    global_path = Path(global_config_path) if global_config_path is not None else GLOBAL_CONFIG_PATH
+    config = deepcopy(BUILT_IN_DEFAULTS)
+    if global_path.exists():
+        _deep_merge(config, parse_config_file(global_path))
+    _deep_merge(config, deepcopy(raw))
+    if cli_overrides:
+        _deep_merge(config, deepcopy(cli_overrides))
     config.setdefault("workload", {"enabled": False})
     config.setdefault("faults", [])
     config.setdefault("scale_profile", {})
@@ -145,13 +205,40 @@ def normalize_config(raw: dict[str, Any]) -> dict[str, Any]:
     runtime.setdefault("provider", "docker")
     runtime.setdefault("sandbox_mode", "container_namespace")
     runtime.setdefault("dry_run", False)
+    runtime.setdefault("nodehost_strategy", "density_limited")
+    runtime.setdefault("max_nodehosts", 64)
+    runtime.setdefault("nodehosts_per_az", 2)
+    runtime.setdefault("max_logical_nodes_per_nodehost", 25)
+    runtime.setdefault("nodehost_distribution", "round_robin_by_az")
 
     workload = config.setdefault("workload", {})
     workload.setdefault("enabled", False)
     if workload.get("enabled"):
         workload.setdefault("pipeline", 1)
         workload.setdefault("timing", "all_run")
+    config["_config_sources"] = {
+        "merge_order": ["built-in defaults", "global config", "scenario config", "CLI override"],
+        "built_in_defaults": "valkey_scale_lab.config.validation.BUILT_IN_DEFAULTS",
+        "global_config_path": global_path.as_posix(),
+        "global_config_loaded": global_path.exists(),
+        "scenario_config_path": Path(scenario_config_path).as_posix() if scenario_config_path else "MISSING",
+        "cli_override_applied": bool(cli_overrides),
+    }
     return config
+
+
+def load_effective_config(
+    config_path: str | Path,
+    *,
+    global_config_path: str | Path | None = None,
+    cli_overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    return normalize_config(
+        parse_config_file(config_path),
+        scenario_config_path=config_path,
+        global_config_path=global_config_path,
+        cli_overrides=cli_overrides,
+    )
 
 
 def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
@@ -214,6 +301,7 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
         errors.append(_err("SANDBOX_MODE", "runtime.sandbox_mode must be container_namespace or sandbox_proxy"))
     if ":9.1." not in str(runtime.get("valkey_image", "")):
         errors.append(_err("VALKEY_VERSION", "runtime.valkey_image must use a 9.1.x tag"))
+    errors.extend(_validate_nodehost_density(config))
 
     errors.extend(_validate_hosts(hosts))
     errors.extend(_validate_network(network))
@@ -333,6 +421,99 @@ def _validate_faults(faults: Any) -> list[dict[str, Any]]:
         if "duration_seconds" in fault and float(fault["duration_seconds"]) <= 0:
             errors.append(_err("FAULT_DURATION", f"faults[{idx}].duration_seconds must be positive"))
     return errors
+
+
+def _deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(base.get(key), dict):
+            _deep_merge(base[key], value)
+        else:
+            base[key] = deepcopy(value)
+    return base
+
+
+def _nodehost_density_report(config: dict[str, Any]) -> dict[str, Any]:
+    density = density_runtime_config(config)
+    density["config_sources"] = config.get("_config_sources", {})
+    return density
+
+
+def _validate_nodehost_density(config: dict[str, Any]) -> list[dict[str, Any]]:
+    errors: list[dict[str, Any]] = []
+    runtime = _obj(config, "runtime")
+    if runtime.get("nodehost_strategy") != "density_limited":
+        errors.append(_err("NODEHOST_STRATEGY", "runtime.nodehost_strategy must be density_limited"))
+    if runtime.get("nodehost_distribution") != "round_robin_by_az":
+        errors.append(_err("NODEHOST_DISTRIBUTION", "runtime.nodehost_distribution must be round_robin_by_az"))
+    for key in ["max_nodehosts", "nodehosts_per_az", "max_logical_nodes_per_nodehost"]:
+        value = runtime.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            errors.append(_err("NODEHOST_DENSITY_INTEGER", f"runtime.{key} must be a positive integer"))
+    if errors:
+        return errors
+    try:
+        build_nodehost_density_plan(
+            config=config,
+            nodes=_semantic_density_nodes(config),
+            run_id="semantic-density-check",
+            assign=True,
+        )
+    except NodehostDensityError as exc:
+        errors.append(_err("NODEHOST_DENSITY_PLAN", str(exc)))
+    return errors
+
+
+def _semantic_density_nodes(config: dict[str, Any]) -> list[dict[str, Any]]:
+    cluster = _obj(config, "cluster")
+    network = _obj(config, "network")
+    hosts = config.get("hosts", [{"host_id": "local"}])
+    host_ids = [host.get("host_id", "local") for host in hosts if isinstance(host, dict)] or ["local"]
+    azs = list(network.get("azs", ["az-local"])) or ["az-local"]
+    shards = int(cluster.get("shards", 0) or 0)
+    replicas = int(cluster.get("replicas_per_shard", 0) or 0)
+    port_base = int(cluster.get("port_base", 7000) or 7000)
+    bus_base = int(cluster.get("cluster_bus_port_base", port_base + 10000) or (port_base + 10000))
+    nodes: list[dict[str, Any]] = []
+    ordinal = 0
+    for shard in range(shards):
+        shard_id = f"shard-{shard:04d}"
+        nodes.append(
+            {
+                "logical_id": f"{shard_id}-primary",
+                "shard_id": shard_id,
+                "role": "primary",
+                "az_id": azs[shard % len(azs)],
+                "host_id": host_ids[ordinal % len(host_ids)],
+                "ordinal": ordinal,
+                "client_port": port_base + ordinal,
+                "cluster_bus_port": bus_base + ordinal,
+            }
+        )
+        ordinal += 1
+    for shard in range(shards):
+        shard_id = f"shard-{shard:04d}"
+        for replica in range(replicas):
+            nodes.append(
+                {
+                    "logical_id": f"{shard_id}-replica-{replica:02d}",
+                    "shard_id": shard_id,
+                    "role": "replica",
+                    "az_id": _semantic_replica_az(azs, azs[shard % len(azs)], shard, replica),
+                    "host_id": host_ids[ordinal % len(host_ids)],
+                    "ordinal": ordinal,
+                    "client_port": port_base + ordinal,
+                    "cluster_bus_port": bus_base + ordinal,
+                }
+            )
+            ordinal += 1
+    return nodes
+
+
+def _semantic_replica_az(azs: list[str], primary_az: str, shard: int, replica: int) -> str:
+    if len(azs) == 1:
+        return azs[0]
+    candidates = [az for az in azs if az != primary_az]
+    return candidates[(shard + replica) % len(candidates)]
 
 
 def _obj(config: dict[str, Any], key: str) -> dict[str, Any]:

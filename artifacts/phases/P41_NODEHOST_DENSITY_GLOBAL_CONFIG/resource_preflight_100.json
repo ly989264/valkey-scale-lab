@@ -1,0 +1,502 @@
+{
+  "artifact_type": "resource_preflight",
+  "bounded_exception": {
+    "config_marker_phase": "MISSING",
+    "default_max_nodes": 100,
+    "node_count": "MISSING",
+    "phase_id": "MISSING",
+    "scenario_name": "MISSING"
+  },
+  "can_run": true,
+  "checks": [
+    {
+      "details": {
+        "errors": []
+      },
+      "name": "config_semantics",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "bounded_exception_phase": "MISSING",
+        "default_cap": 100,
+        "node_count": 100
+      },
+      "name": "node_count_limit",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "available": true,
+        "returncode": 0,
+        "server_version": "29.2.1",
+        "stderr": ""
+      },
+      "name": "docker_available",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "cpu_count": 10
+      },
+      "name": "cpu_count",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "node_memory_limit_mb": 64,
+        "required_memory_mb": 6400,
+        "status_note": "host-visible estimate"
+      },
+      "name": "memory_budget",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "free_mb": 298624,
+        "required_free_mb": 1024
+      },
+      "name": "disk_free",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "client_last": 7599,
+        "cluster_bus_last": 17599,
+        "logical_node_count": 100,
+        "max_port": 65535,
+        "total_ports": 200
+      },
+      "name": "total_port_count",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "base": 7500,
+        "count": 100,
+        "unavailable": []
+      },
+      "name": "client_ports",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "base": 17500,
+        "count": 100,
+        "unavailable": []
+      },
+      "name": "cluster_bus_ports",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "hard": 9223372036854775807,
+        "node_count": 100,
+        "nodehost_count": 4,
+        "required_min": 1024,
+        "soft": 1048575
+      },
+      "name": "runtime_fd_limit",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "actual_nodehost_count": 4,
+        "logical_nodes_per_nodehost": {
+          "nodehost-az-a-00": 25,
+          "nodehost-az-a-01": 25,
+          "nodehost-az-b-00": 25,
+          "nodehost-az-b-01": 25
+        },
+        "max_logical_nodes_per_nodehost": 25,
+        "max_nodehosts": 64,
+        "node_count": 100,
+        "nodehost_count_by_az": {
+          "az-a": 2,
+          "az-b": 2
+        },
+        "nodehost_distribution": "round_robin_by_az",
+        "nodehost_strategy": "density_limited",
+        "nodehosts_per_az": 2
+      },
+      "name": "nodehost_density_plan",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "actual_nodehost_count": 4,
+        "max_nodehosts": 64
+      },
+      "name": "nodehost_count_limit",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "logical_nodes_per_nodehost": {
+          "nodehost-az-a-00": 25,
+          "nodehost-az-a-01": 25,
+          "nodehost-az-b-00": 25,
+          "nodehost-az-b-01": 25
+        },
+        "max_logical_nodes_per_nodehost": 25
+      },
+      "name": "nodehost_process_density",
+      "status": "PASS"
+    },
+    {
+      "details": {
+        "leftovers": [],
+        "node_count": 100,
+        "run_id": "P13_SCALE_LADDER_50_100-scale_100-20260628"
+      },
+      "name": "previous_cleanup_state",
+      "status": "PASS"
+    }
+  ],
+  "config_path": "templates/configs/scale_100.yaml",
+  "created_at": "2026-06-28T00:00:00Z",
+  "dry_run": false,
+  "host": {
+    "cpu_count": 10,
+    "machine": "arm64",
+    "platform": "macOS-26.5.1-arm64-arm-64bit",
+    "system": "Darwin"
+  },
+  "node_count": 100,
+  "nodehost_density": {
+    "actual_nodehost_count": 4,
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 25,
+      "nodehost-az-a-01": 25,
+      "nodehost-az-b-00": 25,
+      "nodehost-az-b-01": 25
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 100,
+    "nodehost_count_by_az": {
+      "az-a": 2,
+      "az-b": 2
+    },
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
+  "nodehost_density_plan": {
+    "actual_nodehost_count": 4,
+    "artifact_type": "nodehost_density_plan",
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 25,
+      "nodehost-az-a-01": 25,
+      "nodehost-az-b-00": 25,
+      "nodehost-az-b-01": 25
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 100,
+    "nodehost_count_by_az": {
+      "az-a": 2,
+      "az-b": 2
+    },
+    "nodehost_density": {
+      "actual_nodehost_count": 4,
+      "logical_nodes_per_nodehost": {
+        "nodehost-az-a-00": 25,
+        "nodehost-az-a-01": 25,
+        "nodehost-az-b-00": 25,
+        "nodehost-az-b-01": 25
+      },
+      "max_logical_nodes_per_nodehost": 25,
+      "max_nodehosts": 64,
+      "node_count": 100,
+      "nodehost_count_by_az": {
+        "az-a": 2,
+        "az-b": 2
+      },
+      "nodehost_distribution": "round_robin_by_az",
+      "nodehost_strategy": "density_limited",
+      "nodehosts_per_az": 2
+    },
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts": [
+      {
+        "az_id": "az-a",
+        "container_name": "vslab-p13-scale-ladder-50-100-resource-preflight-100-20260628-nodehost-az-a-00",
+        "host_id": "local",
+        "logical_node_count": 25,
+        "nodehost_id": "nodehost-az-a-00",
+        "ordinal": 0,
+        "ports": [
+          7500,
+          7504,
+          7508,
+          7512,
+          7516,
+          7520,
+          7524,
+          7528,
+          7532,
+          7536,
+          7540,
+          7544,
+          7548,
+          7553,
+          7557,
+          7561,
+          7565,
+          7569,
+          7573,
+          7577,
+          7581,
+          7585,
+          7589,
+          7593,
+          7597,
+          17500,
+          17504,
+          17508,
+          17512,
+          17516,
+          17520,
+          17524,
+          17528,
+          17532,
+          17536,
+          17540,
+          17544,
+          17548,
+          17553,
+          17557,
+          17561,
+          17565,
+          17569,
+          17573,
+          17577,
+          17581,
+          17585,
+          17589,
+          17593,
+          17597
+        ]
+      },
+      {
+        "az_id": "az-a",
+        "container_name": "vslab-p13-scale-ladder-50-100-resource-preflight-100-20260628-nodehost-az-a-01",
+        "host_id": "local",
+        "logical_node_count": 25,
+        "nodehost_id": "nodehost-az-a-01",
+        "ordinal": 1,
+        "ports": [
+          7502,
+          7506,
+          7510,
+          7514,
+          7518,
+          7522,
+          7526,
+          7530,
+          7534,
+          7538,
+          7542,
+          7546,
+          7551,
+          7555,
+          7559,
+          7563,
+          7567,
+          7571,
+          7575,
+          7579,
+          7583,
+          7587,
+          7591,
+          7595,
+          7599,
+          17502,
+          17506,
+          17510,
+          17514,
+          17518,
+          17522,
+          17526,
+          17530,
+          17534,
+          17538,
+          17542,
+          17546,
+          17551,
+          17555,
+          17559,
+          17563,
+          17567,
+          17571,
+          17575,
+          17579,
+          17583,
+          17587,
+          17591,
+          17595,
+          17599
+        ]
+      },
+      {
+        "az_id": "az-b",
+        "container_name": "vslab-p13-scale-ladder-50-100-resource-preflight-100-20260628-nodehost-az-b-00",
+        "host_id": "local",
+        "logical_node_count": 25,
+        "nodehost_id": "nodehost-az-b-00",
+        "ordinal": 2,
+        "ports": [
+          7501,
+          7505,
+          7509,
+          7513,
+          7517,
+          7521,
+          7525,
+          7529,
+          7533,
+          7537,
+          7541,
+          7545,
+          7549,
+          7552,
+          7556,
+          7560,
+          7564,
+          7568,
+          7572,
+          7576,
+          7580,
+          7584,
+          7588,
+          7592,
+          7596,
+          17501,
+          17505,
+          17509,
+          17513,
+          17517,
+          17521,
+          17525,
+          17529,
+          17533,
+          17537,
+          17541,
+          17545,
+          17549,
+          17552,
+          17556,
+          17560,
+          17564,
+          17568,
+          17572,
+          17576,
+          17580,
+          17584,
+          17588,
+          17592,
+          17596
+        ]
+      },
+      {
+        "az_id": "az-b",
+        "container_name": "vslab-p13-scale-ladder-50-100-resource-preflight-100-20260628-nodehost-az-b-01",
+        "host_id": "local",
+        "logical_node_count": 25,
+        "nodehost_id": "nodehost-az-b-01",
+        "ordinal": 3,
+        "ports": [
+          7503,
+          7507,
+          7511,
+          7515,
+          7519,
+          7523,
+          7527,
+          7531,
+          7535,
+          7539,
+          7543,
+          7547,
+          7550,
+          7554,
+          7558,
+          7562,
+          7566,
+          7570,
+          7574,
+          7578,
+          7582,
+          7586,
+          7590,
+          7594,
+          7598,
+          17503,
+          17507,
+          17511,
+          17515,
+          17519,
+          17523,
+          17527,
+          17531,
+          17535,
+          17539,
+          17543,
+          17547,
+          17550,
+          17554,
+          17558,
+          17562,
+          17566,
+          17570,
+          17574,
+          17578,
+          17582,
+          17586,
+          17590,
+          17594,
+          17598
+        ]
+      }
+    ],
+    "nodehosts_per_az": 2,
+    "run_id": "P13_SCALE_LADDER_50_100-resource-preflight-100-20260628",
+    "schema_version": "v1",
+    "status": "PASS"
+  },
+  "nodes_requested": 100,
+  "phase_id": "P13_SCALE_LADDER_50_100",
+  "port_ranges": {
+    "client": {
+      "base": 7500,
+      "count": 100,
+      "last": 7599
+    },
+    "cluster_bus": {
+      "base": 17500,
+      "count": 100,
+      "last": 17599
+    },
+    "total": {
+      "count": 200,
+      "max_port": 17599
+    }
+  },
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resource_estimates": {
+    "memory_per_node_mb": 64,
+    "node_count": 100,
+    "required_disk_free_mb": 1024,
+    "required_memory_mb": 6400,
+    "workload_overhead": "standard_profile"
+  },
+  "run_id": "P13_SCALE_LADDER_50_100-resource-preflight-100-20260628",
+  "scenario_name": "scale_100",
+  "schema_version": "v1",
+  "status": "PASS"
+}

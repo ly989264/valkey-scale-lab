@@ -17,8 +17,9 @@ from typing import Any, Callable, ContextManager, Iterable, TypeVar
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.config.simple_yaml import parse_config_file
-from valkey_scale_lab.config.validation import normalize_config, validate_semantics
+from valkey_scale_lab.config.validation import load_effective_config, normalize_config, validate_semantics
 from valkey_scale_lab.metrics import MISSING, TelemetryRun, workload_metrics, write_jsonl
+from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
 from valkey_scale_lab.orchestrator.local import write_phase_summary as write_p10_phase_summary
 from valkey_scale_lab.planner.plan import build_cluster_plan
@@ -64,6 +65,7 @@ P36_STAGE = "P36_FULL_FLOW_E2E_50_100_200_REAL"
 P36_SCENARIO_50 = "strict_full_flow_50"
 P36_SCENARIO_100 = "strict_full_flow_100"
 P36_SCENARIO_200 = "strict_full_flow_200"
+P41_STAGE = "P41_NODEHOST_DENSITY_GLOBAL_CONFIG"
 P36_FULL_FLOW_STEPS = [
     "config_validate",
     "resource_preflight",
@@ -260,6 +262,8 @@ def create_scenario(
     artifacts_dir: str | Path,
     state_out: str | Path,
     setup_timeline: SetupTimeline | None = None,
+    global_config_path: str | Path | None = None,
+    cli_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if (phase, scenario) not in {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"),
@@ -285,7 +289,7 @@ def create_scenario(
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
         ("P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "fault_workload_impact_analysis"),
         ("P26_FINAL_REPORT_REGRESSION", "final_report_regression_smoke"),
-    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None and _strict_full_flow_node_count(phase, scenario) is None:
+    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None and _strict_full_flow_node_count(phase, scenario) is None and _p41_nodehost_density_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
         run_id = _run_id(phase, scenario)
@@ -293,7 +297,7 @@ def create_scenario(
         artifacts.mkdir(parents=True, exist_ok=True)
 
     with _timeline_span(setup_timeline, "config_parse_and_validate", "configuration", {"config_path": str(config_path)}):
-        config = normalize_config(parse_config_file(config_path))
+        config = load_effective_config(config_path, global_config_path=global_config_path, cli_overrides=cli_overrides)
         errors = _runtime_semantic_errors(config, phase=phase, scenario=scenario)
         if errors:
             message = "; ".join(f"{item['code']}: {item['message']}" for item in errors)
@@ -439,6 +443,7 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
         "resources_remaining": resources_remaining,
         "cleanup_actions": actions,
         "cleanup_timing": cleanup_timing,
+        "nodehost_density": state.get("nodehost_density", state.get("runtime", {})),
         "artifacts_dir": str(artifacts_dir),
     }
     out = Path(out_path)
@@ -459,6 +464,7 @@ def _runtime_state(
     config: dict[str, Any],
     nodes: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    density = _legacy_container_density(config, nodes)
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
@@ -475,7 +481,9 @@ def _runtime_state(
             "cluster_startup_parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
             "replica_replicate_parallelism": _replica_replicate_parallelism(),
             "cluster_meet_fanout": CLUSTER_MEET_FANOUT,
+            **density,
         },
+        "nodehost_density": density,
         "nodes": [
             {
                 "logical_id": node["logical_id"],
@@ -495,6 +503,21 @@ def _runtime_state(
     }
 
 
+def _legacy_container_density(config: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    runtime = config.get("runtime", {})
+    logical_counts = {str(node.get("logical_id")): 1 for node in nodes}
+    return {
+        "nodehost_strategy": runtime.get("nodehost_strategy", "density_limited"),
+        "max_nodehosts": int(runtime.get("max_nodehosts", 64)),
+        "nodehosts_per_az": int(runtime.get("nodehosts_per_az", 2)),
+        "max_logical_nodes_per_nodehost": int(runtime.get("max_logical_nodes_per_nodehost", 25)),
+        "actual_nodehost_count": len(nodes),
+        "logical_nodes_per_nodehost": logical_counts,
+        "nodehost_distribution": runtime.get("nodehost_distribution", "round_robin_by_az"),
+        "node_count": len(nodes),
+    }
+
+
 def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
     return (
         _curve_scale_sample_node_count(phase, scenario) is not None
@@ -503,6 +526,7 @@ def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
         or _p24_fault_matrix_node_count(phase, scenario) is not None
         or _strict_fault_matrix_node_count(phase, scenario) is not None
         or _strict_full_flow_node_count(phase, scenario) is not None
+        or _p41_nodehost_density_node_count(phase, scenario) is not None
         or (phase, scenario) in {
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
@@ -582,6 +606,15 @@ def _strict_full_flow_node_count(phase: str, scenario: str) -> int | None:
     return profile.scale if profile else None
 
 
+def _p41_nodehost_density_node_count(phase: str, scenario: str) -> int | None:
+    if phase != P41_STAGE:
+        return None
+    match = re.fullmatch(r"p41_nodehost_density_scale_(10|30|50|100|200)", scenario)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
 def _runtime_semantic_errors(config: dict[str, Any], *, phase: str, scenario: str) -> list[dict[str, Any]]:
     errors = validate_semantics(config)
     if not _is_exact_200_runtime_exception(config, phase=phase, scenario=scenario):
@@ -620,6 +653,7 @@ def _exact_200_stage_scenario_allowed(phase: str, scenario: str) -> bool:
         or (phase, scenario) == (P32_STAGE, P32_SCENARIO)
         or (phase, scenario) == (P35_STAGE, P35_SCENARIO)
         or (phase, scenario) == (P36_STAGE, P36_SCENARIO_200)
+        or _p41_nodehost_density_node_count(phase, scenario) == 200
     )
 
 
@@ -676,6 +710,7 @@ def _create_process_scenario(
         )
     with _timeline_span(setup_timeline, "nodehost_plan", "planning", {"node_count": len(nodes)}):
         nodehosts = _process_nodehosts(config, nodes, phase, scenario, run_id)
+        _write_nodehost_density_plan_artifact(artifacts / "nodehost_density_plan.json", config, nodes, nodehosts, run_id)
     snapshots: list[dict[str, Any]] = []
     timings: dict[str, dict[str, Any]] = {}
     try:
@@ -811,30 +846,11 @@ def _process_nodehosts(
     scenario: str,
     run_id: str,
 ) -> list[dict[str, Any]]:
-    if phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
-        return _p24_process_nodehosts(nodes, run_id)
-    safe_run = run_id.lower().replace("_", "-")
-    azs = [az for az in config["network"]["azs"] if any(node["az_id"] == az for node in nodes)]
-    nodehosts: list[dict[str, Any]] = []
-    for ordinal, az in enumerate(azs):
-        hosted = [node for node in nodes if node["az_id"] == az]
-        nodehost_id = f"nodehost-{az}"
-        for node in hosted:
-            node["runtime_type"] = "docker_process"
-            node["nodehost_id"] = nodehost_id
-        ports = sorted([node["client_port"] for node in hosted] + [node["cluster_bus_port"] for node in hosted])
-        nodehosts.append(
-            {
-                "nodehost_id": nodehost_id,
-                "az_id": az,
-                "host_id": "local",
-                "ordinal": ordinal,
-                "container_name": f"vslab-{safe_run}-{nodehost_id}",
-                "ports": ports,
-                "logical_node_count": len(hosted),
-            }
-        )
-    return nodehosts
+    try:
+        plan = build_nodehost_density_plan(config=config, nodes=nodes, run_id=run_id, assign=True)
+    except NodehostDensityError as exc:
+        raise DockerRuntimeError(str(exc)) from exc
+    return list(plan["nodehosts"])
 
 
 def _p24_process_nodehosts(nodes: list[dict[str, Any]], run_id: str) -> list[dict[str, Any]]:
@@ -876,6 +892,25 @@ def _p24_process_nodehosts(nodes: list[dict[str, Any]], run_id: str) -> list[dic
             }
         )
     return nodehosts
+
+
+def _write_nodehost_density_plan_artifact(path: Path, config: dict[str, Any], nodes: list[dict[str, Any]], nodehosts: list[dict[str, Any]], run_id: str) -> None:
+    try:
+        plan = build_nodehost_density_plan(config=config, nodes=[dict(node) for node in nodes], run_id=run_id, assign=True)
+    except NodehostDensityError as exc:
+        plan = {
+            "schema_version": "v1",
+            "artifact_type": "nodehost_density_plan",
+            "status": "FAIL",
+            "run_id": run_id,
+            "reason": str(exc),
+            "nodehosts": nodehosts,
+        }
+    plan["phase_id"] = nodes[0].get("phase") if nodes else "MISSING"
+    plan["scenario_name"] = nodes[0].get("scenario") if nodes else "MISSING"
+    plan["config_sources"] = config.get("_config_sources", {})
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _start_nodehost(
@@ -1346,6 +1381,7 @@ def _process_runtime_state(
     nodes: list[dict[str, Any]],
     snapshots: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    density = _runtime_density_from_nodehosts(config, nodehosts, nodes)
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
@@ -1359,13 +1395,16 @@ def _process_runtime_state(
             "project": PROJECT,
             "cluster_startup_strategy": _process_cluster_startup_strategy(nodes),
             "cluster_create_strategy": _cluster_create_strategy(),
-            "container_strategy": "one_owned_docker_nodehost_per_virtual_az",
+            "container_strategy": "density_limited_nodehosts_with_valkey_processes",
             "nodehost_count": len(nodehosts),
             "logical_node_count": len(nodes),
             "cluster_startup_parallelism": CLUSTER_ORCHESTRATION_PARALLELISM,
             "replica_replicate_parallelism": _replica_replicate_parallelism(),
             "cluster_meet_fanout": CLUSTER_MEET_FANOUT,
+            **density,
         },
+        "nodehost_density": density,
+        "config_sources": config.get("_config_sources", {}),
         "nodehosts": [
             {
                 "nodehost_id": nodehost["nodehost_id"],
@@ -1405,6 +1444,24 @@ def _process_runtime_state(
             for node in nodes
         ],
         "cluster_snapshots": snapshots,
+    }
+
+
+def _runtime_density_from_nodehosts(config: dict[str, Any], nodehosts: list[dict[str, Any]], nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    runtime = config.get("runtime", {})
+    logical_counts = {
+        str(nodehost.get("nodehost_id")): int(nodehost.get("logical_node_count", 0) or 0)
+        for nodehost in nodehosts
+    }
+    return {
+        "nodehost_strategy": runtime.get("nodehost_strategy", "density_limited"),
+        "max_nodehosts": int(runtime.get("max_nodehosts", 64)),
+        "nodehosts_per_az": int(runtime.get("nodehosts_per_az", 2)),
+        "max_logical_nodes_per_nodehost": int(runtime.get("max_logical_nodes_per_nodehost", 25)),
+        "actual_nodehost_count": len(nodehosts),
+        "logical_nodes_per_nodehost": logical_counts,
+        "nodehost_distribution": runtime.get("nodehost_distribution", "round_robin_by_az"),
+        "node_count": len(nodes),
     }
 
 
@@ -1739,6 +1796,7 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
         "resources_remaining": resources_remaining,
         "cleanup_actions": actions,
         "cleanup_timing": cleanup_timing,
+        "nodehost_density": state.get("nodehost_density", state.get("runtime", {})),
         "artifacts_dir": str(artifacts_dir),
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -3545,6 +3603,9 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
     strict_full_flow_count = _strict_full_flow_node_count(phase, scenario)
     if strict_full_flow_count is not None:
         return node_count == strict_full_flow_count
+    p41_count = _p41_nodehost_density_node_count(phase, scenario)
+    if p41_count is not None:
+        return node_count == p41_count
     expected = {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},

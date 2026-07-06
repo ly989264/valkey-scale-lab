@@ -232,6 +232,32 @@ def test_p32_node_specs_use_slow_cluster_failure_timeout() -> None:
     assert {node["cluster_node_timeout"] for node in nodes} == {"600000"}
 
 
+def test_process_nodehosts_use_global_density_for_100_and_200() -> None:
+    config100 = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_100.yaml"))
+    nodes100 = docker_runtime._node_specs(config100, "P13_SCALE_LADDER_50_100", "scale_100", "density-100")
+    nodehosts100 = docker_runtime._process_nodehosts(config100, nodes100, "P13_SCALE_LADDER_50_100", "scale_100", "density-100")
+    assert len(nodehosts100) == 4
+    assert max(nodehost["logical_node_count"] for nodehost in nodehosts100) == 25
+
+    config200 = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
+    nodes200 = docker_runtime._node_specs(config200, "P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200", "density-200")
+    nodehosts200 = docker_runtime._process_nodehosts(config200, nodes200, "P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200", "density-200")
+    assert len(nodehosts200) == 8
+    assert max(nodehost["logical_node_count"] for nodehost in nodehosts200) == 25
+
+
+def test_process_nodehosts_preserve_single_az_fault_domains() -> None:
+    config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/single_mac_6node.yaml"))
+    nodes = docker_runtime._node_specs(config, "P03_LOCAL_DOCKER_VALKEY", "cluster_smoke", "density-smoke")
+    nodehosts = docker_runtime._process_nodehosts(config, nodes, "P03_LOCAL_DOCKER_VALKEY", "cluster_smoke", "density-smoke")
+    by_shard: dict[str, set[str]] = {}
+    for node in nodes:
+        by_shard.setdefault(node["shard_id"], set()).add(node["nodehost_id"])
+
+    assert len(nodehosts) == 2
+    assert all(len(nodehost_ids) == 2 for nodehost_ids in by_shard.values())
+
+
 def test_p32_cluster_plan_writer_allows_only_exact_stage_exception(tmp_path: Path) -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
     out = tmp_path / "cluster_plan.json"
@@ -391,8 +417,14 @@ def test_process_nodehosts_group_logical_nodes_by_az() -> None:
 
     nodehosts = docker_runtime._process_nodehosts(config, nodes, "P13_SCALE_LADDER_50_100", "scale_50", "run")
 
-    assert [nodehost["nodehost_id"] for nodehost in nodehosts] == ["nodehost-az-a", "nodehost-az-b"]
+    assert [nodehost["nodehost_id"] for nodehost in nodehosts] == [
+        "nodehost-az-a-00",
+        "nodehost-az-a-01",
+        "nodehost-az-b-00",
+        "nodehost-az-b-01",
+    ]
     assert sum(nodehost["logical_node_count"] for nodehost in nodehosts) == 50
+    assert max(nodehost["logical_node_count"] for nodehost in nodehosts) <= 25
     assert all(node["runtime_type"] == "docker_process" for node in nodes)
     assert all(node["nodehost_id"].startswith("nodehost-az-") for node in nodes)
     assert all(node["cluster_bus_port"] >= 17400 for node in nodes)

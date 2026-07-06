@@ -1,0 +1,6 @@
+runtime:
+  nodehost_strategy: density_limited
+  max_nodehosts: 64
+  nodehosts_per_az: 2
+  max_logical_nodes_per_nodehost: 25
+  nodehost_distribution: round_robin_by_az

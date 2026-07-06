@@ -31,8 +31,13 @@ def test_plan_has_unique_names_dirs_and_ports(tmp_path: Path) -> None:
     for key in ["logical_id", "container_name", "data_dir", "log_dir"]:
         values = [node[key] for node in plan["nodes"]]
         assert len(values) == len(set(values))
-    assert [nodehost["az_id"] for nodehost in plan["nodehosts"]] == ["az-a", "az-b"]
-    assert {node["nodehost_id"] for node in plan["nodes"]} == {"nodehost-az-a", "nodehost-az-b"}
+    assert [nodehost["az_id"] for nodehost in plan["nodehosts"]] == ["az-a", "az-a", "az-b", "az-b"]
+    assert {node["nodehost_id"] for node in plan["nodes"]} == {
+        "nodehost-az-a-00",
+        "nodehost-az-a-01",
+        "nodehost-az-b-00",
+        "nodehost-az-b-01",
+    }
     assert all(node["nodehost_container_name"] for node in plan["nodes"])
     ports_by_host: dict[str, list[int]] = defaultdict(list)
     for node in plan["nodes"]:
@@ -69,7 +74,7 @@ def test_1000_node_plan_is_opt_in_dry_run(tmp_path: Path) -> None:
     plan = create_plan_file("templates/configs/scale_1000_dryrun_optin.yaml", tmp_path / "scale_1000.json", dry_run=True)
     assert plan["node_count"] == 1000
     assert plan["azs"] == ["az-a", "az-b"]
-    assert len(plan["nodehosts"]) == 2
+    assert len(plan["nodehosts"]) == 40
     assert plan["constraints"]["opt_in_1000"] is True
     assert plan["constraints"]["dry_run"] is True
     assert plan["constraints"]["two_virtual_azs"] is True
@@ -115,6 +120,7 @@ def test_p32_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None
     assert plan["constraints"]["bounded_exception_phase"] == "P32_MANAGEMENT_MATRIX_200_REAL"
     assert plan["constraints"]["bounded_exception_scenario"] == "strict_management_matrix_200"
     assert plan["runtime"]["dry_run"] is False
+    assert plan["nodehost_density"]["actual_nodehost_count"] == 8
 
 
 def test_p36_exact_200_plan_uses_bounded_exception_without_raising_cap() -> None:

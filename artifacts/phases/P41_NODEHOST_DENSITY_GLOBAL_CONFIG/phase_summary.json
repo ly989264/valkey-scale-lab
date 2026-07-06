@@ -1,0 +1,50 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-07-06T00:00:00Z",
+  "missing_metrics": [],
+  "nodehost_density": {
+    "actual_nodehost_count": 4,
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 25,
+      "nodehost-az-a-01": 25,
+      "nodehost-az-b-00": 25,
+      "nodehost-az-b-01": 25
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 100,
+    "nodehost_count_by_az": {
+      "az-a": 2,
+      "az-b": 2
+    },
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
+  "phase_id": "P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/phase_summary.json",
+    "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/nodehost_density_plan.json",
+    "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/resource_preflight.json",
+    "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/run_state.json",
+    "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/cluster_plan.json",
+    "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/coverage_ledger.json",
+    "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/analysis_summary.json",
+    "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/report_index.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "Full 30/50/100/200 real Valkey evidence depends on Docker availability and free local ports.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P41_NODEHOST_DENSITY_GLOBAL_CONFIG-density-20260706",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P41 added global nodehost density config, shared density planning, fail-closed preflight checks, and nodehost density artifacts."
+}
