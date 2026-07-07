@@ -7,10 +7,23 @@ from valkey_scale_lab import resource
 from valkey_scale_lab.runtime import docker_runtime
 
 
-def test_resource_preflight_reports_port_and_cleanup_checks(tmp_path: Path, monkeypatch) -> None:
+def _patch_resource_preflight_host(monkeypatch) -> None:
     monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
+    monkeypatch.setattr(
+        resource,
+        "_cleanup_state_check",
+        lambda phase_id, scenario, node_count: resource._check(
+            "previous_cleanup_state",
+            True,
+            {"node_count": node_count, "phase_id": phase_id, "scenario": scenario},
+        ),
+    )
     monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+    monkeypatch.setattr(resource, "_host_available_memory_mb", lambda: 65536)
+
+
+def test_resource_preflight_reports_port_and_cleanup_checks(tmp_path: Path, monkeypatch) -> None:
+    _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight("templates/configs/scale_10.yaml", tmp_path / "preflight.json")
 
@@ -21,9 +34,7 @@ def test_resource_preflight_reports_port_and_cleanup_checks(tmp_path: Path, monk
 
 
 def test_p21_resource_preflight_allows_only_exact_200_exception(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count, "phase_id": phase_id, "scenario": scenario}))
-    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+    _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight("templates/configs/scale_200.yaml", tmp_path / "preflight.json")
 
@@ -36,9 +47,7 @@ def test_p21_resource_preflight_allows_only_exact_200_exception(tmp_path: Path, 
 
 
 def test_p32_resource_preflight_allows_exact_200_stage_exception(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count, "phase_id": phase_id, "scenario": scenario}))
-    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+    _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
@@ -56,9 +65,7 @@ def test_p32_resource_preflight_allows_exact_200_stage_exception(tmp_path: Path,
 
 
 def test_p32_resource_preflight_rejects_wrong_200_scenario(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
-    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+    _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
@@ -72,9 +79,7 @@ def test_p32_resource_preflight_rejects_wrong_200_scenario(tmp_path: Path, monke
 
 
 def test_p35_resource_preflight_allows_exact_200_fault_stage_exception(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count, "phase_id": phase_id, "scenario": scenario}))
-    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+    _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
@@ -93,9 +98,7 @@ def test_p35_resource_preflight_allows_exact_200_fault_stage_exception(tmp_path:
 
 
 def test_p36_resource_preflight_allows_exact_200_full_flow_exception(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count, "phase_id": phase_id, "scenario": scenario}))
-    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+    _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
@@ -114,9 +117,7 @@ def test_p36_resource_preflight_allows_exact_200_full_flow_exception(tmp_path: P
 
 
 def test_p35_resource_preflight_rejects_wrong_200_fault_scenario(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
-    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+    _patch_resource_preflight_host(monkeypatch)
 
     report = resource.run_resource_preflight(
         "templates/configs/scale_200.yaml",
@@ -130,9 +131,7 @@ def test_p35_resource_preflight_rejects_wrong_200_fault_scenario(tmp_path: Path,
 
 
 def test_resource_preflight_rejects_unmarked_real_200_config(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr(resource, "_docker_details", lambda: {"available": True, "server_version": "test"})
-    monkeypatch.setattr(resource, "_cleanup_state_check", lambda phase_id, scenario, node_count: resource._check("previous_cleanup_state", True, {"node_count": node_count}))
-    monkeypatch.setattr(resource, "_port_check", lambda base, count, name: resource._check(name, True, {"base": base, "count": count}))
+    _patch_resource_preflight_host(monkeypatch)
     raw = Path("templates/configs/scale_200.yaml").read_text(encoding="utf-8")
     bad_config = tmp_path / "bad_scale_200.yaml"
     bad_config.write_text(raw.replace("bounded_exception_phase: P21_FAILOVER_LATENCY_CURVE_200", "bounded_exception_phase: P22_FAULT_REPLICA_HOST_AZ_STOP"), encoding="utf-8")
