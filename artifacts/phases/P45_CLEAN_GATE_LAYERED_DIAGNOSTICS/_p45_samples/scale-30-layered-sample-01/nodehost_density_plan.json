@@ -1,0 +1,172 @@
+{
+  "actual_nodehost_count": 4,
+  "artifact_type": "nodehost_density_plan",
+  "config_sources": {
+    "built_in_defaults": "valkey_scale_lab.config.validation.BUILT_IN_DEFAULTS",
+    "cli_override_applied": false,
+    "cluster_node_timeout": {
+      "effective_cluster_node_timeout_ms": 30000,
+      "merge_order": [
+        "built-in defaults",
+        "global config",
+        "selected profile",
+        "scenario config",
+        "CLI override"
+      ],
+      "profile": "MISSING",
+      "requested_cluster_node_timeout_ms": 30000,
+      "source": "global"
+    },
+    "global_config_loaded": true,
+    "global_config_path": "config/valkey_scale_lab_global.yaml",
+    "merge_order": [
+      "built-in defaults",
+      "global config",
+      "scenario config",
+      "CLI override"
+    ],
+    "scenario_config_path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/templates/configs/scale_30.yaml"
+  },
+  "logical_nodes_per_nodehost": {
+    "nodehost-az-a-00": 8,
+    "nodehost-az-a-01": 7,
+    "nodehost-az-b-00": 8,
+    "nodehost-az-b-01": 7
+  },
+  "max_logical_nodes_per_nodehost": 25,
+  "max_nodehosts": 64,
+  "node_count": 30,
+  "nodehost_count_by_az": {
+    "az-a": 2,
+    "az-b": 2
+  },
+  "nodehost_density": {
+    "actual_nodehost_count": 4,
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 8,
+      "nodehost-az-a-01": 7,
+      "nodehost-az-b-00": 8,
+      "nodehost-az-b-01": 7
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 30,
+    "nodehost_count_by_az": {
+      "az-a": 2,
+      "az-b": 2
+    },
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
+  "nodehost_distribution": "round_robin_by_az",
+  "nodehost_strategy": "density_limited",
+  "nodehosts": [
+    {
+      "az_id": "az-a",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-30-layered-sample-01-20260628-nodehost-az-a-00",
+      "host_id": "local",
+      "logical_node_count": 8,
+      "nodehost_id": "nodehost-az-a-00",
+      "ordinal": 0,
+      "ports": [
+        7300,
+        7304,
+        7308,
+        7312,
+        7316,
+        7320,
+        7324,
+        7328,
+        17300,
+        17304,
+        17308,
+        17312,
+        17316,
+        17320,
+        17324,
+        17328
+      ]
+    },
+    {
+      "az_id": "az-a",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-30-layered-sample-01-20260628-nodehost-az-a-01",
+      "host_id": "local",
+      "logical_node_count": 7,
+      "nodehost_id": "nodehost-az-a-01",
+      "ordinal": 1,
+      "ports": [
+        7302,
+        7306,
+        7310,
+        7314,
+        7318,
+        7322,
+        7326,
+        17302,
+        17306,
+        17310,
+        17314,
+        17318,
+        17322,
+        17326
+      ]
+    },
+    {
+      "az_id": "az-b",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-30-layered-sample-01-20260628-nodehost-az-b-00",
+      "host_id": "local",
+      "logical_node_count": 8,
+      "nodehost_id": "nodehost-az-b-00",
+      "ordinal": 2,
+      "ports": [
+        7301,
+        7305,
+        7309,
+        7313,
+        7317,
+        7321,
+        7325,
+        7329,
+        17301,
+        17305,
+        17309,
+        17313,
+        17317,
+        17321,
+        17325,
+        17329
+      ]
+    },
+    {
+      "az_id": "az-b",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-30-layered-sample-01-20260628-nodehost-az-b-01",
+      "host_id": "local",
+      "logical_node_count": 7,
+      "nodehost_id": "nodehost-az-b-01",
+      "ordinal": 3,
+      "ports": [
+        7303,
+        7307,
+        7311,
+        7315,
+        7319,
+        7323,
+        7327,
+        17303,
+        17307,
+        17311,
+        17315,
+        17319,
+        17323,
+        17327
+      ]
+    }
+  ],
+  "nodehosts_per_az": 2,
+  "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+  "run_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628",
+  "scenario_name": "p45_scale_30_layered_sample_01",
+  "schema_version": "v1",
+  "status": "PASS"
+}

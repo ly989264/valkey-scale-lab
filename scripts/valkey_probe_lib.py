@@ -254,6 +254,8 @@ def wait_for_cluster_ok(
     timeout_seconds: float = 60.0,
     interval: float = 1.0,
     timing: dict[str, Any] | None = None,
+    diagnostic_rounds: list[dict[str, Any]] | None = None,
+    round_context: dict[str, Any] | None = None,
 ) -> tuple[bool, list[dict[str, Any]]]:
     deadline = time.monotonic() + timeout_seconds
     last: list[dict[str, Any]] = []
@@ -261,17 +263,32 @@ def wait_for_cluster_ok(
     representatives = _representative_endpoints(endpoints)
     while time.monotonic() < deadline:
         rep_started = time.monotonic()
+        rep_started_unix_ms = int(time.time() * 1000)
         probes = _probe_endpoints_concurrent(representatives)
+        rep_ended_unix_ms = int(time.time() * 1000)
         _record_wait_timing(
             timing,
             "representative_probe",
             rep_started,
             {"endpoint_count": len(representatives), "sample_scope": "representative"},
         )
+        _append_clean_gate_round(
+            diagnostic_rounds,
+            round_context,
+            probes,
+            min_nodes,
+            expected_role_counts,
+            rep_started_unix_ms,
+            rep_ended_unix_ms,
+            "representative",
+            "PASS" if _all_probes_have_full_membership(probes, min_nodes, expected_role_counts) else "FAIL",
+        )
         last = probes
         if _all_probes_have_full_membership(probes, min_nodes, expected_role_counts):
             full_started = time.monotonic()
+            full_started_unix_ms = int(time.time() * 1000)
             full_probes = _probe_endpoints_concurrent(endpoints)
+            full_ended_unix_ms = int(time.time() * 1000)
             _record_wait_timing(
                 timing,
                 "final_full_probe",
@@ -280,7 +297,30 @@ def wait_for_cluster_ok(
             )
             last = full_probes
             if _enough_probes_have_full_membership(full_probes, min_nodes, expected_role_counts):
+                _append_clean_gate_round(
+                    diagnostic_rounds,
+                    round_context,
+                    full_probes,
+                    min_nodes,
+                    expected_role_counts,
+                    full_started_unix_ms,
+                    full_ended_unix_ms,
+                    "all_nodes",
+                    "PASS",
+                )
                 return True, full_probes
+            _append_clean_gate_round(
+                diagnostic_rounds,
+                round_context,
+                full_probes,
+                min_nodes,
+                expected_role_counts,
+                full_started_unix_ms,
+                full_ended_unix_ms,
+                "all_nodes",
+                "FAIL",
+                failed_reason="final_full_probe_failed",
+            )
             _record_wait_timing(
                 timing,
                 "diagnostic_full_probe",
@@ -291,7 +331,22 @@ def wait_for_cluster_ok(
             return False, full_probes
         time.sleep(interval)
     diagnostic_started = time.monotonic()
+    diagnostic_started_unix_ms = int(time.time() * 1000)
     diagnostic = _probe_endpoints_concurrent(endpoints)
+    diagnostic_ended_unix_ms = int(time.time() * 1000)
+    _append_clean_gate_round(
+        diagnostic_rounds,
+        round_context,
+        diagnostic,
+        min_nodes,
+        expected_role_counts,
+        diagnostic_started_unix_ms,
+        diagnostic_ended_unix_ms,
+        "all_nodes",
+        "FAIL",
+        failed_reason="representative_timeout",
+        timed_out=True,
+    )
     _record_wait_timing(
         timing,
         "diagnostic_full_probe",
@@ -299,6 +354,77 @@ def wait_for_cluster_ok(
         {"endpoint_count": len(endpoints), "sample_scope": "all_nodes", "reason": "representative_timeout"},
     )
     return False, diagnostic or last
+
+
+def _append_clean_gate_round(
+    rows: list[dict[str, Any]] | None,
+    context: dict[str, Any] | None,
+    probes: list[dict[str, Any]],
+    min_nodes: int,
+    expected_role_counts: dict[str, int] | None,
+    start_ms: int,
+    end_ms: int,
+    sample_scope: str,
+    status: str,
+    *,
+    failed_reason: str | None = None,
+    timed_out: bool = False,
+) -> None:
+    if rows is None:
+        return
+    reason = failed_reason or _probe_failure_reason(probes, min_nodes, expected_role_counts)
+    slowest_node, slowest_ms = _slowest_probe(probes, end_ms - start_ms)
+    base = {
+        "schema_version": "v1",
+        "artifact_type": "clean_gate_probe_round",
+        "probe_start_ms": start_ms,
+        "probe_end_ms": end_ms,
+        "probe_duration_ms": max(0, end_ms - start_ms),
+        "sample_scope": sample_scope,
+        "sample_count": len(probes),
+        "status": status,
+        "failed_reason": "" if status == "PASS" else reason,
+        "slowest_node": slowest_node,
+        "slowest_probe_ms": slowest_ms,
+        "timed_out": timed_out,
+        "probe_status_counts": {
+            "PASS": sum(1 for probe in probes if probe.get("status") == "PASS"),
+            "FAIL": sum(1 for probe in probes if probe.get("status") != "PASS"),
+        },
+        "all_slots_covered": any(
+            int(probe.get("cluster_slots_assigned", 0) or 0) == 16384
+            and int(probe.get("cluster_slots_ok", 0) or 0) == 16384
+            for probe in probes
+        ),
+        "all_nodes_clean": status == "PASS",
+    }
+    if context:
+        base.update(context)
+    rows.append(base)
+
+
+def _probe_failure_reason(
+    probes: list[dict[str, Any]],
+    min_nodes: int,
+    expected_role_counts: dict[str, int] | None,
+) -> str:
+    if not probes:
+        return "no_probes"
+    failing = [probe for probe in probes if not _probe_has_full_membership(probe, min_nodes, expected_role_counts)]
+    if not failing:
+        return ""
+    probe = failing[0]
+    if probe.get("status") != "PASS":
+        return str(probe.get("error") or "probe_failed")[:200]
+    if probe.get("cluster_state") != "ok":
+        return f"cluster_state={probe.get('cluster_state')}"
+    return "membership_not_clean"
+
+
+def _slowest_probe(probes: list[dict[str, Any]], fallback_ms: int) -> tuple[str, int]:
+    if not probes:
+        return "MISSING", max(0, fallback_ms)
+    return str(probes[-1].get("logical_id", "MISSING")), max(0, fallback_ms)
 
 
 def _probe_endpoints_concurrent(endpoints: list[Endpoint]) -> list[dict[str, Any]]:

@@ -25,7 +25,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea"
+      "sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -356,6 +356,10 @@
       "sha256": "8db371a613849999ecc982bb4be5899b5659b371d1c25f973c483be43c03a2a3"
     },
     {
+      "path": "docs/codex/goal-loop/stages/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS.md",
+      "sha256": "ee4e05354368688d1046ffd0cf55e51fcb2d6aa4e80f2c574557d1c1a9038e08"
+    },
+    {
       "path": "docs/codex/goal-loop/templates/BLOCKED_STAGE_TEMPLATE.md",
       "sha256": "e18da55b4f638ec0a3b0f6197a91c9aed4c47ef88f633c35a1c26b6c0ea42f1e"
     },
@@ -392,8 +396,20 @@
       "sha256": "9ccd8b6931d5acec49f96349c09b5a00a805e8b6b55ae05bb02ba6d9a999bd6c"
     },
     {
+      "path": "schemas/artifact/clean_gate_diagnostics.schema.json",
+      "sha256": "abdfc805663932e181f029a98c5802b46bb8b6e8857087b64da5f8da94b67415"
+    },
+    {
+      "path": "schemas/artifact/clean_gate_probe_round.schema.json",
+      "sha256": "e840e4208f70c4d52eab3cedf2a79554104a10ae730c0678a81bff86410bd779"
+    },
+    {
       "path": "schemas/artifact/cleanup_report.schema.json",
       "sha256": "d79a8bdb0569fb51921721a4b95478d80e4cd751c180004b409a0a3d52760ba2"
+    },
+    {
+      "path": "schemas/artifact/client_recovery_sample.schema.json",
+      "sha256": "8e0f6970737c10a8c19e08541721f540697e275456780bfefa8b2aec10f74433"
     },
     {
       "path": "schemas/artifact/cluster_plan.schema.json",
@@ -420,12 +436,12 @@
       "sha256": "a910674b2aa04e9723184e91e692a415f2c9fd8166ae8d956877f1106dfbaf5b"
     },
     {
-      "path": "schemas/artifact/effective_server_profile.schema.json",
-      "sha256": "b80b469672f2d7f7ec1b9f76bdba40bd3164bd67c97209a6418a6d4d49423b26"
-    },
-    {
       "path": "schemas/artifact/effective_cluster_timeout.schema.json",
       "sha256": "786859df89b70fe2201005db350196587a5339d777e34cea34f715df0b914794"
+    },
+    {
+      "path": "schemas/artifact/effective_server_profile.schema.json",
+      "sha256": "b80b469672f2d7f7ec1b9f76bdba40bd3164bd67c97209a6418a6d4d49423b26"
     },
     {
       "path": "schemas/artifact/env_info.schema.json",
@@ -434,10 +450,6 @@
     {
       "path": "schemas/artifact/event.schema.json",
       "sha256": "edf7627a18da7dc67acbd58df083580af098d161d559d4c63931578bc97b641a"
-    },
-    {
-      "path": "schemas/artifact/client_recovery_sample.schema.json",
-      "sha256": "8e0f6970737c10a8c19e08541721f540697e275456780bfefa8b2aec10f74433"
     },
     {
       "path": "schemas/artifact/failover_latency_curve.schema.json",
@@ -457,7 +469,7 @@
     },
     {
       "path": "schemas/artifact/failover_timeline_sample.schema.json",
-      "sha256": "1bdfacb515f636976774a84b157b5e6e8b92cd209f1a9e939e2d45ae0a2d4084"
+      "sha256": "433548c9afd4ec70c6135beb984eeff50251e4d002ab00d3a3a4e544d818b829"
     },
     {
       "path": "schemas/artifact/fault_failover_scale.schema.json",
@@ -500,6 +512,10 @@
       "sha256": "c3c5acdfa70475bb78a4a1b7f5f5e70146ef34e0c04dc00866d6c555138a5b04"
     },
     {
+      "path": "schemas/artifact/layered_recovery_summary.schema.json",
+      "sha256": "8014ece0630c2808b1852be8bb912f244325cd1c13f57a46ac2152f874a506a7"
+    },
+    {
       "path": "schemas/artifact/loop_report_index.schema.json",
       "sha256": "b8087965804e5c00eedb0f47661c472bb6427542fa54a8bde098275397392152"
     },
@@ -536,12 +552,12 @@
       "sha256": "c87a404b32b6af7bb34b5bca4e39baf1eada6750e0f1cf0bdd7a95663d61d335"
     },
     {
-      "path": "schemas/artifact/observer_sample.schema.json",
-      "sha256": "e74aeab8f01c1fae415d79c24b0d8a22a12227c9d72be13f133e0789d941fafc"
-    },
-    {
       "path": "schemas/artifact/nodehost_density_plan.schema.json",
       "sha256": "7fa27e3c1687d9b41038d99a832e19568bdcd6ba8a062fbfbb8aeb6112b8ff5d"
+    },
+    {
+      "path": "schemas/artifact/observer_sample.schema.json",
+      "sha256": "e74aeab8f01c1fae415d79c24b0d8a22a12227c9d72be13f133e0789d941fafc"
     },
     {
       "path": "schemas/artifact/p13_cleanup_optimization.schema.json",
@@ -606,6 +622,10 @@
     {
       "path": "schemas/artifact/rebalance_summary.schema.json",
       "sha256": "2847b271bbba634cfc9bcaceb85606ced29cf071d804cefaf512bfaf32118215"
+    },
+    {
+      "path": "schemas/artifact/recovery_endpoint_summary.schema.json",
+      "sha256": "4cc4c4bd53b3991c91f369f37169681d930d74027f67aac84234ef3173161452"
     },
     {
       "path": "schemas/artifact/report_index.schema.json",
@@ -676,12 +696,12 @@
       "sha256": "0458bb9f767e7774a2f6a8fa58e025a2f827bd8c5d2f8fb385095d8e521c77f5"
     },
     {
-      "path": "schemas/artifact/topology_snapshot.schema.json",
-      "sha256": "532b959735ee25889a085d2b175d332292c119d69dc90560bf98d9c181ae4333"
-    },
-    {
       "path": "schemas/artifact/timeout_matrix_report.schema.json",
       "sha256": "b1d0f3f8eb7dd2f86c01e0f33fb28b5d610d5becdd295500415419cd3ac1c464"
+    },
+    {
+      "path": "schemas/artifact/topology_snapshot.schema.json",
+      "sha256": "532b959735ee25889a085d2b175d332292c119d69dc90560bf98d9c181ae4333"
     },
     {
       "path": "schemas/artifact/valkey_e2e_evidence.schema.json",
@@ -816,8 +836,16 @@
       "sha256": "7b0bf8fa8e1e97f7a4cb0baecdbde0401df791edfe77af3f250459ab7217aed0"
     },
     {
+      "path": "scripts/assert_clean_gate_diagnostics.py",
+      "sha256": "0fd37c89e6222331e7e9d224647798c7f543e22deec31434bc777f01d90cff16"
+    },
+    {
       "path": "scripts/assert_cleanup.py",
       "sha256": "edc66415dde56b3a887688f839aa474ea948ad4d46f4e7d0aa24307326723353"
+    },
+    {
+      "path": "scripts/assert_cluster_timeout_config.py",
+      "sha256": "41fd9bdd5bfac22e3aed78c6dc728c41c5cba404236e9a46773c72b36aa00ab3"
     },
     {
       "path": "scripts/assert_coverage_registry.py",
@@ -864,6 +892,10 @@
       "sha256": "0e45a49b0f15b6af112e286c446deeb0413b378f3afe9fd5903cfd934e0b1ce5"
     },
     {
+      "path": "scripts/assert_layered_recovery_semantics.py",
+      "sha256": "aaa21e31249e89925a62446a07e70726b12fa1468eecc33c4d952013d69380fd"
+    },
+    {
       "path": "scripts/assert_management_matrix_strict.py",
       "sha256": "a41fc36595f788f675e38fb169e91f4e48637d6591c72e4a69d3e1ba68b05dd4"
     },
@@ -876,12 +908,24 @@
       "sha256": "6ecea8b64da3a34f82ea8d278f812e24594d060e55c38aa7c38cf283fd67b567"
     },
     {
-      "path": "scripts/assert_no_rto_partial_coverage.py",
-      "sha256": "43b6e6dbebe9ec76175aa0c8a0e942d8860f9385973266e1944745e182600f58"
+      "path": "scripts/assert_no_clean_gate_partial_coverage.py",
+      "sha256": "bcdd8e012b3407f5b763e8cca70b52364f1c384cda9b1c200159f72bce0e7f33"
+    },
+    {
+      "path": "scripts/assert_no_clean_gate_rto_conflation.py",
+      "sha256": "65ec7a4c6220d3edc16cf45526f4093f5222ddc9c1743b96d76588ee1eae84b2"
+    },
+    {
+      "path": "scripts/assert_no_hidden_timeout_override.py",
+      "sha256": "8aba2f53b5dbb848095ffc8bc7379e7931d7a44725fb54e122ec820ce12bf20b"
     },
     {
       "path": "scripts/assert_no_nodehost_partial_coverage.py",
       "sha256": "a061fc306a6e2c4c027f0f65208676bfa460e717fbb4a3e899fd9c7a24b3e8dd"
+    },
+    {
+      "path": "scripts/assert_no_rto_partial_coverage.py",
+      "sha256": "43b6e6dbebe9ec76175aa0c8a0e942d8860f9385973266e1944745e182600f58"
     },
     {
       "path": "scripts/assert_no_server_profile_partial_coverage.py",
@@ -928,6 +972,10 @@
       "sha256": "658b09877f886cba8b18aad5a6ffb7cf74d494f3abc9e047742ed2d863818b75"
     },
     {
+      "path": "scripts/assert_timeout_matrix_artifacts.py",
+      "sha256": "2ae7379f763c56404dc6bd8bdd105c58900296150b5e1df922c0be5f8e41c444"
+    },
+    {
       "path": "scripts/assert_workload_impact.py",
       "sha256": "566782c179388216f091ce82ca7513a3a355698e7568d35f4dce1400bfea3f8a"
     },
@@ -972,24 +1020,16 @@
       "sha256": "5142c646c0355e2e287f0ba49623353a585ed04bb492ec44fd72258289029a75"
     },
     {
-      "path": "scripts/assert_cluster_timeout_config.py",
-      "sha256": "41fd9bdd5bfac22e3aed78c6dc728c41c5cba404236e9a46773c72b36aa00ab3"
-    },
-    {
-      "path": "scripts/assert_no_hidden_timeout_override.py",
-      "sha256": "8aba2f53b5dbb848095ffc8bc7379e7931d7a44725fb54e122ec820ce12bf20b"
-    },
-    {
-      "path": "scripts/assert_timeout_matrix_artifacts.py",
-      "sha256": "2ae7379f763c56404dc6bd8bdd105c58900296150b5e1df922c0be5f8e41c444"
+      "path": "scripts/failover_rto_timeout_matrix.py",
+      "sha256": "c87da20e9818371b97a31a4dc649eeba8adfe16637c5d311070047a72b7fd604"
     },
     {
       "path": "scripts/fault_failover_gate.py",
-      "sha256": "8a8a27b33338ccf705639a2eccec559e2853d42fcc41f26b42c8d615939a5db1"
+      "sha256": "4fa64de7d2c3e8d4fad69c9aa5033087897bfbc589058794e1c50c049e21bcd1"
     },
     {
       "path": "scripts/fault_failover_timeline_gate.py",
-      "sha256": "7d63a6a5e58ba2eb2027494784f14beeb463938cb8673155744a38db024d2575"
+      "sha256": "2954c94978b9387a180aefd5f3d487ebb2ae4df3809dba30f6006fed1e6f1d77"
     },
     {
       "path": "scripts/fault_safety_gate.py",
@@ -1030,10 +1070,6 @@
     {
       "path": "scripts/p42_server_profile_artifacts.py",
       "sha256": "80093dafeb4446c29a1ffa20342e70d225dd264af77a77ee0bbd316f0e54383f"
-    },
-    {
-      "path": "scripts/failover_rto_timeout_matrix.py",
-      "sha256": "c87da20e9818371b97a31a4dc649eeba8adfe16637c5d311070047a72b7fd604"
     },
     {
       "path": "scripts/p43_cluster_timeout_artifacts.py",
@@ -1077,7 +1113,7 @@
     },
     {
       "path": "scripts/valkey_probe_lib.py",
-      "sha256": "ecf706a6b3596aa22a1f64d6488759781c867cd95d8c1b0b1b4c150af69e473b"
+      "sha256": "05d6777c826a6a4acdce33c3ea91cf9a9c4a992de9b9f6293c3618e16f44a439"
     },
     {
       "path": "templates/artifacts/env_info.template.json",
@@ -1140,6 +1176,6 @@
       "sha256": "5471eff099bd2cb0940e0500e1b98ff5c0b69095e9c7ec342fb5df3034e7d2c3"
     }
   ],
-  "updated_by": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+  "updated_by": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
   "update_reason": "Refresh hashes after P44 workload window derivation fixes."
 }

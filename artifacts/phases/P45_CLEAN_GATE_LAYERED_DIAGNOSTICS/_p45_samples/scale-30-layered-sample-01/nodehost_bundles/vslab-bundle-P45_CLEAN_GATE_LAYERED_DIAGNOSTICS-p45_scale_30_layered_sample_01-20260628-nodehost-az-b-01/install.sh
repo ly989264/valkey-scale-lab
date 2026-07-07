@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+BUNDLE_DIR="/tmp/vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628-nodehost-az-b-01"
+mkdir -p "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0003-primary"
+cp "$BUNDLE_DIR/node_configs/shard-0003-primary.conf" "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0003-primary/valkey.conf"
+mkdir -p "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0007-primary"
+cp "$BUNDLE_DIR/node_configs/shard-0007-primary.conf" "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0007-primary/valkey.conf"
+mkdir -p "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0011-primary"
+cp "$BUNDLE_DIR/node_configs/shard-0011-primary.conf" "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0011-primary/valkey.conf"
+mkdir -p "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0000-replica-00"
+cp "$BUNDLE_DIR/node_configs/shard-0000-replica-00.conf" "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0000-replica-00/valkey.conf"
+mkdir -p "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0004-replica-00"
+cp "$BUNDLE_DIR/node_configs/shard-0004-replica-00.conf" "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0004-replica-00/valkey.conf"
+mkdir -p "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0008-replica-00"
+cp "$BUNDLE_DIR/node_configs/shard-0008-replica-00.conf" "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0008-replica-00/valkey.conf"
+mkdir -p "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0012-replica-00"
+cp "$BUNDLE_DIR/node_configs/shard-0012-replica-00.conf" "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0012-replica-00/valkey.conf"

@@ -1,0 +1,65 @@
+{
+  "bundle_name": "vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628-nodehost-az-a-01",
+  "node_count": 7,
+  "nodehost_id": "nodehost-az-a-01",
+  "nodes": [
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-30-layered-sample-01/node_configs/shard-0002-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0002-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0002-primary",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0002-primary/valkey.log",
+      "logical_id": "shard-0002-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0002-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-30-layered-sample-01/node_configs/shard-0006-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0006-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0006-primary",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0006-primary/valkey.log",
+      "logical_id": "shard-0006-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0006-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-30-layered-sample-01/node_configs/shard-0010-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0010-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0010-primary",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0010-primary/valkey.log",
+      "logical_id": "shard-0010-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0010-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-30-layered-sample-01/node_configs/shard-0014-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0014-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0014-primary",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0014-primary/valkey.log",
+      "logical_id": "shard-0014-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0014-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-30-layered-sample-01/node_configs/shard-0003-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0003-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0003-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0003-replica-00/valkey.log",
+      "logical_id": "shard-0003-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0003-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-30-layered-sample-01/node_configs/shard-0007-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0007-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0007-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0007-replica-00/valkey.log",
+      "logical_id": "shard-0007-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0007-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-30-layered-sample-01/node_configs/shard-0011-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0011-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0011-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0011-replica-00/valkey.log",
+      "logical_id": "shard-0011-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628/shard-0011-replica-00/valkey.pid"
+    }
+  ],
+  "run_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_30_layered_sample_01-20260628",
+  "schema_version": "v1"
+}

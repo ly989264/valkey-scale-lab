@@ -1,0 +1,1859 @@
+{
+  "cluster_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628",
+  "cluster_snapshots": [
+    {
+      "cluster_states": [
+        "fail"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 5,
+      "known_nodes_max": 5,
+      "label": "after_meet_primaries",
+      "node_count": 10,
+      "pfail_count": 0,
+      "primary_count": 4,
+      "replica_count": 0,
+      "sample_count": 2,
+      "sample_scope": "representative_primaries",
+      "samples": [
+        {
+          "cluster_state": "fail",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 5,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 0,
+          "slots_fail": 0,
+          "slots_ok": 0
+        },
+        {
+          "cluster_state": "fail",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 5,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 4,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 0,
+          "slots_fail": 0,
+          "slots_ok": 0
+        }
+      ],
+      "slots_assigned": 0,
+      "slots_fail": 0,
+      "slots_ok": 0
+    },
+    {
+      "cluster_states": [
+        "ok"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 5,
+      "known_nodes_max": 5,
+      "label": "after_add_slots",
+      "node_count": 10,
+      "pfail_count": 0,
+      "primary_count": 5,
+      "replica_count": 0,
+      "sample_count": 2,
+      "sample_scope": "representative_primaries",
+      "samples": [
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 5,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 5,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        }
+      ],
+      "slots_assigned": 16384,
+      "slots_fail": 0,
+      "slots_ok": 16384
+    },
+    {
+      "cluster_states": [
+        "ok"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 10,
+      "known_nodes_max": 10,
+      "label": "after_meet_replicas",
+      "node_count": 10,
+      "pfail_count": 0,
+      "primary_count": 7,
+      "replica_count": 0,
+      "sample_count": 2,
+      "sample_scope": "representative_by_az",
+      "samples": [
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 10,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 7,
+          "probe_status": "PASS",
+          "replica_count": 0,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        }
+      ],
+      "slots_assigned": 16384,
+      "slots_fail": 0,
+      "slots_ok": 16384
+    },
+    {
+      "cluster_states": [
+        "ok"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 10,
+      "known_nodes_max": 10,
+      "label": "after_add_replicas",
+      "node_count": 10,
+      "pfail_count": 0,
+      "primary_count": 5,
+      "replica_count": 5,
+      "sample_count": 2,
+      "sample_scope": "representative_by_az",
+      "samples": [
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        }
+      ],
+      "slots_assigned": 16384,
+      "slots_fail": 0,
+      "slots_ok": 16384
+    },
+    {
+      "cluster_states": [
+        "ok"
+      ],
+      "fail_count": 0,
+      "handshake_count": 0,
+      "known_nodes": 10,
+      "known_nodes_max": 10,
+      "label": "final",
+      "node_count": 10,
+      "pfail_count": 0,
+      "primary_count": 5,
+      "replica_count": 5,
+      "sample_count": 10,
+      "sample_scope": "all_nodes",
+      "samples": [
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0001-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0000-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0002-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0003-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0004-primary",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0001-replica-00",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0002-replica-00",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0000-replica-00",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0004-replica-00",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        {
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "logical_id": "shard-0003-replica-00",
+          "pfail_count": 0,
+          "primary_count": 5,
+          "probe_status": "PASS",
+          "replica_count": 5,
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        }
+      ],
+      "slots_assigned": 16384,
+      "slots_fail": 0,
+      "slots_ok": 16384
+    }
+  ],
+  "config_sources": {
+    "built_in_defaults": "valkey_scale_lab.config.validation.BUILT_IN_DEFAULTS",
+    "cli_override_applied": false,
+    "cluster_node_timeout": {
+      "effective_cluster_node_timeout_ms": 30000,
+      "merge_order": [
+        "built-in defaults",
+        "global config",
+        "selected profile",
+        "scenario config",
+        "CLI override"
+      ],
+      "profile": "MISSING",
+      "requested_cluster_node_timeout_ms": 30000,
+      "source": "global"
+    },
+    "global_config_loaded": true,
+    "global_config_path": "config/valkey_scale_lab_global.yaml",
+    "merge_order": [
+      "built-in defaults",
+      "global config",
+      "scenario config",
+      "CLI override"
+    ],
+    "scenario_config_path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/templates/configs/scale_10.yaml"
+  },
+  "effective_cluster_timeout": {
+    "artifact_type": "effective_cluster_timeout",
+    "cluster_node_timeout_allow_override": false,
+    "cluster_node_timeout_matrix_ms": [
+      5000,
+      10000,
+      15000,
+      30000,
+      60000
+    ],
+    "cluster_node_timeout_profile": "MISSING",
+    "cluster_node_timeout_source": "global",
+    "effective_cluster_node_timeout_ms": 30000,
+    "merge_order": [
+      "built-in defaults",
+      "global config",
+      "selected profile",
+      "scenario config",
+      "CLI override"
+    ],
+    "requested_cluster_node_timeout_ms": 30000,
+    "schema_version": "v1",
+    "source": "global"
+  },
+  "effective_server_profile": {
+    "artifact_type": "effective_server_profile",
+    "effective_io_threads": 1,
+    "effective_node_memory_limit_mb": 64,
+    "host_cpu_count": 10,
+    "io_thread_budget_reason": [
+      "within per-node and total io-thread budget"
+    ],
+    "io_thread_budget_status": "PASS",
+    "io_threads_auto": false,
+    "io_threads_auto_candidate": "SKIPPED_WITH_REASON",
+    "io_threads_max_per_node": 2,
+    "io_threads_max_total": 256,
+    "log_format": "text",
+    "logical_node_count": 10,
+    "memory_budget_status": "PENDING_PREFLIGHT",
+    "nodehost_count": 4,
+    "requested_io_threads": 1,
+    "requested_node_memory_limit_mb": 64,
+    "runtime_memory_limit_enforced": true,
+    "runtime_memory_limit_method": "valkey_maxmemory",
+    "schema_version": "v1",
+    "server_profile": "one_b_dev",
+    "total_valkey_threads": 10
+  },
+  "nodehost_density": {
+    "actual_nodehost_count": 4,
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 3,
+      "nodehost-az-a-01": 2,
+      "nodehost-az-b-00": 3,
+      "nodehost-az-b-01": 2
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 10,
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
+  "nodehosts": [
+    {
+      "az_id": "az-a",
+      "container_id": "018b1a0be45dbe2417395f8b3b93b0efbc904ca9df92a025f9adb94440cf0f6a",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "host_id": "local",
+      "logical_node_count": 3,
+      "nodehost_id": "nodehost-az-a-00",
+      "ports": [
+        7200,
+        7204,
+        7208,
+        17200,
+        17204,
+        17208
+      ]
+    },
+    {
+      "az_id": "az-a",
+      "container_id": "554c2f1bafa9a7d2ec618cb681f209194a0786269b0c907132894d2541cfbb00",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-01",
+      "host_id": "local",
+      "logical_node_count": 2,
+      "nodehost_id": "nodehost-az-a-01",
+      "ports": [
+        7202,
+        7206,
+        17202,
+        17206
+      ]
+    },
+    {
+      "az_id": "az-b",
+      "container_id": "dae325ba5a292633cce0a73004165cdbb2c7d315ccc4e3ae61ec1b3aca34ca03",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "host_id": "local",
+      "logical_node_count": 3,
+      "nodehost_id": "nodehost-az-b-00",
+      "ports": [
+        7201,
+        7205,
+        7209,
+        17201,
+        17205,
+        17209
+      ]
+    },
+    {
+      "az_id": "az-b",
+      "container_id": "150e3174b485ea59e895c949ca2ea2678bc0346bcc14b81afff5aaada616b86d",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-01",
+      "host_id": "local",
+      "logical_node_count": 2,
+      "nodehost_id": "nodehost-az-b-01",
+      "ports": [
+        7203,
+        7207,
+        17203,
+        17207
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "az_id": "az-a",
+      "client_port": 7200,
+      "cluster_bus_port": 17200,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0000-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.conf",
+      "container_id": "018b1a0be45dbe2417395f8b3b93b0efbc904ca9df92a025f9adb94440cf0f6a",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.log",
+      "logical_id": "shard-0000-primary",
+      "nodehost_container_ip": "172.18.0.4",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "nodehost_id": "nodehost-az-a-00",
+      "pid": 27,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "primary",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7201,
+      "cluster_bus_port": 17201,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0001-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.conf",
+      "container_id": "dae325ba5a292633cce0a73004165cdbb2c7d315ccc4e3ae61ec1b3aca34ca03",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.log",
+      "logical_id": "shard-0001-primary",
+      "nodehost_container_ip": "172.18.0.5",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "nodehost_id": "nodehost-az-b-00",
+      "pid": 28,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "primary",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7202,
+      "cluster_bus_port": 17202,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0002-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.conf",
+      "container_id": "554c2f1bafa9a7d2ec618cb681f209194a0786269b0c907132894d2541cfbb00",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-01",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.log",
+      "logical_id": "shard-0002-primary",
+      "nodehost_container_ip": "172.18.0.2",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-01",
+      "nodehost_id": "nodehost-az-a-01",
+      "pid": 26,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "primary",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7203,
+      "cluster_bus_port": 17203,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0003-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.conf",
+      "container_id": "150e3174b485ea59e895c949ca2ea2678bc0346bcc14b81afff5aaada616b86d",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-01",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.log",
+      "logical_id": "shard-0003-primary",
+      "nodehost_container_ip": "172.18.0.3",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-01",
+      "nodehost_id": "nodehost-az-b-01",
+      "pid": 26,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "primary",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7204,
+      "cluster_bus_port": 17204,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0004-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.conf",
+      "container_id": "018b1a0be45dbe2417395f8b3b93b0efbc904ca9df92a025f9adb94440cf0f6a",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.log",
+      "logical_id": "shard-0004-primary",
+      "nodehost_container_ip": "172.18.0.4",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "nodehost_id": "nodehost-az-a-00",
+      "pid": 30,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "primary",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0004"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7205,
+      "cluster_bus_port": 17205,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0000-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.conf",
+      "container_id": "dae325ba5a292633cce0a73004165cdbb2c7d315ccc4e3ae61ec1b3aca34ca03",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.log",
+      "logical_id": "shard-0000-replica-00",
+      "nodehost_container_ip": "172.18.0.5",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "nodehost_id": "nodehost-az-b-00",
+      "pid": 31,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "replica",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0000"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7206,
+      "cluster_bus_port": 17206,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0001-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.conf",
+      "container_id": "554c2f1bafa9a7d2ec618cb681f209194a0786269b0c907132894d2541cfbb00",
+      "container_ip": "172.18.0.2",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-01",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.log",
+      "logical_id": "shard-0001-replica-00",
+      "nodehost_container_ip": "172.18.0.2",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-01",
+      "nodehost_id": "nodehost-az-a-01",
+      "pid": 29,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "replica",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0001"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7207,
+      "cluster_bus_port": 17207,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0002-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.conf",
+      "container_id": "150e3174b485ea59e895c949ca2ea2678bc0346bcc14b81afff5aaada616b86d",
+      "container_ip": "172.18.0.3",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-01",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.log",
+      "logical_id": "shard-0002-replica-00",
+      "nodehost_container_ip": "172.18.0.3",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-01",
+      "nodehost_id": "nodehost-az-b-01",
+      "pid": 29,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "replica",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0002"
+    },
+    {
+      "az_id": "az-a",
+      "client_port": 7208,
+      "cluster_bus_port": 17208,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0003-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.conf",
+      "container_id": "018b1a0be45dbe2417395f8b3b93b0efbc904ca9df92a025f9adb94440cf0f6a",
+      "container_ip": "172.18.0.4",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.log",
+      "logical_id": "shard-0003-replica-00",
+      "nodehost_container_ip": "172.18.0.4",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "nodehost_id": "nodehost-az-a-00",
+      "pid": 33,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "replica",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0003"
+    },
+    {
+      "az_id": "az-b",
+      "client_port": 7209,
+      "cluster_bus_port": 17209,
+      "cluster_node_timeout": "30000",
+      "cluster_node_timeout_ms": 30000,
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0004-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.conf",
+      "container_id": "dae325ba5a292633cce0a73004165cdbb2c7d315ccc4e3ae61ec1b3aca34ca03",
+      "container_ip": "172.18.0.5",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00",
+      "effective_cluster_node_timeout_ms": 30000,
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "effective_server_profile": "one_b_dev",
+      "host": "127.0.0.1",
+      "host_id": "local",
+      "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.log",
+      "logical_id": "shard-0004-replica-00",
+      "nodehost_container_ip": "172.18.0.5",
+      "nodehost_container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "nodehost_id": "nodehost-az-b-00",
+      "pid": 34,
+      "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.pid",
+      "requested_cluster_node_timeout_ms": 30000,
+      "role": "replica",
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "shard_id": "shard-0004"
+    }
+  ],
+  "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+  "runtime": {
+    "actual_nodehost_count": 4,
+    "cluster_create_strategy": "valkey_cli_cluster_create_primaries",
+    "cluster_meet_fanout": 4,
+    "cluster_node_timeout_source": "global",
+    "cluster_snapshot_path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/cluster_snapshots_p45_scale_10_layered_sample_01.json",
+    "cluster_startup_parallelism": 8,
+    "cluster_startup_strategy": "all_processes_ready_then_tree_fanout_meet_parallel_slots_parallel_replicas_two_stage_probe",
+    "cluster_timeout": {
+      "artifact_type": "effective_cluster_timeout",
+      "cluster_node_timeout_allow_override": false,
+      "cluster_node_timeout_matrix_ms": [
+        5000,
+        10000,
+        15000,
+        30000,
+        60000
+      ],
+      "cluster_node_timeout_profile": "MISSING",
+      "cluster_node_timeout_source": "global",
+      "effective_cluster_node_timeout_ms": 30000,
+      "merge_order": [
+        "built-in defaults",
+        "global config",
+        "selected profile",
+        "scenario config",
+        "CLI override"
+      ],
+      "requested_cluster_node_timeout_ms": 30000,
+      "schema_version": "v1",
+      "source": "global"
+    },
+    "container_strategy": "density_limited_nodehosts_with_valkey_processes",
+    "effective_cluster_node_timeout_ms": 30000,
+    "effective_io_threads": 1,
+    "effective_node_memory_limit_mb": 64,
+    "logical_node_count": 10,
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 3,
+      "nodehost-az-a-01": 2,
+      "nodehost-az-b-00": 3,
+      "nodehost-az-b-01": 2
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "network_name": "vslab-p45-clean-gate-layered-diagnostics-p45_scale_10_layered_sample_01",
+    "node_count": 10,
+    "nodehost_count": 4,
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2,
+    "operations": [
+      {
+        "details": {
+          "cluster_states": [
+            "fail"
+          ],
+          "fail_count": 0,
+          "fanout": 4,
+          "handshake_count": 0,
+          "known_nodes": 5,
+          "known_nodes_max": 5,
+          "label": "after_meet_primaries",
+          "meet_commands": 4,
+          "node_count": 10,
+          "parallelism": 8,
+          "pfail_count": 0,
+          "primary_count": 4,
+          "replica_count": 0,
+          "sample_count": 2,
+          "sample_scope": "representative_primaries",
+          "samples": [
+            {
+              "cluster_state": "fail",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 5,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 0,
+              "slots_fail": 0,
+              "slots_ok": 0
+            },
+            {
+              "cluster_state": "fail",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 5,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 4,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 0,
+              "slots_fail": 0,
+              "slots_ok": 0
+            }
+          ],
+          "slots_assigned": 0,
+          "slots_fail": 0,
+          "slots_ok": 0,
+          "strategy": "tree_fanout_cluster_meet_after_all_processes_start"
+        },
+        "duration_seconds": 1.022605,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "tree_fanout_meet_primaries",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      },
+      {
+        "details": {
+          "cluster_states": [
+            "ok"
+          ],
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 5,
+          "known_nodes_max": 5,
+          "label": "after_add_slots",
+          "node_count": 10,
+          "parallelism": 8,
+          "pfail_count": 0,
+          "primary_count": 5,
+          "replica_count": 0,
+          "sample_count": 2,
+          "sample_scope": "representative_primaries",
+          "samples": [
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 5,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 5,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            }
+          ],
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        "duration_seconds": 3.089953,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "parallel_add_slots",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      },
+      {
+        "details": {
+          "cluster_states": [
+            "ok"
+          ],
+          "fail_count": 0,
+          "fanout": 4,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "known_nodes_max": 10,
+          "label": "after_meet_replicas",
+          "meet_commands": 5,
+          "node_count": 10,
+          "parallelism": 8,
+          "pfail_count": 0,
+          "primary_count": 7,
+          "replica_count": 0,
+          "sample_count": 2,
+          "sample_scope": "representative_by_az",
+          "samples": [
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 10,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 7,
+              "probe_status": "PASS",
+              "replica_count": 0,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            }
+          ],
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384,
+          "strategy": "tree_fanout_cluster_meet_before_parallel_replication"
+        },
+        "duration_seconds": 1.031672,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "tree_fanout_meet_replicas",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      },
+      {
+        "details": {
+          "cluster_states": [
+            "ok"
+          ],
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "known_nodes_max": 10,
+          "label": "after_add_replicas",
+          "node_count": 10,
+          "parallelism": 8,
+          "pfail_count": 0,
+          "primary_count": 5,
+          "replica_count": 5,
+          "sample_count": 2,
+          "sample_scope": "representative_by_az",
+          "samples": [
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            }
+          ],
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        "duration_seconds": 0.048504,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "parallel_add_replicas",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      },
+      {
+        "details": {
+          "cluster_states": [
+            "ok"
+          ],
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 10,
+          "known_nodes_max": 10,
+          "label": "final",
+          "node_count": 10,
+          "pfail_count": 0,
+          "primary_count": 5,
+          "replica_count": 5,
+          "sample_count": 10,
+          "sample_scope": "all_nodes",
+          "samples": [
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0001-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0000-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0002-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0003-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0004-primary",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0001-replica-00",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0002-replica-00",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0000-replica-00",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0004-replica-00",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            },
+            {
+              "cluster_state": "ok",
+              "fail_count": 0,
+              "handshake_count": 0,
+              "known_nodes": 10,
+              "logical_id": "shard-0003-replica-00",
+              "pfail_count": 0,
+              "primary_count": 5,
+              "probe_status": "PASS",
+              "replica_count": 5,
+              "slots_assigned": 16384,
+              "slots_fail": 0,
+              "slots_ok": 16384
+            }
+          ],
+          "slots_assigned": 16384,
+          "slots_fail": 0,
+          "slots_ok": 16384
+        },
+        "duration_seconds": 2.063176,
+        "finished_at": "2026-06-28T00:00:00Z",
+        "operation": "final_cluster_check",
+        "started_at": "2026-06-28T00:00:00Z",
+        "status": "PASS"
+      }
+    ],
+    "process_bootstrap_batching": {
+      "config_local_generate_seconds": 0.008487,
+      "config_remote_install_seconds": 0.115282,
+      "docker_cp_count_before_after": {
+        "after": 4,
+        "basis": "deterministic setup command plan for config transfer",
+        "before": 10,
+        "reduction": 6,
+        "stages": {
+          "config_remote_install": {
+            "after": 4,
+            "after_basis": "one config bundle docker cp per nodehost",
+            "before": 10,
+            "before_basis": "legacy per-node config docker cp",
+            "stage": "config_remote_install"
+          }
+        }
+      },
+      "docker_exec_count_before_after": {
+        "after": 12,
+        "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+        "before": 30,
+        "reduction": 18,
+        "stages": {
+          "config_remote_install": {
+            "after": 4,
+            "after_basis": "one install.sh exec per nodehost",
+            "before": 10,
+            "before_basis": "legacy per-node mkdir",
+            "stage": "config_remote_install"
+          },
+          "process_start_and_pidfile_collect": {
+            "after": 8,
+            "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+            "before": 20,
+            "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+            "stage": "process_start_and_pidfile_collect"
+          }
+        }
+      },
+      "node_count": 10,
+      "nodehost_bulk_install_used": true,
+      "nodehost_bulk_start_used": true,
+      "nodehost_count": 4,
+      "per_logical_node_evidence": [
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0000-primary.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.log",
+          "logical_id": "shard-0000-primary",
+          "pid": 27,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.pid"
+        },
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0001-primary.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.log",
+          "logical_id": "shard-0001-primary",
+          "pid": 28,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.pid"
+        },
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0002-primary.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.log",
+          "logical_id": "shard-0002-primary",
+          "pid": 26,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.pid"
+        },
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0003-primary.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.log",
+          "logical_id": "shard-0003-primary",
+          "pid": 26,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.pid"
+        },
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0004-primary.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.log",
+          "logical_id": "shard-0004-primary",
+          "pid": 30,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.pid"
+        },
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0000-replica-00.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.log",
+          "logical_id": "shard-0000-replica-00",
+          "pid": 31,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.pid"
+        },
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0001-replica-00.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.log",
+          "logical_id": "shard-0001-replica-00",
+          "pid": 29,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.pid"
+        },
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0002-replica-00.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.log",
+          "logical_id": "shard-0002-replica-00",
+          "pid": 29,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.pid"
+        },
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0003-replica-00.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.log",
+          "logical_id": "shard-0003-replica-00",
+          "pid": 33,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.pid"
+        },
+        {
+          "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0004-replica-00.conf",
+          "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.conf",
+          "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00",
+          "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.log",
+          "logical_id": "shard-0004-replica-00",
+          "pid": 34,
+          "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.pid"
+        }
+      ],
+      "pidfile_collect_seconds": 0.060279,
+      "process_start_command_seconds": 0.082357
+    },
+    "project": "valkey-scale-lab",
+    "replica_replicate_parallelism": 8,
+    "requested_cluster_node_timeout_ms": 30000,
+    "run_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628",
+    "runtime_memory_limit_enforced": true,
+    "sandbox_network": true,
+    "server_profile": {
+      "artifact_type": "effective_server_profile",
+      "effective_io_threads": 1,
+      "effective_node_memory_limit_mb": 64,
+      "host_cpu_count": 10,
+      "io_thread_budget_reason": [
+        "within per-node and total io-thread budget"
+      ],
+      "io_thread_budget_status": "PASS",
+      "io_threads_auto": false,
+      "io_threads_auto_candidate": "SKIPPED_WITH_REASON",
+      "io_threads_max_per_node": 2,
+      "io_threads_max_total": 256,
+      "log_format": "text",
+      "logical_node_count": 10,
+      "memory_budget_status": "PENDING_PREFLIGHT",
+      "nodehost_count": 4,
+      "requested_io_threads": 1,
+      "requested_node_memory_limit_mb": 64,
+      "runtime_memory_limit_enforced": true,
+      "runtime_memory_limit_method": "valkey_maxmemory",
+      "schema_version": "v1",
+      "server_profile": "one_b_dev",
+      "total_valkey_threads": 10
+    },
+    "timing_breakdown_path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/runtime_timing_breakdown_p45_scale_10_layered_sample_01.json",
+    "timings": [
+      {
+        "count": 1,
+        "details": {
+          "nodehost_count": 4,
+          "parallelism": 8
+        },
+        "duration_seconds": 0.415603,
+        "name": "nodehost_start",
+        "status": "PASS"
+      },
+      {
+        "count": 1,
+        "details": {
+          "bundle_records": [
+            {
+              "bundle_artifact_dir": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/nodehost_bundles/vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628-nodehost-az-a-00",
+              "node_count": 3,
+              "nodehost_id": "nodehost-az-a-00",
+              "remote_bundle_dir": "/tmp/vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628-nodehost-az-a-00"
+            },
+            {
+              "bundle_artifact_dir": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/nodehost_bundles/vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628-nodehost-az-a-01",
+              "node_count": 2,
+              "nodehost_id": "nodehost-az-a-01",
+              "remote_bundle_dir": "/tmp/vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628-nodehost-az-a-01"
+            },
+            {
+              "bundle_artifact_dir": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/nodehost_bundles/vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628-nodehost-az-b-00",
+              "node_count": 3,
+              "nodehost_id": "nodehost-az-b-00",
+              "remote_bundle_dir": "/tmp/vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628-nodehost-az-b-00"
+            },
+            {
+              "bundle_artifact_dir": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/nodehost_bundles/vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628-nodehost-az-b-01",
+              "node_count": 2,
+              "nodehost_id": "nodehost-az-b-01",
+              "remote_bundle_dir": "/tmp/vslab-bundle-P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628-nodehost-az-b-01"
+            }
+          ],
+          "config_local_generate_seconds": 0.008487,
+          "config_remote_install_seconds": 0.115282,
+          "docker_cp_bundle_seconds": 0.043912,
+          "docker_cp_count_before_after": {
+            "after": 4,
+            "after_basis": "one config bundle docker cp per nodehost",
+            "before": 10,
+            "before_basis": "legacy per-node config docker cp",
+            "stage": "config_remote_install"
+          },
+          "docker_exec_count_before_after": {
+            "after": 4,
+            "after_basis": "one install.sh exec per nodehost",
+            "before": 10,
+            "before_basis": "legacy per-node mkdir",
+            "stage": "config_remote_install"
+          },
+          "node_config_local_generate_seconds": 0.001327,
+          "node_count": 10,
+          "nodehost_bulk_install_used": true,
+          "nodehost_bundle_install_seconds": 0.07137,
+          "nodehost_bundle_write_seconds": 0.00716,
+          "nodehost_count": 4,
+          "parallelism": 8,
+          "process_bootstrap_batching": {
+            "config_local_generate_seconds": 0.008487,
+            "config_remote_install_seconds": 0.115282,
+            "docker_cp_count_before_after": {
+              "after": 4,
+              "basis": "deterministic setup command plan for config transfer",
+              "before": 10,
+              "reduction": 6,
+              "stages": {
+                "config_remote_install": {
+                  "after": 4,
+                  "after_basis": "one config bundle docker cp per nodehost",
+                  "before": 10,
+                  "before_basis": "legacy per-node config docker cp",
+                  "stage": "config_remote_install"
+                }
+              }
+            },
+            "docker_exec_count_before_after": {
+              "after": 12,
+              "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+              "before": 30,
+              "reduction": 18,
+              "stages": {
+                "config_remote_install": {
+                  "after": 4,
+                  "after_basis": "one install.sh exec per nodehost",
+                  "before": 10,
+                  "before_basis": "legacy per-node mkdir",
+                  "stage": "config_remote_install"
+                },
+                "process_start_and_pidfile_collect": {
+                  "after": 8,
+                  "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                  "before": 20,
+                  "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                  "stage": "process_start_and_pidfile_collect"
+                }
+              }
+            },
+            "node_count": 10,
+            "nodehost_bulk_install_used": true,
+            "nodehost_bulk_start_used": true,
+            "nodehost_count": 4,
+            "per_logical_node_evidence": [
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0000-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.log",
+                "logical_id": "shard-0000-primary",
+                "pid": 27,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0001-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.log",
+                "logical_id": "shard-0001-primary",
+                "pid": 28,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0002-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.log",
+                "logical_id": "shard-0002-primary",
+                "pid": 26,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0003-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.log",
+                "logical_id": "shard-0003-primary",
+                "pid": 26,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0004-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.log",
+                "logical_id": "shard-0004-primary",
+                "pid": 30,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0000-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.log",
+                "logical_id": "shard-0000-replica-00",
+                "pid": 31,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0001-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.log",
+                "logical_id": "shard-0001-replica-00",
+                "pid": 29,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0002-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.log",
+                "logical_id": "shard-0002-replica-00",
+                "pid": 29,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0003-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.log",
+                "logical_id": "shard-0003-replica-00",
+                "pid": 33,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0004-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.log",
+                "logical_id": "shard-0004-replica-00",
+                "pid": 34,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.pid"
+              }
+            ],
+            "pidfile_collect_seconds": 0.060279,
+            "process_start_command_seconds": 0.082357
+          }
+        },
+        "duration_seconds": 0.123823,
+        "name": "process_config_prepare",
+        "status": "PASS"
+      },
+      {
+        "count": 1,
+        "details": {
+          "node_count": 10
+        },
+        "duration_seconds": 0.012977,
+        "name": "process_ready_wait",
+        "status": "PASS"
+      },
+      {
+        "count": 1,
+        "details": {
+          "docker_exec_count_before_after": {
+            "after": 8,
+            "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+            "before": 20,
+            "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+            "stage": "process_start_and_pidfile_collect"
+          },
+          "node_count": 10,
+          "nodehost_bulk_start_used": true,
+          "nodehost_count": 4,
+          "parallelism": 8,
+          "pidfile_collect_seconds": 0.060279,
+          "process_bootstrap_batching": {
+            "config_local_generate_seconds": 0.008487,
+            "config_remote_install_seconds": 0.115282,
+            "docker_cp_count_before_after": {
+              "after": 4,
+              "basis": "deterministic setup command plan for config transfer",
+              "before": 10,
+              "reduction": 6,
+              "stages": {
+                "config_remote_install": {
+                  "after": 4,
+                  "after_basis": "one config bundle docker cp per nodehost",
+                  "before": 10,
+                  "before_basis": "legacy per-node config docker cp",
+                  "stage": "config_remote_install"
+                }
+              }
+            },
+            "docker_exec_count_before_after": {
+              "after": 12,
+              "basis": "deterministic setup command plan, excluding cluster meet/addslots/replicate probes",
+              "before": 30,
+              "reduction": 18,
+              "stages": {
+                "config_remote_install": {
+                  "after": 4,
+                  "after_basis": "one install.sh exec per nodehost",
+                  "before": 10,
+                  "before_basis": "legacy per-node mkdir",
+                  "stage": "config_remote_install"
+                },
+                "process_start_and_pidfile_collect": {
+                  "after": 8,
+                  "after_basis": "one start_all.sh and one collect_pidfiles.sh exec per nodehost",
+                  "before": 20,
+                  "before_basis": "legacy per-node valkey-server exec plus per-node pidfile cat",
+                  "stage": "process_start_and_pidfile_collect"
+                }
+              }
+            },
+            "node_count": 10,
+            "nodehost_bulk_install_used": true,
+            "nodehost_bulk_start_used": true,
+            "nodehost_count": 4,
+            "per_logical_node_evidence": [
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0000-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.log",
+                "logical_id": "shard-0000-primary",
+                "pid": 27,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0001-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.log",
+                "logical_id": "shard-0001-primary",
+                "pid": 28,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0002-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.log",
+                "logical_id": "shard-0002-primary",
+                "pid": 26,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0003-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.log",
+                "logical_id": "shard-0003-primary",
+                "pid": 26,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0004-primary.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.log",
+                "logical_id": "shard-0004-primary",
+                "pid": 30,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-primary/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0000-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.log",
+                "logical_id": "shard-0000-replica-00",
+                "pid": 31,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0000-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0001-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.log",
+                "logical_id": "shard-0001-replica-00",
+                "pid": 29,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0001-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0002-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.log",
+                "logical_id": "shard-0002-replica-00",
+                "pid": 29,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0002-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0003-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.log",
+                "logical_id": "shard-0003-replica-00",
+                "pid": 33,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0003-replica-00/valkey.pid"
+              },
+              {
+                "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01/node_configs/shard-0004-replica-00.conf",
+                "config_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.conf",
+                "data_dir": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00",
+                "log_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.log",
+                "logical_id": "shard-0004-replica-00",
+                "pid": 34,
+                "pid_file": "/tmp/valkey-scale-lab/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628/shard-0004-replica-00/valkey.pid"
+              }
+            ],
+            "pidfile_collect_seconds": 0.060279,
+            "process_start_command_seconds": 0.082357
+          },
+          "process_start_command_seconds": 0.082357
+        },
+        "duration_seconds": 0.142669,
+        "name": "process_start",
+        "status": "PASS"
+      }
+    ],
+    "type": "docker_process"
+  },
+  "scenario": "p45_scale_10_layered_sample_01",
+  "schema_version": "v1"
+}

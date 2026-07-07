@@ -6290,6 +6290,264 @@
         "md_path": "audit/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/AUDIT.md",
         "decision_json_path": "audit/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/audit_decision.json"
       }
+    },
+    {
+      "id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+      "title": "Clean-gate layered diagnostics",
+      "automatic": false,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 200,
+      "objectives": [
+        "Separate Level 1 observer recovery, Level 2 client recovery, and Level 3 clean-gate snapshot endpoints",
+        "Keep the all-node clean gate as the final PASS condition while emitting per-round diagnostics",
+        "Require real 30/50/100/200 Valkey layered failover evidence and greater-than-200 dry-run projection only"
+      ],
+      "gates": [
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "PYTHONPYCACHEPREFIX=/tmp/vslab_pyc python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "clean_gate_layered_tests",
+          "kind": "unit",
+          "command": "PYTHONPYCACHEPREFIX=/tmp/vslab_pyc python3 -m pytest -q tests/unit/test_failover_timeline_observer.py tests/unit/test_clean_gate_diagnostics.py tests/failover/test_clean_gate_layered_assertions.py tests/integration/test_failover_timeline_artifacts.py tests/integration/test_docker_runtime_contract.py tests/unit/test_goal_loop_assertions.py",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "clean_gate_layered_real",
+          "kind": "real_valkey",
+          "command": "python3 scripts/fault_failover_timeline_gate.py --phase P45_CLEAN_GATE_LAYERED_DIAGNOSTICS --artifact-dir artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS --scales 10,30,50,100,200 --samples-per-scale 1 --require-data-path",
+          "timeout_seconds": 7200,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "failover_timeline_sample_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/failover_timeline_sample.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/failover_timeline_samples.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "layered_recovery_summary_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/layered_recovery_summary.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/layered_recovery_summary.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "client_recovery_sample_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/client_recovery_sample.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/client_recovery_samples.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "observer_sample_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/observer_sample.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/observer_samples.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "events_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/event.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/events.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "metrics_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_sample.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/metrics_timeseries.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_windows_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/workload_windows.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/workload_windows.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "clean_gate_diagnostics_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_clean_gate_diagnostics.py --phase P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "layered_recovery_semantics",
+          "kind": "harness",
+          "command": "python3 scripts/assert_layered_recovery_semantics.py --phase P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "no_clean_gate_partial_coverage",
+          "kind": "harness",
+          "command": "python3 scripts/assert_no_clean_gate_partial_coverage.py --phase P45_CLEAN_GATE_LAYERED_DIAGNOSTICS --require-scales 30,50,100,200 --require-dry-run-gt-200",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "clean_gate_probe_round_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/clean_gate_probe_round.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/clean_gate_probe_rounds.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "clean_gate_diagnostics_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/clean_gate_diagnostics.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/clean_gate_diagnostics.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "recovery_endpoint_summary_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/recovery_endpoint_summary.schema.json --instance artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/recovery_endpoint_summary.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "no_clean_gate_rto_conflation",
+          "kind": "harness",
+          "command": "python3 scripts/assert_no_clean_gate_rto_conflation.py --phase P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/events.jsonl",
+          "schema": "schemas/artifact/event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/analysis_summary.json",
+          "schema": "schemas/artifact/analysis_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/report_index.json",
+          "schema": "schemas/artifact/report_index.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/failover_timeline_samples.jsonl",
+          "schema": "schemas/artifact/failover_timeline_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/layered_recovery_summary.json",
+          "schema": "schemas/artifact/layered_recovery_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/client_recovery_samples.jsonl",
+          "schema": "schemas/artifact/client_recovery_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/observer_samples.jsonl",
+          "schema": "schemas/artifact/observer_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/dry_run_gt_200_projection.json",
+          "schema": "schemas/artifact/cluster_plan.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/clean_gate_diagnostics.json",
+          "schema": "schemas/artifact/clean_gate_diagnostics.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/clean_gate_probe_rounds.jsonl",
+          "schema": "schemas/artifact/clean_gate_probe_round.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/recovery_endpoint_summary.json",
+          "schema": "schemas/artifact/recovery_endpoint_summary.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/AUDIT.md",
+        "decision_json_path": "audit/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/audit_decision.json"
+      }
     }
   ]
 }

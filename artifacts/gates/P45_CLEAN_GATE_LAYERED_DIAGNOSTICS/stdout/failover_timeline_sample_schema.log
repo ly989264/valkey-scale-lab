@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/failover_timeline_sample.schema.json instance=artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/failover_timeline_samples.jsonl

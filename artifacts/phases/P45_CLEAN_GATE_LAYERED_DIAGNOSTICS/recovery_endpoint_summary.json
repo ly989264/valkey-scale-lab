@@ -1,0 +1,160 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "recovery_endpoint_summary",
+  "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+  "run_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-recovery-endpoint-summary",
+  "status": "PASS",
+  "endpoints": [
+    {
+      "sample_id": "scale-10-layered-sample-01",
+      "node_count": 10,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410172234,
+        "end_at_ms": 1783410172766,
+        "source_ref": "observer_samples.jsonl#scale-10-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410123736,
+        "end_at_ms": 1783410172877,
+        "source_ref": "client_recovery_samples.jsonl#scale-10-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410172766,
+        "end_at_ms": 1783410173345,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-10-layered-sample-01"
+      },
+      "timeline_sample_ref": "failover_timeline_samples.jsonl#scale-10-layered-sample-01"
+    },
+    {
+      "sample_id": "scale-30-layered-sample-01",
+      "node_count": 30,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410295574,
+        "end_at_ms": 1783410305368,
+        "source_ref": "observer_samples.jsonl#scale-30-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410257393,
+        "end_at_ms": 1783410305629,
+        "source_ref": "client_recovery_samples.jsonl#scale-30-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410305368,
+        "end_at_ms": 1783410306060,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-30-layered-sample-01"
+      },
+      "timeline_sample_ref": "failover_timeline_samples.jsonl#scale-30-layered-sample-01"
+    },
+    {
+      "sample_id": "scale-50-layered-sample-01",
+      "node_count": 50,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410494497,
+        "end_at_ms": 1783410506165,
+        "source_ref": "observer_samples.jsonl#scale-50-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410459192,
+        "end_at_ms": 1783410506264,
+        "source_ref": "client_recovery_samples.jsonl#scale-50-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410506165,
+        "end_at_ms": 1783410506713,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-50-layered-sample-01"
+      },
+      "timeline_sample_ref": "failover_timeline_samples.jsonl#scale-50-layered-sample-01"
+    },
+    {
+      "sample_id": "scale-100-layered-sample-01",
+      "node_count": 100,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410633311,
+        "end_at_ms": 1783410638270,
+        "source_ref": "observer_samples.jsonl#scale-100-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410586987,
+        "end_at_ms": 1783410638410,
+        "source_ref": "client_recovery_samples.jsonl#scale-100-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410638270,
+        "end_at_ms": 1783410638937,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-100-layered-sample-01"
+      },
+      "timeline_sample_ref": "failover_timeline_samples.jsonl#scale-100-layered-sample-01"
+    },
+    {
+      "sample_id": "scale-200-layered-sample-01",
+      "node_count": 200,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410856290,
+        "end_at_ms": 1783410863262,
+        "source_ref": "observer_samples.jsonl#scale-200-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410808054,
+        "end_at_ms": 1783410863302,
+        "source_ref": "client_recovery_samples.jsonl#scale-200-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410863262,
+        "end_at_ms": 1783410864011,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-200-layered-sample-01"
+      },
+      "timeline_sample_ref": "failover_timeline_samples.jsonl#scale-200-layered-sample-01"
+    }
+  ],
+  "source_artifacts": [
+    "failover_timeline_samples.jsonl",
+    "observer_samples.jsonl",
+    "client_recovery_samples.jsonl",
+    "clean_gate_probe_rounds.jsonl"
+  ]
+}

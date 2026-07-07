@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Layered Recovery Summary",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "status",
+    "sample_count",
+    "kill_to_pfail_ms",
+    "pfail_to_cluster_ok_ms",
+    "cluster_ok_to_client_success_ms",
+    "cluster_ok_to_clean_snapshot_ms",
+    "kill_to_clean_snapshot_ms",
+    "level_1",
+    "level_2",
+    "level_3",
+    "clean_gate",
+    "per_sample"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "layered_recovery_summary"},
+    "phase_id": {"type": "string"},
+    "run_id": {"type": "string"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL"]},
+    "sample_count": {"type": "integer", "minimum": 0},
+    "per_sample": {"type": "array"}
+  },
+  "additionalProperties": true
+}

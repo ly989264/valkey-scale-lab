@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/observer_sample.schema.json instance=artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/observer_samples.jsonl

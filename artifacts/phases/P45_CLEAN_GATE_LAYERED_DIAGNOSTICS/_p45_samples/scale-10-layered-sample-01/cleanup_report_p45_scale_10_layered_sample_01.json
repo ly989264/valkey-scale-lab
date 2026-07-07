@@ -1,0 +1,263 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/_p45_samples/scale-10-layered-sample-01",
+  "cleanup_actions": [
+    {
+      "action": "terminate",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "id": "nodehost-az-a-00",
+      "invalid_pid_count": 0,
+      "pid_count": 3,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=3 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-01",
+      "id": "nodehost-az-a-01",
+      "invalid_pid_count": 0,
+      "pid_count": 2,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=2 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "id": "nodehost-az-b-00",
+      "invalid_pid_count": 0,
+      "pid_count": 3,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=3 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-01",
+      "id": "nodehost-az-b-01",
+      "invalid_pid_count": 0,
+      "pid_count": 2,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=2 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 3,
+      "alive_pids": [
+        "27",
+        "30",
+        "33"
+      ],
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "id": "nodehost-az-a-00",
+      "pid_count": 3,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 2,
+      "alive_pids": [
+        "26",
+        "29"
+      ],
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-01",
+      "id": "nodehost-az-a-01",
+      "pid_count": 2,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 3,
+      "alive_pids": [
+        "28",
+        "31",
+        "34"
+      ],
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "id": "nodehost-az-b-00",
+      "pid_count": 3,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 2,
+      "alive_pids": [
+        "26",
+        "29"
+      ],
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-01",
+      "id": "nodehost-az-b-01",
+      "pid_count": 2,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-00",
+      "id": "nodehost-az-a-00",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-a-01",
+      "id": "nodehost-az-a-01",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-00",
+      "id": "nodehost-az-b-00",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p45-clean-gate-layered-diagnostics-p45-scale-10-layered-sample-01-20260628-nodehost-az-b-01",
+      "id": "nodehost-az-b-01",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "stop",
+      "id": "dae325ba5a29",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "dae325ba5a29",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "150e3174b485",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "150e3174b485",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "018b1a0be45d",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "018b1a0be45d",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "554c2f1bafa9",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "554c2f1bafa9",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "cf825343e937",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "bounded_parallelism": true,
+    "cleanup_remove_containers_seconds": 7.316385,
+    "cleanup_remove_networks_seconds": 0.234269,
+    "cleanup_residual_scan_seconds": 0.060319,
+    "cleanup_terminate_processes_seconds": 0.066364,
+    "cleanup_verify_nodehost_empty_seconds": 0.090899,
+    "cleanup_verify_process_exit_seconds": 45.333537,
+    "parallelism": 8
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "nodehost_density": {
+    "actual_nodehost_count": 4,
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 3,
+      "nodehost-az-a-01": 2,
+      "nodehost-az-b-00": 3,
+      "nodehost-az-b-01": 2
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 10,
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
+  "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-p45_scale_10_layered_sample_01-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

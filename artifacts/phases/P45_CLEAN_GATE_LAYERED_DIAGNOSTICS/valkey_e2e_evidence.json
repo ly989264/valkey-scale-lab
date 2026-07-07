@@ -1,0 +1,635 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "valkey_e2e_evidence",
+  "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+  "run_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-valkey_e2e_evidence",
+  "created_at": "2026-07-07T07:56:02.257204Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "status": "PASS",
+  "scenario": "p44_failover_timeline",
+  "real_valkey": true,
+  "valkey_version_prefix_required": "9.1.",
+  "probe_result": "PASS",
+  "nodes_observed": 200,
+  "valkey_versions": [
+    "9.1.0"
+  ],
+  "sample_refs": [
+    "scale-10-layered-sample-01",
+    "scale-30-layered-sample-01",
+    "scale-50-layered-sample-01",
+    "scale-100-layered-sample-01",
+    "scale-200-layered-sample-01"
+  ],
+  "observed_real_scales": [
+    10,
+    30,
+    50,
+    100,
+    200
+  ],
+  "errors": [],
+  "cluster_state_observed": "ok",
+  "data_path_result": "PASS",
+  "probes": [
+    {
+      "logical_id": "shard-0000-primary",
+      "host": "127.0.0.1",
+      "port": 7200,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "host": "127.0.0.1",
+      "port": 7201,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "host": "127.0.0.1",
+      "port": 7202,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0003-primary",
+      "host": "127.0.0.1",
+      "port": 7203,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0004-primary",
+      "host": "127.0.0.1",
+      "port": 7204,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "port": 7205,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0001-replica-00",
+      "host": "127.0.0.1",
+      "port": 7206,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0002-replica-00",
+      "host": "127.0.0.1",
+      "port": 7207,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0003-replica-00",
+      "host": "127.0.0.1",
+      "port": 7208,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0004-replica-00",
+      "host": "127.0.0.1",
+      "port": 7209,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0000-primary",
+      "host": "127.0.0.1",
+      "port": 7300,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "host": "127.0.0.1",
+      "port": 7301,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "host": "127.0.0.1",
+      "port": 7302,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0003-primary",
+      "host": "127.0.0.1",
+      "port": 7303,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0004-primary",
+      "host": "127.0.0.1",
+      "port": 7304,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0005-primary",
+      "host": "127.0.0.1",
+      "port": 7305,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0006-primary",
+      "host": "127.0.0.1",
+      "port": 7306,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0007-primary",
+      "host": "127.0.0.1",
+      "port": 7307,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0008-primary",
+      "host": "127.0.0.1",
+      "port": 7308,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0009-primary",
+      "host": "127.0.0.1",
+      "port": 7309,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0010-primary",
+      "host": "127.0.0.1",
+      "port": 7310,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0011-primary",
+      "host": "127.0.0.1",
+      "port": 7311,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0012-primary",
+      "host": "127.0.0.1",
+      "port": 7312,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0013-primary",
+      "host": "127.0.0.1",
+      "port": 7313,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0014-primary",
+      "host": "127.0.0.1",
+      "port": 7314,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0000-replica-00",
+      "host": "127.0.0.1",
+      "port": 7315,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0000-primary",
+      "host": "127.0.0.1",
+      "port": 7400,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "host": "127.0.0.1",
+      "port": 7401,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "host": "127.0.0.1",
+      "port": 7402,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0003-primary",
+      "host": "127.0.0.1",
+      "port": 7403,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0004-primary",
+      "host": "127.0.0.1",
+      "port": 7404,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0005-primary",
+      "host": "127.0.0.1",
+      "port": 7405,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0006-primary",
+      "host": "127.0.0.1",
+      "port": 7406,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0007-primary",
+      "host": "127.0.0.1",
+      "port": 7407,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0008-primary",
+      "host": "127.0.0.1",
+      "port": 7408,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0009-primary",
+      "host": "127.0.0.1",
+      "port": 7409,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0010-primary",
+      "host": "127.0.0.1",
+      "port": 7410,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0011-primary",
+      "host": "127.0.0.1",
+      "port": 7411,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0012-primary",
+      "host": "127.0.0.1",
+      "port": 7412,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0013-primary",
+      "host": "127.0.0.1",
+      "port": 7413,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0014-primary",
+      "host": "127.0.0.1",
+      "port": 7414,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0015-primary",
+      "host": "127.0.0.1",
+      "port": 7415,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0000-primary",
+      "host": "127.0.0.1",
+      "port": 7500,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "host": "127.0.0.1",
+      "port": 7501,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "host": "127.0.0.1",
+      "port": 7502,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0003-primary",
+      "host": "127.0.0.1",
+      "port": 7503,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0004-primary",
+      "host": "127.0.0.1",
+      "port": 7504,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0005-primary",
+      "host": "127.0.0.1",
+      "port": 7505,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0006-primary",
+      "host": "127.0.0.1",
+      "port": 7506,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0007-primary",
+      "host": "127.0.0.1",
+      "port": 7507,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0008-primary",
+      "host": "127.0.0.1",
+      "port": 7508,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0009-primary",
+      "host": "127.0.0.1",
+      "port": 7509,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0010-primary",
+      "host": "127.0.0.1",
+      "port": 7510,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0011-primary",
+      "host": "127.0.0.1",
+      "port": 7511,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0012-primary",
+      "host": "127.0.0.1",
+      "port": 7512,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0013-primary",
+      "host": "127.0.0.1",
+      "port": 7513,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0014-primary",
+      "host": "127.0.0.1",
+      "port": 7514,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0015-primary",
+      "host": "127.0.0.1",
+      "port": 7515,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0000-primary",
+      "host": "127.0.0.1",
+      "port": 7800,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "host": "127.0.0.1",
+      "port": 7801,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "host": "127.0.0.1",
+      "port": 7802,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0003-primary",
+      "host": "127.0.0.1",
+      "port": 7803,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0004-primary",
+      "host": "127.0.0.1",
+      "port": 7804,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0005-primary",
+      "host": "127.0.0.1",
+      "port": 7805,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0006-primary",
+      "host": "127.0.0.1",
+      "port": 7806,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0007-primary",
+      "host": "127.0.0.1",
+      "port": 7807,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0008-primary",
+      "host": "127.0.0.1",
+      "port": 7808,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0009-primary",
+      "host": "127.0.0.1",
+      "port": 7809,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0010-primary",
+      "host": "127.0.0.1",
+      "port": 7810,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0011-primary",
+      "host": "127.0.0.1",
+      "port": 7811,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0012-primary",
+      "host": "127.0.0.1",
+      "port": 7812,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0013-primary",
+      "host": "127.0.0.1",
+      "port": 7813,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0014-primary",
+      "host": "127.0.0.1",
+      "port": 7814,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    },
+    {
+      "logical_id": "shard-0015-primary",
+      "host": "127.0.0.1",
+      "port": 7815,
+      "status": "PASS",
+      "version": "9.1.0",
+      "cluster_state": "ok"
+    }
+  ],
+  "cleanup": {
+    "status": "PASS",
+    "path": "cleanup_report.json"
+  }
+}

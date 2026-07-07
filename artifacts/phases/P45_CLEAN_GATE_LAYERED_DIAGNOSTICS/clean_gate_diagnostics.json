@@ -1,0 +1,39 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "clean_gate_diagnostics",
+  "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+  "run_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-clean-gate-diagnostics",
+  "status": "PASS",
+  "sample_count": 5,
+  "sample_refs": [
+    "scale-10-layered-sample-01",
+    "scale-30-layered-sample-01",
+    "scale-50-layered-sample-01",
+    "scale-100-layered-sample-01",
+    "scale-200-layered-sample-01"
+  ],
+  "first_cluster_ok_at_ms": 1783410172766,
+  "first_slots_covered_at_ms": 1783410172766,
+  "first_representative_clean_at_ms": 1783410173341,
+  "first_all_nodes_clean_at_ms": 1783410173345,
+  "clean_gate_total_ms": 7,
+  "probe_round_count": 10,
+  "full_probe_count": 5,
+  "representative_probe_count": 5,
+  "representative_probe_total_ms": 16.0,
+  "all_nodes_probe_count": 5,
+  "all_nodes_probe_total_ms": 417.0,
+  "probe_timeout_count": 0,
+  "max_single_probe_ms": 289,
+  "slowest_probe_node": "shard-0099-replica-00",
+  "slowest_probe_ms": 289,
+  "first_client_success_at_ms": 1783410172877,
+  "first_pfail_seen_at_ms": 1783410172234,
+  "first_fail_seen_at_ms": 1783410172766,
+  "first_promotion_seen_at_ms": 1783410172766,
+  "last_failing_reason": "not_applicable_clean_gate_passed_without_failed_round",
+  "source_artifacts": [
+    "failover_timeline_samples.jsonl",
+    "clean_gate_probe_rounds.jsonl"
+  ]
+}

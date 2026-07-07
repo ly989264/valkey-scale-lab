@@ -21,6 +21,9 @@ from valkey_scale_lab.observer.failover_timeline import (  # noqa: E402
     ClientRecoveryAccumulator,
     FailoverTimelineObserver,
     ObserverEndpoint,
+    build_clean_gate_diagnostics,
+    build_layered_recovery_summary,
+    build_recovery_endpoint_summary,
     build_rto_summary,
     derive_rto_metrics,
     monotonic_ms,
@@ -38,6 +41,7 @@ from fault_failover_gate import (  # noqa: E402
 )
 
 PHASE = "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"
+P45_PHASE = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
 REQUIRED_REAL_SCALES = [30, 50, 100, 200]
 SMOKE_SCALE = 10
 
@@ -122,11 +126,12 @@ def main() -> int:
         artifact_dir = ROOT / artifact_dir
     artifact_dir.mkdir(parents=True, exist_ok=True)
     scales = [int(item) for item in args.scales.split(",") if item]
-    required = [scale for scale in REQUIRED_REAL_SCALES if scale in scales]
+    required = REQUIRED_REAL_SCALES if args.phase == P45_PHASE else [scale for scale in REQUIRED_REAL_SCALES if scale in scales]
     errors: list[str] = []
     samples: list[dict[str, Any]] = []
     observer_rows: list[dict[str, Any]] = []
     client_rows: list[dict[str, Any]] = []
+    clean_rounds: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
     cleanup_reports: list[dict[str, Any]] = []
@@ -141,36 +146,44 @@ def main() -> int:
             samples.append(result["timeline_sample"])
             observer_rows.extend(result["observer_samples"])
             client_rows.extend(result["client_samples"])
+            clean_rounds.extend(result["clean_gate_rounds"])
             events.extend(result["events"])
             metrics.extend(result["metrics"])
             cleanup_reports.append(result["cleanup_report"])
             if result["timeline_sample"].get("status") != "PASS":
                 errors.extend(result["errors"])
 
-    write_jsonl(artifact_dir / "failover_timeline_samples.jsonl", samples)
-    write_jsonl(artifact_dir / "observer_samples.jsonl", observer_rows)
-    write_jsonl(artifact_dir / "client_recovery_samples.jsonl", client_rows)
-    write_jsonl(artifact_dir / "events.jsonl", events)
-    write_jsonl(artifact_dir / "metrics_timeseries.jsonl", metrics)
-    write_common_artifacts(args.phase, artifact_dir, samples, client_rows, cleanup_reports, errors)
-    write_gt_200_projection(args.phase, artifact_dir, errors)
-
     observed = {sample.get("node_count") for sample in samples if sample.get("status") == "PASS" and sample.get("real_valkey") is True}
     missing = sorted(set(required) - observed)
     if missing:
-        errors.append(f"missing required real P44 scales {missing}")
+        errors.append(f"missing required real {args.phase} scales {missing}")
+    write_jsonl(artifact_dir / "failover_timeline_samples.jsonl", samples)
+    write_jsonl(artifact_dir / "observer_samples.jsonl", observer_rows)
+    write_jsonl(artifact_dir / "client_recovery_samples.jsonl", client_rows)
+    if args.phase == P45_PHASE:
+        write_jsonl(artifact_dir / "clean_gate_probe_rounds.jsonl", clean_rounds)
+    write_jsonl(artifact_dir / "events.jsonl", events)
+    write_jsonl(artifact_dir / "metrics_timeseries.jsonl", metrics)
+    write_common_artifacts(args.phase, artifact_dir, samples, client_rows, cleanup_reports, errors, clean_rounds=clean_rounds)
+    write_gt_200_projection(args.phase, artifact_dir, errors)
     if errors:
         write_blocked(args.phase, errors)
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
         return 1
     clear_blocked(args.phase)
-    print(f"PASS P44 failover timeline artifacts at {artifact_dir}")
+    print(f"PASS {args.phase} failover timeline artifacts at {artifact_dir}")
     return 0
 
 
 def config_for_scale(scale: int) -> Path:
     return ROOT / "templates" / "configs" / f"scale_{scale}.yaml"
+
+
+def scenario_for_phase(phase: str, scale: int, index: int) -> str:
+    if phase == P45_PHASE:
+        return f"p45_scale_{scale}_layered_sample_{index:02d}"
+    return f"p44_scale_{scale}_timeline_sample_{index:02d}"
 
 
 def run_resource_preflight(phase: str, scale: int, artifact_dir: Path) -> tuple[bool, Path, str]:
@@ -189,7 +202,7 @@ def run_resource_preflight(phase: str, scale: int, artifact_dir: Path) -> tuple[
             "--phase",
             phase,
             "--scenario",
-            f"p44_scale_{scale}_timeline_sample_01",
+            scenario_for_phase(phase, scale, 1),
         ],
         timeout=240,
     )
@@ -212,15 +225,16 @@ def run_resource_preflight(phase: str, scale: int, artifact_dir: Path) -> tuple[
 
 
 def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, index: int) -> dict[str, Any]:
-    sample_id = f"scale-{scale}-timeline-sample-{index:02d}"
-    scenario = f"p44_scale_{scale}_timeline_sample_{index:02d}"
-    sample_dir = artifact_dir / "_p44_samples" / sample_id
+    sample_id = f"scale-{scale}-{'layered' if args.phase == P45_PHASE else 'timeline'}-sample-{index:02d}"
+    scenario = scenario_for_phase(args.phase, scale, index)
+    sample_dir = artifact_dir / ("_p45_samples" if args.phase == P45_PHASE else "_p44_samples") / sample_id
     sample_dir.mkdir(parents=True, exist_ok=True)
     state_path = sample_dir / "state_failover.json"
     run_id = f"{args.phase}-{sample_id}-real"
     errors: list[str] = []
     observer_samples: list[dict[str, Any]] = []
     client_samples: list[dict[str, Any]] = []
+    clean_gate_rounds: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
     cleanup_report: dict[str, Any] = {"status": "MISSING", "resources_remaining": [{"reason": "cleanup did not run"}]}
@@ -364,7 +378,21 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
         )
         (sample_dir / "fault_clear.stdout.log").write_text(clear.stdout, encoding="utf-8", errors="replace")
         (sample_dir / "fault_clear.stderr.log").write_text(clear.stderr, encoding="utf-8", errors="replace")
-        clean_ok, _clean_probes = wait_for_stable_cluster_ok(endpoints, scale, timeout_seconds=max(180, scale * 2), interval=2)
+        clean_ok, _clean_probes = wait_for_stable_cluster_ok(
+            endpoints,
+            scale,
+            timeout_seconds=max(180, scale * 2),
+            interval=2,
+            diagnostic_rounds=clean_gate_rounds if args.phase == P45_PHASE else None,
+            round_context={
+                "phase_id": args.phase,
+                "run_id": run_id,
+                "scenario_name": scenario,
+                "sample_id": sample_id,
+                "node_count": scale,
+                "source": "clean_gate",
+            },
+        )
         clean_snapshot_passed_at_ms = unix_ms() if clean_ok else "MISSING"
         observer.stop()
         observer_samples = list(observer.samples)
@@ -421,6 +449,10 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
             "moved_count": client_summary["moved_count"],
             "ask_count": client_summary["ask_count"],
             "clean_snapshot_endpoint": "separate_clean_gate_after_cluster_ok",
+            "level_1_source": "observer",
+            "level_2_source": "client_probe",
+            "level_3_source": "clean_gate",
+            "clean_gate_probe_rounds_ref": f"clean_gate_probe_rounds.jsonl#{sample_id}" if args.phase == P45_PHASE else "MISSING",
             "state_ref": rel(state_path),
             "cleanup_ref": rel(sample_dir / "cleanup_report.json"),
         }
@@ -460,6 +492,7 @@ def run_single_sample(args: argparse.Namespace, artifact_dir: Path, scale: int, 
         "timeline_sample": timeline_sample,
         "observer_samples": observer_samples,
         "client_samples": client_samples,
+        "clean_gate_rounds": clean_gate_rounds,
         "events": events,
         "metrics": metrics,
         "cleanup_report": cleanup_report,
@@ -477,7 +510,7 @@ def run_client_probe(
     fault_apply_at_ms: int,
 ) -> dict[str, Any]:
     ts = unix_ms()
-    key = f"{target['slot_key']}:p44:{sample_id}:{ts}"
+    key = f"{target['slot_key']}:{'p45' if phase == P45_PHASE else 'p44'}:{sample_id}:{ts}"
     value = f"value-{ts}"
     status = "FAIL"
     set_status = "FAIL"
@@ -585,8 +618,8 @@ def event_rows(sample: dict[str, Any]) -> list[dict[str, Any]]:
                 "subject_type": "failover_timeline",
                 "subject_id": sample.get("target_primary_logical_id", "MISSING"),
                 "operation_id": "",
-                "fault_id": f"p44-primary-stop-{sample['sample_id']}",
-                "message": f"P44 {event_type} for {sample['sample_id']}",
+                "fault_id": f"{'p45' if sample['phase_id'] == P45_PHASE else 'p44'}-primary-stop-{sample['sample_id']}",
+                "message": f"{sample['phase_id']} {event_type} for {sample['sample_id']}",
                 "metadata": {"node_count": sample.get("node_count"), "field": field},
             }
         )
@@ -611,7 +644,7 @@ def metric_rows(sample: dict[str, Any]) -> list[dict[str, Any]]:
                 "run_id": sample["run_id"],
                 "phase_id": sample["phase_id"],
                 "timestamp": iso_from_ms(sample.get("clean_snapshot_passed_at_ms", "MISSING")),
-                "source": "p44_failover_timeline",
+                "source": "p45_layered_failover_timeline" if sample["phase_id"] == P45_PHASE else "p44_failover_timeline",
                 "metrics": {metric: value},
                 "scenario_name": sample["scenario_name"],
                 "sample_id": sample["sample_id"],
@@ -636,9 +669,15 @@ def write_common_artifacts(
     client_rows: list[dict[str, Any]],
     cleanup_reports: list[dict[str, Any]],
     errors: list[str],
+    *,
+    clean_rounds: list[dict[str, Any]] | None = None,
 ) -> None:
     status = "PASS" if not errors and samples and all(sample.get("status") == "PASS" for sample in samples) else "FAIL"
-    refs = [rel(base / name) for name in ["failover_timeline_samples.jsonl", "observer_samples.jsonl", "client_recovery_samples.jsonl", "failover_rto_summary.json"]]
+    p45 = phase == P45_PHASE
+    summary_name = "layered_recovery_summary.json" if p45 else "failover_rto_summary.json"
+    refs = [rel(base / name) for name in ["failover_timeline_samples.jsonl", "observer_samples.jsonl", "client_recovery_samples.jsonl", summary_name]]
+    if p45:
+        refs.extend(rel(base / name) for name in ["clean_gate_diagnostics.json", "clean_gate_probe_rounds.jsonl", "recovery_endpoint_summary.json"])
     pass_samples = [sample for sample in samples if sample.get("status") == "PASS"]
     first_sample = pass_samples[0] if pass_samples else {}
     summary = build_rto_summary(
@@ -651,14 +690,24 @@ def write_common_artifacts(
         scale="10,30,50,100,200",
     )
     summary["status"] = status
-    write_json(base / "failover_rto_summary.json", summary)
+    if p45:
+        write_json(base / "failover_rto_summary.json", summary)
+        write_json(base / "clean_gate_diagnostics.json", build_clean_gate_diagnostics(samples, clean_rounds or [], phase_id=phase, run_id=f"{phase}-clean-gate-diagnostics"))
+        layered = build_layered_recovery_summary(samples, phase_id=phase, run_id=f"{phase}-layered-recovery-summary")
+        layered["status"] = status
+        write_json(base / "layered_recovery_summary.json", layered)
+        endpoint_summary = build_recovery_endpoint_summary(samples, phase_id=phase, run_id=f"{phase}-recovery-endpoint-summary")
+        endpoint_summary["status"] = status
+        write_json(base / "recovery_endpoint_summary.json", endpoint_summary)
+    else:
+        write_json(base / "failover_rto_summary.json", summary)
     write_json(
         base / "phase_summary.json",
         base_artifact(
             phase,
             "phase_summary",
             status,
-            summary="P44 failover RTO timeline observability",
+            summary="P45 clean-gate layered diagnostics" if p45 else "P44 failover RTO timeline observability",
             required_artifacts=refs,
             missing_metrics=[] if status == "PASS" else [{"metric": "p44_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}],
             risks=[],
@@ -670,14 +719,14 @@ def write_common_artifacts(
             phase,
             "quant_summary",
             status,
-            summary="P44 RTO metrics derived only from failover_timeline_samples.jsonl.",
+            summary="P45 layered recovery metrics derived from observer, client probe, and clean-gate artifacts." if p45 else "P44 RTO metrics derived only from failover_timeline_samples.jsonl.",
             artifact_refs=refs,
             source_artifacts=refs,
             missing_data=[] if status == "PASS" else [{"field": "p44_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}],
             runtime_claims={"real_valkey_claimed": status == "PASS", "management_runtime_claimed": False, "fault_runtime_claimed": True},
         ),
     )
-    write_json(base / "analysis_summary.json", base_artifact(phase, "analysis_summary", status, source_artifacts=refs, findings=[], missing_metrics=[] if status == "PASS" else [{"metric": "p44_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}]))
+    write_json(base / "analysis_summary.json", base_artifact(phase, "analysis_summary", status, source_artifacts=refs, findings=[], missing_metrics=[] if status == "PASS" else [{"metric": "p45_layered_coverage" if p45 else "p44_real_timeline_coverage", "status": "MISSING", "reason": "; ".join(errors)[:500]}]))
     write_json(base / "report_index.json", base_artifact(phase, "report_index", status, source_artifacts=refs, reports=[]))
     write_json(base / "cleanup_report.json", merge_cleanup_reports(phase, cleanup_reports))
     write_json(base / "workload_windows.json", workload_windows_artifact(phase, samples, client_rows, status))
@@ -694,7 +743,7 @@ def write_gt_200_projection(phase: str, base: Path, errors: list[str]) -> None:
                 "dry_run": True,
                 "real_valkey": False,
                 "runtime_resources_created": False,
-                "projection_only_reason": "Greater-than-200 P44 coverage is dry-run projection only.",
+                "projection_only_reason": f"Greater-than-200 {phase} coverage is dry-run projection only.",
             }
         )
         write_json(base / "dry_run_gt_200_projection.json", projection)
@@ -885,6 +934,10 @@ def _missing_timeline_sample(phase: str, run_id: str, scenario: str, sample_id: 
         "first_client_success_source": "client_recovery_samples.jsonl",
         "observer_samples_ref": f"observer_samples.jsonl#{sample_id}",
         "client_recovery_samples_ref": f"client_recovery_samples.jsonl#{sample_id}",
+        "level_1_source": "observer",
+        "level_2_source": "client_probe",
+        "level_3_source": "clean_gate" if phase == P45_PHASE else "MISSING",
+        "clean_gate_probe_rounds_ref": f"clean_gate_probe_rounds.jsonl#{sample_id}" if phase == P45_PHASE else "MISSING",
     }
     for field in [
         "fault_apply_at_ms",
@@ -915,7 +968,7 @@ def write_blocked(phase: str, errors: list[str]) -> None:
             [
                 f"# BLOCKED - {phase}",
                 "",
-                "P44 cannot pass without real Valkey failover timeline observer evidence for 30/50/100/200.",
+                f"{phase} cannot pass without real Valkey failover timeline observer evidence for 30/50/100/200.",
                 "",
                 "Blocking reasons:",
                 *[f"- {error}" for error in errors],

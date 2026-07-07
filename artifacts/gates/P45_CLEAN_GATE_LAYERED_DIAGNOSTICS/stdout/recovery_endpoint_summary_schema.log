@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/recovery_endpoint_summary.schema.json instance=artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/recovery_endpoint_summary.json

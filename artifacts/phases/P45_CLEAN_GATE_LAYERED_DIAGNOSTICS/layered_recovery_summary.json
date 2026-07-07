@@ -1,0 +1,297 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "layered_recovery_summary",
+  "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+  "run_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-layered-recovery-summary",
+  "status": "PASS",
+  "sample_count": 5,
+  "sample_refs": [
+    "scale-10-layered-sample-01",
+    "scale-30-layered-sample-01",
+    "scale-50-layered-sample-01",
+    "scale-100-layered-sample-01",
+    "scale-200-layered-sample-01"
+  ],
+  "required_real_scales": [
+    30,
+    50,
+    100,
+    200
+  ],
+  "observed_real_scales": [
+    10,
+    30,
+    50,
+    100,
+    200
+  ],
+  "per_sample": [
+    {
+      "sample_id": "scale-10-layered-sample-01",
+      "node_count": 10,
+      "kill_to_pfail_ms": 48498.0,
+      "pfail_to_cluster_ok_ms": 532.0,
+      "kill_to_client_recovered_ms": 49141.0,
+      "cluster_ok_to_client_success_ms": 111.0,
+      "cluster_ok_to_clean_snapshot_ms": 579.0,
+      "kill_to_clean_snapshot_ms": 49609.0,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410172234,
+        "end_at_ms": 1783410172766,
+        "source_ref": "observer_samples.jsonl#scale-10-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410123736,
+        "end_at_ms": 1783410172877,
+        "source_ref": "client_recovery_samples.jsonl#scale-10-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410172766,
+        "end_at_ms": 1783410173345,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-10-layered-sample-01"
+      },
+      "clean_gate": {
+        "source": "clean_gate",
+        "start_at_ms": 1783410172766,
+        "clean_snapshot_passed_at_ms": 1783410173345,
+        "probe_rounds_ref": "clean_gate_probe_rounds.jsonl#scale-10-layered-sample-01"
+      }
+    },
+    {
+      "sample_id": "scale-30-layered-sample-01",
+      "node_count": 30,
+      "kill_to_pfail_ms": 38181.0,
+      "pfail_to_cluster_ok_ms": 9794.0,
+      "kill_to_client_recovered_ms": 48236.0,
+      "cluster_ok_to_client_success_ms": 261.0,
+      "cluster_ok_to_clean_snapshot_ms": 692.0,
+      "kill_to_clean_snapshot_ms": 48667.0,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410295574,
+        "end_at_ms": 1783410305368,
+        "source_ref": "observer_samples.jsonl#scale-30-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410257393,
+        "end_at_ms": 1783410305629,
+        "source_ref": "client_recovery_samples.jsonl#scale-30-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410305368,
+        "end_at_ms": 1783410306060,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-30-layered-sample-01"
+      },
+      "clean_gate": {
+        "source": "clean_gate",
+        "start_at_ms": 1783410305368,
+        "clean_snapshot_passed_at_ms": 1783410306060,
+        "probe_rounds_ref": "clean_gate_probe_rounds.jsonl#scale-30-layered-sample-01"
+      }
+    },
+    {
+      "sample_id": "scale-50-layered-sample-01",
+      "node_count": 50,
+      "kill_to_pfail_ms": 35305.0,
+      "pfail_to_cluster_ok_ms": 11668.0,
+      "kill_to_client_recovered_ms": 47072.0,
+      "cluster_ok_to_client_success_ms": 99.0,
+      "cluster_ok_to_clean_snapshot_ms": 548.0,
+      "kill_to_clean_snapshot_ms": 47521.0,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410494497,
+        "end_at_ms": 1783410506165,
+        "source_ref": "observer_samples.jsonl#scale-50-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410459192,
+        "end_at_ms": 1783410506264,
+        "source_ref": "client_recovery_samples.jsonl#scale-50-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410506165,
+        "end_at_ms": 1783410506713,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-50-layered-sample-01"
+      },
+      "clean_gate": {
+        "source": "clean_gate",
+        "start_at_ms": 1783410506165,
+        "clean_snapshot_passed_at_ms": 1783410506713,
+        "probe_rounds_ref": "clean_gate_probe_rounds.jsonl#scale-50-layered-sample-01"
+      }
+    },
+    {
+      "sample_id": "scale-100-layered-sample-01",
+      "node_count": 100,
+      "kill_to_pfail_ms": 46324.0,
+      "pfail_to_cluster_ok_ms": 4959.0,
+      "kill_to_client_recovered_ms": 51423.0,
+      "cluster_ok_to_client_success_ms": 140.0,
+      "cluster_ok_to_clean_snapshot_ms": 667.0,
+      "kill_to_clean_snapshot_ms": 51950.0,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410633311,
+        "end_at_ms": 1783410638270,
+        "source_ref": "observer_samples.jsonl#scale-100-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410586987,
+        "end_at_ms": 1783410638410,
+        "source_ref": "client_recovery_samples.jsonl#scale-100-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410638270,
+        "end_at_ms": 1783410638937,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-100-layered-sample-01"
+      },
+      "clean_gate": {
+        "source": "clean_gate",
+        "start_at_ms": 1783410638270,
+        "clean_snapshot_passed_at_ms": 1783410638937,
+        "probe_rounds_ref": "clean_gate_probe_rounds.jsonl#scale-100-layered-sample-01"
+      }
+    },
+    {
+      "sample_id": "scale-200-layered-sample-01",
+      "node_count": 200,
+      "kill_to_pfail_ms": 48236.0,
+      "pfail_to_cluster_ok_ms": 6972.0,
+      "kill_to_client_recovered_ms": 55248.0,
+      "cluster_ok_to_client_success_ms": 40.0,
+      "cluster_ok_to_clean_snapshot_ms": 749.0,
+      "kill_to_clean_snapshot_ms": 55957.0,
+      "level_1": {
+        "source": "observer",
+        "start_field": "first_pfail_seen_at_ms",
+        "end_field": "first_cluster_ok_at_ms",
+        "start_at_ms": 1783410856290,
+        "end_at_ms": 1783410863262,
+        "source_ref": "observer_samples.jsonl#scale-200-layered-sample-01"
+      },
+      "level_2": {
+        "source": "client_probe",
+        "start_field": "fault_apply_at_ms",
+        "end_field": "first_client_success_at_ms",
+        "start_at_ms": 1783410808054,
+        "end_at_ms": 1783410863302,
+        "source_ref": "client_recovery_samples.jsonl#scale-200-layered-sample-01"
+      },
+      "level_3": {
+        "source": "clean_gate",
+        "start_field": "first_cluster_ok_at_ms",
+        "end_field": "clean_snapshot_passed_at_ms",
+        "start_at_ms": 1783410863262,
+        "end_at_ms": 1783410864011,
+        "source_ref": "clean_gate_probe_rounds.jsonl#scale-200-layered-sample-01"
+      },
+      "clean_gate": {
+        "source": "clean_gate",
+        "start_at_ms": 1783410863262,
+        "clean_snapshot_passed_at_ms": 1783410864011,
+        "probe_rounds_ref": "clean_gate_probe_rounds.jsonl#scale-200-layered-sample-01"
+      }
+    }
+  ],
+  "kill_to_pfail_ms": {
+    "sample_count": 5,
+    "p50_ms": 46324.0,
+    "p95_ms": 48498.0,
+    "max_ms": 48498.0,
+    "percentile_method": "nearest_rank_round_index"
+  },
+  "pfail_to_cluster_ok_ms": {
+    "sample_count": 5,
+    "p50_ms": 6972.0,
+    "p95_ms": 11668.0,
+    "max_ms": 11668.0,
+    "percentile_method": "nearest_rank_round_index"
+  },
+  "kill_to_client_recovered_ms": {
+    "sample_count": 5,
+    "p50_ms": 49141.0,
+    "p95_ms": 55248.0,
+    "max_ms": 55248.0,
+    "percentile_method": "nearest_rank_round_index"
+  },
+  "cluster_ok_to_client_success_ms": {
+    "sample_count": 5,
+    "p50_ms": 111.0,
+    "p95_ms": 261.0,
+    "max_ms": 261.0,
+    "percentile_method": "nearest_rank_round_index"
+  },
+  "cluster_ok_to_clean_snapshot_ms": {
+    "sample_count": 5,
+    "p50_ms": 667.0,
+    "p95_ms": 749.0,
+    "max_ms": 749.0,
+    "percentile_method": "nearest_rank_round_index"
+  },
+  "kill_to_clean_snapshot_ms": {
+    "sample_count": 5,
+    "p50_ms": 49609.0,
+    "p95_ms": 55957.0,
+    "max_ms": 55957.0,
+    "percentile_method": "nearest_rank_round_index"
+  },
+  "level_1": {
+    "source": "observer",
+    "timestamp_fields": [
+      "first_pfail_seen_at_ms",
+      "first_cluster_ok_at_ms"
+    ]
+  },
+  "level_2": {
+    "source": "client_probe",
+    "timestamp_fields": [
+      "fault_apply_at_ms",
+      "first_client_success_at_ms"
+    ]
+  },
+  "level_3": {
+    "source": "clean_gate",
+    "timestamp_fields": [
+      "first_cluster_ok_at_ms",
+      "clean_snapshot_passed_at_ms"
+    ]
+  },
+  "clean_gate": {
+    "source": "clean_gate",
+    "final_all_node_clean_required": true
+  }
+}

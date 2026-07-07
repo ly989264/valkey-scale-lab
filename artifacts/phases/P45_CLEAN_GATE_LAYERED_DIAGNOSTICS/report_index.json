@@ -1,0 +1,22 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "report_index",
+  "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+  "run_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS-report_index",
+  "created_at": "2026-07-07T07:56:02.250131Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "status": "PASS",
+  "source_artifacts": [
+    "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/failover_timeline_samples.jsonl",
+    "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/observer_samples.jsonl",
+    "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/client_recovery_samples.jsonl",
+    "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/layered_recovery_summary.json",
+    "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/clean_gate_diagnostics.json",
+    "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/clean_gate_probe_rounds.jsonl",
+    "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/recovery_endpoint_summary.json"
+  ],
+  "reports": []
+}

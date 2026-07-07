@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Clean Gate Probe Round",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "phase_id",
+    "run_id",
+    "scenario_name",
+    "sample_id",
+    "probe_start_ms",
+    "probe_end_ms",
+    "probe_duration_ms",
+    "sample_scope",
+    "sample_count",
+    "failed_reason",
+    "slowest_node"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "phase_id": {"type": "string"},
+    "run_id": {"type": "string"},
+    "scenario_name": {"type": "string"},
+    "sample_id": {"type": "string"},
+    "probe_start_ms": {"type": "number"},
+    "probe_end_ms": {"type": "number"},
+    "probe_duration_ms": {"type": "number", "minimum": 0},
+    "sample_scope": {"type": "string", "enum": ["representative", "all_nodes"]},
+    "sample_count": {"type": "integer", "minimum": 0},
+    "status": {"type": "string", "enum": ["PASS", "FAIL"]},
+    "failed_reason": {"type": "string"},
+    "slowest_node": {"type": "string"},
+    "slowest_probe_ms": {"type": ["number", "string"]},
+    "timed_out": {"type": "boolean"}
+  },
+  "additionalProperties": true
+}

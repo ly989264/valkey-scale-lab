@@ -1,0 +1,7 @@
+{
+  "fault_id": "p44-primary-stop-scale-30-layered-sample-01",
+  "type": "node_stop",
+  "scope": "owned_container_or_process",
+  "forbid_host_network_mutation": true,
+  "target_logical_id": "shard-0007-primary"
+}

@@ -27,7 +27,8 @@ P36_SCENARIO = "strict_full_flow_200"
 P42_STAGE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
 P43_STAGE = "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE"
 P44_STAGE = "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"
-EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE, P43_STAGE, P44_STAGE}
+P45_STAGE = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
+EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE, P43_STAGE, P44_STAGE, P45_STAGE}
 
 
 class ResourcePreflightError(RuntimeError):
@@ -254,6 +255,8 @@ def _exact_200_phase_scenario_allowed(phase_id: str, scenario: str) -> bool:
         phase_id == P43_STAGE and scenario == "p43_cluster_timeout_scale_200"
     ) or (
         phase_id == P44_STAGE and scenario.startswith("p44_scale_200_timeline_sample_")
+    ) or (
+        phase_id == P45_STAGE and scenario.startswith("p45_scale_200_layered_sample_")
     )
 
 

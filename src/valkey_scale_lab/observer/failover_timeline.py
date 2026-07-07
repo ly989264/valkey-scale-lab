@@ -28,6 +28,12 @@ RTO_METRIC_FIELDS = [
     "kill_to_clean_snapshot_ms",
 ]
 
+LAYER_SOURCE_FIELDS = {
+    "level_1": "observer",
+    "level_2": "client_probe",
+    "level_3": "clean_gate",
+}
+
 
 class FailoverTimelineError(ValueError):
     """Raised when P44 timeline inputs cannot support a real RTO metric."""
@@ -161,6 +167,191 @@ def build_rto_summary(
         "observed_real_scales": node_counts,
         "derived_series": derived_series,
     }
+
+
+def build_clean_gate_diagnostics(
+    samples: list[dict[str, Any]],
+    probe_rounds: list[dict[str, Any]],
+    *,
+    phase_id: str,
+    run_id: str,
+) -> dict[str, Any]:
+    pass_samples = [sample for sample in samples if sample.get("status") == "PASS" and sample.get("real_valkey") is True]
+    first_sample = pass_samples[0] if pass_samples else (samples[0] if samples else {})
+    representative_rounds = [row for row in probe_rounds if row.get("sample_scope") == "representative"]
+    all_node_rounds = [row for row in probe_rounds if row.get("sample_scope") == "all_nodes"]
+    full_rounds = [row for row in probe_rounds if row.get("sample_scope") in {"all_nodes", "full"}]
+    failed_rounds = [row for row in probe_rounds if row.get("status") != "PASS"]
+    slowest = _slowest_probe_round(probe_rounds)
+    first_rep_clean = _first_round_end(representative_rounds, status="PASS")
+    first_all_clean = _first_round_end(all_node_rounds, status="PASS")
+    clean_start = _first_round_start(probe_rounds)
+    clean_end = first_all_clean if isinstance(first_all_clean, (int, float)) else _last_round_end(probe_rounds)
+    clean_total = clean_end - clean_start if isinstance(clean_start, (int, float)) and isinstance(clean_end, (int, float)) else "MISSING"
+    last_failed = _last_failing_reason(failed_rounds)
+    return {
+        "schema_version": "v1",
+        "artifact_type": "clean_gate_diagnostics",
+        "phase_id": phase_id,
+        "run_id": run_id,
+        "status": "PASS" if pass_samples and len(pass_samples) == len(samples) else "FAIL",
+        "sample_count": len(samples),
+        "sample_refs": [str(sample.get("sample_id")) for sample in samples],
+        "first_cluster_ok_at_ms": first_sample.get("first_cluster_ok_at_ms", "MISSING"),
+        "first_slots_covered_at_ms": first_sample.get("first_slots_covered_at_ms", "MISSING"),
+        "first_representative_clean_at_ms": first_rep_clean,
+        "first_all_nodes_clean_at_ms": first_all_clean,
+        "clean_gate_total_ms": round(clean_total, 3) if isinstance(clean_total, (int, float)) else "MISSING",
+        "probe_round_count": len(probe_rounds),
+        "full_probe_count": len(full_rounds),
+        "representative_probe_count": len(representative_rounds),
+        "representative_probe_total_ms": _round_total_ms(representative_rounds),
+        "all_nodes_probe_count": len(all_node_rounds),
+        "all_nodes_probe_total_ms": _round_total_ms(all_node_rounds),
+        "probe_timeout_count": sum(1 for row in probe_rounds if row.get("timed_out") is True or row.get("failed_reason") == "timeout"),
+        "max_single_probe_ms": slowest.get("slowest_probe_ms", "MISSING"),
+        "slowest_probe_node": slowest.get("slowest_node", "MISSING"),
+        "slowest_probe_ms": slowest.get("slowest_probe_ms", "MISSING"),
+        "first_client_success_at_ms": first_sample.get("first_client_success_at_ms", "MISSING"),
+        "first_pfail_seen_at_ms": first_sample.get("first_pfail_seen_at_ms", "MISSING"),
+        "first_fail_seen_at_ms": first_sample.get("first_fail_seen_at_ms", "MISSING"),
+        "first_promotion_seen_at_ms": first_sample.get("first_promotion_seen_at_ms", "MISSING"),
+        "last_failing_reason": last_failed if last_failed else ("MISSING" if failed_rounds else "not_applicable_clean_gate_passed_without_failed_round"),
+        "source_artifacts": ["failover_timeline_samples.jsonl", "clean_gate_probe_rounds.jsonl"],
+    }
+
+
+def build_layered_recovery_summary(
+    samples: list[dict[str, Any]],
+    *,
+    phase_id: str,
+    run_id: str,
+) -> dict[str, Any]:
+    pass_samples = [sample for sample in samples if sample.get("status") == "PASS" and sample.get("real_valkey") is True]
+    per_sample = []
+    for sample in samples:
+        durations = derive_rto_metrics(sample) if sample.get("status") == "PASS" else _missing_layered_durations()
+        per_sample.append({
+            "sample_id": sample.get("sample_id", "MISSING"),
+            "node_count": sample.get("node_count", "MISSING"),
+            **durations,
+            "level_1": _level_ref("level_1", sample, "first_pfail_seen_at_ms", "first_cluster_ok_at_ms", "observer_samples_ref"),
+            "level_2": _level_ref("level_2", sample, "fault_apply_at_ms", "first_client_success_at_ms", "client_recovery_samples_ref"),
+            "level_3": _level_ref("level_3", sample, "first_cluster_ok_at_ms", "clean_snapshot_passed_at_ms", "clean_gate_probe_rounds_ref"),
+            "clean_gate": {
+                "source": LAYER_SOURCE_FIELDS["level_3"],
+                "start_at_ms": sample.get("first_cluster_ok_at_ms", "MISSING"),
+                "clean_snapshot_passed_at_ms": sample.get("clean_snapshot_passed_at_ms", "MISSING"),
+                "probe_rounds_ref": sample.get("clean_gate_probe_rounds_ref", "clean_gate_probe_rounds.jsonl"),
+            },
+        })
+    return {
+        "schema_version": "v1",
+        "artifact_type": "layered_recovery_summary",
+        "phase_id": phase_id,
+        "run_id": run_id,
+        "status": "PASS" if pass_samples and len(pass_samples) == len(samples) else "FAIL",
+        "sample_count": len(pass_samples),
+        "sample_refs": [str(sample.get("sample_id")) for sample in pass_samples],
+        "required_real_scales": [30, 50, 100, 200],
+        "observed_real_scales": sorted({int(sample["node_count"]) for sample in pass_samples if isinstance(sample.get("node_count"), int)}),
+        "per_sample": per_sample,
+        **_summary_series(pass_samples),
+        "level_1": {"source": LAYER_SOURCE_FIELDS["level_1"], "timestamp_fields": ["first_pfail_seen_at_ms", "first_cluster_ok_at_ms"]},
+        "level_2": {"source": LAYER_SOURCE_FIELDS["level_2"], "timestamp_fields": ["fault_apply_at_ms", "first_client_success_at_ms"]},
+        "level_3": {"source": LAYER_SOURCE_FIELDS["level_3"], "timestamp_fields": ["first_cluster_ok_at_ms", "clean_snapshot_passed_at_ms"]},
+        "clean_gate": {"source": LAYER_SOURCE_FIELDS["level_3"], "final_all_node_clean_required": True},
+    }
+
+
+def build_recovery_endpoint_summary(
+    samples: list[dict[str, Any]],
+    *,
+    phase_id: str,
+    run_id: str,
+) -> dict[str, Any]:
+    endpoints = []
+    for sample in samples:
+        endpoints.append({
+            "sample_id": sample.get("sample_id", "MISSING"),
+            "node_count": sample.get("node_count", "MISSING"),
+            "level_1": _level_ref("level_1", sample, "first_pfail_seen_at_ms", "first_cluster_ok_at_ms", "observer_samples_ref"),
+            "level_2": _level_ref("level_2", sample, "fault_apply_at_ms", "first_client_success_at_ms", "client_recovery_samples_ref"),
+            "level_3": _level_ref("level_3", sample, "first_cluster_ok_at_ms", "clean_snapshot_passed_at_ms", "clean_gate_probe_rounds_ref"),
+            "timeline_sample_ref": f"failover_timeline_samples.jsonl#{sample.get('sample_id', 'MISSING')}",
+        })
+    return {
+        "schema_version": "v1",
+        "artifact_type": "recovery_endpoint_summary",
+        "phase_id": phase_id,
+        "run_id": run_id,
+        "status": "PASS" if samples and all(sample.get("status") == "PASS" for sample in samples) else "FAIL",
+        "endpoints": endpoints,
+        "source_artifacts": ["failover_timeline_samples.jsonl", "observer_samples.jsonl", "client_recovery_samples.jsonl", "clean_gate_probe_rounds.jsonl"],
+    }
+
+
+def _missing_layered_durations() -> dict[str, str]:
+    return {field: "MISSING" for field in RTO_METRIC_FIELDS}
+
+
+def _summary_series(samples: list[dict[str, Any]]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for field in RTO_METRIC_FIELDS:
+        values = [float(sample[field]) for sample in samples if isinstance(sample.get(field), (int, float))]
+        out[field] = {
+            "sample_count": len(values),
+            "p50_ms": percentile(values, 0.50) if values else "MISSING",
+            "p95_ms": percentile(values, 0.95) if values else "MISSING",
+            "max_ms": round(max(values), 3) if values else "MISSING",
+            "percentile_method": "nearest_rank_round_index",
+        }
+    return out
+
+
+def _level_ref(level: str, sample: dict[str, Any], start_field: str, end_field: str, ref_field: str) -> dict[str, Any]:
+    return {
+        "source": LAYER_SOURCE_FIELDS[level],
+        "start_field": start_field,
+        "end_field": end_field,
+        "start_at_ms": sample.get(start_field, "MISSING"),
+        "end_at_ms": sample.get(end_field, "MISSING"),
+        "source_ref": sample.get(ref_field, "MISSING"),
+    }
+
+
+def _round_total_ms(rounds: list[dict[str, Any]]) -> float:
+    return round(sum(float(row.get("probe_duration_ms", 0) or 0) for row in rounds), 3)
+
+
+def _first_round_start(rounds: list[dict[str, Any]]) -> Any:
+    values = [row.get("probe_start_ms") for row in rounds if isinstance(row.get("probe_start_ms"), (int, float))]
+    return min(values) if values else "MISSING"
+
+
+def _first_round_end(rounds: list[dict[str, Any]], *, status: str) -> Any:
+    values = [row.get("probe_end_ms") for row in rounds if row.get("status") == status and isinstance(row.get("probe_end_ms"), (int, float))]
+    return min(values) if values else "MISSING"
+
+
+def _last_round_end(rounds: list[dict[str, Any]]) -> Any:
+    values = [row.get("probe_end_ms") for row in rounds if isinstance(row.get("probe_end_ms"), (int, float))]
+    return max(values) if values else "MISSING"
+
+
+def _last_failing_reason(rounds: list[dict[str, Any]]) -> str:
+    for row in reversed(rounds):
+        reason = row.get("failed_reason")
+        if isinstance(reason, str) and reason:
+            return reason
+    return ""
+
+
+def _slowest_probe_round(rounds: list[dict[str, Any]]) -> dict[str, Any]:
+    candidates = [row for row in rounds if isinstance(row.get("slowest_probe_ms"), (int, float))]
+    if not candidates:
+        return {}
+    return max(candidates, key=lambda row: float(row.get("slowest_probe_ms", 0) or 0))
 
 
 class RespError(Exception):

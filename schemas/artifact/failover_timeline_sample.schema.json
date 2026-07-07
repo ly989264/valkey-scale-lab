@@ -64,7 +64,11 @@
     "client_probe_source": {"type": "string", "minLength": 1},
     "first_client_success_source": {"type": "string", "minLength": 1},
     "observer_samples_ref": {"type": "string", "minLength": 1},
-    "client_recovery_samples_ref": {"type": "string", "minLength": 1}
+    "client_recovery_samples_ref": {"type": "string", "minLength": 1},
+    "level_1_source": {"type": "string"},
+    "level_2_source": {"type": "string"},
+    "level_3_source": {"type": "string"},
+    "clean_gate_probe_rounds_ref": {"type": "string"}
   },
   "additionalProperties": true
 }

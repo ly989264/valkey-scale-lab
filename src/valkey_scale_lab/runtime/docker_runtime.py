@@ -75,6 +75,7 @@ P41_STAGE = "P41_NODEHOST_DENSITY_GLOBAL_CONFIG"
 P42_STAGE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
 P43_STAGE = "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE"
 P44_STAGE = "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"
+P45_STAGE = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
 P36_FULL_FLOW_STEPS = [
     "config_validate",
     "resource_preflight",
@@ -298,7 +299,7 @@ def create_scenario(
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
         ("P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "fault_workload_impact_analysis"),
         ("P26_FINAL_REPORT_REGRESSION", "final_report_regression_smoke"),
-    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None and _strict_full_flow_node_count(phase, scenario) is None and _p41_nodehost_density_node_count(phase, scenario) is None and _p42_server_profile_node_count(phase, scenario) is None and _p43_cluster_timeout_node_count(phase, scenario) is None and _p44_failover_timeline_node_count(phase, scenario) is None:
+    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None and _strict_full_flow_node_count(phase, scenario) is None and _p41_nodehost_density_node_count(phase, scenario) is None and _p42_server_profile_node_count(phase, scenario) is None and _p43_cluster_timeout_node_count(phase, scenario) is None and _p44_failover_timeline_node_count(phase, scenario) is None and _p45_clean_gate_layered_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
         run_id = _run_id(phase, scenario)
@@ -558,6 +559,7 @@ def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
         or _p42_server_profile_node_count(phase, scenario) is not None
         or _p43_cluster_timeout_node_count(phase, scenario) is not None
         or _p44_failover_timeline_node_count(phase, scenario) is not None
+        or _p45_clean_gate_layered_node_count(phase, scenario) is not None
         or (phase, scenario) in {
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
@@ -673,6 +675,15 @@ def _p44_failover_timeline_node_count(phase: str, scenario: str) -> int | None:
     return int(match.group(1))
 
 
+def _p45_clean_gate_layered_node_count(phase: str, scenario: str) -> int | None:
+    if phase != P45_STAGE:
+        return None
+    match = re.fullmatch(r"p45_scale_(10|30|50|100|200)_layered_sample_\d+", scenario)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
 def _p42_server_profile_config_path(phase: str, scenario: str) -> str | None:
     node_count = _p42_server_profile_node_count(phase, scenario)
     if node_count is None:
@@ -711,7 +722,7 @@ def _is_exact_200_runtime_exception(config: dict[str, Any], *, phase: str, scena
         _exact_200_stage_scenario_allowed(phase, scenario)
         and node_count == 200
         and config.get("profile_name") == "scale_200"
-        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE, P43_STAGE, P44_STAGE}
+        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE, P43_STAGE, P44_STAGE, P45_STAGE}
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
@@ -729,6 +740,7 @@ def _exact_200_stage_scenario_allowed(phase: str, scenario: str) -> bool:
         or _p42_server_profile_node_count(phase, scenario) == 200
         or _p43_cluster_timeout_node_count(phase, scenario) == 200
         or _p44_failover_timeline_node_count(phase, scenario) == 200
+        or _p45_clean_gate_layered_node_count(phase, scenario) == 200
     )
 
 
@@ -3831,6 +3843,9 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
     p44_count = _p44_failover_timeline_node_count(phase, scenario)
     if p44_count is not None:
         return node_count == p44_count
+    p45_count = _p45_clean_gate_layered_node_count(phase, scenario)
+    if p45_count is not None:
+        return node_count == p45_count
     expected = {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},

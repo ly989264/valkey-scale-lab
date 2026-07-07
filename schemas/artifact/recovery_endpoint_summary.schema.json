@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Recovery Endpoint Summary",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "status",
+    "endpoints",
+    "source_artifacts"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "recovery_endpoint_summary"},
+    "phase_id": {"type": "string"},
+    "run_id": {"type": "string"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL"]},
+    "endpoints": {"type": "array"},
+    "source_artifacts": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

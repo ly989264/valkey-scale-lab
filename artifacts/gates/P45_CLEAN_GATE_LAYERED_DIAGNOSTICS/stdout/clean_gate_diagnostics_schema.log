@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/clean_gate_diagnostics.schema.json instance=artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/clean_gate_diagnostics.json

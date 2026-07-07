@@ -350,6 +350,7 @@ def test_p21_runtime_semantic_exception_is_narrow() -> None:
     assert docker_runtime._runtime_semantic_errors(config, phase="P35_FAULT_FAILOVER_MATRIX_200_REAL", scenario="strict_fault_matrix_200") == []
     assert docker_runtime._runtime_semantic_errors(config, phase="P36_FULL_FLOW_E2E_50_100_200_REAL", scenario="strict_full_flow_200") == []
     assert docker_runtime._runtime_semantic_errors(config, phase="P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY", scenario="p44_scale_200_timeline_sample_01") == []
+    assert docker_runtime._runtime_semantic_errors(config, phase="P45_CLEAN_GATE_LAYERED_DIAGNOSTICS", scenario="p45_scale_200_layered_sample_01") == []
     assert any(
         error["code"] == "NODE_CAP_EXCEEDED"
         for error in docker_runtime._runtime_semantic_errors(config, phase="P22_FAULT_REPLICA_HOST_AZ_STOP", scenario="scale_200_sample_01")
@@ -366,6 +367,17 @@ def test_p21_runtime_semantic_exception_is_narrow() -> None:
         error["code"] == "NODE_CAP_EXCEEDED"
         for error in docker_runtime._runtime_semantic_errors(config, phase="P36_FULL_FLOW_E2E_50_100_200_REAL", scenario="strict_full_flow_199")
     )
+
+
+def test_p45_clean_gate_layered_runtime_is_exact_scale_process_runtime() -> None:
+    for scale in [10, 30, 50, 100, 200]:
+        phase = "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
+        scenario = f"p45_scale_{scale}_layered_sample_01"
+        assert docker_runtime._p45_clean_gate_layered_node_count(phase, scenario) == scale
+        assert docker_runtime._scenario_node_count_allowed(phase, scenario, scale) is True
+        assert docker_runtime._uses_docker_process_runtime(phase, scenario) is True
+    assert docker_runtime._scenario_node_count_allowed("P45_CLEAN_GATE_LAYERED_DIAGNOSTICS", "p45_scale_200_layered_sample_01", 100) is False
+    assert docker_runtime._scenario_node_count_allowed("P45_CLEAN_GATE_LAYERED_DIAGNOSTICS", "p45_scale_201_layered_sample_01", 201) is False
 
 
 def test_p13_runtime_timing_names_split_diagnostic_probe() -> None:

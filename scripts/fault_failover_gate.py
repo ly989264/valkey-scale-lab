@@ -334,6 +334,8 @@ def wait_for_stable_cluster_ok(
     *,
     timeout_seconds: float,
     interval: float = 1.0,
+    diagnostic_rounds: list[dict[str, Any]] | None = None,
+    round_context: dict[str, Any] | None = None,
 ) -> tuple[bool, list[dict[str, Any]]]:
     deadline = time.monotonic() + timeout_seconds
     last: list[dict[str, Any]] = []
@@ -344,6 +346,8 @@ def wait_for_stable_cluster_ok(
             min_nodes,
             timeout_seconds=min(30.0, remaining),
             interval=interval,
+            diagnostic_rounds=diagnostic_rounds,
+            round_context=round_context,
         )
         last = probes
         if ok:

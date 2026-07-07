@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/workload_windows.schema.json instance=artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/workload_windows.json

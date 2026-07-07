@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/client_recovery_sample.schema.json instance=artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/client_recovery_samples.jsonl
