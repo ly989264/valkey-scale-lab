@@ -1,0 +1,46 @@
+{
+  "artifact_type": "fault_report",
+  "created_at": "2026-06-28T00:00:00Z",
+  "faults": [
+    {
+      "apply_status": "PASS",
+      "clear_status": "PASS",
+      "ended_at": "2026-06-28T00:00:00Z",
+      "expected_impact": {
+        "description": "Sandbox-scoped fault lifecycle is recorded without host network mutation.",
+        "kind": "node_stop"
+      },
+      "fault_id": "p44-primary-stop-scale-50-timeline-sample-01",
+      "fault_parameters": {},
+      "fault_type": "node_stop",
+      "implementation_path": "owned_runtime_control",
+      "observed_impact": {
+        "action": "process_restart",
+        "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_50_timeline_sample_01-20260628/shard-0012-primary/valkey.conf",
+        "nodehost_container_name": "vslab-p44-failover-rto-timeline-observability-p44-scale-50-timeline-sample-01-20260628-nodehost-az-a-00",
+        "pid": 224,
+        "restart_attempts": 1,
+        "status": "PASS",
+        "stderr": "",
+        "stdout": ""
+      },
+      "scope": "owned_container_or_process",
+      "started_at": "2026-06-28T00:00:00Z",
+      "target_logical_id": "shard-0012-primary"
+    }
+  ],
+  "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_50_timeline_sample_01-20260628",
+  "safety_checks": {
+    "fault_state_cleared": true,
+    "global_firewall_mutated": false,
+    "host_network_mutated": false,
+    "sandbox_only": true
+  },
+  "schema_version": "v1",
+  "status": "PASS"
+}

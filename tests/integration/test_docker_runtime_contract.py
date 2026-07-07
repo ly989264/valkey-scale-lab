@@ -349,6 +349,7 @@ def test_p21_runtime_semantic_exception_is_narrow() -> None:
     assert docker_runtime._runtime_semantic_errors(config, phase="P32_MANAGEMENT_MATRIX_200_REAL", scenario="strict_management_matrix_200") == []
     assert docker_runtime._runtime_semantic_errors(config, phase="P35_FAULT_FAILOVER_MATRIX_200_REAL", scenario="strict_fault_matrix_200") == []
     assert docker_runtime._runtime_semantic_errors(config, phase="P36_FULL_FLOW_E2E_50_100_200_REAL", scenario="strict_full_flow_200") == []
+    assert docker_runtime._runtime_semantic_errors(config, phase="P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY", scenario="p44_scale_200_timeline_sample_01") == []
     assert any(
         error["code"] == "NODE_CAP_EXCEEDED"
         for error in docker_runtime._runtime_semantic_errors(config, phase="P22_FAULT_REPLICA_HOST_AZ_STOP", scenario="scale_200_sample_01")

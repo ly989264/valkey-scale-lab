@@ -1,0 +1,55 @@
+{
+  "artifact_type": "effective_cluster_timeout",
+  "cluster_node_timeout_allow_override": false,
+  "cluster_node_timeout_matrix_ms": [
+    5000,
+    10000,
+    15000,
+    30000,
+    60000
+  ],
+  "cluster_node_timeout_profile": "MISSING",
+  "cluster_node_timeout_source": "global",
+  "config_sources": {
+    "built_in_defaults": "valkey_scale_lab.config.validation.BUILT_IN_DEFAULTS",
+    "cli_override_applied": false,
+    "cluster_node_timeout": {
+      "effective_cluster_node_timeout_ms": 30000,
+      "merge_order": [
+        "built-in defaults",
+        "global config",
+        "selected profile",
+        "scenario config",
+        "CLI override"
+      ],
+      "profile": "MISSING",
+      "requested_cluster_node_timeout_ms": 30000,
+      "source": "global"
+    },
+    "global_config_loaded": true,
+    "global_config_path": "config/valkey_scale_lab_global.yaml",
+    "merge_order": [
+      "built-in defaults",
+      "global config",
+      "scenario config",
+      "CLI override"
+    ],
+    "scenario_config_path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/templates/configs/scale_200.yaml"
+  },
+  "effective_cluster_node_timeout_ms": 30000,
+  "merge_order": [
+    "built-in defaults",
+    "global config",
+    "selected profile",
+    "scenario config",
+    "CLI override"
+  ],
+  "node_count": 200,
+  "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+  "requested_cluster_node_timeout_ms": 30000,
+  "run_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_200_timeline_sample_01-20260628",
+  "scenario_name": "p44_scale_200_timeline_sample_01",
+  "schema_version": "v1",
+  "source": "global",
+  "status": "PASS"
+}

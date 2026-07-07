@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Failover RTO Summary",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "status",
+    "sample_count",
+    "timeout_config_ms",
+    "server_profile",
+    "nodehost_strategy",
+    "node_count",
+    "scale",
+    "required_real_scales",
+    "observed_real_scales",
+    "derived_series"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "v1"},
+    "artifact_type": {"type": "string", "const": "failover_rto_summary"},
+    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "run_id": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "MISSING", "SKIPPED_WITH_REASON"]},
+    "sample_count": {"type": "integer", "minimum": 0},
+    "timeout_config_ms": {"type": "integer", "minimum": 1},
+    "server_profile": {"type": "string", "minLength": 1},
+    "nodehost_strategy": {"type": "string", "minLength": 1},
+    "node_count": {"type": ["integer", "string"]},
+    "scale": {"type": "string", "minLength": 1},
+    "required_real_scales": {"type": "array", "items": {"type": "integer"}},
+    "observed_real_scales": {"type": "array", "items": {"type": "integer"}},
+    "derived_series": {"type": "object"}
+  },
+  "additionalProperties": true
+}

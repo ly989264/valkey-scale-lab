@@ -209,6 +209,7 @@ def build_cluster_plan(
             "requested_cluster_node_timeout_ms": effective_timeout["requested_cluster_node_timeout_ms"],
             "effective_cluster_node_timeout_ms": effective_timeout["effective_cluster_node_timeout_ms"],
             "cluster_node_timeout_source": effective_timeout["cluster_node_timeout_source"],
+            "failover_timeline_observer": config.get("observability", {}).get("failover_timeline_observer", {}),
             **density,
         },
         "directories": {
@@ -218,6 +219,7 @@ def build_cluster_plan(
         "nodehost_density": density,
         "effective_server_profile": effective_profile,
         "effective_cluster_timeout": effective_timeout,
+        "failover_timeline_observer": config.get("observability", {}).get("failover_timeline_observer", {}),
         "config_sources": config.get("_config_sources", {}),
         "nodehosts": nodehosts,
         "nodes": planned_nodes,

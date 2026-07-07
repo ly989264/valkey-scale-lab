@@ -264,6 +264,40 @@
       },
       "additionalProperties": true
     },
+    "observability": {
+      "type": "object",
+      "properties": {
+        "failover_timeline_observer": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "probe_interval_ms": {
+              "type": "integer",
+              "minimum": 50,
+              "maximum": 60000
+            },
+            "client_probe_interval_ms": {
+              "type": "integer",
+              "minimum": 50,
+              "maximum": 60000
+            },
+            "probe_timeout_ms": {
+              "type": "integer",
+              "minimum": 50,
+              "maximum": 60000
+            },
+            "max_observer_endpoints": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
     "profiles": {
       "type": "object",
       "additionalProperties": {

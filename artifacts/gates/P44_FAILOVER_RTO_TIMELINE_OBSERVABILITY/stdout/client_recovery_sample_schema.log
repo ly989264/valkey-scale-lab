@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/client_recovery_sample.schema.json instance=artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/client_recovery_samples.jsonl

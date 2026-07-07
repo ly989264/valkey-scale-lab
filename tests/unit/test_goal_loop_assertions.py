@@ -108,6 +108,29 @@ def test_strict_manifest_policy_appends_p27_p40_and_preserves_caps() -> None:
     assert by_id["P37_200_PLUS_DRY_RUN_SUPPORT"]["dry_run_target_nodes"] == [201, 250, 300, 500, 1000]
 
 
+def test_p44_manifest_is_nonautomatic_real_bounded_observer_stage() -> None:
+    gate = load_script("codex_gate")
+    manifest = gate.load_manifest()
+
+    assert gate.validate_manifest(manifest) == []
+    by_id = {phase["id"]: phase for phase in manifest["phases"]}
+    p44 = by_id["P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"]
+
+    assert p44["automatic"] is False
+    assert p44["real_valkey_required"] is True
+    assert p44["fake_only_allowed"] is False
+    assert p44["max_nodes"] == 200
+    assert manifest["default_max_nodes"] == 100
+    real_gate = next(gate_entry for gate_entry in p44["gates"] if gate_entry["name"] == "failover_timeline_real")
+    assert real_gate["real_valkey"] is True
+    assert "scripts/fault_failover_timeline_gate.py" in real_gate["command"]
+    assert "--scales 10,30,50,100,200" in real_gate["command"]
+    assert "1000" not in real_gate["command"]
+    required_paths = {artifact["path"] for artifact in p44["required_artifacts"]}
+    assert "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/failover_timeline_samples.jsonl" in required_paths
+    assert "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/dry_run_gt_200_projection.json" in required_paths
+
+
 def test_p32_real_valkey_gate_has_bounded_inner_setup_timeout() -> None:
     gate = load_script("codex_gate")
     manifest = gate.load_manifest()

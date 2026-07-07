@@ -16,6 +16,13 @@ cluster:
   cluster_node_timeout_ms: 30000
 fault:
   cluster_node_timeout_matrix_ms: [5000, 10000, 15000, 30000, 60000]
+observability:
+  failover_timeline_observer:
+    enabled: true
+    probe_interval_ms: 250
+    client_probe_interval_ms: 250
+    probe_timeout_ms: 1000
+    max_observer_endpoints: 32
 profiles:
   correctness:
     cluster_node_timeout_ms: 30000

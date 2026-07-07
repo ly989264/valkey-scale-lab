@@ -1,0 +1,24 @@
+{
+  "artifact_type": "fault_apply",
+  "created_at": "2026-06-28T00:00:00Z",
+  "fault_id": "p44-primary-stop-scale-200-timeline-sample-01",
+  "fault_type": "node_stop",
+  "implementation_path": "owned_runtime_control",
+  "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_200_timeline_sample_01-20260628",
+  "safety_checks": {
+    "global_firewall_mutated": false,
+    "host_network_mutated": false,
+    "sandbox_only": true,
+    "scope": "owned Docker/container namespace or sandbox proxy"
+  },
+  "schema_version": "v1",
+  "scope": "owned_container_or_process",
+  "state_path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-200-timeline-sample-01/fault_state_p44-primary-stop-scale-200-timeline-sample-01.json",
+  "status": "PASS",
+  "target_logical_id": "shard-0050-primary"
+}

@@ -25,7 +25,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "7eac3e8bde57965680e3024d1343ce319d477755837652560283be9feb91eed9"
+      "sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -352,6 +352,10 @@
       "sha256": "6e56777d4250c68d4e6e820065552191202be3249d720fe448602c6ca81aea9e"
     },
     {
+      "path": "docs/codex/goal-loop/stages/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY.md",
+      "sha256": "8db371a613849999ecc982bb4be5899b5659b371d1c25f973c483be43c03a2a3"
+    },
+    {
       "path": "docs/codex/goal-loop/templates/BLOCKED_STAGE_TEMPLATE.md",
       "sha256": "e18da55b4f638ec0a3b0f6197a91c9aed4c47ef88f633c35a1c26b6c0ea42f1e"
     },
@@ -432,6 +436,10 @@
       "sha256": "edf7627a18da7dc67acbd58df083580af098d161d559d4c63931578bc97b641a"
     },
     {
+      "path": "schemas/artifact/client_recovery_sample.schema.json",
+      "sha256": "8e0f6970737c10a8c19e08541721f540697e275456780bfefa8b2aec10f74433"
+    },
+    {
       "path": "schemas/artifact/failover_latency_curve.schema.json",
       "sha256": "ba5879f39c3817afc3386f7b9809559f805e58974d6fab722b379222d897a7db"
     },
@@ -442,6 +450,14 @@
     {
       "path": "schemas/artifact/failover_report.schema.json",
       "sha256": "e6b388ce1d18d3f27bdd546666727ea3b8fc8ac923f43ad25031faad871ce934"
+    },
+    {
+      "path": "schemas/artifact/failover_rto_summary.schema.json",
+      "sha256": "340aff7b4f5f28b5a4c9c9f4aa09f02606414e199ae5a6a50bd17cc9e8cec052"
+    },
+    {
+      "path": "schemas/artifact/failover_timeline_sample.schema.json",
+      "sha256": "1bdfacb515f636976774a84b157b5e6e8b92cd209f1a9e939e2d45ae0a2d4084"
     },
     {
       "path": "schemas/artifact/fault_failover_scale.schema.json",
@@ -518,6 +534,10 @@
     {
       "path": "schemas/artifact/no_runtime_created_proof.schema.json",
       "sha256": "c87a404b32b6af7bb34b5bca4e39baf1eada6750e0f1cf0bdd7a95663d61d335"
+    },
+    {
+      "path": "schemas/artifact/observer_sample.schema.json",
+      "sha256": "e74aeab8f01c1fae415d79c24b0d8a22a12227c9d72be13f133e0789d941fafc"
     },
     {
       "path": "schemas/artifact/nodehost_density_plan.schema.json",
@@ -753,7 +773,7 @@
     },
     {
       "path": "schemas/config/run_config.schema.json",
-      "sha256": "ed6ae04213832295d9a039c93bf14e90e9468e34e5a634e4baa1cebc3cd060cf"
+      "sha256": "2a5910f48c38d91e7c99d558c43c7398c99a4001d622a55525088245336ef30c"
     },
     {
       "path": "schemas/loop_engineering/command_log_entry.schema.json",
@@ -812,6 +832,10 @@
       "sha256": "03e30155e326682e6ff5beff71a0830ab3ef89281a308bd3cf6fa1d795c419fc"
     },
     {
+      "path": "scripts/assert_failover_timeline_completeness.py",
+      "sha256": "8e1a6dfab3f6c7bb96daf4d7c72380650d71845582b3dee2ac6caf2844d58dd5"
+    },
+    {
       "path": "scripts/assert_fault_matrix_coverage.py",
       "sha256": "a979eafc76239a6b81b0d2d73d879196777420b0f3b8e64494df0a396d76a7da"
     },
@@ -852,6 +876,10 @@
       "sha256": "6ecea8b64da3a34f82ea8d278f812e24594d060e55c38aa7c38cf283fd67b567"
     },
     {
+      "path": "scripts/assert_no_rto_partial_coverage.py",
+      "sha256": "43b6e6dbebe9ec76175aa0c8a0e942d8860f9385973266e1944745e182600f58"
+    },
+    {
       "path": "scripts/assert_no_nodehost_partial_coverage.py",
       "sha256": "a061fc306a6e2c4c027f0f65208676bfa460e717fbb4a3e899fd9c7a24b3e8dd"
     },
@@ -878,6 +906,10 @@
     {
       "path": "scripts/assert_report_quality.py",
       "sha256": "af7040369ef7d56636aef33fb8d78a6a3a7c5b8cde1db2ffc31e2a2d351f5092"
+    },
+    {
+      "path": "scripts/assert_rto_metric_semantics.py",
+      "sha256": "264223bc8fcb4ee44dd298f0570abf7a7695a2b47133559e57c07d3ed05150cb"
     },
     {
       "path": "scripts/assert_runtime_nodehost_distribution.py",
@@ -954,6 +986,10 @@
     {
       "path": "scripts/fault_failover_gate.py",
       "sha256": "8a8a27b33338ccf705639a2eccec559e2853d42fcc41f26b42c8d615939a5db1"
+    },
+    {
+      "path": "scripts/fault_failover_timeline_gate.py",
+      "sha256": "7d63a6a5e58ba2eb2027494784f14beeb463938cb8673155744a38db024d2575"
     },
     {
       "path": "scripts/fault_safety_gate.py",
@@ -1104,6 +1140,6 @@
       "sha256": "5471eff099bd2cb0940e0500e1b98ff5c0b69095e9c7ec342fb5df3034e7d2c3"
     }
   ],
-  "updated_by": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
-  "update_reason": "P43 cluster node timeout global profile: added timeout stage docs, schemas, assertions, matrix runner, artifact builder, and refreshed hashes after strengthening locked harness files."
+  "updated_by": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+  "update_reason": "Refresh hashes after P44 workload window derivation fixes."
 }

@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/metric_sample.schema.json instance=artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/metrics_timeseries.jsonl

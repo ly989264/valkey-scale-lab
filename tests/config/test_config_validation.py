@@ -285,6 +285,31 @@ def test_rejects_invalid_fault_definition(tmp_path: Path) -> None:
     assert {"FAULT_TYPE", "FAULT_TARGET_SCOPE", "FAULT_DURATION"} <= {error["code"] for error in report["errors"]}
 
 
+def test_failover_timeline_observer_global_defaults_are_reported(tmp_path: Path) -> None:
+    report = validate_config_file("templates/configs/scale_10.yaml", tmp_path / "report.json")
+
+    observer = report["failover_timeline_observer"]
+    assert report["valid"] is True
+    assert observer["enabled"] is True
+    assert observer["probe_interval_ms"] == 250
+    assert observer["client_probe_interval_ms"] == 250
+    assert observer["probe_timeout_ms"] == 1000
+    assert observer["max_observer_endpoints"] == 32
+
+
+def test_rejects_invalid_failover_timeline_observer_config(tmp_path: Path) -> None:
+    config = tmp_path / "bad_observer.yaml"
+    text = Path("templates/configs/scale_10.yaml").read_text(encoding="utf-8")
+    text += "\nobservability:\n  failover_timeline_observer:\n    enabled: yes\n    probe_interval_ms: 1\n"
+    config.write_text(text, encoding="utf-8")
+
+    report = validate_config_file(config, tmp_path / "report.json")
+
+    assert report["valid"] is False
+    codes = {error["code"] for error in report["errors"]}
+    assert "FAILOVER_TIMELINE_OBSERVER_RANGE" in codes
+
+
 def test_emit_schema_report(tmp_path: Path) -> None:
     out = tmp_path / "schema_report.json"
     report = emit_schema_report(out)

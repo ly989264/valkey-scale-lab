@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/event.schema.json instance=artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/events.jsonl

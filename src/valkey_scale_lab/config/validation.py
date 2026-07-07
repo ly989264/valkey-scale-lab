@@ -56,6 +56,15 @@ BUILT_IN_DEFAULTS: dict[str, Any] = {
     "workload": {"enabled": False},
     "cluster": {"node_memory_limit_mb": 64, "cluster_node_timeout_ms": DEFAULT_CLUSTER_NODE_TIMEOUT_MS},
     "fault": {"cluster_node_timeout_matrix_ms": list(DEFAULT_CLUSTER_NODE_TIMEOUT_MATRIX_MS)},
+    "observability": {
+        "failover_timeline_observer": {
+            "enabled": True,
+            "probe_interval_ms": 250,
+            "client_probe_interval_ms": 250,
+            "probe_timeout_ms": 1000,
+            "max_observer_endpoints": 32,
+        }
+    },
     "profiles": {
         "correctness": {"cluster_node_timeout_ms": DEFAULT_CLUSTER_NODE_TIMEOUT_MS},
         "failover_rto": {"cluster_node_timeout_ms": DEFAULT_CLUSTER_NODE_TIMEOUT_MS},
@@ -128,6 +137,7 @@ def validate_config_file(
         "nodehost_density": _nodehost_density_report(normalized) if normalized else {},
         "server_profile": normalized.get("_effective_server_profile", {}) if normalized else {},
         "cluster_timeout": normalized.get("_effective_cluster_timeout", {}) if normalized else {},
+        "failover_timeline_observer": normalized.get("observability", {}).get("failover_timeline_observer", {}) if normalized else {},
     }
     if normalized:
         effective_profile = normalized.get("_effective_server_profile", {})
@@ -219,6 +229,11 @@ def emit_schema_report(out_path: str | Path) -> dict[str, Any]:
                 "status": "PASS",
             },
             {
+                "name": "failover_timeline_observer_global_config",
+                "description": "Failover timeline observer probe intervals and endpoint fanout merge through the global observability config.",
+                "status": "PASS",
+            },
+            {
                 "name": "workload_ratios",
                 "description": "Enabled workloads must have read_ratio + write_ratio equal to 1.0.",
                 "status": "PASS",
@@ -277,6 +292,13 @@ def normalize_config(
     if workload.get("enabled"):
         workload.setdefault("pipeline", 1)
         workload.setdefault("timing", "all_run")
+    observability = config.setdefault("observability", {})
+    failover_observer = observability.setdefault("failover_timeline_observer", {})
+    failover_observer.setdefault("enabled", True)
+    failover_observer.setdefault("probe_interval_ms", 250)
+    failover_observer.setdefault("client_probe_interval_ms", 250)
+    failover_observer.setdefault("probe_timeout_ms", 1000)
+    failover_observer.setdefault("max_observer_endpoints", 32)
     timeout_source = compute_cluster_timeout_source(
         raw=raw,
         global_config=global_config or config,
@@ -324,6 +346,7 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
     cluster = _obj(config, "cluster")
     network = _obj(config, "network")
     workload = _obj(config, "workload")
+    observability = _obj(config, "observability")
     scale_profile = _obj(config, "scale_profile")
     hosts = config.get("hosts", [])
     faults = config.get("faults", [])
@@ -398,7 +421,30 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
     errors.extend(_validate_network(network))
     errors.extend(_validate_cluster_ports(cluster, total_nodes))
     errors.extend(_validate_workload(workload))
+    errors.extend(_validate_failover_timeline_observer(observability))
     errors.extend(_validate_faults(faults))
+    return errors
+
+
+def _validate_failover_timeline_observer(observability: dict[str, Any]) -> list[dict[str, Any]]:
+    observer = observability.get("failover_timeline_observer", {})
+    if not isinstance(observer, dict):
+        return [_err("FAILOVER_TIMELINE_OBSERVER_CONFIG", "observability.failover_timeline_observer must be an object")]
+    errors: list[dict[str, Any]] = []
+    if not isinstance(observer.get("enabled", True), bool):
+        errors.append(_err("FAILOVER_TIMELINE_OBSERVER_ENABLED", "observability.failover_timeline_observer.enabled must be boolean"))
+    for key, low, high in [
+        ("probe_interval_ms", 50, 60000),
+        ("client_probe_interval_ms", 50, 60000),
+        ("probe_timeout_ms", 50, 60000),
+        ("max_observer_endpoints", 1, 10000),
+    ]:
+        try:
+            value = int(observer.get(key, 0) or 0)
+        except (TypeError, ValueError):
+            value = 0
+        if value < low or value > high:
+            errors.append(_err("FAILOVER_TIMELINE_OBSERVER_RANGE", f"observability.failover_timeline_observer.{key} must be between {low} and {high}"))
     return errors
 
 

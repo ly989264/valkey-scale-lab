@@ -1,0 +1,70 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "failover_rto_summary",
+  "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+  "run_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-summary",
+  "status": "PASS",
+  "sample_count": 5,
+  "sample_refs": [
+    "scale-10-timeline-sample-01",
+    "scale-30-timeline-sample-01",
+    "scale-50-timeline-sample-01",
+    "scale-100-timeline-sample-01",
+    "scale-200-timeline-sample-01"
+  ],
+  "timeout_config_ms": 30000,
+  "server_profile": "one_b_dev",
+  "nodehost_strategy": "density_limited",
+  "node_count": 200,
+  "scale": "10,30,50,100,200",
+  "required_real_scales": [
+    30,
+    50,
+    100,
+    200
+  ],
+  "observed_real_scales": [
+    10,
+    30,
+    50,
+    100,
+    200
+  ],
+  "derived_series": {
+    "kill_to_pfail_ms": {
+      "sample_count": 5,
+      "p50_ms": 46006.0,
+      "p95_ms": 46968.0,
+      "max_ms": 46968.0,
+      "percentile_method": "nearest_rank_round_index"
+    },
+    "pfail_to_cluster_ok_ms": {
+      "sample_count": 5,
+      "p50_ms": 2848.0,
+      "p95_ms": 5829.0,
+      "max_ms": 5829.0,
+      "percentile_method": "nearest_rank_round_index"
+    },
+    "kill_to_client_recovered_ms": {
+      "sample_count": 5,
+      "p50_ms": 49738.0,
+      "p95_ms": 51029.0,
+      "max_ms": 51029.0,
+      "percentile_method": "nearest_rank_round_index"
+    },
+    "cluster_ok_to_clean_snapshot_ms": {
+      "sample_count": 5,
+      "p50_ms": 578.0,
+      "p95_ms": 895.0,
+      "max_ms": 895.0,
+      "percentile_method": "nearest_rank_round_index"
+    },
+    "kill_to_clean_snapshot_ms": {
+      "sample_count": 5,
+      "p50_ms": 50129.0,
+      "p95_ms": 51429.0,
+      "max_ms": 51429.0,
+      "percentile_method": "nearest_rank_round_index"
+    }
+  }
+}

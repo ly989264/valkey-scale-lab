@@ -1,0 +1,132 @@
+{
+  "actual_nodehost_count": 4,
+  "artifact_type": "nodehost_density_plan",
+  "config_sources": {
+    "built_in_defaults": "valkey_scale_lab.config.validation.BUILT_IN_DEFAULTS",
+    "cli_override_applied": false,
+    "cluster_node_timeout": {
+      "effective_cluster_node_timeout_ms": 30000,
+      "merge_order": [
+        "built-in defaults",
+        "global config",
+        "selected profile",
+        "scenario config",
+        "CLI override"
+      ],
+      "profile": "MISSING",
+      "requested_cluster_node_timeout_ms": 30000,
+      "source": "global"
+    },
+    "global_config_loaded": true,
+    "global_config_path": "config/valkey_scale_lab_global.yaml",
+    "merge_order": [
+      "built-in defaults",
+      "global config",
+      "scenario config",
+      "CLI override"
+    ],
+    "scenario_config_path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/templates/configs/scale_10.yaml"
+  },
+  "logical_nodes_per_nodehost": {
+    "nodehost-az-a-00": 3,
+    "nodehost-az-a-01": 2,
+    "nodehost-az-b-00": 3,
+    "nodehost-az-b-01": 2
+  },
+  "max_logical_nodes_per_nodehost": 25,
+  "max_nodehosts": 64,
+  "node_count": 10,
+  "nodehost_count_by_az": {
+    "az-a": 2,
+    "az-b": 2
+  },
+  "nodehost_density": {
+    "actual_nodehost_count": 4,
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 3,
+      "nodehost-az-a-01": 2,
+      "nodehost-az-b-00": 3,
+      "nodehost-az-b-01": 2
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 10,
+    "nodehost_count_by_az": {
+      "az-a": 2,
+      "az-b": 2
+    },
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
+  "nodehost_distribution": "round_robin_by_az",
+  "nodehost_strategy": "density_limited",
+  "nodehosts": [
+    {
+      "az_id": "az-a",
+      "container_name": "vslab-p44-failover-rto-timeline-observability-p44-scale-10-timeline-sample-01-20260628-nodehost-az-a-00",
+      "host_id": "local",
+      "logical_node_count": 3,
+      "nodehost_id": "nodehost-az-a-00",
+      "ordinal": 0,
+      "ports": [
+        7200,
+        7204,
+        7208,
+        17200,
+        17204,
+        17208
+      ]
+    },
+    {
+      "az_id": "az-a",
+      "container_name": "vslab-p44-failover-rto-timeline-observability-p44-scale-10-timeline-sample-01-20260628-nodehost-az-a-01",
+      "host_id": "local",
+      "logical_node_count": 2,
+      "nodehost_id": "nodehost-az-a-01",
+      "ordinal": 1,
+      "ports": [
+        7202,
+        7206,
+        17202,
+        17206
+      ]
+    },
+    {
+      "az_id": "az-b",
+      "container_name": "vslab-p44-failover-rto-timeline-observability-p44-scale-10-timeline-sample-01-20260628-nodehost-az-b-00",
+      "host_id": "local",
+      "logical_node_count": 3,
+      "nodehost_id": "nodehost-az-b-00",
+      "ordinal": 2,
+      "ports": [
+        7201,
+        7205,
+        7209,
+        17201,
+        17205,
+        17209
+      ]
+    },
+    {
+      "az_id": "az-b",
+      "container_name": "vslab-p44-failover-rto-timeline-observability-p44-scale-10-timeline-sample-01-20260628-nodehost-az-b-01",
+      "host_id": "local",
+      "logical_node_count": 2,
+      "nodehost_id": "nodehost-az-b-01",
+      "ordinal": 3,
+      "ports": [
+        7203,
+        7207,
+        17203,
+        17207
+      ]
+    }
+  ],
+  "nodehosts_per_az": 2,
+  "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+  "run_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_10_timeline_sample_01-20260628",
+  "scenario_name": "p44_scale_10_timeline_sample_01",
+  "schema_version": "v1",
+  "status": "PASS"
+}

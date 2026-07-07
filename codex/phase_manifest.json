@@ -6079,6 +6079,217 @@
         "md_path": "audit/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/AUDIT.md",
         "decision_json_path": "audit/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/audit_decision.json"
       }
+    },
+    {
+      "id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+      "title": "Failover RTO timeline observability",
+      "automatic": false,
+      "fake_only_allowed": false,
+      "real_valkey_required": true,
+      "max_nodes": 200,
+      "objectives": [
+        "Measure failover RTO as process-gone, PFAIL, FAIL, promotion, slot coverage, cluster OK, client recovery, and clean-gate tail segments",
+        "Run a concurrent observer and continuous SET/GET client probe during primary-stop failover",
+        "Require real 30/50/100/200 Valkey timeline evidence and keep greater-than-200 as dry-run projection only"
+      ],
+      "gates": [
+        {
+          "name": "safety_static_scan",
+          "kind": "safety",
+          "command": "python3 scripts/safety_scan.py",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "scripts_compile",
+          "kind": "unit",
+          "command": "PYTHONPYCACHEPREFIX=/tmp/vslab_pyc python3 -m compileall -q scripts src",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "failover_timeline_tests",
+          "kind": "unit",
+          "command": "PYTHONPYCACHEPREFIX=/tmp/vslab_pyc python3 -m pytest -q tests/unit/test_failover_timeline_observer.py tests/failover/test_failover_timeline_assertions.py tests/integration/test_failover_timeline_artifacts.py tests/failover/test_failover_contract.py",
+          "timeout_seconds": 600,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "failover_timeline_real",
+          "kind": "real_valkey",
+          "command": "python3 scripts/fault_failover_timeline_gate.py --phase P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY --artifact-dir artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY --scales 10,30,50,100,200 --samples-per-scale 1 --require-data-path",
+          "timeout_seconds": 7200,
+          "required": true,
+          "real_valkey": true
+        },
+        {
+          "name": "failover_timeline_sample_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/failover_timeline_sample.schema.json --instance artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/failover_timeline_samples.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "failover_rto_summary_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/failover_rto_summary.schema.json --instance artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/failover_rto_summary.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "client_recovery_sample_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/client_recovery_sample.schema.json --instance artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/client_recovery_samples.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "observer_sample_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/observer_sample.schema.json --instance artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/observer_samples.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "events_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/event.schema.json --instance artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/events.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "metrics_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/metric_sample.schema.json --instance artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/metrics_timeseries.jsonl --jsonl",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "workload_windows_schema",
+          "kind": "schema",
+          "command": "python3 scripts/validate_json_schema.py --schema schemas/artifact/workload_windows.schema.json --instance artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/workload_windows.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "timeline_completeness",
+          "kind": "harness",
+          "command": "python3 scripts/assert_failover_timeline_completeness.py --phase P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY --require-scales 30,50,100,200",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "rto_metric_semantics",
+          "kind": "harness",
+          "command": "python3 scripts/assert_rto_metric_semantics.py --phase P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "no_rto_partial_coverage",
+          "kind": "harness",
+          "command": "python3 scripts/assert_no_rto_partial_coverage.py --phase P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY --require-scales 30,50,100,200 --require-dry-run-gt-200",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        },
+        {
+          "name": "cleanup_assertion",
+          "kind": "harness",
+          "command": "python3 scripts/assert_cleanup.py --cleanup-report artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/cleanup_report.json",
+          "timeout_seconds": 120,
+          "required": true,
+          "real_valkey": false
+        }
+      ],
+      "required_artifacts": [
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/phase_summary.json",
+          "schema": "schemas/artifact/phase_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/valkey_e2e_evidence.json",
+          "schema": "schemas/artifact/valkey_e2e_evidence.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/cleanup_report.json",
+          "schema": "schemas/artifact/cleanup_report.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/events.jsonl",
+          "schema": "schemas/artifact/event.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/metrics_timeseries.jsonl",
+          "schema": "schemas/artifact/metric_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/workload_windows.json",
+          "schema": "schemas/artifact/workload_windows.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/quant_summary.json",
+          "schema": "schemas/artifact/quant_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/analysis_summary.json",
+          "schema": "schemas/artifact/analysis_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/report_index.json",
+          "schema": "schemas/artifact/report_index.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/failover_timeline_samples.jsonl",
+          "schema": "schemas/artifact/failover_timeline_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/failover_rto_summary.json",
+          "schema": "schemas/artifact/failover_rto_summary.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/client_recovery_samples.jsonl",
+          "schema": "schemas/artifact/client_recovery_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/observer_samples.jsonl",
+          "schema": "schemas/artifact/observer_sample.schema.json",
+          "required": true
+        },
+        {
+          "path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/dry_run_gt_200_projection.json",
+          "schema": "schemas/artifact/cluster_plan.schema.json",
+          "required": true
+        }
+      ],
+      "audit": {
+        "md_path": "audit/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/AUDIT.md",
+        "decision_json_path": "audit/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/audit_decision.json"
+      }
     }
   ]
 }

@@ -1,0 +1,30 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [],
+  "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_artifacts": [
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/phase_summary.json",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/resource_preflight_10.json",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/resource_preflight_30.json",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/valkey_e2e_evidence_10.json",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/valkey_e2e_evidence_30.json",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/scale_ladder_report.json",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/cleanup_report.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "Scale ladder comparison uses bounded local single-host Docker rungs; host-specific resource limits may vary.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-scale-ladder-20260628",
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P12 runs real 10-node and 30-node Valkey scale rungs with resource preflight, independent e2e evidence, rung metrics, management summaries, and a scale ladder comparison artifact."
+}

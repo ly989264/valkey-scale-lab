@@ -1,0 +1,31 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "quant_summary",
+  "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+  "run_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-quant_summary",
+  "created_at": "2026-07-07T04:41:36.287289Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "status": "PASS",
+  "summary": "P44 RTO metrics derived only from failover_timeline_samples.jsonl.",
+  "artifact_refs": [
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/failover_timeline_samples.jsonl",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/observer_samples.jsonl",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/client_recovery_samples.jsonl",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/failover_rto_summary.json"
+  ],
+  "source_artifacts": [
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/failover_timeline_samples.jsonl",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/observer_samples.jsonl",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/client_recovery_samples.jsonl",
+    "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/failover_rto_summary.json"
+  ],
+  "missing_data": [],
+  "runtime_claims": {
+    "real_valkey_claimed": true,
+    "management_runtime_claimed": false,
+    "fault_runtime_claimed": true
+  }
+}

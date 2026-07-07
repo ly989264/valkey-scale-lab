@@ -1,0 +1,209 @@
+{
+  "bundle_name": "vslab-bundle-P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628-nodehost-az-a-01",
+  "node_count": 25,
+  "nodehost_id": "nodehost-az-a-01",
+  "nodes": [
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0002-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0002-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0002-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0002-primary/valkey.log",
+      "logical_id": "shard-0002-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0002-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0006-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0006-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0006-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0006-primary/valkey.log",
+      "logical_id": "shard-0006-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0006-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0010-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0010-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0010-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0010-primary/valkey.log",
+      "logical_id": "shard-0010-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0010-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0014-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0014-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0014-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0014-primary/valkey.log",
+      "logical_id": "shard-0014-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0014-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0018-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0018-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0018-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0018-primary/valkey.log",
+      "logical_id": "shard-0018-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0018-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0022-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0022-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0022-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0022-primary/valkey.log",
+      "logical_id": "shard-0022-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0022-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0026-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0026-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0026-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0026-primary/valkey.log",
+      "logical_id": "shard-0026-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0026-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0030-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0030-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0030-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0030-primary/valkey.log",
+      "logical_id": "shard-0030-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0030-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0034-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0034-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0034-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0034-primary/valkey.log",
+      "logical_id": "shard-0034-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0034-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0038-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0038-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0038-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0038-primary/valkey.log",
+      "logical_id": "shard-0038-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0038-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0042-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0042-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0042-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0042-primary/valkey.log",
+      "logical_id": "shard-0042-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0042-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0046-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0046-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0046-primary",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0046-primary/valkey.log",
+      "logical_id": "shard-0046-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0046-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0001-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0001-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0001-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0001-replica-00/valkey.log",
+      "logical_id": "shard-0001-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0001-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0005-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0005-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0005-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0005-replica-00/valkey.log",
+      "logical_id": "shard-0005-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0005-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0009-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0009-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0009-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0009-replica-00/valkey.log",
+      "logical_id": "shard-0009-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0009-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0013-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0013-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0013-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0013-replica-00/valkey.log",
+      "logical_id": "shard-0013-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0013-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0017-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0017-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0017-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0017-replica-00/valkey.log",
+      "logical_id": "shard-0017-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0017-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0021-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0021-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0021-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0021-replica-00/valkey.log",
+      "logical_id": "shard-0021-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0021-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0025-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0025-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0025-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0025-replica-00/valkey.log",
+      "logical_id": "shard-0025-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0025-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0029-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0029-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0029-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0029-replica-00/valkey.log",
+      "logical_id": "shard-0029-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0029-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0033-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0033-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0033-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0033-replica-00/valkey.log",
+      "logical_id": "shard-0033-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0033-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0037-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0037-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0037-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0037-replica-00/valkey.log",
+      "logical_id": "shard-0037-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0037-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0041-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0041-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0041-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0041-replica-00/valkey.log",
+      "logical_id": "shard-0041-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0041-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0045-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0045-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0045-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0045-replica-00/valkey.log",
+      "logical_id": "shard-0045-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0045-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/_p44_samples/scale-100-timeline-sample-01/node_configs/shard-0049-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0049-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0049-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0049-replica-00/valkey.log",
+      "logical_id": "shard-0049-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628/shard-0049-replica-00/valkey.pid"
+    }
+  ],
+  "run_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY-p44_scale_100_timeline_sample_01-20260628",
+  "schema_version": "v1"
+}
