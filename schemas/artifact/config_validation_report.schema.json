@@ -13,7 +13,10 @@
     "config_path",
     "valid",
     "errors",
-    "normalized_config_path"
+    "normalized_config_path",
+    "requested_cluster_node_timeout_ms",
+    "effective_cluster_node_timeout_ms",
+    "cluster_node_timeout_source"
   ],
   "properties": {
     "schema_version": {
@@ -62,6 +65,36 @@
     },
     "normalized_config_path": {
       "type": "string"
+    },
+    "requested_cluster_node_timeout_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 600000
+    },
+    "effective_cluster_node_timeout_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 600000
+    },
+    "cluster_node_timeout_source": {
+      "type": "string",
+      "enum": [
+        "global",
+        "profile",
+        "scenario",
+        "cli"
+      ]
+    },
+    "cluster_node_timeout_profile": {
+      "type": "string"
+    },
+    "cluster_node_timeout_matrix_ms": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 100,
+        "maximum": 600000
+      }
     }
   },
   "additionalProperties": true

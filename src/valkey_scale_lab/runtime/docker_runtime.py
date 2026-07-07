@@ -16,6 +16,11 @@ from pathlib import Path
 from typing import Any, Callable, ContextManager, Iterable, TypeVar
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab.cluster_timeout import (
+    cluster_timeout_node_fields,
+    compute_effective_cluster_timeout,
+    valkey_cluster_timeout_config_lines,
+)
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.config.validation import load_effective_config, normalize_config, validate_semantics
 from valkey_scale_lab.metrics import MISSING, TelemetryRun, workload_metrics, write_jsonl
@@ -68,6 +73,7 @@ P36_SCENARIO_100 = "strict_full_flow_100"
 P36_SCENARIO_200 = "strict_full_flow_200"
 P41_STAGE = "P41_NODEHOST_DENSITY_GLOBAL_CONFIG"
 P42_STAGE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
+P43_STAGE = "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE"
 P36_FULL_FLOW_STEPS = [
     "config_validate",
     "resource_preflight",
@@ -291,7 +297,7 @@ def create_scenario(
         ("P19_MANAGEMENT_ROLLING_RESTART", "management_rolling_restart"),
         ("P25_FAULT_WORKLOAD_IMPACT_ANALYSIS", "fault_workload_impact_analysis"),
         ("P26_FINAL_REPORT_REGRESSION", "final_report_regression_smoke"),
-    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None and _strict_full_flow_node_count(phase, scenario) is None and _p41_nodehost_density_node_count(phase, scenario) is None and _p42_server_profile_node_count(phase, scenario) is None:
+    } and _curve_scale_sample_node_count(phase, scenario) is None and _p22_fault_matrix_node_count(phase, scenario) is None and _p23_fault_matrix_node_count(phase, scenario) is None and _p24_fault_matrix_node_count(phase, scenario) is None and _strict_fault_matrix_node_count(phase, scenario) is None and _strict_full_flow_node_count(phase, scenario) is None and _p41_nodehost_density_node_count(phase, scenario) is None and _p42_server_profile_node_count(phase, scenario) is None and _p43_cluster_timeout_node_count(phase, scenario) is None:
         raise DockerRuntimeError(f"runtime does not implement phase/scenario {phase}/{scenario}")
     with _timeline_span(setup_timeline, "setup_entry", "setup_lifecycle", {"phase_id": phase, "scenario": scenario}):
         run_id = _run_id(phase, scenario)
@@ -369,6 +375,7 @@ def create_scenario(
             started.append(node)
         state = _runtime_state(phase, scenario, run_id, network_name, config, nodes)
         _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", phase, scenario, run_id, state)
+        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", phase, scenario, run_id, state)
         _write_state(Path(state_out), state)
         operations = _configure_cluster(nodes)
         if phase == "P04_CLUSTER_MANAGEMENT_OPS":
@@ -469,6 +476,7 @@ def _runtime_state(
 ) -> dict[str, Any]:
     density = _legacy_container_density(config, nodes)
     effective_profile = compute_effective_server_profile(config, nodehost_count=len(nodes))
+    effective_timeout = compute_effective_cluster_timeout(config)
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
@@ -489,10 +497,16 @@ def _runtime_state(
             "effective_io_threads": effective_profile["effective_io_threads"],
             "effective_node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
             "runtime_memory_limit_enforced": effective_profile["runtime_memory_limit_enforced"],
+            "cluster_timeout": effective_timeout,
+            "requested_cluster_node_timeout_ms": effective_timeout["requested_cluster_node_timeout_ms"],
+            "effective_cluster_node_timeout_ms": effective_timeout["effective_cluster_node_timeout_ms"],
+            "cluster_node_timeout_source": effective_timeout["cluster_node_timeout_source"],
             **density,
         },
         "nodehost_density": density,
         "effective_server_profile": effective_profile,
+        "effective_cluster_timeout": effective_timeout,
+        "config_sources": config.get("_config_sources", {}),
         "nodes": [
             {
                 "logical_id": node["logical_id"],
@@ -507,6 +521,7 @@ def _runtime_state(
                 "pid": node["pid"],
                 "shard_id": node["shard_id"],
                 **node_effective_fields(effective_profile),
+                **cluster_timeout_node_fields(effective_timeout),
             }
             for node in nodes
         ],
@@ -538,6 +553,7 @@ def _uses_docker_process_runtime(phase: str, scenario: str) -> bool:
         or _strict_full_flow_node_count(phase, scenario) is not None
         or _p41_nodehost_density_node_count(phase, scenario) is not None
         or _p42_server_profile_node_count(phase, scenario) is not None
+        or _p43_cluster_timeout_node_count(phase, scenario) is not None
         or (phase, scenario) in {
         ("P12_SCALE_LADDER_10_30", "scale_10"),
         ("P12_SCALE_LADDER_10_30", "scale_30"),
@@ -635,8 +651,24 @@ def _p42_server_profile_node_count(phase: str, scenario: str) -> int | None:
     return int(match.group(1))
 
 
+def _p43_cluster_timeout_node_count(phase: str, scenario: str) -> int | None:
+    if phase != P43_STAGE:
+        return None
+    match = re.fullmatch(r"p43_cluster_timeout_scale_(10|30|50|100|200)", scenario)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
 def _p42_server_profile_config_path(phase: str, scenario: str) -> str | None:
     node_count = _p42_server_profile_node_count(phase, scenario)
+    if node_count is None:
+        return None
+    return f"templates/configs/scale_{node_count}.yaml"
+
+
+def _p43_cluster_timeout_config_path(phase: str, scenario: str) -> str | None:
+    node_count = _p43_cluster_timeout_node_count(phase, scenario)
     if node_count is None:
         return None
     return f"templates/configs/scale_{node_count}.yaml"
@@ -666,7 +698,7 @@ def _is_exact_200_runtime_exception(config: dict[str, Any], *, phase: str, scena
         _exact_200_stage_scenario_allowed(phase, scenario)
         and node_count == 200
         and config.get("profile_name") == "scale_200"
-        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE}
+        and scale_profile.get("bounded_exception_phase") in {"P21_FAILOVER_LATENCY_CURVE_200", P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE, P43_STAGE}
         and int(scale_profile.get("bounded_exception_nodes", 0) or 0) == 200
         and int(safety.get("default_max_nodes", 0) or 0) == 100
         and safety.get("allow_1000_nodes") is False
@@ -682,6 +714,7 @@ def _exact_200_stage_scenario_allowed(phase: str, scenario: str) -> bool:
         or (phase, scenario) == (P36_STAGE, P36_SCENARIO_200)
         or _p41_nodehost_density_node_count(phase, scenario) == 200
         or _p42_server_profile_node_count(phase, scenario) == 200
+        or _p43_cluster_timeout_node_count(phase, scenario) == 200
     )
 
 
@@ -729,6 +762,16 @@ def _create_process_scenario(
         )
         if preflight.get("can_run") is not True:
             raise DockerRuntimeError(f"P42 resource preflight cannot support {scenario}; stage is blocked")
+    p43_config_path = _p43_cluster_timeout_config_path(phase, scenario)
+    if p43_config_path:
+        preflight = run_resource_preflight(
+            p43_config_path,
+            artifacts / "resource_preflight.json",
+            phase_id=phase,
+            scenario=scenario,
+        )
+        if preflight.get("can_run") is not True:
+            raise DockerRuntimeError(f"P43 resource preflight cannot support {scenario}; stage is blocked")
     with _timeline_span(setup_timeline, "pre_cleanup_by_label", "docker_cleanup", {"run_id": run_id}):
         cleanup_by_label(phase=phase, run_id=run_id)
     with _timeline_span(setup_timeline, "docker_network_create", "docker_network", {"network_name": network_name}):
@@ -831,6 +874,7 @@ def _create_process_scenario(
         state = _process_runtime_state(phase, scenario, run_id, network_name, config, nodehosts, nodes, snapshots)
         state["runtime"]["process_bootstrap_batching"] = bootstrap_batching
         _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", phase, scenario, run_id, state)
+        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", phase, scenario, run_id, state)
         with _timeline_span(setup_timeline, "state_write_before_cluster", "state_write", {"path": state_out.as_posix()}):
             _write_state(state_out, state)
         operations, snapshots = _configure_process_cluster(nodes, timings=timings, setup_timeline=setup_timeline)
@@ -847,6 +891,7 @@ def _create_process_scenario(
         state["runtime"]["timing_breakdown_path"] = timing_path.as_posix()
         state["runtime"]["timings"] = _timing_entries(timings)
         _write_effective_server_profile_artifact(artifacts / "effective_server_profile.json", phase, scenario, run_id, state)
+        _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", phase, scenario, run_id, state)
         with _timeline_span(setup_timeline, "state_write_after_cluster", "state_write", {"path": state_out.as_posix()}):
             _write_state(state_out, state)
         if strict_management:
@@ -1012,6 +1057,12 @@ def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any]) -> str:
         "effective_io_threads": int(node.get("effective_io_threads", 1) or 1),
         "effective_node_memory_limit_mb": int(node.get("effective_node_memory_limit_mb", 0) or 0),
     }
+    timeout = {
+        "requested_cluster_node_timeout_ms": int(node.get("requested_cluster_node_timeout_ms", node.get("cluster_node_timeout_ms", 30000)) or 30000),
+        "effective_cluster_node_timeout_ms": int(node.get("effective_cluster_node_timeout_ms", node.get("cluster_node_timeout_ms", 30000)) or 30000),
+        "cluster_node_timeout_source": node.get("cluster_node_timeout_source", "global"),
+        "cluster_node_timeout_profile": node.get("cluster_node_timeout_profile", "MISSING"),
+    }
     return "\n".join(
         [
             f"port {node['client_port']}",
@@ -1019,7 +1070,7 @@ def _process_config_text(node: dict[str, Any], nodehost: dict[str, Any]) -> str:
             "protected-mode no",
             "cluster-enabled yes",
             "cluster-config-file nodes.conf",
-            f"cluster-node-timeout {node.get('cluster_node_timeout', '60000')}",
+            *valkey_cluster_timeout_config_lines(timeout),
             f"cluster-port {node['cluster_bus_port']}",
             f"cluster-announce-ip {nodehost['container_ip']}",
             f"cluster-announce-port {node['client_port']}",
@@ -1430,6 +1481,7 @@ def _process_runtime_state(
 ) -> dict[str, Any]:
     density = _runtime_density_from_nodehosts(config, nodehosts, nodes)
     effective_profile = compute_effective_server_profile(config, nodehost_count=len(nodehosts))
+    effective_timeout = compute_effective_cluster_timeout(config)
     return {
         "schema_version": "v1",
         "cluster_id": run_id,
@@ -1453,10 +1505,15 @@ def _process_runtime_state(
             "effective_io_threads": effective_profile["effective_io_threads"],
             "effective_node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
             "runtime_memory_limit_enforced": effective_profile["runtime_memory_limit_enforced"],
+            "cluster_timeout": effective_timeout,
+            "requested_cluster_node_timeout_ms": effective_timeout["requested_cluster_node_timeout_ms"],
+            "effective_cluster_node_timeout_ms": effective_timeout["effective_cluster_node_timeout_ms"],
+            "cluster_node_timeout_source": effective_timeout["cluster_node_timeout_source"],
             **density,
         },
         "nodehost_density": density,
         "effective_server_profile": effective_profile,
+        "effective_cluster_timeout": effective_timeout,
         "config_sources": config.get("_config_sources", {}),
         "nodehosts": [
             {
@@ -1494,6 +1551,7 @@ def _process_runtime_state(
                 "nodehost_container_name": node["nodehost_container_name"],
                 "nodehost_container_ip": node["nodehost_container_ip"],
                 **node_effective_fields(effective_profile),
+                **cluster_timeout_node_fields(effective_timeout),
             }
             for node in nodes
         ],
@@ -1542,6 +1600,24 @@ def _write_effective_server_profile_artifact(path: Path, phase: str, scenario: s
     path.write_text(json.dumps(profile, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _write_effective_cluster_timeout_artifact(path: Path, phase: str, scenario: str, run_id: str, state: dict[str, Any]) -> None:
+    timeout = dict(state.get("effective_cluster_timeout") or state.get("runtime", {}).get("cluster_timeout") or {})
+    timeout.update(
+        {
+            "schema_version": "v1",
+            "artifact_type": "effective_cluster_timeout",
+            "phase_id": phase,
+            "scenario_name": scenario,
+            "run_id": run_id,
+            "status": "PASS" if timeout.get("effective_cluster_node_timeout_ms") else "FAIL",
+            "node_count": len(state.get("nodes", [])),
+            "config_sources": state.get("config_sources", {}),
+        }
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(timeout, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def _write_generated_valkey_configs_manifest(path: Path, phase: str, scenario: str, run_id: str, nodes: list[dict[str, Any]]) -> None:
     entries: list[dict[str, Any]] = []
     for node in nodes:
@@ -1549,6 +1625,8 @@ def _write_generated_valkey_configs_manifest(path: Path, phase: str, scenario: s
         text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
         effective_io = int(node.get("effective_io_threads", 1) or 1)
         memory_mb = int(node.get("effective_node_memory_limit_mb", 0) or 0)
+        effective_timeout = int(node.get("effective_cluster_node_timeout_ms", node.get("cluster_node_timeout_ms", 30000)) or 30000)
+        timeout_source = str(node.get("cluster_node_timeout_source", "MISSING"))
         entries.append(
             {
                 "logical_id": node.get("logical_id", "MISSING"),
@@ -1560,6 +1638,12 @@ def _write_generated_valkey_configs_manifest(path: Path, phase: str, scenario: s
                 "maxmemory_line_present": f"maxmemory {memory_mb}mb" in text if memory_mb > 0 else False,
                 "runtime_memory_limit_enforced": bool(node.get("runtime_memory_limit_enforced")),
                 "runtime_memory_limit_method": node.get("runtime_memory_limit_method", "MISSING"),
+                "requested_cluster_node_timeout_ms": int(node.get("requested_cluster_node_timeout_ms", effective_timeout) or effective_timeout),
+                "effective_cluster_node_timeout_ms": effective_timeout,
+                "cluster_node_timeout_source": timeout_source,
+                "cluster_node_timeout_profile": node.get("cluster_node_timeout_profile", "MISSING"),
+                "cluster_node_timeout_line_present": f"cluster-node-timeout {effective_timeout}" in text,
+                "cluster_node_timeout_source_present": "vslab cluster-node-timeout-source" in text and f"source={timeout_source}" in text,
             }
         )
     report = {
@@ -1568,7 +1652,7 @@ def _write_generated_valkey_configs_manifest(path: Path, phase: str, scenario: s
         "phase_id": phase,
         "scenario_name": scenario,
         "run_id": run_id,
-        "status": "PASS" if entries and all((entry["io_threads_line_present"] is True or entry["io_threads_line_required"] is False) and entry["maxmemory_line_present"] for entry in entries) else "FAIL",
+        "status": "PASS" if entries and all((entry["io_threads_line_present"] is True or entry["io_threads_line_required"] is False) and entry["maxmemory_line_present"] and entry["cluster_node_timeout_line_present"] and entry["cluster_node_timeout_source_present"] for entry in entries) else "FAIL",
         "node_count": len(entries),
         "entries": entries,
     }
@@ -2028,10 +2112,13 @@ def _node_specs(config: dict[str, Any], phase: str, scenario: str, run_id: str |
     ordinal = 0
     effective_profile = compute_effective_server_profile(config)
     effective_node_fields = node_effective_fields(effective_profile)
+    effective_timeout = compute_effective_cluster_timeout(config)
+    effective_timeout_fields = cluster_timeout_node_fields(effective_timeout)
     for shard in range(shards):
         shard_id = f"shard-{shard:04d}"
         specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, "primary", azs[shard % len(azs)], host_ids[ordinal % len(host_ids)], run_id))
         specs[-1].update(effective_node_fields)
+        specs[-1].update(effective_timeout_fields)
         ordinal += 1
     for shard in range(shards):
         for replica in range(replicas):
@@ -2039,6 +2126,7 @@ def _node_specs(config: dict[str, Any], phase: str, scenario: str, run_id: str |
             az = azs[(shard + replica + 1) % len(azs)]
             specs.append(_spec(cluster, phase, scenario, ordinal, shard_id, f"replica-{replica:02d}", az, host_ids[ordinal % len(host_ids)], run_id))
             specs[-1].update(effective_node_fields)
+            specs[-1].update(effective_timeout_fields)
             ordinal += 1
     return specs
 
@@ -2060,10 +2148,6 @@ def _spec(cluster: dict[str, Any], phase: str, scenario: str, ordinal: int, shar
         "phase": phase,
         "scenario": scenario,
     }
-    if phase in {"P13_SCALE_LADDER_50_100", P30_STAGE, P31_STAGE, P32_STAGE, P36_STAGE}:
-        spec["cluster_node_timeout"] = "600000"
-    if phase == "P24_PARTITION_SPLIT_BRAIN_MATRIX":
-        spec["cluster_node_timeout"] = "5000"
     return spec
 
 
@@ -2096,7 +2180,7 @@ def _start_container(node: dict[str, Any], network_name: str, image: str, phase:
         "--cluster-config-file",
         "nodes.conf",
         "--cluster-node-timeout",
-        str(node.get("cluster_node_timeout", "5000")),
+        str(node.get("effective_cluster_node_timeout_ms", node.get("cluster_node_timeout_ms", 30000))),
         "--appendonly",
         "no",
         "--protected-mode",
@@ -3727,6 +3811,9 @@ def _scenario_node_count_allowed(phase: str, scenario: str, node_count: int) -> 
     p42_count = _p42_server_profile_node_count(phase, scenario)
     if p42_count is not None:
         return node_count == p42_count
+    p43_count = _p43_cluster_timeout_node_count(phase, scenario)
+    if p43_count is not None:
+        return node_count == p43_count
     expected = {
         ("P03_LOCAL_DOCKER_VALKEY", "cluster_smoke"): {6},
         ("P04_CLUSTER_MANAGEMENT_OPS", "management_ops"): {6},

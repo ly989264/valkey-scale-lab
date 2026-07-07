@@ -25,7 +25,7 @@
     },
     {
       "path": "codex/phase_manifest.json",
-      "sha256": "055be29c4a1fd715fcb0463ce0699416dc6c9766c212855d99e72b2e8dcb33b4"
+      "sha256": "7eac3e8bde57965680e3024d1343ce319d477755837652560283be9feb91eed9"
     },
     {
       "path": "docs/codex/00_MISSION.md",
@@ -348,6 +348,10 @@
       "sha256": "1e4891cd45610e910598556b09d9fb2f5dbd2b8a6675576b584e80ad4de2d14d"
     },
     {
+      "path": "docs/codex/goal-loop/stages/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE.md",
+      "sha256": "6e56777d4250c68d4e6e820065552191202be3249d720fe448602c6ca81aea9e"
+    },
+    {
       "path": "docs/codex/goal-loop/templates/BLOCKED_STAGE_TEMPLATE.md",
       "sha256": "e18da55b4f638ec0a3b0f6197a91c9aed4c47ef88f633c35a1c26b6c0ea42f1e"
     },
@@ -401,7 +405,7 @@
     },
     {
       "path": "schemas/artifact/config_validation_report.schema.json",
-      "sha256": "b8b97ddeb884c3bfb8317cbaa4d53423b4d18abbdc5ee59e701751e89d64264b"
+      "sha256": "86f29cc8d8f14faec789a867fc6858c91648d69c099b80eb628f627da26acf8c"
     },
     {
       "path": "schemas/artifact/coverage_matrix.schema.json",
@@ -414,6 +418,10 @@
     {
       "path": "schemas/artifact/effective_server_profile.schema.json",
       "sha256": "b80b469672f2d7f7ec1b9f76bdba40bd3164bd67c97209a6418a6d4d49423b26"
+    },
+    {
+      "path": "schemas/artifact/effective_cluster_timeout.schema.json",
+      "sha256": "786859df89b70fe2201005db350196587a5339d777e34cea34f715df0b914794"
     },
     {
       "path": "schemas/artifact/env_info.schema.json",
@@ -652,6 +660,10 @@
       "sha256": "532b959735ee25889a085d2b175d332292c119d69dc90560bf98d9c181ae4333"
     },
     {
+      "path": "schemas/artifact/timeout_matrix_report.schema.json",
+      "sha256": "b1d0f3f8eb7dd2f86c01e0f33fb28b5d610d5becdd295500415419cd3ac1c464"
+    },
+    {
       "path": "schemas/artifact/valkey_e2e_evidence.schema.json",
       "sha256": "d17580f410f16e8875c67c6844cecfabf148f7ffdedddca703186984ef79e1aa"
     },
@@ -741,7 +753,7 @@
     },
     {
       "path": "schemas/config/run_config.schema.json",
-      "sha256": "9293edefbdbf695d32543ab8bb8849d11898edb077ba9c10b21d8b75cd24b104"
+      "sha256": "ed6ae04213832295d9a039c93bf14e90e9468e34e5a634e4baa1cebc3cd060cf"
     },
     {
       "path": "schemas/loop_engineering/command_log_entry.schema.json",
@@ -928,8 +940,20 @@
       "sha256": "5142c646c0355e2e287f0ba49623353a585ed04bb492ec44fd72258289029a75"
     },
     {
+      "path": "scripts/assert_cluster_timeout_config.py",
+      "sha256": "41fd9bdd5bfac22e3aed78c6dc728c41c5cba404236e9a46773c72b36aa00ab3"
+    },
+    {
+      "path": "scripts/assert_no_hidden_timeout_override.py",
+      "sha256": "8aba2f53b5dbb848095ffc8bc7379e7931d7a44725fb54e122ec820ce12bf20b"
+    },
+    {
+      "path": "scripts/assert_timeout_matrix_artifacts.py",
+      "sha256": "2ae7379f763c56404dc6bd8bdd105c58900296150b5e1df922c0be5f8e41c444"
+    },
+    {
       "path": "scripts/fault_failover_gate.py",
-      "sha256": "43064ff2a3e2b2f11e872818869d83f8208ab9152ec3c8134a916b5a42c906f2"
+      "sha256": "8a8a27b33338ccf705639a2eccec559e2853d42fcc41f26b42c8d615939a5db1"
     },
     {
       "path": "scripts/fault_safety_gate.py",
@@ -972,6 +996,14 @@
       "sha256": "b9b0315e53d9ec8c01d186f8cfd1a04d8353f629caddff2b4edbb66f21020dd7"
     },
     {
+      "path": "scripts/failover_rto_timeout_matrix.py",
+      "sha256": "c87da20e9818371b97a31a4dc649eeba8adfe16637c5d311070047a72b7fd604"
+    },
+    {
+      "path": "scripts/p43_cluster_timeout_artifacts.py",
+      "sha256": "a97a17e1e094dc5a7ec9bd5f0ce28639cd2c19789e533ec9288e993a10c0ef8d"
+    },
+    {
       "path": "scripts/render_audit_report.py",
       "sha256": "614da5265a34cfe753afa6d8028df8ac9efb1cdb8190aac82e755d05d365b12e"
     },
@@ -1005,7 +1037,7 @@
     },
     {
       "path": "scripts/valkey_e2e_gate.py",
-      "sha256": "d7f973ae73ca87b4c5d72eb751089dce764c917dc14e5c673c846797d3416b5c"
+      "sha256": "80f0b809d2dab2ff5aa3a081a6456ea2bb50b624abec17a470affc316807429c"
     },
     {
       "path": "scripts/valkey_probe_lib.py",
@@ -1072,6 +1104,6 @@
       "sha256": "5471eff099bd2cb0940e0500e1b98ff5c0b69095e9c7ec342fb5df3034e7d2c3"
     }
   ],
-  "updated_by": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
-  "update_reason": "P42 server profile global config: added profile schemas/assertions and refreshed hashes after strengthening locked harness files."
+  "updated_by": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
+  "update_reason": "P43 cluster node timeout global profile: added timeout stage docs, schemas, assertions, matrix runner, artifact builder, and refreshed hashes after strengthening locked harness files."
 }

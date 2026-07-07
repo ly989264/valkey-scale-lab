@@ -234,9 +234,52 @@
         "node_memory_limit_mb": {
           "type": "integer",
           "minimum": 1
+        },
+        "cluster_node_timeout_ms": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 600000
+        },
+        "cluster_node_timeout_profile": {
+          "type": "string"
+        },
+        "cluster_node_timeout_allow_override": {
+          "type": "boolean"
         }
       },
       "additionalProperties": true
+    },
+    "fault": {
+      "type": "object",
+      "properties": {
+        "cluster_node_timeout_matrix_ms": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 600000
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "cluster_node_timeout_ms": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 600000
+          },
+          "allow_override": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true
+      }
     },
     "workload": {
       "type": "object"

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout
 from valkey_scale_lab.config.validation import load_effective_config, validate_semantics
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.server_profile import compute_effective_server_profile
@@ -24,7 +25,8 @@ P35_SCENARIO = "strict_fault_matrix_200"
 P36_STAGE = "P36_FULL_FLOW_E2E_50_100_200_REAL"
 P36_SCENARIO = "strict_full_flow_200"
 P42_STAGE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
-EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE}
+P43_STAGE = "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE"
+EXACT_200_CONFIG_MARKER_PHASES = {P21_STAGE, P32_STAGE, P35_STAGE, P36_STAGE, P42_STAGE, P43_STAGE}
 
 
 class ResourcePreflightError(RuntimeError):
@@ -97,6 +99,7 @@ def run_resource_preflight(
         config,
         nodehost_count=int((density_plan or {}).get("actual_nodehost_count", 0) or 0) or None,
     )
+    effective_timeout = compute_effective_cluster_timeout(config)
     memory_check = _memory_check(
         node_count,
         int(effective_profile["effective_node_memory_limit_mb"]),
@@ -155,12 +158,16 @@ def run_resource_preflight(
             density_plan=density_plan,
         ),
         "server_profile": effective_profile,
+        "cluster_timeout": effective_timeout,
         "requested_io_threads": effective_profile["requested_io_threads"],
         "effective_io_threads": effective_profile["effective_io_threads"],
         "requested_node_memory_limit_mb": effective_profile["requested_node_memory_limit_mb"],
         "effective_node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
         "io_thread_budget_status": effective_profile["io_thread_budget_status"],
         "memory_budget_status": effective_profile["memory_budget_status"],
+        "requested_cluster_node_timeout_ms": effective_timeout["requested_cluster_node_timeout_ms"],
+        "effective_cluster_node_timeout_ms": effective_timeout["effective_cluster_node_timeout_ms"],
+        "cluster_node_timeout_source": effective_timeout["cluster_node_timeout_source"],
         "node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
         "projected_node_memory_mb": node_count * int(effective_profile["effective_node_memory_limit_mb"]),
         "projected_nodehost_memory_mb": _projected_nodehost_memory(
@@ -242,7 +249,9 @@ def _exact_200_phase_scenario_allowed(phase_id: str, scenario: str) -> bool:
         (P32_STAGE, P32_SCENARIO),
         (P35_STAGE, P35_SCENARIO),
         (P36_STAGE, P36_SCENARIO),
-    } or (phase_id == P42_STAGE and scenario == "p42_server_profile_scale_200")
+    } or (phase_id == P42_STAGE and scenario == "p42_server_profile_scale_200") or (
+        phase_id == P43_STAGE and scenario == "p43_cluster_timeout_scale_200"
+    )
 
 
 def _semantic_errors_for_preflight(config: dict[str, Any], *, allow_exact_200: bool) -> list[dict[str, Any]]:

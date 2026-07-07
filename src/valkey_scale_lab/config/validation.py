@@ -8,6 +8,15 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab.cluster_timeout import (
+    DEFAULT_CLUSTER_NODE_TIMEOUT_MATRIX_MS,
+    DEFAULT_CLUSTER_NODE_TIMEOUT_MS,
+    compute_cluster_timeout_source,
+    normalize_cluster_timeout_config,
+    profile_timeout_overlay,
+    selected_timeout_profile,
+    validate_cluster_timeout_config,
+)
 from valkey_scale_lab.config.schema import load_schema, validate
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan, density_runtime_config
@@ -45,7 +54,13 @@ BUILT_IN_DEFAULTS: dict[str, Any] = {
         "nodehost_distribution": "round_robin_by_az",
     },
     "workload": {"enabled": False},
-    "cluster": {"node_memory_limit_mb": 64},
+    "cluster": {"node_memory_limit_mb": 64, "cluster_node_timeout_ms": DEFAULT_CLUSTER_NODE_TIMEOUT_MS},
+    "fault": {"cluster_node_timeout_matrix_ms": list(DEFAULT_CLUSTER_NODE_TIMEOUT_MATRIX_MS)},
+    "profiles": {
+        "correctness": {"cluster_node_timeout_ms": DEFAULT_CLUSTER_NODE_TIMEOUT_MS},
+        "failover_rto": {"cluster_node_timeout_ms": DEFAULT_CLUSTER_NODE_TIMEOUT_MS},
+        "management_safe": {"cluster_node_timeout_ms": DEFAULT_CLUSTER_NODE_TIMEOUT_MS, "allow_override": True},
+    },
     "faults": [],
     "scale_profile": {},
     "metadata": {},
@@ -112,6 +127,7 @@ def validate_config_file(
         "config_sources": normalized.get("_config_sources", {}) if normalized else {},
         "nodehost_density": _nodehost_density_report(normalized) if normalized else {},
         "server_profile": normalized.get("_effective_server_profile", {}) if normalized else {},
+        "cluster_timeout": normalized.get("_effective_cluster_timeout", {}) if normalized else {},
     }
     if normalized:
         effective_profile = normalized.get("_effective_server_profile", {})
@@ -123,6 +139,16 @@ def validate_config_file(
                 "effective_node_memory_limit_mb": effective_profile.get("effective_node_memory_limit_mb", "MISSING"),
                 "io_thread_budget_status": effective_profile.get("io_thread_budget_status", "MISSING"),
                 "memory_budget_status": effective_profile.get("memory_budget_status", "MISSING"),
+            }
+        )
+        effective_timeout = normalized.get("_effective_cluster_timeout", {})
+        report.update(
+            {
+                "requested_cluster_node_timeout_ms": effective_timeout.get("requested_cluster_node_timeout_ms", "MISSING"),
+                "effective_cluster_node_timeout_ms": effective_timeout.get("effective_cluster_node_timeout_ms", "MISSING"),
+                "cluster_node_timeout_source": effective_timeout.get("cluster_node_timeout_source", "MISSING"),
+                "cluster_node_timeout_profile": effective_timeout.get("cluster_node_timeout_profile", "MISSING"),
+                "cluster_node_timeout_matrix_ms": effective_timeout.get("cluster_node_timeout_matrix_ms", []),
             }
         )
     out_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -188,6 +214,11 @@ def emit_schema_report(out_path: str | Path) -> dict[str, Any]:
                 "status": "PASS",
             },
             {
+                "name": "cluster_node_timeout_global_profile",
+                "description": "cluster-node-timeout merge order is built-in defaults < global config < selected profile < scenario config < CLI override.",
+                "status": "PASS",
+            },
+            {
                 "name": "workload_ratios",
                 "description": "Enabled workloads must have read_ratio + write_ratio equal to 1.0.",
                 "status": "PASS",
@@ -207,8 +238,13 @@ def normalize_config(
 ) -> dict[str, Any]:
     global_path = Path(global_config_path) if global_config_path is not None else GLOBAL_CONFIG_PATH
     config = deepcopy(BUILT_IN_DEFAULTS)
+    global_config: dict[str, Any] = {}
     if global_path.exists():
-        _deep_merge(config, parse_config_file(global_path))
+        global_config = parse_config_file(global_path)
+        _deep_merge(config, global_config)
+    profile_name = selected_timeout_profile(raw, cli_overrides)
+    if profile_name:
+        _deep_merge(config, profile_timeout_overlay(config, profile_name))
     _deep_merge(config, deepcopy(raw))
     if cli_overrides:
         _deep_merge(config, deepcopy(cli_overrides))
@@ -241,6 +277,13 @@ def normalize_config(
     if workload.get("enabled"):
         workload.setdefault("pipeline", 1)
         workload.setdefault("timing", "all_run")
+    timeout_source = compute_cluster_timeout_source(
+        raw=raw,
+        global_config=global_config or config,
+        cli_overrides=cli_overrides,
+        profile_name=profile_name,
+    )
+    normalize_cluster_timeout_config(config, source=timeout_source, profile_name=profile_name)
     normalize_server_profile_config(config)
     config["_config_sources"] = {
         "merge_order": ["built-in defaults", "global config", "scenario config", "CLI override"],
@@ -249,6 +292,13 @@ def normalize_config(
         "global_config_loaded": global_path.exists(),
         "scenario_config_path": Path(scenario_config_path).as_posix() if scenario_config_path else "MISSING",
         "cli_override_applied": bool(cli_overrides),
+        "cluster_node_timeout": {
+            "merge_order": ["built-in defaults", "global config", "selected profile", "scenario config", "CLI override"],
+            "source": timeout_source,
+            "requested_cluster_node_timeout_ms": config["_effective_cluster_timeout"]["requested_cluster_node_timeout_ms"],
+            "effective_cluster_node_timeout_ms": config["_effective_cluster_timeout"]["effective_cluster_node_timeout_ms"],
+            "profile": config["_effective_cluster_timeout"]["cluster_node_timeout_profile"],
+        },
     }
     return config
 
@@ -342,6 +392,7 @@ def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:
     if ":9.1." not in str(runtime.get("valkey_image", "")):
         errors.append(_err("VALKEY_VERSION", "runtime.valkey_image must use a 9.1.x tag"))
     errors.extend(_validate_nodehost_density(config))
+    errors.extend(validate_cluster_timeout_config(config))
 
     errors.extend(_validate_hosts(hosts))
     errors.extend(_validate_network(network))

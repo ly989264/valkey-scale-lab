@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/workload_windows.schema.json instance=artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/workload_windows.json

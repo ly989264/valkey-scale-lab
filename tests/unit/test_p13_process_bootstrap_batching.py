@@ -22,14 +22,18 @@ def test_process_bundle_generation_preserves_per_node_evidence(tmp_path: Path) -
             "run_id": "P13_SCALE_LADDER_50_100-scale_50-20260628",
             "client_port": 7400,
             "cluster_bus_port": 17400,
-            "cluster_node_timeout": "600000",
+            "effective_cluster_node_timeout_ms": 30000,
+            "requested_cluster_node_timeout_ms": 30000,
+            "cluster_node_timeout_source": "global",
         },
         {
             "logical_id": "shard-0001-primary",
             "run_id": "P13_SCALE_LADDER_50_100-scale_50-20260628",
             "client_port": 7401,
             "cluster_bus_port": 17401,
-            "cluster_node_timeout": "600000",
+            "effective_cluster_node_timeout_ms": 30000,
+            "requested_cluster_node_timeout_ms": 30000,
+            "cluster_node_timeout_source": "global",
         },
     ]
     for node in nodes:

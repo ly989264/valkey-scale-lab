@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import importlib.util
+from argparse import Namespace
 from pathlib import Path
 
 
@@ -55,3 +56,56 @@ def test_p20_sample_scenario_maps_to_unique_scale_setup_alias() -> None:
 
     assert gate.scale_setup_scenario("scale_100_sample_03_fault_failover") == "scale_100_sample_03"
     assert gate.scale_setup_scenario("scale_30_fault_failover") == "scale_30"
+
+
+def test_failover_timeout_resolves_global_config_when_cli_absent() -> None:
+    gate = load_fault_failover_gate()
+
+    value, source, profile = gate.resolve_failover_timeout(
+        Namespace(
+            config="templates/configs/scale_10.yaml",
+            timeout_config_ms=None,
+            failover_node_timeout_ms=None,
+        )
+    )
+
+    assert value == 30000
+    assert source == "global"
+    assert profile == "MISSING"
+
+
+def test_failover_timeout_marks_legacy_flag_as_cli_source() -> None:
+    gate = load_fault_failover_gate()
+
+    value, source, profile = gate.resolve_failover_timeout(
+        Namespace(
+            config="templates/configs/scale_10.yaml",
+            timeout_config_ms=None,
+            failover_node_timeout_ms=10000,
+        )
+    )
+
+    assert value == 10000
+    assert source == "cli"
+    assert profile == "failover_node_timeout_ms"
+
+
+def test_failover_timeout_resolves_scenario_override(tmp_path: Path) -> None:
+    gate = load_fault_failover_gate()
+    source = Path("templates/configs/scale_10.yaml")
+    config = tmp_path / "scale_10_timeout.yaml"
+    text = source.read_text(encoding="utf-8")
+    text = text.replace("  cluster_bus_port_base: 17200", "  cluster_bus_port_base: 17200\n  cluster_node_timeout_ms: 60000")
+    config.write_text(text, encoding="utf-8")
+
+    value, source_name, profile = gate.resolve_failover_timeout(
+        Namespace(
+            config=config.as_posix(),
+            timeout_config_ms=None,
+            failover_node_timeout_ms=None,
+        )
+    )
+
+    assert value == 60000
+    assert source_name == "scenario"
+    assert profile == "MISSING"

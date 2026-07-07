@@ -36,10 +36,11 @@ def test_p10_node_specs_preserve_multi_host_placement() -> None:
     assert [node["host_id"] for node in nodes] == ["local-a", "local-b", "local-a", "local-b", "local-a", "local-b"]
 
 
-def test_p13_node_specs_use_slower_cluster_failure_timeout() -> None:
+def test_p13_node_specs_use_global_cluster_node_timeout() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_50.yaml"))
     nodes = docker_runtime._node_specs(config, "P13_SCALE_LADDER_50_100", "scale_50")
-    assert {node["cluster_node_timeout"] for node in nodes} == {"600000"}
+    assert {node["effective_cluster_node_timeout_ms"] for node in nodes} == {30000}
+    assert {node["cluster_node_timeout_source"] for node in nodes} == {"global"}
 
 
 def test_p13_node_specs_preserve_replica_topology() -> None:
@@ -224,12 +225,13 @@ def test_p36_strict_full_flow_is_exact_scale_process_runtime() -> None:
     assert docker_runtime._uses_docker_process_runtime("P36_FULL_FLOW_E2E_50_100_200_REAL", "strict_full_flow_199") is False
 
 
-def test_p32_node_specs_use_slow_cluster_failure_timeout() -> None:
+def test_p32_node_specs_use_global_cluster_node_timeout() -> None:
     config = docker_runtime.normalize_config(docker_runtime.parse_config_file("templates/configs/scale_200.yaml"))
     nodes = docker_runtime._node_specs(config, "P32_MANAGEMENT_MATRIX_200_REAL", "strict_management_matrix_200")
 
     assert len(nodes) == 200
-    assert {node["cluster_node_timeout"] for node in nodes} == {"600000"}
+    assert {node["effective_cluster_node_timeout_ms"] for node in nodes} == {30000}
+    assert {node["cluster_node_timeout_source"] for node in nodes} == {"global"}
 
 
 def test_process_nodehosts_use_global_density_for_100_and_200() -> None:

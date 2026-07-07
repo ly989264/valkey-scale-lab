@@ -1630,7 +1630,7 @@ def test_p21_single_sample_runs_inter_sample_cleanup_when_child_leaves_state(tmp
     args = type("Args", (), {
         "phase": P21_PHASE,
         "wait_after_fault": 1,
-        "failover_node_timeout_ms": 15000,
+        "failover_node_timeout_ms": 30000,
         "require_data_path": True,
     })()
 

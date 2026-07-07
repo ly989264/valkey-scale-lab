@@ -354,6 +354,11 @@ def node_processes_from_state(state: dict[str, Any]) -> list[dict[str, Any]]:
         "effective_node_memory_limit_mb",
         "runtime_memory_limit_enforced",
         "runtime_memory_limit_method",
+        "requested_cluster_node_timeout_ms",
+        "effective_cluster_node_timeout_ms",
+        "cluster_node_timeout_source",
+        "cluster_node_timeout_profile",
+        "config_artifact_file",
     ]
     return [{key: node.get(key, "MISSING") for key in keys} for node in state.get("nodes", [])]
 
@@ -461,7 +466,7 @@ def main() -> int:
                 state_load_started = time.monotonic()
                 state = load_state(state_path)
                 record_timing(accounting_timings, "state_load", state_load_started, details={"path": str(state_path)})
-                if args.phase in {"P30_MANAGEMENT_MATRIX_50_REAL", "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"}:
+                if args.phase in {"P30_MANAGEMENT_MATRIX_50_REAL", "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG", "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE"}:
                     run_state_path = artifact_dir / "run_state.json"
                     if not run_state_path.exists():
                         write_json(
@@ -672,6 +677,10 @@ def main() -> int:
         },
         "probes": probes,
         "runtime": state.get("runtime", {}),
+        "effective_cluster_timeout": state.get("effective_cluster_timeout", state.get("runtime", {}).get("cluster_timeout", {})),
+        "requested_cluster_node_timeout_ms": state.get("runtime", {}).get("requested_cluster_node_timeout_ms", "MISSING"),
+        "effective_cluster_node_timeout_ms": state.get("runtime", {}).get("effective_cluster_node_timeout_ms", "MISSING"),
+        "cluster_node_timeout_source": state.get("runtime", {}).get("cluster_node_timeout_source", "MISSING"),
         "nodehosts": state.get("nodehosts", []),
         "node_processes": node_processes_from_state(state),
         "role_counts": role_counts_from_probes(probes),

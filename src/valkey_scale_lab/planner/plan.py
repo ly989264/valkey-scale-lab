@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout, cluster_timeout_node_fields
 from valkey_scale_lab.config.validation import (
     REQUIRED_1000_ENV_VALUE,
     is_p37_200_plus_dry_run_profile,
@@ -120,8 +121,10 @@ def build_cluster_plan(
     except NodehostDensityError as exc:
         raise PlannerError(str(exc)) from exc
     effective_profile = compute_effective_server_profile(config, nodehost_count=int(density_plan.get("actual_nodehost_count", 0) or 0))
+    effective_timeout = compute_effective_cluster_timeout(config)
     for node in planned_nodes:
         node.update(node_effective_fields(effective_profile))
+        node.update(cluster_timeout_node_fields(effective_timeout))
     nodehosts = density_plan["nodehosts"]
     density = density_plan["nodehost_density"]
     capacity = _check_host_capacity(config, planned_nodes)
@@ -202,6 +205,10 @@ def build_cluster_plan(
             "effective_io_threads": effective_profile["effective_io_threads"],
             "effective_node_memory_limit_mb": effective_profile["effective_node_memory_limit_mb"],
             "runtime_memory_limit_enforced": effective_profile["runtime_memory_limit_enforced"],
+            "cluster_timeout": effective_timeout,
+            "requested_cluster_node_timeout_ms": effective_timeout["requested_cluster_node_timeout_ms"],
+            "effective_cluster_node_timeout_ms": effective_timeout["effective_cluster_node_timeout_ms"],
+            "cluster_node_timeout_source": effective_timeout["cluster_node_timeout_source"],
             **density,
         },
         "directories": {
@@ -210,6 +217,7 @@ def build_cluster_plan(
         },
         "nodehost_density": density,
         "effective_server_profile": effective_profile,
+        "effective_cluster_timeout": effective_timeout,
         "config_sources": config.get("_config_sources", {}),
         "nodehosts": nodehosts,
         "nodes": planned_nodes,
@@ -321,6 +329,7 @@ def _node(
         "dry_run": dry_run,
         "resource_limits": {
             "memory_mb": config["cluster"].get("node_memory_limit_mb"),
+            "cluster_node_timeout_ms": config["cluster"].get("cluster_node_timeout_ms"),
         },
     }
 

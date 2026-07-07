@@ -1,0 +1,35 @@
+{
+  "artifact_type": "effective_cluster_timeout",
+  "cluster_node_timeout_allow_override": false,
+  "cluster_node_timeout_matrix_ms": [
+    5000,
+    10000,
+    15000,
+    30000,
+    60000
+  ],
+  "cluster_node_timeout_profile": "MISSING",
+  "cluster_node_timeout_source": "global",
+  "created_at": "2026-07-07T00:00:00Z",
+  "effective_cluster_node_timeout_ms": 30000,
+  "merge_order": [
+    "built-in defaults",
+    "global config",
+    "selected profile",
+    "scenario config",
+    "CLI override"
+  ],
+  "node_count": 100,
+  "phase_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "requested_cluster_node_timeout_ms": 30000,
+  "run_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-cluster-timeout-20260707",
+  "scenario_name": "p43_cluster_timeout_scale_100",
+  "schema_version": "v1",
+  "source": "global",
+  "stage_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
+  "status": "PASS"
+}

@@ -223,6 +223,7 @@ def _resource_preflight(args: argparse.Namespace) -> int:
 
 def _nodehost_cli_overrides(args: argparse.Namespace) -> dict[str, object] | None:
     runtime: dict[str, object] = {}
+    cluster: dict[str, object] = {}
     for attr in [
         "nodehost_strategy",
         "max_nodehosts",
@@ -244,7 +245,16 @@ def _nodehost_cli_overrides(args: argparse.Namespace) -> dict[str, object] | Non
                 valkey[attr] = value
     if valkey:
         runtime["valkey"] = valkey
-    return {"runtime": runtime} if runtime else None
+    if hasattr(args, "cluster_node_timeout_ms") and args.cluster_node_timeout_ms is not None:
+        cluster["cluster_node_timeout_ms"] = args.cluster_node_timeout_ms
+    if hasattr(args, "cluster_node_timeout_profile") and args.cluster_node_timeout_profile is not None:
+        cluster["cluster_node_timeout_profile"] = args.cluster_node_timeout_profile
+    overrides: dict[str, object] = {}
+    if runtime:
+        overrides["runtime"] = runtime
+    if cluster:
+        overrides["cluster"] = cluster
+    return overrides or None
 
 
 def _add_nodehost_overrides(parser: argparse.ArgumentParser) -> None:
@@ -255,6 +265,8 @@ def _add_nodehost_overrides(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--io-threads-max-per-node", type=int)
     parser.add_argument("--io-threads-max-total", type=int)
     parser.add_argument("--log-format", choices=["text", "json"])
+    parser.add_argument("--cluster-node-timeout-ms", type=int)
+    parser.add_argument("--cluster-node-timeout-profile", choices=["correctness", "failover_rto", "management_safe"])
     parser.add_argument("--nodehost-strategy", choices=["density_limited"])
     parser.add_argument("--max-nodehosts", type=int)
     parser.add_argument("--nodehosts-per-az", type=int)

@@ -70,7 +70,10 @@ def test_process_config_omits_io_threads_for_one_and_writes_two_with_maxmemory()
         "logical_id": "shard-0000-primary",
         "client_port": 7000,
         "cluster_bus_port": 17000,
-        "cluster_node_timeout": "5000",
+        "requested_cluster_node_timeout_ms": 30000,
+        "effective_cluster_node_timeout_ms": 30000,
+        "cluster_node_timeout_source": "global",
+        "cluster_node_timeout_profile": "MISSING",
         "effective_node_memory_limit_mb": 64,
     }
     nodehost = {"container_ip": "172.18.0.2"}
@@ -80,5 +83,7 @@ def test_process_config_omits_io_threads_for_one_and_writes_two_with_maxmemory()
 
     assert "io-threads" not in text_one
     assert "maxmemory 64mb" in text_one
+    assert "cluster-node-timeout 30000" in text_one
+    assert "vslab cluster-node-timeout-source source=global" in text_one
     assert "io-threads 2" in text_two
     assert "maxmemory 64mb" in text_two

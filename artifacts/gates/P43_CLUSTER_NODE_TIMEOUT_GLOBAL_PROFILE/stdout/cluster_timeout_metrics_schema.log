@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/metric_sample.schema.json instance=artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/metrics_timeseries.jsonl

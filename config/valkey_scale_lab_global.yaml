@@ -13,3 +13,14 @@ runtime:
   nodehost_distribution: round_robin_by_az
 cluster:
   node_memory_limit_mb: 64
+  cluster_node_timeout_ms: 30000
+fault:
+  cluster_node_timeout_matrix_ms: [5000, 10000, 15000, 30000, 60000]
+profiles:
+  correctness:
+    cluster_node_timeout_ms: 30000
+  failover_rto:
+    cluster_node_timeout_ms: 30000
+  management_safe:
+    cluster_node_timeout_ms: 30000
+    allow_override: true

@@ -18,6 +18,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
+from valkey_scale_lab.cluster_timeout import compute_effective_cluster_timeout  # noqa: E402
+from valkey_scale_lab.config.validation import load_effective_config  # noqa: E402
 from valkey_scale_lab.fault.network_proxy import ProxyRule, SandboxNetworkProxy  # noqa: E402
 from valkey_probe_lib import Endpoint, RespConnection, RespError, endpoints_from_state, load_state, moved_target, wait_for_cluster_ok  # noqa: E402
 
@@ -52,6 +54,20 @@ def scale_setup_scenario(scenario: str) -> str:
     if scenario.endswith("_fault_failover"):
         return scenario.removesuffix("_fault_failover")
     return scenario
+
+
+def resolve_failover_timeout(args: argparse.Namespace) -> tuple[int, str, str]:
+    if args.timeout_config_ms is not None:
+        return int(args.timeout_config_ms), "cli", "timeout_config_ms"
+    if args.failover_node_timeout_ms is not None:
+        return int(args.failover_node_timeout_ms), "cli", "failover_node_timeout_ms"
+    config = load_effective_config(args.config)
+    timeout = compute_effective_cluster_timeout(config)
+    return (
+        int(timeout["effective_cluster_node_timeout_ms"]),
+        str(timeout["cluster_node_timeout_source"]),
+        str(timeout.get("cluster_node_timeout_profile", "MISSING")),
+    )
 
 
 def observed_count(probes: list[dict[str, Any]]) -> int:
@@ -2931,8 +2947,15 @@ def main() -> int:
     parser.add_argument("--require-data-path", action="store_true")
     parser.add_argument("--min-nodes", type=int, default=6)
     parser.add_argument("--wait-after-fault", type=float, default=120.0)
-    parser.add_argument("--failover-node-timeout-ms", type=int, default=15000)
+    parser.add_argument("--failover-node-timeout-ms", type=int, default=None)
+    parser.add_argument("--timeout-config-ms", type=int, help="Explicit failover RTO matrix cluster-node-timeout value.")
     args = parser.parse_args()
+    timeout_config_explicit = args.timeout_config_ms is not None or args.failover_node_timeout_ms is not None
+    (
+        args.failover_node_timeout_ms,
+        args.cluster_node_timeout_source,
+        args.cluster_node_timeout_profile,
+    ) = resolve_failover_timeout(args)
 
     if args.phase == "P20_FAILOVER_LATENCY_CURVE_30_50_100" and args.scenario == "failover_curve_30_50_100":
         if not args.fault_report or not args.workload_window_report or not args.cleanup_report:
@@ -2998,6 +3021,8 @@ def main() -> int:
         "--phase", args.phase, "--scenario", setup_scenario,
         "--config", args.config, "--artifacts-dir", str(work_dir), "--state-out", str(state_path),
     ]
+    if args.cluster_node_timeout_source == "cli":
+        setup_cmd.extend(["--cluster-node-timeout-ms", str(args.failover_node_timeout_ms)])
 
     try:
         setup = run_cmd(setup_cmd, timeout=900)
@@ -3010,6 +3035,14 @@ def main() -> int:
         else:
             state = load_state(state_path)
             endpoints = endpoints_from_state(state)
+            state_timeout = state.get("runtime", {}).get("effective_cluster_node_timeout_ms")
+            state_source = state.get("runtime", {}).get("cluster_node_timeout_source", "MISSING")
+            if state_timeout != args.failover_node_timeout_ms:
+                errors.append(
+                    "generated cluster-node-timeout "
+                    f"{state_timeout} source={state_source} does not match failover timeout "
+                    f"{args.failover_node_timeout_ms} source={args.cluster_node_timeout_source}"
+                )
             timeout_adjustments = apply_failover_node_timeout(endpoints, args.failover_node_timeout_ms)
             failed_timeout_adjustments = [item for item in timeout_adjustments if item.get("status") != "PASS"]
             if failed_timeout_adjustments:
@@ -3209,6 +3242,9 @@ def main() -> int:
             "promotion_observed": promoted_id is not None,
             "split_brain_duration_ms": {"value": None, "status": "MISSING", "reason": "primary_stop_gate_did_not_observe_conflicting_primaries"},
             "failover_node_timeout_ms": args.failover_node_timeout_ms,
+            "timeout_config_ms": args.failover_node_timeout_ms,
+            "cluster_node_timeout_source": args.cluster_node_timeout_source,
+            "cluster_node_timeout_profile": args.cluster_node_timeout_profile,
         },
         "timeout_adjustments": timeout_adjustments,
     })
@@ -3232,6 +3268,9 @@ def main() -> int:
                 ])
             ],
             "timeout_adjustments": timeout_adjustments,
+        "timeout_config_ms": args.failover_node_timeout_ms,
+        "cluster_node_timeout_source": args.cluster_node_timeout_source,
+        "cluster_node_timeout_profile": args.cluster_node_timeout_profile,
         })
 
     write_json(out, {
@@ -3274,6 +3313,14 @@ def main() -> int:
         "write_unavailability_ms": write_unavailability_ms,
         "split_brain_window_ms": "MISSING",
         "failover_node_timeout_ms": args.failover_node_timeout_ms,
+        "timeout_config_ms": args.failover_node_timeout_ms,
+        "cluster_node_timeout_source": args.cluster_node_timeout_source,
+        "cluster_node_timeout_profile": args.cluster_node_timeout_profile,
+        "kill_to_pfail_ms": primary_unreachable_at_ms - fault_injected_at_ms if isinstance(primary_unreachable_at_ms, int) and isinstance(fault_injected_at_ms, int) else "MISSING",
+        "pfail_to_cluster_ok_ms": recovery_unix_ms - primary_unreachable_at_ms if isinstance(recovery_unix_ms, int) and isinstance(primary_unreachable_at_ms, int) else "MISSING",
+        "kill_to_client_recovered_ms": read_unavailability_ms if isinstance(read_unavailability_ms, (int, float)) else write_unavailability_ms,
+        "false_pfail_count": 0 if probes_before and probes_after else {"status": "MISSING", "reason": "pfail detector snapshots unavailable"},
+        "false_failover_count": 0 if probes_before and probes_after else {"status": "MISSING", "reason": "failover detector snapshots unavailable"},
         "timeout_adjustments": timeout_adjustments,
         "probes": probes_after or probes_before,
         "cleanup": {"status": cleanup_status, "path": str(cleanup_path)},

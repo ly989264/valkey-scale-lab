@@ -1,0 +1,65 @@
+{
+  "bundle_name": "vslab-bundle-P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628-nodehost-az-b-01",
+  "node_count": 7,
+  "nodehost_id": "nodehost-az-b-01",
+  "nodes": [
+    {
+      "config_artifact_file": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/node_configs/shard-0003-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0003-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0003-primary",
+      "log_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0003-primary/valkey.log",
+      "logical_id": "shard-0003-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0003-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/node_configs/shard-0007-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0007-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0007-primary",
+      "log_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0007-primary/valkey.log",
+      "logical_id": "shard-0007-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0007-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/node_configs/shard-0011-primary.conf",
+      "config_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0011-primary/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0011-primary",
+      "log_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0011-primary/valkey.log",
+      "logical_id": "shard-0011-primary",
+      "pid_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0011-primary/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/node_configs/shard-0000-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0000-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0000-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0000-replica-00/valkey.log",
+      "logical_id": "shard-0000-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0000-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/node_configs/shard-0004-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0004-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0004-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0004-replica-00/valkey.log",
+      "logical_id": "shard-0004-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0004-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/node_configs/shard-0008-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0008-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0008-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0008-replica-00/valkey.log",
+      "logical_id": "shard-0008-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0008-replica-00/valkey.pid"
+    },
+    {
+      "config_artifact_file": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/node_configs/shard-0012-replica-00.conf",
+      "config_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0012-replica-00/valkey.conf",
+      "data_dir": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0012-replica-00",
+      "log_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0012-replica-00/valkey.log",
+      "logical_id": "shard-0012-replica-00",
+      "pid_file": "/tmp/valkey-scale-lab/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628/shard-0012-replica-00/valkey.pid"
+    }
+  ],
+  "run_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_30-20260628",
+  "schema_version": "v1"
+}

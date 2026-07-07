@@ -1,0 +1,82 @@
+{
+  "artifact_type": "scale_rung_summary",
+  "az_distribution": {
+    "az-a": 5,
+    "az-b": 5
+  },
+  "client_port_range": {
+    "max": 7209,
+    "min": 7200
+  },
+  "cluster_known_nodes_observed": [
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10
+  ],
+  "cluster_states": [
+    "ok"
+  ],
+  "config_path": "scale_10",
+  "created_at": "2026-06-28T00:00:00Z",
+  "errors": [],
+  "evidence_path": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/valkey_e2e_evidence_10.json",
+  "host_distribution": {
+    "local": 10
+  },
+  "management": {
+    "cluster_known_nodes_expected": 10,
+    "cluster_known_nodes_max": 10,
+    "cluster_known_nodes_min": 10,
+    "slot_ranges": [
+      {
+        "end": 9829,
+        "start": 6553
+      },
+      {
+        "end": 13106,
+        "start": 9830
+      },
+      {
+        "end": 16383,
+        "start": 13107
+      },
+      {
+        "end": 3275,
+        "start": 0
+      },
+      {
+        "end": 6552,
+        "start": 3276
+      }
+    ],
+    "slots_assigned": 16384
+  },
+  "metrics": {
+    "avg_used_memory": 3043112.8,
+    "total_commands_processed": 258,
+    "total_used_memory": 30431128
+  },
+  "node_count": 10,
+  "phase_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
+  "primary_count": 5,
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "replica_count": 5,
+  "run_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-p43_cluster_timeout_scale_10-20260628",
+  "rung": 10,
+  "scenario": "p43_cluster_timeout_scale_10",
+  "schema_version": "v1",
+  "status": "PASS",
+  "valkey_versions": [
+    "9.1.0"
+  ]
+}

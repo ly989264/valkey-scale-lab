@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Timeout Matrix Report",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "phase_id", "status", "rows"],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "timeout_matrix_report"},
+    "phase_id": {"type": "string"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED", "NOT_RUN_WITH_REASON"]},
+    "configured_matrix_ms": {
+      "type": "array",
+      "items": {"type": "integer", "minimum": 100, "maximum": 600000}
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "status",
+          "node_count",
+          "timeout_config_ms",
+          "kill_to_pfail_ms",
+          "pfail_to_cluster_ok_ms",
+          "kill_to_client_recovered_ms",
+          "false_pfail_count",
+          "false_failover_count"
+        ],
+        "properties": {
+          "status": {"type": "string", "enum": ["PASS", "FAIL", "BLOCKED", "NOT_RUN_WITH_REASON"]},
+          "node_count": {"type": "integer", "minimum": 1},
+          "timeout_config_ms": {"type": "integer", "minimum": 100, "maximum": 600000},
+          "reason": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

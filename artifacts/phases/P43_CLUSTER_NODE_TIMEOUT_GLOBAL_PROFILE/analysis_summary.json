@@ -1,0 +1,29 @@
+{
+  "artifact_type": "analysis_summary",
+  "created_at": "2026-07-07T00:00:00Z",
+  "findings": [
+    {
+      "name": "cluster_node_timeout_global_profile",
+      "status": "PASS"
+    }
+  ],
+  "missing_metrics": [],
+  "phase_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE-cluster-timeout-20260707",
+  "schema_version": "v1",
+  "source_artifacts": [
+    "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/effective_cluster_timeout.json",
+    "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/config_validation_report.json",
+    "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/resource_preflight.json",
+    "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/cluster_plan.json",
+    "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/coverage_ledger.json",
+    "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/timeout_matrix_report.json",
+    "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/dry_run_gt_200_projection.json"
+  ],
+  "stage_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
+  "status": "PASS"
+}
