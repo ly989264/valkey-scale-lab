@@ -1,16 +1,148 @@
 {
   "artifact_type": "config_validation_report",
+  "cluster_node_timeout_matrix_ms": [
+    5000,
+    10000,
+    15000,
+    30000,
+    60000
+  ],
+  "cluster_node_timeout_profile": "MISSING",
+  "cluster_node_timeout_source": "global",
+  "cluster_timeout": {
+    "artifact_type": "effective_cluster_timeout",
+    "cluster_node_timeout_allow_override": false,
+    "cluster_node_timeout_matrix_ms": [
+      5000,
+      10000,
+      15000,
+      30000,
+      60000
+    ],
+    "cluster_node_timeout_profile": "MISSING",
+    "cluster_node_timeout_source": "global",
+    "effective_cluster_node_timeout_ms": 30000,
+    "merge_order": [
+      "built-in defaults",
+      "global config",
+      "selected profile",
+      "scenario config",
+      "CLI override"
+    ],
+    "requested_cluster_node_timeout_ms": 30000,
+    "schema_version": "v1",
+    "source": "global"
+  },
   "config_path": "templates/configs/single_mac_6node.yaml",
+  "config_sources": {
+    "built_in_defaults": "valkey_scale_lab.config.validation.BUILT_IN_DEFAULTS",
+    "cli_override_applied": false,
+    "cluster_node_timeout": {
+      "effective_cluster_node_timeout_ms": 30000,
+      "merge_order": [
+        "built-in defaults",
+        "global config",
+        "selected profile",
+        "scenario config",
+        "CLI override"
+      ],
+      "profile": "MISSING",
+      "requested_cluster_node_timeout_ms": 30000,
+      "source": "global"
+    },
+    "global_config_loaded": true,
+    "global_config_path": "config/valkey_scale_lab_global.yaml",
+    "merge_order": [
+      "built-in defaults",
+      "global config",
+      "scenario config",
+      "CLI override"
+    ],
+    "scenario_config_path": "templates/configs/single_mac_6node.yaml"
+  },
   "created_at": "2026-06-28T00:00:00Z",
+  "effective_cluster_node_timeout_ms": 30000,
+  "effective_io_threads": 1,
+  "effective_node_memory_limit_mb": 128,
   "errors": [],
+  "failover_timeline_observer": {
+    "client_probe_interval_ms": 250,
+    "enabled": true,
+    "max_observer_endpoints": 32,
+    "probe_interval_ms": 250,
+    "probe_timeout_ms": 1000
+  },
+  "io_thread_budget_status": "PASS",
+  "memory_budget_status": "PENDING_PREFLIGHT",
+  "nodehost_density": {
+    "config_sources": {
+      "built_in_defaults": "valkey_scale_lab.config.validation.BUILT_IN_DEFAULTS",
+      "cli_override_applied": false,
+      "cluster_node_timeout": {
+        "effective_cluster_node_timeout_ms": 30000,
+        "merge_order": [
+          "built-in defaults",
+          "global config",
+          "selected profile",
+          "scenario config",
+          "CLI override"
+        ],
+        "profile": "MISSING",
+        "requested_cluster_node_timeout_ms": 30000,
+        "source": "global"
+      },
+      "global_config_loaded": true,
+      "global_config_path": "config/valkey_scale_lab_global.yaml",
+      "merge_order": [
+        "built-in defaults",
+        "global config",
+        "scenario config",
+        "CLI override"
+      ],
+      "scenario_config_path": "templates/configs/single_mac_6node.yaml"
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
   "normalized_config_path": "artifacts/phases/P01_CONFIG_SCHEMA/config_validation_report.normalized.json",
   "phase_id": "P01_CONFIG_SCHEMA",
   "producer": {
     "name": "valkey-scale-lab",
     "version": "0.0.0"
   },
+  "requested_cluster_node_timeout_ms": 30000,
+  "requested_io_threads": 1,
+  "requested_node_memory_limit_mb": 128,
   "run_id": "P01_CONFIG_SCHEMA-local-20260628",
   "schema_version": "v1",
+  "server_profile": {
+    "artifact_type": "effective_server_profile",
+    "effective_io_threads": 1,
+    "effective_node_memory_limit_mb": 128,
+    "host_cpu_count": 10,
+    "io_thread_budget_reason": [
+      "within per-node and total io-thread budget"
+    ],
+    "io_thread_budget_status": "PASS",
+    "io_threads_auto": false,
+    "io_threads_auto_candidate": "SKIPPED_WITH_REASON",
+    "io_threads_max_per_node": 2,
+    "io_threads_max_total": 256,
+    "log_format": "text",
+    "logical_node_count": 6,
+    "memory_budget_status": "PENDING_PREFLIGHT",
+    "nodehost_count": 1,
+    "requested_io_threads": 1,
+    "requested_node_memory_limit_mb": 128,
+    "runtime_memory_limit_enforced": true,
+    "runtime_memory_limit_method": "valkey_maxmemory",
+    "schema_version": "v1",
+    "server_profile": "one_b_dev",
+    "total_valkey_threads": 6
+  },
   "status": "PASS",
   "total_nodes": 6,
   "valid": true,

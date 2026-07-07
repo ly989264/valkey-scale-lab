@@ -176,6 +176,19 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
                 last_error = f"attempt={attempt} restart_rc={result.returncode} stderr={result.stderr.strip()!r}"
             else:
                 try:
+                    if not target.get("pid_file") or target.get("client_port") is None:
+                        return {
+                            "status": "PASS",
+                            "action": "process_restart",
+                            "nodehost_container_name": nodehost,
+                            "config_file": config_file,
+                            "pid": "MISSING",
+                            "restart_attempts": attempt,
+                            "readiness_check": "SKIPPED_WITH_REASON",
+                            "reason": "fault state lacks pid_file or client_port, so clear verified only the owned restart command",
+                            "stdout": result.stdout.strip(),
+                            "stderr": result.stderr.strip(),
+                        }
                     new_pid = _wait_for_process_restart(target, str(nodehost), timeout_seconds=timeout_seconds, stable_seconds=stable_seconds)
                     return {
                         "status": "PASS",

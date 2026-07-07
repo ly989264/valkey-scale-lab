@@ -48,10 +48,23 @@ def test_l08_worktree_has_no_cache_or_scratch_pollution() -> None:
         if any(part in {"__pycache__", ".pytest_cache"} for part in path.parts):
             polluted.append(tracked_path)
         elif any(part.startswith("_fault_failover_work_") for part in path.parts):
-            polluted.append(tracked_path)
+            if not _is_committed_failover_sample_evidence(path):
+                polluted.append(tracked_path)
         elif path.suffix == ".pyc":
             polluted.append(tracked_path)
     assert polluted == []
+
+
+def _is_committed_failover_sample_evidence(path: Path) -> bool:
+    parts = path.parts
+    return (
+        len(parts) > 5
+        and parts[0] == "artifacts"
+        and parts[1] == "phases"
+        and parts[2] in {"P20_FAILOVER_LATENCY_CURVE_30_50_100", "P21_FAILOVER_LATENCY_CURVE_200"}
+        and parts[3] in {"_p20_samples", "_p21_samples"}
+        and any(part.startswith("_fault_failover_work_") for part in parts)
+    )
 
 
 def test_l08_real_fault_failover_pass_entries_have_positive_duration() -> None:

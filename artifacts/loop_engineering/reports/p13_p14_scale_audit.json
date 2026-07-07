@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "p13_p14_scale_audit",
-  "created_at": "2026-07-02T12:02:23.341473Z",
+  "created_at": "2026-07-07T04:59:56.330025Z",
   "producer": {
     "name": "scripts/audit_p13_p14_scale.py",
     "version": "v1"
@@ -186,8 +186,10 @@
       "path": "artifacts/gates/P13_SCALE_LADDER_50_100/gate_result.json",
       "status": "PASS",
       "finding_ids": [],
-      "historical_finding_ids": [],
-      "historical_drift_allowed": false
+      "historical_finding_ids": [
+        "P13P14-0001"
+      ],
+      "historical_drift_allowed": true
     },
     "optimization_artifacts": {
       "classified_separately": true,
@@ -289,5 +291,18 @@
     "finding_ids": [],
     "reason": "P14 is opt-in dry-run/resource/planner only and was not executed by L04."
   },
-  "findings": []
+  "findings": [
+    {
+      "id": "P13P14-0001",
+      "severity": "medium",
+      "category": "p13_historical_manifest_drift",
+      "classification": "historical",
+      "blocking": false,
+      "description": "P13 gate result has allowlisted legacy manifest SHA drift",
+      "evidence": [
+        "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+        "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea"
+      ]
+    }
+  ]
 }

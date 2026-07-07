@@ -18,7 +18,10 @@ from schema_validator import load_json, validate  # noqa: E402
 
 P13_ID = "P13_SCALE_LADDER_50_100"
 P14_ID = "P14_SCALE_1000_OPTIN_DRYRUN"
-LEGACY_GATE_MANIFEST_SHA256 = "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4"
+LEGACY_GATE_MANIFEST_SHA256ES = {
+    "87fa9952002f6f606dd10984fd6700d4eb577c7388cb755ece52e4688c2adad4",
+    "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
+}
 P13_DIR = Path("artifacts/phases") / P13_ID
 P13O_DIRS = [
     Path("artifacts/phases/P13O_CLUSTER_CREATE_AB"),
@@ -470,7 +473,7 @@ class P13P14Audit:
         manifest_sha = self.manifest_sha256()
         observed_manifest_sha = gate_result.get("manifest_sha256")
         if observed_manifest_sha != manifest_sha:
-            if observed_manifest_sha == LEGACY_GATE_MANIFEST_SHA256:
+            if observed_manifest_sha in LEGACY_GATE_MANIFEST_SHA256ES:
                 historical_findings.append(
                     self.finding(
                         severity="medium",

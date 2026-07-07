@@ -1,12 +1,12 @@
 {
   "artifact_type": "final_audit_report",
-  "created_at": "2026-07-02T12:04:12.725350Z",
+  "created_at": "2026-07-07T05:05:38.862069Z",
   "findings": [],
   "generated_reports": [
     {
       "path": "artifacts/loop_engineering/reports/coverage_matrix.csv",
       "role": "csv_view",
-      "sha256": "d3f186d6096f7b89a67063da9c096a266112aa34b9c4dc3cf9f3f63c16452db0",
+      "sha256": "8eae0cce7116b1a5ae387844595eeabb93803596f5e9b267f718d0dbfaa1b6f6",
       "source_artifacts": [
         "artifacts/loop_engineering/reports/audit_report.json",
         "artifacts/loop_engineering/reports/provenance_graph.json",
@@ -906,7 +906,7 @@
     {
       "path": "artifacts/loop_engineering/reports/index.html",
       "role": "html_report",
-      "sha256": "8add5d1fec8a3002920c946928aac886b7c57c3ac06fea12d641bc487cbdd07b",
+      "sha256": "fe927937a284821b6e0c10c09aa303c4134086f38b7560f748ae323367c09ee8",
       "source_artifacts": [
         "artifacts/loop_engineering/reports/audit_report.json",
         "artifacts/loop_engineering/reports/provenance_graph.json",
@@ -936,7 +936,7 @@
     {
       "path": "artifacts/loop_engineering/final_audit/index.html",
       "role": "html_report",
-      "sha256": "02410b715272a17b280921cb67447a9ce8ba42428bc65748b718f91054b97316",
+      "sha256": "e688b6617334fef41a37e0b63e9bb04aabfeb6aaef9600d6d8d8fe7847d2ecc4",
       "source_artifacts": [
         "artifacts/loop_engineering/reports/audit_report.json",
         "artifacts/loop_engineering/reports/provenance_graph.json",
@@ -1442,62 +1442,62 @@
     "name": "scripts/final_audit_gate.py",
     "version": "v1"
   },
-  "root_commit_sha": "6c8fdba9f7f1259b04064eadbc0cb6d3e324c935",
+  "root_commit_sha": "c064c0b7f56d00bf51360d5e75663f84e8874b77",
   "schema_version": "v1",
   "source_artifacts": [
     {
       "artifact_type": "audit_report",
       "path": "artifacts/loop_engineering/reports/audit_report.json",
-      "sha256": "49fef411baa8ba827cf58185b668e32c96b679498a90fd99cca159c89dc68a6c",
+      "sha256": "812045c24d64ebdcc4b2fcb477da6b99a28f551fdddf3bbd00ecefcc20a11b12",
       "source_of_truth": true,
       "status": "PASS"
     },
     {
       "artifact_type": "provenance_graph",
       "path": "artifacts/loop_engineering/reports/provenance_graph.json",
-      "sha256": "8825e00bdabdb017d72f3b9571a1c718f944d011f2e6b3beade4dae1dd2cd4cf",
+      "sha256": "56a35e1fc5b885e3c3aaf915eeb81a026f796d2bd834ad16d74c724f90b466ab",
       "source_of_truth": true,
       "status": "PASS"
     },
     {
       "artifact_type": "metric_catalog",
       "path": "artifacts/loop_engineering/reports/metric_catalog.json",
-      "sha256": "219a5d7a1c0062d40831a96b851410930fc75244ecc2563e8a367c753f7f1620",
+      "sha256": "6f70631eb6f75afd80a0f5ca5e2edc4818c0dca1c4edecfdfc70f001d7e4ab10",
       "source_of_truth": true,
       "status": "PASS"
     },
     {
       "artifact_type": "coverage_matrix",
       "path": "artifacts/loop_engineering/reports/coverage_matrix.json",
-      "sha256": "d4e6ee0a41355cd347a924a62a9e772122286b2b52aacf42f070ca329e2d0a52",
+      "sha256": "fa76516835ef88e411b32a23a4fee92f507545792aef11b1cc5c8e84b87b1593",
       "source_of_truth": true,
       "status": "PASS"
     },
     {
       "artifact_type": "p13_p14_scale_audit",
       "path": "artifacts/loop_engineering/reports/p13_p14_scale_audit.json",
-      "sha256": "a0b06dd2226f048b0558192055bed68b2b454554cbe6971b7e90cb6f9a18135b",
+      "sha256": "aa8e1fc7a51e5a3cf41f2a2f494e311718030874101c7538b55182e97bff86d7",
       "source_of_truth": true,
       "status": "PASS"
     },
     {
       "artifact_type": "small_real_parity_audit",
       "path": "artifacts/loop_engineering/reports/small_real_parity_audit.json",
-      "sha256": "ea6adbdc263ed1144a7d4b43e898d96207cedf7876fbe3502f2d56dfa6169a17",
+      "sha256": "4fd3e40b570d3b7c9a9d2a3a9064f1dd26fbbe1567d67d946e583e16f9a98af2",
       "source_of_truth": true,
       "status": "PASS"
     },
     {
       "artifact_type": "scale_build_metrics",
       "path": "artifacts/loop_engineering/reports/scale_build_metrics.json",
-      "sha256": "c9501f7ce1d0d9d6a5ab0e187ddc5a0967ab966ebede192c377e9bebfaa59327",
+      "sha256": "abdc5be553d982527119156e9cc06e960e02a852f5191a15d6fcb0a0b46e753f",
       "source_of_truth": true,
       "status": "PASS"
     },
     {
       "artifact_type": "fault_failover_scale",
       "path": "artifacts/loop_engineering/reports/fault_failover_scale.json",
-      "sha256": "1ca00d0495511b57e17520c412446c01ef2f5a6762e62c0abbb548052d109655",
+      "sha256": "08e44ffdce491d27a2f015b052b31d6e844ee3971a925938ffbb64fc4bc03c4a",
       "source_of_truth": true,
       "status": "PASS"
     },
@@ -1511,7 +1511,7 @@
     {
       "artifact_type": "loop_report_index",
       "path": "artifacts/loop_engineering/reports/report_index.json",
-      "sha256": "71398d3a66185326e81de0c5ab42472958d4b4edb8b7971171d06ca584d520e1",
+      "sha256": "873fdf13ee358d962500327cf5493fb9307b723a16d4ed2eb9b010cbf02a0ef6",
       "source_of_truth": true,
       "status": "PASS"
     }

@@ -27,6 +27,21 @@
       "status": "PASS"
     },
     {
+      "description": "Nodehost density config merge order is built-in defaults < global config < scenario config < CLI override.",
+      "name": "nodehost_density_global_merge",
+      "status": "PASS"
+    },
+    {
+      "description": "cluster-node-timeout merge order is built-in defaults < global config < selected profile < scenario config < CLI override.",
+      "name": "cluster_node_timeout_global_profile",
+      "status": "PASS"
+    },
+    {
+      "description": "Failover timeline observer probe intervals and endpoint fanout merge through the global observability config.",
+      "name": "failover_timeline_observer_global_config",
+      "status": "PASS"
+    },
+    {
       "description": "Enabled workloads must have read_ratio + write_ratio equal to 1.0.",
       "name": "workload_ratios",
       "status": "PASS"
@@ -37,6 +52,11 @@
     "default_max_nodes": 100,
     "faults": [],
     "runtime.dry_run": false,
+    "runtime.max_logical_nodes_per_nodehost": 25,
+    "runtime.max_nodehosts": 64,
+    "runtime.nodehost_distribution": "round_robin_by_az",
+    "runtime.nodehost_strategy": "density_limited",
+    "runtime.nodehosts_per_az": 2,
     "runtime.provider": "docker",
     "runtime.sandbox_mode": "container_namespace",
     "safety.allow_1000_nodes": false,

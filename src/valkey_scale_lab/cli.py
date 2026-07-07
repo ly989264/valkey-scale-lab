@@ -206,14 +206,20 @@ def _report(args: argparse.Namespace) -> int:
 
 def _resource_preflight(args: argparse.Namespace) -> int:
     try:
+        kwargs: dict[str, object] = {
+            "dry_run": args.dry_run,
+            "phase_id": args.phase,
+            "scenario": args.scenario,
+        }
+        if args.global_config is not None:
+            kwargs["global_config_path"] = args.global_config
+        cli_overrides = _nodehost_cli_overrides(args)
+        if cli_overrides is not None:
+            kwargs["cli_overrides"] = cli_overrides
         report = run_resource_preflight(
             args.config,
             args.out,
-            dry_run=args.dry_run,
-            phase_id=args.phase,
-            scenario=args.scenario,
-            global_config_path=args.global_config,
-            cli_overrides=_nodehost_cli_overrides(args),
+            **kwargs,
         )
     except ResourcePreflightError as exc:
         print(f"ERROR: resource preflight: {exc}", file=sys.stderr)

@@ -24,6 +24,11 @@ def write_json(path: Path, data: dict[str, Any]) -> None:
     path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def ensure_evidence_alias(source: Path, alias: Path) -> None:
+    if source.exists() and not alias.exists():
+        alias.write_bytes(source.read_bytes())
+
+
 def artifact_ref(path: Path) -> str:
     return path.resolve().relative_to(ROOT.resolve()).as_posix()
 
@@ -87,6 +92,7 @@ def main() -> int:
         dry_run=True,
     )
     smoke_evidence = base / "smoke_10_valkey_e2e_evidence.json"
+    ensure_evidence_alias(smoke_evidence, base / "valkey_e2e_evidence_10.json")
     smoke_status, smoke_reason = _real_evidence_status(smoke_evidence, 10)
     smoke_refs = [artifact_ref(smoke_evidence)] if smoke_evidence.exists() else [artifact_ref(base / "nodehost_density_plan.json")]
     coverage_rows = [

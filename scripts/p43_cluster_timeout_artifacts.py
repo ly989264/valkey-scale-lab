@@ -31,6 +31,7 @@ def main() -> int:
     base = ROOT / "artifacts" / "phases" / PHASE
     base.mkdir(parents=True, exist_ok=True)
     errors: list[str] = []
+    _ensure_evidence_alias(base / "valkey_e2e_evidence.json", base / "valkey_e2e_evidence_10.json")
 
     config100 = ROOT / SCALE_CONFIGS[100]
     validation = validate_config_file(config100, base / "config_validation_report.json")
@@ -87,6 +88,11 @@ def main() -> int:
         return 1
     print(f"PASS P43 cluster timeout artifacts at {base}")
     return 0
+
+
+def _ensure_evidence_alias(source: Path, alias: Path) -> None:
+    if source.exists() and not alias.exists():
+        alias.write_bytes(source.read_bytes())
 
 
 def _timeout_artifact(timeout: dict[str, Any], node_count: int, scenario: str) -> dict[str, Any]:

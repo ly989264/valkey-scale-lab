@@ -35,7 +35,7 @@
       "exists": true,
       "path": "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_no_bypass_report.json",
       "required": true,
-      "sha256": "d3470996ef5cfcd3d4575ffb5ecdd4a364167ed1bf21090383f8875b1d0c3e48"
+      "sha256": "1cb05a75d9be5a2216ab0bd788d164e611eab57806c3124b10a1be0c1884f21b"
     },
     {
       "bytes": 1466,
@@ -354,11 +354,11 @@
       "sha256": "29010afe36fbef0b6c872d0b7f7437fcbf4225540c0230544565d578b0f59737"
     },
     {
-      "bytes": 20292,
+      "bytes": 21852,
       "exists": true,
       "path": "artifacts/goal_loop_strict/STRICT_STAGE_JOURNAL.md",
       "required": true,
-      "sha256": "747e63fbfe79b53efda7e81abcc7e48d1c7c1774986e04d2f0325e955808ae44"
+      "sha256": "f0f18cb638cc336ab9051a724110b3ea904dd85a36d1fa7d5849b9b3f0154861"
     },
     {
       "bytes": 836381,
@@ -487,18 +487,18 @@
       "sha256": "7effa44949fca3374d5a315f814feaf7c22f4105e6b90ac6da4f84ca737c65c4"
     },
     {
-      "bytes": 211830,
+      "bytes": 250261,
       "exists": true,
       "path": "codex/phase_manifest.json",
       "required": true,
-      "sha256": "b8b5b03cdd1b72af90ccf8155a0bd8e3a1241938f280fce10ef4ef83f09d2033"
+      "sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea"
     },
     {
-      "bytes": 1524,
+      "bytes": 1746,
       "exists": true,
       "path": "codex/status/phase_state.json",
       "required": true,
-      "sha256": "5ffdd1dd81a5925ceae870135ae07777af7dc67174001835f8850ace15943a89"
+      "sha256": "1ad6b6b0b08f5470c98822252add5e0be61cfa5269aadbf9e3d6deecd9911492"
     }
   ],
   "status": "PASS"

@@ -933,7 +933,7 @@
     },
     {
       "path": "scripts/audit_committed_artifacts.py",
-      "sha256": "2722d40e248c97412e90e45b69733e8cf9f31b316c7057b9bc2f0ceac1411ddd"
+      "sha256": "af367c737e892b2feda7b6b0e84298fe03026ad8971f4bcfe91007575fe06696"
     },
     {
       "path": "scripts/audit_fault_failover_scale.py",
@@ -941,7 +941,7 @@
     },
     {
       "path": "scripts/audit_p13_p14_scale.py",
-      "sha256": "eeb7373557ac9aca0a43eec87e92197e1d1a5370b2ad42d8fece4c6d96e3774c"
+      "sha256": "4168a1d8dcd5ef49037c5f4dddb86f8b9e1c40c8f1ba23fa18d7d342b8d7f404"
     },
     {
       "path": "scripts/audit_scale_build_metrics.py",
@@ -961,7 +961,7 @@
     },
     {
       "path": "scripts/build_provenance_graph.py",
-      "sha256": "374abf472537a4cf04f7c9467f8ac685e5fda364e52ee7b8185d827329320707"
+      "sha256": "e9b30b12d989aa6e58b30ad329d977170e1f21240b4a1c58610d6bd5a63b2005"
     },
     {
       "path": "scripts/build_strict_coverage_registry.py",
@@ -1025,11 +1025,11 @@
     },
     {
       "path": "scripts/p41_nodehost_density_artifacts.py",
-      "sha256": "6dc4d138774961d8e8ae597ecf2824c76fcbc2aa57f508b7942164ad317e88d3"
+      "sha256": "c0cf42474d60df5aed92bf4a2359af7bc0cd4747747a518c6dadc69b5374614a"
     },
     {
       "path": "scripts/p42_server_profile_artifacts.py",
-      "sha256": "b9b0315e53d9ec8c01d186f8cfd1a04d8353f629caddff2b4edbb66f21020dd7"
+      "sha256": "80093dafeb4446c29a1ffa20342e70d225dd264af77a77ee0bbd316f0e54383f"
     },
     {
       "path": "scripts/failover_rto_timeout_matrix.py",
@@ -1037,7 +1037,7 @@
     },
     {
       "path": "scripts/p43_cluster_timeout_artifacts.py",
-      "sha256": "a97a17e1e094dc5a7ec9bd5f0ce28639cd2c19789e533ec9288e993a10c0ef8d"
+      "sha256": "3630de62e183cc0267ffee1a82ad5949257e6398643d62a3ecd48bc92f19d8ed"
     },
     {
       "path": "scripts/render_audit_report.py",

@@ -227,8 +227,14 @@ class ProvenanceGraph:
             return "timeseries"
         if suffix == ".log":
             return "log"
-        if suffix in REPORT_VIEW_SUFFIXES:
-            return "report_view"
+        if suffix == ".html":
+            return "html_report"
+        if suffix == ".md":
+            return "markdown_report"
+        if suffix == ".svg":
+            return "visualization"
+        if suffix == ".csv":
+            return "csv_view"
         return "artifact"
 
     def is_dry_run(self, payload: Any | None, path_text: str) -> bool:
@@ -513,10 +519,22 @@ class ProvenanceGraph:
                         source_path = item["path"]
                         if self.should_skip_declared_source(path_text, source_path, payload):
                             continue
+                        target_type = str(payload.get("artifact_type") or "")
+                        allows_report_view_inputs = target_type in {
+                            "analysis_provenance",
+                            "final_artifact_manifest",
+                            "report_index",
+                            "strict_visual_report_index",
+                        }
+                        relation = (
+                            "report_view_input"
+                            if allows_report_view_inputs and Path(str(source_path)).suffix in REPORT_VIEW_SUFFIXES
+                            else "source_artifact"
+                        )
                         self.add_edge(
                             source_path,
                             path_text,
-                            relation="source_artifact",
+                            relation=relation,
                             discovered_by="source_artifacts",
                             evidence_pointer=f"{path_text}.source_artifacts[{idx}]",
                             expected_source_sha256=item.get("sha256"),
