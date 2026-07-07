@@ -3,20 +3,20 @@
   "audit_only": true,
   "coverage_registry_gate_command": "python3 scripts/assert_coverage_registry.py --phase P40_STRICT_FINAL_AUDIT_CLOSEOUT --require-final-real-scales --require-dry-run-200-plus",
   "manifest": {
-    "bytes": 250261,
+    "bytes": 261973,
     "exists": true,
     "path": "codex/phase_manifest.json",
     "required": true,
-    "sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea"
+    "sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5"
   },
   "manual_gate_state_edit_check": "PASS",
   "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
   "phase_state": {
-    "bytes": 1746,
+    "bytes": 1788,
     "exists": true,
     "path": "codex/status/phase_state.json",
     "required": true,
-    "sha256": "1ad6b6b0b08f5470c98822252add5e0be61cfa5269aadbf9e3d6deecd9911492"
+    "sha256": "dea9d3f79201c0701769cffc80516664736a887b842dc092529e416d3f2646c3"
   },
   "report_quality_gate_command": "python3 scripts/assert_report_quality.py --phase P39_VISUAL_REPORT_QUALITY_GATE --report-index artifacts/phases/P39_VISUAL_REPORT_QUALITY_GATE/report_index.json",
   "runtime_started": false,

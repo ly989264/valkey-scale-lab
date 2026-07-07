@@ -1,7 +1,7 @@
 {
   "schema_version": "v1",
   "artifact_type": "audit_report",
-  "created_at": "2026-07-07T05:01:33.413324Z",
+  "created_at": "2026-07-07T10:56:14.357871Z",
   "producer": {
     "name": "scripts/audit_committed_artifacts.py",
     "version": "v1"
@@ -55,7 +55,8 @@
       "P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
       "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
       "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
-      "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY"
+      "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+      "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS"
     ],
     "required_artifact_count": 347
   },
@@ -63,7 +64,7 @@
     "default_max_nodes": 100,
     "automatic_stop_after": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
     "valkey_version_required_prefix": "9.1.",
-    "manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea"
+    "manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5"
   },
   "summary": {
     "phase_count": 40,
@@ -9629,7 +9630,7 @@
       "schema_path": "schemas/artifact/strict_generic_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "3bb0e92bd7a5ea4cb139cab0f119d2104acef03e2caf40da36d8bf99dae3828a",
+      "sha256": "6437d402837b33b1e9decef1b968c697cc7ee1b69c521682bfa9526c38f87ae3",
       "metadata": {
         "artifact_type": "final_artifact_manifest",
         "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
@@ -9656,7 +9657,7 @@
       "schema_path": "schemas/artifact/strict_generic_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "d3470996ef5cfcd3d4575ffb5ecdd4a364167ed1bf21090383f8875b1d0c3e48",
+      "sha256": "783ad12fdf6187f3e114bfd544696e97538fce2ef940d9f8635b86bd5d070b48",
       "metadata": {
         "artifact_type": "final_no_bypass_report",
         "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
@@ -9712,7 +9713,7 @@
       "schema_path": "schemas/artifact/strict_generic_report.schema.json",
       "schema_exists": true,
       "schema_valid": true,
-      "sha256": "c68e84558e0f7865d981337a7346358d7b4df6506e8531c14c0580a865649d2d",
+      "sha256": "c2c6b21a810e1eb6b793a136cf34bbc85176434c2dd57f58d2bb43d6067ee988",
       "metadata": {
         "artifact_type": "analysis_provenance",
         "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
@@ -9762,7 +9763,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9778,7 +9779,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9794,7 +9795,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9810,7 +9811,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9826,7 +9827,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9842,7 +9843,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9858,7 +9859,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9874,7 +9875,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9890,7 +9891,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9906,7 +9907,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9922,7 +9923,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9938,7 +9939,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9954,7 +9955,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9970,7 +9971,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -9986,7 +9987,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10002,7 +10003,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10018,7 +10019,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10034,7 +10035,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10050,7 +10051,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10066,7 +10067,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10082,7 +10083,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10098,7 +10099,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10114,7 +10115,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10130,7 +10131,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10146,7 +10147,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "0f8af416b4c1a779daa0bb636e16aadbed80c32df3a650769d21681c1bb75e1f",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10162,7 +10163,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "86305a8ad7823ef5adbd32e0208fdced9a7d712e32866415e7e2c6c8401b3137",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10178,7 +10179,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "28c522f6130fcac3b24ce98f5018f0478c5f202210a704da6eee1990e110bf6b",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10194,7 +10195,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "f9a1fa5debba9e4b034a5ce7205e736c1e902cbb4097d4f19a461a63c68c8a53",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10210,7 +10211,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "f9a1fa5debba9e4b034a5ce7205e736c1e902cbb4097d4f19a461a63c68c8a53",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10226,7 +10227,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "9ff6b434f7d72d2fb4d935a7e02ef093c5a5741535c8ae8bc4fc5f7ea5362382",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10242,7 +10243,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "1d45d63c5ed75f22180d7bc60a842a6f31dad3e8bd82801adf3590f1dfea3b55",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10258,7 +10259,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10274,7 +10275,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10290,7 +10291,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10306,7 +10307,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10322,7 +10323,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10338,7 +10339,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10354,7 +10355,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10370,7 +10371,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10386,7 +10387,7 @@
       "schema_valid": true,
       "status": "PASS",
       "manifest_sha256": "b8b5b03cdd1b72af90ccf8155a0bd8e3a1241938f280fce10ef4ef83f09d2033",
-      "expected_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+      "expected_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
       "command_mismatches": [],
       "historical_drift": [
         "manifest_sha256"
@@ -10418,7 +10419,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P00_REPO_CONTRACT",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P00_REPO_CONTRACT",
@@ -10433,7 +10434,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P01_CONFIG_SCHEMA",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P01_CONFIG_SCHEMA",
@@ -10448,7 +10449,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P02_PLANNER",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P02_PLANNER",
@@ -10463,7 +10464,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P03_LOCAL_DOCKER_VALKEY",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P03_LOCAL_DOCKER_VALKEY",
@@ -10478,7 +10479,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P04_CLUSTER_MANAGEMENT_OPS",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
@@ -10493,7 +10494,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P05_WORKLOAD_ENGINE",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P05_WORKLOAD_ENGINE",
@@ -10508,7 +10509,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P06_OBSERVABILITY_METRICS",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P06_OBSERVABILITY_METRICS",
@@ -10575,7 +10576,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P07_FAULT_INJECTION_SANDBOX",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P07_FAULT_INJECTION_SANDBOX",
@@ -10590,7 +10591,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P08_FAILOVER_SPLIT_BRAIN",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P08_FAILOVER_SPLIT_BRAIN",
@@ -10605,7 +10606,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P09_ANALYSIS_REPORTING",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P09_ANALYSIS_REPORTING",
@@ -10620,7 +10621,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P10_MULTI_HOST_ORCHESTRATION",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P10_MULTI_HOST_ORCHESTRATION",
@@ -10635,7 +10636,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P11_STABILITY_SOAK",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P11_STABILITY_SOAK",
@@ -10650,7 +10651,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P12_SCALE_LADDER_10_30",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P12_SCALE_LADDER_10_30",
@@ -10665,7 +10666,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P13_SCALE_LADDER_50_100",
       "evidence": [
         "observed=5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate results were produced before later manifest revisions; L01 audits these historical artifacts without rewriting gate_result.json. Any non-allowlisted manifest hash mismatch remains a blocking current finding."
       ],
       "phase_id": "P13_SCALE_LADDER_50_100",
@@ -10680,7 +10681,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P15_GOAL_REBASE_HARNESS_EXTENSION",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P15_GOAL_REBASE_HARNESS_EXTENSION",
@@ -10695,7 +10696,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P16_QUANT_TELEMETRY_UNIFICATION",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P16_QUANT_TELEMETRY_UNIFICATION",
@@ -10762,7 +10763,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P17_MANAGEMENT_REMOVE_NODE",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
@@ -10907,7 +10908,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P18_MANAGEMENT_RESHARD_REBALANCE",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
@@ -11065,7 +11066,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P19_MANAGEMENT_ROLLING_RESTART",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
@@ -11236,7 +11237,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P20_FAILOVER_LATENCY_CURVE_30_50_100",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
@@ -11316,7 +11317,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P21_FAILOVER_LATENCY_CURVE_200",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P21_FAILOVER_LATENCY_CURVE_200",
@@ -11396,7 +11397,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P22_FAULT_REPLICA_HOST_AZ_STOP",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
@@ -11502,7 +11503,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
@@ -11595,7 +11596,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P24_PARTITION_SPLIT_BRAIN_MATRIX",
       "evidence": [
         "observed=3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
@@ -11701,7 +11702,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
       "evidence": [
         "observed=0f8af416b4c1a779daa0bb636e16aadbed80c32df3a650769d21681c1bb75e1f",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
@@ -11794,7 +11795,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P26_FINAL_REPORT_REGRESSION",
       "evidence": [
         "observed=86305a8ad7823ef5adbd32e0208fdced9a7d712e32866415e7e2c6c8401b3137",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P26_FINAL_REPORT_REGRESSION",
@@ -11913,7 +11914,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P27_STRICT_MATRIX_REBASE_HARNESS",
       "evidence": [
         "observed=28c522f6130fcac3b24ce98f5018f0478c5f202210a704da6eee1990e110bf6b",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P27_STRICT_MATRIX_REBASE_HARNESS",
@@ -11954,7 +11955,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
       "evidence": [
         "observed=f9a1fa5debba9e4b034a5ce7205e736c1e902cbb4097d4f19a461a63c68c8a53",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P28_COVERAGE_REGISTRY_AND_SCENARIO_COMPILER",
@@ -11969,7 +11970,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
       "evidence": [
         "observed=f9a1fa5debba9e4b034a5ce7205e736c1e902cbb4097d4f19a461a63c68c8a53",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
@@ -12062,7 +12063,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P30_MANAGEMENT_MATRIX_50_REAL",
       "evidence": [
         "observed=9ff6b434f7d72d2fb4d935a7e02ef093c5a5741535c8ae8bc4fc5f7ea5362382",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
@@ -12246,7 +12247,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P31_MANAGEMENT_MATRIX_100_REAL",
       "evidence": [
         "observed=1d45d63c5ed75f22180d7bc60a842a6f31dad3e8bd82801adf3590f1dfea3b55",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P31_MANAGEMENT_MATRIX_100_REAL",
@@ -12430,7 +12431,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P32_MANAGEMENT_MATRIX_200_REAL",
       "evidence": [
         "observed=a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
@@ -12614,7 +12615,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P33_FAULT_FAILOVER_MATRIX_50_REAL",
       "evidence": [
         "observed=a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL",
@@ -12785,7 +12786,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P34_FAULT_FAILOVER_MATRIX_100_REAL",
       "evidence": [
         "observed=a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL",
@@ -12956,7 +12957,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P35_FAULT_FAILOVER_MATRIX_200_REAL",
       "evidence": [
         "observed=a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
@@ -13127,7 +13128,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P36_FULL_FLOW_E2E_50_100_200_REAL",
       "evidence": [
         "observed=a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
@@ -13246,7 +13247,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P37_200_PLUS_DRY_RUN_SUPPORT",
       "evidence": [
         "observed=a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P37_200_PLUS_DRY_RUN_SUPPORT",
@@ -13287,7 +13288,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P38_CROSS_SCALE_ANALYSIS_REGRESSION",
       "evidence": [
         "observed=a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P38_CROSS_SCALE_ANALYSIS_REGRESSION",
@@ -13302,7 +13303,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P39_VISUAL_REPORT_QUALITY_GATE",
       "evidence": [
         "observed=a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P39_VISUAL_REPORT_QUALITY_GATE",
@@ -13317,7 +13318,7 @@
       "description": "Gate result manifest_sha256 does not match current manifest for P40_STRICT_FINAL_AUDIT_CLOSEOUT",
       "evidence": [
         "observed=b8b5b03cdd1b72af90ccf8155a0bd8e3a1241938f280fce10ef4ef83f09d2033",
-        "current=37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea",
+        "current=12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
         "allowlist=legacy_gate_manifest_sha256; rationale=Committed gate result predates the current manifest; the exact historical manifest hash is explicitly allowlisted for audit compatibility."
       ],
       "phase_id": "P40_STRICT_FINAL_AUDIT_CLOSEOUT",
