@@ -1,0 +1,14 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "failover_report",
+  "phase_id": "M1-S03",
+  "run_id": "m1-s03-local",
+  "status": "SKIPPED_WITH_REASON",
+  "failovers": [],
+  "summary": {
+    "split_brain_duration_ms": {
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "M1-S03 covers command audit logging; failover measurement is handled in later milestone1 stages."
+    }
+  }
+}

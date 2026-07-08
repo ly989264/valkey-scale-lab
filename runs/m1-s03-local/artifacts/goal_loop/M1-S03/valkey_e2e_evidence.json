@@ -1,0 +1,74 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "valkey_e2e_evidence",
+  "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+  "run_id": "phase-P03_LOCAL_DOCKER_VALKEY-cluster_smoke",
+  "created_at": "2026-07-08T14:58:18.806375Z",
+  "producer": {
+    "name": "scripts/valkey_e2e_gate.py",
+    "version": "v1"
+  },
+  "status": "FAIL",
+  "real_valkey": true,
+  "valkey_version_prefix_required": "9.1.",
+  "probe_result": "FAIL",
+  "nodes_requested": 6,
+  "min_nodes_requested": 6,
+  "nodes_observed": 0,
+  "cluster_state_observed": "unknown",
+  "data_path_result": "SKIPPED_WITH_REASON",
+  "valkey_versions": [],
+  "scenario": "cluster_smoke",
+  "started_at": "2026-07-08T14:58:18.670377Z",
+  "finished_at": "2026-07-08T14:58:18.806385Z",
+  "setup": {
+    "command": [
+      "/Library/Developer/CommandLineTools/usr/bin/python3",
+      "-m",
+      "valkey_scale_lab.cli",
+      "gate",
+      "scenario",
+      "--phase",
+      "P03_LOCAL_DOCKER_VALKEY",
+      "--scenario",
+      "cluster_smoke",
+      "--config",
+      "templates/configs/single_mac_6node.yaml",
+      "--artifacts-dir",
+      "runs/m1-s03-local/artifacts/goal_loop/M1-S03",
+      "--state-out",
+      "runs/m1-s03-local/artifacts/goal_loop/M1-S03/state_cluster_smoke.json"
+    ],
+    "status": "FAIL",
+    "stdout_path": "runs/m1-s03-local/artifacts/goal_loop/M1-S03/cluster_smoke_setup.stdout.log",
+    "stderr_path": "runs/m1-s03-local/artifacts/goal_loop/M1-S03/cluster_smoke_setup.stderr.log"
+  },
+  "probes": [],
+  "runtime": {},
+  "effective_cluster_timeout": {},
+  "requested_cluster_node_timeout_ms": "MISSING",
+  "effective_cluster_node_timeout_ms": "MISSING",
+  "cluster_node_timeout_source": "MISSING",
+  "nodehosts": [],
+  "node_processes": [],
+  "role_counts": {
+    "primary": 0,
+    "replica": 0,
+    "handshake": 0,
+    "fail": 0,
+    "pfail": 0
+  },
+  "cluster_snapshots": [],
+  "timing_breakdown_path": "SKIPPED_WITH_REASON",
+  "timing_breakdown": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "P13 timing breakdown is only emitted for P13 scale gates"
+  },
+  "cleanup": {
+    "status": "FAIL",
+    "path": "runs/m1-s03-local/artifacts/goal_loop/M1-S03/cleanup_report.json"
+  },
+  "errors": [
+    "setup command failed exit=1"
+  ]
+}

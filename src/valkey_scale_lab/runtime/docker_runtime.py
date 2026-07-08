@@ -29,6 +29,7 @@ from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts,
 from valkey_scale_lab.orchestrator.local import write_phase_summary as write_p10_phase_summary
 from valkey_scale_lab.planner.plan import build_cluster_plan
 from valkey_scale_lab.resource import run_resource_preflight
+from valkey_scale_lab.runtime.command_recorder import classify_command_kind, current_command_recorder
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields, valkey_config_lines
 from valkey_scale_lab.workload import CANONICAL_WINDOWS, run_windowed_workload
@@ -237,7 +238,36 @@ def _timeline_call(
         return func()
 
 
-def run_docker(args: list[str], timeout: int = 120, check: bool = True) -> DockerResult:
+def run_docker(
+    args: list[str],
+    timeout: int = 120,
+    check: bool = True,
+    *,
+    operation_id: str | None = None,
+    step_id: str | None = None,
+    command_kind: str | None = None,
+    node: dict[str, Any] | None = None,
+    retry_index: int = 0,
+) -> DockerResult:
+    recorder = current_command_recorder()
+    argv = ["docker", *[str(arg) for arg in args]]
+    if recorder is not None:
+        try:
+            proc = recorder.record_subprocess(
+                operation_id=operation_id or _infer_operation_id(argv),
+                step_id=step_id or _infer_step_id(argv),
+                command_kind=command_kind or classify_command_kind(argv),
+                argv=argv,
+                timeout_ms=int(timeout * 1000),
+                node=node,
+                retry_index=retry_index,
+                check=check,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise DockerRuntimeError(f"docker {' '.join(args)} timed out after {timeout} seconds") from exc
+        except subprocess.CalledProcessError as exc:
+            raise DockerRuntimeError(f"docker {' '.join(args)} failed exit={exc.returncode}: {str(exc.stderr).strip()}") from exc
+        return DockerResult(proc.stdout, proc.stderr, int(proc.returncode))
     try:
         proc = subprocess.run(
             ["docker", *args],
@@ -252,6 +282,21 @@ def run_docker(args: list[str], timeout: int = 120, check: bool = True) -> Docke
     if check and proc.returncode != 0:
         raise DockerRuntimeError(f"docker {' '.join(args)} failed exit={proc.returncode}: {proc.stderr.strip()}")
     return result
+
+
+def _infer_operation_id(argv: list[str]) -> str:
+    command_kind = classify_command_kind(argv)
+    if command_kind == "cleanup":
+        return "cleanup"
+    if command_kind in {"fault_clear"}:
+        return "fault_clear"
+    if command_kind.startswith("cluster_"):
+        return "cluster_setup"
+    return "runtime"
+
+
+def _infer_step_id(argv: list[str]) -> str:
+    return classify_command_kind(argv)
 
 
 def run_container_cli(container: str, *args: Any, timeout: int = 60, check: bool = True) -> str:
@@ -2341,6 +2386,10 @@ def run_node_cli(node: dict[str, Any], *args: Any, timeout: int = 60, check: boo
             ["exec", node["nodehost_container_name"], "valkey-cli", "-p", str(node["client_port"]), *[str(arg) for arg in args]],
             timeout=timeout,
             check=check,
+            operation_id="cluster_setup",
+            step_id=classify_command_kind(["valkey-cli", *[str(arg) for arg in args]]),
+            command_kind=classify_command_kind(["valkey-cli", *[str(arg) for arg in args]]),
+            node=node,
         )
         return result.stdout.strip()
     return run_container_cli(node["container_name"], *args, timeout=timeout, check=check)
@@ -2352,6 +2401,10 @@ def run_node_cluster_cli(node: dict[str, Any], *args: Any, timeout: int = 60, ch
             ["exec", node["nodehost_container_name"], "valkey-cli", "-c", "-p", str(node["client_port"]), *[str(arg) for arg in args]],
             timeout=timeout,
             check=check,
+            operation_id="cluster_setup",
+            step_id=classify_command_kind(["valkey-cli", *[str(arg) for arg in args]]),
+            command_kind=classify_command_kind(["valkey-cli", *[str(arg) for arg in args]]),
+            node=node,
         )
         return result.stdout.strip()
     return run_container_cluster_cli(node["container_name"], *args, timeout=timeout, check=check)
@@ -2364,7 +2417,46 @@ def _node_host_command(node: dict[str, Any], *args: Any, timeout: float = 2.0) -
 def _node_command(node: dict[str, Any], *args: Any, timeout: float = 5.0) -> str:
     if "client_port" in node:
         try:
-            return str(_node_host_command(node, *args, timeout=timeout)).strip()
+            recorder = current_command_recorder()
+            if recorder is None:
+                return str(_node_host_command(node, *args, timeout=timeout)).strip()
+            argv = ["valkey-cli", "-h", str(node.get("host", "127.0.0.1")), "-p", str(node["client_port"]), *[str(arg) for arg in args]]
+            started = int(time.time() * 1000)
+            try:
+                value = str(_node_host_command(node, *args, timeout=timeout)).strip()
+            except Exception as exc:
+                recorder.record_result(
+                    operation_id="cluster_setup",
+                    step_id=classify_command_kind(argv),
+                    command_kind=classify_command_kind(argv),
+                    argv=argv,
+                    started_at_unix_ms=started,
+                    ended_at_unix_ms=int(time.time() * 1000),
+                    exit_code=1,
+                    stdout="",
+                    stderr=repr(exc),
+                    timeout_ms=int(timeout * 1000),
+                    status="FAIL",
+                    error_type=type(exc).__name__,
+                    node=node,
+                )
+                raise
+            recorder.record_result(
+                operation_id="cluster_setup",
+                step_id=classify_command_kind(argv),
+                command_kind=classify_command_kind(argv),
+                argv=argv,
+                started_at_unix_ms=started,
+                ended_at_unix_ms=int(time.time() * 1000),
+                exit_code=0,
+                stdout=value,
+                stderr="",
+                timeout_ms=int(timeout * 1000),
+                status="PASS",
+                error_type="",
+                node=node,
+            )
+            return value
         except Exception:
             if node.get("runtime_type") == "docker_process" or node.get("nodehost_container_name"):
                 return run_node_cli(node, *args, timeout=max(1, int(timeout)))

@@ -1,0 +1,12 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "valkey_e2e_evidence",
+  "phase_id": "M1-S03",
+  "run_id": "m1-s03-local",
+  "status": "SKIPPED_WITH_REASON",
+  "real_valkey": false,
+  "reason": "M1-S03 stage source artifact uses fixture command log coverage; real local Valkey gate result is recorded separately as BLOCKED_WITH_REASON.",
+  "valkey_versions": [],
+  "nodes_observed": 0,
+  "cluster_state_observed": "SKIPPED_WITH_REASON"
+}

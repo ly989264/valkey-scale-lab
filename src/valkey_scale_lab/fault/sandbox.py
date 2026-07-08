@@ -14,6 +14,16 @@ class FaultError(RuntimeError):
     pass
 
 
+def _run_docker_audited(args: list[str], **kwargs: Any) -> Any:
+    try:
+        return run_docker(args, **kwargs)
+    except TypeError as exc:
+        if "unexpected keyword argument" not in str(exc):
+            raise
+        legacy_kwargs = {key: value for key, value in kwargs.items() if key in {"timeout", "check"}}
+        return run_docker(args, **legacy_kwargs)
+
+
 def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: str | Path, out_path: str | Path) -> dict[str, Any]:
     state = _load_json(state_path)
     spec = _load_json(fault_json)
@@ -59,7 +69,15 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
                 pid_text = str(int(pid))
             except (TypeError, ValueError) as exc:
                 raise FaultError(f"node_stop requires numeric target pid in state: {pid!r}") from exc
-            result = run_docker(["exec", str(nodehost_container), "sh", "-c", f"kill -TERM {pid_text}"], timeout=30, check=False)
+            result = _run_docker_audited(
+                ["exec", str(nodehost_container), "sh", "-c", f"kill -TERM {pid_text}"],
+                timeout=30,
+                check=False,
+                operation_id=f"fault_apply:{fault_id}",
+                step_id="fault_apply_node_stop",
+                command_kind="fault_apply",
+                node=target,
+            )
             action = "process_stop"
             target_fields = {"nodehost_container_name": nodehost_container, "pid": int(pid_text)}
             failure_target = f"logical process pid={pid_text} in owned container {nodehost_container}"
@@ -67,7 +85,15 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
             container_name = target.get("container_name")
             if not container_name:
                 raise FaultError("node_stop requires target container_name or nodehost_container_name/pid in state")
-            result = run_docker(["stop", "-t", "5", str(container_name)], timeout=30, check=False)
+            result = _run_docker_audited(
+                ["stop", "-t", "5", str(container_name)],
+                timeout=30,
+                check=False,
+                operation_id=f"fault_apply:{fault_id}",
+                step_id="fault_apply_node_stop",
+                command_kind="fault_apply",
+                node=target,
+            )
             action = "container_stop"
             target_fields = {"container_name": container_name}
             failure_target = f"owned container {container_name}"
@@ -170,8 +196,8 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
         last_error = ""
         for attempt in range(1, attempts + 1):
             if pid_file:
-                run_docker(["exec", str(nodehost), "rm", "-f", str(pid_file)], timeout=10, check=False)
-            result = run_docker(["exec", str(nodehost), "sh", "-c", command], timeout=30, check=False)
+                _run_docker_audited(["exec", str(nodehost), "rm", "-f", str(pid_file)], timeout=10, check=False, operation_id="fault_clear", step_id="fault_clear_remove_pid_file", command_kind="fault_clear", node=target)
+            result = _run_docker_audited(["exec", str(nodehost), "sh", "-c", command], timeout=30, check=False, operation_id="fault_clear", step_id="fault_clear_restart_process", command_kind="fault_clear", node=target)
             if result.returncode != 0:
                 last_error = f"attempt={attempt} restart_rc={result.returncode} stderr={result.stderr.strip()!r}"
             else:
@@ -209,7 +235,7 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
         container_name = target.get("container_name") or observed.get("container_name")
         if not container_name:
             raise FaultError("node_stop container clear requires container_name in fault state")
-        result = run_docker(["start", str(container_name)], timeout=30, check=False)
+        result = _run_docker_audited(["start", str(container_name)], timeout=30, check=False, operation_id="fault_clear", step_id="fault_clear_container_start", command_kind="fault_clear", node=target)
         if result.returncode != 0:
             raise FaultError(f"node_stop container restart failed for {container_name}: {result.stderr.strip()}")
         return {
@@ -235,8 +261,8 @@ def _wait_for_process_restart(target: dict[str, Any], nodehost: str, *, timeout_
     ready_since: float | None = None
     ready_pid: int | None = None
     while time.monotonic() < deadline:
-        pid_result = run_docker(["exec", nodehost, "cat", str(pid_file)], timeout=5, check=False)
-        ping_result = run_docker(["exec", nodehost, "valkey-cli", "-p", str(port), "PING"], timeout=5, check=False)
+        pid_result = _run_docker_audited(["exec", nodehost, "cat", str(pid_file)], timeout=5, check=False, operation_id="fault_clear", step_id="fault_clear_probe_pid", command_kind="fault_clear", node=target)
+        ping_result = _run_docker_audited(["exec", nodehost, "valkey-cli", "-p", str(port), "PING"], timeout=5, check=False, operation_id="fault_clear", step_id="fault_clear_probe_ping", command_kind="fault_clear", node=target)
         pid_text = pid_result.stdout.strip()
         if pid_result.returncode == 0 and pid_text.isdigit() and ping_result.returncode == 0 and ping_result.stdout.strip() == "PONG":
             if stable_seconds <= 0:

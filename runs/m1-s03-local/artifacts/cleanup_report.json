@@ -1,0 +1,21 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "cleanup_report",
+  "phase_id": "M1-S03",
+  "run_id": "m1-s03-local",
+  "created_at": "2026-07-08T00:00:00Z",
+  "producer": {"name": "valkey-scale-lab", "version": "m1-s03"},
+  "status": "PASS",
+  "resources_remaining": [],
+  "cleanup_actions": [
+    {
+      "type": "container",
+      "id": "fixture-vslab-nodehost-0",
+      "action": "remove",
+      "status": "PASS",
+      "command_log_refs": ["command_log.jsonl#cmd-000005"]
+    }
+  ],
+  "command_log_ref": "command_log.jsonl",
+  "command_audit_summary_ref": "command_audit_summary.json"
+}

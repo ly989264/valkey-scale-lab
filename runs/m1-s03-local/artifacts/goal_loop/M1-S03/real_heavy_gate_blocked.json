@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "real_heavy_gate_blocked",
+  "stage_id": "M1-S03",
+  "run_id": "m1-s03-local",
+  "status": "BLOCKED_WITH_REASON",
+  "command": "python3 scripts/valkey_e2e_gate.py --phase P03_LOCAL_DOCKER_VALKEY --scenario cluster_smoke --config templates/configs/single_mac_6node.yaml --out runs/m1-s03-local/artifacts/goal_loop/M1-S03/valkey_e2e_evidence.json --min-nodes 6 --setup-timeout 180 --cleanup-timeout 120 --probe-timeout 60 --wait-cluster-timeout 60",
+  "reason": "Current Codex sandbox denies local port bind for Valkey listener preflight on 127.0.0.1:7000; no real Valkey PASS evidence was fabricated.",
+  "stderr_excerpt": "port 127.0.0.1:7000 is not available: [Errno 1] Operation not permitted",
+  "fake_real_evidence": false
+}

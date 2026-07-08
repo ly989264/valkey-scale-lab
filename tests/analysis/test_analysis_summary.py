@@ -49,10 +49,27 @@ def test_analysis_preserves_missing_metrics_and_writes_baseline(tmp_path: Path) 
     summary = create_analysis_summary(source, tmp_path / "analysis_summary.json")
 
     assert summary["status"] == "PASS"
-    assert summary["missing_metrics"][0]["metric"] == "split_brain_duration_ms"
+    assert any(item["metric"] == "split_brain_duration_ms" for item in summary["missing_metrics"])
     assert summary["metrics"][1]["name"] == "failover_latency_ms"
     assert (tmp_path / "baseline_comparison.json").exists()
     assert summary["baseline_comparison"]["status"] == "NO_BASELINE_YET"
+
+
+def test_analysis_aggregates_command_log(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    _write(source / "phase_summary.json", {"phase_id": "M1-S03", "run_id": "m1-s03", "status": "PASS", "missing_metrics": []})
+    _write(source / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": False, "valkey_versions": [], "nodes_observed": 1, "cluster_state_observed": "ok"})
+    _write(source / "failover_report.json", {"status": "PASS", "failovers": [{"failover_latency_ms": 1}], "summary": {}})
+    _write(source / "cleanup_report.json", {"status": "PASS", "resources_remaining": []})
+    fixture = Path("tests/fixtures/command_log/retry/command_log.jsonl")
+    (source / "command_log.jsonl").write_text(fixture.read_text(encoding="utf-8"), encoding="utf-8")
+
+    summary = create_analysis_summary(source, tmp_path / "analysis_summary.json")
+
+    assert summary["command_audit"]["total_commands"] == 2
+    assert summary["command_audit"]["failure_count"] == 1
+    assert summary["command_audit"]["retry_count"] == 1
 
 
 def _write(path: Path, data: dict) -> None:

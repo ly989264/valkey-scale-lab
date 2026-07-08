@@ -27,8 +27,11 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
     failover = _load_required(source_dir / "failover_report.json")
     cleanup = _load_required(source_dir / "cleanup_report.json")
     setup_telemetry = _load_optional(source_dir / "setup_telemetry.json")
+    command_rows = _load_optional_jsonl(source_dir / "command_log.jsonl")
+    command_summary = _load_optional(source_dir / "command_audit_summary.json")
+    command_audit = _command_audit_aggregates(command_rows, command_summary)
 
-    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry)
+    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit)
     failovers = list(failover.get("failovers", []))
     primary_failover = failovers[0] if failovers else {}
     failover_latency = primary_failover.get("failover_latency_ms", "MISSING")
@@ -74,6 +77,14 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
             "node_count": setup_telemetry.get("node_count", "MISSING"),
             "total_setup_ms": setup_telemetry.get("metrics", {}).get("total_setup_ms", "MISSING") if isinstance(setup_telemetry.get("metrics"), dict) else "MISSING",
         },
+        {
+            "name": "command_audit",
+            "status": command_audit.get("status", "MISSING"),
+            "total_commands": command_audit.get("total_commands", 0),
+            "failure_count": command_audit.get("failure_count", 0),
+            "timeout_count": command_audit.get("timeout_count", 0),
+            "retry_count": command_audit.get("retry_count", 0),
+        },
     ]
 
     out = Path(out_path)
@@ -113,6 +124,7 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
             "reason": "Input artifacts did not include setup_telemetry.json.",
         },
         "setup_aggregates": _setup_aggregates(setup_telemetry),
+        "command_audit": command_audit,
         "baseline_comparison": baseline,
         "sidecars": [
             {
@@ -142,6 +154,23 @@ def _load_optional(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
     return _load_required(path)
+
+
+def _load_optional_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    try:
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if not isinstance(row, dict):
+                raise AnalysisError(f"JSONL row {lineno} in {path} is not an object")
+            rows.append(row)
+    except json.JSONDecodeError as exc:
+        raise AnalysisError(f"invalid JSONL in {path}: {exc}") from exc
+    return rows
 
 
 def _metadata_refs(run_manifest: dict[str, Any] | None) -> dict[str, Any]:
@@ -201,7 +230,12 @@ def _load_run_metadata(run_manifest: dict[str, Any] | None) -> dict[str, Any]:
         }
 
 
-def _collect_missing_metrics(phase_summary: dict[str, Any], failover: dict[str, Any], setup_telemetry: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+def _collect_missing_metrics(
+    phase_summary: dict[str, Any],
+    failover: dict[str, Any],
+    setup_telemetry: dict[str, Any] | None = None,
+    command_audit: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
     for item in phase_summary.get("missing_metrics", []):
         if isinstance(item, dict) and item.get("metric"):
@@ -232,7 +266,91 @@ def _collect_missing_metrics(phase_summary: dict[str, Any], failover: dict[str, 
                         "source": "setup_telemetry.missing_metrics",
                     },
                 )
+    if command_audit and command_audit.get("status") in {"MISSING", "SKIPPED_WITH_REASON"}:
+        for item in command_audit.get("missing_or_skipped", []):
+            if isinstance(item, dict) and item.get("metric"):
+                found.setdefault(
+                    str(item["metric"]),
+                    {
+                        "metric": str(item["metric"]),
+                        "status": item.get("status", "MISSING"),
+                        "reason": item.get("reason", "command audit reported metric unavailable"),
+                        "impact": item.get("impact", "Command traceability is incomplete."),
+                        "source": "command_audit.missing_or_skipped",
+                    },
+                )
     return [found[key] for key in sorted(found)]
+
+
+def _command_audit_aggregates(rows: list[dict[str, Any]], summary: dict[str, Any]) -> dict[str, Any]:
+    if not rows:
+        return summary or {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Input artifacts did not include command_log.jsonl.",
+            "total_commands": 0,
+            "failure_count": 0,
+            "timeout_count": 0,
+            "retry_count": 0,
+            "slowest_commands_topN": [],
+            "failed_commands": [],
+            "timeout_commands": [],
+            "retry_commands": [],
+            "by_command_kind": {},
+            "operation_traceability": [],
+            "missing_or_skipped": [
+                {
+                    "metric": "command_log.total_commands",
+                    "status": "SKIPPED_WITH_REASON",
+                    "reason": "Input artifacts did not include command_log.jsonl.",
+                    "impact": "Report cannot display command-level traceability.",
+                }
+            ],
+        }
+    by_kind: dict[str, int] = {}
+    for row in rows:
+        by_kind[str(row.get("command_kind", "MISSING"))] = by_kind.get(str(row.get("command_kind", "MISSING")), 0) + 1
+    failures = [row for row in rows if row.get("status") == "FAIL"]
+    timeouts = [row for row in rows if row.get("status") == "TIMEOUT"]
+    retries = [row for row in rows if int(row.get("retry_index", 0) or 0) > 0 or row.get("status") == "RETRY"]
+    operation_map: dict[str, list[str]] = {}
+    for row in rows:
+        operation_map.setdefault(str(row.get("operation_id", "MISSING")), []).append(str(row.get("command_id", "MISSING")))
+    aggregate = {
+        "status": summary.get("status", "PASS") if summary else "PASS",
+        "command_log_ref": summary.get("command_log_ref", "command_log.jsonl") if summary else "command_log.jsonl",
+        "total_commands": len(rows),
+        "pass_count": sum(1 for row in rows if row.get("status") == "PASS"),
+        "failure_count": len(failures),
+        "timeout_count": len(timeouts),
+        "retry_count": len(retries),
+        "by_command_kind": by_kind,
+        "slowest_commands_topN": [_command_summary_row(row) for row in sorted(rows, key=lambda row: float(row.get("duration_ms", 0) or 0), reverse=True)[:10]],
+        "failed_commands": [_command_summary_row(row) for row in failures],
+        "timeout_commands": [_command_summary_row(row) for row in timeouts],
+        "retry_commands": [_command_summary_row(row) for row in retries],
+        "operation_traceability": [
+            {"operation_id": operation_id, "command_log_refs": [f"command_log.jsonl#{command_id}" for command_id in command_ids], "status": "PASS"}
+            for operation_id, command_ids in sorted(operation_map.items())
+        ],
+        "missing_or_skipped": [],
+    }
+    if summary:
+        aggregate["summary_artifact"] = summary
+    return aggregate
+
+
+def _command_summary_row(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "command_id": row.get("command_id", "MISSING"),
+        "operation_id": row.get("operation_id", "MISSING"),
+        "step_id": row.get("step_id", "MISSING"),
+        "command_kind": row.get("command_kind", "MISSING"),
+        "duration_ms": row.get("duration_ms", "MISSING"),
+        "status": row.get("status", "MISSING"),
+        "exit_code": row.get("exit_code", "MISSING"),
+        "retry_index": row.get("retry_index", 0),
+        "error_type": row.get("error_type", ""),
+    }
 
 
 def _setup_aggregates(setup_telemetry: dict[str, Any]) -> dict[str, Any]:

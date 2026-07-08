@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "M1-S03",
+  "run_id": "m1-s03-local",
+  "created_at": "2026-07-08T00:00:00Z",
+  "producer": {"name": "valkey-scale-lab", "version": "m1-s03"},
+  "status": "PASS",
+  "summary": "M1-S03 command audit fixture artifact for offline analysis/report gate coverage.",
+  "missing_metrics": []
+}

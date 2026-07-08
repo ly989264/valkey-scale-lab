@@ -1,0 +1,117 @@
+{
+  "artifact_type": "command_audit_summary",
+  "by_command_kind": {
+    "cleanup": 1,
+    "cluster_addslots": 1,
+    "cluster_meet": 1,
+    "cluster_probe": 1,
+    "cluster_replicate": 1
+  },
+  "command_log_ref": "tests/fixtures/command_log/success/command_log.jsonl",
+  "coverage": {
+    "observed_command_kinds": [
+      "cleanup",
+      "cluster_addslots",
+      "cluster_meet",
+      "cluster_probe",
+      "cluster_replicate"
+    ],
+    "required_command_kinds": [
+      "cluster_meet",
+      "cluster_addslots",
+      "cluster_replicate",
+      "cluster_probe",
+      "cleanup"
+    ]
+  },
+  "failed_commands": [],
+  "failure_count": 0,
+  "missing_or_skipped": [],
+  "operation_traceability": [
+    {
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000005"
+      ],
+      "operation_id": "cleanup",
+      "status": "PASS"
+    },
+    {
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000001",
+        "command_log.jsonl#cmd-000002",
+        "command_log.jsonl#cmd-000003",
+        "command_log.jsonl#cmd-000004"
+      ],
+      "operation_id": "cluster_setup",
+      "status": "PASS"
+    }
+  ],
+  "pass_count": 5,
+  "phase_id": "M1-S03",
+  "retry_commands": [],
+  "retry_count": 0,
+  "run_id": "fixture-command-success",
+  "scenario": "fixture",
+  "schema_version": "v1",
+  "slowest_commands_topN": [
+    {
+      "command_id": "cmd-000003",
+      "command_kind": "cluster_replicate",
+      "duration_ms": 15,
+      "error_type": "",
+      "exit_code": 0,
+      "operation_id": "cluster_setup",
+      "retry_index": 0,
+      "status": "PASS",
+      "step_id": "cluster_replicate"
+    },
+    {
+      "command_id": "cmd-000002",
+      "command_kind": "cluster_addslots",
+      "duration_ms": 12,
+      "error_type": "",
+      "exit_code": 0,
+      "operation_id": "cluster_setup",
+      "retry_index": 0,
+      "status": "PASS",
+      "step_id": "cluster_addslots"
+    },
+    {
+      "command_id": "cmd-000001",
+      "command_kind": "cluster_meet",
+      "duration_ms": 10,
+      "error_type": "",
+      "exit_code": 0,
+      "operation_id": "cluster_setup",
+      "retry_index": 0,
+      "status": "PASS",
+      "step_id": "cluster_meet"
+    },
+    {
+      "command_id": "cmd-000005",
+      "command_kind": "cleanup",
+      "duration_ms": 10,
+      "error_type": "",
+      "exit_code": 0,
+      "operation_id": "cleanup",
+      "retry_index": 0,
+      "status": "PASS",
+      "step_id": "cleanup"
+    },
+    {
+      "command_id": "cmd-000004",
+      "command_kind": "cluster_probe",
+      "duration_ms": 3,
+      "error_type": "",
+      "exit_code": 0,
+      "operation_id": "cluster_setup",
+      "retry_index": 0,
+      "status": "PASS",
+      "step_id": "cluster_probe"
+    }
+  ],
+  "status": "PASS",
+  "timeout_commands": [],
+  "timeout_count": 0,
+  "total_commands": 5
+}

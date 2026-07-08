@@ -1,0 +1,5 @@
+metric,status,value,unit,reason
+nodes_observed_after_fault,PASS,0,count,
+failover_latency_ms,MISSING,,ms,source artifact did not provide metric
+split_brain_duration_ms,SKIPPED_WITH_REASON,,ms,M1-S03 covers command audit logging; failover measurement is handled in later milestone1 stages.
+cleanup_resources_remaining,PASS,0,count,

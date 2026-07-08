@@ -1,0 +1,6 @@
+command_id,operation_id,step_id,command_kind,duration_ms,status,exit_code,retry_index,error_type
+cmd-000003,cluster_setup,cluster_replicate,cluster_replicate,15,PASS,0,0,
+cmd-000002,cluster_setup,cluster_addslots,cluster_addslots,12,PASS,0,0,
+cmd-000001,cluster_setup,cluster_meet,cluster_meet,10,PASS,0,0,
+cmd-000005,cleanup,cleanup,cleanup,10,PASS,0,0,
+cmd-000004,cluster_setup,cluster_probe,cluster_probe,3,PASS,0,0,

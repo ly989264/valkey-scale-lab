@@ -40,8 +40,12 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_baseline_csv(report_dir / "baseline_comparison.csv", analysis.get("baseline_comparison", {})),
         _write_setup_phase_csv(report_dir / "setup_phase_durations.csv", analysis.get("setup_aggregates", {})),
         _write_setup_nodes_csv(report_dir / "setup_slowest_nodes.csv", analysis.get("setup_aggregates", {})),
+        _write_command_rows_csv(report_dir / "command_slowest.csv", analysis.get("command_audit", {}).get("slowest_commands_topN", [])),
+        _write_command_rows_csv(report_dir / "command_failures.csv", analysis.get("command_audit", {}).get("failed_commands", [])),
+        _write_command_rows_csv(report_dir / "command_retries.csv", analysis.get("command_audit", {}).get("retry_commands", [])),
         _write_chart(report_dir / "metric_chart.svg", metrics),
         _write_setup_waterfall_svg(report_dir / "setup_waterfall.svg", analysis.get("setup_aggregates", {})),
+        _write_command_latency_svg(report_dir / "command_latency.svg", analysis.get("command_audit", {})),
         _write_markdown(report_dir / "report.md", analysis),
         _write_html(report_dir / "index.html", analysis),
     ]
@@ -73,6 +77,12 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
             "setup_telemetry": analysis.get("setup_telemetry", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include setup telemetry"}),
             "csv": "setup_phase_durations.csv",
             "svg": "setup_waterfall.svg",
+        },
+        "command_audit_report_inputs": {
+            "command_log": analysis.get("command_audit", {}).get("command_log_ref", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include command audit"}),
+            "command_audit_summary": analysis.get("command_audit", {}).get("summary_artifact", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include command_audit_summary.json"}),
+            "csv": ["command_slowest.csv", "command_failures.csv", "command_retries.csv"],
+            "svg": "command_latency.svg",
         },
     }
     _write_json(index_path, index)
@@ -162,6 +172,27 @@ def _write_setup_nodes_csv(path: Path, setup: dict[str, Any]) -> Path:
     return path
 
 
+def _write_command_rows_csv(path: Path, rows: list[dict[str, Any]]) -> Path:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["command_id", "operation_id", "step_id", "command_kind", "duration_ms", "status", "exit_code", "retry_index", "error_type"])
+        writer.writeheader()
+        for item in rows:
+            writer.writerow(
+                {
+                    "command_id": item.get("command_id", "MISSING"),
+                    "operation_id": item.get("operation_id", "MISSING"),
+                    "step_id": item.get("step_id", "MISSING"),
+                    "command_kind": item.get("command_kind", "MISSING"),
+                    "duration_ms": item.get("duration_ms", ""),
+                    "status": item.get("status", "MISSING"),
+                    "exit_code": item.get("exit_code", ""),
+                    "retry_index": item.get("retry_index", 0),
+                    "error_type": item.get("error_type", ""),
+                }
+            )
+    return path
+
+
 def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
     numeric = [m for m in metrics if isinstance(m.get("value"), (int, float)) and not isinstance(m.get("value"), bool)]
     max_value = max([float(m["value"]) for m in numeric] + [1.0])
@@ -222,9 +253,38 @@ def _write_setup_waterfall_svg(path: Path, setup: dict[str, Any]) -> Path:
     return path
 
 
+def _write_command_latency_svg(path: Path, audit: dict[str, Any]) -> Path:
+    rows = [item for item in audit.get("slowest_commands_topN", []) if isinstance(item.get("duration_ms"), (int, float))]
+    max_value = max([float(item["duration_ms"]) for item in rows] + [1.0])
+    y = 42
+    parts: list[str] = []
+    for item in rows[:10]:
+        name = html.escape(f"{item.get('command_kind', 'MISSING')} {item.get('command_id', 'MISSING')}")
+        value = float(item["duration_ms"])
+        width = int(380 * (value / max_value))
+        color = "#7c4d1d" if item.get("status") != "PASS" else "#475f9b"
+        parts.append(f'<text x="12" y="{y + 14}" font-size="12">{name}</text>')
+        parts.append(f'<rect x="230" y="{y}" width="{max(width, 2)}" height="18" fill="{color}"/>')
+        parts.append(f'<text x="{240 + max(width, 2)}" y="{y + 14}" font-size="12">{value:.3f} ms</text>')
+        y += 32
+    if not rows:
+        parts.append('<text x="12" y="56" font-size="13">command_log.jsonl 未提供可绘制的命令耗时。</text>')
+    height = max(y + 20, 100)
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="760" height="{height}" viewBox="0 0 760 {height}">\n'
+        '<rect width="100%" height="100%" fill="#ffffff"/>\n'
+        '<text x="12" y="24" font-size="16" font-weight="700">命令耗时分布</text>\n'
+        + "\n".join(parts)
+        + "\n</svg>\n"
+    )
+    path.write_text(svg, encoding="utf-8")
+    return path
+
+
 def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     metadata = analysis.get("run_metadata", {})
     setup = analysis.get("setup_aggregates", {})
+    command_audit = analysis.get("command_audit", {})
     lines = [
         "# P09 Analysis Report",
         "",
@@ -264,6 +324,31 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
                 lines.append(f"- {item.get('logical_id', 'MISSING')}: {item.get('node_ready_ms', 'MISSING')} ms, role={item.get('node_role', 'MISSING')}")
     else:
         lines.append("- SKIPPED_WITH_REASON: 无慢节点样本")
+    lines.extend(["", "## 慢命令 TopN", ""])
+    if command_audit.get("slowest_commands_topN"):
+        lines.append("![命令耗时分布](command_latency.svg)")
+        for item in command_audit.get("slowest_commands_topN", [])[:10]:
+            lines.append(f"- {item.get('command_id', 'MISSING')} {item.get('command_kind', 'MISSING')}: {item.get('duration_ms', 'MISSING')} ms status={item.get('status', 'MISSING')}")
+    else:
+        lines.append(f"- {command_audit.get('status', 'SKIPPED_WITH_REASON')}: {command_audit.get('reason', '无 command log 样本')}")
+    lines.extend(["", "## 失败命令", ""])
+    failures = command_audit.get("failed_commands", [])
+    if failures:
+        for item in failures[:10]:
+            lines.append(f"- {item.get('command_id', 'MISSING')} {item.get('command_kind', 'MISSING')}: {item.get('error_type', '')}")
+    else:
+        lines.append("- none")
+    lines.extend(["", "## 重试命令", ""])
+    retries = command_audit.get("retry_commands", [])
+    if retries:
+        for item in retries[:10]:
+            lines.append(f"- {item.get('command_id', 'MISSING')} {item.get('command_kind', 'MISSING')}: retry_index={item.get('retry_index', 0)} status={item.get('status', 'MISSING')}")
+    else:
+        lines.append("- none")
+    lines.extend(["", "## 命令审计覆盖", ""])
+    lines.append(f"- total_commands: {command_audit.get('total_commands', 0)}")
+    for kind, count in sorted(command_audit.get("by_command_kind", {}).items()):
+        lines.append(f"- {kind}: {count}")
     lines.extend(["", "## 缺失指标", ""])
     missing = analysis.get("missing_metrics", [])
     if missing:
@@ -271,7 +356,7 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('status', 'MISSING')} - {item.get('reason', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- metric_chart.svg", "- setup_waterfall.svg"])
+    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
@@ -279,6 +364,7 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
 def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
     metadata = analysis.get("run_metadata", {})
     setup = analysis.get("setup_aggregates", {})
+    command_audit = analysis.get("command_audit", {})
     metadata_rows = "\n".join(
         "<tr><td>{}</td><td><code>{}</code></td></tr>".format(
             html.escape(key),
@@ -315,6 +401,13 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         for item in setup.get("slowest_nodes_topN", [])[:10]
         if isinstance(item, dict)
     ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无慢节点样本</td></tr>'
+    slow_command_rows = _command_html_rows(command_audit.get("slowest_commands_topN", [])) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无慢命令样本</td></tr>'
+    failed_command_rows = _command_html_rows(command_audit.get("failed_commands", [])) or '<tr><td colspan="5">none</td></tr>'
+    retry_command_rows = _command_html_rows(command_audit.get("retry_commands", [])) or '<tr><td colspan="5">none</td></tr>'
+    command_coverage_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td></tr>".format(html.escape(str(kind)), html.escape(str(count)))
+        for kind, count in sorted(command_audit.get("by_command_kind", {}).items())
+    ) or '<tr><td colspan="2">SKIPPED_WITH_REASON: 无 command log 样本</td></tr>'
     document = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -344,6 +437,15 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   <table><thead><tr><th>阶段指标</th><th>耗时 ms</th></tr></thead><tbody>{setup_rows}</tbody></table>
   <h2>慢节点 TopN</h2>
   <table><thead><tr><th>节点</th><th>ready ms</th><th>角色</th><th>状态</th></tr></thead><tbody>{slow_node_rows}</tbody></table>
+  <h2>慢命令 TopN</h2>
+  <img src="command_latency.svg" alt="命令耗时分布">
+  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody>{slow_command_rows}</tbody></table>
+  <h2>失败命令</h2>
+  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody>{failed_command_rows}</tbody></table>
+  <h2>重试命令</h2>
+  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody>{retry_command_rows}</tbody></table>
+  <h2>命令审计覆盖</h2>
+  <table><thead><tr><th>命令类型</th><th>数量</th></tr></thead><tbody>{command_coverage_rows}</tbody></table>
   <h2>图表</h2>
   <img src="metric_chart.svg" alt="P09 artifact metrics chart">
 </body>
@@ -351,6 +453,20 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
 """
     path.write_text(document, encoding="utf-8")
     return path
+
+
+def _command_html_rows(rows: list[dict[str, Any]]) -> str:
+    return "\n".join(
+        "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(str(item.get("command_id", "MISSING"))),
+            html.escape(str(item.get("operation_id", "MISSING"))),
+            html.escape(str(item.get("command_kind", "MISSING"))),
+            html.escape(str(item.get("duration_ms", "MISSING"))),
+            html.escape(str(item.get("status", "MISSING"))),
+        )
+        for item in rows
+        if isinstance(item, dict)
+    )
 
 
 def _write_phase_summary(phase_dir: Path, analysis: dict[str, Any], index_path: Path, reports: list[Path]) -> None:

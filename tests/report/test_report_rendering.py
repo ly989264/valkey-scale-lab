@@ -36,6 +36,17 @@ def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: P
                 }
             ]
         },
+        "command_audit": {
+            "status": "PASS",
+            "command_log_ref": "command_log.jsonl",
+            "total_commands": 2,
+            "by_command_kind": {"cluster_probe": 1, "cleanup": 1},
+            "slowest_commands_topN": [
+                {"command_id": "cmd-000001", "operation_id": "cluster_setup", "step_id": "cluster_probe", "command_kind": "cluster_probe", "duration_ms": 5, "status": "PASS", "exit_code": 0, "retry_index": 0}
+            ],
+            "failed_commands": [],
+            "retry_commands": [],
+        },
     }
     analysis_path = tmp_path / "analysis_summary.json"
     analysis_path.write_text(json.dumps(analysis), encoding="utf-8")
@@ -53,9 +64,15 @@ def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: P
         "setup_phase_durations.csv",
         "setup_slowest_nodes.csv",
         "setup_waterfall.svg",
+        "command_slowest.csv",
+        "command_failures.csv",
+        "command_retries.csv",
+        "command_latency.svg",
     } == report_paths
+    assert "command_audit_report_inputs" in index
     assert (tmp_path / "phase_summary.json").exists()
     assert "MISSING" in (tmp_path / "report" / "missing_metrics.csv").read_text(encoding="utf-8")
+    assert "慢命令 TopN" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
 
 
 def test_report_renderer_marks_empty_missing_metrics_as_none(tmp_path: Path) -> None:

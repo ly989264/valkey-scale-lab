@@ -1,0 +1,2 @@
+metric,status,reason,impact
+split_brain_duration_ms,SKIPPED_WITH_REASON,M1-S03 covers command audit logging; failover measurement is handled in later milestone1 stages.,

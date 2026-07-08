@@ -1,0 +1,2 @@
+metric,value_ms,status,reason
+setup_telemetry,,SKIPPED_WITH_REASON,setup_telemetry.json was not present in the input artifacts.

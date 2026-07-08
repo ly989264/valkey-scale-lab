@@ -1,0 +1,410 @@
+{
+  "artifact_type": "analysis_summary",
+  "baseline_comparison": {
+    "artifact_type": "baseline_comparison",
+    "baseline_source": {
+      "reason": "No versioned baseline artifact exists for the first analysis-reporting phase.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "comparisons": [
+      {
+        "baseline_value": null,
+        "current_value": 0,
+        "delta": null,
+        "metric": "nodes_observed_after_fault",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "failover_latency_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "split_brain_duration_ms",
+        "status": "SKIPPED_WITH_REASON",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": 0,
+        "delta": null,
+        "metric": "cleanup_resources_remaining",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      }
+    ],
+    "created_at": "2026-06-28T00:00:00Z",
+    "phase_id": "P09_ANALYSIS_REPORTING",
+    "producer": {
+      "name": "valkey-scale-lab",
+      "version": "0.0.0"
+    },
+    "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+    "schema_version": "v1",
+    "source_dir": "runs/m1-s03-local/artifacts",
+    "status": "NO_BASELINE_YET"
+  },
+  "command_audit": {
+    "by_command_kind": {
+      "cleanup": 1,
+      "cluster_addslots": 1,
+      "cluster_meet": 1,
+      "cluster_probe": 1,
+      "cluster_replicate": 1
+    },
+    "command_log_ref": "runs/m1-s03-local/artifacts/command_log.jsonl",
+    "failed_commands": [],
+    "failure_count": 0,
+    "missing_or_skipped": [],
+    "operation_traceability": [
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000005"
+        ],
+        "operation_id": "cleanup",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000001",
+          "command_log.jsonl#cmd-000002",
+          "command_log.jsonl#cmd-000003",
+          "command_log.jsonl#cmd-000004"
+        ],
+        "operation_id": "cluster_setup",
+        "status": "PASS"
+      }
+    ],
+    "pass_count": 5,
+    "retry_commands": [],
+    "retry_count": 0,
+    "slowest_commands_topN": [
+      {
+        "command_id": "cmd-000003",
+        "command_kind": "cluster_replicate",
+        "duration_ms": 15,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "cluster_setup",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "cluster_replicate"
+      },
+      {
+        "command_id": "cmd-000002",
+        "command_kind": "cluster_addslots",
+        "duration_ms": 12,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "cluster_setup",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "cluster_addslots"
+      },
+      {
+        "command_id": "cmd-000001",
+        "command_kind": "cluster_meet",
+        "duration_ms": 10,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "cluster_setup",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "cluster_meet"
+      },
+      {
+        "command_id": "cmd-000005",
+        "command_kind": "cleanup",
+        "duration_ms": 10,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "cleanup",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "cleanup"
+      },
+      {
+        "command_id": "cmd-000004",
+        "command_kind": "cluster_probe",
+        "duration_ms": 3,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "cluster_setup",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "cluster_probe"
+      }
+    ],
+    "status": "PASS",
+    "summary_artifact": {
+      "artifact_type": "command_audit_summary",
+      "by_command_kind": {
+        "cleanup": 1,
+        "cluster_addslots": 1,
+        "cluster_meet": 1,
+        "cluster_probe": 1,
+        "cluster_replicate": 1
+      },
+      "command_log_ref": "runs/m1-s03-local/artifacts/command_log.jsonl",
+      "coverage": {
+        "observed_command_kinds": [
+          "cleanup",
+          "cluster_addslots",
+          "cluster_meet",
+          "cluster_probe",
+          "cluster_replicate"
+        ],
+        "required_command_kinds": [
+          "cluster_meet",
+          "cluster_addslots",
+          "cluster_replicate",
+          "cluster_probe",
+          "cleanup"
+        ]
+      },
+      "failed_commands": [],
+      "failure_count": 0,
+      "missing_or_skipped": [],
+      "operation_traceability": [
+        {
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000005"
+          ],
+          "operation_id": "cleanup",
+          "status": "PASS"
+        },
+        {
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000001",
+            "command_log.jsonl#cmd-000002",
+            "command_log.jsonl#cmd-000003",
+            "command_log.jsonl#cmd-000004"
+          ],
+          "operation_id": "cluster_setup",
+          "status": "PASS"
+        }
+      ],
+      "pass_count": 5,
+      "phase_id": "M1-S03",
+      "retry_commands": [],
+      "retry_count": 0,
+      "run_id": "m1-s03-local",
+      "scenario": "fixture",
+      "schema_version": "v1",
+      "slowest_commands_topN": [
+        {
+          "command_id": "cmd-000003",
+          "command_kind": "cluster_replicate",
+          "duration_ms": 15,
+          "error_type": "",
+          "exit_code": 0,
+          "operation_id": "cluster_setup",
+          "retry_index": 0,
+          "status": "PASS",
+          "step_id": "cluster_replicate"
+        },
+        {
+          "command_id": "cmd-000002",
+          "command_kind": "cluster_addslots",
+          "duration_ms": 12,
+          "error_type": "",
+          "exit_code": 0,
+          "operation_id": "cluster_setup",
+          "retry_index": 0,
+          "status": "PASS",
+          "step_id": "cluster_addslots"
+        },
+        {
+          "command_id": "cmd-000001",
+          "command_kind": "cluster_meet",
+          "duration_ms": 10,
+          "error_type": "",
+          "exit_code": 0,
+          "operation_id": "cluster_setup",
+          "retry_index": 0,
+          "status": "PASS",
+          "step_id": "cluster_meet"
+        },
+        {
+          "command_id": "cmd-000005",
+          "command_kind": "cleanup",
+          "duration_ms": 10,
+          "error_type": "",
+          "exit_code": 0,
+          "operation_id": "cleanup",
+          "retry_index": 0,
+          "status": "PASS",
+          "step_id": "cleanup"
+        },
+        {
+          "command_id": "cmd-000004",
+          "command_kind": "cluster_probe",
+          "duration_ms": 3,
+          "error_type": "",
+          "exit_code": 0,
+          "operation_id": "cluster_setup",
+          "retry_index": 0,
+          "status": "PASS",
+          "step_id": "cluster_probe"
+        }
+      ],
+      "status": "PASS",
+      "timeout_commands": [],
+      "timeout_count": 0,
+      "total_commands": 5
+    },
+    "timeout_commands": [],
+    "timeout_count": 0,
+    "total_commands": 5
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "findings": [
+    {
+      "name": "source_phase",
+      "source_phase_id": "M1-S03",
+      "source_run_id": "m1-s03-local",
+      "status": "PASS"
+    },
+    {
+      "cluster_state_observed": "SKIPPED_WITH_REASON",
+      "name": "real_valkey_evidence",
+      "nodes_observed": 0,
+      "real_valkey": false,
+      "status": "SKIPPED_WITH_REASON",
+      "valkey_versions": []
+    },
+    {
+      "failover_latency_ms": "MISSING",
+      "name": "failover",
+      "old_primary_node_id": "MISSING",
+      "promoted_node_id": "MISSING",
+      "status": "SKIPPED_WITH_REASON",
+      "target_logical_id": "MISSING"
+    },
+    {
+      "name": "cleanup",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "name": "setup_telemetry",
+      "node_count": "MISSING",
+      "status": "SKIPPED_WITH_REASON",
+      "total_setup_ms": "MISSING"
+    },
+    {
+      "failure_count": 0,
+      "name": "command_audit",
+      "retry_count": 0,
+      "status": "PASS",
+      "timeout_count": 0,
+      "total_commands": 5
+    }
+  ],
+  "metrics": [
+    {
+      "name": "nodes_observed_after_fault",
+      "status": "PASS",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "name": "failover_latency_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "split_brain_duration_ms",
+      "reason": "M1-S03 covers command audit logging; failover measurement is handled in later milestone1 stages.",
+      "status": "SKIPPED_WITH_REASON",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "cleanup_resources_remaining",
+      "status": "PASS",
+      "unit": "count",
+      "value": 0
+    }
+  ],
+  "missing_metrics": [
+    {
+      "metric": "split_brain_duration_ms",
+      "reason": "M1-S03 covers command audit logging; failover measurement is handled in later milestone1 stages.",
+      "source": "failover_report.summary",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+  "run_manifest_ref": {
+    "reason": "Legacy artifact directory input did not include a run_manifest.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata": {
+    "reason": "Legacy artifact directory input did not include run metadata.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata_ref": {
+    "reason": "Legacy artifact directory input did not include a run_metadata.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "schema_version": "v1",
+  "setup_aggregates": {
+    "reason": "setup_telemetry.json was not present in the input artifacts.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "setup_telemetry": {
+    "reason": "Input artifacts did not include setup_telemetry.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "sidecars": [
+    {
+      "artifact_type": "baseline_comparison",
+      "path": "runs/m1-s03-local/artifacts/baseline_comparison.json",
+      "sha256": "fac7f885d3c6450e1f2e2308b7ee0720dbd117bed9e35970f430f593a748347e"
+    }
+  ],
+  "source": {
+    "input_dir": "runs/m1-s03-local/artifacts",
+    "input_kind": "artifact_dir",
+    "phase_id": "M1-S03",
+    "run_id": "m1-s03-local"
+  },
+  "source_artifacts": [
+    {
+      "path": "runs/m1-s03-local/artifacts/cleanup_report.json",
+      "sha256": "b9c8a581c6786586bfc4e34ca534f2acfe2108f8da35344c6194a8eab7f73fe2"
+    },
+    {
+      "path": "runs/m1-s03-local/artifacts/command_audit_summary.json",
+      "sha256": "5691d1a6d392b1083a2a6a54a3c8f019b29fe10cd51f6680031c0ad28fd238fa"
+    },
+    {
+      "path": "runs/m1-s03-local/artifacts/failover_report.json",
+      "sha256": "cdbbdba14b01bdbca61dab59339920ce36e4d9f4596f825ee1d05b928774fa36"
+    },
+    {
+      "path": "runs/m1-s03-local/artifacts/phase_summary.json",
+      "sha256": "fa21b66bab61dd2fcf165e4dc017e1c6777cef410c4315e4ecb1d2ef0809f525"
+    },
+    {
+      "path": "runs/m1-s03-local/artifacts/valkey_e2e_evidence.json",
+      "sha256": "19eacbe7c6ed6af69c53e296a540b10a1d45f31bf73cd33815959e1657f8be79"
+    }
+  ],
+  "status": "PASS"
+}

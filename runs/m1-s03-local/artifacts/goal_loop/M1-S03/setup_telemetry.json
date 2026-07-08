@@ -1,0 +1,178 @@
+{
+  "artifact_type": "setup_telemetry",
+  "blocked_reason": {
+    "reason": "port 127.0.0.1:7000 is not available: [Errno 1] Operation not permitted",
+    "status": "MISSING"
+  },
+  "cleanup": {
+    "cleanup_ms": {
+      "reason": "Cleanup timing is attached after gate cleanup runs.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "reason": "Cleanup report is written by the cleanup command after setup.",
+    "resources_remaining": {
+      "reason": "Residual resources are checked during cleanup.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "created_at": "2026-07-08T14:58:18.799056Z",
+  "metrics": {
+    "cleanup_ms": {
+      "reason": "Cleanup timing is attached after gate cleanup runs.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "cluster_convergence_probe_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "cluster_meet_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "cluster_slots_assign_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "config_parse_ms": 0.399,
+    "config_validate_ms": 0.601,
+    "full_cluster_probe_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "node_config_distribute_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "node_config_generate_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "nodehost_start_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "plan_build_ms": 0.055,
+    "port_check_ms": 0.11,
+    "process_ready_wait_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "process_start_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "replica_replicate_ms": {
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "resource_preflight_ms": {
+      "reason": "Resource preflight is only executed by stages that require bounded scale admission.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "total_setup_ms": 1.187
+  },
+  "missing_metrics": [
+    {
+      "metric": "resource_preflight_ms",
+      "reason": "Resource preflight is only executed by stages that require bounded scale admission.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "nodehost_start_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "node_config_generate_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "node_config_distribute_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "process_start_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "process_ready_wait_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "cluster_meet_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "cluster_slots_assign_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "replica_replicate_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "cluster_convergence_probe_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "full_cluster_probe_ms",
+      "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "metric": "cleanup_ms",
+      "reason": "Cleanup timing is attached after gate cleanup runs.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "node_count": 0,
+  "per_node_samples": [
+    {
+      "reason": "No per-node samples exist because setup did not reach live node runtime.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "per_nodehost_samples": [
+    {
+      "reason": "No per-nodehost samples exist because setup did not reach nodehost runtime.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+  "producer": {
+    "name": "valkey-scale-lab-runtime",
+    "version": "0.0.0"
+  },
+  "run_id": "phase-P03_LOCAL_DOCKER_VALKEY-cluster_smoke",
+  "same_schema_scale_rungs": [
+    30,
+    50,
+    100,
+    200
+  ],
+  "scenario": "cluster_smoke",
+  "schema_version": "v1",
+  "slowest_nodes_topN": [
+    {
+      "reason": "Slow-node ranking requires numeric per-node readiness samples.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "slowest_replica_replicate_topN": [
+    {
+      "reason": "Slow-replica ranking requires numeric replica readiness samples.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "source_artifacts": [],
+  "status": "FAIL"
+}

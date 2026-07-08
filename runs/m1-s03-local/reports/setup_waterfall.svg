@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="100" viewBox="0 0 720 100">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="12" y="24" font-size="16" font-weight="700">集群拉起瀑布图</text>
+<text x="12" y="56" font-size="13">setup_telemetry.json 未提供可绘制的数值阶段耗时。</text>
+</svg>

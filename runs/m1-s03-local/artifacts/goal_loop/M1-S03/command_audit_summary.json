@@ -1,0 +1,38 @@
+{
+  "artifact_type": "command_audit_summary",
+  "by_command_kind": {},
+  "command_log_ref": "runs/m1-s03-local/artifacts/goal_loop/M1-S03/command_log.jsonl",
+  "coverage": {
+    "observed_command_kinds": [],
+    "required_command_kinds": [
+      "cluster_meet",
+      "cluster_addslots",
+      "cluster_replicate",
+      "cluster_probe",
+      "cleanup"
+    ]
+  },
+  "failed_commands": [],
+  "failure_count": 0,
+  "missing_or_skipped": [
+    {
+      "impact": "PASS operations cannot be audited.",
+      "metric": "command_log.total_commands",
+      "reason": "No command rows were recorded.",
+      "status": "MISSING"
+    }
+  ],
+  "operation_traceability": [],
+  "pass_count": 0,
+  "phase_id": "P03_LOCAL_DOCKER_VALKEY",
+  "retry_commands": [],
+  "retry_count": 0,
+  "run_id": "phase-P03_LOCAL_DOCKER_VALKEY-cluster_smoke",
+  "scenario": "cluster_smoke",
+  "schema_version": "v1",
+  "slowest_commands_topN": [],
+  "status": "FAIL",
+  "timeout_commands": [],
+  "timeout_count": 0,
+  "total_commands": 0
+}

@@ -14,6 +14,7 @@ from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.report import FinalReportError, ReportError, build_final_goal_loop_report, render_report
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
+from valkey_scale_lab.runtime.command_recorder import CommandRecorder, command_recorder_context
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, build_setup_telemetry_artifact, write_setup_telemetry_artifact
 
@@ -58,22 +59,29 @@ def _gate_scenario(args: argparse.Namespace) -> int:
     state: dict[str, object] = {}
     exit_code = 0
     error: str | None = None
+    run_id = f"phase-{args.phase}-{args.scenario}"
+    recorder = CommandRecorder(phase_id=args.phase, run_id=run_id, scenario=args.scenario, artifacts_dir=args.artifacts_dir)
     try:
-        state = create_scenario(
-            phase=args.phase,
-            scenario=args.scenario,
-            config_path=args.config,
-            artifacts_dir=args.artifacts_dir,
-            state_out=args.state_out,
-            setup_timeline=setup_timeline,
-            global_config_path=args.global_config,
-            cli_overrides=_nodehost_cli_overrides(args),
+        with command_recorder_context(recorder):
+            state = create_scenario(
+                phase=args.phase,
+                scenario=args.scenario,
+                config_path=args.config,
+                artifacts_dir=args.artifacts_dir,
+                state_out=args.state_out,
+                setup_timeline=setup_timeline,
+                global_config_path=args.global_config,
+                cli_overrides=_nodehost_cli_overrides(args),
         )
+        run_id = str(state.get("cluster_id") or run_id)
+        recorder.run_id = run_id
+        _attach_command_audit_refs(state, args.artifacts_dir)
     except DockerRuntimeError as exc:
         print(f"ERROR: gate scenario: {exc}", file=sys.stderr)
         exit_code = 1
         error = str(exc)
     finally:
+        recorder.close(status="PASS" if exit_code == 0 else "FAIL")
         _finalize_setup_timeline(args, setup_timeline, state, exit_code=exit_code, error=error)
     return exit_code
 
@@ -165,9 +173,36 @@ def _state_has_nodes(state_obj: dict[str, object]) -> bool:
     return isinstance(nodes, list) and bool(nodes)
 
 
+def _attach_command_audit_refs(state: dict[str, object], artifacts_dir: str | Path) -> None:
+    runtime = state.setdefault("runtime", {})
+    if not isinstance(runtime, dict):
+        return
+    artifacts = Path(artifacts_dir)
+    runtime["command_log_ref"] = (artifacts / "command_log.jsonl").as_posix()
+    runtime["command_audit_summary_ref"] = (artifacts / "command_audit_summary.json").as_posix()
+
+
+def _load_json_if_present(path: str | Path) -> dict[str, object]:
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 def _gate_cleanup(args: argparse.Namespace) -> int:
     try:
-        report = cleanup_scenario(state_path=args.state, artifacts_dir=args.artifacts_dir, out_path=args.out)
+        state = _load_json_if_present(args.state)
+        phase_id = str(state.get("phase_id", "P03_LOCAL_DOCKER_VALKEY")) if isinstance(state, dict) else "P03_LOCAL_DOCKER_VALKEY"
+        scenario = str(state.get("scenario", "cleanup")) if isinstance(state, dict) else "cleanup"
+        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"phase-{phase_id}-{scenario}") if isinstance(state, dict) else f"phase-{phase_id}-{scenario}"
+        recorder = CommandRecorder(phase_id=phase_id, run_id=run_id, scenario=scenario, artifacts_dir=args.artifacts_dir, append=True)
+        with command_recorder_context(recorder):
+            report = cleanup_scenario(state_path=args.state, artifacts_dir=args.artifacts_dir, out_path=args.out)
+        summary = recorder.close(status="PASS" if report.get("status") == "PASS" else "FAIL")
+        report["command_log_ref"] = summary["command_log_ref"]
+        report["command_audit_summary_ref"] = str(Path(args.artifacts_dir, "command_audit_summary.json"))
+        Path(args.out).write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         _refresh_setup_telemetry_cleanup(args, report)
     except (DockerRuntimeError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"ERROR: gate cleanup: {exc}", file=sys.stderr)
@@ -210,12 +245,19 @@ def _refresh_setup_telemetry_cleanup(args: argparse.Namespace, cleanup_report: d
 
 def _fault_apply(args: argparse.Namespace) -> int:
     try:
-        apply_fault(
-            state_path=args.state,
-            target_logical_id=args.target_logical_id,
-            fault_json=args.fault_json,
-            out_path=args.out,
-        )
+        state = _load_json_if_present(args.state)
+        phase_id = str(state.get("phase_id", "P07_FAULT_INJECTION_SANDBOX")) if isinstance(state, dict) else "P07_FAULT_INJECTION_SANDBOX"
+        scenario = str(state.get("scenario", "fault_apply")) if isinstance(state, dict) else "fault_apply"
+        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{phase_id}-fault") if isinstance(state, dict) else f"{phase_id}-fault"
+        recorder = CommandRecorder(phase_id=phase_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
+        with command_recorder_context(recorder):
+            apply_fault(
+                state_path=args.state,
+                target_logical_id=args.target_logical_id,
+                fault_json=args.fault_json,
+                out_path=args.out,
+            )
+        recorder.close()
     except FaultError as exc:
         print(f"ERROR: fault apply: {exc}", file=sys.stderr)
         return 1
@@ -224,7 +266,14 @@ def _fault_apply(args: argparse.Namespace) -> int:
 
 def _fault_clear(args: argparse.Namespace) -> int:
     try:
-        clear_fault(state_path=args.state, fault_id=args.fault_id, out_path=args.out)
+        state = _load_json_if_present(args.state)
+        phase_id = str(state.get("phase_id", "P07_FAULT_INJECTION_SANDBOX")) if isinstance(state, dict) else "P07_FAULT_INJECTION_SANDBOX"
+        scenario = str(state.get("scenario", "fault_clear")) if isinstance(state, dict) else "fault_clear"
+        run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{phase_id}-fault") if isinstance(state, dict) else f"{phase_id}-fault"
+        recorder = CommandRecorder(phase_id=phase_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
+        with command_recorder_context(recorder):
+            clear_fault(state_path=args.state, fault_id=args.fault_id, out_path=args.out)
+        recorder.close()
     except FaultError as exc:
         print(f"ERROR: fault clear: {exc}", file=sys.stderr)
         return 1
