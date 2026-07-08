@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="456" role="img" aria-label="Workload QPS p99 错误率">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="28" font-size="16" font-family="sans-serif">Workload QPS / p99 / 错误率</text>
+<text x="20" y="72" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="58" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="72" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="100" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="86" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="100" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="128" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="114" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="128" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="156" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="142" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="156" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="184" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="170" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="184" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="212" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="198" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="212" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="240" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="226" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="240" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="268" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="254" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="268" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="296" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="282" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="296" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="324" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="310" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="324" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="352" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="338" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="352" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+<text x="20" y="380" font-size="12" font-family="sans-serif">MISSING:event</text>
+<rect x="190" y="366" width="0" height="18" fill="#2f80ed"/>
+<text x="200" y="380" font-size="12" font-family="sans-serif">QPS=MISSING p99=MISSING 错误率=MISSING</text>
+</svg>

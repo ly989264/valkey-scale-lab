@@ -1,0 +1,67 @@
+{
+  "artifact_type": "fault_workload_impact",
+  "rows": [
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-az_stop",
+      "sample_id": "scale_30-30-az_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-fault_period_workload_impact",
+      "sample_id": "scale_30-30-fault_period_workload_impact"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-majority_partition",
+      "sample_id": "scale_30-30-majority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-minority_partition",
+      "sample_id": "scale_30-30-minority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-network_delay",
+      "sample_id": "scale_30-30-network_delay"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-network_flap",
+      "sample_id": "scale_30-30-network_flap"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-network_loss",
+      "sample_id": "scale_30-30-network_loss"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-network_partition",
+      "sample_id": "scale_30-30-network_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-node_host_stop",
+      "sample_id": "scale_30-30-node_host_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-primary_stop_failover",
+      "sample_id": "scale_30-30-primary_stop_failover"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-replica_stop",
+      "sample_id": "scale_30-30-replica_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#scale_30-30-split_brain_window_detection",
+      "sample_id": "scale_30-30-split_brain_window_detection"
+    }
+  ],
+  "schema_version": "v1",
+  "status": "PASS"
+}

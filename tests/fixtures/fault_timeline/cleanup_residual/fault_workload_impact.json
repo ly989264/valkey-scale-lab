@@ -1,0 +1,12 @@
+{
+  "artifact_type": "fault_workload_impact",
+  "rows": [
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#cleanup_residual-small-primary_stop_failover",
+      "sample_id": "cleanup_residual-small-primary_stop_failover"
+    }
+  ],
+  "schema_version": "v1",
+  "status": "PASS"
+}

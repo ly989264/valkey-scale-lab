@@ -1,0 +1,12 @@
+{
+  "artifact_type": "fault_workload_impact",
+  "rows": [
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#missing_effect_observed-small-network_delay",
+      "sample_id": "missing_effect_observed-small-network_delay"
+    }
+  ],
+  "schema_version": "v1",
+  "status": "PASS"
+}

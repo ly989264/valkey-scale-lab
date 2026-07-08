@@ -1,0 +1,12 @@
+{
+  "artifact_type": "fault_workload_impact",
+  "rows": [
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact",
+      "sample_id": "report_input_missing-small-fault_period_workload_impact"
+    }
+  ],
+  "schema_version": "v1",
+  "status": "PASS"
+}

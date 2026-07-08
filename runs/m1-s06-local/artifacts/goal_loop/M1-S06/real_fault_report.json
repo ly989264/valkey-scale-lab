@@ -1,0 +1,31 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "fault_report",
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "run_id": "phase-P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_01_fault_failover-primary-stop",
+  "created_at": "2026-07-08T16:53:35.739740Z",
+  "producer": {
+    "name": "scripts/fault_failover_gate.py",
+    "version": "v1"
+  },
+  "status": "PASS",
+  "faults": [
+    {
+      "fault_id": "fault-primary-stop",
+      "fault_type": "node_stop",
+      "scope": "owned_container_or_process",
+      "target_logical_id": "shard-0007-primary",
+      "apply_status": "PASS",
+      "clear_status": "PASS",
+      "fault_apply_latency_ms": 149.846,
+      "fault_clear_latency_ms": 402.743,
+      "after_clear_nodes_observed": 30,
+      "after_clear_cluster_state": "ok"
+    }
+  ],
+  "safety_checks": {
+    "host_network_mutated": false,
+    "global_firewall_mutated": false,
+    "sandbox_only": true
+  }
+}

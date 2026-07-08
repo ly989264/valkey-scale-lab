@@ -1,0 +1,14 @@
+{
+  "missing_metrics": [
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because promotion_observed=SKIPPED_WITH_REASON: promotion_expected=false for this fault type",
+      "sample_id": "report_input_missing-small-fault_period_workload_impact",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "M1-S06",
+  "run_id": "m1-s06-fixture",
+  "status": "PASS"
+}

@@ -1,0 +1,13 @@
+metric,current_value,baseline_value,delta,unit,status
+nodes_observed_after_fault,0,,,count,NO_BASELINE_YET
+failover_latency_ms,1,,,ms,NO_BASELINE_YET
+split_brain_duration_ms,,,,ms,MISSING
+cleanup_resources_remaining,0,,,count,NO_BASELINE_YET
+workload_achieved_qps,,,,ops_per_second,MISSING
+workload_latency_p99_ms,,,,ms,MISSING
+workload_error_rate,,,,ratio,MISSING
+fault_failover_latency_p95_ms,20.0,,,ms,NO_BASELINE_YET
+fault_client_unavailability_p95_ms,120.0,,,ms,NO_BASELINE_YET
+fault_workload_recovery_p95_ms,10.0,,,ms,NO_BASELINE_YET
+fault_split_brain_window_max_ms,0.0,,,ms,NO_BASELINE_YET
+fault_cluster_down_window_max_ms,45.0,,,ms,NO_BASELINE_YET

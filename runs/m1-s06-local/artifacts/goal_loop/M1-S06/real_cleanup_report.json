@@ -1,0 +1,285 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "runs/m1-s06-local/artifacts/goal_loop/M1-S06/_fault_failover_work_scale_30_sample_01_fault_failover",
+  "cleanup_actions": [
+    {
+      "action": "terminate",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-a-00",
+      "id": "nodehost-az-a-00",
+      "invalid_pid_count": 0,
+      "pid_count": 8,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=8 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-a-01",
+      "id": "nodehost-az-a-01",
+      "invalid_pid_count": 0,
+      "pid_count": 7,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=7 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-b-00",
+      "id": "nodehost-az-b-00",
+      "invalid_pid_count": 0,
+      "pid_count": 8,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=8 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "terminate",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-b-01",
+      "id": "nodehost-az-b-01",
+      "invalid_pid_count": 0,
+      "pid_count": 7,
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "signaled=7 already_stopped=0 failed=0",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 8,
+      "alive_pids": [
+        "39",
+        "42",
+        "51",
+        "66",
+        "75",
+        "84",
+        "93",
+        "102"
+      ],
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-a-00",
+      "id": "nodehost-az-a-00",
+      "pid_count": 8,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 7,
+      "alive_pids": [
+        "36",
+        "39",
+        "48",
+        "57",
+        "72",
+        "81",
+        "84"
+      ],
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-a-01",
+      "id": "nodehost-az-a-01",
+      "pid_count": 7,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 8,
+      "alive_pids": [
+        "37",
+        "40",
+        "49",
+        "64",
+        "73",
+        "82",
+        "91",
+        "94"
+      ],
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-b-00",
+      "id": "nodehost-az-b-00",
+      "pid_count": 8,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_exit",
+      "alive_pid_count": 7,
+      "alive_pids": [
+        "35",
+        "38",
+        "47",
+        "56",
+        "71",
+        "80",
+        "83"
+      ],
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-b-01",
+      "id": "nodehost-az-b-01",
+      "pid_count": 7,
+      "reason": "Some Valkey pids were still observable or verification timed out before owned container removal.",
+      "status": "SKIPPED_WITH_REASON",
+      "stderr": "",
+      "type": "nodehost_valkey_processes"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-a-00",
+      "id": "nodehost-az-a-00",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-a-01",
+      "id": "nodehost-az-a-01",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-b-00",
+      "id": "nodehost-az-b-00",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "verify_no_valkey_processes",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-b-01",
+      "id": "nodehost-az-b-01",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "stdout": "OCI runtime exec failed: exec failed: unable to start container process: exec: \"pgrep\": executable file not found in $PATH",
+      "type": "nodehost"
+    },
+    {
+      "action": "stop",
+      "id": "108e782a3a4d",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "108e782a3a4d",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "b49e86b5943f",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "b49e86b5943f",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "6dd878051d20",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "6dd878051d20",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "a74ed22fe19e",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "a74ed22fe19e",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "602654842acb",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "bounded_parallelism": true,
+    "cleanup_remove_containers_seconds": 11.994702,
+    "cleanup_remove_networks_seconds": 0.250691,
+    "cleanup_residual_scan_seconds": 0.063462,
+    "cleanup_terminate_processes_seconds": 0.05833,
+    "cleanup_verify_nodehost_empty_seconds": 0.094447,
+    "cleanup_verify_process_exit_seconds": 45.340925,
+    "parallelism": 8
+  },
+  "command_audit_summary_ref": "runs/m1-s06-local/artifacts/goal_loop/M1-S06/_fault_failover_work_scale_30_sample_01_fault_failover/command_audit_summary.json",
+  "command_log_ref": "runs/m1-s06-local/artifacts/goal_loop/M1-S06/_fault_failover_work_scale_30_sample_01_fault_failover/command_log.jsonl",
+  "created_at": "2026-06-28T00:00:00Z",
+  "nodehost_density": {
+    "actual_nodehost_count": 4,
+    "logical_nodes_per_nodehost": {
+      "nodehost-az-a-00": 8,
+      "nodehost-az-a-01": 7,
+      "nodehost-az-b-00": 8,
+      "nodehost-az-b-01": 7
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 30,
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_01-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

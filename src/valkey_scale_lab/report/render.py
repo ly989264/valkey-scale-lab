@@ -50,12 +50,21 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_management_detail_csv(report_dir / "management_reshard_rebalance.csv", analysis.get("management_ops", {}).get("reshard_rebalance_summary", [])),
         _write_workload_windows_csv(report_dir / "workload_benchmark_windows.csv", analysis.get("workload_benchmark", {})),
         _write_workload_profile_csv(report_dir / "workload_profile_summary.csv", analysis.get("workload_benchmark", {})),
+        _write_fault_timeline_events_csv(report_dir / "fault_timeline_events.csv", analysis.get("fault_timeline", {})),
+        _write_fault_timeline_summary_csv(report_dir / "fault_timeline_summary.csv", analysis.get("fault_timeline", {})),
+        _write_failover_latency_distribution_csv(report_dir / "failover_latency_distribution.csv", analysis.get("fault_timeline", {})),
+        _write_split_brain_windows_csv(report_dir / "split_brain_windows.csv", analysis.get("fault_timeline", {})),
+        _write_fault_workload_impact_csv(report_dir / "fault_workload_impact.csv", analysis.get("fault_timeline", {})),
         _write_chart(report_dir / "metric_chart.svg", metrics),
         _write_setup_waterfall_svg(report_dir / "setup_waterfall.svg", analysis.get("setup_aggregates", {})),
         _write_command_latency_svg(report_dir / "command_latency.svg", analysis.get("command_audit", {})),
         _write_management_duration_svg(report_dir / "management_operation_duration.svg", analysis.get("management_ops", {})),
         _write_management_topology_svg(report_dir / "management_topology_diff.svg", analysis.get("management_ops", {})),
         _write_workload_svg(report_dir / "workload_qps_p99_error.svg", analysis.get("workload_benchmark", {})),
+        _write_fault_timeline_svg(report_dir / "fault_timeline.svg", analysis.get("fault_timeline", {})),
+        _write_fault_distribution_svg(report_dir / "failover_latency_distribution.svg", analysis.get("fault_timeline", {})),
+        _write_split_brain_svg(report_dir / "split_brain_window.svg", analysis.get("fault_timeline", {})),
+        _write_fault_workload_svg(report_dir / "fault_workload_impact.svg", analysis.get("fault_timeline", {})),
         _write_markdown(report_dir / "report.md", analysis),
         _write_html(report_dir / "index.html", analysis),
     ]
@@ -114,6 +123,30 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
             },
             "csv": ["workload_benchmark_windows.csv", "workload_profile_summary.csv"],
             "svg": "workload_qps_p99_error.svg",
+        },
+        "fault_timeline_report_inputs": {
+            "fault_timeline": analysis.get("fault_timeline", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include fault timeline aggregates"}),
+            "refs": analysis.get("fault_timeline", {}).get("source_refs", {
+                "fault_timeline_report": "fault_timeline_report.json",
+                "fault_timeline_events": "fault_timeline_events.jsonl",
+                "failover_latency_samples": "failover_latency_samples.jsonl",
+                "fault_workload_impact": "fault_workload_impact.json",
+                "cleanup": "cleanup_report.json",
+                "evidence": "valkey_e2e_evidence.json",
+            }),
+            "csv": [
+                "fault_timeline_events.csv",
+                "fault_timeline_summary.csv",
+                "failover_latency_distribution.csv",
+                "split_brain_windows.csv",
+                "fault_workload_impact.csv",
+            ],
+            "svg": [
+                "fault_timeline.svg",
+                "failover_latency_distribution.svg",
+                "split_brain_window.svg",
+                "fault_workload_impact.svg",
+            ],
         },
     }
     _write_json(index_path, index)
@@ -351,6 +384,108 @@ def _write_workload_profile_csv(path: Path, workload: dict[str, Any]) -> Path:
     return path
 
 
+def _write_fault_timeline_events_csv(path: Path, fault: dict[str, Any]) -> Path:
+    rows = fault.get("event_completeness", []) if isinstance(fault, dict) else []
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["sample_id", "observed_event_count", "missing_events", "status"])
+        writer.writeheader()
+        if not rows:
+            writer.writerow({"sample_id": "SKIPPED_WITH_REASON", "observed_event_count": 0, "missing_events": fault.get("reason", "无故障 timeline 输入") if isinstance(fault, dict) else "无故障 timeline 输入", "status": fault.get("status", "SKIPPED_WITH_REASON") if isinstance(fault, dict) else "SKIPPED_WITH_REASON"})
+        for row in rows:
+            writer.writerow({
+                "sample_id": row.get("sample_id", "MISSING"),
+                "observed_event_count": row.get("observed_event_count", 0),
+                "missing_events": ",".join(str(item) for item in row.get("missing_events", [])),
+                "status": "PASS" if not row.get("missing_events") else "PARTIAL",
+            })
+    return path
+
+
+def _write_fault_timeline_summary_csv(path: Path, fault: dict[str, Any]) -> Path:
+    rows = fault.get("rows", []) if isinstance(fault, dict) else []
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["sample_id", "fault_type", "scale_rung", "node_count", "status", "failover_latency_ms", "client_unavailability_ms", "cleanup_duration_ms"])
+        writer.writeheader()
+        if not rows:
+            writer.writerow({"sample_id": "SKIPPED_WITH_REASON", "status": fault.get("status", "SKIPPED_WITH_REASON") if isinstance(fault, dict) else "SKIPPED_WITH_REASON"})
+        for row in rows:
+            metrics = row.get("metrics", {}) if isinstance(row, dict) else {}
+            writer.writerow({
+                "sample_id": row.get("sample_id", "MISSING"),
+                "fault_type": row.get("fault_type", "MISSING"),
+                "scale_rung": row.get("scale_rung", "MISSING"),
+                "node_count": row.get("node_count", "MISSING"),
+                "status": row.get("status", "MISSING"),
+                "failover_latency_ms": _csv_value(metrics.get("failover_latency_ms")),
+                "client_unavailability_ms": _csv_value(metrics.get("client_unavailability_ms")),
+                "cleanup_duration_ms": _csv_value(metrics.get("cleanup_duration_ms")),
+            })
+    return path
+
+
+def _write_failover_latency_distribution_csv(path: Path, fault: dict[str, Any]) -> Path:
+    fields = ["failover_latency", "promotion_latency", "client_unavailability", "workload_recovery"]
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["metric", "sample_count", "p50_ms", "p95_ms", "max_ms", "status", "reason"])
+        writer.writeheader()
+        for name in fields:
+            item = fault.get(name, {}) if isinstance(fault, dict) else {}
+            writer.writerow({
+                "metric": name,
+                "sample_count": item.get("sample_count", 0),
+                "p50_ms": item.get("p50_ms", "MISSING"),
+                "p95_ms": item.get("p95_ms", "MISSING"),
+                "max_ms": item.get("max_ms", "MISSING"),
+                "status": item.get("status", "MISSING"),
+                "reason": item.get("reason", ""),
+            })
+    return path
+
+
+def _write_split_brain_windows_csv(path: Path, fault: dict[str, Any]) -> Path:
+    fields = ["split_brain_window", "cluster_down_window"]
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["metric", "sample_count", "p95_ms", "max_ms", "status", "reason"])
+        writer.writeheader()
+        for name in fields:
+            item = fault.get(name, {}) if isinstance(fault, dict) else {}
+            writer.writerow({"metric": name, "sample_count": item.get("sample_count", 0), "p95_ms": item.get("p95_ms", "MISSING"), "max_ms": item.get("max_ms", "MISSING"), "status": item.get("status", "MISSING"), "reason": item.get("reason", "")})
+    return path
+
+
+def _write_fault_workload_impact_csv(path: Path, fault: dict[str, Any]) -> Path:
+    rows = fault.get("rows", []) if isinstance(fault, dict) else []
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["sample_id", "fault_type", "client_unavailability_ms", "workload_recovery_ms", "cluster_down_window_ms", "status"])
+        writer.writeheader()
+        if not rows:
+            writer.writerow({"sample_id": "SKIPPED_WITH_REASON", "status": fault.get("status", "SKIPPED_WITH_REASON") if isinstance(fault, dict) else "SKIPPED_WITH_REASON"})
+        for row in rows:
+            metrics = row.get("metrics", {}) if isinstance(row, dict) else {}
+            writer.writerow({
+                "sample_id": row.get("sample_id", "MISSING"),
+                "fault_type": row.get("fault_type", "MISSING"),
+                "client_unavailability_ms": _csv_value(metrics.get("client_unavailability_ms")),
+                "workload_recovery_ms": _csv_value(metrics.get("workload_recovery_ms")),
+                "cluster_down_window_ms": _csv_value(metrics.get("cluster_down_window_ms")),
+                "status": row.get("status", "MISSING"),
+            })
+    return path
+
+
+def _csv_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return value.get("status", "MISSING")
+    return "" if value is None else value
+
+
+def _display_metric(value: Any) -> str:
+    if isinstance(value, dict):
+        reason = value.get("reason", "")
+        return f"{value.get('status', 'MISSING')} ({reason})" if reason else str(value.get("status", "MISSING"))
+    return str(value)
+
+
 def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
     numeric = [m for m in metrics if isinstance(m.get("value"), (int, float)) and not isinstance(m.get("value"), bool)]
     max_value = max([float(m["value"]) for m in numeric] + [1.0])
@@ -521,12 +656,107 @@ def _write_workload_svg(path: Path, workload: dict[str, Any]) -> Path:
     return path
 
 
+def _write_fault_timeline_svg(path: Path, fault: dict[str, Any]) -> Path:
+    rows = fault.get("event_completeness", []) if isinstance(fault, dict) else []
+    y = 52
+    parts = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="820" height="360" viewBox="0 0 820 360">',
+        '<rect width="100%" height="100%" fill="#ffffff"/>',
+        '<text x="16" y="28" font-size="16" font-weight="700">故障 Timeline</text>',
+    ]
+    if not rows:
+        parts.append('<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: 无 fault_timeline_events.jsonl 输入</text>')
+    for row in rows[:8]:
+        sample_id = html.escape(str(row.get("sample_id", "MISSING")))
+        count = int(row.get("observed_event_count", 0) or 0)
+        parts.append(f'<text x="16" y="{y + 14}" font-size="12">{sample_id}</text>')
+        parts.append(f'<rect x="180" y="{y}" width="{max(count * 36, 2)}" height="18" fill="#326c7a"/>')
+        parts.append(f'<text x="{190 + max(count * 36, 2)}" y="{y + 14}" font-size="12">{count}/12 events</text>')
+        y += 32
+    parts.append("</svg>")
+    path.write_text("\n".join(parts), encoding="utf-8")
+    return path
+
+
+def _write_fault_distribution_svg(path: Path, fault: dict[str, Any]) -> Path:
+    rows = [(name, fault.get(name, {})) for name in ["failover_latency", "promotion_latency", "client_unavailability", "workload_recovery"]] if isinstance(fault, dict) else []
+    values = [float(item.get("p95_ms")) for _, item in rows if isinstance(item.get("p95_ms"), (int, float))]
+    max_value = max(values or [1.0])
+    y = 50
+    parts = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="820" height="240" viewBox="0 0 820 240">',
+        '<rect width="100%" height="100%" fill="#ffffff"/>',
+        '<text x="16" y="28" font-size="16" font-weight="700">Failover 延迟分布</text>',
+    ]
+    for name, item in rows:
+        value = item.get("p95_ms", "MISSING")
+        width = int(420 * (float(value) / max_value)) if isinstance(value, (int, float)) else 2
+        parts.append(f'<text x="16" y="{y + 14}" font-size="12">{html.escape(name)}</text>')
+        parts.append(f'<rect x="210" y="{y}" width="{max(width, 2)}" height="18" fill="#475f9b"/>')
+        parts.append(f'<text x="{220 + max(width, 2)}" y="{y + 14}" font-size="12">p95={html.escape(str(value))} ms</text>')
+        y += 34
+    parts.append("</svg>")
+    path.write_text("\n".join(parts), encoding="utf-8")
+    return path
+
+
+def _write_split_brain_svg(path: Path, fault: dict[str, Any]) -> Path:
+    rows = [(name, fault.get(name, {})) for name in ["split_brain_window", "cluster_down_window"]] if isinstance(fault, dict) else []
+    max_value = max([float(item.get("max_ms")) for _, item in rows if isinstance(item.get("max_ms"), (int, float))] or [1.0])
+    y = 56
+    parts = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="760" height="170" viewBox="0 0 760 170">',
+        '<rect width="100%" height="100%" fill="#ffffff"/>',
+        '<text x="16" y="28" font-size="16" font-weight="700">Split-brain 窗口</text>',
+    ]
+    for name, item in rows:
+        value = item.get("max_ms", "MISSING")
+        width = int(360 * (float(value) / max_value)) if isinstance(value, (int, float)) else 2
+        parts.append(f'<text x="16" y="{y + 14}" font-size="12">{html.escape(name)}</text>')
+        parts.append(f'<rect x="210" y="{y}" width="{max(width, 2)}" height="18" fill="#7c4d1d"/>')
+        parts.append(f'<text x="{220 + max(width, 2)}" y="{y + 14}" font-size="12">max={html.escape(str(value))} ms</text>')
+        y += 34
+    parts.append("</svg>")
+    path.write_text("\n".join(parts), encoding="utf-8")
+    return path
+
+
+def _write_fault_workload_svg(path: Path, fault: dict[str, Any]) -> Path:
+    rows = fault.get("rows", []) if isinstance(fault, dict) else []
+    max_value = max([
+        float(row.get("metrics", {}).get("client_unavailability_ms"))
+        for row in rows
+        if isinstance(row, dict) and isinstance(row.get("metrics", {}).get("client_unavailability_ms"), (int, float))
+    ] or [1.0])
+    y = 52
+    parts = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="840" height="320" viewBox="0 0 840 320">',
+        '<rect width="100%" height="100%" fill="#ffffff"/>',
+        '<text x="16" y="28" font-size="16" font-weight="700">故障期间 Workload 影响</text>',
+    ]
+    if not rows:
+        parts.append('<text x="16" y="70" font-size="13">SKIPPED_WITH_REASON: 无 fault workload impact 输入</text>')
+    for row in rows[:8]:
+        metrics = row.get("metrics", {}) if isinstance(row, dict) else {}
+        value = metrics.get("client_unavailability_ms", "MISSING")
+        width = int(360 * (float(value) / max_value)) if isinstance(value, (int, float)) else 2
+        label = html.escape(f"{row.get('fault_type', 'MISSING')} {row.get('sample_id', 'MISSING')}")
+        parts.append(f'<text x="16" y="{y + 14}" font-size="12">{label}</text>')
+        parts.append(f'<rect x="280" y="{y}" width="{max(width, 2)}" height="18" fill="#5f6f2f"/>')
+        parts.append(f'<text x="{290 + max(width, 2)}" y="{y + 14}" font-size="12">unavailable={html.escape(str(value))} ms</text>')
+        y += 32
+    parts.append("</svg>")
+    path.write_text("\n".join(parts), encoding="utf-8")
+    return path
+
+
 def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     metadata = analysis.get("run_metadata", {})
     setup = analysis.get("setup_aggregates", {})
     command_audit = analysis.get("command_audit", {})
     management = analysis.get("management_ops", {})
     workload = analysis.get("workload_benchmark", {})
+    fault = analysis.get("fault_timeline", {})
     lines = [
         "# P09 Analysis Report",
         "",
@@ -617,6 +847,36 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             )
     else:
         lines.append(f"- {workload.get('status', 'SKIPPED_WITH_REASON')}: {workload.get('reason', '无 workload benchmark 样本')}")
+    lines.extend(["", "## 故障 Timeline", ""])
+    if fault.get("event_completeness"):
+        lines.append("![故障 Timeline](fault_timeline.svg)")
+        for item in fault.get("event_completeness", [])[:10]:
+            missing_events = ", ".join(str(name) for name in item.get("missing_events", [])) or "none"
+            lines.append(f"- {item.get('sample_id', 'MISSING')}: observed={item.get('observed_event_count', 0)}/12, missing={missing_events}")
+    else:
+        lines.append(f"- {fault.get('status', 'SKIPPED_WITH_REASON')}: {fault.get('reason', '无 fault timeline artifact')}")
+    lines.extend(["", "## Failover 延迟分布", ""])
+    lines.append("![Failover 延迟分布](failover_latency_distribution.svg)")
+    for name in ["failover_latency", "promotion_latency", "client_unavailability", "workload_recovery"]:
+        item = fault.get(name, {}) if isinstance(fault, dict) else {}
+        lines.append(f"- {name}: p50={item.get('p50_ms', 'MISSING')} ms, p95={item.get('p95_ms', 'MISSING')} ms, max={item.get('max_ms', 'MISSING')} ms, status={item.get('status', 'MISSING')}")
+    lines.extend(["", "## Split-brain 窗口", ""])
+    lines.append("![Split-brain 窗口](split_brain_window.svg)")
+    for name in ["split_brain_window", "cluster_down_window"]:
+        item = fault.get(name, {}) if isinstance(fault, dict) else {}
+        lines.append(f"- {name}: p95={item.get('p95_ms', 'MISSING')} ms, max={item.get('max_ms', 'MISSING')} ms, status={item.get('status', 'MISSING')}")
+    lines.extend(["", "## 故障期间 Workload 影响", ""])
+    if fault.get("rows"):
+        lines.append("![故障期间 Workload 影响](fault_workload_impact.svg)")
+        for row in fault.get("rows", [])[:10]:
+            metrics = row.get("metrics", {}) if isinstance(row, dict) else {}
+            lines.append(
+                f"- {row.get('fault_type', 'MISSING')} {row.get('sample_id', 'MISSING')}: "
+                f"client_unavailability_ms={_display_metric(metrics.get('client_unavailability_ms'))}, "
+                f"workload_recovery_ms={_display_metric(metrics.get('workload_recovery_ms'))}, status={row.get('status', 'MISSING')}"
+            )
+    else:
+        lines.append(f"- {fault.get('status', 'SKIPPED_WITH_REASON')}: {fault.get('reason', '无故障期间 workload impact 输入')}")
     lines.extend(["", "## 缺失指标", ""])
     missing = analysis.get("missing_metrics", [])
     if missing:
@@ -624,7 +884,7 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('status', 'MISSING')} - {item.get('reason', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- workload_benchmark_windows.csv", "- workload_profile_summary.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg", "- workload_qps_p99_error.svg"])
+    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- workload_benchmark_windows.csv", "- workload_profile_summary.csv", "- fault_timeline_events.csv", "- fault_timeline_summary.csv", "- failover_latency_distribution.csv", "- split_brain_windows.csv", "- fault_workload_impact.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg", "- workload_qps_p99_error.svg", "- fault_timeline.svg", "- failover_latency_distribution.svg", "- split_brain_window.svg", "- fault_workload_impact.svg"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
@@ -635,6 +895,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
     command_audit = analysis.get("command_audit", {})
     management = analysis.get("management_ops", {})
     workload = analysis.get("workload_benchmark", {})
+    fault = analysis.get("fault_timeline", {})
     metadata_rows = "\n".join(
         "<tr><td>{}</td><td><code>{}</code></td></tr>".format(
             html.escape(key),
@@ -706,6 +967,43 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         )
         for item in workload.get("windows", [])[:12]
     ) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无 workload benchmark 样本</td></tr>'
+    fault_event_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(str(item.get("sample_id", "MISSING"))),
+            html.escape(str(item.get("observed_event_count", 0))),
+            html.escape(", ".join(str(name) for name in item.get("missing_events", [])) or "none"),
+        )
+        for item in fault.get("event_completeness", [])[:10]
+    ) or '<tr><td colspan="3">SKIPPED_WITH_REASON: 无 fault timeline 样本</td></tr>'
+    fault_distribution_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(name),
+            html.escape(str((fault.get(name, {}) if isinstance(fault, dict) else {}).get("p50_ms", "MISSING"))),
+            html.escape(str((fault.get(name, {}) if isinstance(fault, dict) else {}).get("p95_ms", "MISSING"))),
+            html.escape(str((fault.get(name, {}) if isinstance(fault, dict) else {}).get("max_ms", "MISSING"))),
+            html.escape(str((fault.get(name, {}) if isinstance(fault, dict) else {}).get("status", "MISSING"))),
+        )
+        for name in ["failover_latency", "promotion_latency", "client_unavailability", "workload_recovery"]
+    )
+    split_brain_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(name),
+            html.escape(str((fault.get(name, {}) if isinstance(fault, dict) else {}).get("p95_ms", "MISSING"))),
+            html.escape(str((fault.get(name, {}) if isinstance(fault, dict) else {}).get("max_ms", "MISSING"))),
+            html.escape(str((fault.get(name, {}) if isinstance(fault, dict) else {}).get("status", "MISSING"))),
+        )
+        for name in ["split_brain_window", "cluster_down_window"]
+    )
+    fault_workload_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(str(row.get("fault_type", "MISSING"))),
+            html.escape(str(row.get("sample_id", "MISSING"))),
+            html.escape(_display_metric((row.get("metrics", {}) if isinstance(row, dict) else {}).get("client_unavailability_ms"))),
+            html.escape(_display_metric((row.get("metrics", {}) if isinstance(row, dict) else {}).get("workload_recovery_ms"))),
+            html.escape(str(row.get("status", "MISSING"))),
+        )
+        for row in fault.get("rows", [])[:10]
+    ) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无故障期间 workload impact 输入</td></tr>'
     document = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -754,6 +1052,18 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   <p>覆盖 profile: <code>{html.escape(", ".join(str(item) for item in workload.get("profiles_covered", [])))}</code>；全 slot 覆盖: <code>{html.escape(str(workload.get("full_slot_covered", "MISSING")))}</code>。该结论来自本地 workload artifact，不依赖 LLM 或外网。</p>
   <img src="workload_qps_p99_error.svg" alt="Workload QPS p99 错误率对比">
   <table><thead><tr><th>压测 profile</th><th>采集窗口</th><th>实际 QPS</th><th>p99 延迟 ms</th><th>错误率</th></tr></thead><tbody>{workload_rows}</tbody></table>
+  <h2>故障 Timeline</h2>
+  <img src="fault_timeline.svg" alt="故障 Timeline">
+  <table><thead><tr><th>样本</th><th>观察事件数</th><th>缺失事件</th></tr></thead><tbody>{fault_event_rows}</tbody></table>
+  <h2>Failover 延迟分布</h2>
+  <img src="failover_latency_distribution.svg" alt="Failover 延迟分布">
+  <table><thead><tr><th>指标</th><th>p50 ms</th><th>p95 ms</th><th>max ms</th><th>状态</th></tr></thead><tbody>{fault_distribution_rows}</tbody></table>
+  <h2>Split-brain 窗口</h2>
+  <img src="split_brain_window.svg" alt="Split-brain 窗口">
+  <table><thead><tr><th>指标</th><th>p95 ms</th><th>max ms</th><th>状态</th></tr></thead><tbody>{split_brain_rows}</tbody></table>
+  <h2>故障期间 Workload 影响</h2>
+  <img src="fault_workload_impact.svg" alt="故障期间 Workload 影响">
+  <table><thead><tr><th>故障类型</th><th>样本</th><th>客户端不可用 ms</th><th>workload 恢复 ms</th><th>状态</th></tr></thead><tbody>{fault_workload_rows}</tbody></table>
   <h2>图表</h2>
   <img src="metric_chart.svg" alt="P09 artifact metrics chart">
 </body>

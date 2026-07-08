@@ -1,0 +1,552 @@
+{
+  "artifact_type": "workload_windows",
+  "fault_metrics": {
+    "client_unavailability_ms": 120,
+    "cluster_down_window_ms": 45,
+    "split_brain_window_ms": 0
+  },
+  "schema_version": "v1",
+  "status": "PASS",
+  "windows": [
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-primary_stop_failover",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-replica_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-node_host_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-az_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-network_delay",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-network_loss",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-network_flap",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-network_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-minority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-majority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-split_brain_window_detection",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-small-fault_period_workload_impact",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-primary_stop_failover",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-replica_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-node_host_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-az_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-network_delay",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-network_loss",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-network_flap",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-network_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-minority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-majority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-split_brain_window_detection",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-30-fault_period_workload_impact",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-primary_stop_failover",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-replica_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-node_host_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-az_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-network_delay",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-network_loss",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-network_flap",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-network_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-minority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-majority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-split_brain_window_detection",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-50-fault_period_workload_impact",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-primary_stop_failover",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-replica_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-node_host_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-az_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-network_delay",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-network_loss",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-network_flap",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-network_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-minority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-majority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-split_brain_window_detection",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-100-fault_period_workload_impact",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-primary_stop_failover",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-replica_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-node_host_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-az_stop",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-network_delay",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-network_loss",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-network_flap",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-network_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-minority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-majority_partition",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-split_brain_window_detection",
+      "window_name": "event"
+    },
+    {
+      "metrics": {
+        "client_unavailability_ms": 120,
+        "cluster_down_window_ms": 45,
+        "split_brain_window_ms": 0
+      },
+      "sample_id": "blocked-200-fault_period_workload_impact",
+      "window_name": "event"
+    }
+  ]
+}

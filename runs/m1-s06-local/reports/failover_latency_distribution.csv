@@ -1,0 +1,5 @@
+metric,sample_count,p50_ms,p95_ms,max_ms,status,reason
+failover_latency,60,20.0,20.0,20.0,PASS,
+promotion_latency,20,10.0,10.0,10.0,PASS,
+client_unavailability,60,120.0,120.0,120.0,PASS,
+workload_recovery,60,10.0,10.0,10.0,PASS,

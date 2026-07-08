@@ -313,6 +313,11 @@ def _build_row(
         "sample_id": sample_id,
         "fault_id": str(metadata.get("fault_id", "")),
         "fault_type": fault_type,
+        "fault_timeline_ref": metadata.get("fault_timeline_ref", metadata.get("timeline_ref", "")),
+        "fault_event_window": metadata.get("fault_event_window", {"start_event": "fault_apply_completed", "end_event": "workload_recovered"} if category != "management" else {}),
+        "client_unavailability_ms": metadata.get("client_unavailability_ms", _first_metric_value(window_records, "client_unavailability_ms", "MISSING")),
+        "cluster_down_window_ms": metadata.get("cluster_down_window_ms", _first_metric_value(window_records, "cluster_down_window_ms", "MISSING")),
+        "workload_recovery_ms": metadata.get("workload_recovery_ms", _first_metric_value(window_records, "workload_recovery_ms", derived.get("recovery_duration_ms", "MISSING"))),
         "node_count": node_count,
         "source_status": status,
         "source_refs": [
@@ -854,6 +859,14 @@ def _first_window_value(windows: dict[str, dict[str, Any]], key: str, default: A
     for window in windows.values():
         if key in window:
             return window[key]
+    return default
+
+
+def _first_metric_value(windows: dict[str, dict[str, Any]], key: str, default: Any) -> Any:
+    for window in windows.values():
+        metrics = window.get("metrics", {}) if isinstance(window, dict) else {}
+        if isinstance(metrics, dict) and key in metrics:
+            return metrics[key]
     return default
 
 

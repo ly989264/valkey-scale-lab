@@ -1,0 +1,131 @@
+{
+  "artifact_type": "fault_timeline_report",
+  "failover_latency_samples_ref": "failover_latency_samples.jsonl",
+  "fault_rows": [
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {
+        "cleanup_verified": 1800000000110,
+        "cluster_impact_started": 1800000000040,
+        "cluster_recovered": 1800000000070,
+        "failover_started": 1800000000050,
+        "fault_apply_completed": 1800000000020,
+        "fault_apply_started": 1800000000010,
+        "fault_clear_completed": 1800000000100,
+        "fault_clear_started": 1800000000090,
+        "fault_effect_observed": 1800000000030,
+        "fault_planned": 1800000000000,
+        "workload_recovered": 1800000000080
+      },
+      "execution_mode": "fake",
+      "fault_id": "fault-report_input_missing-small-fault_period_workload_impact",
+      "fault_type": "fault_period_workload_impact",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": 10.0,
+        "cleanup_duration_ms": 10.0,
+        "clear_duration_ms": 10.0,
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": 30.0,
+        "effect_observed_delay_ms": 10.0,
+        "failover_latency_ms": 20.0,
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because promotion_observed=SKIPPED_WITH_REASON: promotion_expected=false for this fault type",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": 10.0
+      },
+      "node_count": 6,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "report_input_missing-small-fault_period_workload_impact",
+      "scale_rung": "small",
+      "scenario_name": "report_input_missing_small",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:fault_planned",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:fault_apply_started",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:fault_apply_completed",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:fault_effect_observed",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:cluster_impact_started",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:failover_started",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:promotion_observed",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:cluster_recovered",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:workload_recovered",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:fault_clear_started",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:fault_clear_completed",
+        "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#report_input_missing-small-fault_period_workload_impact",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    }
+  ],
+  "fault_workload_impact_ref": "fault_workload_impact.json",
+  "missing_metrics": [
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because promotion_observed=SKIPPED_WITH_REASON: promotion_expected=false for this fault type",
+      "sample_id": "report_input_missing-small-fault_period_workload_impact",
+      "status": "MISSING"
+    }
+  ],
+  "observed_fault_types": [
+    "fault_period_workload_impact"
+  ],
+  "observed_scale_rungs": [
+    "small"
+  ],
+  "phase_id": "M1-S06",
+  "required_fault_types": [
+    "primary_stop_failover",
+    "replica_stop",
+    "node_host_stop",
+    "az_stop",
+    "network_delay",
+    "network_loss",
+    "network_flap",
+    "network_partition",
+    "minority_partition",
+    "majority_partition",
+    "split_brain_window_detection",
+    "fault_period_workload_impact"
+  ],
+  "required_scale_rungs": [
+    "small",
+    "30",
+    "50",
+    "100",
+    "200"
+  ],
+  "run_id": "m1-s06-fixture",
+  "schema_version": "v1",
+  "status": "PARTIAL",
+  "timeline_events_ref": "fault_timeline_events.jsonl"
+}

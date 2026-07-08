@@ -8,6 +8,7 @@ from typing import Any
 from valkey_scale_lab import __version__
 from valkey_scale_lab.artifacts import artifact_record, load_json as load_artifact_json, resolve_artifact_input
 from valkey_scale_lab.management_matrix import REQUIRED_MANAGEMENT_OPERATIONS
+from valkey_scale_lab.observer.failover_timeline import M1_REQUIRED_FAULT_TYPES, M1_REQUIRED_SCALE_RUNGS, M1_REQUIRED_TIMELINE_METRICS
 
 PHASE_ID = "P09_ANALYSIS_REPORTING"
 RUN_ID = "P09_ANALYSIS_REPORTING-analysis-20260628"
@@ -39,8 +40,18 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
     workload_windows = _load_optional(source_dir / "workload_windows.json")
     workload_report = _load_optional(source_dir / "workload_report.json")
     workload_benchmark = _workload_aggregates(workload_windows, workload_report, management_workload)
+    fault_timeline_report = _load_optional(source_dir / "fault_timeline_report.json")
+    fault_timeline_events = _load_optional_jsonl(source_dir / "fault_timeline_events.jsonl")
+    failover_latency_samples = _load_optional_jsonl(source_dir / "failover_latency_samples.jsonl")
+    fault_workload_impact = _load_optional(source_dir / "fault_workload_impact.json")
+    fault_timeline = _fault_timeline_aggregates(
+        fault_timeline_report,
+        fault_timeline_events,
+        failover_latency_samples,
+        fault_workload_impact,
+    )
 
-    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit, management_ops, workload_benchmark)
+    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit, management_ops, workload_benchmark, fault_timeline)
     failovers = list(failover.get("failovers", []))
     primary_failover = failovers[0] if failovers else {}
     failover_latency = primary_failover.get("failover_latency_ms", "MISSING")
@@ -54,6 +65,11 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         _metric("workload_achieved_qps", workload_benchmark.get("aggregate", {}).get("achieved_qps", "MISSING"), "ops_per_second"),
         _metric("workload_latency_p99_ms", workload_benchmark.get("aggregate", {}).get("latency_p99_ms", "MISSING"), "ms"),
         _metric("workload_error_rate", workload_benchmark.get("aggregate", {}).get("error_rate", "MISSING"), "ratio"),
+        _metric("fault_failover_latency_p95_ms", fault_timeline.get("failover_latency", {}).get("p95_ms", "MISSING"), "ms"),
+        _metric("fault_client_unavailability_p95_ms", fault_timeline.get("client_unavailability", {}).get("p95_ms", "MISSING"), "ms"),
+        _metric("fault_workload_recovery_p95_ms", fault_timeline.get("workload_recovery", {}).get("p95_ms", "MISSING"), "ms"),
+        _metric("fault_split_brain_window_max_ms", fault_timeline.get("split_brain_window", {}).get("max_ms", "MISSING"), "ms"),
+        _metric("fault_cluster_down_window_max_ms", fault_timeline.get("cluster_down_window", {}).get("max_ms", "MISSING"), "ms"),
     ]
     findings = [
         {
@@ -110,6 +126,13 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
             "full_slot_covered": workload_benchmark.get("full_slot_covered", "MISSING"),
             "window_count": workload_benchmark.get("window_count", 0),
         },
+        {
+            "name": "fault_timeline",
+            "status": fault_timeline.get("status", "MISSING"),
+            "fault_type_coverage": fault_timeline.get("fault_type_coverage", {}),
+            "scale_coverage": fault_timeline.get("scale_coverage", {}),
+            "row_count": fault_timeline.get("row_count", 0),
+        },
     ]
 
     out = Path(out_path)
@@ -152,6 +175,7 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         "command_audit": command_audit,
         "management_ops": management_ops,
         "workload_benchmark": workload_benchmark,
+        "fault_timeline": fault_timeline,
         "baseline_comparison": baseline,
         "sidecars": [
             {
@@ -264,6 +288,7 @@ def _collect_missing_metrics(
     command_audit: dict[str, Any] | None = None,
     management_ops: dict[str, Any] | None = None,
     workload_benchmark: dict[str, Any] | None = None,
+    fault_timeline: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
     for item in phase_summary.get("missing_metrics", []):
@@ -336,7 +361,174 @@ def _collect_missing_metrics(
                         "source": "workload_benchmark.missing_metrics",
                     },
                 )
+    if fault_timeline:
+        for item in fault_timeline.get("missing_metrics", []):
+            if isinstance(item, dict) and item.get("metric"):
+                metric = f"fault_timeline.{item['metric']}"
+                found.setdefault(
+                    metric,
+                    {
+                        "metric": metric,
+                        "status": item.get("status", "MISSING"),
+                        "reason": item.get("reason", "fault timeline artifact reported metric unavailable"),
+                        "impact": item.get("impact", "Fault timeline analysis is incomplete."),
+                        "source": "fault_timeline.missing_metrics",
+                    },
+                )
     return [found[key] for key in sorted(found)]
+
+
+def _fault_timeline_aggregates(
+    report: dict[str, Any],
+    events: list[dict[str, Any]],
+    latency_samples: list[dict[str, Any]],
+    workload_impact: dict[str, Any],
+) -> dict[str, Any]:
+    rows = report.get("fault_rows", []) if isinstance(report, dict) else []
+    if not rows and not events:
+        return {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Input artifacts did not include fault_timeline_report.json or fault_timeline_events.jsonl.",
+            "row_count": 0,
+            "event_count": 0,
+            "fault_type_coverage": {"required": M1_REQUIRED_FAULT_TYPES, "observed": [], "missing": M1_REQUIRED_FAULT_TYPES},
+            "scale_coverage": {"required": M1_REQUIRED_SCALE_RUNGS, "observed": [], "missing": M1_REQUIRED_SCALE_RUNGS},
+            "missing_metrics": [
+                {
+                    "metric": "row_count",
+                    "status": "SKIPPED_WITH_REASON",
+                    "reason": "Fault timeline artifacts were not present.",
+                    "impact": "Report cannot display fault timeline, failover distribution, split-brain windows, or fault-period workload impact.",
+                }
+            ],
+        }
+    row_fault_types = {str(row.get("fault_type")) for row in rows if isinstance(row, dict) and row.get("fault_type")}
+    event_fault_types = {str(row.get("fault_type")) for row in events if row.get("fault_type")}
+    observed_fault_types = sorted(row_fault_types | event_fault_types)
+    row_scales = {str(row.get("scale_rung")) for row in rows if isinstance(row, dict) and row.get("scale_rung")}
+    event_scales = {str(row.get("scale_rung")) for row in events if row.get("scale_rung")}
+    observed_scales = sorted(row_scales | event_scales)
+    metric_rows = [row.get("metrics", {}) for row in rows if isinstance(row, dict) and isinstance(row.get("metrics"), dict)]
+    missing_metrics: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        metrics = row.get("metrics", {})
+        if not isinstance(metrics, dict):
+            continue
+        for name in M1_REQUIRED_TIMELINE_METRICS:
+            value = metrics.get(name)
+            if isinstance(value, dict) and value.get("status") in {"MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"}:
+                missing_metrics.append(
+                    {
+                        "sample_id": row.get("sample_id", "MISSING"),
+                        "metric": name,
+                        "status": value.get("status", "MISSING"),
+                        "reason": value.get("reason", "fault timeline reported unavailable metric"),
+                        "impact": value.get("impact", "Timeline percentile excludes this metric."),
+                    }
+                )
+            elif name not in metrics:
+                missing_metrics.append(
+                    {
+                        "sample_id": row.get("sample_id", "MISSING"),
+                        "metric": name,
+                        "status": "MISSING",
+                        "reason": "metric key is absent from fault timeline row",
+                        "impact": "Timeline percentile excludes this metric.",
+                    }
+                )
+    event_names_by_sample: dict[str, set[str]] = {}
+    bad_event_status_count = 0
+    for event in events:
+        sample_id = str(event.get("sample_id", "MISSING"))
+        event_names_by_sample.setdefault(sample_id, set()).add(str(event.get("event_name", "MISSING")))
+        if event.get("event_status") != "OBSERVED":
+            bad_event_status_count += 1
+    completeness = [
+        {
+            "sample_id": sample_id,
+            "observed_event_count": len(names),
+            "missing_events": [name for name in [
+                "fault_planned",
+                "fault_apply_started",
+                "fault_apply_completed",
+                "fault_effect_observed",
+                "cluster_impact_started",
+                "failover_started",
+                "promotion_observed",
+                "cluster_recovered",
+                "workload_recovered",
+                "fault_clear_started",
+                "fault_clear_completed",
+                "cleanup_verified",
+            ] if name not in names],
+        }
+        for sample_id, names in sorted(event_names_by_sample.items())
+    ]
+    return {
+        "status": report.get("status", "PASS") if isinstance(report, dict) and report else "PASS",
+        "row_count": len(rows),
+        "event_count": len(events),
+        "latency_sample_count": len(latency_samples),
+        "workload_impact_status": workload_impact.get("status", "SKIPPED_WITH_REASON") if isinstance(workload_impact, dict) else "SKIPPED_WITH_REASON",
+        "fault_type_coverage": {
+            "required": M1_REQUIRED_FAULT_TYPES,
+            "observed": observed_fault_types,
+            "missing": [name for name in M1_REQUIRED_FAULT_TYPES if name not in observed_fault_types],
+        },
+        "scale_coverage": {
+            "required": M1_REQUIRED_SCALE_RUNGS,
+            "observed": observed_scales,
+            "missing": [name for name in M1_REQUIRED_SCALE_RUNGS if name not in observed_scales],
+        },
+        "event_completeness": completeness,
+        "non_observed_event_count": bad_event_status_count,
+        "failover_latency": _metric_distribution(metric_rows, "failover_latency_ms"),
+        "promotion_latency": _metric_distribution(metric_rows, "promotion_latency_ms"),
+        "client_unavailability": _metric_distribution(metric_rows, "client_unavailability_ms"),
+        "workload_recovery": _metric_distribution(metric_rows, "workload_recovery_ms"),
+        "split_brain_window": _metric_distribution(metric_rows, "split_brain_window_ms"),
+        "cluster_down_window": _metric_distribution(metric_rows, "cluster_down_window_ms"),
+        "cleanup_verification": {
+            "pass_count": sum(1 for row in rows if isinstance(row, dict) and row.get("status") == "PASS"),
+            "non_pass_count": sum(1 for row in rows if isinstance(row, dict) and row.get("status") != "PASS"),
+        },
+        "missing_metrics": missing_metrics + list(report.get("missing_metrics", []) if isinstance(report, dict) else []),
+        "rows": rows[:50],
+        "source_refs": {
+            "fault_timeline_report": "fault_timeline_report.json",
+            "fault_timeline_events": "fault_timeline_events.jsonl",
+            "failover_latency_samples": "failover_latency_samples.jsonl",
+            "fault_workload_impact": "fault_workload_impact.json",
+        },
+    }
+
+
+def _metric_distribution(rows: list[dict[str, Any]], metric: str) -> dict[str, Any]:
+    values = [float(row[metric]) for row in rows if isinstance(row.get(metric), (int, float)) and not isinstance(row.get(metric), bool)]
+    if not values:
+        return {
+            "sample_count": 0,
+            "p50_ms": "MISSING",
+            "p95_ms": "MISSING",
+            "max_ms": "MISSING",
+            "status": "MISSING",
+            "reason": f"{metric} had no numeric samples.",
+        }
+    values = sorted(values)
+    return {
+        "sample_count": len(values),
+        "p50_ms": _nearest_rank(values, 0.50),
+        "p95_ms": _nearest_rank(values, 0.95),
+        "max_ms": round(max(values), 3),
+        "status": "PASS",
+    }
+
+
+def _nearest_rank(values: list[float], percentile: float) -> float:
+    index = min(len(values) - 1, max(0, round((len(values) - 1) * percentile)))
+    return round(values[index], 3)
 
 
 def _command_audit_aggregates(rows: list[dict[str, Any]], summary: dict[str, Any]) -> dict[str, Any]:

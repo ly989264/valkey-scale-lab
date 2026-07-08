@@ -1,0 +1,8 @@
+{
+  "cluster_state_observed": "SKIPPED_WITH_REASON",
+  "nodes_observed": 0,
+  "real_valkey": false,
+  "reason": "fixture only; not real Valkey evidence",
+  "status": "SKIPPED_WITH_REASON",
+  "valkey_versions": []
+}

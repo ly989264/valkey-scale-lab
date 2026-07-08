@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="170" viewBox="0 0 760 170">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16" y="28" font-size="16" font-weight="700">Split-brain 窗口</text>
+<text x="16" y="70" font-size="12">split_brain_window</text>
+<rect x="210" y="56" width="2" height="18" fill="#7c4d1d"/>
+<text x="222" y="70" font-size="12">max=0.0 ms</text>
+<text x="16" y="104" font-size="12">cluster_down_window</text>
+<rect x="210" y="90" width="360" height="18" fill="#7c4d1d"/>
+<text x="580" y="104" font-size="12">max=45.0 ms</text>
+</svg>

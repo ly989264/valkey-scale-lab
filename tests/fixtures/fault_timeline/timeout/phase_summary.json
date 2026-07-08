@@ -1,0 +1,28 @@
+{
+  "missing_metrics": [
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_recovered=MISSING: observer timed out before recovery event",
+      "sample_id": "timeout-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because cluster_recovered=MISSING: observer timed out before recovery event",
+      "sample_id": "timeout-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=MISSING: observer timed out before recovery event; workload_recovered=MISSING: observer timed out before recovery event",
+      "sample_id": "timeout-small-primary_stop_failover",
+      "status": "MISSING"
+    }
+  ],
+  "phase_id": "M1-S06",
+  "run_id": "m1-s06-fixture",
+  "status": "FAIL"
+}

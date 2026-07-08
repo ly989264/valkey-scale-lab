@@ -1,0 +1,3 @@
+metric,sample_count,p95_ms,max_ms,status,reason
+split_brain_window,60,0.0,0.0,PASS,
+cluster_down_window,60,45.0,45.0,PASS,

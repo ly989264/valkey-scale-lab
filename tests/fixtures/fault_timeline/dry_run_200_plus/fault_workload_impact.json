@@ -1,0 +1,67 @@
+{
+  "artifact_type": "fault_workload_impact",
+  "rows": [
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection"
+    }
+  ],
+  "schema_version": "v1",
+  "status": "PASS"
+}

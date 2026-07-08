@@ -1,0 +1,307 @@
+{
+  "artifact_type": "fault_workload_impact",
+  "rows": [
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-az_stop",
+      "sample_id": "success-100-az_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-fault_period_workload_impact",
+      "sample_id": "success-100-fault_period_workload_impact"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-majority_partition",
+      "sample_id": "success-100-majority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-minority_partition",
+      "sample_id": "success-100-minority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-network_delay",
+      "sample_id": "success-100-network_delay"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-network_flap",
+      "sample_id": "success-100-network_flap"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-network_loss",
+      "sample_id": "success-100-network_loss"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-network_partition",
+      "sample_id": "success-100-network_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-node_host_stop",
+      "sample_id": "success-100-node_host_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-primary_stop_failover",
+      "sample_id": "success-100-primary_stop_failover"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-replica_stop",
+      "sample_id": "success-100-replica_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-100-split_brain_window_detection",
+      "sample_id": "success-100-split_brain_window_detection"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-az_stop",
+      "sample_id": "success-200-az_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-fault_period_workload_impact",
+      "sample_id": "success-200-fault_period_workload_impact"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-majority_partition",
+      "sample_id": "success-200-majority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-minority_partition",
+      "sample_id": "success-200-minority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-network_delay",
+      "sample_id": "success-200-network_delay"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-network_flap",
+      "sample_id": "success-200-network_flap"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-network_loss",
+      "sample_id": "success-200-network_loss"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-network_partition",
+      "sample_id": "success-200-network_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-node_host_stop",
+      "sample_id": "success-200-node_host_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-primary_stop_failover",
+      "sample_id": "success-200-primary_stop_failover"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-replica_stop",
+      "sample_id": "success-200-replica_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-200-split_brain_window_detection",
+      "sample_id": "success-200-split_brain_window_detection"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-az_stop",
+      "sample_id": "success-30-az_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-fault_period_workload_impact",
+      "sample_id": "success-30-fault_period_workload_impact"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-majority_partition",
+      "sample_id": "success-30-majority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-minority_partition",
+      "sample_id": "success-30-minority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-network_delay",
+      "sample_id": "success-30-network_delay"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-network_flap",
+      "sample_id": "success-30-network_flap"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-network_loss",
+      "sample_id": "success-30-network_loss"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-network_partition",
+      "sample_id": "success-30-network_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-node_host_stop",
+      "sample_id": "success-30-node_host_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-primary_stop_failover",
+      "sample_id": "success-30-primary_stop_failover"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-replica_stop",
+      "sample_id": "success-30-replica_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-30-split_brain_window_detection",
+      "sample_id": "success-30-split_brain_window_detection"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-az_stop",
+      "sample_id": "success-50-az_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-fault_period_workload_impact",
+      "sample_id": "success-50-fault_period_workload_impact"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-majority_partition",
+      "sample_id": "success-50-majority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-minority_partition",
+      "sample_id": "success-50-minority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-network_delay",
+      "sample_id": "success-50-network_delay"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-network_flap",
+      "sample_id": "success-50-network_flap"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-network_loss",
+      "sample_id": "success-50-network_loss"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-network_partition",
+      "sample_id": "success-50-network_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-node_host_stop",
+      "sample_id": "success-50-node_host_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-primary_stop_failover",
+      "sample_id": "success-50-primary_stop_failover"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-replica_stop",
+      "sample_id": "success-50-replica_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-50-split_brain_window_detection",
+      "sample_id": "success-50-split_brain_window_detection"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-az_stop",
+      "sample_id": "success-small-az_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-fault_period_workload_impact",
+      "sample_id": "success-small-fault_period_workload_impact"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-majority_partition",
+      "sample_id": "success-small-majority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-minority_partition",
+      "sample_id": "success-small-minority_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-network_delay",
+      "sample_id": "success-small-network_delay"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-network_flap",
+      "sample_id": "success-small-network_flap"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-network_loss",
+      "sample_id": "success-small-network_loss"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-network_partition",
+      "sample_id": "success-small-network_partition"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-node_host_stop",
+      "sample_id": "success-small-node_host_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-primary_stop_failover",
+      "sample_id": "success-small-primary_stop_failover"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-replica_stop",
+      "sample_id": "success-small-replica_stop"
+    },
+    {
+      "client_unavailability_ms": 120.0,
+      "fault_timeline_ref": "fault_timeline_events.jsonl#success-small-split_brain_window_detection",
+      "sample_id": "success-small-split_brain_window_detection"
+    }
+  ],
+  "schema_version": "v1",
+  "status": "PASS"
+}

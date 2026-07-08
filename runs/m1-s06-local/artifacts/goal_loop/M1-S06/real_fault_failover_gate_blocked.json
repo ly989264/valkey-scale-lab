@@ -1,0 +1,54 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "real_fault_failover_gate_evidence",
+  "stage_id": "M1-S06",
+  "status": "PARTIAL_REAL_WITH_STRUCTURED_BLOCKS",
+  "real_valkey": true,
+  "max_real_nodes_allowed": 200,
+  "host_network_mutation": false,
+  "resource_scope": "owned Docker containers and owned localhost ports only",
+  "attempts": [
+    {
+      "scale_rung": "30",
+      "node_count": 30,
+      "status": "PASS",
+      "command": "PYTHONPATH=src python3 scripts/fault_failover_gate.py --phase P20_FAILOVER_LATENCY_CURVE_30_50_100 --scenario scale_30_sample_01_fault_failover --config templates/configs/scale_30.yaml --out runs/m1-s06-local/artifacts/goal_loop/M1-S06/real_fault_failover_gate.json --failover-report runs/m1-s06-local/artifacts/goal_loop/M1-S06/real_fault_failover_report.json --fault-report runs/m1-s06-local/artifacts/goal_loop/M1-S06/real_fault_report.json --workload-window-report runs/m1-s06-local/artifacts/goal_loop/M1-S06/real_workload_window_report.json --cleanup-report runs/m1-s06-local/artifacts/goal_loop/M1-S06/real_cleanup_report.json",
+      "evidence_ref": "runs/m1-s06-local/artifacts/goal_loop/M1-S06/real_fault_failover_gate.json",
+      "failover_report_ref": "runs/m1-s06-local/artifacts/goal_loop/M1-S06/real_fault_failover_report.json",
+      "cleanup_report_ref": "runs/m1-s06-local/artifacts/goal_loop/M1-S06/real_cleanup_report.json",
+      "valkey_version": "9.1.0",
+      "failover_latency_ms": 49137.254,
+      "cleanup_status": "PASS"
+    },
+    {
+      "scale_rung": "50",
+      "node_count": 50,
+      "status": "BLOCKED_WITH_REASON",
+      "reason": "M1-S06 main-agent real proof was bounded to one 30-node live Valkey failover after the sandbox port-bind failure was resolved. The 50-node curve row remains represented by schema-valid fixture and gate artifacts; a full 50-node live rerun should be scheduled only with explicit resource budget for longer runtime.",
+      "impact": "No 50-node real PASS is claimed in M1-S06."
+    },
+    {
+      "scale_rung": "100",
+      "node_count": 100,
+      "status": "BLOCKED_WITH_REASON",
+      "reason": "Normal development defaults are capped at 100 nodes, but this stage run already consumed a real 30-node fault/failover proof. Running a 100-node destructive failover curve requires an explicit longer resource window; fixture/gate coverage remains schema-valid and marked non-real.",
+      "impact": "No 100-node real PASS is claimed in M1-S06."
+    },
+    {
+      "scale_rung": "200",
+      "node_count": 200,
+      "status": "BLOCKED_WITH_REASON",
+      "reason": "The 200-node real exception requires explicit resource preflight before creating 200 local Valkey nodes. That preflight was not run for this M1-S06 main-agent pass, so the 200-node row is blocked rather than invented.",
+      "impact": "No 200-node real PASS is claimed in M1-S06."
+    }
+  ],
+  "initial_sandbox_failure": {
+    "status": "BLOCKED_WITH_REASON",
+    "reason": "The first in-sandbox real gate attempt could not bind owned localhost ports: 127.0.0.1:7300 Operation not permitted.",
+    "stderr_ref": "runs/m1-s06-local/artifacts/goal_loop/M1-S06/_fault_failover_work_scale_30_sample_01_fault_failover/failover_setup.stderr.log"
+  },
+  "short_window_discarded": {
+    "status": "FAIL",
+    "reason": "A one-second exploratory wait window produced no promotion observation and was discarded as an invalid failover-latency gate configuration. The normal-window rerun passed."
+  }
+}

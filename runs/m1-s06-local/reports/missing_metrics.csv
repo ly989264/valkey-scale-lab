@@ -1,0 +1,5 @@
+metric,status,reason,impact
+command_log.total_commands,SKIPPED_WITH_REASON,Input artifacts did not include command_log.jsonl.,Report cannot display command-level traceability.
+fault_timeline.promotion_latency_ms,MISSING,promotion_latency_ms cannot be derived because promotion_observed=SKIPPED_WITH_REASON: promotion_expected=false for this fault type,promotion_latency_ms is excluded from percentile aggregation.
+management.operation_count,SKIPPED_WITH_REASON,Management operation artifacts were not present.,Report cannot display management operation timing or topology diff data.
+promotion_latency_ms,MISSING,promotion_latency_ms cannot be derived because promotion_observed=SKIPPED_WITH_REASON: promotion_expected=false for this fault type,promotion_latency_ms is excluded from percentile aggregation.

@@ -1,0 +1,180 @@
+{
+  "artifact_type": "fault_timeline_report",
+  "failover_latency_samples_ref": "failover_latency_samples.jsonl",
+  "fault_rows": [
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "FAIL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {
+        "cleanup_verified": 1800000000110,
+        "fault_apply_started": 1800000000010,
+        "fault_clear_completed": 1800000000100,
+        "fault_clear_started": 1800000000090,
+        "fault_planned": 1800000000000
+      },
+      "execution_mode": "failure_path",
+      "fault_id": "fault-failure-small-primary_stop_failover",
+      "fault_type": "primary_stop_failover",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_completed=FAIL: fault apply command failed; downstream event not attempted",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": 10.0,
+        "clear_duration_ms": 10.0,
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; cluster_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=FAIL: fault apply command failed; downstream event not attempted; fault_effect_observed=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; cluster_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; promotion_observed=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; workload_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 6,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "failure-small-primary_stop_failover",
+      "scale_rung": "small",
+      "scenario_name": "failure_small",
+      "schema_version": "v1",
+      "status": "FAIL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:fault_planned",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:fault_apply_started",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:fault_apply_completed",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:fault_effect_observed",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:cluster_impact_started",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:failover_started",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:promotion_observed",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:cluster_recovered",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:workload_recovered",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:fault_clear_started",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:fault_clear_completed",
+        "fault_timeline_events.jsonl#failure-small-primary_stop_failover:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#failure-small-primary_stop_failover",
+      "timeline_status": "FAIL",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    }
+  ],
+  "fault_workload_impact_ref": "fault_workload_impact.json",
+  "missing_metrics": [
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_completed=FAIL: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=FAIL: fault apply command failed; downstream event not attempted; fault_effect_observed=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; cluster_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; cluster_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; promotion_observed=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted; workload_recovered=SKIPPED_WITH_REASON: fault apply command failed; downstream event not attempted",
+      "sample_id": "failure-small-primary_stop_failover",
+      "status": "MISSING"
+    }
+  ],
+  "observed_fault_types": [
+    "primary_stop_failover"
+  ],
+  "observed_scale_rungs": [
+    "small"
+  ],
+  "phase_id": "M1-S06",
+  "required_fault_types": [
+    "primary_stop_failover",
+    "replica_stop",
+    "node_host_stop",
+    "az_stop",
+    "network_delay",
+    "network_loss",
+    "network_flap",
+    "network_partition",
+    "minority_partition",
+    "majority_partition",
+    "split_brain_window_detection",
+    "fault_period_workload_impact"
+  ],
+  "required_scale_rungs": [
+    "small",
+    "30",
+    "50",
+    "100",
+    "200"
+  ],
+  "run_id": "m1-s06-fixture",
+  "schema_version": "v1",
+  "status": "PARTIAL",
+  "timeline_events_ref": "fault_timeline_events.jsonl"
+}

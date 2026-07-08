@@ -1,0 +1,805 @@
+{
+  "artifact_type": "setup_telemetry",
+  "cleanup": {
+    "cleanup_ms": 65802.557,
+    "cleanup_timing": {
+      "bounded_parallelism": true,
+      "cleanup_remove_containers_seconds": 11.994702,
+      "cleanup_remove_networks_seconds": 0.250691,
+      "cleanup_residual_scan_seconds": 0.063462,
+      "cleanup_terminate_processes_seconds": 0.05833,
+      "cleanup_verify_nodehost_empty_seconds": 0.094447,
+      "cleanup_verify_process_exit_seconds": 45.340925,
+      "parallelism": 8
+    },
+    "resources_remaining": [],
+    "status": "PASS"
+  },
+  "created_at": "2026-07-08T16:53:35.729419Z",
+  "metrics": {
+    "cleanup_ms": 65802.557,
+    "cluster_convergence_probe_ms": 189.629,
+    "cluster_meet_ms": 6093.026,
+    "cluster_slots_assign_ms": 13225.301,
+    "config_parse_ms": 0.213,
+    "config_validate_ms": 0.654,
+    "full_cluster_probe_ms": 8259.855,
+    "node_config_distribute_ms": 128.446,
+    "node_config_generate_ms": 2.92,
+    "nodehost_start_ms": 575.009,
+    "plan_build_ms": 0.633,
+    "port_check_ms": 0.571,
+    "process_ready_wait_ms": 46.389,
+    "process_start_ms": 200.016,
+    "replica_replicate_ms": 66.878,
+    "resource_preflight_ms": {
+      "reason": "Resource preflight is only executed by stages that require bounded scale admission.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "total_setup_ms": 28933.52
+  },
+  "missing_metrics": [
+    {
+      "metric": "resource_preflight_ms",
+      "reason": "Resource preflight is only executed by stages that require bounded scale admission.",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "node_count": 30,
+  "per_node_samples": [
+    {
+      "logical_id": "shard-0000-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 39,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 37,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 36,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0003-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 35,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0004-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 42,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0005-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 40,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0006-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 39,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0007-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 38,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0008-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 51,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0009-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 49,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0010-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 48,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0011-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 47,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0012-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 66,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0013-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 64,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0014-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 57,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0000-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 56,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0001-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 75,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0002-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 73,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0003-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 72,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0004-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 71,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0005-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 84,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0006-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 82,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0007-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 81,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0008-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 80,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0009-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 93,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0010-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 91,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0011-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 84,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0012-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 83,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0013-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 102,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0014-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 94,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-00"
+    }
+  ],
+  "per_nodehost_samples": [
+    {
+      "az_id": "az-a",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-a-00",
+      "host_id": "local",
+      "nodehost_id": "nodehost-az-a-00",
+      "nodehost_process_count": 8,
+      "nodehost_start_ms": 575.009
+    },
+    {
+      "az_id": "az-a",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-a-01",
+      "host_id": "local",
+      "nodehost_id": "nodehost-az-a-01",
+      "nodehost_process_count": 7,
+      "nodehost_start_ms": 575.009
+    },
+    {
+      "az_id": "az-b",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-b-00",
+      "host_id": "local",
+      "nodehost_id": "nodehost-az-b-00",
+      "nodehost_process_count": 8,
+      "nodehost_start_ms": 575.009
+    },
+    {
+      "az_id": "az-b",
+      "container_name": "vslab-p20-failover-latency-curve-30-50-100-scale-30-sample-01-20260628-nodehost-az-b-01",
+      "host_id": "local",
+      "nodehost_id": "nodehost-az-b-01",
+      "nodehost_process_count": 7,
+      "nodehost_start_ms": 575.009
+    }
+  ],
+  "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+  "producer": {
+    "name": "valkey-scale-lab-runtime",
+    "version": "0.0.0"
+  },
+  "run_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100-scale_30_sample_01-20260628",
+  "same_schema_scale_rungs": [
+    30,
+    50,
+    100,
+    200
+  ],
+  "scenario": "scale_30_sample_01",
+  "schema_version": "v1",
+  "slowest_nodes_topN": [
+    {
+      "logical_id": "shard-0000-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 39,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0001-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 37,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0002-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 36,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0003-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 35,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0004-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 42,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0005-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 40,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0006-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 39,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0007-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 38,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0008-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 51,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0009-primary",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 49,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "primary",
+      "nodehost_id": "nodehost-az-b-00"
+    }
+  ],
+  "slowest_replica_replicate_topN": [
+    {
+      "logical_id": "shard-0000-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 56,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0001-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 75,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0002-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 73,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0003-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 72,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0004-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 71,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0005-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 84,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-00"
+    },
+    {
+      "logical_id": "shard-0006-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 82,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-00"
+    },
+    {
+      "logical_id": "shard-0007-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 81,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-01"
+    },
+    {
+      "logical_id": "shard-0008-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 80,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-b-01"
+    },
+    {
+      "logical_id": "shard-0009-replica-00",
+      "node_cluster_known_nodes": {
+        "impact": "Report cannot compare per-node membership convergence.",
+        "reason": "Node cluster_known_nodes was not persisted in runtime state.",
+        "status": "MISSING"
+      },
+      "node_cluster_state": "MISSING",
+      "node_pid": 93,
+      "node_ping_ready_ms": 46.389,
+      "node_ready_ms": 46.389,
+      "node_role": "replica",
+      "nodehost_id": "nodehost-az-a-00"
+    }
+  ],
+  "source_artifacts": [],
+  "status": "PASS"
+}

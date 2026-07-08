@@ -1,0 +1,1912 @@
+{
+  "artifact_type": "fault_timeline_report",
+  "failover_latency_samples_ref": "failover_latency_samples.jsonl",
+  "fault_rows": [
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "fault_type": "az_stop",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "fault_type": "fault_period_workload_impact",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "fault_type": "majority_partition",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "fault_type": "minority_partition",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "fault_type": "network_delay",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "fault_type": "network_flap",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "fault_type": "network_loss",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "fault_type": "network_partition",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "fault_type": "node_host_stop",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "fault_type": "primary_stop_failover",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "fault_type": "replica_stop",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    },
+    {
+      "clean_cluster_evidence": {
+        "ref": "cleanup_report.json",
+        "status": "PARTIAL"
+      },
+      "cleanup_ref": "cleanup_report.json",
+      "event_timestamps": {},
+      "execution_mode": "dry_run",
+      "fault_id": "fault-dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "fault_type": "split_brain_window_detection",
+      "host_network_mutation": false,
+      "metric_sources": {
+        "apply_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cleanup_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "clear_duration_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "client_unavailability_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_down_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "cluster_impact_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "effect_observed_delay_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "failover_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "promotion_latency_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "split_brain_window_ms": "fault_timeline_events.jsonl+workload_windows.json",
+        "workload_recovery_ms": "fault_timeline_events.jsonl+workload_windows.json"
+      },
+      "metrics": {
+        "apply_duration_ms": {
+          "impact": "apply_duration_ms is excluded from percentile aggregation.",
+          "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "cleanup_duration_ms": {
+          "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+          "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "clear_duration_ms": {
+          "impact": "clear_duration_ms is excluded from percentile aggregation.",
+          "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "client_unavailability_ms": 120.0,
+        "cluster_down_window_ms": 45.0,
+        "cluster_impact_ms": {
+          "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+          "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "effect_observed_delay_ms": {
+          "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+          "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "failover_latency_ms": {
+          "impact": "failover_latency_ms is excluded from percentile aggregation.",
+          "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "promotion_latency_ms": {
+          "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+          "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        },
+        "split_brain_window_ms": 0.0,
+        "workload_recovery_ms": {
+          "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+          "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+          "status": "MISSING"
+        }
+      },
+      "node_count": 200,
+      "phase_id": "M1-S06",
+      "real_valkey": false,
+      "run_id": "m1-s06-fixture",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "scale_rung": "200_plus_dry_run_planning",
+      "scenario_name": "dry_run_200_plus_200_plus_dry_run_planning",
+      "schema_version": "v1",
+      "status": "PARTIAL",
+      "timeline_event_refs": [
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:fault_planned",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:fault_apply_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:fault_apply_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:fault_effect_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:cluster_impact_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:failover_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:promotion_observed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:cluster_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:workload_recovered",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:fault_clear_started",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:fault_clear_completed",
+        "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection:cleanup_verified"
+      ],
+      "timeline_ref": "fault_timeline_events.jsonl#dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "timeline_status": "MISSING",
+      "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+      "workload_window_refs": [
+        "workload_windows.json#event"
+      ]
+    }
+  ],
+  "fault_workload_impact_ref": "fault_workload_impact.json",
+  "missing_metrics": [
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-az_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-fault_period_workload_impact",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-majority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-minority_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_delay",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_flap",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_loss",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-network_partition",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-node_host_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-primary_stop_failover",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-replica_stop",
+      "status": "MISSING"
+    },
+    {
+      "impact": "apply_duration_ms is excluded from percentile aggregation.",
+      "metric": "apply_duration_ms",
+      "reason": "apply_duration_ms cannot be derived because fault_apply_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "status": "MISSING"
+    },
+    {
+      "impact": "effect_observed_delay_ms is excluded from percentile aggregation.",
+      "metric": "effect_observed_delay_ms",
+      "reason": "effect_observed_delay_ms cannot be derived because fault_apply_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_effect_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cluster_impact_ms is excluded from percentile aggregation.",
+      "metric": "cluster_impact_ms",
+      "reason": "cluster_impact_ms cannot be derived because cluster_impact_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "status": "MISSING"
+    },
+    {
+      "impact": "failover_latency_ms is excluded from percentile aggregation.",
+      "metric": "failover_latency_ms",
+      "reason": "failover_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "status": "MISSING"
+    },
+    {
+      "impact": "promotion_latency_ms is excluded from percentile aggregation.",
+      "metric": "promotion_latency_ms",
+      "reason": "promotion_latency_ms cannot be derived because failover_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; promotion_observed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "status": "MISSING"
+    },
+    {
+      "impact": "workload_recovery_ms is excluded from percentile aggregation.",
+      "metric": "workload_recovery_ms",
+      "reason": "workload_recovery_ms cannot be derived because cluster_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; workload_recovered=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "status": "MISSING"
+    },
+    {
+      "impact": "clear_duration_ms is excluded from percentile aggregation.",
+      "metric": "clear_duration_ms",
+      "reason": "clear_duration_ms cannot be derived because fault_clear_started=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "status": "MISSING"
+    },
+    {
+      "impact": "cleanup_duration_ms is excluded from percentile aggregation.",
+      "metric": "cleanup_duration_ms",
+      "reason": "cleanup_duration_ms cannot be derived because fault_clear_completed=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created; cleanup_verified=SKIPPED_WITH_REASON: greater-than-200 dry-run planning only; no runtime resources created",
+      "sample_id": "dry_run_200_plus-200_plus_dry_run_planning-split_brain_window_detection",
+      "status": "MISSING"
+    }
+  ],
+  "observed_fault_types": [
+    "az_stop",
+    "fault_period_workload_impact",
+    "majority_partition",
+    "minority_partition",
+    "network_delay",
+    "network_flap",
+    "network_loss",
+    "network_partition",
+    "node_host_stop",
+    "primary_stop_failover",
+    "replica_stop",
+    "split_brain_window_detection"
+  ],
+  "observed_scale_rungs": [
+    "200_plus_dry_run_planning"
+  ],
+  "phase_id": "M1-S06",
+  "required_fault_types": [
+    "primary_stop_failover",
+    "replica_stop",
+    "node_host_stop",
+    "az_stop",
+    "network_delay",
+    "network_loss",
+    "network_flap",
+    "network_partition",
+    "minority_partition",
+    "majority_partition",
+    "split_brain_window_detection",
+    "fault_period_workload_impact"
+  ],
+  "required_scale_rungs": [
+    "small",
+    "30",
+    "50",
+    "100",
+    "200"
+  ],
+  "run_id": "m1-s06-fixture",
+  "schema_version": "v1",
+  "status": "PARTIAL",
+  "timeline_events_ref": "fault_timeline_events.jsonl"
+}

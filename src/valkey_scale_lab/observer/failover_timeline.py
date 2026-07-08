@@ -34,9 +34,327 @@ LAYER_SOURCE_FIELDS = {
     "level_3": "clean_gate",
 }
 
+M1_REQUIRED_TIMELINE_EVENTS = [
+    "fault_planned",
+    "fault_apply_started",
+    "fault_apply_completed",
+    "fault_effect_observed",
+    "cluster_impact_started",
+    "failover_started",
+    "promotion_observed",
+    "cluster_recovered",
+    "workload_recovered",
+    "fault_clear_started",
+    "fault_clear_completed",
+    "cleanup_verified",
+]
+
+M1_REQUIRED_TIMELINE_METRICS = [
+    "apply_duration_ms",
+    "effect_observed_delay_ms",
+    "cluster_impact_ms",
+    "failover_latency_ms",
+    "promotion_latency_ms",
+    "client_unavailability_ms",
+    "workload_recovery_ms",
+    "clear_duration_ms",
+    "cleanup_duration_ms",
+    "split_brain_window_ms",
+    "cluster_down_window_ms",
+]
+
+M1_REQUIRED_FAULT_TYPES = [
+    "primary_stop_failover",
+    "replica_stop",
+    "node_host_stop",
+    "az_stop",
+    "network_delay",
+    "network_loss",
+    "network_flap",
+    "network_partition",
+    "minority_partition",
+    "majority_partition",
+    "split_brain_window_detection",
+    "fault_period_workload_impact",
+]
+
+M1_REQUIRED_SCALE_RUNGS = ["small", "30", "50", "100", "200"]
+M1_EVENT_STATUSES = {"OBSERVED", "MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON", "FAIL"}
+
 
 class FailoverTimelineError(ValueError):
     """Raised when P44 timeline inputs cannot support a real RTO metric."""
+
+
+def missing_metric(reason: str, *, status: str = "MISSING", impact: str | None = None) -> dict[str, str]:
+    if status not in {"MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"}:
+        raise FailoverTimelineError(f"unsupported missing metric status: {status}")
+    value = {"status": status, "reason": reason}
+    if impact:
+        value["impact"] = impact
+    return value
+
+
+def make_fault_timeline_event(
+    *,
+    phase_id: str,
+    run_id: str,
+    scenario_name: str,
+    sample_id: str,
+    fault_id: str,
+    fault_type: str,
+    node_count: int,
+    scale_rung: str,
+    event_name: str,
+    event_status: str = "OBSERVED",
+    timestamp_unix_ms: int | dict[str, Any] | str | None = None,
+    monotonic_ms_value: float | dict[str, Any] | str | None = None,
+    reason: str = "",
+    source: str = "fault_timeline_contract",
+    subject_type: str = "cluster",
+    subject_id: str = "cluster",
+    real_valkey: bool = False,
+    execution_mode: str = "fake",
+    details: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if event_name not in M1_REQUIRED_TIMELINE_EVENTS:
+        raise FailoverTimelineError(f"unsupported M1-S06 event: {event_name}")
+    if event_status not in M1_EVENT_STATUSES:
+        raise FailoverTimelineError(f"unsupported M1-S06 event status: {event_status}")
+    if event_status != "OBSERVED" and not reason:
+        raise FailoverTimelineError(f"{event_name} with {event_status} requires reason")
+    if event_status == "OBSERVED" and not isinstance(timestamp_unix_ms, int):
+        raise FailoverTimelineError(f"{event_name} OBSERVED requires integer timestamp_unix_ms")
+    if event_status == "OBSERVED" and not isinstance(monotonic_ms_value, (int, float)):
+        raise FailoverTimelineError(f"{event_name} OBSERVED requires numeric monotonic_ms")
+    event = {
+        "schema_version": "v1",
+        "artifact_type": "fault_timeline_event",
+        "phase_id": phase_id,
+        "run_id": run_id,
+        "scenario_name": scenario_name,
+        "sample_id": sample_id,
+        "fault_id": fault_id,
+        "fault_type": fault_type,
+        "node_count": node_count,
+        "scale_rung": str(scale_rung),
+        "event_name": event_name,
+        "event_status": event_status,
+        "timestamp_unix_ms": timestamp_unix_ms if timestamp_unix_ms is not None else missing_metric(reason or "event was not observed"),
+        "monotonic_ms": monotonic_ms_value if monotonic_ms_value is not None else missing_metric(reason or "event was not observed"),
+        "source": source,
+        "subject_type": subject_type,
+        "subject_id": subject_id,
+        "real_valkey": real_valkey,
+        "execution_mode": execution_mode,
+        "reason": reason,
+    }
+    if details:
+        event["details"] = details
+    return event
+
+
+def derive_fault_timeline_metrics(events: list[dict[str, Any]], workload_windows: dict[str, Any] | None = None) -> dict[str, Any]:
+    by_name = {str(event.get("event_name")): event for event in events}
+    missing_events = [name for name in M1_REQUIRED_TIMELINE_EVENTS if name not in by_name]
+    if missing_events:
+        raise FailoverTimelineError(f"timeline is missing required events: {', '.join(missing_events)}")
+    observed = {
+        name: float(event["monotonic_ms"])
+        for name, event in by_name.items()
+        if event.get("event_status") == "OBSERVED" and isinstance(event.get("monotonic_ms"), (int, float))
+    }
+    ordered = [observed[name] for name in M1_REQUIRED_TIMELINE_EVENTS if name in observed]
+    if any(left > right for left, right in zip(ordered, ordered[1:])):
+        raise FailoverTimelineError("observed timeline events must be monotonic")
+
+    def delta(name: str, start: str, end: str) -> Any:
+        if start in observed and end in observed:
+            value = observed[end] - observed[start]
+            if value < 0:
+                raise FailoverTimelineError(f"{name} derived to negative duration")
+            return round(value, 3)
+        return _missing_delta(name, start, end, by_name)
+
+    metrics = {
+        "apply_duration_ms": delta("apply_duration_ms", "fault_apply_started", "fault_apply_completed"),
+        "effect_observed_delay_ms": delta("effect_observed_delay_ms", "fault_apply_completed", "fault_effect_observed"),
+        "cluster_impact_ms": delta("cluster_impact_ms", "cluster_impact_started", "cluster_recovered"),
+        "failover_latency_ms": delta("failover_latency_ms", "failover_started", "cluster_recovered"),
+        "promotion_latency_ms": delta("promotion_latency_ms", "failover_started", "promotion_observed"),
+        "workload_recovery_ms": delta("workload_recovery_ms", "cluster_recovered", "workload_recovered"),
+        "clear_duration_ms": delta("clear_duration_ms", "fault_clear_started", "fault_clear_completed"),
+        "cleanup_duration_ms": delta("cleanup_duration_ms", "fault_clear_completed", "cleanup_verified"),
+        "split_brain_window_ms": _window_metric(workload_windows, "split_brain_window_ms"),
+        "cluster_down_window_ms": _window_metric(workload_windows, "cluster_down_window_ms"),
+        "client_unavailability_ms": _window_metric(workload_windows, "client_unavailability_ms"),
+    }
+    if (
+        isinstance(metrics["failover_latency_ms"], (int, float))
+        and isinstance(metrics["cleanup_duration_ms"], (int, float))
+        and metrics["failover_latency_ms"] == metrics["cleanup_duration_ms"]
+        and by_name["cluster_recovered"].get("monotonic_ms") != by_name["cleanup_verified"].get("monotonic_ms")
+    ):
+        raise FailoverTimelineError("failover latency must not be substituted with cleanup duration")
+    return metrics
+
+
+def build_failover_latency_sample_from_timeline(row: dict[str, Any]) -> dict[str, Any]:
+    metrics = row.get("metrics", {})
+    if not isinstance(metrics, dict):
+        raise FailoverTimelineError("timeline row metrics must be an object")
+    return {
+        "schema_version": "v1",
+        "phase_id": row.get("phase_id", "M1-S06"),
+        "node_count": row.get("node_count", 0),
+        "sample_id": row.get("sample_id", "MISSING"),
+        "target_primary_logical_id": row.get("target_logical_id", row.get("subject_id", "MISSING")),
+        "fault_injected_at_ms": row.get("event_timestamps", {}).get("fault_apply_completed", "MISSING"),
+        "replica_promoted_at_ms": row.get("event_timestamps", {}).get("promotion_observed", "MISSING"),
+        "slot_coverage_ok_at_ms": row.get("event_timestamps", {}).get("cluster_recovered", "MISSING"),
+        "first_successful_read_at_ms": row.get("event_timestamps", {}).get("workload_recovered", "MISSING"),
+        "first_successful_write_at_ms": row.get("event_timestamps", {}).get("workload_recovered", "MISSING"),
+        "promotion_latency_ms": metrics.get("promotion_latency_ms", missing_metric("promotion latency was not derivable from timeline")),
+        "cluster_recovery_latency_ms": metrics.get("failover_latency_ms", missing_metric("failover latency was not derivable from timeline")),
+        "read_unavailability_ms": metrics.get("client_unavailability_ms", missing_metric("client read unavailability was not measured")),
+        "write_unavailability_ms": metrics.get("client_unavailability_ms", missing_metric("client write unavailability was not measured")),
+        "workload_impact_ref": row.get("workload_impact_ref", "fault_workload_impact.json"),
+        "timeline_ref": row.get("timeline_ref", f"fault_timeline_events.jsonl#{row.get('sample_id', 'MISSING')}"),
+        "fault_type": row.get("fault_type", "MISSING"),
+        "fault_id": row.get("fault_id", "MISSING"),
+        "source_event_start": "failover_started",
+        "source_event_end": "cluster_recovered",
+        "derived_from_timeline": True,
+        "workload_recovery_ref": row.get("workload_recovery_ref", "workload_windows.json"),
+    }
+
+
+def build_fault_timeline_report(
+    events: list[dict[str, Any]],
+    *,
+    phase_id: str,
+    run_id: str,
+    workload_windows: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for event in events:
+        grouped.setdefault(str(event.get("sample_id", "MISSING")), []).append(event)
+    rows: list[dict[str, Any]] = []
+    missing_metrics: list[dict[str, Any]] = []
+    for sample_id, sample_events in sorted(grouped.items()):
+        first = sample_events[0]
+        metrics = derive_fault_timeline_metrics(sample_events, _window_for_sample(workload_windows, sample_id))
+        for name, value in metrics.items():
+            if isinstance(value, dict) and value.get("status") in {"MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"}:
+                missing_metrics.append({"sample_id": sample_id, "metric": name, **value})
+        event_timestamps = {
+            str(event.get("event_name")): event.get("timestamp_unix_ms")
+            for event in sample_events
+            if event.get("event_status") == "OBSERVED"
+        }
+        status = _row_status(sample_events, metrics)
+        rows.append({
+            "schema_version": "v1",
+            "phase_id": phase_id,
+            "run_id": run_id,
+            "scenario_name": first.get("scenario_name", "MISSING"),
+            "sample_id": sample_id,
+            "fault_id": first.get("fault_id", "MISSING"),
+            "fault_type": first.get("fault_type", "MISSING"),
+            "node_count": first.get("node_count", "MISSING"),
+            "scale_rung": str(first.get("scale_rung", "MISSING")),
+            "status": status,
+            "timeline_status": status if status in {"PASS", "FAIL", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"} else "MISSING",
+            "real_valkey": bool(first.get("real_valkey") is True),
+            "execution_mode": first.get("execution_mode", "MISSING"),
+            "metrics": metrics,
+            "metric_sources": {name: "fault_timeline_events.jsonl+workload_windows.json" for name in M1_REQUIRED_TIMELINE_METRICS},
+            "timeline_ref": f"fault_timeline_events.jsonl#{sample_id}",
+            "timeline_event_refs": [f"fault_timeline_events.jsonl#{sample_id}:{event}" for event in M1_REQUIRED_TIMELINE_EVENTS],
+            "event_timestamps": event_timestamps,
+            "workload_window_refs": _workload_refs(workload_windows, sample_id),
+            "cleanup_ref": "cleanup_report.json",
+            "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+            "clean_cluster_evidence": {"status": "PASS" if status == "PASS" else status, "ref": "cleanup_report.json"},
+            "host_network_mutation": False,
+        })
+    return {
+        "schema_version": "v1",
+        "artifact_type": "fault_timeline_report",
+        "phase_id": phase_id,
+        "run_id": run_id,
+        "status": "PASS" if rows and all(row["status"] == "PASS" for row in rows) else "PARTIAL",
+        "fault_rows": rows,
+        "timeline_events_ref": "fault_timeline_events.jsonl",
+        "failover_latency_samples_ref": "failover_latency_samples.jsonl",
+        "fault_workload_impact_ref": "fault_workload_impact.json",
+        "required_fault_types": M1_REQUIRED_FAULT_TYPES,
+        "observed_fault_types": sorted({str(row.get("fault_type")) for row in rows}),
+        "required_scale_rungs": M1_REQUIRED_SCALE_RUNGS,
+        "observed_scale_rungs": sorted({str(row.get("scale_rung")) for row in rows}),
+        "missing_metrics": missing_metrics,
+    }
+
+
+def _missing_delta(name: str, start: str, end: str, by_name: dict[str, dict[str, Any]]) -> dict[str, str]:
+    missing = []
+    for event_name in [start, end]:
+        event = by_name.get(event_name, {})
+        if event.get("event_status") != "OBSERVED":
+            missing.append(f"{event_name}={event.get('event_status', 'MISSING')}: {event.get('reason', '')}".strip())
+    return missing_metric(
+        f"{name} cannot be derived because {'; '.join(missing) or 'required events are absent'}",
+        impact=f"{name} is excluded from percentile aggregation.",
+    )
+
+
+def _window_metric(workload_windows: dict[str, Any] | None, metric: str) -> Any:
+    if not isinstance(workload_windows, dict):
+        return missing_metric(f"{metric} requires workload/fault window input", status="SKIPPED_WITH_REASON")
+    metrics = workload_windows.get("fault_metrics", {})
+    if isinstance(metrics, dict) and isinstance(metrics.get(metric), (int, float)):
+        return round(float(metrics[metric]), 3)
+    for window in workload_windows.get("windows", []):
+        if isinstance(window, dict) and isinstance(window.get(metric), (int, float)):
+            return round(float(window[metric]), 3)
+        window_metrics = window.get("metrics", {}) if isinstance(window, dict) else {}
+        if isinstance(window_metrics, dict) and isinstance(window_metrics.get(metric), (int, float)):
+            return round(float(window_metrics[metric]), 3)
+    return missing_metric(f"{metric} was not present in workload/fault windows")
+
+
+def _window_for_sample(workload_windows: dict[str, Any] | None, sample_id: str) -> dict[str, Any] | None:
+    if not isinstance(workload_windows, dict):
+        return None
+    rows = [row for row in workload_windows.get("windows", []) if isinstance(row, dict) and str(row.get("sample_id", sample_id)) == sample_id]
+    if rows:
+        copy = dict(workload_windows)
+        copy["windows"] = rows
+        return copy
+    return workload_windows
+
+
+def _workload_refs(workload_windows: dict[str, Any] | None, sample_id: str) -> list[str]:
+    if not isinstance(workload_windows, dict):
+        return [{"status": "SKIPPED_WITH_REASON", "reason": "workload_windows.json was not provided"}]  # type: ignore[list-item]
+    refs = []
+    for window in workload_windows.get("windows", []):
+        if isinstance(window, dict) and str(window.get("sample_id", sample_id)) == sample_id:
+            refs.append(f"workload_windows.json#{window.get('window_name', 'window')}")
+    return refs or ["workload_windows.json"]
+
+
+def _row_status(events: list[dict[str, Any]], metrics: dict[str, Any]) -> str:
+    statuses = {str(event.get("event_status")) for event in events}
+    if "FAIL" in statuses:
+        return "FAIL"
+    if "BLOCKED_WITH_REASON" in statuses:
+        return "BLOCKED_WITH_REASON"
+    if any(isinstance(value, dict) and value.get("status") == "MISSING" for value in metrics.values()):
+        return "PARTIAL"
+    if "SKIPPED_WITH_REASON" in statuses:
+        return "SKIPPED_WITH_REASON"
+    return "PASS"
 
 
 @dataclass(frozen=True)
