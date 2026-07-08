@@ -1,0 +1,41 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "run_metadata",
+  "run_id": "fixture-failure",
+  "created_at": "2026-07-08T00:00:00Z",
+  "git_sha": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Fixture does not bind to a repository checkout."
+  },
+  "tool_version": "fixture",
+  "config_sha256": {
+    "status": "MISSING",
+    "reason": "Failure fixture models a missing config path."
+  },
+  "inventory_sha256": {
+    "status": "MISSING",
+    "reason": "Failure happened before runtime inventory was produced."
+  },
+  "valkey_version": {
+    "status": "MISSING",
+    "reason": "Failure happened before Valkey version probing.",
+    "impact": "Analysis must not invent version evidence."
+  },
+  "host_facts": {
+    "fixture": true
+  },
+  "os_kernel": "fixture",
+  "ulimit": {
+    "fixture": true
+  },
+  "port_ranges": {
+    "status": "MISSING",
+    "reason": "Port preflight failed before a usable allocation was recorded."
+  },
+  "runtime_provider": "docker",
+  "runtime_mode": "setup_failure",
+  "artifact_root": "runs/fixture-failure/artifacts",
+  "log_root": "runs/fixture-failure/logs",
+  "report_root": "runs/fixture-failure/reports",
+  "state_root": "runs/fixture-failure/state"
+}

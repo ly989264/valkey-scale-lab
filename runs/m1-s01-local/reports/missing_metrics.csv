@@ -1,0 +1,3 @@
+metric,status,reason,impact
+real_valkey_smoke,SKIPPED_WITH_REASON,The local sandbox denied port preflight bind before a real Valkey smoke run could start.,"M1-S01 implementation evidence is complete, but real Valkey smoke must be rerun in an environment that permits local port binding."
+split_brain_duration_ms,SKIPPED_WITH_REASON,No failover scenario is executed in M1-S01.,

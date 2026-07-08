@@ -1,0 +1,40 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "run_metadata",
+  "run_id": "fixture-dry-run",
+  "created_at": "2026-07-08T00:00:00Z",
+  "git_sha": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Fixture does not bind to a repository checkout."
+  },
+  "tool_version": "fixture",
+  "config_sha256": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Dry-run fixture omits a concrete config file."
+  },
+  "inventory_sha256": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Dry-run planning does not create runtime inventory."
+  },
+  "valkey_version": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Dry-run planning does not start Valkey endpoints."
+  },
+  "host_facts": {
+    "fixture": true
+  },
+  "os_kernel": "fixture",
+  "ulimit": {
+    "fixture": true
+  },
+  "port_ranges": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Dry-run does not reserve ports."
+  },
+  "runtime_provider": "docker",
+  "runtime_mode": "dry_run_planning",
+  "artifact_root": "runs/fixture-dry-run/artifacts",
+  "log_root": "runs/fixture-dry-run/logs",
+  "report_root": "runs/fixture-dry-run/reports",
+  "state_root": "runs/fixture-dry-run/state"
+}

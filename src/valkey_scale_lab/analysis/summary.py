@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab.artifacts import artifact_record, load_json as load_artifact_json, resolve_artifact_input
 
 PHASE_ID = "P09_ANALYSIS_REPORTING"
 RUN_ID = "P09_ANALYSIS_REPORTING-analysis-20260628"
@@ -17,7 +18,7 @@ class AnalysisError(RuntimeError):
 
 
 def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict[str, Any]:
-    source_dir = Path(input_dir)
+    source_dir, run_manifest = resolve_artifact_input(input_dir)
     if not source_dir.exists():
         raise AnalysisError(f"input artifact directory does not exist: {source_dir}")
 
@@ -71,23 +72,31 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     baseline_path = out.parent / "baseline_comparison.json"
-    baseline = _baseline_comparison(metrics, source_dir)
+    metadata_refs = _metadata_refs(run_manifest)
+    run_metadata = _load_run_metadata(run_manifest)
+    output_run_id = _metadata_value(run_metadata, "run_id", RUN_ID)
+    output_created_at = _metadata_value(run_metadata, "created_at", CREATED_AT)
+    baseline = _baseline_comparison(metrics, source_dir, run_id=output_run_id, created_at=output_created_at)
     _write_json(baseline_path, baseline)
 
     summary = {
         "schema_version": "v1",
         "artifact_type": "analysis_summary",
         "phase_id": PHASE_ID,
-        "run_id": RUN_ID,
-        "created_at": CREATED_AT,
+        "run_id": output_run_id,
+        "created_at": output_created_at,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS",
         "source": {
             "input_dir": source_dir.as_posix(),
+            "input_kind": "run_manifest" if run_manifest else "artifact_dir",
             "phase_id": phase_summary.get("phase_id", "MISSING"),
             "run_id": phase_summary.get("run_id", "MISSING"),
         },
-        "source_artifacts": [_artifact_record(path) for path in sorted(source_dir.glob("*.json"))],
+        "source_artifacts": [_artifact_record(path) for path in _source_artifact_paths(source_dir, out, baseline_path)],
+        "run_manifest_ref": metadata_refs.get("run_manifest_ref"),
+        "run_metadata_ref": metadata_refs.get("run_metadata_ref"),
+        "run_metadata": run_metadata,
         "findings": findings,
         "metrics": metrics,
         "missing_metrics": missing_metrics,
@@ -114,6 +123,63 @@ def _load_required(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise AnalysisError(f"source artifact must be a JSON object: {path}")
     return data
+
+
+def _metadata_refs(run_manifest: dict[str, Any] | None) -> dict[str, Any]:
+    if not run_manifest:
+        return {
+            "run_manifest_ref": {
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "Legacy artifact directory input did not include a run_manifest.json.",
+            },
+            "run_metadata_ref": {
+                "status": "SKIPPED_WITH_REASON",
+                "reason": "Legacy artifact directory input did not include a run_metadata.json.",
+            },
+        }
+    manifest_path = Path(str(run_manifest["_manifest_path"]))
+    metadata_ref = run_manifest.get("run_metadata_ref")
+    if not isinstance(metadata_ref, dict):
+        metadata_ref = {
+            "status": "MISSING",
+            "reason": "run_manifest.json did not include run_metadata_ref.",
+            "impact": "Analysis cannot link report output back to run metadata.",
+        }
+    return {
+        "run_manifest_ref": {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "The final run manifest is refreshed after analysis/report artifacts are written, so analysis records the manifest path without a pre-refresh hash.",
+            "path": _rel(manifest_path),
+        },
+        "run_metadata_ref": metadata_ref,
+    }
+
+
+def _load_run_metadata(run_manifest: dict[str, Any] | None) -> dict[str, Any]:
+    if not run_manifest:
+        return {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Legacy artifact directory input did not include run metadata.",
+        }
+    metadata_ref = run_manifest.get("run_metadata_ref")
+    manifest_path = Path(str(run_manifest["_manifest_path"]))
+    if not isinstance(metadata_ref, dict) or not isinstance(metadata_ref.get("path"), str):
+        return {
+            "status": "MISSING",
+            "reason": "run_manifest.json did not include a readable run_metadata_ref.path.",
+            "impact": "Analysis cannot display run-level provenance fields.",
+        }
+    metadata_path = Path(metadata_ref["path"])
+    if not metadata_path.is_absolute():
+        metadata_path = Path.cwd() / metadata_path
+    try:
+        return load_artifact_json(metadata_path)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        return {
+            "status": "MISSING",
+            "reason": f"Could not read run metadata: {exc}",
+            "impact": "Analysis cannot display run-level provenance fields.",
+        }
 
 
 def _collect_missing_metrics(phase_summary: dict[str, Any], failover: dict[str, Any]) -> list[dict[str, Any]]:
@@ -156,13 +222,20 @@ def _metric_from_optional(name: str, value: Any, unit: str) -> dict[str, Any]:
     return _metric(name, value if value is not None else "MISSING", unit)
 
 
-def _baseline_comparison(metrics: list[dict[str, Any]], source_dir: Path) -> dict[str, Any]:
+def _metadata_value(metadata: dict[str, Any], key: str, fallback: str) -> str:
+    value = metadata.get(key)
+    if isinstance(value, str) and value:
+        return value
+    return fallback
+
+
+def _baseline_comparison(metrics: list[dict[str, Any]], source_dir: Path, *, run_id: str = RUN_ID, created_at: str = CREATED_AT) -> dict[str, Any]:
     return {
         "schema_version": "v1",
         "artifact_type": "baseline_comparison",
         "phase_id": PHASE_ID,
-        "run_id": RUN_ID,
-        "created_at": CREATED_AT,
+        "run_id": run_id,
+        "created_at": created_at,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "NO_BASELINE_YET",
         "baseline_source": {
@@ -186,6 +259,11 @@ def _baseline_comparison(metrics: list[dict[str, Any]], source_dir: Path) -> dic
 
 def _artifact_record(path: Path) -> dict[str, str]:
     return {"path": _rel(path), "sha256": _sha256_file(path)}
+
+
+def _source_artifact_paths(source_dir: Path, out: Path, baseline_path: Path) -> list[Path]:
+    excluded = {out.resolve(), baseline_path.resolve()}
+    return [path for path in sorted(source_dir.glob("*.json")) if path.resolve() not in excluded]
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:

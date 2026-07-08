@@ -1,0 +1,126 @@
+{
+  "artifact_root": "runs/m1-s01-local/artifacts",
+  "artifact_type": "run_manifest",
+  "artifacts": [
+    {
+      "path": "runs/m1-s01-local/artifacts/analysis_summary.json",
+      "sha256": "9174d238724f3868af03fc51d60e4c6a821ab9df101a64b7b1e51f42c09e0e19"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/baseline_comparison.json",
+      "sha256": "044d0c6da162bb2f37b05e0b3eb18ae53f48e8f7801987741b25db97705fea28"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/cleanup_report.json",
+      "sha256": "1bf2aa8d19b34017a24190456cd6e85993ced096494e46cdb8d8272003c45c97"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/failover_report.json",
+      "sha256": "c44e5ab51a125bb34dd21285e889a77538b8c2623b52728c5034779de0f16f2e"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/COMPLETION.md",
+      "sha256": "4655f9441c40738f5e0f282596143169ebbb273785f44175c189e9aab2d76db7"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/CONTEXT_RELOAD.md",
+      "sha256": "238f31760222ff50e7496f9105958aef92ddcb89064f9eb3c1865a52f5dd4c63"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/DESIGN_BRIEF.md",
+      "sha256": "75925119fb5f49b082be761b2ab8270dd44b303483b198eb197701c7ff664307"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/REVIEW.md",
+      "sha256": "76d28b7efa3d733a3b26137f49dd7c91a4fc2ab840a1cc27f4c801861a41c8c8"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/WORKER_SUMMARY.md",
+      "sha256": "e28149a54a06c0eec977f912e4d03bb1a9fd1d0ccddac10f850cc4632d908d7f"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/cleanup_report.json",
+      "sha256": "9cc4e5f4e33d9008042821b6cec90fc9a3c34d690b188f47c9a39a550aae0195"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/cluster_smoke_setup.stderr.log",
+      "sha256": "01181a05b693239c43f091d4aa141f2f1d0b51672f19841ef6ee4d63bda98b44"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/cluster_smoke_setup.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/coverage_matrix.md",
+      "sha256": "25ad72e57b6161ca1b803b9ac58ad2c8e3728a5986c64a28e2fa3df0f30ef2ea"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/real_heavy_gate_blocked.json",
+      "sha256": "78c9f07e5ee9d6951c0939d720832601a3daa4bb36fc8346b52eaf5b275e12d9"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/goal_loop/M1-S01/valkey_e2e_evidence.json",
+      "sha256": "341558b59d216cacf5a4ef6d502e9d081ae31e59e6d22c5113a8297066adcc1b"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/phase_summary.json",
+      "sha256": "e0964369db11410a1308f5d712ba50ed751f9ee496aff039a641224c16f6af82"
+    },
+    {
+      "path": "runs/m1-s01-local/artifacts/valkey_e2e_evidence.json",
+      "sha256": "f4cb90b2870d83758b2b0e2ab011009fde3a1a0bd6e91ccdf5746eca61bc1a40"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/baseline_comparison.csv",
+      "sha256": "b03de6f3e40808693329d0050b5ae47fc0c29719f62798c2e140d9a53a2f81c8"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/index.html",
+      "sha256": "7a4dcf9ba4ff60997f2ae522f04c80cf97b07dd5a0fcd6e9778154ca04398a15"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/metric_chart.svg",
+      "sha256": "95e9af58ddd810a1fd7551aa0d75b6481000b702153ca95341dc470aee461792"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/metrics.csv",
+      "sha256": "8fb9519df1386565c19536f5d91f85d0bf422d04f9cac0de41be0857562d8b8d"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/missing_metrics.csv",
+      "sha256": "9d600a2a28d93b86a31075286310812668a3d31d52cb11a1a682c6b8e27ba0fc"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/phase_summary.json",
+      "sha256": "e7936dd58a1136755a451334352e5c7c6763e4ef68e89dae016fda83d9cd92e3"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/report.md",
+      "sha256": "845f3244788295e9d50bae76f61f309617dc831a103904640a6814502a98abb7"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/report_index.json",
+      "sha256": "7ae8a5700bc39c11cd38ea3ca394708eefbc571a86bb26e9ff5135203a1b778d"
+    },
+    {
+      "path": "runs/m1-s01-local/state/run_manifest.json",
+      "sha256": "e6d2afc39a5557dec346849738bc8c459e6051d100296481c9990ba13af4fdf7"
+    },
+    {
+      "path": "runs/m1-s01-local/state/run_metadata.json",
+      "sha256": "51208d3456c03878d6a5370edf48c83e637050f610db4c0b0e727ec7e6c155c4"
+    }
+  ],
+  "created_at": "2026-07-08T13:44:20Z",
+  "log_root": "runs/m1-s01-local/logs",
+  "report_root": "runs/m1-s01-local/reports",
+  "run_id": "m1-s01-local",
+  "run_metadata_ref": {
+    "path": "runs/m1-s01-local/state/run_metadata.json",
+    "sha256": "51208d3456c03878d6a5370edf48c83e637050f610db4c0b0e727ec7e6c155c4"
+  },
+  "run_root": "runs/m1-s01-local",
+  "schema_version": "v1",
+  "state_root": "runs/m1-s01-local/state",
+  "status": "PASS"
+}

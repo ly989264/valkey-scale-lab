@@ -1,0 +1,21 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "phase_summary",
+  "phase_id": "M1-S01",
+  "run_id": "m1-s01-local",
+  "created_at": "2026-07-08T00:00:00Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "unknown"
+  },
+  "status": "PASS",
+  "summary": "M1-S01 run metadata and artifact placement contract evidence.",
+  "missing_metrics": [
+    {
+      "metric": "real_valkey_smoke",
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "The local sandbox denied port preflight bind before a real Valkey smoke run could start.",
+      "impact": "M1-S01 implementation evidence is complete, but real Valkey smoke must be rerun in an environment that permits local port binding."
+    }
+  ]
+}

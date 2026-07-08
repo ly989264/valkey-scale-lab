@@ -31,6 +31,8 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
     report_dir.mkdir(parents=True, exist_ok=True)
     metrics = list(analysis.get("metrics", []))
     missing = list(analysis.get("missing_metrics", []))
+    report_run_id = str(analysis.get("run_id") or RUN_ID)
+    report_created_at = str(analysis.get("created_at") or CREATED_AT)
 
     generated = [
         _write_metrics_csv(report_dir / "metrics.csv", metrics),
@@ -46,11 +48,23 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         "schema_version": "v1",
         "artifact_type": "report_index",
         "phase_id": PHASE_ID,
-        "run_id": str(analysis.get("run_id", RUN_ID)),
-        "created_at": CREATED_AT,
+        "run_id": report_run_id,
+        "created_at": report_created_at,
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS",
         "analysis_path": _rel(analysis_file),
+        "run_manifest_ref": analysis.get("run_manifest_ref")
+        or {
+            "status": "MISSING",
+            "reason": "analysis_summary.json did not include run_manifest_ref.",
+            "impact": "Report cannot link back to run manifest.",
+        },
+        "run_metadata_ref": analysis.get("run_metadata_ref")
+        or {
+            "status": "MISSING",
+            "reason": "analysis_summary.json did not include run_metadata_ref.",
+            "impact": "Report cannot link back to run metadata.",
+        },
         "reports": [_report_record(path) for path in generated],
     }
     _write_json(index_path, index)
@@ -143,30 +157,47 @@ def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
 
 
 def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
+    metadata = analysis.get("run_metadata", {})
     lines = [
         "# P09 Analysis Report",
         "",
         f"Status: {analysis.get('status', 'MISSING')}",
         f"Source phase: {analysis.get('source', {}).get('phase_id', 'MISSING')}",
         "",
-        "## Findings",
+        "## 运行元数据",
+        "",
+        f"- run_id: {_metadata_value(metadata, 'run_id')}",
+        f"- created_at: {_metadata_value(metadata, 'created_at')}",
+        f"- git_sha: {_metadata_value(metadata, 'git_sha')}",
+        f"- valkey_version: {_metadata_value(metadata, 'valkey_version')}",
+        f"- artifact_root: {_metadata_value(metadata, 'artifact_root')}",
+        "",
+        "## 分析发现",
         "",
     ]
     for finding in analysis.get("findings", []):
         lines.append(f"- {finding.get('name', 'finding')}: {finding.get('status', 'MISSING')}")
-    lines.extend(["", "## Missing Metrics", ""])
+    lines.extend(["", "## 缺失指标", ""])
     missing = analysis.get("missing_metrics", [])
     if missing:
         for item in missing:
             lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('status', 'MISSING')} - {item.get('reason', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## Generated Tables", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- metric_chart.svg"])
+    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- metric_chart.svg"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
 
 def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
+    metadata = analysis.get("run_metadata", {})
+    metadata_rows = "\n".join(
+        "<tr><td>{}</td><td><code>{}</code></td></tr>".format(
+            html.escape(key),
+            html.escape(_metadata_value(metadata, key)),
+        )
+        for key in ["run_id", "created_at", "git_sha", "valkey_version", "artifact_root"]
+    )
     finding_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td></tr>".format(
             html.escape(str(item.get("name", "finding"))),
@@ -199,11 +230,13 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   <h1>P09 Analysis Report</h1>
   <p>Status: <code>{html.escape(str(analysis.get("status", "MISSING")))}</code></p>
   <p>Source phase: <code>{html.escape(str(analysis.get("source", {}).get("phase_id", "MISSING")))}</code></p>
-  <h2>Findings</h2>
+  <h2>运行元数据</h2>
+  <table><thead><tr><th>字段</th><th>值</th></tr></thead><tbody>{metadata_rows}</tbody></table>
+  <h2>分析发现</h2>
   <table><thead><tr><th>Name</th><th>Status</th></tr></thead><tbody>{finding_rows}</tbody></table>
-  <h2>Missing Metrics</h2>
-  <table><thead><tr><th>Metric</th><th>Status</th><th>Reason</th></tr></thead><tbody>{missing_rows}</tbody></table>
-  <h2>Chart</h2>
+  <h2>缺失指标</h2>
+  <table><thead><tr><th>指标</th><th>状态</th><th>原因</th></tr></thead><tbody>{missing_rows}</tbody></table>
+  <h2>图表</h2>
   <img src="metric_chart.svg" alt="P09 artifact metrics chart">
 </body>
 </html>
@@ -217,8 +250,8 @@ def _write_phase_summary(phase_dir: Path, analysis: dict[str, Any], index_path: 
         "schema_version": "v1",
         "artifact_type": "phase_summary",
         "phase_id": PHASE_ID,
-        "run_id": str(analysis.get("run_id", RUN_ID)),
-        "created_at": CREATED_AT,
+        "run_id": str(analysis.get("run_id") or RUN_ID),
+        "created_at": str(analysis.get("created_at") or CREATED_AT),
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS",
         "summary": "P09 analyzed prior real Valkey failover artifacts and rendered deterministic machine-readable, tabular, chart, HTML, and markdown report outputs without inventing missing metrics.",
@@ -230,6 +263,8 @@ def _write_phase_summary(phase_dir: Path, analysis: dict[str, Any], index_path: 
             "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json",
         ],
         "missing_metrics": list(analysis.get("missing_metrics", [])),
+        "run_manifest_ref": analysis.get("run_manifest_ref"),
+        "run_metadata_ref": analysis.get("run_metadata_ref"),
         "risks": [
             {
                 "risk": "Baseline comparison is initialized with NO_BASELINE_YET until a versioned baseline exists.",
@@ -245,6 +280,17 @@ def _write_phase_summary(phase_dir: Path, analysis: dict[str, Any], index_path: 
 
 def _report_record(path: Path) -> dict[str, str]:
     return {"path": _rel(path), "sha256": _sha256_file(path)}
+
+
+def _metadata_value(metadata: Any, key: str) -> str:
+    if not isinstance(metadata, dict):
+        return "SKIPPED_WITH_REASON: no run metadata attached"
+    value = metadata.get(key, {"status": "MISSING", "reason": f"{key} absent from run metadata"})
+    if isinstance(value, dict) and value.get("status") in {"MISSING", "SKIPPED_WITH_REASON"}:
+        return f"{value.get('status')}: {value.get('reason', '')}"
+    if isinstance(value, (dict, list)):
+        return json.dumps(value, sort_keys=True)
+    return str(value)
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:

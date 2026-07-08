@@ -10,6 +10,9 @@
     "created_at",
     "producer",
     "status",
+    "run_manifest_ref",
+    "run_metadata_ref",
+    "run_metadata",
     "findings",
     "missing_metrics"
   ],
@@ -63,6 +66,37 @@
         "NO_BASELINE_YET"
       ]
     },
+    "run_manifest_ref": {
+      "$ref": "#/$defs/artifact_ref_or_reason"
+    },
+    "run_metadata_ref": {
+      "$ref": "#/$defs/artifact_ref_or_reason"
+    },
+    "run_metadata": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "artifact_type",
+            "run_id"
+          ],
+          "properties": {
+            "artifact_type": {
+              "type": "string",
+              "const": "run_metadata"
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": true
+        },
+        {
+          "$ref": "#/$defs/reason"
+        }
+      ]
+    },
     "findings": {
       "type": "array",
       "items": {
@@ -74,6 +108,72 @@
       "items": {
         "type": "object"
       }
+    }
+  },
+  "$defs": {
+    "artifact_ref_or_reason": {
+      "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sha256": {
+              "type": "string",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          "additionalProperties": true
+        },
+        {
+          "required": [
+            "status",
+            "reason"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "MISSING",
+                "SKIPPED_WITH_REASON"
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "reason": {
+      "type": "object",
+      "required": [
+        "status",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "MISSING",
+            "SKIPPED_WITH_REASON"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
     }
   },
   "additionalProperties": true

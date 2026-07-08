@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "run_metadata",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "run_id",
+    "created_at",
+    "git_sha",
+    "tool_version",
+    "config_sha256",
+    "inventory_sha256",
+    "valkey_version",
+    "host_facts",
+    "os_kernel",
+    "ulimit",
+    "port_ranges",
+    "runtime_provider",
+    "runtime_mode",
+    "artifact_root",
+    "log_root",
+    "report_root",
+    "state_root"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^v1$"
+    },
+    "artifact_type": {
+      "type": "string",
+      "const": "run_metadata"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "git_sha": {
+      "$ref": "#/$defs/string_or_reason"
+    },
+    "tool_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "config_sha256": {
+      "$ref": "#/$defs/sha_or_reason"
+    },
+    "inventory_sha256": {
+      "$ref": "#/$defs/sha_or_reason"
+    },
+    "valkey_version": {
+      "$ref": "#/$defs/string_object_or_reason"
+    },
+    "host_facts": {
+      "type": "object"
+    },
+    "ulimit": {
+      "type": "object"
+    },
+    "port_ranges": {
+      "type": [
+        "object",
+        "array",
+        "string"
+      ]
+    },
+    "runtime_provider": {
+      "$ref": "#/$defs/string_or_reason"
+    },
+    "runtime_mode": {
+      "$ref": "#/$defs/string_or_reason"
+    },
+    "artifact_root": {
+      "type": "string",
+      "pattern": "runs/.+/artifacts$"
+    },
+    "log_root": {
+      "type": "string",
+      "pattern": "runs/.+/logs$"
+    },
+    "report_root": {
+      "type": "string",
+      "pattern": "runs/.+/reports$"
+    },
+    "state_root": {
+      "type": "string",
+      "pattern": "runs/.+/state$"
+    }
+  },
+  "$defs": {
+    "reason": {
+      "type": "object",
+      "required": [
+        "status",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "MISSING",
+            "SKIPPED_WITH_REASON"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "impact": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "string_or_reason": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "$ref": "#/$defs/reason"
+        }
+      ]
+    },
+    "sha_or_reason": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "$ref": "#/$defs/reason"
+        }
+      ]
+    },
+    "string_object_or_reason": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "object",
+          "not": {
+            "required": [
+              "status"
+            ]
+          }
+        },
+        {
+          "$ref": "#/$defs/reason"
+        }
+      ]
+    }
+  },
+  "additionalProperties": true
+}

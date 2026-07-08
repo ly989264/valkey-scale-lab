@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "valkey_e2e_evidence",
+  "phase_id": "M1-S01",
+  "run_id": "m1-s01-local",
+  "created_at": "2026-07-08T00:00:00Z",
+  "producer": {
+    "name": "scripts/valkey_e2e_gate.py",
+    "version": "v1"
+  },
+  "status": "BLOCKED_WITH_REASON",
+  "real_valkey": false,
+  "reason": "Sandbox denied local port preflight bind for 127.0.0.1:7000; real Valkey evidence is not claimed as PASS.",
+  "valkey_versions": [],
+  "nodes_observed": 0,
+  "cluster_state_observed": "unknown"
+}

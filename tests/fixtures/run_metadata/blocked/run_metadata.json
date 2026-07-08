@@ -1,0 +1,41 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "run_metadata",
+  "run_id": "fixture-blocked",
+  "created_at": "2026-07-08T00:00:00Z",
+  "git_sha": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Fixture does not bind to a repository checkout."
+  },
+  "tool_version": "fixture",
+  "config_sha256": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Blocked preflight fixture has no runnable config."
+  },
+  "inventory_sha256": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Blocked preflight fixture never creates runtime inventory."
+  },
+  "valkey_version": {
+    "status": "MISSING",
+    "reason": "Valkey was not started because resource preflight blocked execution.",
+    "impact": "Fixture cannot provide real Valkey version evidence."
+  },
+  "host_facts": {
+    "fixture": true
+  },
+  "os_kernel": "fixture",
+  "ulimit": {
+    "fixture": true
+  },
+  "port_ranges": {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "Port allocation is skipped when preflight blocks."
+  },
+  "runtime_provider": "docker",
+  "runtime_mode": "blocked_preflight",
+  "artifact_root": "runs/fixture-blocked/artifacts",
+  "log_root": "runs/fixture-blocked/logs",
+  "report_root": "runs/fixture-blocked/reports",
+  "state_root": "runs/fixture-blocked/state"
+}

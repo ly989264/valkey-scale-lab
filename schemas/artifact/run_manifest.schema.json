@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "run_manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "run_id",
+    "created_at",
+    "status",
+    "run_root",
+    "artifact_root",
+    "log_root",
+    "report_root",
+    "state_root",
+    "run_metadata_ref",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^v1$"
+    },
+    "artifact_type": {
+      "type": "string",
+      "const": "run_manifest"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "PARTIAL",
+        "MISSING",
+        "SKIPPED_WITH_REASON",
+        "BLOCKED_WITH_REASON"
+      ]
+    },
+    "run_root": {
+      "type": "string",
+      "pattern": "runs/.+"
+    },
+    "artifact_root": {
+      "type": "string",
+      "pattern": "runs/.+/artifacts$"
+    },
+    "log_root": {
+      "type": "string",
+      "pattern": "runs/.+/logs$"
+    },
+    "report_root": {
+      "type": "string",
+      "pattern": "runs/.+/reports$"
+    },
+    "state_root": {
+      "type": "string",
+      "pattern": "runs/.+/state$"
+    },
+    "run_metadata_ref": {
+      "$ref": "#/$defs/artifact_ref"
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/artifact_ref"
+      }
+    }
+  },
+  "$defs": {
+    "artifact_ref": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

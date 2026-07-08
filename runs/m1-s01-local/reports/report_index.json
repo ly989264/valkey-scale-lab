@@ -1,0 +1,48 @@
+{
+  "analysis_path": "runs/m1-s01-local/artifacts/analysis_summary.json",
+  "artifact_type": "report_index",
+  "created_at": "2026-07-08T13:44:20Z",
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "reports": [
+    {
+      "path": "runs/m1-s01-local/reports/metrics.csv",
+      "sha256": "8fb9519df1386565c19536f5d91f85d0bf422d04f9cac0de41be0857562d8b8d"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/missing_metrics.csv",
+      "sha256": "9d600a2a28d93b86a31075286310812668a3d31d52cb11a1a682c6b8e27ba0fc"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/baseline_comparison.csv",
+      "sha256": "b03de6f3e40808693329d0050b5ae47fc0c29719f62798c2e140d9a53a2f81c8"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/metric_chart.svg",
+      "sha256": "95e9af58ddd810a1fd7551aa0d75b6481000b702153ca95341dc470aee461792"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/report.md",
+      "sha256": "845f3244788295e9d50bae76f61f309617dc831a103904640a6814502a98abb7"
+    },
+    {
+      "path": "runs/m1-s01-local/reports/index.html",
+      "sha256": "7a4dcf9ba4ff60997f2ae522f04c80cf97b07dd5a0fcd6e9778154ca04398a15"
+    }
+  ],
+  "run_id": "m1-s01-local",
+  "run_manifest_ref": {
+    "path": "runs/m1-s01-local/state/run_manifest.json",
+    "reason": "The final run manifest is refreshed after analysis/report artifacts are written, so analysis records the manifest path without a pre-refresh hash.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata_ref": {
+    "path": "runs/m1-s01-local/state/run_metadata.json",
+    "sha256": "51208d3456c03878d6a5370edf48c83e637050f610db4c0b0e727ec7e6c155c4"
+  },
+  "schema_version": "v1",
+  "status": "PASS"
+}

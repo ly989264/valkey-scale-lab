@@ -1,0 +1,5 @@
+metric,status,value,unit,reason
+nodes_observed_after_fault,PASS,0,count,
+failover_latency_ms,MISSING,,ms,source artifact did not provide metric
+split_brain_duration_ms,SKIPPED_WITH_REASON,,ms,No failover scenario is executed in M1-S01.
+cleanup_resources_remaining,PASS,0,count,

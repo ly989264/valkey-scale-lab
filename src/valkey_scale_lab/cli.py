@@ -8,6 +8,7 @@ from pathlib import Path
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.analysis import AnalysisError, WorkloadImpactError, build_workload_impact_analysis, create_analysis_summary
+from valkey_scale_lab.artifacts import build_run_metadata, create_run_context, write_run_manifest, write_run_metadata
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
 from valkey_scale_lab.fault.sandbox import FaultError, apply_fault, clear_fault
 from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
@@ -227,6 +228,20 @@ def _resource_preflight(args: argparse.Namespace) -> int:
     return 0 if report["can_run"] else 1
 
 
+def _run_init(args: argparse.Namespace) -> int:
+    context = create_run_context(args.run_id, args.runs_root)
+    metadata = build_run_metadata(
+        context,
+        config_path=args.config,
+        runtime_provider=args.runtime_provider,
+        runtime_mode=args.runtime_mode,
+    )
+    write_run_metadata(context, metadata)
+    write_run_manifest(context, metadata=metadata, status=args.status)
+    print(context.run_root.as_posix())
+    return 0
+
+
 def _nodehost_cli_overrides(args: argparse.Namespace) -> dict[str, object] | None:
     runtime: dict[str, object] = {}
     cluster: dict[str, object] = {}
@@ -374,6 +389,18 @@ def build_parser() -> argparse.ArgumentParser:
     _add_nodehost_overrides(preflight)
     preflight.set_defaults(func=_resource_preflight)
     _add_unimplemented(resource, "resource")
+
+    run = sub.add_parser("run", help="Create and inspect run-oriented artifact directories.")
+    run_sub = run.add_subparsers(dest="run_command", metavar="<run-command>")
+    init = run_sub.add_parser("init", help="Create runs/<run_id>/artifacts|logs|reports|state with metadata.")
+    init.add_argument("--run-id", help="Deterministic run id. Generated from UTC time when omitted.")
+    init.add_argument("--runs-root", default="runs", help="Root directory for run outputs.")
+    init.add_argument("--config", help="Optional config path to hash into run metadata.")
+    init.add_argument("--runtime-provider", default="local")
+    init.add_argument("--runtime-mode", default="metadata-init")
+    init.add_argument("--status", default="PASS", choices=["PASS", "FAIL", "PARTIAL", "MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"])
+    init.set_defaults(func=_run_init)
+    _add_unimplemented(run, "run")
 
     return parser
 

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>P09 Analysis Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; color: #202124; }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0 24px; }
+    th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; }
+    th { background: #f6f8fa; }
+    code { background: #f6f8fa; padding: 2px 4px; }
+  </style>
+</head>
+<body>
+  <h1>P09 Analysis Report</h1>
+  <p>Status: <code>PASS</code></p>
+  <p>Source phase: <code>M1-S01</code></p>
+  <h2>运行元数据</h2>
+  <table><thead><tr><th>字段</th><th>值</th></tr></thead><tbody><tr><td>run_id</td><td><code>m1-s01-local</code></td></tr>
+<tr><td>created_at</td><td><code>2026-07-08T13:44:20Z</code></td></tr>
+<tr><td>git_sha</td><td><code>1bbbca941a8636a9e4685f4c2973ae4d15ddfd4d</code></td></tr>
+<tr><td>valkey_version</td><td><code>MISSING: Valkey endpoints were not probed while creating run metadata.</code></td></tr>
+<tr><td>artifact_root</td><td><code>runs/m1-s01-local/artifacts</code></td></tr></tbody></table>
+  <h2>分析发现</h2>
+  <table><thead><tr><th>Name</th><th>Status</th></tr></thead><tbody><tr><td>source_phase</td><td>PASS</td></tr>
+<tr><td>real_valkey_evidence</td><td>BLOCKED_WITH_REASON</td></tr>
+<tr><td>failover</td><td>SKIPPED_WITH_REASON</td></tr>
+<tr><td>cleanup</td><td>PASS</td></tr></tbody></table>
+  <h2>缺失指标</h2>
+  <table><thead><tr><th>指标</th><th>状态</th><th>原因</th></tr></thead><tbody><tr><td>real_valkey_smoke</td><td>SKIPPED_WITH_REASON</td><td>The local sandbox denied port preflight bind before a real Valkey smoke run could start.</td></tr>
+<tr><td>split_brain_duration_ms</td><td>SKIPPED_WITH_REASON</td><td>No failover scenario is executed in M1-S01.</td></tr></tbody></table>
+  <h2>图表</h2>
+  <img src="metric_chart.svg" alt="P09 artifact metrics chart">
+</body>
+</html>
