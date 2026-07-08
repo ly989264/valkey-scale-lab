@@ -1,0 +1,21 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "failover_report",
+  "phase_id": "M1-S02",
+  "run_id": "m1-s02-local",
+  "created_at": "2026-07-08T00:00:00Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "unknown"
+  },
+  "status": "SKIPPED_WITH_REASON",
+  "reason": "M1-S02 validates setup telemetry; failover behavior is covered by later milestone stages.",
+  "failovers": [],
+  "summary": {
+    "split_brain_duration_ms": {
+      "status": "SKIPPED_WITH_REASON",
+      "reason": "No failover scenario is executed in M1-S02.",
+      "impact": "Failover metrics are not evaluated by this stage report."
+    }
+  }
+}

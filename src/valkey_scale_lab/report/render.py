@@ -38,7 +38,10 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_metrics_csv(report_dir / "metrics.csv", metrics),
         _write_missing_csv(report_dir / "missing_metrics.csv", missing),
         _write_baseline_csv(report_dir / "baseline_comparison.csv", analysis.get("baseline_comparison", {})),
+        _write_setup_phase_csv(report_dir / "setup_phase_durations.csv", analysis.get("setup_aggregates", {})),
+        _write_setup_nodes_csv(report_dir / "setup_slowest_nodes.csv", analysis.get("setup_aggregates", {})),
         _write_chart(report_dir / "metric_chart.svg", metrics),
+        _write_setup_waterfall_svg(report_dir / "setup_waterfall.svg", analysis.get("setup_aggregates", {})),
         _write_markdown(report_dir / "report.md", analysis),
         _write_html(report_dir / "index.html", analysis),
     ]
@@ -66,6 +69,11 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
             "impact": "Report cannot link back to run metadata.",
         },
         "reports": [_report_record(path) for path in generated],
+        "setup_report_inputs": {
+            "setup_telemetry": analysis.get("setup_telemetry", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include setup telemetry"}),
+            "csv": "setup_phase_durations.csv",
+            "svg": "setup_waterfall.svg",
+        },
     }
     _write_json(index_path, index)
     _write_phase_summary(index_path.parent, analysis, index_path, generated)
@@ -123,6 +131,37 @@ def _write_baseline_csv(path: Path, baseline: dict[str, Any]) -> Path:
     return path
 
 
+def _write_setup_phase_csv(path: Path, setup: dict[str, Any]) -> Path:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["metric", "value_ms", "status", "reason"])
+        writer.writeheader()
+        for item in setup.get("phase_duration_ranking", []):
+            writer.writerow({"metric": item.get("metric", "MISSING"), "value_ms": item.get("value_ms", ""), "status": "PASS", "reason": ""})
+        if not setup.get("phase_duration_ranking"):
+            writer.writerow({"metric": "setup_telemetry", "value_ms": "", "status": setup.get("status", "SKIPPED_WITH_REASON"), "reason": setup.get("reason", "")})
+    return path
+
+
+def _write_setup_nodes_csv(path: Path, setup: dict[str, Any]) -> Path:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["logical_id", "nodehost_id", "node_ready_ms", "node_role", "node_cluster_state", "node_cluster_known_nodes"])
+        writer.writeheader()
+        for item in setup.get("slowest_nodes_topN", []):
+            if not isinstance(item, dict) or item.get("status") == "SKIPPED_WITH_REASON":
+                continue
+            writer.writerow(
+                {
+                    "logical_id": item.get("logical_id", "MISSING"),
+                    "nodehost_id": item.get("nodehost_id", "MISSING"),
+                    "node_ready_ms": item.get("node_ready_ms", ""),
+                    "node_role": item.get("node_role", "MISSING"),
+                    "node_cluster_state": item.get("node_cluster_state", "MISSING"),
+                    "node_cluster_known_nodes": item.get("node_cluster_known_nodes", "MISSING"),
+                }
+            )
+    return path
+
+
 def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
     numeric = [m for m in metrics if isinstance(m.get("value"), (int, float)) and not isinstance(m.get("value"), bool)]
     max_value = max([float(m["value"]) for m in numeric] + [1.0])
@@ -156,8 +195,36 @@ def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
     return path
 
 
+def _write_setup_waterfall_svg(path: Path, setup: dict[str, Any]) -> Path:
+    rows = [item for item in setup.get("phase_duration_ranking", []) if isinstance(item.get("value_ms"), (int, float))]
+    max_value = max([float(item["value_ms"]) for item in rows] + [1.0])
+    y = 42
+    parts: list[str] = []
+    for item in rows[:17]:
+        name = html.escape(str(item.get("metric", "MISSING")))
+        value = float(item["value_ms"])
+        width = int(380 * (value / max_value))
+        parts.append(f'<text x="12" y="{y + 14}" font-size="12">{name}</text>')
+        parts.append(f'<rect x="210" y="{y}" width="{max(width, 2)}" height="18" fill="#326c7a"/>')
+        parts.append(f'<text x="{220 + max(width, 2)}" y="{y + 14}" font-size="12">{value:.3f} ms</text>')
+        y += 32
+    if not rows:
+        parts.append('<text x="12" y="56" font-size="13">setup_telemetry.json 未提供可绘制的数值阶段耗时。</text>')
+    height = max(y + 20, 100)
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="720" height="{height}" viewBox="0 0 720 {height}">\n'
+        '<rect width="100%" height="100%" fill="#ffffff"/>\n'
+        '<text x="12" y="24" font-size="16" font-weight="700">集群拉起瀑布图</text>\n'
+        + "\n".join(parts)
+        + "\n</svg>\n"
+    )
+    path.write_text(svg, encoding="utf-8")
+    return path
+
+
 def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     metadata = analysis.get("run_metadata", {})
+    setup = analysis.get("setup_aggregates", {})
     lines = [
         "# P09 Analysis Report",
         "",
@@ -177,6 +244,26 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     ]
     for finding in analysis.get("findings", []):
         lines.append(f"- {finding.get('name', 'finding')}: {finding.get('status', 'MISSING')}")
+    lines.extend(["", "## 集群拉起瀑布图", ""])
+    if setup.get("phase_duration_ranking"):
+        lines.append("![集群拉起瀑布图](setup_waterfall.svg)")
+    else:
+        lines.append(f"- {setup.get('status', 'SKIPPED_WITH_REASON')}: {setup.get('reason', '未提供 setup telemetry')}")
+    lines.extend(["", "## 阶段耗时排序", ""])
+    for item in setup.get("phase_duration_ranking", [])[:10]:
+        lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('value_ms', 'MISSING')} ms")
+    if not setup.get("phase_duration_ranking"):
+        lines.append("- SKIPPED_WITH_REASON: 无可排序的阶段耗时")
+    lines.extend(["", "## 慢节点 TopN", ""])
+    slow_nodes = setup.get("slowest_nodes_topN", [])
+    if slow_nodes:
+        for item in slow_nodes[:10]:
+            if isinstance(item, dict) and item.get("status") == "SKIPPED_WITH_REASON":
+                lines.append(f"- SKIPPED_WITH_REASON: {item.get('reason', '')}")
+            elif isinstance(item, dict):
+                lines.append(f"- {item.get('logical_id', 'MISSING')}: {item.get('node_ready_ms', 'MISSING')} ms, role={item.get('node_role', 'MISSING')}")
+    else:
+        lines.append("- SKIPPED_WITH_REASON: 无慢节点样本")
     lines.extend(["", "## 缺失指标", ""])
     missing = analysis.get("missing_metrics", [])
     if missing:
@@ -184,13 +271,14 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('status', 'MISSING')} - {item.get('reason', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- metric_chart.svg"])
+    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- metric_chart.svg", "- setup_waterfall.svg"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
 
 def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
     metadata = analysis.get("run_metadata", {})
+    setup = analysis.get("setup_aggregates", {})
     metadata_rows = "\n".join(
         "<tr><td>{}</td><td><code>{}</code></td></tr>".format(
             html.escape(key),
@@ -213,6 +301,20 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         )
         for item in analysis.get("missing_metrics", [])
     ) or '<tr><td colspan="3">none</td></tr>'
+    setup_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td></tr>".format(html.escape(str(item.get("metric", "MISSING"))), html.escape(str(item.get("value_ms", "MISSING"))))
+        for item in setup.get("phase_duration_ranking", [])[:12]
+    ) or '<tr><td colspan="2">SKIPPED_WITH_REASON: 无可排序的阶段耗时</td></tr>'
+    slow_node_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(str(item.get("logical_id", item.get("status", "MISSING")))),
+            html.escape(str(item.get("node_ready_ms", ""))),
+            html.escape(str(item.get("node_role", ""))),
+            html.escape(str(item.get("node_cluster_state", item.get("reason", "")))),
+        )
+        for item in setup.get("slowest_nodes_topN", [])[:10]
+        if isinstance(item, dict)
+    ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无慢节点样本</td></tr>'
     document = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -236,6 +338,12 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   <table><thead><tr><th>Name</th><th>Status</th></tr></thead><tbody>{finding_rows}</tbody></table>
   <h2>缺失指标</h2>
   <table><thead><tr><th>指标</th><th>状态</th><th>原因</th></tr></thead><tbody>{missing_rows}</tbody></table>
+  <h2>集群拉起瀑布图</h2>
+  <img src="setup_waterfall.svg" alt="集群拉起瀑布图">
+  <h2>阶段耗时排序</h2>
+  <table><thead><tr><th>阶段指标</th><th>耗时 ms</th></tr></thead><tbody>{setup_rows}</tbody></table>
+  <h2>慢节点 TopN</h2>
+  <table><thead><tr><th>节点</th><th>ready ms</th><th>角色</th><th>状态</th></tr></thead><tbody>{slow_node_rows}</tbody></table>
   <h2>图表</h2>
   <img src="metric_chart.svg" alt="P09 artifact metrics chart">
 </body>

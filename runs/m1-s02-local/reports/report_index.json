@@ -1,0 +1,172 @@
+{
+  "analysis_path": "runs/m1-s02-local/artifacts/analysis_summary.json",
+  "artifact_type": "report_index",
+  "created_at": "2026-07-08T14:06:06Z",
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "reports": [
+    {
+      "path": "runs/m1-s02-local/reports/metrics.csv",
+      "sha256": "a9b0140d0813d10eb98b17f69941538bf0237c6ed6f7c16b932d14f74f3ff11a"
+    },
+    {
+      "path": "runs/m1-s02-local/reports/missing_metrics.csv",
+      "sha256": "edc400ea12cad4e3c170cbc5be40ad0619925b0adc2283762bc1aaad7a23f306"
+    },
+    {
+      "path": "runs/m1-s02-local/reports/baseline_comparison.csv",
+      "sha256": "b03de6f3e40808693329d0050b5ae47fc0c29719f62798c2e140d9a53a2f81c8"
+    },
+    {
+      "path": "runs/m1-s02-local/reports/setup_phase_durations.csv",
+      "sha256": "fe7c1cecc5218e2ac81bd14185027322c1538e7be02e7801aab1e968ff00a697"
+    },
+    {
+      "path": "runs/m1-s02-local/reports/setup_slowest_nodes.csv",
+      "sha256": "545a3b4c0871e961b3177134b82049fc1af5c2b17d6a389bf997cd966a31c2b6"
+    },
+    {
+      "path": "runs/m1-s02-local/reports/metric_chart.svg",
+      "sha256": "95e9af58ddd810a1fd7551aa0d75b6481000b702153ca95341dc470aee461792"
+    },
+    {
+      "path": "runs/m1-s02-local/reports/setup_waterfall.svg",
+      "sha256": "2763c8c0f16d91b910352cc8fd1c9cabe5563f9b3d633e017f112e48f0bf255f"
+    },
+    {
+      "path": "runs/m1-s02-local/reports/report.md",
+      "sha256": "255fa5f130f3aed6526bd51749746545f3fcec302d532f3bf168bcc07f6660c6"
+    },
+    {
+      "path": "runs/m1-s02-local/reports/index.html",
+      "sha256": "704f76afac1e9d1e4a48dce141e01b4efce987c59349f5641688b9318a95f3b5"
+    }
+  ],
+  "run_id": "m1-s02-local",
+  "run_manifest_ref": {
+    "path": "runs/m1-s02-local/state/run_manifest.json",
+    "reason": "The final run manifest is refreshed after analysis/report artifacts are written, so analysis records the manifest path without a pre-refresh hash.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata_ref": {
+    "path": "runs/m1-s02-local/state/run_metadata.json",
+    "sha256": "c88e2240018713d619f817d1ccd99e89585266e54aab7787faeb681714939ac7"
+  },
+  "schema_version": "v1",
+  "setup_report_inputs": {
+    "csv": "setup_phase_durations.csv",
+    "setup_telemetry": {
+      "artifact_type": "setup_telemetry",
+      "cleanup": {
+        "cleanup_ms": 50.0,
+        "cleanup_timing": {
+          "cleanup_remove_containers_seconds": 0.05
+        },
+        "resources_remaining": [],
+        "status": "PASS"
+      },
+      "created_at": "2026-07-08T00:00:00Z",
+      "metrics": {
+        "cleanup_ms": 50.0,
+        "cluster_convergence_probe_ms": 30.0,
+        "cluster_meet_ms": 120.0,
+        "cluster_slots_assign_ms": 70.0,
+        "config_parse_ms": 1.0,
+        "config_validate_ms": 5.0,
+        "full_cluster_probe_ms": 20.0,
+        "node_config_distribute_ms": 25.0,
+        "node_config_generate_ms": 10.0,
+        "nodehost_start_ms": 40.0,
+        "plan_build_ms": 6.0,
+        "port_check_ms": 3.0,
+        "process_ready_wait_ms": 90.0,
+        "process_start_ms": 80.0,
+        "replica_replicate_ms": 110.0,
+        "resource_preflight_ms": {
+          "reason": "Resource preflight is only executed by stages that require bounded scale admission.",
+          "status": "SKIPPED_WITH_REASON"
+        },
+        "total_setup_ms": 609.0
+      },
+      "missing_metrics": [],
+      "node_count": 2,
+      "per_node_samples": [
+        {
+          "logical_id": "shard-0000-replica-00",
+          "node_cluster_known_nodes": 2,
+          "node_cluster_state": "ok",
+          "node_pid": 102,
+          "node_ping_ready_ms": 90.0,
+          "node_ready_ms": 90.0,
+          "node_role": "replica",
+          "nodehost_id": "nodehost-a"
+        },
+        {
+          "logical_id": "shard-0000-primary",
+          "node_cluster_known_nodes": 2,
+          "node_cluster_state": "ok",
+          "node_pid": 101,
+          "node_ping_ready_ms": 80.0,
+          "node_ready_ms": 80.0,
+          "node_role": "primary",
+          "nodehost_id": "nodehost-a"
+        }
+      ],
+      "per_nodehost_samples": [
+        {
+          "az_id": "az-a",
+          "container_name": "vslab-nodehost-a",
+          "host_id": "local",
+          "nodehost_id": "nodehost-a",
+          "nodehost_process_count": 2,
+          "nodehost_start_ms": 40.0
+        }
+      ],
+      "phase_id": "M1-S02",
+      "producer": {
+        "name": "test",
+        "version": "v1"
+      },
+      "run_id": "fixture-success",
+      "same_schema_scale_rungs": [
+        30,
+        50,
+        100,
+        200
+      ],
+      "scenario": "success",
+      "schema_version": "v1",
+      "slowest_nodes_topN": [
+        {
+          "logical_id": "shard-0000-replica-00",
+          "node_cluster_known_nodes": 2,
+          "node_cluster_state": "ok",
+          "node_pid": 102,
+          "node_ping_ready_ms": 90.0,
+          "node_ready_ms": 90.0,
+          "node_role": "replica",
+          "nodehost_id": "nodehost-a"
+        }
+      ],
+      "slowest_replica_replicate_topN": [
+        {
+          "logical_id": "shard-0000-replica-00",
+          "node_cluster_known_nodes": 2,
+          "node_cluster_state": "ok",
+          "node_pid": 102,
+          "node_ping_ready_ms": 90.0,
+          "node_ready_ms": 90.0,
+          "node_role": "replica",
+          "nodehost_id": "nodehost-a"
+        }
+      ],
+      "source_artifacts": [],
+      "status": "PASS"
+    },
+    "svg": "setup_waterfall.svg"
+  },
+  "status": "PASS"
+}

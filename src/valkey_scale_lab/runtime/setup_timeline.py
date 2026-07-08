@@ -10,6 +10,7 @@ from typing import Any, Callable, Iterator
 from valkey_scale_lab import __version__
 
 SETUP_TIMELINE_ARTIFACT_TYPE = "p13_setup_exhaustive_timeline"
+SETUP_TELEMETRY_ARTIFACT_TYPE = "setup_telemetry"
 SETUP_TIMELINE_OPTIMIZATION_PHASE = "P13O-07_SETUP_EXHAUSTIVE_TIMELINE"
 SETUP_TIMELINE_UNEXPLAINED_LIMIT_SECONDS = 2.0
 
@@ -48,6 +49,31 @@ REQUIRED_SETUP_GROUPS = [
     "process_start",
     "cluster_formation",
 ]
+
+REQUIRED_SETUP_TELEMETRY_METRICS = [
+    "config_parse_ms",
+    "config_validate_ms",
+    "resource_preflight_ms",
+    "plan_build_ms",
+    "port_check_ms",
+    "nodehost_start_ms",
+    "node_config_generate_ms",
+    "node_config_distribute_ms",
+    "process_start_ms",
+    "process_ready_wait_ms",
+    "cluster_meet_ms",
+    "cluster_slots_assign_ms",
+    "replica_replicate_ms",
+    "cluster_convergence_probe_ms",
+    "full_cluster_probe_ms",
+    "cleanup_ms",
+    "total_setup_ms",
+]
+
+RUNTIME_ONLY_REASON = {
+    "status": "SKIPPED_WITH_REASON",
+    "reason": "This metric is only available after a live local setup reaches the corresponding runtime step.",
+}
 
 DEFAULT_SETUP_GROUPS = [
     {
@@ -89,6 +115,18 @@ def utc_now() -> str:
 
 def _round_seconds(value: float) -> float:
     return round(max(float(value), 0.0), 6)
+
+
+def _ms(seconds: float | int) -> float:
+    return round(max(float(seconds), 0.0) * 1000.0, 3)
+
+
+def _missing(reason: str, impact: str) -> dict[str, str]:
+    return {"status": "MISSING", "reason": reason, "impact": impact}
+
+
+def _skipped(reason: str) -> dict[str, str]:
+    return {"status": "SKIPPED_WITH_REASON", "reason": reason}
 
 
 class SetupTimeline:
@@ -331,6 +369,274 @@ def build_setup_timeline_artifact(
     if extra:
         artifact.update(extra)
     return artifact
+
+
+def build_setup_telemetry_artifact(
+    *,
+    phase_id: str,
+    run_id: str,
+    scenario: str,
+    status: str,
+    node_count: int,
+    segments: list[dict[str, Any]] | None = None,
+    runtime_timings: list[dict[str, Any]] | None = None,
+    nodes: list[dict[str, Any]] | None = None,
+    nodehosts: list[dict[str, Any]] | None = None,
+    cleanup_report: dict[str, Any] | None = None,
+    source_artifacts: list[dict[str, Any]] | None = None,
+    blocked_reason: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build the common M1 setup telemetry artifact from runtime evidence."""
+    normalized_segments = _normalize_segments(segments or []) if segments else []
+    timings_by_name = {
+        str(item.get("name")): dict(item)
+        for item in (runtime_timings or [])
+        if isinstance(item, dict) and item.get("name")
+    }
+    segment_ms = _segment_duration_ms(normalized_segments)
+    metric_values = {
+        "config_parse_ms": _segment_detail_ms(normalized_segments, "config_parse_and_validate", "config_parse_ms")
+        or _missing("config_parse_and_validate span did not include parser timing detail.", "Cannot independently rank parser cost."),
+        "config_validate_ms": _segment_detail_ms(normalized_segments, "config_parse_and_validate", "config_validate_ms")
+        or segment_ms.get("config_parse_and_validate")
+        or _missing("config_parse_and_validate span was not recorded.", "Cannot rank config validation cost."),
+        "resource_preflight_ms": segment_ms.get("resource_preflight")
+        or _skipped("Resource preflight is only executed by stages that require bounded scale admission."),
+        "plan_build_ms": _sum_metric_values(segment_ms.get("node_spec_generation"), segment_ms.get("nodehost_plan")),
+        "port_check_ms": segment_ms.get("port_preflight_check")
+        or _missing("port_preflight_check span was not recorded.", "Cannot isolate local port collision check cost."),
+        "nodehost_start_ms": _timing_ms(timings_by_name, "nodehost_start") or segment_ms.get("nodehost_start") or RUNTIME_ONLY_REASON,
+        "node_config_generate_ms": segment_ms.get("node_config_local_generate")
+        or _timing_detail_ms(timings_by_name, "process_config_prepare", "config_local_generate_seconds")
+        or RUNTIME_ONLY_REASON,
+        "node_config_distribute_ms": _sum_metric_values(
+            segment_ms.get("nodehost_bundle_write"),
+            segment_ms.get("docker_cp_bundle"),
+            segment_ms.get("nodehost_bundle_install"),
+        ),
+        "process_start_ms": _timing_ms(timings_by_name, "process_start") or segment_ms.get("nodehost_start_all") or RUNTIME_ONLY_REASON,
+        "process_ready_wait_ms": _timing_ms(timings_by_name, "process_ready_wait") or segment_ms.get("process_ready_wait") or RUNTIME_ONLY_REASON,
+        "cluster_meet_ms": _sum_metric_values(
+            _timing_ms(timings_by_name, "primary_cluster_create") or segment_ms.get("primary_cluster_create"),
+            _timing_ms(timings_by_name, "replica_meet") or segment_ms.get("replica_meet"),
+        ),
+        "cluster_slots_assign_ms": _timing_detail_ms(timings_by_name, "primary_cluster_create", "slot_assignment_seconds")
+        or _timing_ms(timings_by_name, "cluster_slots_assign")
+        or segment_ms.get("cluster_slots_assign")
+        or _timing_ms(timings_by_name, "primary_cluster_create")
+        or segment_ms.get("primary_cluster_create")
+        or RUNTIME_ONLY_REASON,
+        "replica_replicate_ms": _timing_ms(timings_by_name, "replica_replicate") or segment_ms.get("replica_replicate") or RUNTIME_ONLY_REASON,
+        "cluster_convergence_probe_ms": _sum_metric_values(
+            _timing_ms(timings_by_name, "runtime_representative_probe"),
+            segment_ms.get("cluster_convergence_wait"),
+        ),
+        "full_cluster_probe_ms": _sum_metric_values(
+            _timing_ms(timings_by_name, "runtime_final_full_probe"),
+            segment_ms.get("cluster_final_full_snapshot"),
+            segment_ms.get("cluster_final_snapshot"),
+        ),
+        "cleanup_ms": _cleanup_ms(cleanup_report),
+        "total_setup_ms": _ms(sum(float(segment["duration_seconds"]) for segment in normalized_segments))
+        if normalized_segments
+        else _missing("setup timeline segments were not recorded.", "Cannot compute total setup duration."),
+    }
+    node_samples = _node_samples(nodes or [], metric_values)
+    nodehost_samples = _nodehost_samples(nodehosts or [], nodes or [], metric_values)
+    slow_nodes = _top_n(node_samples, "node_ready_ms")
+    slow_replicas = _top_n([sample for sample in node_samples if sample.get("node_role") == "replica"], "node_ready_ms")
+    missing_metrics = _setup_missing_metrics(metric_values)
+    artifact = {
+        "schema_version": "v1",
+        "artifact_type": SETUP_TELEMETRY_ARTIFACT_TYPE,
+        "phase_id": phase_id,
+        "run_id": run_id,
+        "scenario": scenario,
+        "created_at": utc_now(),
+        "producer": {"name": "valkey-scale-lab-runtime", "version": __version__},
+        "status": status if not missing_metrics or status != "PASS" else "PASS",
+        "node_count": int(node_count),
+        "same_schema_scale_rungs": [30, 50, 100, 200],
+        "metrics": metric_values,
+        "per_node_samples": node_samples
+        or [_skipped("No per-node samples exist because setup did not reach live node runtime.")],
+        "per_nodehost_samples": nodehost_samples
+        or [_skipped("No per-nodehost samples exist because setup did not reach nodehost runtime.")],
+        "slowest_nodes_topN": slow_nodes
+        or [_skipped("Slow-node ranking requires numeric per-node readiness samples.")],
+        "slowest_replica_replicate_topN": slow_replicas
+        or [_skipped("Slow-replica ranking requires numeric replica readiness samples.")],
+        "cleanup": _cleanup_summary(cleanup_report),
+        "missing_metrics": missing_metrics,
+        "source_artifacts": source_artifacts or [],
+    }
+    if blocked_reason:
+        artifact["blocked_reason"] = blocked_reason
+    return artifact
+
+
+def write_setup_telemetry_artifact(path: str | Path, artifact: dict[str, Any]) -> dict[str, Any]:
+    out = Path(path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return artifact
+
+
+def validate_setup_telemetry_artifact(artifact: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if artifact.get("artifact_type") != SETUP_TELEMETRY_ARTIFACT_TYPE:
+        errors.append("artifact_type must be setup_telemetry")
+    metrics = artifact.get("metrics")
+    if not isinstance(metrics, dict):
+        return [*errors, "metrics must be object"]
+    for name in REQUIRED_SETUP_TELEMETRY_METRICS:
+        if name not in metrics:
+            errors.append(f"missing setup telemetry metric: {name}")
+        elif not _is_metric_value(metrics[name]):
+            errors.append(f"setup telemetry metric {name} must be numeric ms or structured missing/skipped reason")
+    for collection in ["per_node_samples", "per_nodehost_samples", "slowest_nodes_topN", "slowest_replica_replicate_topN"]:
+        if not isinstance(artifact.get(collection), list) or not artifact.get(collection):
+            errors.append(f"{collection} must be a non-empty array or structured skipped reason")
+    if not isinstance(artifact.get("cleanup"), dict):
+        errors.append("cleanup must be object")
+    return errors
+
+
+def _segment_duration_ms(segments: list[dict[str, Any]]) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for segment in segments:
+        if segment.get("kind") == "gap":
+            continue
+        name = str(segment.get("name", ""))
+        out[name] = round(out.get(name, 0.0) + _ms(float(segment.get("duration_seconds", 0.0))), 3)
+    return out
+
+
+def _segment_detail_ms(segments: list[dict[str, Any]], segment_name: str, detail_name: str) -> float | None:
+    for segment in segments:
+        if segment.get("name") != segment_name:
+            continue
+        details = segment.get("details", {})
+        if not isinstance(details, dict):
+            return None
+        value = details.get(detail_name)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return round(max(float(value), 0.0), 3)
+    return None
+
+
+def _timing_ms(timings: dict[str, dict[str, Any]], name: str) -> float | None:
+    value = timings.get(name, {}).get("duration_seconds")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return _ms(value)
+    return None
+
+
+def _timing_detail_ms(timings: dict[str, dict[str, Any]], name: str, detail: str) -> float | None:
+    value = timings.get(name, {}).get("details", {}).get(detail)
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return _ms(value)
+    return None
+
+
+def _sum_metric_values(*values: Any) -> float | dict[str, str]:
+    numeric = [float(value) for value in values if isinstance(value, (int, float)) and not isinstance(value, bool)]
+    if numeric:
+        return round(sum(numeric), 3)
+    return dict(RUNTIME_ONLY_REASON)
+
+
+def _cleanup_ms(cleanup_report: dict[str, Any] | None) -> float | dict[str, str]:
+    if not cleanup_report:
+        return _skipped("Cleanup timing is attached after gate cleanup runs.")
+    timing = cleanup_report.get("cleanup_timing", {})
+    if not isinstance(timing, dict):
+        return _missing("cleanup_report.cleanup_timing is missing or invalid.", "Cannot quantify cleanup duration.")
+    total = sum(float(value) for value in timing.values() if isinstance(value, (int, float)) and not isinstance(value, bool))
+    return _ms(total)
+
+
+def _cleanup_summary(cleanup_report: dict[str, Any] | None) -> dict[str, Any]:
+    if not cleanup_report:
+        return {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Cleanup report is written by the cleanup command after setup.",
+            "cleanup_ms": _skipped("Cleanup timing is attached after gate cleanup runs."),
+            "resources_remaining": _skipped("Residual resources are checked during cleanup."),
+        }
+    return {
+        "status": cleanup_report.get("status", "MISSING"),
+        "cleanup_ms": _cleanup_ms(cleanup_report),
+        "resources_remaining": cleanup_report.get("resources_remaining", []),
+        "cleanup_timing": cleanup_report.get("cleanup_timing", {}),
+    }
+
+
+def _node_samples(nodes: list[dict[str, Any]], metrics: dict[str, Any]) -> list[dict[str, Any]]:
+    process_ready = metrics.get("process_ready_wait_ms", RUNTIME_ONLY_REASON)
+    samples: list[dict[str, Any]] = []
+    for node in nodes:
+        logical_id = str(node.get("logical_id", "MISSING"))
+        pid = node.get("pid", _missing("Node pid was not present in runtime state.", "Cannot prove process identity for this node."))
+        known = node.get("cluster_known_nodes", node.get("known_nodes"))
+        if known is None:
+            known = _missing("Node cluster_known_nodes was not persisted in runtime state.", "Report cannot compare per-node membership convergence.")
+        samples.append(
+            {
+                "logical_id": logical_id,
+                "nodehost_id": node.get("nodehost_id", node.get("container_name", "MISSING")),
+                "node_ready_ms": process_ready,
+                "node_ping_ready_ms": process_ready,
+                "node_cluster_known_nodes": known,
+                "node_cluster_state": node.get("cluster_state", "MISSING"),
+                "node_role": node.get("role", "MISSING"),
+                "node_pid": pid,
+            }
+        )
+    return samples
+
+
+def _nodehost_samples(nodehosts: list[dict[str, Any]], nodes: list[dict[str, Any]], metrics: dict[str, Any]) -> list[dict[str, Any]]:
+    counts: dict[str, int] = {}
+    for node in nodes:
+        nodehost_id = str(node.get("nodehost_id", node.get("container_name", "MISSING")))
+        counts[nodehost_id] = counts.get(nodehost_id, 0) + 1
+    if not nodehosts and counts:
+        nodehosts = [{"nodehost_id": key} for key in sorted(counts)]
+    samples = []
+    for nodehost in nodehosts:
+        nodehost_id = str(nodehost.get("nodehost_id", nodehost.get("container_name", "MISSING")))
+        samples.append(
+            {
+                "nodehost_id": nodehost_id,
+                "az_id": nodehost.get("az_id", "MISSING"),
+                "host_id": nodehost.get("host_id", "MISSING"),
+                "container_name": nodehost.get("container_name", "MISSING"),
+                "nodehost_start_ms": metrics.get("nodehost_start_ms", RUNTIME_ONLY_REASON),
+                "nodehost_process_count": int(nodehost.get("logical_node_count", counts.get(nodehost_id, 0)) or 0),
+            }
+        )
+    return samples
+
+
+def _top_n(samples: list[dict[str, Any]], key: str, limit: int = 10) -> list[dict[str, Any]]:
+    numeric = [sample for sample in samples if isinstance(sample.get(key), (int, float)) and not isinstance(sample.get(key), bool)]
+    return sorted(numeric, key=lambda item: float(item[key]), reverse=True)[:limit]
+
+
+def _setup_missing_metrics(metrics: dict[str, Any]) -> list[dict[str, Any]]:
+    missing: list[dict[str, Any]] = []
+    for name in REQUIRED_SETUP_TELEMETRY_METRICS:
+        value = metrics.get(name)
+        if isinstance(value, dict) and value.get("status") in {"MISSING", "SKIPPED_WITH_REASON"}:
+            missing.append({"metric": name, **value})
+    return missing
+
+
+def _is_metric_value(value: Any) -> bool:
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return value >= 0
+    return isinstance(value, dict) and value.get("status") in {"MISSING", "SKIPPED_WITH_REASON"} and bool(value.get("reason"))
 
 
 def _normalize_segments(segments: list[dict[str, Any]]) -> list[dict[str, Any]]:

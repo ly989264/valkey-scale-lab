@@ -22,7 +22,7 @@ from valkey_scale_lab.cluster_timeout import (
     valkey_cluster_timeout_config_lines,
 )
 from valkey_scale_lab.config.simple_yaml import parse_config_file
-from valkey_scale_lab.config.validation import load_effective_config, normalize_config, validate_semantics
+from valkey_scale_lab.config.validation import load_effective_config, load_effective_config_with_timing, normalize_config, validate_semantics
 from valkey_scale_lab.metrics import MISSING, TelemetryRun, workload_metrics, write_jsonl
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
@@ -306,9 +306,22 @@ def create_scenario(
         artifacts = Path(artifacts_dir)
         artifacts.mkdir(parents=True, exist_ok=True)
 
-    with _timeline_span(setup_timeline, "config_parse_and_validate", "configuration", {"config_path": str(config_path)}):
-        config = load_effective_config(config_path, global_config_path=global_config_path, cli_overrides=cli_overrides)
+    config_timing_details = {"config_path": str(config_path)}
+    with _timeline_span(setup_timeline, "config_parse_and_validate", "configuration", config_timing_details):
+        config, config_timings = load_effective_config_with_timing(
+            config_path,
+            global_config_path=global_config_path,
+            cli_overrides=cli_overrides,
+        )
+        semantic_start = time.perf_counter()
         errors = _runtime_semantic_errors(config, phase=phase, scenario=scenario)
+        semantic_ms = round(max(time.perf_counter() - semantic_start, 0.0) * 1000.0, 3)
+        config_timing_details.update(config_timings)
+        config_timing_details["runtime_semantic_validate_ms"] = semantic_ms
+        config_timing_details["config_validate_ms"] = round(
+            float(config_timings["config_normalize_validate_ms"]) + semantic_ms,
+            3,
+        )
         if errors:
             message = "; ".join(f"{item['code']}: {item['message']}" for item in errors)
             raise DockerRuntimeError(message)
@@ -2601,9 +2614,27 @@ def _configure_process_cluster(
     replicas = [node for node in nodes if node["role"] == "replica"]
     first = primaries[0]
 
+    meet_details: dict[str, Any] = {}
     meet_started = time.monotonic()
-    primary_meet_commands = _tree_fanout_meet_nodes(first, primaries[1:], timeout=timeout)
-    _wait_process_known(primaries, expected=len(primaries), timeout=timeout, final_check=False)
+
+    def meet_primaries() -> int:
+        commands = _tree_fanout_meet_nodes(first, primaries[1:], timeout=timeout)
+        _wait_process_known(primaries, expected=len(primaries), timeout=timeout, final_check=False, timings=timings)
+        meet_details.update({"meet_commands": commands})
+        return commands
+
+    primary_meet_commands = _run_timed_step(
+        timings,
+        "primary_cluster_create",
+        lambda: _timeline_call(
+            setup_timeline,
+            "primary_cluster_create",
+            "cluster_formation",
+            meet_primaries,
+            {"primary_count": len(primaries), "fanout": CLUSTER_MEET_FANOUT},
+        ),
+        meet_details,
+    )
     snapshots.append(_process_cluster_summary("after_meet_primaries", _representative_nodes(primaries), total_node_count=len(nodes), sample_scope="representative_primaries"))
     operations.append(
         _operation(
@@ -2622,15 +2653,30 @@ def _configure_process_cluster(
 
     slots_started = time.monotonic()
     primary_slot_ranges = list(zip(primaries, _slot_ranges(len(primaries))))
-    _bounded_parallel(
-        primary_slot_ranges,
-        lambda item: _add_slots_node(item[0], item[1][0], item[1][1]),
-        parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
-        timeout=timeout,
-        label="parallel CLUSTER ADDSLOTS",
+
+    def assign_slots() -> None:
+        _bounded_parallel(
+            primary_slot_ranges,
+            lambda item: _add_slots_node(item[0], item[1][0], item[1][1]),
+            parallelism=CLUSTER_ORCHESTRATION_PARALLELISM,
+            timeout=timeout,
+            label="parallel CLUSTER ADDSLOTS",
+        )
+        _wait_process_slots_assigned(primaries, timeout=timeout, final_check=False, timings=timings)
+        _wait_process_cluster_ok(primaries, timeout=timeout, final_check=False, timings=timings)
+
+    _run_timed_step(
+        timings,
+        "cluster_slots_assign",
+        lambda: _timeline_call(
+            setup_timeline,
+            "cluster_slots_assign",
+            "cluster_formation",
+            assign_slots,
+            {"primary_count": len(primaries), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
+        ),
+        {"primary_count": len(primaries), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
     )
-    _wait_process_slots_assigned(primaries, timeout=timeout, final_check=False)
-    _wait_process_cluster_ok(primaries, timeout=timeout, final_check=False)
     snapshots.append(_process_cluster_summary("after_add_slots", _representative_nodes(primaries), total_node_count=len(nodes), sample_scope="representative_primaries"))
     operations.append(
         _operation(
@@ -2647,8 +2693,24 @@ def _configure_process_cluster(
 
     replica_meet_started = time.monotonic()
     primary_ids = _cluster_node_ids_by_shard(primaries, timeout=min(timeout, 120.0))
-    replica_meet_commands = _tree_fanout_meet_nodes(first, replicas, timeout=timeout)
-    _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False)
+
+    def meet_replicas() -> int:
+        commands = _tree_fanout_meet_nodes(first, replicas, timeout=timeout)
+        _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False, timings=timings)
+        return commands
+
+    replica_meet_commands = _run_timed_step(
+        timings,
+        "replica_meet",
+        lambda: _timeline_call(
+            setup_timeline,
+            "replica_meet",
+            "cluster_formation",
+            meet_replicas,
+            {"replica_count": len(replicas), "fanout": CLUSTER_MEET_FANOUT},
+        ),
+        {"replica_count": len(replicas), "fanout": CLUSTER_MEET_FANOUT},
+    )
     snapshots.append(_process_cluster_summary("after_meet_replicas", _representative_nodes(nodes), total_node_count=len(nodes), sample_scope="representative_by_az"))
     operations.append(
         _operation(
@@ -2666,10 +2728,24 @@ def _configure_process_cluster(
     )
 
     replica_started = time.monotonic()
-    _replicate_process_nodes_parallel(replicas, primary_ids, timeout=timeout)
-    _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False)
-    _wait_process_cluster_ok(nodes, timeout=timeout, final_check=False)
-    _wait_process_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, final_check=False)
+    def replicate_nodes() -> None:
+        _replicate_process_nodes_parallel(replicas, primary_ids, timeout=timeout)
+        _wait_process_known(nodes, expected=len(nodes), timeout=timeout, final_check=False, timings=timings)
+        _wait_process_cluster_ok(nodes, timeout=timeout, final_check=False, timings=timings)
+        _wait_process_role_counts(nodes, expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, final_check=False, timings=timings)
+
+    _run_timed_step(
+        timings,
+        "replica_replicate",
+        lambda: _timeline_call(
+            setup_timeline,
+            "replica_replicate",
+            "cluster_formation",
+            replicate_nodes,
+            {"replica_count": len(replicas), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
+        ),
+        {"replica_count": len(replicas), "parallelism": CLUSTER_ORCHESTRATION_PARALLELISM},
+    )
     snapshots.append(_process_cluster_summary("after_add_replicas", _representative_nodes(nodes), total_node_count=len(nodes), sample_scope="representative_by_az"))
     operations.append(
         _operation(
@@ -2685,8 +2761,9 @@ def _configure_process_cluster(
     )
 
     final_started = time.monotonic()
-    _wait_process_snapshot_clean(nodes, expected_nodes=len(nodes), expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout)
-    snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
+    with _timeline_span(setup_timeline, "cluster_final_full_snapshot", "cluster_formation", {"sample_scope": "all_nodes", "node_count": len(nodes)}):
+        _wait_process_snapshot_clean(nodes, expected_nodes=len(nodes), expected_primaries=len(primaries), expected_replicas=len(replicas), timeout=timeout, timings=timings)
+        snapshots.append(_process_cluster_summary("final", nodes, sample_scope="all_nodes"))
     operations.append(_operation("final_cluster_check", "PASS", final_started, snapshots[-1]))
     return operations, snapshots
 

@@ -26,8 +26,9 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
     evidence = _load_required(source_dir / "valkey_e2e_evidence.json")
     failover = _load_required(source_dir / "failover_report.json")
     cleanup = _load_required(source_dir / "cleanup_report.json")
+    setup_telemetry = _load_optional(source_dir / "setup_telemetry.json")
 
-    missing_metrics = _collect_missing_metrics(phase_summary, failover)
+    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry)
     failovers = list(failover.get("failovers", []))
     primary_failover = failovers[0] if failovers else {}
     failover_latency = primary_failover.get("failover_latency_ms", "MISSING")
@@ -67,6 +68,12 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
             "status": cleanup.get("status", "MISSING"),
             "resources_remaining": cleanup.get("resources_remaining", []),
         },
+        {
+            "name": "setup_telemetry",
+            "status": setup_telemetry.get("status", "SKIPPED_WITH_REASON"),
+            "node_count": setup_telemetry.get("node_count", "MISSING"),
+            "total_setup_ms": setup_telemetry.get("metrics", {}).get("total_setup_ms", "MISSING") if isinstance(setup_telemetry.get("metrics"), dict) else "MISSING",
+        },
     ]
 
     out = Path(out_path)
@@ -100,6 +107,12 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         "findings": findings,
         "metrics": metrics,
         "missing_metrics": missing_metrics,
+        "setup_telemetry": setup_telemetry
+        or {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Input artifacts did not include setup_telemetry.json.",
+        },
+        "setup_aggregates": _setup_aggregates(setup_telemetry),
         "baseline_comparison": baseline,
         "sidecars": [
             {
@@ -123,6 +136,12 @@ def _load_required(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise AnalysisError(f"source artifact must be a JSON object: {path}")
     return data
+
+
+def _load_optional(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    return _load_required(path)
 
 
 def _metadata_refs(run_manifest: dict[str, Any] | None) -> dict[str, Any]:
@@ -182,7 +201,7 @@ def _load_run_metadata(run_manifest: dict[str, Any] | None) -> dict[str, Any]:
         }
 
 
-def _collect_missing_metrics(phase_summary: dict[str, Any], failover: dict[str, Any]) -> list[dict[str, Any]]:
+def _collect_missing_metrics(phase_summary: dict[str, Any], failover: dict[str, Any], setup_telemetry: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
     for item in phase_summary.get("missing_metrics", []):
         if isinstance(item, dict) and item.get("metric"):
@@ -199,7 +218,45 @@ def _collect_missing_metrics(phase_summary: dict[str, Any], failover: dict[str, 
                     "source": "failover_report.summary",
                 },
             )
+    if setup_telemetry:
+        for item in setup_telemetry.get("missing_metrics", []):
+            if isinstance(item, dict) and item.get("metric"):
+                metric = f"setup.{item['metric']}"
+                found.setdefault(
+                    metric,
+                    {
+                        "metric": metric,
+                        "status": item.get("status", "MISSING"),
+                        "reason": item.get("reason", "setup telemetry reported metric unavailable"),
+                        "impact": item.get("impact", ""),
+                        "source": "setup_telemetry.missing_metrics",
+                    },
+                )
     return [found[key] for key in sorted(found)]
+
+
+def _setup_aggregates(setup_telemetry: dict[str, Any]) -> dict[str, Any]:
+    if not setup_telemetry:
+        return {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "setup_telemetry.json was not present in the input artifacts.",
+        }
+    metrics = setup_telemetry.get("metrics", {})
+    numeric = [
+        {"metric": name, "value_ms": round(float(value), 3)}
+        for name, value in metrics.items()
+        if isinstance(value, (int, float)) and not isinstance(value, bool)
+    ] if isinstance(metrics, dict) else []
+    phase_duration_ranking = sorted(numeric, key=lambda item: item["value_ms"], reverse=True)
+    return {
+        "status": setup_telemetry.get("status", "MISSING"),
+        "node_count": setup_telemetry.get("node_count", "MISSING"),
+        "phase_duration_ranking": phase_duration_ranking,
+        "slowest_nodes_topN": setup_telemetry.get("slowest_nodes_topN", []),
+        "slowest_replica_replicate_topN": setup_telemetry.get("slowest_replica_replicate_topN", []),
+        "cleanup": setup_telemetry.get("cleanup", {}),
+        "same_schema_scale_rungs": setup_telemetry.get("same_schema_scale_rungs", []),
+    }
 
 
 def _metric(name: str, value: Any, unit: str) -> dict[str, Any]:

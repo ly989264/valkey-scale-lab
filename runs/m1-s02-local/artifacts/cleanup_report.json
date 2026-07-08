@@ -1,0 +1,28 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "cleanup_report",
+  "phase_id": "M1-S02",
+  "run_id": "m1-s02-local",
+  "created_at": "2026-07-08T00:00:00Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "unknown"
+  },
+  "status": "PASS",
+  "resources_remaining": [],
+  "cleanup_timing": {
+    "cleanup_residual_scan_seconds": 0.003,
+    "cleanup_terminate_processes_seconds": 0.004,
+    "cleanup_verify_process_exit_seconds": 0.002,
+    "cleanup_verify_nodehost_empty_seconds": 0.001
+  },
+  "cleanup_actions": [
+    {
+      "type": "run_directory",
+      "id": "m1-s02-local",
+      "action": "retain_artifacts",
+      "status": "PASS",
+      "idempotent": true
+    }
+  ]
+}

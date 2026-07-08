@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import time
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -337,6 +338,28 @@ def load_effective_config(
         global_config_path=global_config_path,
         cli_overrides=cli_overrides,
     )
+
+
+def load_effective_config_with_timing(
+    config_path: str | Path,
+    *,
+    global_config_path: str | Path | None = None,
+    cli_overrides: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, float]]:
+    parse_start = time.perf_counter()
+    raw = parse_config_file(config_path)
+    parse_end = time.perf_counter()
+    config = normalize_config(
+        raw,
+        scenario_config_path=config_path,
+        global_config_path=global_config_path,
+        cli_overrides=cli_overrides,
+    )
+    validate_end = time.perf_counter()
+    return config, {
+        "config_parse_ms": round(max(parse_end - parse_start, 0.0) * 1000.0, 3),
+        "config_normalize_validate_ms": round(max(validate_end - parse_end, 0.0) * 1000.0, 3),
+    }
 
 
 def validate_semantics(config: dict[str, Any]) -> list[dict[str, Any]]:

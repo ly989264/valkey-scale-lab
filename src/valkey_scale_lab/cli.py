@@ -15,7 +15,7 @@ from valkey_scale_lab.planner.plan import PlannerError, create_plan_file
 from valkey_scale_lab.report import FinalReportError, ReportError, build_final_goal_loop_report, render_report
 from valkey_scale_lab.resource import ResourcePreflightError, run_resource_preflight
 from valkey_scale_lab.runtime.docker_runtime import DockerRuntimeError, cleanup_scenario, create_scenario
-from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
+from valkey_scale_lab.runtime.setup_timeline import SetupTimeline, build_setup_telemetry_artifact, write_setup_telemetry_artifact
 
 
 UNIMPLEMENTED = (
@@ -54,7 +54,7 @@ def _plan(args: argparse.Namespace) -> int:
 
 
 def _gate_scenario(args: argparse.Namespace) -> int:
-    setup_timeline = SetupTimeline() if args.phase == "P13_SCALE_LADDER_50_100" else None
+    setup_timeline = SetupTimeline()
     state: dict[str, object] = {}
     exit_code = 0
     error: str | None = None
@@ -74,8 +74,7 @@ def _gate_scenario(args: argparse.Namespace) -> int:
         exit_code = 1
         error = str(exc)
     finally:
-        if setup_timeline is not None:
-            _finalize_setup_timeline(args, setup_timeline, state, exit_code=exit_code, error=error)
+        _finalize_setup_timeline(args, setup_timeline, state, exit_code=exit_code, error=error)
     return exit_code
 
 
@@ -99,10 +98,12 @@ def _finalize_setup_timeline(
         except (OSError, json.JSONDecodeError):
             pass
     runtime = state_obj.setdefault("runtime", {})
+    emit_legacy_setup_timeline = args.phase == "P13_SCALE_LADDER_50_100"
     if isinstance(runtime, dict):
-        runtime["setup_timeline_path"] = timeline_path.as_posix()
+        if emit_legacy_setup_timeline:
+            runtime["setup_timeline_path"] = timeline_path.as_posix()
         timings = runtime.get("timings")
-        if isinstance(timings, list):
+        if emit_legacy_setup_timeline and isinstance(timings, list):
             for entry in timings:
                 if isinstance(entry, dict) and entry.get("name") == "nodehost_start":
                     details = entry.setdefault("details", {})
@@ -114,36 +115,97 @@ def _finalize_setup_timeline(
         "state_write",
         {"path": state_path.as_posix(), "setup_timeline_path": timeline_path.as_posix()},
     ):
-        if state_obj:
+        if _state_has_nodes(state_obj):
             state_path.parent.mkdir(parents=True, exist_ok=True)
             state_path.write_text(json.dumps(state_obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     with setup_timeline.span("setup_return", "setup_lifecycle", {"exit_code": exit_code, "error": error or ""}):
         pass
     node_count = len(state_obj.get("nodes", [])) if isinstance(state_obj.get("nodes"), list) else 0
     run_id = str(state_obj.get("cluster_id") or f"phase-{args.phase}-{args.scenario}")
-    setup_timeline.write_artifact(
-        timeline_path,
+    if emit_legacy_setup_timeline:
+        setup_timeline.write_artifact(
+            timeline_path,
+            phase_id=args.phase,
+            run_id=run_id,
+            scenario=args.scenario,
+            node_count=node_count,
+            status="PASS" if exit_code == 0 else "FAIL",
+            extra={
+                "setup_command_wall_source": {
+                    "status": "MISSING",
+                    "reason": "outer wrapper attaches setup_command_wall_seconds during P13O validation",
+                }
+            },
+        )
+    telemetry = build_setup_telemetry_artifact(
         phase_id=args.phase,
         run_id=run_id,
         scenario=args.scenario,
-        node_count=node_count,
         status="PASS" if exit_code == 0 else "FAIL",
-        extra={
-            "setup_command_wall_source": {
-                "status": "MISSING",
-                "reason": "outer wrapper attaches setup_command_wall_seconds during P13O validation",
-            }
+        node_count=node_count,
+        segments=setup_timeline.segments,
+        runtime_timings=runtime.get("timings", []) if isinstance(runtime, dict) else [],
+        nodes=state_obj.get("nodes", []) if isinstance(state_obj.get("nodes"), list) else [],
+        nodehosts=state_obj.get("nodehosts", []) if isinstance(state_obj.get("nodehosts"), list) else [],
+        blocked_reason={
+            "status": "SKIPPED_WITH_REASON" if exit_code == 0 else "MISSING",
+            "reason": error or "Setup completed; cleanup timing is added by cleanup command.",
         },
     )
+    telemetry_path = artifacts_dir / "setup_telemetry.json"
+    write_setup_telemetry_artifact(telemetry_path, telemetry)
+    if isinstance(runtime, dict):
+        runtime["setup_telemetry_path"] = telemetry_path.as_posix()
+        if _state_has_nodes(state_obj):
+            state_path.write_text(json.dumps(state_obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _state_has_nodes(state_obj: dict[str, object]) -> bool:
+    nodes = state_obj.get("nodes")
+    return isinstance(nodes, list) and bool(nodes)
 
 
 def _gate_cleanup(args: argparse.Namespace) -> int:
     try:
         report = cleanup_scenario(state_path=args.state, artifacts_dir=args.artifacts_dir, out_path=args.out)
+        _refresh_setup_telemetry_cleanup(args, report)
     except (DockerRuntimeError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"ERROR: gate cleanup: {exc}", file=sys.stderr)
         return 1
     return 0 if report["status"] == "PASS" else 1
+
+
+def _refresh_setup_telemetry_cleanup(args: argparse.Namespace, cleanup_report: dict[str, object]) -> None:
+    artifacts_dir = Path(args.artifacts_dir)
+    telemetry_path = artifacts_dir / "setup_telemetry.json"
+    if not telemetry_path.exists():
+        return
+    try:
+        telemetry = json.loads(telemetry_path.read_text(encoding="utf-8"))
+        state = json.loads(Path(args.state).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    refreshed = build_setup_telemetry_artifact(
+        phase_id=str(telemetry.get("phase_id", state.get("phase_id", "MISSING"))),
+        run_id=str(telemetry.get("run_id", state.get("cluster_id", "MISSING"))),
+        scenario=str(telemetry.get("scenario", state.get("scenario", "MISSING"))),
+        status=str(telemetry.get("status", cleanup_report.get("status", "MISSING"))),
+        node_count=int(telemetry.get("node_count", len(state.get("nodes", []))) or 0),
+        runtime_timings=state.get("runtime", {}).get("timings", []) if isinstance(state.get("runtime"), dict) else [],
+        nodes=state.get("nodes", []) if isinstance(state.get("nodes"), list) else [],
+        nodehosts=state.get("nodehosts", []) if isinstance(state.get("nodehosts"), list) else [],
+        cleanup_report=dict(cleanup_report),
+    )
+    # Preserve setup metrics collected from the original in-process timeline; cleanup runs in a second process.
+    if isinstance(telemetry.get("metrics"), dict):
+        refreshed["metrics"].update({k: v for k, v in telemetry["metrics"].items() if k != "cleanup_ms"})
+        refreshed["metrics"]["cleanup_ms"] = refreshed["cleanup"]["cleanup_ms"]
+        old_missing = [item for item in telemetry.get("missing_metrics", []) if isinstance(item, dict) and item.get("metric") != "cleanup_ms"]
+        cleanup_value = refreshed["metrics"].get("cleanup_ms")
+        if isinstance(cleanup_value, dict):
+            old_missing.append({"metric": "cleanup_ms", **cleanup_value})
+        refreshed["missing_metrics"] = old_missing
+    write_setup_telemetry_artifact(telemetry_path, refreshed)
 
 
 def _fault_apply(args: argparse.Namespace) -> int:

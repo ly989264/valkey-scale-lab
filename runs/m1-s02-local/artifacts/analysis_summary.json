@@ -1,0 +1,443 @@
+{
+  "artifact_type": "analysis_summary",
+  "baseline_comparison": {
+    "artifact_type": "baseline_comparison",
+    "baseline_source": {
+      "reason": "No versioned baseline artifact exists for the first analysis-reporting phase.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "comparisons": [
+      {
+        "baseline_value": null,
+        "current_value": 0,
+        "delta": null,
+        "metric": "nodes_observed_after_fault",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "failover_latency_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "split_brain_duration_ms",
+        "status": "SKIPPED_WITH_REASON",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": 0,
+        "delta": null,
+        "metric": "cleanup_resources_remaining",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      }
+    ],
+    "created_at": "2026-07-08T14:06:06Z",
+    "phase_id": "P09_ANALYSIS_REPORTING",
+    "producer": {
+      "name": "valkey-scale-lab",
+      "version": "0.0.0"
+    },
+    "run_id": "m1-s02-local",
+    "schema_version": "v1",
+    "source_dir": "runs/m1-s02-local/artifacts",
+    "status": "NO_BASELINE_YET"
+  },
+  "created_at": "2026-07-08T14:06:06Z",
+  "findings": [
+    {
+      "name": "source_phase",
+      "source_phase_id": "M1-S02",
+      "source_run_id": "m1-s02-local",
+      "status": "PASS"
+    },
+    {
+      "cluster_state_observed": "unknown",
+      "name": "real_valkey_evidence",
+      "nodes_observed": 0,
+      "real_valkey": false,
+      "status": "BLOCKED_WITH_REASON",
+      "valkey_versions": []
+    },
+    {
+      "failover_latency_ms": "MISSING",
+      "name": "failover",
+      "old_primary_node_id": "MISSING",
+      "promoted_node_id": "MISSING",
+      "status": "SKIPPED_WITH_REASON",
+      "target_logical_id": "MISSING"
+    },
+    {
+      "name": "cleanup",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "name": "setup_telemetry",
+      "node_count": 2,
+      "status": "PASS",
+      "total_setup_ms": 609.0
+    }
+  ],
+  "metrics": [
+    {
+      "name": "nodes_observed_after_fault",
+      "status": "PASS",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "name": "failover_latency_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "split_brain_duration_ms",
+      "reason": "No failover scenario is executed in M1-S02.",
+      "status": "SKIPPED_WITH_REASON",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "cleanup_resources_remaining",
+      "status": "PASS",
+      "unit": "count",
+      "value": 0
+    }
+  ],
+  "missing_metrics": [
+    {
+      "metric": "split_brain_duration_ms",
+      "reason": "No failover scenario is executed in M1-S02.",
+      "source": "failover_report.summary",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "m1-s02-local",
+  "run_manifest_ref": {
+    "path": "runs/m1-s02-local/state/run_manifest.json",
+    "reason": "The final run manifest is refreshed after analysis/report artifacts are written, so analysis records the manifest path without a pre-refresh hash.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata": {
+    "artifact_root": "runs/m1-s02-local/artifacts",
+    "artifact_type": "run_metadata",
+    "config_sha256": {
+      "reason": "No config path was supplied for this run context.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "created_at": "2026-07-08T14:06:06Z",
+    "git_sha": "574271eaf8254d1f7e9180dfbd8c7b1ca9facd32",
+    "host_facts": {
+      "hostname": "AllGooddeMac-mini.local",
+      "machine": "arm64",
+      "processor": "arm",
+      "python_version": "3.9.6",
+      "system": "Darwin"
+    },
+    "inventory_sha256": {
+      "reason": "No runtime inventory was supplied for this run context.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "log_root": "runs/m1-s02-local/logs",
+    "os_kernel": "25.5.0",
+    "port_ranges": {
+      "reason": "No port allocator range was supplied for this run context.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "report_root": "runs/m1-s02-local/reports",
+    "run_id": "m1-s02-local",
+    "runtime_mode": "metadata-init",
+    "runtime_provider": "local",
+    "schema_version": "v1",
+    "state_root": "runs/m1-s02-local/state",
+    "tool_version": "0.0.0",
+    "ulimit": {
+      "rlimit_nofile": {
+        "hard": 9223372036854775807,
+        "soft": 1048575
+      },
+      "rlimit_nproc": {
+        "hard": 8000,
+        "soft": 5333
+      }
+    },
+    "valkey_version": {
+      "impact": "Report cannot prove runtime Valkey version from metadata alone.",
+      "reason": "Valkey endpoints were not probed while creating run metadata.",
+      "status": "MISSING"
+    }
+  },
+  "run_metadata_ref": {
+    "path": "runs/m1-s02-local/state/run_metadata.json",
+    "sha256": "c88e2240018713d619f817d1ccd99e89585266e54aab7787faeb681714939ac7"
+  },
+  "schema_version": "v1",
+  "setup_aggregates": {
+    "cleanup": {
+      "cleanup_ms": 50.0,
+      "cleanup_timing": {
+        "cleanup_remove_containers_seconds": 0.05
+      },
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    "node_count": 2,
+    "phase_duration_ranking": [
+      {
+        "metric": "total_setup_ms",
+        "value_ms": 609.0
+      },
+      {
+        "metric": "cluster_meet_ms",
+        "value_ms": 120.0
+      },
+      {
+        "metric": "replica_replicate_ms",
+        "value_ms": 110.0
+      },
+      {
+        "metric": "process_ready_wait_ms",
+        "value_ms": 90.0
+      },
+      {
+        "metric": "process_start_ms",
+        "value_ms": 80.0
+      },
+      {
+        "metric": "cluster_slots_assign_ms",
+        "value_ms": 70.0
+      },
+      {
+        "metric": "cleanup_ms",
+        "value_ms": 50.0
+      },
+      {
+        "metric": "nodehost_start_ms",
+        "value_ms": 40.0
+      },
+      {
+        "metric": "cluster_convergence_probe_ms",
+        "value_ms": 30.0
+      },
+      {
+        "metric": "node_config_distribute_ms",
+        "value_ms": 25.0
+      },
+      {
+        "metric": "full_cluster_probe_ms",
+        "value_ms": 20.0
+      },
+      {
+        "metric": "node_config_generate_ms",
+        "value_ms": 10.0
+      },
+      {
+        "metric": "plan_build_ms",
+        "value_ms": 6.0
+      },
+      {
+        "metric": "config_validate_ms",
+        "value_ms": 5.0
+      },
+      {
+        "metric": "port_check_ms",
+        "value_ms": 3.0
+      },
+      {
+        "metric": "config_parse_ms",
+        "value_ms": 1.0
+      }
+    ],
+    "same_schema_scale_rungs": [
+      30,
+      50,
+      100,
+      200
+    ],
+    "slowest_nodes_topN": [
+      {
+        "logical_id": "shard-0000-replica-00",
+        "node_cluster_known_nodes": 2,
+        "node_cluster_state": "ok",
+        "node_pid": 102,
+        "node_ping_ready_ms": 90.0,
+        "node_ready_ms": 90.0,
+        "node_role": "replica",
+        "nodehost_id": "nodehost-a"
+      }
+    ],
+    "slowest_replica_replicate_topN": [
+      {
+        "logical_id": "shard-0000-replica-00",
+        "node_cluster_known_nodes": 2,
+        "node_cluster_state": "ok",
+        "node_pid": 102,
+        "node_ping_ready_ms": 90.0,
+        "node_ready_ms": 90.0,
+        "node_role": "replica",
+        "nodehost_id": "nodehost-a"
+      }
+    ],
+    "status": "PASS"
+  },
+  "setup_telemetry": {
+    "artifact_type": "setup_telemetry",
+    "cleanup": {
+      "cleanup_ms": 50.0,
+      "cleanup_timing": {
+        "cleanup_remove_containers_seconds": 0.05
+      },
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    "created_at": "2026-07-08T00:00:00Z",
+    "metrics": {
+      "cleanup_ms": 50.0,
+      "cluster_convergence_probe_ms": 30.0,
+      "cluster_meet_ms": 120.0,
+      "cluster_slots_assign_ms": 70.0,
+      "config_parse_ms": 1.0,
+      "config_validate_ms": 5.0,
+      "full_cluster_probe_ms": 20.0,
+      "node_config_distribute_ms": 25.0,
+      "node_config_generate_ms": 10.0,
+      "nodehost_start_ms": 40.0,
+      "plan_build_ms": 6.0,
+      "port_check_ms": 3.0,
+      "process_ready_wait_ms": 90.0,
+      "process_start_ms": 80.0,
+      "replica_replicate_ms": 110.0,
+      "resource_preflight_ms": {
+        "reason": "Resource preflight is only executed by stages that require bounded scale admission.",
+        "status": "SKIPPED_WITH_REASON"
+      },
+      "total_setup_ms": 609.0
+    },
+    "missing_metrics": [],
+    "node_count": 2,
+    "per_node_samples": [
+      {
+        "logical_id": "shard-0000-replica-00",
+        "node_cluster_known_nodes": 2,
+        "node_cluster_state": "ok",
+        "node_pid": 102,
+        "node_ping_ready_ms": 90.0,
+        "node_ready_ms": 90.0,
+        "node_role": "replica",
+        "nodehost_id": "nodehost-a"
+      },
+      {
+        "logical_id": "shard-0000-primary",
+        "node_cluster_known_nodes": 2,
+        "node_cluster_state": "ok",
+        "node_pid": 101,
+        "node_ping_ready_ms": 80.0,
+        "node_ready_ms": 80.0,
+        "node_role": "primary",
+        "nodehost_id": "nodehost-a"
+      }
+    ],
+    "per_nodehost_samples": [
+      {
+        "az_id": "az-a",
+        "container_name": "vslab-nodehost-a",
+        "host_id": "local",
+        "nodehost_id": "nodehost-a",
+        "nodehost_process_count": 2,
+        "nodehost_start_ms": 40.0
+      }
+    ],
+    "phase_id": "M1-S02",
+    "producer": {
+      "name": "test",
+      "version": "v1"
+    },
+    "run_id": "fixture-success",
+    "same_schema_scale_rungs": [
+      30,
+      50,
+      100,
+      200
+    ],
+    "scenario": "success",
+    "schema_version": "v1",
+    "slowest_nodes_topN": [
+      {
+        "logical_id": "shard-0000-replica-00",
+        "node_cluster_known_nodes": 2,
+        "node_cluster_state": "ok",
+        "node_pid": 102,
+        "node_ping_ready_ms": 90.0,
+        "node_ready_ms": 90.0,
+        "node_role": "replica",
+        "nodehost_id": "nodehost-a"
+      }
+    ],
+    "slowest_replica_replicate_topN": [
+      {
+        "logical_id": "shard-0000-replica-00",
+        "node_cluster_known_nodes": 2,
+        "node_cluster_state": "ok",
+        "node_pid": 102,
+        "node_ping_ready_ms": 90.0,
+        "node_ready_ms": 90.0,
+        "node_role": "replica",
+        "nodehost_id": "nodehost-a"
+      }
+    ],
+    "source_artifacts": [],
+    "status": "PASS"
+  },
+  "sidecars": [
+    {
+      "artifact_type": "baseline_comparison",
+      "path": "runs/m1-s02-local/artifacts/baseline_comparison.json",
+      "sha256": "aaea8026db74028e40ea954a6edf6275b78a9c44484a253b6b6f771af6ede80a"
+    }
+  ],
+  "source": {
+    "input_dir": "runs/m1-s02-local/artifacts",
+    "input_kind": "run_manifest",
+    "phase_id": "M1-S02",
+    "run_id": "m1-s02-local"
+  },
+  "source_artifacts": [
+    {
+      "path": "runs/m1-s02-local/artifacts/cleanup_report.json",
+      "sha256": "b56edab8c2828d45ee58280808c2400a1135bb965b12a0d74ed2b498e0f41f5b"
+    },
+    {
+      "path": "runs/m1-s02-local/artifacts/failover_report.json",
+      "sha256": "49a90b7fe5f17430fd7125db8ab423581d5a185327a7f1e1043b7e5dae27cc1c"
+    },
+    {
+      "path": "runs/m1-s02-local/artifacts/phase_summary.json",
+      "sha256": "03ef310de422e1c593c7e1daf2fecb9a972091b1520eacf804631bd404d63fa4"
+    },
+    {
+      "path": "runs/m1-s02-local/artifacts/setup_telemetry.json",
+      "sha256": "06c754524a36986711f38db225c7a6830802dab7cfb7cf752ba0263146c6bdb4"
+    },
+    {
+      "path": "runs/m1-s02-local/artifacts/valkey_e2e_evidence.json",
+      "sha256": "63ff1e8a4b45120ba5f715afff1a561fc62624c0ef859bbdf47c88c465896322"
+    }
+  ],
+  "status": "PASS"
+}

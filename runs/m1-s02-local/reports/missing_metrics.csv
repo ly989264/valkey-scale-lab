@@ -1,0 +1,2 @@
+metric,status,reason,impact
+split_brain_duration_ms,SKIPPED_WITH_REASON,No failover scenario is executed in M1-S02.,

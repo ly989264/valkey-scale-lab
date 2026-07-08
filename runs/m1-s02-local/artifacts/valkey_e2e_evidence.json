@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "valkey_e2e_evidence",
+  "phase_id": "M1-S02",
+  "run_id": "m1-s02-local",
+  "created_at": "2026-07-08T00:00:00Z",
+  "producer": {
+    "name": "scripts/valkey_e2e_gate.py",
+    "version": "v1"
+  },
+  "status": "BLOCKED_WITH_REASON",
+  "real_valkey": false,
+  "reason": "Real local smoke is attempted separately; if sandbox denies local port bind, M1-S02 does not claim a real Valkey PASS.",
+  "valkey_versions": [],
+  "nodes_observed": 0,
+  "cluster_state_observed": "unknown"
+}

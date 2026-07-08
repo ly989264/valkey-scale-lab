@@ -1,0 +1,23 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "real_heavy_gate_blocked",
+  "stage_id": "M1-S02",
+  "status": "BLOCKED_WITH_REASON",
+  "attempted_command": "python3 scripts/valkey_e2e_gate.py --phase P03_LOCAL_DOCKER_VALKEY --scenario cluster_smoke --config templates/configs/single_mac_6node.yaml --out runs/m1-s02-local/artifacts/goal_loop/M1-S02/valkey_e2e_evidence.json --min-nodes 6 --setup-timeout 180 --cleanup-timeout 120 --probe-timeout 60 --wait-cluster-timeout 60",
+  "reason": "Local sandbox denied the port preflight bind for 127.0.0.1:7000 with Operation not permitted before Valkey containers could be started.",
+  "affected_real_scale_rungs": [
+    "small_cluster",
+    "scale_30",
+    "scale_50",
+    "scale_100",
+    "scale_200"
+  ],
+  "evidence": [
+    "runs/m1-s02-local/artifacts/goal_loop/M1-S02/valkey_e2e_evidence.json",
+    "runs/m1-s02-local/artifacts/goal_loop/M1-S02/cluster_smoke_setup.stderr.log",
+    "runs/m1-s02-local/artifacts/goal_loop/M1-S02/setup_telemetry.json",
+    "runs/m1-s02-local/artifacts/goal_loop/M1-S02/cleanup_report.json"
+  ],
+  "not_a_real_pass": true,
+  "next_action": "Run the same command in an environment that permits local port binding and Docker Valkey startup."
+}

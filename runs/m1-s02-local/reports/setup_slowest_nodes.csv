@@ -1,0 +1,2 @@
+logical_id,nodehost_id,node_ready_ms,node_role,node_cluster_state,node_cluster_known_nodes
+shard-0000-replica-00,nodehost-a,90.0,replica,ok,2

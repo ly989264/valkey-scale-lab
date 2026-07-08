@@ -1,0 +1,49 @@
+{
+  "artifact_root": "runs/m1-s02-local/artifacts",
+  "artifact_type": "run_metadata",
+  "config_sha256": {
+    "reason": "No config path was supplied for this run context.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "created_at": "2026-07-08T14:06:06Z",
+  "git_sha": "574271eaf8254d1f7e9180dfbd8c7b1ca9facd32",
+  "host_facts": {
+    "hostname": "AllGooddeMac-mini.local",
+    "machine": "arm64",
+    "processor": "arm",
+    "python_version": "3.9.6",
+    "system": "Darwin"
+  },
+  "inventory_sha256": {
+    "reason": "No runtime inventory was supplied for this run context.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "log_root": "runs/m1-s02-local/logs",
+  "os_kernel": "25.5.0",
+  "port_ranges": {
+    "reason": "No port allocator range was supplied for this run context.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "report_root": "runs/m1-s02-local/reports",
+  "run_id": "m1-s02-local",
+  "runtime_mode": "metadata-init",
+  "runtime_provider": "local",
+  "schema_version": "v1",
+  "state_root": "runs/m1-s02-local/state",
+  "tool_version": "0.0.0",
+  "ulimit": {
+    "rlimit_nofile": {
+      "hard": 9223372036854775807,
+      "soft": 1048575
+    },
+    "rlimit_nproc": {
+      "hard": 8000,
+      "soft": 5333
+    }
+  },
+  "valkey_version": {
+    "impact": "Report cannot prove runtime Valkey version from metadata alone.",
+    "reason": "Valkey endpoints were not probed while creating run metadata.",
+    "status": "MISSING"
+  }
+}

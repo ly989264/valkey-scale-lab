@@ -1,0 +1,22 @@
+{
+  "artifact_root": "runs/m1-s02-local/artifacts",
+  "artifact_type": "run_manifest",
+  "artifacts": [
+    {
+      "path": "runs/m1-s02-local/state/run_metadata.json",
+      "sha256": "c88e2240018713d619f817d1ccd99e89585266e54aab7787faeb681714939ac7"
+    }
+  ],
+  "created_at": "2026-07-08T14:06:06Z",
+  "log_root": "runs/m1-s02-local/logs",
+  "report_root": "runs/m1-s02-local/reports",
+  "run_id": "m1-s02-local",
+  "run_metadata_ref": {
+    "path": "runs/m1-s02-local/state/run_metadata.json",
+    "sha256": "c88e2240018713d619f817d1ccd99e89585266e54aab7787faeb681714939ac7"
+  },
+  "run_root": "runs/m1-s02-local",
+  "schema_version": "v1",
+  "state_root": "runs/m1-s02-local/state",
+  "status": "PASS"
+}

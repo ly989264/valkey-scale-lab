@@ -43,7 +43,17 @@ def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: P
     index = render_report(analysis_path, tmp_path / "report", tmp_path / "report_index.json")
 
     report_paths = {Path(item["path"]).name for item in index["reports"]}
-    assert {"index.html", "report.md", "metrics.csv", "missing_metrics.csv", "baseline_comparison.csv", "metric_chart.svg"} == report_paths
+    assert {
+        "index.html",
+        "report.md",
+        "metrics.csv",
+        "missing_metrics.csv",
+        "baseline_comparison.csv",
+        "metric_chart.svg",
+        "setup_phase_durations.csv",
+        "setup_slowest_nodes.csv",
+        "setup_waterfall.svg",
+    } == report_paths
     assert (tmp_path / "phase_summary.json").exists()
     assert "MISSING" in (tmp_path / "report" / "missing_metrics.csv").read_text(encoding="utf-8")
 
