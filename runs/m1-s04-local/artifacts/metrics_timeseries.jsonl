@@ -1,0 +1,1 @@
+{"artifact_type": "metric_sample", "metric": "management.operation_count", "phase_id": "M1-S04", "run_id": "m1-s04-local", "schema_version": "v1", "unit": "count", "value": 11}

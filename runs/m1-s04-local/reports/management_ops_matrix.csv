@@ -1,0 +1,12 @@
+operation_name,operation_id,coverage_id,status,command_count,workload_impact_ref,cleanup_ref
+create_cluster,m1-s04-01-create_cluster,6.management.create_cluster,PASS,1,management_workload_impact.json#m1-s04-01-create_cluster,cleanup_report.json
+meet_nodes,m1-s04-02-meet_nodes,6.management.meet_nodes,PASS,1,management_workload_impact.json#m1-s04-02-meet_nodes,cleanup_report.json
+add_replica,m1-s04-03-add_replica,6.management.add_replica,PASS,1,management_workload_impact.json#m1-s04-03-add_replica,cleanup_report.json
+remove_replica,m1-s04-04-remove_replica,6.management.remove_replica,PASS,1,management_workload_impact.json#m1-s04-04-remove_replica,cleanup_report.json
+remove_primary_drained_or_safe_replaced,m1-s04-05-remove_primary_drained_or_safe_replaced,6.management.remove_primary_drained_or_safe_replaced,PASS,1,management_workload_impact.json#m1-s04-05-remove_primary_drained_or_safe_replaced,cleanup_report.json
+remove_failed_node,m1-s04-06-remove_failed_node,6.management.remove_failed_node,PASS,1,management_workload_impact.json#m1-s04-06-remove_failed_node,cleanup_report.json
+reshard_slot_range,m1-s04-07-reshard_slot_range,6.management.reshard_slot_range,PASS,1,management_workload_impact.json#m1-s04-07-reshard_slot_range,cleanup_report.json
+reshard_with_keys,m1-s04-08-reshard_with_keys,6.management.reshard_with_keys,PASS,1,management_workload_impact.json#m1-s04-08-reshard_with_keys,cleanup_report.json
+rebalance_after_imbalance,m1-s04-09-rebalance_after_imbalance,6.management.rebalance_after_imbalance,PASS,1,management_workload_impact.json#m1-s04-09-rebalance_after_imbalance,cleanup_report.json
+rolling_restart_replica_first,m1-s04-10-rolling_restart_replica_first,6.management.rolling_restart_replica_first,PASS,1,management_workload_impact.json#m1-s04-10-rolling_restart_replica_first,cleanup_report.json
+rolling_restart_primary_safe,m1-s04-11-rolling_restart_primary_safe,6.management.rolling_restart_primary_safe,PASS,1,management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe,cleanup_report.json

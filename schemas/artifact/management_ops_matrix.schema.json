@@ -2,23 +2,51 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Management Operation Matrix",
   "type": "object",
-  "required": ["schema_version", "artifact_type", "phase_id", "run_id", "operations"],
+  "required": ["schema_version", "artifact_type", "phase_id", "run_id", "scenario", "status", "required_operations", "operations"],
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "management_ops_matrix"},
-    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "phase_id": {"type": "string", "minLength": 1},
     "run_id": {"type": "string", "minLength": 1},
+    "scenario": {"type": "string", "minLength": 1},
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "MISSING", "SKIPPED_WITH_REASON", "BLOCKED_WITH_REASON"]},
+    "required_operations": {"type": "array", "minItems": 11, "items": {"type": "string", "minLength": 1}},
     "operations": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["operation_name", "node_count", "operation_status", "workload_window_ref"],
+        "required": [
+          "operation_name",
+          "operation_id",
+          "coverage_id",
+          "node_count",
+          "scale",
+          "operation_status",
+          "operation_result_ref",
+          "before_topology_snapshot_ref",
+          "after_topology_snapshot_ref",
+          "topology_diff_ref",
+          "command_count",
+          "command_log_refs",
+          "workload_impact_ref",
+          "cleanup_ref"
+        ],
         "properties": {
           "operation_name": {"type": "string", "minLength": 1},
+          "operation_id": {"type": "string", "minLength": 1},
+          "coverage_id": {"type": "string", "minLength": 1},
           "node_count": {"type": "integer", "minimum": 1},
-          "operation_status": {"type": "string", "enum": ["PASS", "FAIL", "MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON", "PASS_NOOP_VERIFIED"]},
-          "workload_window_ref": {"type": "string", "minLength": 1}
+          "scale": {"type": "integer", "minimum": 1},
+          "operation_status": {"type": "string", "enum": ["PASS", "FAIL", "MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON", "PASS_NOOP_VERIFIED", "BLOCKED_WITH_REASON"]},
+          "operation_result_ref": {"type": "string", "minLength": 1},
+          "before_topology_snapshot_ref": {"type": "string", "minLength": 1},
+          "after_topology_snapshot_ref": {"type": "string", "minLength": 1},
+          "topology_diff_ref": {"type": "string", "minLength": 1},
+          "command_count": {"type": "integer", "minimum": 0},
+          "command_log_refs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "workload_impact_ref": {"type": "string", "minLength": 1},
+          "cleanup_ref": {"type": "string", "minLength": 1}
         },
         "additionalProperties": true
       }

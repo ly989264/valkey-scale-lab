@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>P09 Analysis Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; color: #202124; }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0 24px; }
+    th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; }
+    th { background: #f6f8fa; }
+    code { background: #f6f8fa; padding: 2px 4px; }
+  </style>
+</head>
+<body>
+  <h1>P09 Analysis Report</h1>
+  <p>Status: <code>PASS</code></p>
+  <p>Source phase: <code>M1-S04</code></p>
+  <h2>运行元数据</h2>
+  <table><thead><tr><th>字段</th><th>值</th></tr></thead><tbody><tr><td>run_id</td><td><code>m1-s04-local</code></td></tr>
+<tr><td>created_at</td><td><code>2026-07-08T15:07:19Z</code></td></tr>
+<tr><td>git_sha</td><td><code>bf111fe6b916ee21d92df1a44c310c54f8bf3fd1</code></td></tr>
+<tr><td>valkey_version</td><td><code>MISSING: Valkey endpoints were not probed while creating run metadata.</code></td></tr>
+<tr><td>artifact_root</td><td><code>runs/m1-s04-local/artifacts</code></td></tr></tbody></table>
+  <h2>分析发现</h2>
+  <table><thead><tr><th>Name</th><th>Status</th></tr></thead><tbody><tr><td>source_phase</td><td>PASS</td></tr>
+<tr><td>real_valkey_evidence</td><td>BLOCKED_WITH_REASON</td></tr>
+<tr><td>failover</td><td>SKIPPED_WITH_REASON</td></tr>
+<tr><td>cleanup</td><td>PASS</td></tr>
+<tr><td>setup_telemetry</td><td>SKIPPED_WITH_REASON</td></tr>
+<tr><td>command_audit</td><td>PASS</td></tr>
+<tr><td>management_ops</td><td>PASS</td></tr></tbody></table>
+  <h2>缺失指标</h2>
+  <table><thead><tr><th>指标</th><th>状态</th><th>原因</th></tr></thead><tbody><tr><td colspan="3">none</td></tr></tbody></table>
+  <h2>集群拉起瀑布图</h2>
+  <img src="setup_waterfall.svg" alt="集群拉起瀑布图">
+  <h2>阶段耗时排序</h2>
+  <table><thead><tr><th>阶段指标</th><th>耗时 ms</th></tr></thead><tbody><tr><td colspan="2">SKIPPED_WITH_REASON: 无可排序的阶段耗时</td></tr></tbody></table>
+  <h2>慢节点 TopN</h2>
+  <table><thead><tr><th>节点</th><th>ready ms</th><th>角色</th><th>状态</th></tr></thead><tbody><tr><td colspan="4">SKIPPED_WITH_REASON: 无慢节点样本</td></tr></tbody></table>
+  <h2>慢命令 TopN</h2>
+  <img src="command_latency.svg" alt="命令耗时分布">
+  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody><tr><td>cmd-000001</td><td>m1-s04-01-create_cluster</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr>
+<tr><td>cmd-000002</td><td>m1-s04-02-meet_nodes</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr>
+<tr><td>cmd-000003</td><td>m1-s04-03-add_replica</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr>
+<tr><td>cmd-000004</td><td>m1-s04-04-remove_replica</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr>
+<tr><td>cmd-000005</td><td>m1-s04-05-remove_primary_drained_or_safe_replaced</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr>
+<tr><td>cmd-000006</td><td>m1-s04-06-remove_failed_node</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr>
+<tr><td>cmd-000007</td><td>m1-s04-07-reshard_slot_range</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr>
+<tr><td>cmd-000008</td><td>m1-s04-08-reshard_with_keys</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr>
+<tr><td>cmd-000009</td><td>m1-s04-09-rebalance_after_imbalance</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr>
+<tr><td>cmd-000010</td><td>m1-s04-10-rolling_restart_replica_first</td><td>management_operation</td><td>10.0</td><td>PASS</td></tr></tbody></table>
+  <h2>失败命令</h2>
+  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody><tr><td colspan="5">none</td></tr></tbody></table>
+  <h2>重试命令</h2>
+  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody><tr><td colspan="5">none</td></tr></tbody></table>
+  <h2>命令审计覆盖</h2>
+  <table><thead><tr><th>命令类型</th><th>数量</th></tr></thead><tbody><tr><td>management_operation</td><td>11</td></tr></tbody></table>
+  <h2>管理操作矩阵</h2>
+  <img src="management_operation_duration.svg" alt="管理操作耗时排序">
+  <table><thead><tr><th>操作</th><th>耗时 ms</th><th>状态</th><th>命令数</th></tr></thead><tbody><tr><td>rolling_restart_primary_safe</td><td>117.0</td><td>PASS</td><td>1</td></tr>
+<tr><td>rolling_restart_replica_first</td><td>110.0</td><td>PASS</td><td>1</td></tr>
+<tr><td>rebalance_after_imbalance</td><td>103.0</td><td>PASS</td><td>1</td></tr>
+<tr><td>reshard_with_keys</td><td>96.0</td><td>PASS</td><td>1</td></tr>
+<tr><td>reshard_slot_range</td><td>89.0</td><td>PASS</td><td>1</td></tr>
+<tr><td>remove_failed_node</td><td>82.0</td><td>PASS</td><td>1</td></tr>
+<tr><td>remove_primary_drained_or_safe_replaced</td><td>75.0</td><td>PASS</td><td>1</td></tr>
+<tr><td>remove_replica</td><td>68.0</td><td>PASS</td><td>1</td></tr>
+<tr><td>add_replica</td><td>61.0</td><td>PASS</td><td>1</td></tr>
+<tr><td>meet_nodes</td><td>54.0</td><td>PASS</td><td>1</td></tr></tbody></table>
+  <h2>管理 topology diff 摘要</h2>
+  <img src="management_topology_diff.svg" alt="管理 topology diff 摘要">
+  <table><thead><tr><th>操作</th><th>known_nodes_delta</th><th>moved_slot_ranges</th><th>状态</th></tr></thead><tbody><tr><td>m1-s04-01-create_cluster</td><td>0</td><td>0</td><td>PASS</td></tr>
+<tr><td>m1-s04-02-meet_nodes</td><td>0</td><td>0</td><td>PASS</td></tr>
+<tr><td>m1-s04-03-add_replica</td><td>0</td><td>0</td><td>PASS</td></tr>
+<tr><td>m1-s04-04-remove_replica</td><td>0</td><td>0</td><td>PASS</td></tr>
+<tr><td>m1-s04-05-remove_primary_drained_or_safe_replaced</td><td>0</td><td>0</td><td>PASS</td></tr>
+<tr><td>m1-s04-06-remove_failed_node</td><td>0</td><td>0</td><td>PASS</td></tr>
+<tr><td>m1-s04-07-reshard_slot_range</td><td>0</td><td>0</td><td>PASS</td></tr>
+<tr><td>m1-s04-08-reshard_with_keys</td><td>0</td><td>0</td><td>PASS</td></tr>
+<tr><td>m1-s04-09-rebalance_after_imbalance</td><td>0</td><td>0</td><td>PASS</td></tr>
+<tr><td>m1-s04-10-rolling_restart_replica_first</td><td>0</td><td>0</td><td>PASS</td></tr></tbody></table>
+  <h2>图表</h2>
+  <img src="metric_chart.svg" alt="P09 artifact metrics chart">
+</body>
+</html>

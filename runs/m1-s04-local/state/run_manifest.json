@@ -1,0 +1,250 @@
+{
+  "artifact_root": "runs/m1-s04-local/artifacts",
+  "artifact_type": "run_manifest",
+  "artifacts": [
+    {
+      "path": "runs/m1-s04-local/artifacts/analysis_summary.json",
+      "sha256": "6a579177b59d32411a12af1bb310808be4a24e2f1e9c3da78ba06a60715637be"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/baseline_comparison.json",
+      "sha256": "cf4f8ad627847cfb37896de6972b2ce25e75a9d3a81abbe9ab362a703d698e20"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/cleanup_report.json",
+      "sha256": "e39b319e53dcb71e7de98c474a9a00dc52996b8a4768b0c0b1027728b9700b19"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/command_audit_summary.json",
+      "sha256": "4f1638ef307928cdec0437548e5d73c0827c972cb358630d0f1320a4f20969a2"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/command_log.jsonl",
+      "sha256": "a70b37b7a133e01040f948e1d4cac0638daa9bc7a17d8d5f72df1e55312221d8"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/events.jsonl",
+      "sha256": "e3ce7ffe5a92c0b7d514796a51fef0c40ead7b34a3fdc475d5065800e032d903"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/failover_report.json",
+      "sha256": "cfa97f5fc57b6e4909bfa41818d3aa22673899e8817d4f5eccf452c239723cc8"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/CONTEXT_RELOAD.md",
+      "sha256": "ea3148d4fa60b2054f4e0a0bb4cd7fae1f2bfe0254d2e45b1e9a6a4b57cf1aaa"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/DESIGN_BRIEF.md",
+      "sha256": "f2d3a2202f92729feff6a9548eec1ba70ea9f58248b6d91365589ee3f142ad68"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/WORKER_SUMMARY.md",
+      "sha256": "05f7ab0151c34b17d88a771a6e24f2c41fe12af9734fa89c2bb096bd0216c045"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/cleanup_report.json",
+      "sha256": "8a9d9b76dc98fded6f6e10e0f718e927091176fb5ab2c5774d7c554b93892012"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/command_audit_summary.json",
+      "sha256": "5d08f9314c7b991b3cb034d33f58fd41634a8d7fdef618cb5e7a175e09549819"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/coverage_matrix.md",
+      "sha256": "fd194fc908691bec235de4f5d89fcadc1bcf1c72651c8aa31e306552adc73ae2"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/management_ops_setup.stderr.log",
+      "sha256": "01181a05b693239c43f091d4aa141f2f1d0b51672f19841ef6ee4d63bda98b44"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/management_ops_setup.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/real_heavy_gate_blocked.json",
+      "sha256": "d22abfe74426c8cb0095fe7a9d138b9e99316727cd69764844921ae0d1520824"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/setup_telemetry.json",
+      "sha256": "a93d8b1c9df27c03a8298d2bf094e8536a064986d3d70e4f16bad2013571263d"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/strict_management_matrix_50_setup.stderr.log",
+      "sha256": "5fa0b78241b95088eab11ab62c16888962cb6abde2240e76c177cc4a0735666b"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/strict_management_matrix_50_setup.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/valkey_e2e_evidence.json",
+      "sha256": "6425d8cb99a24755893d3a1e868bc44392d76751c622eb7fa59b187a55f8d39d"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/valkey_e2e_evidence_p04.json",
+      "sha256": "87016729562fbf3af64429d3dc99e20cf10db5363dc4e6f56a81e8488b0f0df4"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/management_operation_results.jsonl",
+      "sha256": "e9a8451470c9874619813616620bcd548041dd54f37e4747e009637e18e497eb"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/management_ops_matrix.json",
+      "sha256": "cfa09d67b20c74dbe56178477a16c4455b5ff7051add3815d96a4b7a822a3d0d"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/management_topology_diffs.jsonl",
+      "sha256": "fff9fb44a7626a3fbe687f38ae70612688b10284a505462c90db5e4a05f0aeac"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/management_topology_snapshots.jsonl",
+      "sha256": "f57a9205f32ba0114a4372d8775f59c49e37c25a2e5f3cd5ced7668e38875213"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/management_workload_impact.json",
+      "sha256": "53618e5bf042bda51fa513c0e7191cbd198ca201bdd3a0388be7d2e6aa3a7aa4"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/metrics_timeseries.jsonl",
+      "sha256": "426579d69952fce0609a585d92b2d885edb8e91fdd3293222aa1a5ce9d7bcf2a"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/phase_summary.json",
+      "sha256": "06b77c5985d64ae9f88aa9b566f56a6a34f13851fc356dd93652d97688378157"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/quant_summary.json",
+      "sha256": "878538f8e3ae900d116f99967d98a766f446f1df4b110533650d6a20f6d0f6b0"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/rebalance_summary.json",
+      "sha256": "a5e9e8e00a86e4df8cc83688483f0a833d3c86e6e6a0a01ce78490fd5580bc1c"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/rolling_restart_plan.json",
+      "sha256": "e4abbb503607652c6a121376e0d1f70e345dc84f696674d0f3c0b1a9f9ebf41d"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/rolling_restart_results.jsonl",
+      "sha256": "e95a8934f6327b107e1806fe232ed55c4c827776bab8003ecab8f2a4ef21c93f"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/valkey_e2e_evidence.json",
+      "sha256": "5c4e07c12bb7e6b2902b361f9af2a2b2fd5d1369665ba92191239b70968739db"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/workload_windows.json",
+      "sha256": "5527a123d454a71d4b427e5637beec032b4cbb4c3402156eb10a8c01be66771c"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/baseline_comparison.csv",
+      "sha256": "550d601259e9ef9cfb9e12e4d1372ccce2d8e84ae05b36ad97d790dc61f14e35"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/command_failures.csv",
+      "sha256": "8f33cb6b38c03673c743a251e2c367b03f160ccdc31de94ace765b2ced62e698"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/command_latency.svg",
+      "sha256": "f4c32fe79d1690f7e7f5751f61ad19ec359dd61b081e52d80765a51974a0eed9"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/command_retries.csv",
+      "sha256": "8f33cb6b38c03673c743a251e2c367b03f160ccdc31de94ace765b2ced62e698"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/command_slowest.csv",
+      "sha256": "87df4fcbca9063fd58c8c7bd4adbe10208d5d8f9f49143323fa0f5f340dd67b8"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/index.html",
+      "sha256": "ce4c1b8da5ec75dc4076bc20608bfbb99d46676dabea723f17d4eb9ac9e39b83"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/management_operation_duration.svg",
+      "sha256": "88a613e32aba548724c3f614e5b710130dd0c4e69bc9ba9667e79e7902302fd2"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/management_operation_durations.csv",
+      "sha256": "ffb7cf431783c11506019a903cfa9bbcbcdf9095268811edb7a1ba24b06a0e63"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/management_ops_matrix.csv",
+      "sha256": "1530a887b39175e8f3d4ab2aa55595af987f09f7278140f3f4638cc98c4d7ed7"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/management_reshard_rebalance.csv",
+      "sha256": "7a2eeeae4fa4802ac7c6b28271606d375b3a927f5b7238f07e799f218b0df6c2"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/management_rolling_restart.csv",
+      "sha256": "5ee708383ddd940c2ecfe5b089564d582d7010a28fe2df197cb0c4ab4c2e8f3e"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/management_topology_diff.svg",
+      "sha256": "51efc6bbfcb8288dc0778a5abe4c17177f53c994cb529c4703a0d079d6673e73"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/management_topology_diffs.csv",
+      "sha256": "ad2864cb3e4c776b93e46ca7f3a57cb81e7bb97aa5bb09345b84fe343ab64291"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/metric_chart.svg",
+      "sha256": "6577a801af6df165fc66630708ffb73a441e9b478dadf35772cbea50bd1a2e23"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/metrics.csv",
+      "sha256": "78070ecd7277d9fb091df3121bc079776bb63ccf859b81f973779ef21c9dd5c1"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/missing_metrics.csv",
+      "sha256": "afc9856499c1948134f9a5151ad2413df10a67b75f1202a06e087970dc982c5c"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/phase_summary.json",
+      "sha256": "e519657a2c08c9d71497dc80da00c2896be6741882fd387dd5d9af28560e6514"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/report.md",
+      "sha256": "8582381627424b3db71b19a02dafd100dd5194122f4b81f02551bb1e214b5c19"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/report_index.json",
+      "sha256": "a6372bfec1ebff309f98372f9a86ce27b93c259af528f6459676608078a60711"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/setup_phase_durations.csv",
+      "sha256": "af2c4d1688e3172e648cb90753b1a703b20117028fabef747eceee4382610533"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/setup_slowest_nodes.csv",
+      "sha256": "29b7fa93bddae5f9a1f10484dddbc8811fc8a0989d86c67adddce3a42b2c0c8b"
+    },
+    {
+      "path": "runs/m1-s04-local/reports/setup_waterfall.svg",
+      "sha256": "996ef4efb6e569a4b22d4b1e9137f6b980322e68486020caeb7b1def47d663a8"
+    },
+    {
+      "path": "runs/m1-s04-local/state/run_manifest.json",
+      "sha256": "5df62be7c19dec116fba5733b24c0bda3f22386b1d5d697ae59509846ffef808"
+    },
+    {
+      "path": "runs/m1-s04-local/state/run_metadata.json",
+      "sha256": "9450877e98649da4a315af55166021fdc9e02f18940e94c3b012bbf85b5a0087"
+    }
+  ],
+  "created_at": "2026-07-08T15:07:19Z",
+  "log_root": "runs/m1-s04-local/logs",
+  "report_root": "runs/m1-s04-local/reports",
+  "run_id": "m1-s04-local",
+  "run_metadata_ref": {
+    "path": "runs/m1-s04-local/state/run_metadata.json",
+    "sha256": "9450877e98649da4a315af55166021fdc9e02f18940e94c3b012bbf85b5a0087"
+  },
+  "run_root": "runs/m1-s04-local",
+  "schema_version": "v1",
+  "state_root": "runs/m1-s04-local/state",
+  "status": "PASS"
+}

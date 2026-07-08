@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "cleanup_report",
+  "phase_id": "P04_CLUSTER_MANAGEMENT_OPS",
+  "run_id": "phase-P04_CLUSTER_MANAGEMENT_OPS",
+  "created_at": "2026-07-08T15:38:00.057201Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "unknown"
+  },
+  "status": "FAIL",
+  "resources_remaining": [
+    {
+      "type": "unknown",
+      "reason": "no state file, cleanup could not run"
+    }
+  ],
+  "cleanup_actions": []
+}

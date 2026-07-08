@@ -1,0 +1,9 @@
+{
+  "status": "SKIPPED_WITH_REASON",
+  "failovers": [
+    {
+      "failover_latency_ms": "MISSING"
+    }
+  ],
+  "summary": {}
+}

@@ -1,0 +1,60 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-07-08T15:07:19Z",
+  "missing_metrics": [],
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "report_index": "runs/m1-s04-local/reports/report_index.json",
+  "report_outputs": [
+    "runs/m1-s04-local/reports/metrics.csv",
+    "runs/m1-s04-local/reports/missing_metrics.csv",
+    "runs/m1-s04-local/reports/baseline_comparison.csv",
+    "runs/m1-s04-local/reports/setup_phase_durations.csv",
+    "runs/m1-s04-local/reports/setup_slowest_nodes.csv",
+    "runs/m1-s04-local/reports/command_slowest.csv",
+    "runs/m1-s04-local/reports/command_failures.csv",
+    "runs/m1-s04-local/reports/command_retries.csv",
+    "runs/m1-s04-local/reports/management_ops_matrix.csv",
+    "runs/m1-s04-local/reports/management_operation_durations.csv",
+    "runs/m1-s04-local/reports/management_topology_diffs.csv",
+    "runs/m1-s04-local/reports/management_rolling_restart.csv",
+    "runs/m1-s04-local/reports/management_reshard_rebalance.csv",
+    "runs/m1-s04-local/reports/metric_chart.svg",
+    "runs/m1-s04-local/reports/setup_waterfall.svg",
+    "runs/m1-s04-local/reports/command_latency.svg",
+    "runs/m1-s04-local/reports/management_operation_duration.svg",
+    "runs/m1-s04-local/reports/management_topology_diff.svg",
+    "runs/m1-s04-local/reports/report.md",
+    "runs/m1-s04-local/reports/index.html"
+  ],
+  "required_artifacts": [
+    "artifacts/phases/P09_ANALYSIS_REPORTING/phase_summary.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "Baseline comparison is initialized with NO_BASELINE_YET until a versioned baseline exists.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "m1-s04-local",
+  "run_manifest_ref": {
+    "path": "runs/m1-s04-local/state/run_manifest.json",
+    "reason": "The final run manifest is refreshed after analysis/report artifacts are written, so analysis records the manifest path without a pre-refresh hash.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata_ref": {
+    "path": "runs/m1-s04-local/state/run_metadata.json",
+    "sha256": "9450877e98649da4a315af55166021fdc9e02f18940e94c3b012bbf85b5a0087"
+  },
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P09 analyzed prior real Valkey failover artifacts and rendered deterministic machine-readable, tabular, chart, HTML, and markdown report outputs without inventing missing metrics."
+}

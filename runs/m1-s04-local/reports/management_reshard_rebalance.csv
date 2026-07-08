@@ -1,0 +1,4 @@
+operation_name,operation_id,operation_duration_ms,convergence_ms,slots_moved,keys_moved,cluster_impact_ms,status
+reshard_slot_range,m1-s04-07-reshard_slot_range,89.0,8.0,64,0,,PASS
+reshard_with_keys,m1-s04-08-reshard_with_keys,96.0,8.0,64,12,,PASS
+rebalance_after_imbalance,m1-s04-09-rebalance_after_imbalance,103.0,8.0,128,0,,PASS

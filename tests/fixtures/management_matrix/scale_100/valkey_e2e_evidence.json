@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "real_valkey": false,
+  "valkey_versions": [],
+  "nodes_observed": 100,
+  "cluster_state_observed": "ok"
+}

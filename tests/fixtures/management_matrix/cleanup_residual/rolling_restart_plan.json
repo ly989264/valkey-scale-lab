@@ -1,0 +1,709 @@
+{
+  "artifact_type": "rolling_restart_plan",
+  "operations": [
+    {
+      "after_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "after",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-cleanup_residual",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-10-rolling_restart_replica_first-after"
+      },
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-after",
+      "artifact_type": "management_operation_result",
+      "before_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "before",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-cleanup_residual",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-10-rolling_restart_replica_first-before"
+      },
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-before",
+      "bytes_migrated": {
+        "field": "bytes_migrated",
+        "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+        "reason": "Operation does not migrate keys or expose byte counts.",
+        "status": "MISSING"
+      },
+      "cleanup_ms": 1.0,
+      "cleanup_ref": "cleanup_report.json",
+      "cluster_impact_ms": 6.0,
+      "cluster_known_nodes_after": 6,
+      "cluster_known_nodes_before": 6,
+      "cluster_state_after": "ok",
+      "cluster_state_before": "ok",
+      "command_count": 1,
+      "command_log_ref": "command_log.jsonl#cmd-000010",
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000010"
+      ],
+      "command_ms": 98.0,
+      "convergence_ms": 8.0,
+      "coverage_id": "6.management.rolling_restart_replica_first",
+      "duration_ms": 110.0,
+      "ended_at_unix_ms": 1760000010110,
+      "error_count": 0,
+      "errors_by_type": {},
+      "fail_pfail_handshake_after": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "fail_pfail_handshake_before": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "health_gate_count": 1,
+      "imbalance_delta": 0,
+      "keys_moved": 0,
+      "known_nodes_after": 6,
+      "known_nodes_before": 6,
+      "max_concurrent_restarts": 1,
+      "missing_fields": [],
+      "node_count": 6,
+      "operation_duration_ms": 110.0,
+      "operation_id": "m1-s04-10-rolling_restart_replica_first",
+      "operation_name": "rolling_restart_replica_first",
+      "operation_status": "PASS",
+      "per_node_rejoin_ms": [
+        {
+          "logical_id": "node-0003",
+          "value_ms": 18.0
+        }
+      ],
+      "per_node_restart_ms": [
+        {
+          "logical_id": "node-0003",
+          "value_ms": 14.0
+        }
+      ],
+      "per_node_stop_ms": [
+        {
+          "logical_id": "node-0003",
+          "value_ms": 11.0
+        }
+      ],
+      "per_node_unavailable_ms": [
+        {
+          "logical_id": "node-0003",
+          "value_ms": 31.0
+        }
+      ],
+      "phase_id": "M1-S04",
+      "prepare_ms": 3.0,
+      "restart_count": 1,
+      "retry_count": 0,
+      "role_diff": {
+        "primary": 0,
+        "replica": 0
+      },
+      "rolling_restart_plan_ref": "rolling_restart_plan.json",
+      "rolling_restart_results_ref": "rolling_restart_results.jsonl",
+      "run_id": "m1-s04-cleanup_residual",
+      "scale": 6,
+      "scenario": "cleanup_residual",
+      "schema_version": "v1",
+      "slot_balance_after": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_balance_before": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_diff": {
+        "after_range_count": 3,
+        "before_range_count": 3,
+        "moved_slot_range_count": 0,
+        "moved_slot_ranges": []
+      },
+      "slots_after": 16384,
+      "slots_before": 16384,
+      "slots_moved": 0,
+      "source_evidence_refs": [
+        "management_ops_matrix.json",
+        "management_operation_results.jsonl",
+        "management_topology_snapshots.jsonl",
+        "management_topology_diffs.jsonl",
+        "command_log.jsonl",
+        "management_workload_impact.json",
+        "cleanup_report.json"
+      ],
+      "started_at_unix_ms": 1760000010000,
+      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-before",
+      "topology_diff": {
+        "changed_nodes": [],
+        "fail_pfail_handshake_delta": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "known_nodes_delta": 0,
+        "moved_slots": [],
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "status": "PASS"
+      },
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-10-rolling_restart_replica_first",
+      "topology_ref": "management_topology_snapshots.jsonl",
+      "wall_ms": 110.0,
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first",
+      "workload_window_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first"
+    },
+    {
+      "after_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "after",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-cleanup_residual",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-11-rolling_restart_primary_safe-after"
+      },
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-after",
+      "artifact_type": "management_operation_result",
+      "before_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "before",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-cleanup_residual",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-11-rolling_restart_primary_safe-before"
+      },
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-before",
+      "bytes_migrated": {
+        "field": "bytes_migrated",
+        "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+        "reason": "Operation does not migrate keys or expose byte counts.",
+        "status": "MISSING"
+      },
+      "cleanup_ms": 1.0,
+      "cleanup_ref": "cleanup_report.json",
+      "cluster_impact_ms": 6.0,
+      "cluster_known_nodes_after": 6,
+      "cluster_known_nodes_before": 6,
+      "cluster_state_after": "ok",
+      "cluster_state_before": "ok",
+      "command_count": 1,
+      "command_log_ref": "command_log.jsonl#cmd-000011",
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000011"
+      ],
+      "command_ms": 105.0,
+      "convergence_ms": 8.0,
+      "coverage_id": "6.management.rolling_restart_primary_safe",
+      "duration_ms": 117.0,
+      "ended_at_unix_ms": 1760000011117,
+      "error_count": 0,
+      "errors_by_type": {},
+      "fail_pfail_handshake_after": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "fail_pfail_handshake_before": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "health_gate_count": 1,
+      "imbalance_delta": 0,
+      "keys_moved": 0,
+      "known_nodes_after": 6,
+      "known_nodes_before": 6,
+      "max_concurrent_restarts": 1,
+      "missing_fields": [],
+      "node_count": 6,
+      "operation_duration_ms": 117.0,
+      "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+      "operation_name": "rolling_restart_primary_safe",
+      "operation_status": "PASS",
+      "per_node_rejoin_ms": [
+        {
+          "logical_id": "node-0003",
+          "value_ms": 18.0
+        }
+      ],
+      "per_node_restart_ms": [
+        {
+          "logical_id": "node-0003",
+          "value_ms": 14.0
+        }
+      ],
+      "per_node_stop_ms": [
+        {
+          "logical_id": "node-0003",
+          "value_ms": 11.0
+        }
+      ],
+      "per_node_unavailable_ms": [
+        {
+          "logical_id": "node-0003",
+          "value_ms": 31.0
+        }
+      ],
+      "phase_id": "M1-S04",
+      "prepare_ms": 3.0,
+      "restart_count": 1,
+      "retry_count": 0,
+      "role_diff": {
+        "primary": 0,
+        "replica": 0
+      },
+      "rolling_restart_plan_ref": "rolling_restart_plan.json",
+      "rolling_restart_results_ref": "rolling_restart_results.jsonl",
+      "run_id": "m1-s04-cleanup_residual",
+      "scale": 6,
+      "scenario": "cleanup_residual",
+      "schema_version": "v1",
+      "slot_balance_after": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_balance_before": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_diff": {
+        "after_range_count": 3,
+        "before_range_count": 3,
+        "moved_slot_range_count": 0,
+        "moved_slot_ranges": []
+      },
+      "slots_after": 16384,
+      "slots_before": 16384,
+      "slots_moved": 0,
+      "source_evidence_refs": [
+        "management_ops_matrix.json",
+        "management_operation_results.jsonl",
+        "management_topology_snapshots.jsonl",
+        "management_topology_diffs.jsonl",
+        "command_log.jsonl",
+        "management_workload_impact.json",
+        "cleanup_report.json"
+      ],
+      "started_at_unix_ms": 1760000011000,
+      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-before",
+      "topology_diff": {
+        "changed_nodes": [],
+        "fail_pfail_handshake_delta": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "known_nodes_delta": 0,
+        "moved_slots": [],
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "status": "PASS"
+      },
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-11-rolling_restart_primary_safe",
+      "topology_ref": "management_topology_snapshots.jsonl",
+      "wall_ms": 117.0,
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe",
+      "workload_window_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe"
+    }
+  ],
+  "phase_id": "M1-S04",
+  "run_id": "m1-s04-cleanup_residual",
+  "schema_version": "v1",
+  "status": "PASS"
+}

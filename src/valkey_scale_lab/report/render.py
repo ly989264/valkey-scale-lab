@@ -43,9 +43,16 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_command_rows_csv(report_dir / "command_slowest.csv", analysis.get("command_audit", {}).get("slowest_commands_topN", [])),
         _write_command_rows_csv(report_dir / "command_failures.csv", analysis.get("command_audit", {}).get("failed_commands", [])),
         _write_command_rows_csv(report_dir / "command_retries.csv", analysis.get("command_audit", {}).get("retry_commands", [])),
+        _write_management_ops_csv(report_dir / "management_ops_matrix.csv", analysis.get("management_ops", {})),
+        _write_management_duration_csv(report_dir / "management_operation_durations.csv", analysis.get("management_ops", {})),
+        _write_management_topology_csv(report_dir / "management_topology_diffs.csv", analysis.get("management_ops", {})),
+        _write_management_detail_csv(report_dir / "management_rolling_restart.csv", analysis.get("management_ops", {}).get("rolling_restart_summary", [])),
+        _write_management_detail_csv(report_dir / "management_reshard_rebalance.csv", analysis.get("management_ops", {}).get("reshard_rebalance_summary", [])),
         _write_chart(report_dir / "metric_chart.svg", metrics),
         _write_setup_waterfall_svg(report_dir / "setup_waterfall.svg", analysis.get("setup_aggregates", {})),
         _write_command_latency_svg(report_dir / "command_latency.svg", analysis.get("command_audit", {})),
+        _write_management_duration_svg(report_dir / "management_operation_duration.svg", analysis.get("management_ops", {})),
+        _write_management_topology_svg(report_dir / "management_topology_diff.svg", analysis.get("management_ops", {})),
         _write_markdown(report_dir / "report.md", analysis),
         _write_html(report_dir / "index.html", analysis),
     ]
@@ -83,6 +90,17 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
             "command_audit_summary": analysis.get("command_audit", {}).get("summary_artifact", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include command_audit_summary.json"}),
             "csv": ["command_slowest.csv", "command_failures.csv", "command_retries.csv"],
             "svg": "command_latency.svg",
+        },
+        "management_report_inputs": {
+            "management_ops": analysis.get("management_ops", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include management operation aggregates"}),
+            "csv": [
+                "management_ops_matrix.csv",
+                "management_operation_durations.csv",
+                "management_topology_diffs.csv",
+                "management_rolling_restart.csv",
+                "management_reshard_rebalance.csv"
+            ],
+            "svg": ["management_operation_duration.svg", "management_topology_diff.svg"],
         },
     }
     _write_json(index_path, index)
@@ -193,6 +211,84 @@ def _write_command_rows_csv(path: Path, rows: list[dict[str, Any]]) -> Path:
     return path
 
 
+def _write_management_ops_csv(path: Path, management: dict[str, Any]) -> Path:
+    matrix = management.get("matrix", {}) if isinstance(management, dict) else {}
+    operations = matrix.get("operations", []) if isinstance(matrix, dict) else []
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["operation_name", "operation_id", "coverage_id", "status", "command_count", "workload_impact_ref", "cleanup_ref"])
+        writer.writeheader()
+        for row in operations:
+            writer.writerow(
+                {
+                    "operation_name": row.get("operation_name", "MISSING"),
+                    "operation_id": row.get("operation_id", "MISSING"),
+                    "coverage_id": row.get("coverage_id", "MISSING"),
+                    "status": row.get("operation_status", "MISSING"),
+                    "command_count": row.get("command_count", 0),
+                    "workload_impact_ref": row.get("workload_impact_ref", "MISSING"),
+                    "cleanup_ref": row.get("cleanup_ref", "MISSING"),
+                }
+            )
+    return path
+
+
+def _write_management_duration_csv(path: Path, management: dict[str, Any]) -> Path:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["operation_name", "operation_id", "status", "operation_duration_ms", "convergence_ms", "command_count", "retry_count", "error_count"])
+        writer.writeheader()
+        for row in management.get("duration_ranking_topN", []) if isinstance(management, dict) else []:
+            writer.writerow(
+                {
+                    "operation_name": row.get("operation_name", "MISSING"),
+                    "operation_id": row.get("operation_id", "MISSING"),
+                    "status": row.get("operation_status", "MISSING"),
+                    "operation_duration_ms": row.get("operation_duration_ms", ""),
+                    "convergence_ms": row.get("convergence_ms", ""),
+                    "command_count": row.get("command_count", 0),
+                    "retry_count": row.get("retry_count", 0),
+                    "error_count": row.get("error_count", 0),
+                }
+            )
+    return path
+
+
+def _write_management_topology_csv(path: Path, management: dict[str, Any]) -> Path:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["operation_id", "known_nodes_delta", "moved_slot_range_count", "role_diff", "status"])
+        writer.writeheader()
+        for row in management.get("topology_diff_summary", []) if isinstance(management, dict) else []:
+            writer.writerow(
+                {
+                    "operation_id": row.get("operation_id", "MISSING"),
+                    "known_nodes_delta": row.get("known_nodes_delta", "MISSING"),
+                    "moved_slot_range_count": row.get("moved_slot_range_count", "MISSING"),
+                    "role_diff": json.dumps(row.get("role_diff", {}), sort_keys=True),
+                    "status": row.get("status", "MISSING"),
+                }
+            )
+    return path
+
+
+def _write_management_detail_csv(path: Path, rows: list[dict[str, Any]]) -> Path:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["operation_name", "operation_id", "operation_duration_ms", "convergence_ms", "slots_moved", "keys_moved", "cluster_impact_ms", "status"])
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(
+                {
+                    "operation_name": row.get("operation_name", "MISSING"),
+                    "operation_id": row.get("operation_id", "MISSING"),
+                    "operation_duration_ms": row.get("operation_duration_ms", row.get("wall_ms", "")),
+                    "convergence_ms": row.get("convergence_ms", ""),
+                    "slots_moved": row.get("slots_moved", ""),
+                    "keys_moved": row.get("keys_moved", ""),
+                    "cluster_impact_ms": row.get("cluster_impact_ms", ""),
+                    "status": row.get("operation_status", "MISSING"),
+                }
+            )
+    return path
+
+
 def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
     numeric = [m for m in metrics if isinstance(m.get("value"), (int, float)) and not isinstance(m.get("value"), bool)]
     max_value = max([float(m["value"]) for m in numeric] + [1.0])
@@ -281,10 +377,65 @@ def _write_command_latency_svg(path: Path, audit: dict[str, Any]) -> Path:
     return path
 
 
+def _write_management_duration_svg(path: Path, management: dict[str, Any]) -> Path:
+    rows = [item for item in management.get("duration_ranking_topN", []) if isinstance(item.get("operation_duration_ms"), (int, float))]
+    max_value = max([float(item["operation_duration_ms"]) for item in rows] + [1.0])
+    y = 42
+    parts: list[str] = []
+    for item in rows[:10]:
+        name = html.escape(str(item.get("operation_name", "MISSING")))
+        value = float(item["operation_duration_ms"])
+        width = int(380 * (value / max_value))
+        parts.append(f'<text x="12" y="{y + 14}" font-size="12">{name}</text>')
+        parts.append(f'<rect x="250" y="{y}" width="{max(width, 2)}" height="18" fill="#5f6f2f"/>')
+        parts.append(f'<text x="{260 + max(width, 2)}" y="{y + 14}" font-size="12">{value:.3f} ms</text>')
+        y += 32
+    if not rows:
+        parts.append('<text x="12" y="56" font-size="13">management_operation_results.jsonl 未提供可绘制的管理操作耗时。</text>')
+    height = max(y + 20, 100)
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="820" height="{height}" viewBox="0 0 820 {height}">\n'
+        '<rect width="100%" height="100%" fill="#ffffff"/>\n'
+        '<text x="12" y="24" font-size="16" font-weight="700">管理操作耗时排序</text>\n'
+        + "\n".join(parts)
+        + "\n</svg>\n"
+    )
+    path.write_text(svg, encoding="utf-8")
+    return path
+
+
+def _write_management_topology_svg(path: Path, management: dict[str, Any]) -> Path:
+    rows = management.get("topology_diff_summary", []) if isinstance(management, dict) else []
+    y = 42
+    parts: list[str] = []
+    for item in rows[:10]:
+        name = html.escape(str(item.get("operation_id", "MISSING")))
+        moved = item.get("moved_slot_range_count", 0)
+        moved_value = int(moved) if isinstance(moved, int) else 0
+        width = max(2, moved_value * 6)
+        parts.append(f'<text x="12" y="{y + 14}" font-size="12">{name}</text>')
+        parts.append(f'<rect x="340" y="{y}" width="{width}" height="18" fill="#326c7a"/>')
+        parts.append(f'<text x="{350 + width}" y="{y + 14}" font-size="12">moved_ranges={html.escape(str(moved))}</text>')
+        y += 32
+    if not rows:
+        parts.append('<text x="12" y="56" font-size="13">management_topology_diffs.jsonl 未提供 topology diff。</text>')
+    height = max(y + 20, 100)
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="820" height="{height}" viewBox="0 0 820 {height}">\n'
+        '<rect width="100%" height="100%" fill="#ffffff"/>\n'
+        '<text x="12" y="24" font-size="16" font-weight="700">管理 topology diff 摘要</text>\n'
+        + "\n".join(parts)
+        + "\n</svg>\n"
+    )
+    path.write_text(svg, encoding="utf-8")
+    return path
+
+
 def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     metadata = analysis.get("run_metadata", {})
     setup = analysis.get("setup_aggregates", {})
     command_audit = analysis.get("command_audit", {})
+    management = analysis.get("management_ops", {})
     lines = [
         "# P09 Analysis Report",
         "",
@@ -349,6 +500,20 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     lines.append(f"- total_commands: {command_audit.get('total_commands', 0)}")
     for kind, count in sorted(command_audit.get("by_command_kind", {}).items()):
         lines.append(f"- {kind}: {count}")
+    lines.extend(["", "## 管理操作矩阵", ""])
+    if management.get("duration_ranking_topN"):
+        lines.append("![管理操作耗时排序](management_operation_duration.svg)")
+        for item in management.get("duration_ranking_topN", [])[:11]:
+            lines.append(f"- {item.get('operation_name', 'MISSING')}: {item.get('operation_duration_ms', 'MISSING')} ms status={item.get('operation_status', 'MISSING')} commands={item.get('command_count', 0)}")
+    else:
+        lines.append(f"- {management.get('status', 'SKIPPED_WITH_REASON')}: {management.get('reason', '无管理操作样本')}")
+    lines.extend(["", "## 管理 topology diff 摘要", ""])
+    if management.get("topology_diff_summary"):
+        lines.append("![管理 topology diff 摘要](management_topology_diff.svg)")
+        for item in management.get("topology_diff_summary", [])[:10]:
+            lines.append(f"- {item.get('operation_id', 'MISSING')}: known_nodes_delta={item.get('known_nodes_delta', 'MISSING')}, moved_slot_ranges={item.get('moved_slot_range_count', 'MISSING')}")
+    else:
+        lines.append("- SKIPPED_WITH_REASON: 无 topology diff 样本")
     lines.extend(["", "## 缺失指标", ""])
     missing = analysis.get("missing_metrics", [])
     if missing:
@@ -356,7 +521,7 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('status', 'MISSING')} - {item.get('reason', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg"])
+    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
@@ -365,6 +530,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
     metadata = analysis.get("run_metadata", {})
     setup = analysis.get("setup_aggregates", {})
     command_audit = analysis.get("command_audit", {})
+    management = analysis.get("management_ops", {})
     metadata_rows = "\n".join(
         "<tr><td>{}</td><td><code>{}</code></td></tr>".format(
             html.escape(key),
@@ -408,6 +574,24 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         "<tr><td>{}</td><td>{}</td></tr>".format(html.escape(str(kind)), html.escape(str(count)))
         for kind, count in sorted(command_audit.get("by_command_kind", {}).items())
     ) or '<tr><td colspan="2">SKIPPED_WITH_REASON: 无 command log 样本</td></tr>'
+    management_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(str(item.get("operation_name", "MISSING"))),
+            html.escape(str(item.get("operation_duration_ms", "MISSING"))),
+            html.escape(str(item.get("operation_status", "MISSING"))),
+            html.escape(str(item.get("command_count", 0))),
+        )
+        for item in management.get("duration_ranking_topN", [])[:11]
+    ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无管理操作样本</td></tr>'
+    topology_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(str(item.get("operation_id", "MISSING"))),
+            html.escape(str(item.get("known_nodes_delta", "MISSING"))),
+            html.escape(str(item.get("moved_slot_range_count", "MISSING"))),
+            html.escape(str(item.get("status", "MISSING"))),
+        )
+        for item in management.get("topology_diff_summary", [])[:10]
+    ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无 topology diff 样本</td></tr>'
     document = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -446,6 +630,12 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody>{retry_command_rows}</tbody></table>
   <h2>命令审计覆盖</h2>
   <table><thead><tr><th>命令类型</th><th>数量</th></tr></thead><tbody>{command_coverage_rows}</tbody></table>
+  <h2>管理操作矩阵</h2>
+  <img src="management_operation_duration.svg" alt="管理操作耗时排序">
+  <table><thead><tr><th>操作</th><th>耗时 ms</th><th>状态</th><th>命令数</th></tr></thead><tbody>{management_rows}</tbody></table>
+  <h2>管理 topology diff 摘要</h2>
+  <img src="management_topology_diff.svg" alt="管理 topology diff 摘要">
+  <table><thead><tr><th>操作</th><th>known_nodes_delta</th><th>moved_slot_ranges</th><th>状态</th></tr></thead><tbody>{topology_rows}</tbody></table>
   <h2>图表</h2>
   <img src="metric_chart.svg" alt="P09 artifact metrics chart">
 </body>

@@ -1,0 +1,225 @@
+{
+  "artifact_type": "management_ops_matrix",
+  "operations": [
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-01-create_cluster-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-01-create_cluster-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000001"
+      ],
+      "coverage_id": "200.management.create_cluster",
+      "node_count": 200,
+      "operation_id": "m1-s04-01-create_cluster",
+      "operation_name": "create_cluster",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-01-create_cluster",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-01-create_cluster",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-01-create_cluster"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-02-meet_nodes-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-02-meet_nodes-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000002"
+      ],
+      "coverage_id": "200.management.meet_nodes",
+      "node_count": 200,
+      "operation_id": "m1-s04-02-meet_nodes",
+      "operation_name": "meet_nodes",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-02-meet_nodes",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-02-meet_nodes",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-02-meet_nodes"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-03-add_replica-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-03-add_replica-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000003"
+      ],
+      "coverage_id": "200.management.add_replica",
+      "node_count": 200,
+      "operation_id": "m1-s04-03-add_replica",
+      "operation_name": "add_replica",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-03-add_replica",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-03-add_replica",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-03-add_replica"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-04-remove_replica-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-04-remove_replica-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000004"
+      ],
+      "coverage_id": "200.management.remove_replica",
+      "node_count": 200,
+      "operation_id": "m1-s04-04-remove_replica",
+      "operation_name": "remove_replica",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-04-remove_replica",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-04-remove_replica",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-04-remove_replica"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-05-remove_primary_drained_or_safe_replaced-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-05-remove_primary_drained_or_safe_replaced-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000005"
+      ],
+      "coverage_id": "200.management.remove_primary_drained_or_safe_replaced",
+      "node_count": 200,
+      "operation_id": "m1-s04-05-remove_primary_drained_or_safe_replaced",
+      "operation_name": "remove_primary_drained_or_safe_replaced",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-05-remove_primary_drained_or_safe_replaced",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-05-remove_primary_drained_or_safe_replaced",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-05-remove_primary_drained_or_safe_replaced"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-06-remove_failed_node-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-06-remove_failed_node-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000006"
+      ],
+      "coverage_id": "200.management.remove_failed_node",
+      "node_count": 200,
+      "operation_id": "m1-s04-06-remove_failed_node",
+      "operation_name": "remove_failed_node",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-06-remove_failed_node",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-06-remove_failed_node",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-06-remove_failed_node"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000007"
+      ],
+      "coverage_id": "200.management.reshard_slot_range",
+      "node_count": 200,
+      "operation_id": "m1-s04-07-reshard_slot_range",
+      "operation_name": "reshard_slot_range",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-07-reshard_slot_range",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-07-reshard_slot_range",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000008"
+      ],
+      "coverage_id": "200.management.reshard_with_keys",
+      "node_count": 200,
+      "operation_id": "m1-s04-08-reshard_with_keys",
+      "operation_name": "reshard_with_keys",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-08-reshard_with_keys",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-08-reshard_with_keys",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000009"
+      ],
+      "coverage_id": "200.management.rebalance_after_imbalance",
+      "node_count": 200,
+      "operation_id": "m1-s04-09-rebalance_after_imbalance",
+      "operation_name": "rebalance_after_imbalance",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-09-rebalance_after_imbalance",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-09-rebalance_after_imbalance",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000010"
+      ],
+      "coverage_id": "200.management.rolling_restart_replica_first",
+      "node_count": 200,
+      "operation_id": "m1-s04-10-rolling_restart_replica_first",
+      "operation_name": "rolling_restart_replica_first",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-10-rolling_restart_replica_first",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-10-rolling_restart_replica_first",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first"
+    },
+    {
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-after",
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-before",
+      "cleanup_ref": "cleanup_report.json",
+      "command_count": 1,
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000011"
+      ],
+      "coverage_id": "200.management.rolling_restart_primary_safe",
+      "node_count": 200,
+      "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+      "operation_name": "rolling_restart_primary_safe",
+      "operation_result_ref": "management_operation_results.jsonl#m1-s04-11-rolling_restart_primary_safe",
+      "operation_status": "PASS",
+      "scale": 200,
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-11-rolling_restart_primary_safe",
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe"
+    }
+  ],
+  "phase_id": "M1-S04",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "required_operations": [
+    "create_cluster",
+    "meet_nodes",
+    "add_replica",
+    "remove_replica",
+    "remove_primary_drained_or_safe_replaced",
+    "remove_failed_node",
+    "reshard_slot_range",
+    "reshard_with_keys",
+    "rebalance_after_imbalance",
+    "rolling_restart_replica_first",
+    "rolling_restart_primary_safe"
+  ],
+  "run_id": "m1-s04-scale_200",
+  "scenario": "scale_200",
+  "schema_version": "v1",
+  "status": "PASS"
+}

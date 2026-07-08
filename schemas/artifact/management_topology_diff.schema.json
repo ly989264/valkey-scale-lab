@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Management Topology Diff",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "artifact_type",
+    "phase_id",
+    "run_id",
+    "operation_id",
+    "before_snapshot_ref",
+    "after_snapshot_ref",
+    "slot_diff",
+    "role_diff",
+    "known_nodes_delta",
+    "fail_pfail_handshake_delta",
+    "changed_nodes",
+    "moved_slots",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^v1$"},
+    "artifact_type": {"type": "string", "const": "management_topology_diff"},
+    "phase_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "operation_id": {"type": "string", "minLength": 1},
+    "before_snapshot_ref": {"type": "string", "minLength": 1},
+    "after_snapshot_ref": {"type": "string", "minLength": 1},
+    "slot_diff": {"type": "object"},
+    "role_diff": {"type": "object"},
+    "known_nodes_delta": {"type": "integer"},
+    "fail_pfail_handshake_delta": {"type": "object"},
+    "changed_nodes": {"type": "array"},
+    "moved_slots": {"type": "array"},
+    "status": {"type": "string", "enum": ["PASS", "FAIL", "MISSING", "SKIPPED_WITH_REASON"]}
+  },
+  "additionalProperties": true
+}

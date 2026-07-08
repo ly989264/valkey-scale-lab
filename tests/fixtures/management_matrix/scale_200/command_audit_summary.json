@@ -1,0 +1,15 @@
+{
+  "artifact_type": "command_audit_summary",
+  "command_log_ref": "command_log.jsonl",
+  "failure_count": 0,
+  "missing_or_skipped": [],
+  "pass_count": 11,
+  "phase_id": "M1-S04",
+  "retry_count": 0,
+  "run_id": "m1-s04-scale_200",
+  "scenario": "scale_200",
+  "schema_version": "v1",
+  "status": "PASS",
+  "timeout_count": 0,
+  "total_commands": 11
+}

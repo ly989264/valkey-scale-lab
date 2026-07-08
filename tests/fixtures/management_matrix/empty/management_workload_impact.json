@@ -1,0 +1,9 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "management_workload_impact",
+  "phase_id": "M1-S04",
+  "run_id": "empty",
+  "scenario": "empty",
+  "status": "FAIL",
+  "operations": []
+}

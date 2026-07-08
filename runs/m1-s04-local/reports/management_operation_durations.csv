@@ -1,0 +1,11 @@
+operation_name,operation_id,status,operation_duration_ms,convergence_ms,command_count,retry_count,error_count
+rolling_restart_primary_safe,m1-s04-11-rolling_restart_primary_safe,PASS,117.0,8.0,1,0,0
+rolling_restart_replica_first,m1-s04-10-rolling_restart_replica_first,PASS,110.0,8.0,1,0,0
+rebalance_after_imbalance,m1-s04-09-rebalance_after_imbalance,PASS,103.0,8.0,1,0,0
+reshard_with_keys,m1-s04-08-reshard_with_keys,PASS,96.0,8.0,1,0,0
+reshard_slot_range,m1-s04-07-reshard_slot_range,PASS,89.0,8.0,1,0,0
+remove_failed_node,m1-s04-06-remove_failed_node,PASS,82.0,8.0,1,0,0
+remove_primary_drained_or_safe_replaced,m1-s04-05-remove_primary_drained_or_safe_replaced,PASS,75.0,8.0,1,0,0
+remove_replica,m1-s04-04-remove_replica,PASS,68.0,8.0,1,0,0
+add_replica,m1-s04-03-add_replica,PASS,61.0,8.0,1,0,0
+meet_nodes,m1-s04-02-meet_nodes,PASS,54.0,8.0,1,0,0

@@ -1,0 +1,12 @@
+{
+  "artifact_type": "valkey_e2e_evidence",
+  "cluster_state_observed": "SKIPPED_WITH_REASON",
+  "nodes_observed": 0,
+  "phase_id": "M1-S04",
+  "real_valkey": false,
+  "reason": "Local sandbox denies binding 127.0.0.1:7000, so the real Valkey management run was not claimed as PASS.",
+  "run_id": "m1-s04-local",
+  "schema_version": "v1",
+  "status": "BLOCKED_WITH_REASON",
+  "valkey_versions": []
+}

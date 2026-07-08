@@ -1,0 +1,10 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "management_ops_matrix",
+  "phase_id": "M1-S04",
+  "run_id": "empty",
+  "scenario": "empty",
+  "status": "FAIL",
+  "required_operations": [],
+  "operations": []
+}

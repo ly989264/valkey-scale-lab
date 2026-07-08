@@ -1,0 +1,2827 @@
+{
+  "artifact_type": "analysis_summary",
+  "baseline_comparison": {
+    "artifact_type": "baseline_comparison",
+    "baseline_source": {
+      "reason": "No versioned baseline artifact exists for the first analysis-reporting phase.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "comparisons": [
+      {
+        "baseline_value": null,
+        "current_value": 0,
+        "delta": null,
+        "metric": "nodes_observed_after_fault",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "failover_latency_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "split_brain_duration_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": 0,
+        "delta": null,
+        "metric": "cleanup_resources_remaining",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      }
+    ],
+    "created_at": "2026-07-08T15:07:19Z",
+    "phase_id": "P09_ANALYSIS_REPORTING",
+    "producer": {
+      "name": "valkey-scale-lab",
+      "version": "0.0.0"
+    },
+    "run_id": "m1-s04-local",
+    "schema_version": "v1",
+    "source_dir": "runs/m1-s04-local/artifacts",
+    "status": "NO_BASELINE_YET"
+  },
+  "command_audit": {
+    "by_command_kind": {
+      "management_operation": 11
+    },
+    "command_log_ref": "command_log.jsonl",
+    "failed_commands": [],
+    "failure_count": 0,
+    "missing_or_skipped": [],
+    "operation_traceability": [
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000001"
+        ],
+        "operation_id": "m1-s04-01-create_cluster",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000002"
+        ],
+        "operation_id": "m1-s04-02-meet_nodes",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000003"
+        ],
+        "operation_id": "m1-s04-03-add_replica",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000004"
+        ],
+        "operation_id": "m1-s04-04-remove_replica",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000005"
+        ],
+        "operation_id": "m1-s04-05-remove_primary_drained_or_safe_replaced",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000006"
+        ],
+        "operation_id": "m1-s04-06-remove_failed_node",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000007"
+        ],
+        "operation_id": "m1-s04-07-reshard_slot_range",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000008"
+        ],
+        "operation_id": "m1-s04-08-reshard_with_keys",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000009"
+        ],
+        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000010"
+        ],
+        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "status": "PASS"
+      },
+      {
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000011"
+        ],
+        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "status": "PASS"
+      }
+    ],
+    "pass_count": 11,
+    "retry_commands": [],
+    "retry_count": 0,
+    "slowest_commands_topN": [
+      {
+        "command_id": "cmd-000001",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-01-create_cluster",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "create_cluster"
+      },
+      {
+        "command_id": "cmd-000002",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-02-meet_nodes",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "meet_nodes"
+      },
+      {
+        "command_id": "cmd-000003",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-03-add_replica",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "add_replica"
+      },
+      {
+        "command_id": "cmd-000004",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-04-remove_replica",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "remove_replica"
+      },
+      {
+        "command_id": "cmd-000005",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-05-remove_primary_drained_or_safe_replaced",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "remove_primary_drained_or_safe_replaced"
+      },
+      {
+        "command_id": "cmd-000006",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-06-remove_failed_node",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "remove_failed_node"
+      },
+      {
+        "command_id": "cmd-000007",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-07-reshard_slot_range",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "reshard_slot_range"
+      },
+      {
+        "command_id": "cmd-000008",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-08-reshard_with_keys",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "reshard_with_keys"
+      },
+      {
+        "command_id": "cmd-000009",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "rebalance_after_imbalance"
+      },
+      {
+        "command_id": "cmd-000010",
+        "command_kind": "management_operation",
+        "duration_ms": 10.0,
+        "error_type": "",
+        "exit_code": 0,
+        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "retry_index": 0,
+        "status": "PASS",
+        "step_id": "rolling_restart_replica_first"
+      }
+    ],
+    "status": "PASS",
+    "summary_artifact": {
+      "artifact_type": "command_audit_summary",
+      "command_log_ref": "command_log.jsonl",
+      "failure_count": 0,
+      "missing_or_skipped": [],
+      "pass_count": 11,
+      "phase_id": "M1-S04",
+      "retry_count": 0,
+      "run_id": "m1-s04-local",
+      "scenario": "management_matrix_fixture",
+      "schema_version": "v1",
+      "status": "PASS",
+      "timeout_count": 0,
+      "total_commands": 11
+    },
+    "timeout_commands": [],
+    "timeout_count": 0,
+    "total_commands": 11
+  },
+  "created_at": "2026-07-08T15:07:19Z",
+  "findings": [
+    {
+      "name": "source_phase",
+      "source_phase_id": "M1-S04",
+      "source_run_id": "m1-s04-local",
+      "status": "PASS"
+    },
+    {
+      "cluster_state_observed": "SKIPPED_WITH_REASON",
+      "name": "real_valkey_evidence",
+      "nodes_observed": 0,
+      "real_valkey": false,
+      "status": "BLOCKED_WITH_REASON",
+      "valkey_versions": []
+    },
+    {
+      "failover_latency_ms": "MISSING",
+      "name": "failover",
+      "old_primary_node_id": "MISSING",
+      "promoted_node_id": "MISSING",
+      "status": "SKIPPED_WITH_REASON",
+      "target_logical_id": "MISSING"
+    },
+    {
+      "name": "cleanup",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "name": "setup_telemetry",
+      "node_count": "MISSING",
+      "status": "SKIPPED_WITH_REASON",
+      "total_setup_ms": "MISSING"
+    },
+    {
+      "failure_count": 0,
+      "name": "command_audit",
+      "retry_count": 0,
+      "status": "PASS",
+      "timeout_count": 0,
+      "total_commands": 11
+    },
+    {
+      "missing_required_operations": [],
+      "name": "management_ops",
+      "operation_count": 11,
+      "status": "PASS"
+    }
+  ],
+  "management_ops": {
+    "command_traceability": [
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000001"
+        ],
+        "operation_id": "m1-s04-01-create_cluster",
+        "operation_name": "create_cluster"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000002"
+        ],
+        "operation_id": "m1-s04-02-meet_nodes",
+        "operation_name": "meet_nodes"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000003"
+        ],
+        "operation_id": "m1-s04-03-add_replica",
+        "operation_name": "add_replica"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000004"
+        ],
+        "operation_id": "m1-s04-04-remove_replica",
+        "operation_name": "remove_replica"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000005"
+        ],
+        "operation_id": "m1-s04-05-remove_primary_drained_or_safe_replaced",
+        "operation_name": "remove_primary_drained_or_safe_replaced"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000006"
+        ],
+        "operation_id": "m1-s04-06-remove_failed_node",
+        "operation_name": "remove_failed_node"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000007"
+        ],
+        "operation_id": "m1-s04-07-reshard_slot_range",
+        "operation_name": "reshard_slot_range"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000008"
+        ],
+        "operation_id": "m1-s04-08-reshard_with_keys",
+        "operation_name": "reshard_with_keys"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000009"
+        ],
+        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "operation_name": "rebalance_after_imbalance"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000010"
+        ],
+        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "operation_name": "rolling_restart_replica_first"
+      },
+      {
+        "command_count": 1,
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000011"
+        ],
+        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "operation_name": "rolling_restart_primary_safe"
+      }
+    ],
+    "duration_ranking_topN": [
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 117.0,
+        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "operation_name": "rolling_restart_primary_safe",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-11-rolling_restart_primary_safe",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 110.0,
+        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "operation_name": "rolling_restart_replica_first",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-10-rolling_restart_replica_first",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 103.0,
+        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "operation_name": "rebalance_after_imbalance",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-09-rebalance_after_imbalance",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 96.0,
+        "operation_id": "m1-s04-08-reshard_with_keys",
+        "operation_name": "reshard_with_keys",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-08-reshard_with_keys",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 89.0,
+        "operation_id": "m1-s04-07-reshard_slot_range",
+        "operation_name": "reshard_slot_range",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-07-reshard_slot_range",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 82.0,
+        "operation_id": "m1-s04-06-remove_failed_node",
+        "operation_name": "remove_failed_node",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-06-remove_failed_node",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-06-remove_failed_node"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 75.0,
+        "operation_id": "m1-s04-05-remove_primary_drained_or_safe_replaced",
+        "operation_name": "remove_primary_drained_or_safe_replaced",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-05-remove_primary_drained_or_safe_replaced",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-05-remove_primary_drained_or_safe_replaced"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 68.0,
+        "operation_id": "m1-s04-04-remove_replica",
+        "operation_name": "remove_replica",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-04-remove_replica",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-04-remove_replica"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 61.0,
+        "operation_id": "m1-s04-03-add_replica",
+        "operation_name": "add_replica",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-03-add_replica",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-03-add_replica"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 54.0,
+        "operation_id": "m1-s04-02-meet_nodes",
+        "operation_name": "meet_nodes",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-02-meet_nodes",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-02-meet_nodes"
+      }
+    ],
+    "error_operations": [],
+    "matrix": {
+      "artifact_type": "management_ops_matrix",
+      "operations": [
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-01-create_cluster-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-01-create_cluster-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000001"
+          ],
+          "coverage_id": "6.management.create_cluster",
+          "node_count": 6,
+          "operation_id": "m1-s04-01-create_cluster",
+          "operation_name": "create_cluster",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-01-create_cluster",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-01-create_cluster",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-01-create_cluster"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-02-meet_nodes-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-02-meet_nodes-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000002"
+          ],
+          "coverage_id": "6.management.meet_nodes",
+          "node_count": 6,
+          "operation_id": "m1-s04-02-meet_nodes",
+          "operation_name": "meet_nodes",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-02-meet_nodes",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-02-meet_nodes",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-02-meet_nodes"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-03-add_replica-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-03-add_replica-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000003"
+          ],
+          "coverage_id": "6.management.add_replica",
+          "node_count": 6,
+          "operation_id": "m1-s04-03-add_replica",
+          "operation_name": "add_replica",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-03-add_replica",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-03-add_replica",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-03-add_replica"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-04-remove_replica-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-04-remove_replica-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000004"
+          ],
+          "coverage_id": "6.management.remove_replica",
+          "node_count": 6,
+          "operation_id": "m1-s04-04-remove_replica",
+          "operation_name": "remove_replica",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-04-remove_replica",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-04-remove_replica",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-04-remove_replica"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-05-remove_primary_drained_or_safe_replaced-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-05-remove_primary_drained_or_safe_replaced-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000005"
+          ],
+          "coverage_id": "6.management.remove_primary_drained_or_safe_replaced",
+          "node_count": 6,
+          "operation_id": "m1-s04-05-remove_primary_drained_or_safe_replaced",
+          "operation_name": "remove_primary_drained_or_safe_replaced",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-05-remove_primary_drained_or_safe_replaced",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-05-remove_primary_drained_or_safe_replaced",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-05-remove_primary_drained_or_safe_replaced"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-06-remove_failed_node-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-06-remove_failed_node-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000006"
+          ],
+          "coverage_id": "6.management.remove_failed_node",
+          "node_count": 6,
+          "operation_id": "m1-s04-06-remove_failed_node",
+          "operation_name": "remove_failed_node",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-06-remove_failed_node",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-06-remove_failed_node",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-06-remove_failed_node"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000007"
+          ],
+          "coverage_id": "6.management.reshard_slot_range",
+          "node_count": 6,
+          "operation_id": "m1-s04-07-reshard_slot_range",
+          "operation_name": "reshard_slot_range",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-07-reshard_slot_range",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-07-reshard_slot_range",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000008"
+          ],
+          "coverage_id": "6.management.reshard_with_keys",
+          "node_count": 6,
+          "operation_id": "m1-s04-08-reshard_with_keys",
+          "operation_name": "reshard_with_keys",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-08-reshard_with_keys",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-08-reshard_with_keys",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000009"
+          ],
+          "coverage_id": "6.management.rebalance_after_imbalance",
+          "node_count": 6,
+          "operation_id": "m1-s04-09-rebalance_after_imbalance",
+          "operation_name": "rebalance_after_imbalance",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-09-rebalance_after_imbalance",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-09-rebalance_after_imbalance",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000010"
+          ],
+          "coverage_id": "6.management.rolling_restart_replica_first",
+          "node_count": 6,
+          "operation_id": "m1-s04-10-rolling_restart_replica_first",
+          "operation_name": "rolling_restart_replica_first",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-10-rolling_restart_replica_first",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-10-rolling_restart_replica_first",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first"
+        },
+        {
+          "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-after",
+          "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-before",
+          "cleanup_ref": "cleanup_report.json",
+          "command_count": 1,
+          "command_log_refs": [
+            "command_log.jsonl#cmd-000011"
+          ],
+          "coverage_id": "6.management.rolling_restart_primary_safe",
+          "node_count": 6,
+          "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+          "operation_name": "rolling_restart_primary_safe",
+          "operation_result_ref": "management_operation_results.jsonl#m1-s04-11-rolling_restart_primary_safe",
+          "operation_status": "PASS",
+          "scale": 6,
+          "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-11-rolling_restart_primary_safe",
+          "workload_impact_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe"
+        }
+      ],
+      "phase_id": "M1-S04",
+      "producer": {
+        "name": "valkey-scale-lab",
+        "version": "0.0.0"
+      },
+      "required_operations": [
+        "create_cluster",
+        "meet_nodes",
+        "add_replica",
+        "remove_replica",
+        "remove_primary_drained_or_safe_replaced",
+        "remove_failed_node",
+        "reshard_slot_range",
+        "reshard_with_keys",
+        "rebalance_after_imbalance",
+        "rolling_restart_replica_first",
+        "rolling_restart_primary_safe"
+      ],
+      "run_id": "m1-s04-local",
+      "scenario": "management_matrix_fixture",
+      "schema_version": "v1",
+      "status": "PASS"
+    },
+    "missing_metrics": [],
+    "missing_required_operations": [],
+    "operation_count": 11,
+    "required_operations_observed": [
+      "create_cluster",
+      "meet_nodes",
+      "add_replica",
+      "remove_replica",
+      "remove_primary_drained_or_safe_replaced",
+      "remove_failed_node",
+      "reshard_slot_range",
+      "reshard_with_keys",
+      "rebalance_after_imbalance",
+      "rolling_restart_replica_first",
+      "rolling_restart_primary_safe"
+    ],
+    "reshard_rebalance_summary": [
+      {
+        "after_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "after",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-07-reshard_slot_range",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-07-reshard_slot_range-after"
+        },
+        "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-after",
+        "artifact_type": "management_operation_result",
+        "before_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "before",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-07-reshard_slot_range",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-07-reshard_slot_range-before"
+        },
+        "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-before",
+        "bytes_migrated": {
+          "field": "bytes_migrated",
+          "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+          "reason": "Fixture and current Valkey command path do not expose migrated byte counts.",
+          "status": "MISSING"
+        },
+        "cleanup_ms": 1.0,
+        "cleanup_ref": "cleanup_report.json",
+        "cluster_known_nodes_after": 6,
+        "cluster_known_nodes_before": 6,
+        "cluster_state_after": "ok",
+        "cluster_state_before": "ok",
+        "command_count": 1,
+        "command_log_ref": "command_log.jsonl#cmd-000007",
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000007"
+        ],
+        "command_ms": 77.0,
+        "convergence_ms": 8.0,
+        "coverage_id": "6.management.reshard_slot_range",
+        "duration_ms": 89.0,
+        "ended_at_unix_ms": 1760000007089,
+        "error_count": 0,
+        "errors_by_type": {},
+        "fail_pfail_handshake_after": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "fail_pfail_handshake_before": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "imbalance_after": 1,
+        "imbalance_before": 1,
+        "imbalance_delta": 0,
+        "keys_moved": 0,
+        "known_nodes_after": 6,
+        "known_nodes_before": 6,
+        "missing_fields": [],
+        "movement_ids": [
+          "m1-s04-07-reshard_slot_range-move-0001"
+        ],
+        "node_count": 6,
+        "operation_duration_ms": 89.0,
+        "operation_id": "m1-s04-07-reshard_slot_range",
+        "operation_name": "reshard_slot_range",
+        "operation_status": "PASS",
+        "phase_id": "M1-S04",
+        "post_move_writable": true,
+        "prepare_ms": 3.0,
+        "retry_count": 0,
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "run_id": "m1-s04-local",
+        "scale": 6,
+        "scenario": "management_matrix_fixture",
+        "schema_version": "v1",
+        "slot_balance_after": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_balance_before": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_coverage_complete": true,
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "slots_after": 16384,
+        "slots_before": 16384,
+        "slots_moved": 64,
+        "source_evidence_refs": [
+          "management_ops_matrix.json",
+          "management_operation_results.jsonl",
+          "management_topology_snapshots.jsonl",
+          "management_topology_diffs.jsonl",
+          "command_log.jsonl",
+          "management_workload_impact.json",
+          "cleanup_report.json"
+        ],
+        "source_node_id": "nodeid-0000",
+        "started_at_unix_ms": 1760000007000,
+        "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+        "target_node_id": "nodeid-0001",
+        "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-after",
+        "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-before",
+        "topology_diff": {
+          "changed_nodes": [],
+          "fail_pfail_handshake_delta": {
+            "fail": 0,
+            "handshake": 0,
+            "pfail": 0
+          },
+          "known_nodes_delta": 0,
+          "moved_slots": [],
+          "role_diff": {
+            "primary": 0,
+            "replica": 0
+          },
+          "slot_diff": {
+            "after_range_count": 3,
+            "before_range_count": 3,
+            "moved_slot_range_count": 0,
+            "moved_slot_ranges": []
+          },
+          "status": "PASS"
+        },
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-07-reshard_slot_range",
+        "topology_ref": "management_topology_snapshots.jsonl",
+        "wall_ms": 89.0,
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range",
+        "workload_window_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range"
+      },
+      {
+        "after_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "after",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-08-reshard_with_keys",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-08-reshard_with_keys-after"
+        },
+        "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-after",
+        "artifact_type": "management_operation_result",
+        "before_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "before",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-08-reshard_with_keys",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-08-reshard_with_keys-before"
+        },
+        "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-before",
+        "bytes_migrated": {
+          "field": "bytes_migrated",
+          "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+          "reason": "Fixture and current Valkey command path do not expose migrated byte counts.",
+          "status": "MISSING"
+        },
+        "cleanup_ms": 1.0,
+        "cleanup_ref": "cleanup_report.json",
+        "cluster_known_nodes_after": 6,
+        "cluster_known_nodes_before": 6,
+        "cluster_state_after": "ok",
+        "cluster_state_before": "ok",
+        "command_count": 1,
+        "command_log_ref": "command_log.jsonl#cmd-000008",
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000008"
+        ],
+        "command_ms": 84.0,
+        "convergence_ms": 8.0,
+        "coverage_id": "6.management.reshard_with_keys",
+        "duration_ms": 96.0,
+        "ended_at_unix_ms": 1760000008096,
+        "error_count": 0,
+        "errors_by_type": {},
+        "fail_pfail_handshake_after": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "fail_pfail_handshake_before": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "imbalance_after": 1,
+        "imbalance_before": 1,
+        "imbalance_delta": 0,
+        "keys_moved": 12,
+        "known_nodes_after": 6,
+        "known_nodes_before": 6,
+        "missing_fields": [],
+        "movement_ids": [
+          "m1-s04-08-reshard_with_keys-move-0001"
+        ],
+        "node_count": 6,
+        "operation_duration_ms": 96.0,
+        "operation_id": "m1-s04-08-reshard_with_keys",
+        "operation_name": "reshard_with_keys",
+        "operation_status": "PASS",
+        "phase_id": "M1-S04",
+        "post_move_writable": true,
+        "prepare_ms": 3.0,
+        "retry_count": 0,
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "run_id": "m1-s04-local",
+        "scale": 6,
+        "scenario": "management_matrix_fixture",
+        "schema_version": "v1",
+        "slot_balance_after": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_balance_before": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_coverage_complete": true,
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "slots_after": 16384,
+        "slots_before": 16384,
+        "slots_moved": 64,
+        "source_evidence_refs": [
+          "management_ops_matrix.json",
+          "management_operation_results.jsonl",
+          "management_topology_snapshots.jsonl",
+          "management_topology_diffs.jsonl",
+          "command_log.jsonl",
+          "management_workload_impact.json",
+          "cleanup_report.json"
+        ],
+        "source_node_id": "nodeid-0000",
+        "started_at_unix_ms": 1760000008000,
+        "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+        "target_node_id": "nodeid-0001",
+        "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-after",
+        "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-before",
+        "topology_diff": {
+          "changed_nodes": [],
+          "fail_pfail_handshake_delta": {
+            "fail": 0,
+            "handshake": 0,
+            "pfail": 0
+          },
+          "known_nodes_delta": 0,
+          "moved_slots": [],
+          "role_diff": {
+            "primary": 0,
+            "replica": 0
+          },
+          "slot_diff": {
+            "after_range_count": 3,
+            "before_range_count": 3,
+            "moved_slot_range_count": 0,
+            "moved_slot_ranges": []
+          },
+          "status": "PASS"
+        },
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-08-reshard_with_keys",
+        "topology_ref": "management_topology_snapshots.jsonl",
+        "wall_ms": 96.0,
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys",
+        "workload_window_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys"
+      },
+      {
+        "after_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "after",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-09-rebalance_after_imbalance",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-09-rebalance_after_imbalance-after"
+        },
+        "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-after",
+        "artifact_type": "management_operation_result",
+        "before_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "before",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-09-rebalance_after_imbalance",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-09-rebalance_after_imbalance-before"
+        },
+        "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-before",
+        "bytes_migrated": {
+          "field": "bytes_migrated",
+          "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+          "reason": "Fixture and current Valkey command path do not expose migrated byte counts.",
+          "status": "MISSING"
+        },
+        "cleanup_ms": 1.0,
+        "cleanup_ref": "cleanup_report.json",
+        "cluster_known_nodes_after": 6,
+        "cluster_known_nodes_before": 6,
+        "cluster_state_after": "ok",
+        "cluster_state_before": "ok",
+        "command_count": 1,
+        "command_log_ref": "command_log.jsonl#cmd-000009",
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000009"
+        ],
+        "command_ms": 91.0,
+        "convergence_ms": 8.0,
+        "coverage_id": "6.management.rebalance_after_imbalance",
+        "duration_ms": 103.0,
+        "ended_at_unix_ms": 1760000009103,
+        "error_count": 0,
+        "errors_by_type": {},
+        "fail_pfail_handshake_after": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "fail_pfail_handshake_before": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "imbalance_after": 1,
+        "imbalance_before": 1,
+        "imbalance_delta": 0,
+        "keys_moved": 0,
+        "known_nodes_after": 6,
+        "known_nodes_before": 6,
+        "missing_fields": [],
+        "movement_ids": [
+          "m1-s04-09-rebalance_after_imbalance-move-0001"
+        ],
+        "node_count": 6,
+        "operation_duration_ms": 103.0,
+        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "operation_name": "rebalance_after_imbalance",
+        "operation_status": "PASS",
+        "phase_id": "M1-S04",
+        "post_move_writable": true,
+        "prepare_ms": 3.0,
+        "retry_count": 0,
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "run_id": "m1-s04-local",
+        "scale": 6,
+        "scenario": "management_matrix_fixture",
+        "schema_version": "v1",
+        "slot_balance_after": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_balance_before": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_coverage_complete": true,
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "slots_after": 16384,
+        "slots_before": 16384,
+        "slots_moved": 128,
+        "source_evidence_refs": [
+          "management_ops_matrix.json",
+          "management_operation_results.jsonl",
+          "management_topology_snapshots.jsonl",
+          "management_topology_diffs.jsonl",
+          "command_log.jsonl",
+          "management_workload_impact.json",
+          "cleanup_report.json"
+        ],
+        "source_node_id": "nodeid-0000",
+        "started_at_unix_ms": 1760000009000,
+        "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+        "target_node_id": "nodeid-0001",
+        "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-after",
+        "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-before",
+        "topology_diff": {
+          "changed_nodes": [],
+          "fail_pfail_handshake_delta": {
+            "fail": 0,
+            "handshake": 0,
+            "pfail": 0
+          },
+          "known_nodes_delta": 0,
+          "moved_slots": [],
+          "role_diff": {
+            "primary": 0,
+            "replica": 0
+          },
+          "slot_diff": {
+            "after_range_count": 3,
+            "before_range_count": 3,
+            "moved_slot_range_count": 0,
+            "moved_slot_ranges": []
+          },
+          "status": "PASS"
+        },
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-09-rebalance_after_imbalance",
+        "topology_ref": "management_topology_snapshots.jsonl",
+        "wall_ms": 103.0,
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance",
+        "workload_window_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance"
+      }
+    ],
+    "retry_operations": [],
+    "rolling_restart_summary": [
+      {
+        "after_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "after",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-10-rolling_restart_replica_first",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-10-rolling_restart_replica_first-after"
+        },
+        "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-after",
+        "artifact_type": "management_operation_result",
+        "before_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "before",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-10-rolling_restart_replica_first",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-10-rolling_restart_replica_first-before"
+        },
+        "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-before",
+        "bytes_migrated": {
+          "field": "bytes_migrated",
+          "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+          "reason": "Operation does not migrate keys or expose byte counts.",
+          "status": "MISSING"
+        },
+        "cleanup_ms": 1.0,
+        "cleanup_ref": "cleanup_report.json",
+        "cluster_impact_ms": 6.0,
+        "cluster_known_nodes_after": 6,
+        "cluster_known_nodes_before": 6,
+        "cluster_state_after": "ok",
+        "cluster_state_before": "ok",
+        "command_count": 1,
+        "command_log_ref": "command_log.jsonl#cmd-000010",
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000010"
+        ],
+        "command_ms": 98.0,
+        "convergence_ms": 8.0,
+        "coverage_id": "6.management.rolling_restart_replica_first",
+        "duration_ms": 110.0,
+        "ended_at_unix_ms": 1760000010110,
+        "error_count": 0,
+        "errors_by_type": {},
+        "fail_pfail_handshake_after": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "fail_pfail_handshake_before": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "health_gate_count": 1,
+        "imbalance_delta": 0,
+        "keys_moved": 0,
+        "known_nodes_after": 6,
+        "known_nodes_before": 6,
+        "max_concurrent_restarts": 1,
+        "missing_fields": [],
+        "node_count": 6,
+        "operation_duration_ms": 110.0,
+        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "operation_name": "rolling_restart_replica_first",
+        "operation_status": "PASS",
+        "per_node_rejoin_ms": [
+          {
+            "logical_id": "node-0003",
+            "value_ms": 18.0
+          }
+        ],
+        "per_node_restart_ms": [
+          {
+            "logical_id": "node-0003",
+            "value_ms": 14.0
+          }
+        ],
+        "per_node_stop_ms": [
+          {
+            "logical_id": "node-0003",
+            "value_ms": 11.0
+          }
+        ],
+        "per_node_unavailable_ms": [
+          {
+            "logical_id": "node-0003",
+            "value_ms": 31.0
+          }
+        ],
+        "phase_id": "M1-S04",
+        "prepare_ms": 3.0,
+        "restart_count": 1,
+        "retry_count": 0,
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "rolling_restart_plan_ref": "rolling_restart_plan.json",
+        "rolling_restart_results_ref": "rolling_restart_results.jsonl",
+        "run_id": "m1-s04-local",
+        "scale": 6,
+        "scenario": "management_matrix_fixture",
+        "schema_version": "v1",
+        "slot_balance_after": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_balance_before": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "slots_after": 16384,
+        "slots_before": 16384,
+        "slots_moved": 0,
+        "source_evidence_refs": [
+          "management_ops_matrix.json",
+          "management_operation_results.jsonl",
+          "management_topology_snapshots.jsonl",
+          "management_topology_diffs.jsonl",
+          "command_log.jsonl",
+          "management_workload_impact.json",
+          "cleanup_report.json"
+        ],
+        "started_at_unix_ms": 1760000010000,
+        "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+        "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-after",
+        "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-10-rolling_restart_replica_first-before",
+        "topology_diff": {
+          "changed_nodes": [],
+          "fail_pfail_handshake_delta": {
+            "fail": 0,
+            "handshake": 0,
+            "pfail": 0
+          },
+          "known_nodes_delta": 0,
+          "moved_slots": [],
+          "role_diff": {
+            "primary": 0,
+            "replica": 0
+          },
+          "slot_diff": {
+            "after_range_count": 3,
+            "before_range_count": 3,
+            "moved_slot_range_count": 0,
+            "moved_slot_ranges": []
+          },
+          "status": "PASS"
+        },
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-10-rolling_restart_replica_first",
+        "topology_ref": "management_topology_snapshots.jsonl",
+        "wall_ms": 110.0,
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first",
+        "workload_window_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first"
+      },
+      {
+        "after_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "after",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-11-rolling_restart_primary_safe-after"
+        },
+        "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-after",
+        "artifact_type": "management_operation_result",
+        "before_topology_snapshot": {
+          "artifact_type": "management_topology_snapshot",
+          "cluster_state": "ok",
+          "fail_count": 0,
+          "handshake_count": 0,
+          "known_nodes": 6,
+          "label": "before",
+          "nodes": [
+            {
+              "logical_id": "node-0000",
+              "master_id": "",
+              "node_id": "nodeid-0000",
+              "role": "primary",
+              "slots": [
+                [
+                  0,
+                  5460
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0001",
+              "master_id": "",
+              "node_id": "nodeid-0001",
+              "role": "primary",
+              "slots": [
+                [
+                  5461,
+                  10921
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0002",
+              "master_id": "",
+              "node_id": "nodeid-0002",
+              "role": "primary",
+              "slots": [
+                [
+                  10922,
+                  16383
+                ]
+              ],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0003",
+              "master_id": "nodeid-0000",
+              "node_id": "nodeid-0003",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0004",
+              "master_id": "nodeid-0001",
+              "node_id": "nodeid-0004",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            },
+            {
+              "logical_id": "node-0005",
+              "master_id": "nodeid-0002",
+              "node_id": "nodeid-0005",
+              "role": "replica",
+              "slots": [],
+              "status": "ok"
+            }
+          ],
+          "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+          "pfail_count": 0,
+          "phase_id": "M1-S04",
+          "role_counts": {
+            "primary": 3,
+            "replica": 3
+          },
+          "run_id": "m1-s04-local",
+          "schema_version": "v1",
+          "slot_ranges": [
+            {
+              "end": 5460,
+              "node_id": "nodeid-0000",
+              "start": 0
+            },
+            {
+              "end": 10921,
+              "node_id": "nodeid-0001",
+              "start": 5461
+            },
+            {
+              "end": 16383,
+              "node_id": "nodeid-0002",
+              "start": 10922
+            }
+          ],
+          "snapshot_id": "m1-s04-11-rolling_restart_primary_safe-before"
+        },
+        "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-before",
+        "bytes_migrated": {
+          "field": "bytes_migrated",
+          "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+          "reason": "Operation does not migrate keys or expose byte counts.",
+          "status": "MISSING"
+        },
+        "cleanup_ms": 1.0,
+        "cleanup_ref": "cleanup_report.json",
+        "cluster_impact_ms": 6.0,
+        "cluster_known_nodes_after": 6,
+        "cluster_known_nodes_before": 6,
+        "cluster_state_after": "ok",
+        "cluster_state_before": "ok",
+        "command_count": 1,
+        "command_log_ref": "command_log.jsonl#cmd-000011",
+        "command_log_refs": [
+          "command_log.jsonl#cmd-000011"
+        ],
+        "command_ms": 105.0,
+        "convergence_ms": 8.0,
+        "coverage_id": "6.management.rolling_restart_primary_safe",
+        "duration_ms": 117.0,
+        "ended_at_unix_ms": 1760000011117,
+        "error_count": 0,
+        "errors_by_type": {},
+        "fail_pfail_handshake_after": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "fail_pfail_handshake_before": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "health_gate_count": 1,
+        "imbalance_delta": 0,
+        "keys_moved": 0,
+        "known_nodes_after": 6,
+        "known_nodes_before": 6,
+        "max_concurrent_restarts": 1,
+        "missing_fields": [],
+        "node_count": 6,
+        "operation_duration_ms": 117.0,
+        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "operation_name": "rolling_restart_primary_safe",
+        "operation_status": "PASS",
+        "per_node_rejoin_ms": [
+          {
+            "logical_id": "node-0003",
+            "value_ms": 18.0
+          }
+        ],
+        "per_node_restart_ms": [
+          {
+            "logical_id": "node-0003",
+            "value_ms": 14.0
+          }
+        ],
+        "per_node_stop_ms": [
+          {
+            "logical_id": "node-0003",
+            "value_ms": 11.0
+          }
+        ],
+        "per_node_unavailable_ms": [
+          {
+            "logical_id": "node-0003",
+            "value_ms": 31.0
+          }
+        ],
+        "phase_id": "M1-S04",
+        "prepare_ms": 3.0,
+        "restart_count": 1,
+        "retry_count": 0,
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "rolling_restart_plan_ref": "rolling_restart_plan.json",
+        "rolling_restart_results_ref": "rolling_restart_results.jsonl",
+        "run_id": "m1-s04-local",
+        "scale": 6,
+        "scenario": "management_matrix_fixture",
+        "schema_version": "v1",
+        "slot_balance_after": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_balance_before": {
+          "imbalance": 1,
+          "max_slots": 5462,
+          "min_slots": 5461,
+          "status": "PASS"
+        },
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "slots_after": 16384,
+        "slots_before": 16384,
+        "slots_moved": 0,
+        "source_evidence_refs": [
+          "management_ops_matrix.json",
+          "management_operation_results.jsonl",
+          "management_topology_snapshots.jsonl",
+          "management_topology_diffs.jsonl",
+          "command_log.jsonl",
+          "management_workload_impact.json",
+          "cleanup_report.json"
+        ],
+        "started_at_unix_ms": 1760000011000,
+        "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+        "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-after",
+        "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-11-rolling_restart_primary_safe-before",
+        "topology_diff": {
+          "changed_nodes": [],
+          "fail_pfail_handshake_delta": {
+            "fail": 0,
+            "handshake": 0,
+            "pfail": 0
+          },
+          "known_nodes_delta": 0,
+          "moved_slots": [],
+          "role_diff": {
+            "primary": 0,
+            "replica": 0
+          },
+          "slot_diff": {
+            "after_range_count": 3,
+            "before_range_count": 3,
+            "moved_slot_range_count": 0,
+            "moved_slot_ranges": []
+          },
+          "status": "PASS"
+        },
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-11-rolling_restart_primary_safe",
+        "topology_ref": "management_topology_snapshots.jsonl",
+        "wall_ms": 117.0,
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe",
+        "workload_window_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe"
+      }
+    ],
+    "slow_operations_topN": [
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 117.0,
+        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "operation_name": "rolling_restart_primary_safe",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-11-rolling_restart_primary_safe",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-11-rolling_restart_primary_safe"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 110.0,
+        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "operation_name": "rolling_restart_replica_first",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-10-rolling_restart_replica_first",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-10-rolling_restart_replica_first"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 103.0,
+        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "operation_name": "rebalance_after_imbalance",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-09-rebalance_after_imbalance",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 96.0,
+        "operation_id": "m1-s04-08-reshard_with_keys",
+        "operation_name": "reshard_with_keys",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-08-reshard_with_keys",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys"
+      },
+      {
+        "cleanup_ref": "cleanup_report.json",
+        "command_count": 1,
+        "convergence_ms": 8.0,
+        "error_count": 0,
+        "operation_duration_ms": 89.0,
+        "operation_id": "m1-s04-07-reshard_slot_range",
+        "operation_name": "reshard_slot_range",
+        "operation_status": "PASS",
+        "retry_count": 0,
+        "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-07-reshard_slot_range",
+        "workload_impact_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range"
+      }
+    ],
+    "status": "PASS",
+    "topology_diff_summary": [
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-01-create_cluster",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-02-meet_nodes",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-03-add_replica",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-04-remove_replica",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-05-remove_primary_drained_or_safe_replaced",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-06-remove_failed_node",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-07-reshard_slot_range",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-08-reshard_with_keys",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-10-rolling_restart_replica_first",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      },
+      {
+        "known_nodes_delta": 0,
+        "moved_slot_range_count": 0,
+        "operation_id": "m1-s04-11-rolling_restart_primary_safe",
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "status": "PASS"
+      }
+    ],
+    "workload_impact_status": "PASS"
+  },
+  "metrics": [
+    {
+      "name": "nodes_observed_after_fault",
+      "status": "PASS",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "name": "failover_latency_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "split_brain_duration_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "cleanup_resources_remaining",
+      "status": "PASS",
+      "unit": "count",
+      "value": 0
+    }
+  ],
+  "missing_metrics": [],
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "m1-s04-local",
+  "run_manifest_ref": {
+    "path": "runs/m1-s04-local/state/run_manifest.json",
+    "reason": "The final run manifest is refreshed after analysis/report artifacts are written, so analysis records the manifest path without a pre-refresh hash.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata": {
+    "artifact_root": "runs/m1-s04-local/artifacts",
+    "artifact_type": "run_metadata",
+    "config_sha256": {
+      "reason": "No config path was supplied for this run context.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "created_at": "2026-07-08T15:07:19Z",
+    "git_sha": "bf111fe6b916ee21d92df1a44c310c54f8bf3fd1",
+    "host_facts": {
+      "hostname": "AllGooddeMac-mini.local",
+      "machine": "arm64",
+      "processor": "arm",
+      "python_version": "3.9.6",
+      "system": "Darwin"
+    },
+    "inventory_sha256": {
+      "reason": "No runtime inventory was supplied for this run context.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "log_root": "runs/m1-s04-local/logs",
+    "os_kernel": "25.5.0",
+    "port_ranges": {
+      "reason": "No port allocator range was supplied for this run context.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "report_root": "runs/m1-s04-local/reports",
+    "run_id": "m1-s04-local",
+    "runtime_mode": "metadata-init",
+    "runtime_provider": "local",
+    "schema_version": "v1",
+    "state_root": "runs/m1-s04-local/state",
+    "tool_version": "0.0.0",
+    "ulimit": {
+      "rlimit_nofile": {
+        "hard": 9223372036854775807,
+        "soft": 1048575
+      },
+      "rlimit_nproc": {
+        "hard": 8000,
+        "soft": 5333
+      }
+    },
+    "valkey_version": {
+      "impact": "Report cannot prove runtime Valkey version from metadata alone.",
+      "reason": "Valkey endpoints were not probed while creating run metadata.",
+      "status": "MISSING"
+    }
+  },
+  "run_metadata_ref": {
+    "path": "runs/m1-s04-local/state/run_metadata.json",
+    "sha256": "9450877e98649da4a315af55166021fdc9e02f18940e94c3b012bbf85b5a0087"
+  },
+  "schema_version": "v1",
+  "setup_aggregates": {
+    "reason": "setup_telemetry.json was not present in the input artifacts.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "setup_telemetry": {
+    "reason": "Input artifacts did not include setup_telemetry.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "sidecars": [
+    {
+      "artifact_type": "baseline_comparison",
+      "path": "runs/m1-s04-local/artifacts/baseline_comparison.json",
+      "sha256": "cf4f8ad627847cfb37896de6972b2ce25e75a9d3a81abbe9ab362a703d698e20"
+    }
+  ],
+  "source": {
+    "input_dir": "runs/m1-s04-local/artifacts",
+    "input_kind": "run_manifest",
+    "phase_id": "M1-S04",
+    "run_id": "m1-s04-local"
+  },
+  "source_artifacts": [
+    {
+      "path": "runs/m1-s04-local/artifacts/cleanup_report.json",
+      "sha256": "e39b319e53dcb71e7de98c474a9a00dc52996b8a4768b0c0b1027728b9700b19"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/command_audit_summary.json",
+      "sha256": "4f1638ef307928cdec0437548e5d73c0827c972cb358630d0f1320a4f20969a2"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/failover_report.json",
+      "sha256": "cfa97f5fc57b6e4909bfa41818d3aa22673899e8817d4f5eccf452c239723cc8"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/management_ops_matrix.json",
+      "sha256": "cfa09d67b20c74dbe56178477a16c4455b5ff7051add3815d96a4b7a822a3d0d"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/management_workload_impact.json",
+      "sha256": "53618e5bf042bda51fa513c0e7191cbd198ca201bdd3a0388be7d2e6aa3a7aa4"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/phase_summary.json",
+      "sha256": "06b77c5985d64ae9f88aa9b566f56a6a34f13851fc356dd93652d97688378157"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/quant_summary.json",
+      "sha256": "878538f8e3ae900d116f99967d98a766f446f1df4b110533650d6a20f6d0f6b0"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/rebalance_summary.json",
+      "sha256": "a5e9e8e00a86e4df8cc83688483f0a833d3c86e6e6a0a01ce78490fd5580bc1c"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/rolling_restart_plan.json",
+      "sha256": "e4abbb503607652c6a121376e0d1f70e345dc84f696674d0f3c0b1a9f9ebf41d"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/valkey_e2e_evidence.json",
+      "sha256": "5c4e07c12bb7e6b2902b361f9af2a2b2fd5d1369665ba92191239b70968739db"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/workload_windows.json",
+      "sha256": "5527a123d454a71d4b427e5637beec032b4cbb4c3402156eb10a8c01be66771c"
+    }
+  ],
+  "status": "PASS"
+}

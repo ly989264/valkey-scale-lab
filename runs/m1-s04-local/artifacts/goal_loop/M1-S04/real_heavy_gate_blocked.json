@@ -1,0 +1,11 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "real_heavy_gate_blocked",
+  "stage_id": "M1-S04",
+  "status": "BLOCKED_WITH_REASON",
+  "gate": "scripts/valkey_e2e_gate.py --phase P04_CLUSTER_MANAGEMENT_OPS --scenario management_ops",
+  "reason": "Local sandbox denied binding 127.0.0.1:7000 during real Valkey setup.",
+  "stderr_excerpt": "ERROR: gate scenario: port 127.0.0.1:7000 is not available: [Errno 1] Operation not permitted",
+  "evidence_ref": "runs/m1-s04-local/artifacts/goal_loop/M1-S04/valkey_e2e_evidence_p04.json",
+  "impact": "M1-S04 does not claim a real local management PASS in this environment; schema, fixture, analysis, report, and gate paths are verified offline."
+}

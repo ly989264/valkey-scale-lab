@@ -67,9 +67,17 @@ def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: P
         "command_slowest.csv",
         "command_failures.csv",
         "command_retries.csv",
+        "management_ops_matrix.csv",
+        "management_operation_durations.csv",
+        "management_topology_diffs.csv",
+        "management_rolling_restart.csv",
+        "management_reshard_rebalance.csv",
         "command_latency.svg",
+        "management_operation_duration.svg",
+        "management_topology_diff.svg",
     } == report_paths
     assert "command_audit_report_inputs" in index
+    assert "management_report_inputs" in index
     assert (tmp_path / "phase_summary.json").exists()
     assert "MISSING" in (tmp_path / "report" / "missing_metrics.csv").read_text(encoding="utf-8")
     assert "慢命令 TopN" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")

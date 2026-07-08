@@ -7,6 +7,7 @@ from typing import Any
 
 from valkey_scale_lab import __version__
 from valkey_scale_lab.artifacts import artifact_record, load_json as load_artifact_json, resolve_artifact_input
+from valkey_scale_lab.management_matrix import REQUIRED_MANAGEMENT_OPERATIONS
 
 PHASE_ID = "P09_ANALYSIS_REPORTING"
 RUN_ID = "P09_ANALYSIS_REPORTING-analysis-20260628"
@@ -30,8 +31,13 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
     command_rows = _load_optional_jsonl(source_dir / "command_log.jsonl")
     command_summary = _load_optional(source_dir / "command_audit_summary.json")
     command_audit = _command_audit_aggregates(command_rows, command_summary)
+    management_matrix = _load_optional(source_dir / "management_ops_matrix.json")
+    management_results = _load_optional_jsonl(source_dir / "management_operation_results.jsonl")
+    management_diffs = _load_optional_jsonl(source_dir / "management_topology_diffs.jsonl")
+    management_workload = _load_optional(source_dir / "management_workload_impact.json")
+    management_ops = _management_aggregates(management_matrix, management_results, management_diffs, management_workload)
 
-    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit)
+    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit, management_ops)
     failovers = list(failover.get("failovers", []))
     primary_failover = failovers[0] if failovers else {}
     failover_latency = primary_failover.get("failover_latency_ms", "MISSING")
@@ -85,6 +91,12 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
             "timeout_count": command_audit.get("timeout_count", 0),
             "retry_count": command_audit.get("retry_count", 0),
         },
+        {
+            "name": "management_ops",
+            "status": management_ops.get("status", "MISSING"),
+            "operation_count": management_ops.get("operation_count", 0),
+            "missing_required_operations": management_ops.get("missing_required_operations", []),
+        },
     ]
 
     out = Path(out_path)
@@ -125,6 +137,7 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         },
         "setup_aggregates": _setup_aggregates(setup_telemetry),
         "command_audit": command_audit,
+        "management_ops": management_ops,
         "baseline_comparison": baseline,
         "sidecars": [
             {
@@ -235,6 +248,7 @@ def _collect_missing_metrics(
     failover: dict[str, Any],
     setup_telemetry: dict[str, Any] | None = None,
     command_audit: dict[str, Any] | None = None,
+    management_ops: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
     for item in phase_summary.get("missing_metrics", []):
@@ -277,6 +291,20 @@ def _collect_missing_metrics(
                         "reason": item.get("reason", "command audit reported metric unavailable"),
                         "impact": item.get("impact", "Command traceability is incomplete."),
                         "source": "command_audit.missing_or_skipped",
+                    },
+                )
+    if management_ops:
+        for item in management_ops.get("missing_metrics", []):
+            if isinstance(item, dict) and item.get("metric"):
+                metric = f"management.{item['metric']}"
+                found.setdefault(
+                    metric,
+                    {
+                        "metric": metric,
+                        "status": item.get("status", "MISSING"),
+                        "reason": item.get("reason", "management operation artifact reported metric unavailable"),
+                        "impact": item.get("impact", "Management operation analysis is incomplete."),
+                        "source": "management_ops.missing_metrics",
                     },
                 )
     return [found[key] for key in sorted(found)]
@@ -374,6 +402,115 @@ def _setup_aggregates(setup_telemetry: dict[str, Any]) -> dict[str, Any]:
         "slowest_replica_replicate_topN": setup_telemetry.get("slowest_replica_replicate_topN", []),
         "cleanup": setup_telemetry.get("cleanup", {}),
         "same_schema_scale_rungs": setup_telemetry.get("same_schema_scale_rungs", []),
+    }
+
+
+def _management_aggregates(
+    matrix: dict[str, Any],
+    results: list[dict[str, Any]],
+    diffs: list[dict[str, Any]],
+    workload: dict[str, Any],
+) -> dict[str, Any]:
+    if not matrix and not results:
+        return {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Input artifacts did not include management_ops_matrix.json or management_operation_results.jsonl.",
+            "operation_count": 0,
+            "required_operations_observed": [],
+            "missing_required_operations": REQUIRED_MANAGEMENT_OPERATIONS,
+            "missing_metrics": [
+                {
+                    "metric": "operation_count",
+                    "status": "SKIPPED_WITH_REASON",
+                    "reason": "Management operation artifacts were not present.",
+                    "impact": "Report cannot display management operation timing or topology diff data.",
+                }
+            ],
+        }
+    observed = [str(row.get("operation_name", "MISSING")) for row in results if isinstance(row, dict)]
+    missing_required = [name for name in REQUIRED_MANAGEMENT_OPERATIONS if name not in observed]
+    duration_rows = [
+        {
+            "operation_name": row.get("operation_name", "MISSING"),
+            "operation_id": row.get("operation_id", "MISSING"),
+            "operation_status": row.get("operation_status", "MISSING"),
+            "operation_duration_ms": row.get("operation_duration_ms", row.get("wall_ms", "MISSING")),
+            "convergence_ms": row.get("convergence_ms", "MISSING"),
+            "command_count": row.get("command_count", 0),
+            "retry_count": row.get("retry_count", 0),
+            "error_count": row.get("error_count", 0),
+            "topology_diff_ref": row.get("topology_diff_ref", "MISSING"),
+            "workload_impact_ref": row.get("workload_impact_ref", "MISSING"),
+            "cleanup_ref": row.get("cleanup_ref", "MISSING"),
+        }
+        for row in results
+        if isinstance(row, dict)
+    ]
+    duration_ranking = sorted(
+        duration_rows,
+        key=lambda row: float(row.get("operation_duration_ms", 0) or 0) if isinstance(row.get("operation_duration_ms"), (int, float)) else 0.0,
+        reverse=True,
+    )
+    topology_summary = [
+        {
+            "operation_id": row.get("operation_id", "MISSING"),
+            "known_nodes_delta": row.get("known_nodes_delta", "MISSING"),
+            "moved_slot_range_count": row.get("slot_diff", {}).get("moved_slot_range_count", "MISSING") if isinstance(row.get("slot_diff"), dict) else "MISSING",
+            "role_diff": row.get("role_diff", {}),
+            "status": row.get("status", "MISSING"),
+        }
+        for row in diffs
+        if isinstance(row, dict)
+    ]
+    missing_metrics: list[dict[str, Any]] = []
+    if missing_required:
+        missing_metrics.append(
+            {
+                "metric": "required_operations",
+                "status": "MISSING",
+                "reason": f"Missing required management operations: {', '.join(missing_required)}",
+                "impact": "Milestone1 management matrix coverage is incomplete.",
+            }
+        )
+    for row in results:
+        for item in row.get("missing_fields", []):
+            if isinstance(item, dict):
+                missing_metrics.append(
+                    {
+                        "metric": f"{row.get('operation_name', 'MISSING')}.{item.get('field', 'missing_field')}",
+                        "status": item.get("status", "MISSING"),
+                        "reason": item.get("reason", "operation result reported missing field"),
+                        "impact": item.get("impact", "Management operation result is incomplete."),
+                    }
+                )
+    return {
+        "status": "PASS" if not missing_required and all(row.get("operation_status") == "PASS" for row in results) else "FAIL",
+        "operation_count": len(results),
+        "required_operations_observed": observed,
+        "missing_required_operations": missing_required,
+        "duration_ranking_topN": duration_ranking[:10],
+        "slow_operations_topN": duration_ranking[:5],
+        "error_operations": [row for row in duration_rows if int(row.get("error_count", 0) or 0) > 0 or row.get("operation_status") == "FAIL"],
+        "retry_operations": [row for row in duration_rows if int(row.get("retry_count", 0) or 0) > 0],
+        "command_traceability": [
+            {
+                "operation_id": row.get("operation_id", "MISSING"),
+                "operation_name": row.get("operation_name", "MISSING"),
+                "command_count": row.get("command_count", 0),
+                "command_log_refs": row.get("command_log_refs", []),
+            }
+            for row in results
+        ],
+        "topology_diff_summary": topology_summary,
+        "reshard_rebalance_summary": [
+            row for row in results if row.get("operation_name") in {"reshard_slot_range", "reshard_with_keys", "rebalance_after_imbalance"}
+        ],
+        "rolling_restart_summary": [
+            row for row in results if row.get("operation_name") in {"rolling_restart_replica_first", "rolling_restart_primary_safe"}
+        ],
+        "workload_impact_status": workload.get("status", "MISSING") if isinstance(workload, dict) else "MISSING",
+        "matrix": matrix,
+        "missing_metrics": missing_metrics,
     }
 
 

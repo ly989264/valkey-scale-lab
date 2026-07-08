@@ -1,0 +1,51 @@
+{
+  "artifact_type": "baseline_comparison",
+  "baseline_source": {
+    "reason": "No versioned baseline artifact exists for the first analysis-reporting phase.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "comparisons": [
+    {
+      "baseline_value": null,
+      "current_value": 0,
+      "delta": null,
+      "metric": "nodes_observed_after_fault",
+      "status": "NO_BASELINE_YET",
+      "unit": "count"
+    },
+    {
+      "baseline_value": null,
+      "current_value": null,
+      "delta": null,
+      "metric": "failover_latency_ms",
+      "status": "MISSING",
+      "unit": "ms"
+    },
+    {
+      "baseline_value": null,
+      "current_value": null,
+      "delta": null,
+      "metric": "split_brain_duration_ms",
+      "status": "MISSING",
+      "unit": "ms"
+    },
+    {
+      "baseline_value": null,
+      "current_value": 0,
+      "delta": null,
+      "metric": "cleanup_resources_remaining",
+      "status": "NO_BASELINE_YET",
+      "unit": "count"
+    }
+  ],
+  "created_at": "2026-07-08T15:07:19Z",
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "m1-s04-local",
+  "schema_version": "v1",
+  "source_dir": "runs/m1-s04-local/artifacts",
+  "status": "NO_BASELINE_YET"
+}

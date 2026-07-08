@@ -1,0 +1,14 @@
+{
+  "artifact_type": "failover_report",
+  "failovers": [
+    {
+      "failover_latency_ms": "MISSING"
+    }
+  ],
+  "phase_id": "M1-S04",
+  "reason": "M1-S04 covers management operations, not failover latency.",
+  "run_id": "m1-s04-local",
+  "schema_version": "v1",
+  "status": "SKIPPED_WITH_REASON",
+  "summary": {}
+}

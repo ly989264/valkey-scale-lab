@@ -1,0 +1,996 @@
+{
+  "artifact_type": "rebalance_summary",
+  "operations": [
+    {
+      "after_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "after",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-07-reshard_slot_range",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-success",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-07-reshard_slot_range-after"
+      },
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-after",
+      "artifact_type": "management_operation_result",
+      "before_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "before",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-07-reshard_slot_range",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-success",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-07-reshard_slot_range-before"
+      },
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-before",
+      "bytes_migrated": {
+        "field": "bytes_migrated",
+        "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+        "reason": "Fixture and current Valkey command path do not expose migrated byte counts.",
+        "status": "MISSING"
+      },
+      "cleanup_ms": 1.0,
+      "cleanup_ref": "cleanup_report.json",
+      "cluster_known_nodes_after": 6,
+      "cluster_known_nodes_before": 6,
+      "cluster_state_after": "ok",
+      "cluster_state_before": "ok",
+      "command_count": 1,
+      "command_log_ref": "command_log.jsonl#cmd-000007",
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000007"
+      ],
+      "command_ms": 77.0,
+      "convergence_ms": 8.0,
+      "coverage_id": "6.management.reshard_slot_range",
+      "duration_ms": 89.0,
+      "ended_at_unix_ms": 1760000007089,
+      "error_count": 0,
+      "errors_by_type": {},
+      "fail_pfail_handshake_after": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "fail_pfail_handshake_before": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "imbalance_after": 1,
+      "imbalance_before": 1,
+      "imbalance_delta": 0,
+      "keys_moved": 0,
+      "known_nodes_after": 6,
+      "known_nodes_before": 6,
+      "missing_fields": [],
+      "movement_ids": [
+        "m1-s04-07-reshard_slot_range-move-0001"
+      ],
+      "node_count": 6,
+      "operation_duration_ms": 89.0,
+      "operation_id": "m1-s04-07-reshard_slot_range",
+      "operation_name": "reshard_slot_range",
+      "operation_status": "PASS",
+      "phase_id": "M1-S04",
+      "post_move_writable": true,
+      "prepare_ms": 3.0,
+      "retry_count": 0,
+      "role_diff": {
+        "primary": 0,
+        "replica": 0
+      },
+      "run_id": "m1-s04-success",
+      "scale": 6,
+      "scenario": "success",
+      "schema_version": "v1",
+      "slot_balance_after": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_balance_before": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_coverage_complete": true,
+      "slot_diff": {
+        "after_range_count": 3,
+        "before_range_count": 3,
+        "moved_slot_range_count": 0,
+        "moved_slot_ranges": []
+      },
+      "slots_after": 16384,
+      "slots_before": 16384,
+      "slots_moved": 64,
+      "source_evidence_refs": [
+        "management_ops_matrix.json",
+        "management_operation_results.jsonl",
+        "management_topology_snapshots.jsonl",
+        "management_topology_diffs.jsonl",
+        "command_log.jsonl",
+        "management_workload_impact.json",
+        "cleanup_report.json"
+      ],
+      "source_node_id": "nodeid-0000",
+      "started_at_unix_ms": 1760000007000,
+      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+      "target_node_id": "nodeid-0001",
+      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-07-reshard_slot_range-before",
+      "topology_diff": {
+        "changed_nodes": [],
+        "fail_pfail_handshake_delta": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "known_nodes_delta": 0,
+        "moved_slots": [],
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "status": "PASS"
+      },
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-07-reshard_slot_range",
+      "topology_ref": "management_topology_snapshots.jsonl",
+      "wall_ms": 89.0,
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range",
+      "workload_window_ref": "management_workload_impact.json#m1-s04-07-reshard_slot_range"
+    },
+    {
+      "after_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "after",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-08-reshard_with_keys",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-success",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-08-reshard_with_keys-after"
+      },
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-after",
+      "artifact_type": "management_operation_result",
+      "before_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "before",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-08-reshard_with_keys",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-success",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-08-reshard_with_keys-before"
+      },
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-before",
+      "bytes_migrated": {
+        "field": "bytes_migrated",
+        "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+        "reason": "Fixture and current Valkey command path do not expose migrated byte counts.",
+        "status": "MISSING"
+      },
+      "cleanup_ms": 1.0,
+      "cleanup_ref": "cleanup_report.json",
+      "cluster_known_nodes_after": 6,
+      "cluster_known_nodes_before": 6,
+      "cluster_state_after": "ok",
+      "cluster_state_before": "ok",
+      "command_count": 1,
+      "command_log_ref": "command_log.jsonl#cmd-000008",
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000008"
+      ],
+      "command_ms": 84.0,
+      "convergence_ms": 8.0,
+      "coverage_id": "6.management.reshard_with_keys",
+      "duration_ms": 96.0,
+      "ended_at_unix_ms": 1760000008096,
+      "error_count": 0,
+      "errors_by_type": {},
+      "fail_pfail_handshake_after": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "fail_pfail_handshake_before": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "imbalance_after": 1,
+      "imbalance_before": 1,
+      "imbalance_delta": 0,
+      "keys_moved": 12,
+      "known_nodes_after": 6,
+      "known_nodes_before": 6,
+      "missing_fields": [],
+      "movement_ids": [
+        "m1-s04-08-reshard_with_keys-move-0001"
+      ],
+      "node_count": 6,
+      "operation_duration_ms": 96.0,
+      "operation_id": "m1-s04-08-reshard_with_keys",
+      "operation_name": "reshard_with_keys",
+      "operation_status": "PASS",
+      "phase_id": "M1-S04",
+      "post_move_writable": true,
+      "prepare_ms": 3.0,
+      "retry_count": 0,
+      "role_diff": {
+        "primary": 0,
+        "replica": 0
+      },
+      "run_id": "m1-s04-success",
+      "scale": 6,
+      "scenario": "success",
+      "schema_version": "v1",
+      "slot_balance_after": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_balance_before": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_coverage_complete": true,
+      "slot_diff": {
+        "after_range_count": 3,
+        "before_range_count": 3,
+        "moved_slot_range_count": 0,
+        "moved_slot_ranges": []
+      },
+      "slots_after": 16384,
+      "slots_before": 16384,
+      "slots_moved": 64,
+      "source_evidence_refs": [
+        "management_ops_matrix.json",
+        "management_operation_results.jsonl",
+        "management_topology_snapshots.jsonl",
+        "management_topology_diffs.jsonl",
+        "command_log.jsonl",
+        "management_workload_impact.json",
+        "cleanup_report.json"
+      ],
+      "source_node_id": "nodeid-0000",
+      "started_at_unix_ms": 1760000008000,
+      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+      "target_node_id": "nodeid-0001",
+      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-08-reshard_with_keys-before",
+      "topology_diff": {
+        "changed_nodes": [],
+        "fail_pfail_handshake_delta": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "known_nodes_delta": 0,
+        "moved_slots": [],
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "status": "PASS"
+      },
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-08-reshard_with_keys",
+      "topology_ref": "management_topology_snapshots.jsonl",
+      "wall_ms": 96.0,
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys",
+      "workload_window_ref": "management_workload_impact.json#m1-s04-08-reshard_with_keys"
+    },
+    {
+      "after_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "after",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-success",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-09-rebalance_after_imbalance-after"
+      },
+      "after_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-after",
+      "artifact_type": "management_operation_result",
+      "before_topology_snapshot": {
+        "artifact_type": "management_topology_snapshot",
+        "cluster_state": "ok",
+        "fail_count": 0,
+        "handshake_count": 0,
+        "known_nodes": 6,
+        "label": "before",
+        "nodes": [
+          {
+            "logical_id": "node-0000",
+            "master_id": "",
+            "node_id": "nodeid-0000",
+            "role": "primary",
+            "slots": [
+              [
+                0,
+                5460
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0001",
+            "master_id": "",
+            "node_id": "nodeid-0001",
+            "role": "primary",
+            "slots": [
+              [
+                5461,
+                10921
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0002",
+            "master_id": "",
+            "node_id": "nodeid-0002",
+            "role": "primary",
+            "slots": [
+              [
+                10922,
+                16383
+              ]
+            ],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0003",
+            "master_id": "nodeid-0000",
+            "node_id": "nodeid-0003",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0004",
+            "master_id": "nodeid-0001",
+            "node_id": "nodeid-0004",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          },
+          {
+            "logical_id": "node-0005",
+            "master_id": "nodeid-0002",
+            "node_id": "nodeid-0005",
+            "role": "replica",
+            "slots": [],
+            "status": "ok"
+          }
+        ],
+        "operation_id": "m1-s04-09-rebalance_after_imbalance",
+        "pfail_count": 0,
+        "phase_id": "M1-S04",
+        "role_counts": {
+          "primary": 3,
+          "replica": 3
+        },
+        "run_id": "m1-s04-success",
+        "schema_version": "v1",
+        "slot_ranges": [
+          {
+            "end": 5460,
+            "node_id": "nodeid-0000",
+            "start": 0
+          },
+          {
+            "end": 10921,
+            "node_id": "nodeid-0001",
+            "start": 5461
+          },
+          {
+            "end": 16383,
+            "node_id": "nodeid-0002",
+            "start": 10922
+          }
+        ],
+        "snapshot_id": "m1-s04-09-rebalance_after_imbalance-before"
+      },
+      "before_topology_snapshot_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-before",
+      "bytes_migrated": {
+        "field": "bytes_migrated",
+        "impact": "No value was invented; downstream consumers must treat this metric as unavailable.",
+        "reason": "Fixture and current Valkey command path do not expose migrated byte counts.",
+        "status": "MISSING"
+      },
+      "cleanup_ms": 1.0,
+      "cleanup_ref": "cleanup_report.json",
+      "cluster_known_nodes_after": 6,
+      "cluster_known_nodes_before": 6,
+      "cluster_state_after": "ok",
+      "cluster_state_before": "ok",
+      "command_count": 1,
+      "command_log_ref": "command_log.jsonl#cmd-000009",
+      "command_log_refs": [
+        "command_log.jsonl#cmd-000009"
+      ],
+      "command_ms": 91.0,
+      "convergence_ms": 8.0,
+      "coverage_id": "6.management.rebalance_after_imbalance",
+      "duration_ms": 103.0,
+      "ended_at_unix_ms": 1760000009103,
+      "error_count": 0,
+      "errors_by_type": {},
+      "fail_pfail_handshake_after": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "fail_pfail_handshake_before": {
+        "fail": 0,
+        "handshake": 0,
+        "pfail": 0
+      },
+      "imbalance_after": 1,
+      "imbalance_before": 1,
+      "imbalance_delta": 0,
+      "keys_moved": 0,
+      "known_nodes_after": 6,
+      "known_nodes_before": 6,
+      "missing_fields": [],
+      "movement_ids": [
+        "m1-s04-09-rebalance_after_imbalance-move-0001"
+      ],
+      "node_count": 6,
+      "operation_duration_ms": 103.0,
+      "operation_id": "m1-s04-09-rebalance_after_imbalance",
+      "operation_name": "rebalance_after_imbalance",
+      "operation_status": "PASS",
+      "phase_id": "M1-S04",
+      "post_move_writable": true,
+      "prepare_ms": 3.0,
+      "retry_count": 0,
+      "role_diff": {
+        "primary": 0,
+        "replica": 0
+      },
+      "run_id": "m1-s04-success",
+      "scale": 6,
+      "scenario": "success",
+      "schema_version": "v1",
+      "slot_balance_after": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_balance_before": {
+        "imbalance": 1,
+        "max_slots": 5462,
+        "min_slots": 5461,
+        "status": "PASS"
+      },
+      "slot_coverage_complete": true,
+      "slot_diff": {
+        "after_range_count": 3,
+        "before_range_count": 3,
+        "moved_slot_range_count": 0,
+        "moved_slot_ranges": []
+      },
+      "slots_after": 16384,
+      "slots_before": 16384,
+      "slots_moved": 128,
+      "source_evidence_refs": [
+        "management_ops_matrix.json",
+        "management_operation_results.jsonl",
+        "management_topology_snapshots.jsonl",
+        "management_topology_diffs.jsonl",
+        "command_log.jsonl",
+        "management_workload_impact.json",
+        "cleanup_report.json"
+      ],
+      "source_node_id": "nodeid-0000",
+      "started_at_unix_ms": 1760000009000,
+      "status_reason": "Fixture operation carries the full M1-S04 evidence contract.",
+      "target_node_id": "nodeid-0001",
+      "topology_after_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-after",
+      "topology_before_ref": "management_topology_snapshots.jsonl#m1-s04-09-rebalance_after_imbalance-before",
+      "topology_diff": {
+        "changed_nodes": [],
+        "fail_pfail_handshake_delta": {
+          "fail": 0,
+          "handshake": 0,
+          "pfail": 0
+        },
+        "known_nodes_delta": 0,
+        "moved_slots": [],
+        "role_diff": {
+          "primary": 0,
+          "replica": 0
+        },
+        "slot_diff": {
+          "after_range_count": 3,
+          "before_range_count": 3,
+          "moved_slot_range_count": 0,
+          "moved_slot_ranges": []
+        },
+        "status": "PASS"
+      },
+      "topology_diff_ref": "management_topology_diffs.jsonl#m1-s04-09-rebalance_after_imbalance",
+      "topology_ref": "management_topology_snapshots.jsonl",
+      "wall_ms": 103.0,
+      "workload_impact_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance",
+      "workload_window_ref": "management_workload_impact.json#m1-s04-09-rebalance_after_imbalance"
+    }
+  ],
+  "phase_id": "M1-S04",
+  "run_id": "m1-s04-success",
+  "schema_version": "v1",
+  "status": "PASS"
+}

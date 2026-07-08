@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="382" viewBox="0 0 820 382">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="12" y="24" font-size="16" font-weight="700">管理操作耗时排序</text>
+<text x="12" y="56" font-size="12">rolling_restart_primary_safe</text>
+<rect x="250" y="42" width="380" height="18" fill="#5f6f2f"/>
+<text x="640" y="56" font-size="12">117.000 ms</text>
+<text x="12" y="88" font-size="12">rolling_restart_replica_first</text>
+<rect x="250" y="74" width="357" height="18" fill="#5f6f2f"/>
+<text x="617" y="88" font-size="12">110.000 ms</text>
+<text x="12" y="120" font-size="12">rebalance_after_imbalance</text>
+<rect x="250" y="106" width="334" height="18" fill="#5f6f2f"/>
+<text x="594" y="120" font-size="12">103.000 ms</text>
+<text x="12" y="152" font-size="12">reshard_with_keys</text>
+<rect x="250" y="138" width="311" height="18" fill="#5f6f2f"/>
+<text x="571" y="152" font-size="12">96.000 ms</text>
+<text x="12" y="184" font-size="12">reshard_slot_range</text>
+<rect x="250" y="170" width="289" height="18" fill="#5f6f2f"/>
+<text x="549" y="184" font-size="12">89.000 ms</text>
+<text x="12" y="216" font-size="12">remove_failed_node</text>
+<rect x="250" y="202" width="266" height="18" fill="#5f6f2f"/>
+<text x="526" y="216" font-size="12">82.000 ms</text>
+<text x="12" y="248" font-size="12">remove_primary_drained_or_safe_replaced</text>
+<rect x="250" y="234" width="243" height="18" fill="#5f6f2f"/>
+<text x="503" y="248" font-size="12">75.000 ms</text>
+<text x="12" y="280" font-size="12">remove_replica</text>
+<rect x="250" y="266" width="220" height="18" fill="#5f6f2f"/>
+<text x="480" y="280" font-size="12">68.000 ms</text>
+<text x="12" y="312" font-size="12">add_replica</text>
+<rect x="250" y="298" width="198" height="18" fill="#5f6f2f"/>
+<text x="458" y="312" font-size="12">61.000 ms</text>
+<text x="12" y="344" font-size="12">meet_nodes</text>
+<rect x="250" y="330" width="175" height="18" fill="#5f6f2f"/>
+<text x="435" y="344" font-size="12">54.000 ms</text>
+</svg>

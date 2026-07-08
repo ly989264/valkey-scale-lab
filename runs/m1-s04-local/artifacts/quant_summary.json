@@ -1,0 +1,16 @@
+{
+  "artifact_type": "quant_summary",
+  "counts": {
+    "operation_count": 11
+  },
+  "missing_data": [],
+  "phase_id": "M1-S04",
+  "run_id": "m1-s04-local",
+  "runtime_claims": {
+    "fault_runtime_claimed": false,
+    "management_runtime_claimed": false,
+    "real_valkey_claimed": false
+  },
+  "schema_version": "v1",
+  "status": "PASS"
+}
