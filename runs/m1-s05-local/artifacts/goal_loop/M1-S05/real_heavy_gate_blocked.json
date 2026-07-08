@@ -1,0 +1,11 @@
+{
+  "artifact_type": "real_heavy_gate_blocked",
+  "evidence_ref": "runs/m1-s05-local/artifacts/goal_loop/M1-S05/valkey_e2e_evidence_p05.json",
+  "gate": "scripts/valkey_e2e_gate.py --phase P05_WORKLOAD_ENGINE --scenario workload_smoke",
+  "impact": "M1-S05 does not claim a real local workload benchmark PASS in this environment; schema, fixture, analysis, report, and gate paths are verified offline.",
+  "reason": "Local sandbox denied binding 127.0.0.1:7000 during real Valkey setup.",
+  "schema_version": "v1",
+  "stage_id": "M1-S05",
+  "status": "BLOCKED_WITH_REASON",
+  "stderr_excerpt": "ERROR: gate scenario: port 127.0.0.1:7000 is not available: [Errno 1] Operation not permitted"
+}

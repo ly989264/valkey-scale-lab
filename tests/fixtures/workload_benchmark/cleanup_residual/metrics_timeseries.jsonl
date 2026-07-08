@@ -1,0 +1,1 @@
+{"metric_name":"connection_error_count","metric_unit":"count","metric_value":1,"phase_id":"M1-S05","run_id":"fixture-cleanup","schema_version":"v1","source_id":"uniform:post_recovery","source_type":"workload"}

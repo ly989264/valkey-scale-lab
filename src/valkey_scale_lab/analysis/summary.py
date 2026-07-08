@@ -36,8 +36,11 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
     management_diffs = _load_optional_jsonl(source_dir / "management_topology_diffs.jsonl")
     management_workload = _load_optional(source_dir / "management_workload_impact.json")
     management_ops = _management_aggregates(management_matrix, management_results, management_diffs, management_workload)
+    workload_windows = _load_optional(source_dir / "workload_windows.json")
+    workload_report = _load_optional(source_dir / "workload_report.json")
+    workload_benchmark = _workload_aggregates(workload_windows, workload_report, management_workload)
 
-    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit, management_ops)
+    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit, management_ops, workload_benchmark)
     failovers = list(failover.get("failovers", []))
     primary_failover = failovers[0] if failovers else {}
     failover_latency = primary_failover.get("failover_latency_ms", "MISSING")
@@ -48,6 +51,9 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         _metric("failover_latency_ms", failover_latency, "ms"),
         _metric_from_optional("split_brain_duration_ms", failover.get("summary", {}).get("split_brain_duration_ms"), "ms"),
         _metric("cleanup_resources_remaining", len(cleanup.get("resources_remaining", [])), "count"),
+        _metric("workload_achieved_qps", workload_benchmark.get("aggregate", {}).get("achieved_qps", "MISSING"), "ops_per_second"),
+        _metric("workload_latency_p99_ms", workload_benchmark.get("aggregate", {}).get("latency_p99_ms", "MISSING"), "ms"),
+        _metric("workload_error_rate", workload_benchmark.get("aggregate", {}).get("error_rate", "MISSING"), "ratio"),
     ]
     findings = [
         {
@@ -97,6 +103,13 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
             "operation_count": management_ops.get("operation_count", 0),
             "missing_required_operations": management_ops.get("missing_required_operations", []),
         },
+        {
+            "name": "workload_benchmark",
+            "status": workload_benchmark.get("status", "MISSING"),
+            "profiles_covered": workload_benchmark.get("profiles_covered", []),
+            "full_slot_covered": workload_benchmark.get("full_slot_covered", "MISSING"),
+            "window_count": workload_benchmark.get("window_count", 0),
+        },
     ]
 
     out = Path(out_path)
@@ -138,6 +151,7 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         "setup_aggregates": _setup_aggregates(setup_telemetry),
         "command_audit": command_audit,
         "management_ops": management_ops,
+        "workload_benchmark": workload_benchmark,
         "baseline_comparison": baseline,
         "sidecars": [
             {
@@ -249,6 +263,7 @@ def _collect_missing_metrics(
     setup_telemetry: dict[str, Any] | None = None,
     command_audit: dict[str, Any] | None = None,
     management_ops: dict[str, Any] | None = None,
+    workload_benchmark: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
     for item in phase_summary.get("missing_metrics", []):
@@ -305,6 +320,20 @@ def _collect_missing_metrics(
                         "reason": item.get("reason", "management operation artifact reported metric unavailable"),
                         "impact": item.get("impact", "Management operation analysis is incomplete."),
                         "source": "management_ops.missing_metrics",
+                    },
+                )
+    if workload_benchmark:
+        for item in workload_benchmark.get("missing_metrics", []):
+            if isinstance(item, dict) and item.get("metric"):
+                metric = f"workload.{item['metric']}"
+                found.setdefault(
+                    metric,
+                    {
+                        "metric": metric,
+                        "status": item.get("status", "MISSING"),
+                        "reason": item.get("reason", "workload benchmark artifact reported metric unavailable"),
+                        "impact": item.get("impact", "Workload benchmark analysis is incomplete."),
+                        "source": "workload_benchmark.missing_metrics",
                     },
                 )
     return [found[key] for key in sorted(found)]
@@ -510,6 +539,87 @@ def _management_aggregates(
         ],
         "workload_impact_status": workload.get("status", "MISSING") if isinstance(workload, dict) else "MISSING",
         "matrix": matrix,
+        "missing_metrics": missing_metrics,
+    }
+
+
+def _workload_aggregates(windows_artifact: dict[str, Any], report: dict[str, Any], impact: dict[str, Any]) -> dict[str, Any]:
+    windows = windows_artifact.get("windows", []) if isinstance(windows_artifact, dict) else []
+    if not windows and not report:
+        return {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Input artifacts did not include workload_windows.json or workload_report.json.",
+            "window_count": 0,
+            "profiles_covered": [],
+            "missing_metrics": [
+                {
+                    "metric": "window_count",
+                    "status": "SKIPPED_WITH_REASON",
+                    "reason": "Workload benchmark artifacts were not present.",
+                    "impact": "Report cannot display workload QPS, latency, error-rate, or slot coverage.",
+                }
+            ],
+        }
+    metrics = [row.get("metrics", {}) for row in windows if isinstance(row, dict)]
+    ok_ops = sum(int(item.get("ok_ops", 0) or 0) for item in metrics if isinstance(item, dict))
+    error_ops = sum(int(item.get("error_ops", 0) or 0) for item in metrics if isinstance(item, dict))
+    requested = [float(item.get("requested_qps")) for item in metrics if isinstance(item, dict) and isinstance(item.get("requested_qps"), (int, float))]
+    achieved = [float(item.get("achieved_qps")) for item in metrics if isinstance(item, dict) and isinstance(item.get("achieved_qps"), (int, float))]
+    p99s = [float(item.get("latency_p99_ms")) for item in metrics if isinstance(item, dict) and isinstance(item.get("latency_p99_ms"), (int, float))]
+    errors = [float(item.get("error_rate")) for item in metrics if isinstance(item, dict) and isinstance(item.get("error_rate"), (int, float))]
+    profiles = sorted({str(row.get("profile")) for row in windows if isinstance(row, dict) and row.get("profile")})
+    hash_slot_coverage = windows_artifact.get("hash_slot_coverage", {}) if isinstance(windows_artifact, dict) else {}
+    full_slot_covered = any(isinstance(item, dict) and item.get("full_slot_covered") is True for item in hash_slot_coverage.values()) if isinstance(hash_slot_coverage, dict) else False
+    missing_metrics: list[dict[str, Any]] = []
+    for row in windows:
+        if not isinstance(row, dict):
+            continue
+        row_metrics = row.get("metrics", {})
+        if not isinstance(row_metrics, dict):
+            continue
+        for name, value in row_metrics.items():
+            if value == "MISSING":
+                missing_metrics.append(
+                    {
+                        "metric": f"{row.get('profile', 'unknown')}.{row.get('window_name', 'unknown')}.{name}",
+                        "status": "MISSING",
+                        "reason": row_metrics.get("missing_reasons", {}).get(name, "workload metric was MISSING without a source value"),
+                        "impact": "Benchmark comparison may omit this metric.",
+                    }
+                )
+    aggregate = {
+        "requested_qps": round(sum(requested), 6) if requested else "MISSING",
+        "achieved_qps": round(sum(achieved), 6) if achieved else "MISSING",
+        "throughput_ratio": round(sum(achieved) / sum(requested), 6) if achieved and requested and sum(requested) else "MISSING",
+        "ok_ops": ok_ops,
+        "error_ops": error_ops,
+        "error_rate": round(sum(errors) / len(errors), 6) if errors else "MISSING",
+        "latency_p99_ms": round(sum(p99s) / len(p99s), 6) if p99s else "MISSING",
+    }
+    return {
+        "status": windows_artifact.get("status", report.get("status", "PASS") if isinstance(report, dict) else "PASS"),
+        "window_count": len(windows),
+        "profiles_covered": profiles or (report.get("profiles", []) if isinstance(report, dict) else []),
+        "workload_mode": windows_artifact.get("workload_mode", report.get("workload_mode", "MISSING") if isinstance(report, dict) else "MISSING"),
+        "hash_slot_coverage": hash_slot_coverage or (report.get("hash_slot_coverage", {}) if isinstance(report, dict) else {}),
+        "full_slot_covered": full_slot_covered,
+        "aggregate": aggregate,
+        "windows": [
+            {
+                "profile": row.get("profile", "MISSING"),
+                "window_name": row.get("window_name", "MISSING"),
+                "status": row.get("status", "MISSING"),
+                "requested_qps": row.get("metrics", {}).get("requested_qps", "MISSING") if isinstance(row.get("metrics"), dict) else "MISSING",
+                "achieved_qps": row.get("metrics", {}).get("achieved_qps", "MISSING") if isinstance(row.get("metrics"), dict) else "MISSING",
+                "throughput_ratio": row.get("metrics", {}).get("throughput_ratio", "MISSING") if isinstance(row.get("metrics"), dict) else "MISSING",
+                "latency_p99_ms": row.get("metrics", {}).get("latency_p99_ms", "MISSING") if isinstance(row.get("metrics"), dict) else "MISSING",
+                "error_rate": row.get("metrics", {}).get("error_rate", "MISSING") if isinstance(row.get("metrics"), dict) else "MISSING",
+                "key_slot_coverage": row.get("key_slot_coverage", {}),
+            }
+            for row in windows
+            if isinstance(row, dict)
+        ],
+        "impact_status": impact.get("status", "MISSING") if isinstance(impact, dict) else "MISSING",
         "missing_metrics": missing_metrics,
     }
 

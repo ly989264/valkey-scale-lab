@@ -6,8 +6,11 @@
   "properties": {
     "schema_version": {"type": "string", "pattern": "^v1$"},
     "artifact_type": {"type": "string", "const": "workload_windows"},
-    "phase_id": {"type": "string", "pattern": "^P[0-9]{2}_[A-Z0-9_]+$"},
+    "phase_id": {"type": "string", "pattern": "^(P[0-9]{2}_[A-Z0-9_]+|M[0-9]+-S[0-9]+)$"},
     "run_id": {"type": "string", "minLength": 1},
+    "workload_mode": {"type": "string", "enum": ["smoke", "benchmark", "SKIPPED_WITH_REASON", "MISSING"]},
+    "profiles_covered": {"type": "array", "items": {"type": "string"}},
+    "hash_slot_coverage": {"type": "object"},
     "windows": {
       "type": "array",
       "minItems": 1,
@@ -16,9 +19,38 @@
         "required": ["window_name", "start_event_id", "end_event_id", "metrics"],
         "properties": {
           "window_name": {"type": "string", "enum": ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]},
+          "profile": {"type": "string"},
+          "workload_mode": {"type": "string", "enum": ["smoke", "benchmark", "SKIPPED_WITH_REASON", "MISSING"]},
+          "operation_id": {"type": "string"},
+          "sample_id": {"type": "string"},
+          "status": {"type": "string"},
           "start_event_id": {"type": "string", "minLength": 1},
           "end_event_id": {"type": "string", "minLength": 1},
-          "metrics": {"type": "object"}
+          "key_slot_coverage": {"type": "object"},
+          "config": {"type": "object"},
+          "metrics": {
+            "type": "object",
+            "required": [
+              "requested_qps",
+              "achieved_qps",
+              "throughput_ratio",
+              "ok_ops",
+              "error_ops",
+              "error_rate",
+              "latency_p50_ms",
+              "latency_p90_ms",
+              "latency_p95_ms",
+              "latency_p99_ms",
+              "latency_p999_ms",
+              "timeout_count",
+              "connection_error_count",
+              "moved_count",
+              "ask_count",
+              "cluster_down_count",
+              "readonly_count",
+              "tryagain_count"
+            ]
+          }
         },
         "additionalProperties": true
       }

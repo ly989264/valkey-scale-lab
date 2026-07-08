@@ -1,0 +1,12 @@
+{
+  "cluster_state_observed": "unknown",
+  "nodes_observed": 0,
+  "phase_id": "M1-S05",
+  "probe_result": "SKIPPED_WITH_REASON",
+  "real_valkey": false,
+  "reason": "M1-S05 local artifact gate uses fixture-derived benchmark artifacts; real P05 gate is attempted separately and recorded if blocked.",
+  "run_id": "m1-s05-local",
+  "schema_version": "v1",
+  "status": "SKIPPED_WITH_REASON",
+  "valkey_versions": []
+}

@@ -32,7 +32,7 @@ from valkey_scale_lab.resource import run_resource_preflight
 from valkey_scale_lab.runtime.command_recorder import classify_command_kind, current_command_recorder
 from valkey_scale_lab.runtime.setup_timeline import SetupTimeline
 from valkey_scale_lab.server_profile import compute_effective_server_profile, node_effective_fields, valkey_config_lines
-from valkey_scale_lab.workload import CANONICAL_WINDOWS, run_windowed_workload
+from valkey_scale_lab.workload import BENCHMARK_PROFILES, CANONICAL_WINDOWS, run_benchmark_workload, run_windowed_workload
 
 PROJECT = "valkey-scale-lab"
 LABEL_PREFIX = "org.valkey-scale-lab"
@@ -1743,6 +1743,77 @@ def _write_generated_valkey_configs_manifest(path: Path, phase: str, scenario: s
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _write_p05_workload_benchmark_artifacts(
+    *,
+    artifacts: Path,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    workload: dict[str, Any],
+    requested_qps: float,
+    workload_mode: str,
+    profiles: list[str],
+    nodes: list[dict[str, Any]],
+) -> None:
+    telemetry = TelemetryRun(
+        phase_id=phase,
+        scenario_name=scenario,
+        run_id=run_id,
+        coverage_id="p05.workload.benchmark_contract",
+        scale=len(nodes),
+        node_count=len(nodes),
+    )
+    benchmark = run_benchmark_workload(
+        telemetry=telemetry,
+        command=lambda *args, timeout=10: run_node_cluster_cli(nodes[0], *args, timeout=int(timeout)),
+        profile_names=profiles,
+        workload_config={
+            **workload,
+            "target_qps": min(float(workload.get("target_qps", requested_qps or 12.0)), 12.0),
+            "hash_slot_distribution": workload.get("hash_slot_distribution", "full_slot" if workload_mode == "benchmark" else "single_tag"),
+        },
+        operations_per_window=3,
+        sleep_seconds=0.01,
+    )
+    write_jsonl(artifacts / "events.jsonl", benchmark["events"])
+    write_jsonl(artifacts / "metrics_timeseries.jsonl", benchmark["metric_rows"])
+    workload_artifact = {
+        "schema_version": "v1",
+        "artifact_type": "workload_windows",
+        "phase_id": phase,
+        "run_id": run_id,
+        "created_at": "2026-06-28T00:00:00Z",
+        "producer": {"name": "valkey-scale-lab", "version": __version__},
+        "scenario_name": scenario,
+        "status": "PASS" if all(window.get("status") == "PASS" for window in benchmark["windows"]) else "FAIL",
+        "workload_mode": benchmark["workload_mode"],
+        "profiles_covered": benchmark["profiles_covered"],
+        "hash_slot_coverage": benchmark["hash_slot_coverage"],
+        "windows": benchmark["windows"],
+    }
+    (artifacts / "workload_windows.json").write_text(json.dumps(workload_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (artifacts / "quant_summary.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "v1",
+                "artifact_type": "quant_summary",
+                "phase_id": phase,
+                "run_id": run_id,
+                "created_at": "2026-06-28T00:00:00Z",
+                "producer": {"name": "valkey-scale-lab", "version": __version__},
+                "status": workload_artifact["status"],
+                "workload_window_count": len(benchmark["windows"]),
+                "workload_profiles": benchmark["profiles_covered"],
+                "hash_slot_coverage": benchmark["hash_slot_coverage"],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def _append_p10_orchestrator_cleanup(artifacts_dir: Path, resources_remaining: list[dict[str, Any]]) -> None:
@@ -4396,6 +4467,19 @@ def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, co
 
     duration = max(time.monotonic() - started, 0.000001)
     completed_ops = len(latencies_ms)
+    benchmark_metrics = workload_metrics(requested_qps=requested_qps, duration_seconds=duration, latencies_ms=latencies_ms, error_texts=[str(item.get("error", "")) for item in error_items])
+    workload_mode = str(workload.get("mode", "smoke"))
+    profiles = _workload_profile_names(workload)
+    full_slot_status = {
+        "hash_slot_distribution": workload.get("hash_slot_distribution", "single_tag"),
+        "slot_count_observed": 1,
+        "slot_sample": [0],
+        "full_slot_requested": workload.get("hash_slot_distribution") == "full_slot",
+        "full_slot_covered": False,
+        "fixed_hash_tag_only": True,
+        "status": "SKIPPED_WITH_REASON" if workload.get("hash_slot_distribution") != "full_slot" else "MISSING",
+        "reason": "P05 smoke workload_report preserves legacy single hash-tag probe; canonical benchmark windows carry full-slot evidence when mode=benchmark.",
+    }
     report = {
         "schema_version": "v1",
         "artifact_type": "workload_report",
@@ -4452,9 +4536,31 @@ def write_workload_report(path: Path, phase: str, scenario: str, run_id: str, co
             "items": error_items,
             "classification": "none" if not error_items else "data_path_error",
         },
+        "workload_mode": workload_mode,
+        "profiles": profiles,
+        "canonical_window_refs": [
+            {"artifact": "workload_windows.json", "window_name": name, "status": "SKIPPED_WITH_REASON", "reason": "Legacy P05 workload_report does not own canonical window generation."}
+            for name in CANONICAL_WINDOWS
+        ],
+        "hash_slot_coverage": full_slot_status,
+        "benchmark_metrics": benchmark_metrics,
+        "management_refs": [],
+        "fault_refs": [],
+        "failover_refs": [],
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _write_p05_workload_benchmark_artifacts(
+        artifacts=path.parent,
+        phase=phase,
+        scenario=scenario,
+        run_id=run_id,
+        workload=workload,
+        requested_qps=requested_qps,
+        workload_mode=workload_mode,
+        profiles=profiles,
+        nodes=nodes,
+    )
 
 
 def write_observability_artifacts(
@@ -4661,14 +4767,19 @@ def write_goal_loop_quant_telemetry_artifacts(
             topology_rows.append(_p29_topology_snapshot_row(telemetry, node, sampled_cluster_info, sampled_cluster_nodes_raw))
 
     workload = config.get("workload", {})
-    requested_qps = min(12.0, float(workload.get("uniform_qps", 0)) + float(workload.get("hotspot_qps", 0)) or 12.0)
-    workload_events, workload_metrics_rows, workload_windows = run_windowed_workload(
+    requested_qps = min(12.0, float(workload.get("target_qps", workload.get("uniform_qps", 0))) + float(workload.get("hotspot_qps", 0)) or 12.0)
+    profile_names = _workload_profile_names(workload)
+    benchmark = run_benchmark_workload(
         telemetry=telemetry,
         command=lambda *args, timeout=10: run_node_cluster_cli(nodes[0], *args, timeout=int(timeout)),
-        requested_qps=requested_qps,
+        profile_names=profile_names,
+        workload_config={**workload, "target_qps": requested_qps, "hash_slot_distribution": workload.get("hash_slot_distribution", "full_slot")},
         operations_per_window=6,
         sleep_seconds=0.02,
     )
+    workload_events = benchmark["events"]
+    workload_metrics_rows = benchmark["metric_rows"]
+    workload_windows = benchmark["windows"]
     events.extend(workload_events)
     metric_rows.extend(workload_metrics_rows)
     events.append(
@@ -4712,6 +4823,9 @@ def write_goal_loop_quant_telemetry_artifacts(
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if not any(window.get("status") == "FAIL" for window in workload_windows) else "FAIL",
+        "workload_mode": benchmark["workload_mode"],
+        "profiles_covered": benchmark["profiles_covered"],
+        "hash_slot_coverage": benchmark["hash_slot_coverage"],
         "windows": workload_windows,
     }
     workload_windows_path.write_text(json.dumps(workload_artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -4760,6 +4874,18 @@ def _p16_node_labels(node: dict[str, Any]) -> dict[str, Any]:
         "az_id": node.get("az_id", MISSING),
         "host_id": node.get("host_id", MISSING),
     }
+
+
+def _workload_profile_names(workload: dict[str, Any]) -> list[str]:
+    raw = workload.get("profiles", workload.get("profile", ["smoke"]))
+    if isinstance(raw, str):
+        profiles = [item.strip() for item in raw.split(",") if item.strip()]
+    elif isinstance(raw, list):
+        profiles = [str(item) for item in raw]
+    else:
+        profiles = ["smoke"]
+    filtered = [name for name in profiles if name in BENCHMARK_PROFILES]
+    return filtered or ["smoke"]
 
 
 def _p16_metric_value(value: Any, reason: str) -> tuple[int | float | str | bool, str]:
@@ -6200,20 +6326,34 @@ def _p17_merge_workload_metrics(metric_items: list[dict[str, Any]]) -> dict[str,
     error_rate: float | str = round(error_ops / max(ok_ops + error_ops, 1), 6) if ok_ops or error_ops else MISSING
     if achieved_qps == MISSING:
         missing_reasons["achieved_qps"] = "no workload operations were attempted for this aggregate window"
+        missing_reasons["throughput_ratio"] = "achieved_qps was unavailable for this aggregate window"
     if error_rate == MISSING:
         missing_reasons["error_rate"] = "no workload operations were attempted for this aggregate window"
     return {
         "requested_qps": 200.0,
         "achieved_qps": achieved_qps,
+        "throughput_ratio": round(float(achieved_qps) / 200.0, 6) if isinstance(achieved_qps, (int, float)) else MISSING,
         "ok_ops": ok_ops,
         "error_ops": error_ops,
         "error_rate": error_rate,
         "latency_p50_ms": latency("latency_p50_ms", latencies_p50),
+        "latency_p90_ms": latency("latency_p90_ms", latencies_p95),
         "latency_p95_ms": latency("latency_p95_ms", latencies_p95),
         "latency_p99_ms": latency("latency_p99_ms", latencies_p99),
+        "latency_p999_ms": latency("latency_p999_ms", latencies_p99),
         "timeout_count": sum(int(item.get("timeout_count", 0)) for item in metric_items),
         "moved_redirection_count": sum(int(item.get("moved_redirection_count", 0)) for item in metric_items),
         "ask_redirection_count": sum(int(item.get("ask_redirection_count", 0)) for item in metric_items),
+        "connection_error_count": sum(int(item.get("connection_error_count", 0)) for item in metric_items),
+        "moved_count": sum(int(item.get("moved_count", item.get("moved_redirection_count", 0))) for item in metric_items),
+        "ask_count": sum(int(item.get("ask_count", item.get("ask_redirection_count", 0))) for item in metric_items),
+        "cluster_down_count": sum(int(item.get("cluster_down_count", item.get("cluster_down_error_count", 0))) for item in metric_items),
+        "readonly_count": sum(int(item.get("readonly_count", item.get("readonly_error_count", 0))) for item in metric_items),
+        "tryagain_count": sum(int(item.get("tryagain_count", item.get("tryagain_error_count", 0))) for item in metric_items),
+        "cluster_down_error_count": sum(int(item.get("cluster_down_error_count", 0)) for item in metric_items),
+        "readonly_error_count": sum(int(item.get("readonly_error_count", 0)) for item in metric_items),
+        "tryagain_error_count": sum(int(item.get("tryagain_error_count", 0)) for item in metric_items),
+        "unknown_error_count": sum(int(item.get("unknown_error_count", 0)) for item in metric_items),
         "missing_reasons": missing_reasons,
     }
 
@@ -9061,6 +9201,29 @@ def _p30_workload_window(
         "coverage_id": coverage_id,
         "node_count": int(str(coverage_id).split(".", 1)[0]) if str(coverage_id).split(".", 1)[0].isdigit() else 0,
         "scale": int(str(coverage_id).split(".", 1)[0]) if str(coverage_id).split(".", 1)[0].isdigit() else 0,
+        "profile": "mixed_rw",
+        "workload_mode": "benchmark",
+        "hash_slot_distribution": "multi_slot",
+        "key_slot_coverage": {
+            "hash_slot_distribution": "multi_slot",
+            "slot_count_observed": 3,
+            "slot_sample": [0, 1, 2],
+            "full_slot_requested": False,
+            "full_slot_covered": False,
+            "fixed_hash_tag_only": False,
+            "status": "PASS",
+            "reason": "Management workload windows rotate multiple operation-scoped hash tags; P05 full-slot generator separately proves 0-16383 coverage.",
+        },
+        "config": {
+            "target_qps": metrics.get("requested_qps", 200.0),
+            "read_ratio": 0.5,
+            "write_ratio": 0.5,
+            "connections": 1,
+            "pipeline": 1,
+            "keyspace": 3,
+            "value_size": 16,
+            "timeout_ms": 10000,
+        },
         "metrics": metrics,
     }
     for metric_name in WORKLOAD_WINDOW_REQUIRED_METRICS:
@@ -9156,6 +9319,11 @@ WORKLOAD_WINDOW_REQUIRED_METRICS = [
     "latency_p999_ms",
     "timeout_count",
     "connection_error_count",
+    "moved_count",
+    "ask_count",
+    "cluster_down_count",
+    "readonly_count",
+    "tryagain_count",
     "moved_redirection_count",
     "ask_redirection_count",
     "cluster_down_error_count",

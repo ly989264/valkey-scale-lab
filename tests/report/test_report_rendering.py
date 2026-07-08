@@ -72,15 +72,20 @@ def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: P
         "management_topology_diffs.csv",
         "management_rolling_restart.csv",
         "management_reshard_rebalance.csv",
+        "workload_benchmark_windows.csv",
+        "workload_profile_summary.csv",
         "command_latency.svg",
         "management_operation_duration.svg",
         "management_topology_diff.svg",
+        "workload_qps_p99_error.svg",
     } == report_paths
     assert "command_audit_report_inputs" in index
     assert "management_report_inputs" in index
+    assert "workload_report_inputs" in index
     assert (tmp_path / "phase_summary.json").exists()
     assert "MISSING" in (tmp_path / "report" / "missing_metrics.csv").read_text(encoding="utf-8")
     assert "慢命令 TopN" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
+    assert "Workload 基准压测" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
 
 
 def test_report_renderer_marks_empty_missing_metrics_as_none(tmp_path: Path) -> None:

@@ -89,5 +89,63 @@ def test_analysis_aggregates_management_matrix(tmp_path: Path) -> None:
     assert summary["management_ops"]["duration_ranking_topN"]
 
 
+def test_analysis_aggregates_workload_benchmark(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    _write(source / "phase_summary.json", {"phase_id": "M1-S05", "run_id": "m1-s05", "status": "PASS", "missing_metrics": []})
+    _write(source / "valkey_e2e_evidence.json", {"status": "PASS", "real_valkey": False, "valkey_versions": [], "nodes_observed": 1, "cluster_state_observed": "ok"})
+    _write(source / "failover_report.json", {"status": "SKIPPED_WITH_REASON", "failovers": [{"failover_latency_ms": 1}], "summary": {}})
+    _write(source / "cleanup_report.json", {"status": "PASS", "resources_remaining": []})
+    _write(
+        source / "workload_windows.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "workload_windows",
+            "phase_id": "M1-S05",
+            "run_id": "m1-s05",
+            "status": "PASS",
+            "workload_mode": "benchmark",
+            "profiles_covered": ["uniform"],
+            "hash_slot_coverage": {"uniform": {"full_slot_covered": True, "slot_count_observed": 16384}},
+            "windows": [
+                {
+                    "window_name": "baseline",
+                    "profile": "uniform",
+                    "status": "PASS",
+                    "start_event_id": "evt-start",
+                    "end_event_id": "evt-end",
+                    "key_slot_coverage": {"full_slot_covered": True, "slot_count_observed": 16384},
+                    "metrics": {
+                        "requested_qps": 10,
+                        "achieved_qps": 9,
+                        "throughput_ratio": 0.9,
+                        "ok_ops": 9,
+                        "error_ops": 0,
+                        "error_rate": 0,
+                        "latency_p50_ms": 1,
+                        "latency_p90_ms": 2,
+                        "latency_p95_ms": 3,
+                        "latency_p99_ms": 4,
+                        "latency_p999_ms": 5,
+                        "timeout_count": 0,
+                        "connection_error_count": 0,
+                        "moved_count": 0,
+                        "ask_count": 0,
+                        "cluster_down_count": 0,
+                        "readonly_count": 0,
+                        "tryagain_count": 0,
+                    },
+                }
+            ],
+        },
+    )
+
+    summary = create_analysis_summary(source, tmp_path / "analysis_summary.json")
+
+    assert summary["workload_benchmark"]["aggregate"]["achieved_qps"] == 9.0
+    assert summary["workload_benchmark"]["full_slot_covered"] is True
+    assert any(item["name"] == "workload_benchmark" for item in summary["findings"])
+
+
 def _write(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data), encoding="utf-8")

@@ -1,0 +1,8 @@
+metric,current_value,baseline_value,delta,unit,status
+nodes_observed_after_fault,0,,,count,NO_BASELINE_YET
+failover_latency_ms,,,,ms,MISSING
+split_brain_duration_ms,,,,ms,MISSING
+cleanup_resources_remaining,0,,,count,NO_BASELINE_YET
+workload_achieved_qps,208.8,,,ops_per_second,NO_BASELINE_YET
+workload_latency_p99_ms,4.0,,,ms,NO_BASELINE_YET
+workload_error_rate,0.0,,,ratio,NO_BASELINE_YET

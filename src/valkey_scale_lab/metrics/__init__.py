@@ -188,9 +188,25 @@ def workload_metrics(
     else:
         achieved_qps = round(sample_count / duration, 6)
 
+    achieved_value = achieved_qps
+    throughput_ratio: float | str = MISSING
+    if isinstance(achieved_value, (int, float)) and requested_qps > 0:
+        throughput_ratio = round(float(achieved_value) / float(requested_qps), 6)
+    elif requested_qps <= 0:
+        missing_reasons["throughput_ratio"] = "requested_qps was zero, so throughput ratio is undefined"
+    else:
+        missing_reasons["throughput_ratio"] = missing_reasons.get("achieved_qps", "achieved_qps was unavailable")
+
+    moved_count = counts["moved_redirection_count"]
+    ask_count = counts["ask_redirection_count"]
+    cluster_down_count = counts["cluster_down_error_count"]
+    readonly_count = counts["readonly_error_count"]
+    tryagain_count = counts["tryagain_error_count"]
+
     return {
         "requested_qps": round(float(requested_qps), 6),
         "achieved_qps": achieved_qps,
+        "throughput_ratio": throughput_ratio,
         "ok_ops": sample_count,
         "error_ops": error_count,
         "error_rate": round(error_count / max(total_ops, 1), 6) if total_ops else MISSING,
@@ -201,6 +217,11 @@ def workload_metrics(
         "latency_p999_ms": latency_value("latency_p999_ms", 99.9),
         "timeout_count": counts["timeout_count"],
         "connection_error_count": counts["connection_error_count"],
+        "moved_count": moved_count,
+        "ask_count": ask_count,
+        "cluster_down_count": cluster_down_count,
+        "readonly_count": readonly_count,
+        "tryagain_count": tryagain_count,
         "moved_redirection_count": counts["moved_redirection_count"],
         "ask_redirection_count": counts["ask_redirection_count"],
         "cluster_down_error_count": counts["cluster_down_error_count"],

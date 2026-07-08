@@ -291,6 +291,10 @@ def _build_row(
             "metrics": metrics,
             "start_event_id": window.get("start_event_id", "MISSING"),
             "end_event_id": window.get("end_event_id", "MISSING"),
+            "profile": window.get("profile", "MISSING"),
+            "workload_mode": window.get("workload_mode", "MISSING"),
+            "hash_slot_distribution": window.get("hash_slot_distribution", "MISSING"),
+            "key_slot_coverage": window.get("key_slot_coverage", {}),
             "source_ref": {"artifact": windows_path.as_posix(), "pointer": f"/windows/{entity_id}/{name}"},
         }
 
@@ -326,6 +330,9 @@ def _build_row(
         ],
         "window_refs": {name: record["source_ref"] for name, record in window_records.items()},
         "windows": window_records,
+        "profile": _first_window_value(window_records, "profile", "MISSING"),
+        "workload_mode": _first_window_value(window_records, "workload_mode", "MISSING"),
+        "key_slot_coverage": _first_window_value(window_records, "key_slot_coverage", {}),
         "derived": derived,
         "error_taxonomy": _error_taxonomy(window_records),
     }

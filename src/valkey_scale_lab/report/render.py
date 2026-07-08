@@ -48,11 +48,14 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_management_topology_csv(report_dir / "management_topology_diffs.csv", analysis.get("management_ops", {})),
         _write_management_detail_csv(report_dir / "management_rolling_restart.csv", analysis.get("management_ops", {}).get("rolling_restart_summary", [])),
         _write_management_detail_csv(report_dir / "management_reshard_rebalance.csv", analysis.get("management_ops", {}).get("reshard_rebalance_summary", [])),
+        _write_workload_windows_csv(report_dir / "workload_benchmark_windows.csv", analysis.get("workload_benchmark", {})),
+        _write_workload_profile_csv(report_dir / "workload_profile_summary.csv", analysis.get("workload_benchmark", {})),
         _write_chart(report_dir / "metric_chart.svg", metrics),
         _write_setup_waterfall_svg(report_dir / "setup_waterfall.svg", analysis.get("setup_aggregates", {})),
         _write_command_latency_svg(report_dir / "command_latency.svg", analysis.get("command_audit", {})),
         _write_management_duration_svg(report_dir / "management_operation_duration.svg", analysis.get("management_ops", {})),
         _write_management_topology_svg(report_dir / "management_topology_diff.svg", analysis.get("management_ops", {})),
+        _write_workload_svg(report_dir / "workload_qps_p99_error.svg", analysis.get("workload_benchmark", {})),
         _write_markdown(report_dir / "report.md", analysis),
         _write_html(report_dir / "index.html", analysis),
     ]
@@ -101,6 +104,16 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
                 "management_reshard_rebalance.csv"
             ],
             "svg": ["management_operation_duration.svg", "management_topology_diff.svg"],
+        },
+        "workload_report_inputs": {
+            "workload_benchmark": analysis.get("workload_benchmark", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include workload benchmark aggregates"}),
+            "refs": {
+                "workload_windows": "workload_windows.json",
+                "workload_report": "workload_report.json",
+                "management_workload_impact": "management_workload_impact.json",
+            },
+            "csv": ["workload_benchmark_windows.csv", "workload_profile_summary.csv"],
+            "svg": "workload_qps_p99_error.svg",
         },
     }
     _write_json(index_path, index)
@@ -289,6 +302,55 @@ def _write_management_detail_csv(path: Path, rows: list[dict[str, Any]]) -> Path
     return path
 
 
+def _write_workload_windows_csv(path: Path, workload: dict[str, Any]) -> Path:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["profile", "window_name", "status", "requested_qps", "achieved_qps", "throughput_ratio", "latency_p99_ms", "error_rate", "slot_count_observed", "full_slot_covered"])
+        writer.writeheader()
+        rows = workload.get("windows", []) if isinstance(workload, dict) else []
+        if not rows:
+            writer.writerow({"profile": "SKIPPED_WITH_REASON", "window_name": "", "status": workload.get("status", "SKIPPED_WITH_REASON") if isinstance(workload, dict) else "SKIPPED_WITH_REASON"})
+        for row in rows:
+            coverage = row.get("key_slot_coverage", {}) if isinstance(row, dict) else {}
+            writer.writerow(
+                {
+                    "profile": row.get("profile", "MISSING"),
+                    "window_name": row.get("window_name", "MISSING"),
+                    "status": row.get("status", "MISSING"),
+                    "requested_qps": row.get("requested_qps", "MISSING"),
+                    "achieved_qps": row.get("achieved_qps", "MISSING"),
+                    "throughput_ratio": row.get("throughput_ratio", "MISSING"),
+                    "latency_p99_ms": row.get("latency_p99_ms", "MISSING"),
+                    "error_rate": row.get("error_rate", "MISSING"),
+                    "slot_count_observed": coverage.get("slot_count_observed", "MISSING") if isinstance(coverage, dict) else "MISSING",
+                    "full_slot_covered": coverage.get("full_slot_covered", "MISSING") if isinstance(coverage, dict) else "MISSING",
+                }
+            )
+    return path
+
+
+def _write_workload_profile_csv(path: Path, workload: dict[str, Any]) -> Path:
+    coverage = workload.get("hash_slot_coverage", {}) if isinstance(workload, dict) else {}
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["profile", "window_count", "slot_count_observed", "full_slot_requested", "full_slot_covered", "fixed_hash_tag_only"])
+        writer.writeheader()
+        profiles = workload.get("profiles_covered", []) if isinstance(workload, dict) else []
+        if not profiles:
+            writer.writerow({"profile": "SKIPPED_WITH_REASON", "window_count": 0})
+        for profile in profiles:
+            item = coverage.get(profile, {}) if isinstance(coverage, dict) else {}
+            writer.writerow(
+                {
+                    "profile": profile,
+                    "window_count": sum(1 for row in workload.get("windows", []) if row.get("profile") == profile),
+                    "slot_count_observed": item.get("slot_count_observed", "MISSING") if isinstance(item, dict) else "MISSING",
+                    "full_slot_requested": item.get("full_slot_requested", "MISSING") if isinstance(item, dict) else "MISSING",
+                    "full_slot_covered": item.get("full_slot_covered", "MISSING") if isinstance(item, dict) else "MISSING",
+                    "fixed_hash_tag_only": item.get("fixed_hash_tag_only", "MISSING") if isinstance(item, dict) else "MISSING",
+                }
+            )
+    return path
+
+
 def _write_chart(path: Path, metrics: list[dict[str, Any]]) -> Path:
     numeric = [m for m in metrics if isinstance(m.get("value"), (int, float)) and not isinstance(m.get("value"), bool)]
     max_value = max([float(m["value"]) for m in numeric] + [1.0])
@@ -431,11 +493,40 @@ def _write_management_topology_svg(path: Path, management: dict[str, Any]) -> Pa
     return path
 
 
+def _write_workload_svg(path: Path, workload: dict[str, Any]) -> Path:
+    rows = [row for row in workload.get("windows", []) if isinstance(row, dict)] if isinstance(workload, dict) else []
+    plot_rows = rows[:12]
+    width = 760
+    height = 120 + max(len(plot_rows), 1) * 28
+    max_qps = max([float(row.get("achieved_qps", 0) or 0) for row in plot_rows if isinstance(row.get("achieved_qps"), (int, float))] or [1.0])
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" role="img" aria-label="Workload QPS p99 错误率">',
+        '<rect width="100%" height="100%" fill="white"/>',
+        '<text x="20" y="28" font-size="16" font-family="sans-serif">Workload QPS / p99 / 错误率</text>',
+    ]
+    if not plot_rows:
+        parts.append('<text x="20" y="64" font-size="13" font-family="sans-serif">SKIPPED_WITH_REASON: 无 workload benchmark 行</text>')
+    for idx, row in enumerate(plot_rows):
+        y = 58 + idx * 28
+        qps = row.get("achieved_qps", 0)
+        bar = int((float(qps) / max_qps) * 260) if isinstance(qps, (int, float)) else 0
+        label = html.escape(f"{row.get('profile', 'MISSING')}:{row.get('window_name', 'MISSING')}")
+        p99 = html.escape(str(row.get("latency_p99_ms", "MISSING")))
+        error = html.escape(str(row.get("error_rate", "MISSING")))
+        parts.append(f'<text x="20" y="{y + 14}" font-size="12" font-family="sans-serif">{label}</text>')
+        parts.append(f'<rect x="190" y="{y}" width="{bar}" height="18" fill="#2f80ed"/>')
+        parts.append(f'<text x="{200 + bar}" y="{y + 14}" font-size="12" font-family="sans-serif">QPS={html.escape(str(qps))} p99={p99} 错误率={error}</text>')
+    parts.append("</svg>")
+    path.write_text("\n".join(parts), encoding="utf-8")
+    return path
+
+
 def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     metadata = analysis.get("run_metadata", {})
     setup = analysis.get("setup_aggregates", {})
     command_audit = analysis.get("command_audit", {})
     management = analysis.get("management_ops", {})
+    workload = analysis.get("workload_benchmark", {})
     lines = [
         "# P09 Analysis Report",
         "",
@@ -514,6 +605,18 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             lines.append(f"- {item.get('operation_id', 'MISSING')}: known_nodes_delta={item.get('known_nodes_delta', 'MISSING')}, moved_slot_ranges={item.get('moved_slot_range_count', 'MISSING')}")
     else:
         lines.append("- SKIPPED_WITH_REASON: 无 topology diff 样本")
+    lines.extend(["", "## Workload 基准压测", ""])
+    if workload.get("windows"):
+        lines.append("![Workload QPS p99 error](workload_qps_p99_error.svg)")
+        lines.append(f"- 覆盖 profile: {', '.join(str(item) for item in workload.get('profiles_covered', []))}")
+        lines.append(f"- 全 slot 覆盖: {workload.get('full_slot_covered', 'MISSING')}。该值来自 workload_windows.json 的 hash_slot_coverage，用于确认基准压测不是只走固定 hash tag。")
+        for item in workload.get("windows", [])[:12]:
+            lines.append(
+                f"- {item.get('profile', 'MISSING')} {item.get('window_name', 'MISSING')}: "
+                f"实际 QPS={item.get('achieved_qps', 'MISSING')}，p99 延迟 ms={item.get('latency_p99_ms', 'MISSING')}，错误率={item.get('error_rate', 'MISSING')}"
+            )
+    else:
+        lines.append(f"- {workload.get('status', 'SKIPPED_WITH_REASON')}: {workload.get('reason', '无 workload benchmark 样本')}")
     lines.extend(["", "## 缺失指标", ""])
     missing = analysis.get("missing_metrics", [])
     if missing:
@@ -521,7 +624,7 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
             lines.append(f"- {item.get('metric', 'MISSING')}: {item.get('status', 'MISSING')} - {item.get('reason', '')}")
     else:
         lines.append("- none")
-    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg"])
+    lines.extend(["", "## 生成表格", "", "- metrics.csv", "- missing_metrics.csv", "- baseline_comparison.csv", "- setup_phase_durations.csv", "- setup_slowest_nodes.csv", "- command_slowest.csv", "- command_failures.csv", "- command_retries.csv", "- management_ops_matrix.csv", "- management_operation_durations.csv", "- management_topology_diffs.csv", "- management_rolling_restart.csv", "- management_reshard_rebalance.csv", "- workload_benchmark_windows.csv", "- workload_profile_summary.csv", "- metric_chart.svg", "- setup_waterfall.svg", "- command_latency.svg", "- management_operation_duration.svg", "- management_topology_diff.svg", "- workload_qps_p99_error.svg"])
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
 
@@ -531,6 +634,7 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
     setup = analysis.get("setup_aggregates", {})
     command_audit = analysis.get("command_audit", {})
     management = analysis.get("management_ops", {})
+    workload = analysis.get("workload_benchmark", {})
     metadata_rows = "\n".join(
         "<tr><td>{}</td><td><code>{}</code></td></tr>".format(
             html.escape(key),
@@ -592,6 +696,16 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         )
         for item in management.get("topology_diff_summary", [])[:10]
     ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无 topology diff 样本</td></tr>'
+    workload_rows = "\n".join(
+        "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+            html.escape(str(item.get("profile", "MISSING"))),
+            html.escape(str(item.get("window_name", "MISSING"))),
+            html.escape(str(item.get("achieved_qps", "MISSING"))),
+            html.escape(str(item.get("latency_p99_ms", "MISSING"))),
+            html.escape(str(item.get("error_rate", "MISSING"))),
+        )
+        for item in workload.get("windows", [])[:12]
+    ) or '<tr><td colspan="5">SKIPPED_WITH_REASON: 无 workload benchmark 样本</td></tr>'
     document = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -636,6 +750,10 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   <h2>管理 topology diff 摘要</h2>
   <img src="management_topology_diff.svg" alt="管理 topology diff 摘要">
   <table><thead><tr><th>操作</th><th>known_nodes_delta</th><th>moved_slot_ranges</th><th>状态</th></tr></thead><tbody>{topology_rows}</tbody></table>
+  <h2>Workload 基准压测</h2>
+  <p>覆盖 profile: <code>{html.escape(", ".join(str(item) for item in workload.get("profiles_covered", [])))}</code>；全 slot 覆盖: <code>{html.escape(str(workload.get("full_slot_covered", "MISSING")))}</code>。该结论来自本地 workload artifact，不依赖 LLM 或外网。</p>
+  <img src="workload_qps_p99_error.svg" alt="Workload QPS p99 错误率对比">
+  <table><thead><tr><th>压测 profile</th><th>采集窗口</th><th>实际 QPS</th><th>p99 延迟 ms</th><th>错误率</th></tr></thead><tbody>{workload_rows}</tbody></table>
   <h2>图表</h2>
   <img src="metric_chart.svg" alt="P09 artifact metrics chart">
 </body>

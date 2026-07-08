@@ -1,0 +1,9 @@
+{
+  "failovers": [],
+  "phase_id": "M1-S05",
+  "reason": "M1-S05 workload benchmark stage does not run failover scenarios.",
+  "run_id": "m1-s05-local",
+  "schema_version": "v1",
+  "status": "SKIPPED_WITH_REASON",
+  "summary": {}
+}

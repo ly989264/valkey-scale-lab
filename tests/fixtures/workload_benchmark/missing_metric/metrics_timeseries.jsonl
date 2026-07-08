@@ -1,0 +1,1 @@
+{"metric_name":"latency_p99_ms","metric_unit":"ms","metric_value":"MISSING","missing_reason":"p99 percentile intentionally omitted by missing-metric fixture","phase_id":"M1-S05","run_id":"fixture-missing","schema_version":"v1","source_id":"uniform:baseline","source_type":"workload"}

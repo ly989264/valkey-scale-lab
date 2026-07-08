@@ -544,15 +544,32 @@ def _validate_workload(workload: dict[str, Any]) -> list[dict[str, Any]]:
     errors: list[dict[str, Any]] = []
     if workload.get("enabled") is not True:
         return errors
+    profiles = workload.get("profiles", [workload.get("profile", "smoke")])
+    if isinstance(profiles, str):
+        profiles = [item.strip() for item in profiles.split(",") if item.strip()]
+    allowed_profiles = {"smoke", "uniform", "hotspot", "mixed_rw", "write_heavy", "read_heavy"}
+    for profile in profiles if isinstance(profiles, list) else []:
+        if profile not in allowed_profiles:
+            errors.append(_err("WORKLOAD_PROFILE", f"workload profile {profile!r} is not recognized"))
+    if workload.get("mode", "smoke") not in {"smoke", "benchmark"}:
+        errors.append(_err("WORKLOAD_MODE", "workload.mode must be smoke or benchmark"))
+    if workload.get("hash_slot_distribution", "single_tag") not in {"single_tag", "multi_slot", "full_slot", "hotspot"}:
+        errors.append(_err("WORKLOAD_HASH_SLOT_DISTRIBUTION", "workload.hash_slot_distribution is not recognized"))
     read_ratio = float(workload.get("read_ratio", -1))
     write_ratio = float(workload.get("write_ratio", -1))
     if abs((read_ratio + write_ratio) - 1.0) > 0.000001:
         errors.append(_err("WORKLOAD_RATIO_SUM", "read_ratio + write_ratio must equal 1.0"))
-    for field in ["uniform_qps", "hotspot_qps"]:
-        if float(workload.get(field, -1)) < 0:
+    for field in ["uniform_qps", "hotspot_qps", "target_qps"]:
+        if field in workload and float(workload.get(field, -1)) < 0:
             errors.append(_err("WORKLOAD_QPS", f"workload.{field} must be non-negative"))
-    if int(workload.get("pipeline", 0) or 0) < 1:
-        errors.append(_err("WORKLOAD_PIPELINE", "workload.pipeline must be at least 1"))
+    for field in ["pipeline", "connections", "keyspace", "value_size", "timeout_ms"]:
+        if field in workload and int(workload.get(field, 0) or 0) < 1:
+            errors.append(_err("WORKLOAD_POSITIVE", f"workload.{field} must be at least 1"))
+    for field in ["duration_seconds"]:
+        if field in workload and float(workload.get(field, 0) or 0) <= 0:
+            errors.append(_err("WORKLOAD_POSITIVE", f"workload.{field} must be positive"))
+    if float(workload.get("warmup_seconds", 0) or 0) < 0:
+        errors.append(_err("WORKLOAD_POSITIVE", "workload.warmup_seconds must be non-negative"))
     fraction = float(workload.get("hotspot_key_fraction", 1))
     if fraction <= 0 or fraction > 1:
         errors.append(_err("WORKLOAD_HOTSPOT_FRACTION", "hotspot_key_fraction must be in (0, 1]"))

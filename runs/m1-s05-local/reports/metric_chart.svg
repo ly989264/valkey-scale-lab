@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="296" viewBox="0 0 640 296">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="12" y="24" font-size="16" font-weight="700">P09 Artifact Metrics</text>
+<text x="12" y="56" font-size="12">nodes_observed_after_fault</text>
+<rect x="190" y="42" width="2" height="18" fill="#2f6f4e"/>
+<text x="202" y="56" font-size="12">0</text>
+<text x="12" y="90" font-size="12">failover_latency_ms</text>
+<rect x="190" y="76" width="24" height="18" fill="#8a8f98"/>
+<text x="224" y="90" font-size="12">MISSING</text>
+<text x="12" y="124" font-size="12">split_brain_duration_ms</text>
+<rect x="190" y="110" width="24" height="18" fill="#8a8f98"/>
+<text x="224" y="124" font-size="12">MISSING</text>
+<text x="12" y="158" font-size="12">cleanup_resources_remaining</text>
+<rect x="190" y="144" width="2" height="18" fill="#2f6f4e"/>
+<text x="202" y="158" font-size="12">0</text>
+<text x="12" y="192" font-size="12">workload_achieved_qps</text>
+<rect x="190" y="178" width="360" height="18" fill="#2f6f4e"/>
+<text x="560" y="192" font-size="12">208.8</text>
+<text x="12" y="226" font-size="12">workload_latency_p99_ms</text>
+<rect x="190" y="212" width="6" height="18" fill="#2f6f4e"/>
+<text x="206" y="226" font-size="12">4.0</text>
+<text x="12" y="260" font-size="12">workload_error_rate</text>
+<rect x="190" y="246" width="2" height="18" fill="#2f6f4e"/>
+<text x="202" y="260" font-size="12">0.0</text>
+</svg>

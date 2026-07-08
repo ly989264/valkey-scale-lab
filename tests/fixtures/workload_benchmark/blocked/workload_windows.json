@@ -1,0 +1,70 @@
+{
+  "artifact_type": "workload_windows",
+  "created_at": "2026-06-28T00:00:00Z",
+  "hash_slot_coverage": {},
+  "phase_id": "M1-S05",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.1.0"
+  },
+  "profiles_covered": [],
+  "run_id": "fixture-blocked",
+  "schema_version": "v1",
+  "status": "SKIPPED_WITH_REASON",
+  "windows": [
+    {
+      "config": {
+        "target_qps": 6
+      },
+      "end_event_id": "evt-end-uniform-baseline",
+      "key_slot_coverage": {
+        "fixed_hash_tag_only": false,
+        "full_slot_covered": true,
+        "full_slot_requested": true,
+        "hash_slot_distribution": "full_slot",
+        "slot_count_observed": 16384,
+        "slot_sample": [
+          0,
+          1
+        ]
+      },
+      "metrics": {
+        "achieved_qps": "MISSING",
+        "ask_count": 0,
+        "cluster_down_count": 0,
+        "connection_error_count": 0,
+        "error_ops": 0,
+        "error_rate": "MISSING",
+        "latency_p50_ms": "MISSING",
+        "latency_p90_ms": "MISSING",
+        "latency_p95_ms": "MISSING",
+        "latency_p999_ms": "MISSING",
+        "latency_p99_ms": "MISSING",
+        "missing_reasons": {
+          "achieved_qps": "blocked before workload execution",
+          "error_rate": "blocked before workload execution",
+          "latency_p50_ms": "blocked before workload execution",
+          "latency_p90_ms": "blocked before workload execution",
+          "latency_p95_ms": "blocked before workload execution",
+          "latency_p999_ms": "blocked before workload execution",
+          "latency_p99_ms": "blocked before workload execution",
+          "throughput_ratio": "blocked before workload execution"
+        },
+        "moved_count": 0,
+        "ok_ops": 0,
+        "readonly_count": 0,
+        "requested_qps": 6,
+        "throughput_ratio": "MISSING",
+        "timeout_count": 0,
+        "tryagain_count": 0
+      },
+      "profile": "uniform",
+      "reason": "sandbox port bind blocked real local workload",
+      "start_event_id": "evt-start-uniform-baseline",
+      "status": "SKIPPED_WITH_REASON",
+      "window_name": "baseline",
+      "workload_mode": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "workload_mode": "SKIPPED_WITH_REASON"
+}

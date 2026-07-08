@@ -1,0 +1,3 @@
+metric,status,reason,impact
+command_log.total_commands,SKIPPED_WITH_REASON,Input artifacts did not include command_log.jsonl.,Report cannot display command-level traceability.
+management.operation_count,SKIPPED_WITH_REASON,Management operation artifacts were not present.,Report cannot display management operation timing or topology diff data.

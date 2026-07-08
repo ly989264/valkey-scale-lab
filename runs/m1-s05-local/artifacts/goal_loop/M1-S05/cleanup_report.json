@@ -1,0 +1,19 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "cleanup_report",
+  "phase_id": "P05_WORKLOAD_ENGINE",
+  "run_id": "phase-P05_WORKLOAD_ENGINE",
+  "created_at": "2026-07-08T16:13:09.031397Z",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "unknown"
+  },
+  "status": "FAIL",
+  "resources_remaining": [
+    {
+      "type": "unknown",
+      "reason": "no state file, cleanup could not run"
+    }
+  ],
+  "cleanup_actions": []
+}

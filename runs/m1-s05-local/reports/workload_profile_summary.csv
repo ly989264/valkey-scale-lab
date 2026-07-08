@@ -1,0 +1,7 @@
+profile,window_count,slot_count_observed,full_slot_requested,full_slot_covered,fixed_hash_tag_only
+hotspot,6,16384,True,True,False
+mixed_rw,6,16384,True,True,False
+read_heavy,6,16384,True,True,False
+smoke,6,16384,True,True,False
+uniform,6,16384,True,True,False
+write_heavy,6,16384,True,True,False

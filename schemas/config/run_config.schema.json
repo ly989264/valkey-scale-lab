@@ -316,7 +316,31 @@
       }
     },
     "workload": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "mode": {"type": "string", "enum": ["smoke", "benchmark"]},
+        "profiles": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["smoke", "uniform", "hotspot", "mixed_rw", "write_heavy", "read_heavy"]}
+        },
+        "target_qps": {"type": "number", "minimum": 0},
+        "duration_seconds": {"type": "number", "exclusiveMinimum": 0},
+        "warmup_seconds": {"type": "number", "minimum": 0},
+        "connections": {"type": "integer", "minimum": 1},
+        "pipeline": {"type": "integer", "minimum": 1},
+        "keyspace": {"type": "integer", "minimum": 1},
+        "value_size": {"type": "integer", "minimum": 1},
+        "hash_slot_distribution": {"type": "string", "enum": ["single_tag", "multi_slot", "full_slot", "hotspot"]},
+        "read_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+        "write_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+        "timeout_ms": {"type": "integer", "minimum": 1},
+        "uniform_qps": {"type": "number", "minimum": 0},
+        "hotspot_qps": {"type": "number", "minimum": 0},
+        "hotspot_key_fraction": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "timing": {"type": "string"}
+      },
+      "additionalProperties": true
     },
     "faults": {
       "type": "array"

@@ -1,0 +1,1 @@
+{"event_id":"evt-dry","event_type":"workload_skipped","message":"planning-only dry run, no workload executed","phase_id":"M1-S05","run_id":"fixture-dry-run","schema_version":"v1"}

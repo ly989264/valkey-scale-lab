@@ -1,0 +1,1042 @@
+{
+  "analysis_path": "runs/m1-s05-local/artifacts/analysis_summary.json",
+  "artifact_type": "report_index",
+  "command_audit_report_inputs": {
+    "command_audit_summary": {
+      "reason": "analysis did not include command_audit_summary.json",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "command_log": {
+      "reason": "analysis did not include command audit",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "csv": [
+      "command_slowest.csv",
+      "command_failures.csv",
+      "command_retries.csv"
+    ],
+    "svg": "command_latency.svg"
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "management_report_inputs": {
+    "csv": [
+      "management_ops_matrix.csv",
+      "management_operation_durations.csv",
+      "management_topology_diffs.csv",
+      "management_rolling_restart.csv",
+      "management_reshard_rebalance.csv"
+    ],
+    "management_ops": {
+      "missing_metrics": [
+        {
+          "impact": "Report cannot display management operation timing or topology diff data.",
+          "metric": "operation_count",
+          "reason": "Management operation artifacts were not present.",
+          "status": "SKIPPED_WITH_REASON"
+        }
+      ],
+      "missing_required_operations": [
+        "create_cluster",
+        "meet_nodes",
+        "add_replica",
+        "remove_replica",
+        "remove_primary_drained_or_safe_replaced",
+        "remove_failed_node",
+        "reshard_slot_range",
+        "reshard_with_keys",
+        "rebalance_after_imbalance",
+        "rolling_restart_replica_first",
+        "rolling_restart_primary_safe"
+      ],
+      "operation_count": 0,
+      "reason": "Input artifacts did not include management_ops_matrix.json or management_operation_results.jsonl.",
+      "required_operations_observed": [],
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "svg": [
+      "management_operation_duration.svg",
+      "management_topology_diff.svg"
+    ]
+  },
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "reports": [
+    {
+      "path": "runs/m1-s05-local/reports/metrics.csv",
+      "sha256": "3633518da8f1bbf584b8da939dce9e34fb530fbccb6be76ac0fd7ba29e5b6c03"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/missing_metrics.csv",
+      "sha256": "cae4d974811844a3648ad8367c29da11f0acdfd1c9484876d487b537795e1390"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/baseline_comparison.csv",
+      "sha256": "13c5aec3ede5d9095807758973e5dfce3d79eea5f2035c0310af0cb713abd59b"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/setup_phase_durations.csv",
+      "sha256": "af2c4d1688e3172e648cb90753b1a703b20117028fabef747eceee4382610533"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/setup_slowest_nodes.csv",
+      "sha256": "29b7fa93bddae5f9a1f10484dddbc8811fc8a0989d86c67adddce3a42b2c0c8b"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/command_slowest.csv",
+      "sha256": "8f33cb6b38c03673c743a251e2c367b03f160ccdc31de94ace765b2ced62e698"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/command_failures.csv",
+      "sha256": "8f33cb6b38c03673c743a251e2c367b03f160ccdc31de94ace765b2ced62e698"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/command_retries.csv",
+      "sha256": "8f33cb6b38c03673c743a251e2c367b03f160ccdc31de94ace765b2ced62e698"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/management_ops_matrix.csv",
+      "sha256": "583ccad5d752cf0ba873557913ec74e7f86c1848413e4b4c0a9d0ccfb379c875"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/management_operation_durations.csv",
+      "sha256": "7489ccd29f21d9ff31cd10e6aa2a5d7bf941554b745a06765dcaf89527b06b8a"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/management_topology_diffs.csv",
+      "sha256": "6a2ec577dda424277a351ff9da965762bbc5b6222095da35f4e0d9cb37184138"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/management_rolling_restart.csv",
+      "sha256": "8600d9c6ee46e240bc78dbfcba0470a8537d180a27f1585f5168b9777198983f"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/management_reshard_rebalance.csv",
+      "sha256": "8600d9c6ee46e240bc78dbfcba0470a8537d180a27f1585f5168b9777198983f"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/workload_benchmark_windows.csv",
+      "sha256": "c0f4ef458cc6b5a03c37a8b3cc84a5b78bc89f81f75ff4a986a6208cccea54f0"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/workload_profile_summary.csv",
+      "sha256": "39ba046a40564d2963801b0a531c9a6902344030627a2baf474d3ccd8dc8365b"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/metric_chart.svg",
+      "sha256": "197b8c0de48cc63bcf791a1441f410a5fdb4e0a04989bde02f1ffc66a407a192"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/setup_waterfall.svg",
+      "sha256": "996ef4efb6e569a4b22d4b1e9137f6b980322e68486020caeb7b1def47d663a8"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/command_latency.svg",
+      "sha256": "d5c86997d06cbb7a2cfdf6abadd57e3804f88c0edd0435f6950d81fe8832acae"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/management_operation_duration.svg",
+      "sha256": "7ef39df6c8f633128689b9a7a4f273a2f04ea740305df8e093f0a4f9366c1e26"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/management_topology_diff.svg",
+      "sha256": "c257f3939f02c9490df389b2f1f14dbc45d51e1a3bf370a98531f2f404a88d46"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/workload_qps_p99_error.svg",
+      "sha256": "906373b36f9d609891431b87becb2e75b9123d9c99d99a7d6293e85776ad092d"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/report.md",
+      "sha256": "759a3d01f24b98ae81563db97c9b86969a93aa3ee7b927bffd0a715952b94355"
+    },
+    {
+      "path": "runs/m1-s05-local/reports/index.html",
+      "sha256": "3b9056296be7473413b228b60e343073801037291d79e4543d46eeb525ecfcfc"
+    }
+  ],
+  "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+  "run_manifest_ref": {
+    "reason": "Legacy artifact directory input did not include a run_manifest.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata_ref": {
+    "reason": "Legacy artifact directory input did not include a run_metadata.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "schema_version": "v1",
+  "setup_report_inputs": {
+    "csv": "setup_phase_durations.csv",
+    "setup_telemetry": {
+      "reason": "Input artifacts did not include setup_telemetry.json.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "svg": "setup_waterfall.svg"
+  },
+  "status": "PASS",
+  "workload_report_inputs": {
+    "csv": [
+      "workload_benchmark_windows.csv",
+      "workload_profile_summary.csv"
+    ],
+    "refs": {
+      "management_workload_impact": "management_workload_impact.json",
+      "workload_report": "workload_report.json",
+      "workload_windows": "workload_windows.json"
+    },
+    "svg": "workload_qps_p99_error.svg",
+    "workload_benchmark": {
+      "aggregate": {
+        "achieved_qps": 208.8,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p99_ms": 4.0,
+        "ok_ops": 216,
+        "requested_qps": 216.0,
+        "throughput_ratio": 0.966667
+      },
+      "full_slot_covered": true,
+      "hash_slot_coverage": {
+        "hotspot": {
+          "fixed_hash_tag_only": false,
+          "full_slot_covered": true,
+          "full_slot_requested": true,
+          "hash_slot_distribution": "full_slot",
+          "slot_count_observed": 16384,
+          "slot_sample": [
+            0,
+            1
+          ]
+        },
+        "mixed_rw": {
+          "fixed_hash_tag_only": false,
+          "full_slot_covered": true,
+          "full_slot_requested": true,
+          "hash_slot_distribution": "full_slot",
+          "slot_count_observed": 16384,
+          "slot_sample": [
+            0,
+            1
+          ]
+        },
+        "read_heavy": {
+          "fixed_hash_tag_only": false,
+          "full_slot_covered": true,
+          "full_slot_requested": true,
+          "hash_slot_distribution": "full_slot",
+          "slot_count_observed": 16384,
+          "slot_sample": [
+            0,
+            1
+          ]
+        },
+        "smoke": {
+          "fixed_hash_tag_only": false,
+          "full_slot_covered": true,
+          "full_slot_requested": true,
+          "hash_slot_distribution": "full_slot",
+          "slot_count_observed": 16384,
+          "slot_sample": [
+            0,
+            1
+          ]
+        },
+        "uniform": {
+          "fixed_hash_tag_only": false,
+          "full_slot_covered": true,
+          "full_slot_requested": true,
+          "hash_slot_distribution": "full_slot",
+          "slot_count_observed": 16384,
+          "slot_sample": [
+            0,
+            1
+          ]
+        },
+        "write_heavy": {
+          "fixed_hash_tag_only": false,
+          "full_slot_covered": true,
+          "full_slot_requested": true,
+          "hash_slot_distribution": "full_slot",
+          "slot_count_observed": 16384,
+          "slot_sample": [
+            0,
+            1
+          ]
+        }
+      },
+      "impact_status": "MISSING",
+      "missing_metrics": [],
+      "profiles_covered": [
+        "hotspot",
+        "mixed_rw",
+        "read_heavy",
+        "smoke",
+        "uniform",
+        "write_heavy"
+      ],
+      "status": "PASS",
+      "window_count": 36,
+      "windows": [
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "smoke",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "baseline"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "smoke",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "pre_event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "smoke",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "smoke",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "smoke",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "post_recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "smoke",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "all_run"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "uniform",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "baseline"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "uniform",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "pre_event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "uniform",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "uniform",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "uniform",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "post_recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "uniform",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "all_run"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "hotspot",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "baseline"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "hotspot",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "pre_event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "hotspot",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "hotspot",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "hotspot",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "post_recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "hotspot",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "all_run"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "mixed_rw",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "baseline"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "mixed_rw",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "pre_event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "mixed_rw",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "mixed_rw",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "mixed_rw",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "post_recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "mixed_rw",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "all_run"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "write_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "baseline"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "write_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "pre_event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "write_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "write_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "write_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "post_recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "write_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "all_run"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "read_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "baseline"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "read_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "pre_event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "read_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "event"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "read_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "read_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "post_recovery"
+        },
+        {
+          "achieved_qps": 5.8,
+          "error_rate": 0,
+          "key_slot_coverage": {
+            "fixed_hash_tag_only": false,
+            "full_slot_covered": true,
+            "full_slot_requested": true,
+            "hash_slot_distribution": "full_slot",
+            "slot_count_observed": 16384,
+            "slot_sample": [
+              0,
+              1
+            ]
+          },
+          "latency_p99_ms": 4,
+          "profile": "read_heavy",
+          "requested_qps": 6,
+          "status": "PASS",
+          "throughput_ratio": 0.966667,
+          "window_name": "all_run"
+        }
+      ],
+      "workload_mode": "benchmark"
+    }
+  }
+}

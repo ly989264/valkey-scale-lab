@@ -1,0 +1,283 @@
+{
+  "artifact_type": "workload_windows",
+  "created_at": "2026-06-28T00:00:00Z",
+  "hash_slot_coverage": {
+    "uniform": {
+      "fixed_hash_tag_only": false,
+      "full_slot_covered": true,
+      "full_slot_requested": true,
+      "hash_slot_distribution": "full_slot",
+      "slot_count_observed": 16384,
+      "slot_sample": [
+        0,
+        1
+      ]
+    }
+  },
+  "phase_id": "M1-S05",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.1.0"
+  },
+  "profiles_covered": [
+    "uniform"
+  ],
+  "run_id": "fixture-cleanup-residual",
+  "schema_version": "v1",
+  "status": "PASS",
+  "windows": [
+    {
+      "config": {
+        "target_qps": 6
+      },
+      "end_event_id": "evt-end-uniform-baseline",
+      "key_slot_coverage": {
+        "fixed_hash_tag_only": false,
+        "full_slot_covered": true,
+        "full_slot_requested": true,
+        "hash_slot_distribution": "full_slot",
+        "slot_count_observed": 16384,
+        "slot_sample": [
+          0,
+          1
+        ]
+      },
+      "metrics": {
+        "achieved_qps": 5.8,
+        "ask_count": 0,
+        "cluster_down_count": 0,
+        "connection_error_count": 0,
+        "error_ops": 0,
+        "error_rate": 0,
+        "latency_p50_ms": 1,
+        "latency_p90_ms": 2,
+        "latency_p95_ms": 3,
+        "latency_p999_ms": 5,
+        "latency_p99_ms": 4,
+        "moved_count": 0,
+        "ok_ops": 6,
+        "readonly_count": 0,
+        "requested_qps": 6,
+        "throughput_ratio": 0.966667,
+        "timeout_count": 0,
+        "tryagain_count": 0
+      },
+      "profile": "uniform",
+      "start_event_id": "evt-start-uniform-baseline",
+      "status": "PASS",
+      "window_name": "baseline",
+      "workload_mode": "benchmark"
+    },
+    {
+      "config": {
+        "target_qps": 6
+      },
+      "end_event_id": "evt-end-uniform-pre_event",
+      "key_slot_coverage": {
+        "fixed_hash_tag_only": false,
+        "full_slot_covered": true,
+        "full_slot_requested": true,
+        "hash_slot_distribution": "full_slot",
+        "slot_count_observed": 16384,
+        "slot_sample": [
+          0,
+          1
+        ]
+      },
+      "metrics": {
+        "achieved_qps": 5.8,
+        "ask_count": 0,
+        "cluster_down_count": 0,
+        "connection_error_count": 0,
+        "error_ops": 0,
+        "error_rate": 0,
+        "latency_p50_ms": 1,
+        "latency_p90_ms": 2,
+        "latency_p95_ms": 3,
+        "latency_p999_ms": 5,
+        "latency_p99_ms": 4,
+        "moved_count": 0,
+        "ok_ops": 6,
+        "readonly_count": 0,
+        "requested_qps": 6,
+        "throughput_ratio": 0.966667,
+        "timeout_count": 0,
+        "tryagain_count": 0
+      },
+      "profile": "uniform",
+      "start_event_id": "evt-start-uniform-pre_event",
+      "status": "PASS",
+      "window_name": "pre_event",
+      "workload_mode": "benchmark"
+    },
+    {
+      "config": {
+        "target_qps": 6
+      },
+      "end_event_id": "evt-end-uniform-event",
+      "key_slot_coverage": {
+        "fixed_hash_tag_only": false,
+        "full_slot_covered": true,
+        "full_slot_requested": true,
+        "hash_slot_distribution": "full_slot",
+        "slot_count_observed": 16384,
+        "slot_sample": [
+          0,
+          1
+        ]
+      },
+      "metrics": {
+        "achieved_qps": 5.8,
+        "ask_count": 0,
+        "cluster_down_count": 0,
+        "connection_error_count": 0,
+        "error_ops": 0,
+        "error_rate": 0,
+        "latency_p50_ms": 1,
+        "latency_p90_ms": 2,
+        "latency_p95_ms": 3,
+        "latency_p999_ms": 5,
+        "latency_p99_ms": 4,
+        "moved_count": 0,
+        "ok_ops": 6,
+        "readonly_count": 0,
+        "requested_qps": 6,
+        "throughput_ratio": 0.966667,
+        "timeout_count": 0,
+        "tryagain_count": 0
+      },
+      "profile": "uniform",
+      "start_event_id": "evt-start-uniform-event",
+      "status": "PASS",
+      "window_name": "event",
+      "workload_mode": "benchmark"
+    },
+    {
+      "config": {
+        "target_qps": 6
+      },
+      "end_event_id": "evt-end-uniform-recovery",
+      "key_slot_coverage": {
+        "fixed_hash_tag_only": false,
+        "full_slot_covered": true,
+        "full_slot_requested": true,
+        "hash_slot_distribution": "full_slot",
+        "slot_count_observed": 16384,
+        "slot_sample": [
+          0,
+          1
+        ]
+      },
+      "metrics": {
+        "achieved_qps": 5.8,
+        "ask_count": 0,
+        "cluster_down_count": 0,
+        "connection_error_count": 0,
+        "error_ops": 0,
+        "error_rate": 0,
+        "latency_p50_ms": 1,
+        "latency_p90_ms": 2,
+        "latency_p95_ms": 3,
+        "latency_p999_ms": 5,
+        "latency_p99_ms": 4,
+        "moved_count": 0,
+        "ok_ops": 6,
+        "readonly_count": 0,
+        "requested_qps": 6,
+        "throughput_ratio": 0.966667,
+        "timeout_count": 0,
+        "tryagain_count": 0
+      },
+      "profile": "uniform",
+      "start_event_id": "evt-start-uniform-recovery",
+      "status": "PASS",
+      "window_name": "recovery",
+      "workload_mode": "benchmark"
+    },
+    {
+      "config": {
+        "target_qps": 6
+      },
+      "end_event_id": "evt-end-uniform-post_recovery",
+      "key_slot_coverage": {
+        "fixed_hash_tag_only": false,
+        "full_slot_covered": true,
+        "full_slot_requested": true,
+        "hash_slot_distribution": "full_slot",
+        "slot_count_observed": 16384,
+        "slot_sample": [
+          0,
+          1
+        ]
+      },
+      "metrics": {
+        "achieved_qps": 5.8,
+        "ask_count": 0,
+        "cluster_down_count": 0,
+        "connection_error_count": 0,
+        "error_ops": 0,
+        "error_rate": 0,
+        "latency_p50_ms": 1,
+        "latency_p90_ms": 2,
+        "latency_p95_ms": 3,
+        "latency_p999_ms": 5,
+        "latency_p99_ms": 4,
+        "moved_count": 0,
+        "ok_ops": 6,
+        "readonly_count": 0,
+        "requested_qps": 6,
+        "throughput_ratio": 0.966667,
+        "timeout_count": 0,
+        "tryagain_count": 0
+      },
+      "profile": "uniform",
+      "start_event_id": "evt-start-uniform-post_recovery",
+      "status": "PASS",
+      "window_name": "post_recovery",
+      "workload_mode": "benchmark"
+    },
+    {
+      "config": {
+        "target_qps": 6
+      },
+      "end_event_id": "evt-end-uniform-all_run",
+      "key_slot_coverage": {
+        "fixed_hash_tag_only": false,
+        "full_slot_covered": true,
+        "full_slot_requested": true,
+        "hash_slot_distribution": "full_slot",
+        "slot_count_observed": 16384,
+        "slot_sample": [
+          0,
+          1
+        ]
+      },
+      "metrics": {
+        "achieved_qps": 5.8,
+        "ask_count": 0,
+        "cluster_down_count": 0,
+        "connection_error_count": 0,
+        "error_ops": 0,
+        "error_rate": 0,
+        "latency_p50_ms": 1,
+        "latency_p90_ms": 2,
+        "latency_p95_ms": 3,
+        "latency_p999_ms": 5,
+        "latency_p99_ms": 4,
+        "moved_count": 0,
+        "ok_ops": 6,
+        "readonly_count": 0,
+        "requested_qps": 6,
+        "throughput_ratio": 0.966667,
+        "timeout_count": 0,
+        "tryagain_count": 0
+      },
+      "profile": "uniform",
+      "start_event_id": "evt-start-uniform-all_run",
+      "status": "PASS",
+      "window_name": "all_run",
+      "workload_mode": "benchmark"
+    }
+  ],
+  "workload_mode": "benchmark"
+}
