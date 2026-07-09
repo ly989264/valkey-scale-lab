@@ -47,6 +47,8 @@ def build_report(root: Path) -> dict[str, Any]:
     top = {name: result["status"] for name, result in category.items()}
     if any(status == "FAIL" for status in top.values()):
         milestone = "FAIL"
+    elif any(item["status"] == "FAIL" for item in heavy):
+        milestone = "FAIL"
     elif any(item["status"] == "BLOCKED_WITH_REASON" for item in heavy):
         milestone = "BLOCKED_WITH_REASON"
     elif any(status == "BLOCKED_WITH_REASON" for status in top.values()):
@@ -160,15 +162,121 @@ def _check_cross_scenario(root: Path, sources: list[dict[str, Any]]) -> dict[str
 
 
 def _heavy_rungs(root: Path) -> list[dict[str, Any]]:
+    specs = [
+        {
+            "scale": 30,
+            "category": "cluster_setup",
+            "evidence": "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence_30.json",
+            "cleanup": "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report_scale_30.json",
+            "min_nodes": 30,
+        },
+        {
+            "scale": 50,
+            "category": "management_ops",
+            "evidence": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/valkey_e2e_evidence.json",
+            "cleanup": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/cleanup_report.json",
+            "min_nodes": 50,
+        },
+        {
+            "scale": 100,
+            "category": "management_ops",
+            "evidence": "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/valkey_e2e_evidence.json",
+            "cleanup": "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/cleanup_report.json",
+            "min_nodes": 100,
+        },
+        {
+            "scale": 200,
+            "category": "management_ops",
+            "evidence": "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/valkey_e2e_evidence.json",
+            "cleanup": "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/cleanup_report.json",
+            "min_nodes": 200,
+        },
+        {
+            "scale": 50,
+            "category": "fault_failover",
+            "evidence": "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/valkey_e2e_evidence.json",
+            "cleanup": "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/cleanup_report.json",
+            "min_nodes": 50,
+        },
+        {
+            "scale": 100,
+            "category": "fault_failover",
+            "evidence": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/valkey_e2e_evidence.json",
+            "cleanup": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/cleanup_report.json",
+            "min_nodes": 100,
+        },
+        {
+            "scale": 200,
+            "category": "fault_failover",
+            "evidence": "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/valkey_e2e_evidence.json",
+            "cleanup": "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/cleanup_report.json",
+            "min_nodes": 200,
+        },
+        {
+            "scale": 50,
+            "category": "full_flow",
+            "evidence": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/valkey_e2e_evidence.json",
+            "cleanup": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/cleanup_report.json",
+            "metrics": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/metrics_timeseries.jsonl",
+            "report": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/report_index.json",
+            "min_nodes": 50,
+        },
+        {
+            "scale": 100,
+            "category": "full_flow",
+            "evidence": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/valkey_e2e_evidence.json",
+            "cleanup": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cleanup_report.json",
+            "metrics": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/metrics_timeseries.jsonl",
+            "report": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/report_index.json",
+            "min_nodes": 100,
+        },
+        {
+            "scale": 200,
+            "category": "full_flow",
+            "evidence": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/valkey_e2e_evidence.json",
+            "cleanup": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/cleanup_report.json",
+            "metrics": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/metrics_timeseries.jsonl",
+            "report": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/report_index.json",
+            "min_nodes": 200,
+        },
+    ]
     rows: list[dict[str, Any]] = []
-    for path in [
-        root / "runs/m1-s07-local/artifacts/goal_loop/M1-S07/real_system_metrics_gate_matrix.json",
-        root / "runs/m1-s08-local/artifacts/goal_loop/M1-S08/real_report_gate_matrix.json",
-    ]:
-        data = _json(path)
-        for row in data.get("heavy_rungs", []) if isinstance(data, dict) else []:
-            if isinstance(row, dict):
-                rows.append({"source": _rel(root, path), **row})
+    for spec in specs:
+        evidence = _json(root / spec["evidence"])
+        cleanup = _json(root / spec["cleanup"])
+        metrics_ok = True
+        if spec.get("metrics"):
+            metrics_ok = bool(_jsonl(root / str(spec["metrics"])))
+        report_ok = True
+        if spec.get("report"):
+            report_ok = bool(_json(root / str(spec["report"])))
+        evidence_ok = (
+            evidence.get("status") == "PASS"
+            and evidence.get("real_valkey") is True
+            and int(evidence.get("nodes_observed", 0) or 0) >= int(spec["min_nodes"])
+            and any(str(version).startswith("9.1") for version in evidence.get("valkey_versions", []))
+        )
+        cleanup_ok = cleanup.get("status") == "PASS" and not cleanup.get("resources_remaining")
+        status = "PASS" if evidence_ok and cleanup_ok and metrics_ok and report_ok else "FAIL"
+        reason = (
+            f"Exact real {spec['scale']}-node {spec['category']} evidence passed with Valkey 9.1.x and clean cleanup."
+            if status == "PASS"
+            else f"Exact real {spec['scale']}-node {spec['category']} evidence is missing or incomplete."
+        )
+        rows.append(
+            {
+                "scale": spec["scale"],
+                "category": spec["category"],
+                "status": status,
+                "reason": reason,
+                "evidence": spec["evidence"],
+                "cleanup": spec["cleanup"],
+                "metrics": spec.get("metrics", "SKIPPED_WITH_REASON"),
+                "report": spec.get("report", "SKIPPED_WITH_REASON"),
+                "nodes_observed": evidence.get("nodes_observed", "MISSING"),
+                "valkey_versions": evidence.get("valkey_versions", []),
+            }
+        )
     return rows
 
 

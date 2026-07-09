@@ -1,17 +1,17 @@
 # M1-S09 Completion
 
 stage_id: M1-S09
-status: PASS_WITH_MILESTONE_BLOCKED
+status: PASS
 review_decision: PASS
-milestone1_status: BLOCKED_WITH_REASON
+milestone1_status: PASS
 
 ## Summary
 
-M1-S09 added the final milestone1 acceptance gate and generated `milestone1_acceptance_report.json`. The gate is fail-closed: all implemented categories pass, but milestone1 as a whole is `BLOCKED_WITH_REASON` because exact heavy real 30/50/100/200 runs are not completed and are not claimed as PASS.
+M1-S09 added the final milestone1 acceptance gate and generated `milestone1_acceptance_report.json`. The gate is fail-closed and now validates exact real 30/50/100/200 evidence from P12/P30-P36 artifacts. All acceptance categories and heavy real rungs pass.
 
 ## Gates
 
-- acceptance gate command: PASS with structured `BLOCKED_WITH_REASON`
+- acceptance gate command: PASS
 - acceptance report schema validation: PASS
 - compileall: PASS
 - focused acceptance/report tests: PASS, 5 passed

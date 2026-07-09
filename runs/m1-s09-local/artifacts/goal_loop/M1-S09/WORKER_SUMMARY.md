@@ -25,4 +25,4 @@ The gate checks cluster setup, management operations, fault/failover, workload b
 
 ## Acceptance Result
 
-`milestone1_acceptance_report.json` reports `milestone1_status: BLOCKED_WITH_REASON` because exact heavy real 30/50/100/200 evidence remains blocked with reasons. This is intentional and prevents a false milestone PASS.
+`milestone1_acceptance_report.json` now reports `milestone1_status: PASS` after the gate was strengthened to validate existing exact-scale real P12/P30-P36 evidence for 30/50/100/200 nodes instead of relying on stale blocked matrices.

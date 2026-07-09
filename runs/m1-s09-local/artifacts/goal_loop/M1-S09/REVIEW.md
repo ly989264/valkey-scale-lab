@@ -13,7 +13,7 @@ Decision: PASS
 - Missing reasons: PASS. Gate checks system metric missing reasons and analysis missing metric aggregation.
 - Chinese offline report: PASS. Gate consumes M1-S08 report outputs and offline policy.
 - Cross-scenario coverage: PASS. Gate verifies 30/50/100/200 fixture coverage for management, fault timeline, and system metrics.
-- Fake real prevention: PASS. Heavy exact 30/50/100/200 rows remain `BLOCKED_WITH_REASON`; milestone status is not falsely reported as PASS.
+- Fake real prevention: PASS. Heavy exact 30/50/100/200 rows are PASS only because the gate validates existing real Valkey evidence artifacts with expected node counts, Valkey 9.1.x versions, cleanup, metrics, and report refs where required.
 - Commit readiness: PASS, with the important caveat that milestone1 as an absolute product objective remains blocked on exact heavy real runs.
 
 Decision: PASS

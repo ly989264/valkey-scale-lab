@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_milestone1_acceptance_gate_writes_structured_blocked_report(tmp_path: Path) -> None:
+def test_milestone1_acceptance_gate_writes_structured_report(tmp_path: Path) -> None:
     out = tmp_path / "milestone1_acceptance_report.json"
     result = subprocess.run(
         [
@@ -43,6 +43,8 @@ def test_milestone1_acceptance_gate_writes_structured_blocked_report(tmp_path: P
         "cross_scenario_coverage",
     ]:
         assert report[key] in {"PASS", "FAIL", "BLOCKED_WITH_REASON"}
-    blocked = [row for row in report["heavy_real_rungs"] if row["status"] == "BLOCKED_WITH_REASON"]
-    assert blocked
-    assert all(row.get("reason") for row in blocked)
+    assert report["heavy_real_rungs"]
+    assert all(row["status"] in {"PASS", "FAIL", "BLOCKED_WITH_REASON"} for row in report["heavy_real_rungs"])
+    assert all(row.get("reason") for row in report["heavy_real_rungs"])
+    if report["milestone1_status"] == "PASS":
+        assert all(row["status"] == "PASS" for row in report["heavy_real_rungs"])

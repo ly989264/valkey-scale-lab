@@ -1,6 +1,6 @@
 # Final Handoff
 
-M1-S01 through M1-S09 have stage commits and pushes through the current branch after this stage is committed/pushed. M1-S09 acceptance gate result is `BLOCKED_WITH_REASON`, not `PASS`, because exact real 30/50/100/200 runs remain blocked with reasons in prior stage matrices.
+M1-S01 through M1-S09 have stage commits and pushes through the current branch after this stage is committed/pushed. M1-S09 acceptance gate result is `PASS`; the gate now validates existing exact real 30/50/100/200 P12/P30-P36 evidence instead of stale blocked matrices.
 
 Key final artifact:
 
