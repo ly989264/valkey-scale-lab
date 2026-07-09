@@ -9,9 +9,10 @@ sys.path.insert(0, str(M1H))
 
 from assert_evidence_taxonomy import validate_manifest
 from assert_no_fixture_fallback import scan_fixture_fallbacks
-from assert_no_legacy_m1_pass import validate_no_legacy_pass
+from assert_no_legacy_m1_pass import validate_current_acceptance, validate_no_legacy_pass
 from assert_no_simulated_subagents import scan_stage_artifacts
-from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
+from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
+from build_acceptance_reset import build_acceptance_reset
 from capability_gate import evaluate_capability
 from common import gate_result_path, write_gate_result, write_json
 from manifest import REQUIRED_CLAIMS, build_manifest, claim_id
@@ -107,9 +108,107 @@ def test_legacy_pass_gate_rejects_nonpromotable_required_pass(tmp_path: Path) ->
             ]
         },
     )
-    write_json(acceptance_path, {"milestone1_status": "BLOCKED_WITH_REASON"})
-    violations, _blocked = validate_no_legacy_pass(manifest_path, acceptance_path)
-    assert {item["code"] for item in violations} == {"legacy_or_nonpromotable_pass"}
+    write_json(acceptance_path, _minimal_acceptance_reset(tmp_path, blocked_reason="blocked"))
+    violations, _blocked, _extra = validate_no_legacy_pass(manifest_path, acceptance_path)
+    assert "legacy_or_nonpromotable_pass" in {item["code"] for item in violations}
+
+
+def test_acceptance_reset_blocks_all_claims_from_manifest(tmp_path: Path) -> None:
+    manifest = build_manifest(tmp_path)
+    manifest_path = tmp_path / "runs" / "m1-hardening" / "evidence_manifest.json"
+    write_json(manifest_path, manifest)
+    report, violations = build_acceptance_reset(
+        tmp_path,
+        manifest_path,
+        stage_id="H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET",
+    )
+    assert not violations
+    assert report["artifact_type"] == "milestone1_acceptance_reset"
+    assert report["hardening_loop_status"] == "PASS"
+    assert report["milestone1_status"] == "BLOCKED_WITH_REASON"
+    assert report["false_pass_prevented"] is True
+    assert report["required_claim_count"] == len(REQUIRED_CLAIMS)
+    assert report["passed_claim_count"] == 0
+    assert report["blocked_claim_count"] == len(REQUIRED_CLAIMS)
+    assert all(claim["acceptance_status"] == "BLOCKED_WITH_REASON" for claim in report["claims"])
+    assert all(claim["reason"] for claim in report["claims"])
+
+
+def test_acceptance_reset_rejects_fixture_or_legacy_pass_count(tmp_path: Path) -> None:
+    manifest = build_manifest(tmp_path)
+    manifest["claims"][0].update(
+        {
+            "status": "PASS",
+            "evidence_kind": "FIXTURE_ONLY",
+            "source_artifacts": ["tests/fixtures/example.json"],
+            "semantic_checks": {"m1_format_fields_complete": True, "hardening_stage_accepted": True},
+        }
+    )
+    manifest["claims"][1].update(
+        {
+            "status": "PASS",
+            "evidence_kind": "LEGACY_EVIDENCE_ONLY",
+            "source_artifacts": ["artifacts/phases/legacy.json"],
+            "semantic_checks": {"m1_format_fields_complete": True, "hardening_stage_accepted": True},
+        }
+    )
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    report, violations = build_acceptance_reset(tmp_path, manifest_path, stage_id="H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET")
+    assert report["passed_claim_count"] == 0
+    assert report["failed_claim_count"] == 2
+    assert {item["code"] for item in violations} == {"nonpromotable_required_pass"}
+
+
+def test_current_acceptance_rejects_fixture_backed_pass(tmp_path: Path) -> None:
+    report = _minimal_acceptance_reset(tmp_path, blocked_reason="blocked")
+    first = report["claims"][0]
+    first.update(
+        {
+            "acceptance_status": "PASS",
+            "evidence_kind": "REAL_EXACT_SCALE",
+            "source_artifacts": ["tests/fixtures/unsafe.json"],
+            "semantic_checks": {"m1_format_fields_complete": True, "hardening_stage_accepted": True},
+        }
+    )
+    report["passed_claim_count"] = 1
+    report["blocked_claim_count"] = len(REQUIRED_CLAIMS) - 1
+    path = tmp_path / "acceptance.json"
+    violations, _blocked = validate_current_acceptance(report, path)
+    assert "acceptance_fixture_pass" in {item["code"] for item in violations}
+
+
+def test_historical_m1_pass_is_allowed_only_when_superseded(tmp_path: Path) -> None:
+    manifest_path = tmp_path / "manifest.json"
+    acceptance_path = tmp_path / "acceptance.json"
+    historical_path = tmp_path / "runs" / "m1-s09-local" / "artifacts" / "goal_loop" / "M1-S09" / "milestone1_acceptance_report.json"
+    write_json(manifest_path, build_manifest(tmp_path))
+    reset = _minimal_acceptance_reset(tmp_path, blocked_reason="blocked")
+    reset["supersedes"] = [historical_path.as_posix()]
+    write_json(acceptance_path, reset)
+    write_json(
+        historical_path,
+        {
+            "milestone1_status": "PASS",
+            "source_artifacts": [{"path": "tests/fixtures/unsafe.json"}],
+            "heavy_real_rungs": [{"status": "PASS", "metrics": "SKIPPED_WITH_REASON", "report": "SKIPPED_WITH_REASON"}],
+        },
+    )
+    violations, _blocked, extra = validate_no_legacy_pass(manifest_path, acceptance_path, historical_acceptance_path=historical_path)
+    assert not violations
+    assert extra["superseded_inputs"][0]["path"] == historical_path.as_posix()
+
+    reset.pop("supersedes")
+    write_json(acceptance_path, reset)
+    violations, _blocked, _extra = validate_no_legacy_pass(manifest_path, acceptance_path, historical_acceptance_path=historical_path)
+    assert "legacy_acceptance_fixture_pass" in {item["code"] for item in violations}
+
+
+def test_current_acceptance_rejects_missing_blocked_reason(tmp_path: Path) -> None:
+    report = _minimal_acceptance_reset(tmp_path, blocked_reason="blocked")
+    report["claims"][0]["reason"] = ""
+    violations, _blocked = validate_current_acceptance(report, tmp_path / "acceptance.json")
+    assert "acceptance_blocked_reason_missing" in {item["code"] for item in violations}
 
 
 def test_no_simulated_subagent_valid_and_forbidden_paths(tmp_path: Path) -> None:
@@ -166,6 +265,37 @@ def test_stage_exit_blocks_missing_artifacts_and_passes_complete_stage(tmp_path:
     assert not blocked
 
 
+def test_h01_stage_exit_requires_reset_gate_and_artifact(tmp_path: Path) -> None:
+    for script in REQUIRED_SCRIPTS:
+        path = tmp_path / "scripts" / "m1h" / script
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# script\n", encoding="utf-8")
+    write_json(tmp_path / "runs" / "m1-hardening" / "evidence_manifest.json", {"claims": []})
+    stage_id = "H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET"
+    stage = tmp_path / "runs" / "m1-hardening" / stage_id
+    for gate in H01_REQUIRED_GATE_RESULTS:
+        if gate == "build_acceptance_reset":
+            continue
+        write_json(
+            stage / "artifacts" / "gates" / f"{gate}.json",
+            _gate_payload(stage_id, gate),
+        )
+    for rel in ["agents/design.md", "agents/worker.md", "agents/review.md", "handoff/DESIGN_BRIEF.md", "handoff/WORKER_SUMMARY.md"]:
+        path = stage / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("ok\n", encoding="utf-8")
+    (stage / "handoff" / "REVIEW.md").write_text("Decision: PASS\n", encoding="utf-8")
+    violations, blocked = validate_stage_exit(tmp_path, stage_id)
+    assert any("build_acceptance_reset.json is missing" in item for item in blocked)
+    assert any("milestone1_acceptance_reset.json is missing" in item for item in blocked)
+
+    write_json(stage / "artifacts" / "gates" / "build_acceptance_reset.json", _gate_payload(stage_id, "build_acceptance_reset"))
+    write_json(stage / "artifacts" / "milestone1_acceptance_reset.json", _minimal_acceptance_reset(tmp_path, blocked_reason="blocked", stage_id=stage_id))
+    violations, blocked = validate_stage_exit(tmp_path, stage_id)
+    assert not violations
+    assert not blocked
+
+
 def test_capability_gate_pass_and_blocked(tmp_path: Path) -> None:
     pass_claim = {
         "claim_id": "management_matrix.real_exact.50",
@@ -201,3 +331,52 @@ def test_capability_gate_pass_and_blocked(tmp_path: Path) -> None:
     assert status == "BLOCKED_WITH_REASON"
     assert not violations
     assert blocked
+
+
+def _minimal_acceptance_reset(tmp_path: Path, *, blocked_reason: str, stage_id: str = "H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET") -> dict[str, object]:
+    claims = [
+        {
+            "claim_id": claim_id(capability, scale),
+            "capability": capability,
+            "scale": scale,
+            "required_for_milestone_pass": True,
+            "evidence_kind": "BLOCKED_WITH_REASON",
+            "source_status": "BLOCKED_WITH_REASON",
+            "acceptance_status": "BLOCKED_WITH_REASON",
+            "reason": blocked_reason,
+            "semantic_checks": {"exact_scale_observed": False},
+            "source_artifacts": [],
+        }
+        for capability, scale in REQUIRED_CLAIMS
+    ]
+    return {
+        "schema_version": "v1",
+        "artifact_type": "milestone1_acceptance_reset",
+        "stage_id": stage_id,
+        "hardening_loop_status": "PASS",
+        "milestone1_status": "BLOCKED_WITH_REASON",
+        "false_pass_prevented": True,
+        "required_claim_count": len(REQUIRED_CLAIMS),
+        "passed_claim_count": 0,
+        "blocked_claim_count": len(REQUIRED_CLAIMS),
+        "failed_claim_count": 0,
+        "claims": claims,
+        "missing_claims": [claim["claim_id"] for claim in claims],
+        "blocked_reasons": [blocked_reason],
+        "source_manifest": "runs/m1-hardening/evidence_manifest.json",
+    }
+
+
+def _gate_payload(stage_id: str, gate_name: str) -> dict[str, object]:
+    return {
+        "schema_version": "v1",
+        "artifact_type": "m1h_gate_result",
+        "stage_id": stage_id,
+        "gate_name": gate_name,
+        "status": "PASS",
+        "checked_at": "2026-01-01T00:00:00Z",
+        "inputs": [],
+        "violations": [],
+        "blocked_reasons": [],
+        "source_commit": "abc",
+    }

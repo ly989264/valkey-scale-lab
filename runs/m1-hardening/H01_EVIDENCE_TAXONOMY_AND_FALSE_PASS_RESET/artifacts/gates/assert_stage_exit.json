@@ -1,0 +1,15 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T04:07:27Z",
+  "gate_name": "assert_stage_exit",
+  "inputs": [
+    "runs/m1-hardening/evidence_manifest.json",
+    "runs/m1-hardening/H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET/artifacts/gates"
+  ],
+  "schema_version": "v1",
+  "source_commit": "c6e5fcdb18b1d4960c613f84a53b8c90109cc019",
+  "stage_id": "H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET",
+  "status": "PASS",
+  "violations": []
+}
