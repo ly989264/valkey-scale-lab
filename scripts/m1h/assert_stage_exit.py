@@ -8,6 +8,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from assert_final_milestone1_hardened import H10_ARTIFACT_TYPE, H10_STAGE_ID, validate_hardened_acceptance_contract
 from build_acceptance_reset import validate_acceptance_report
 from common import exit_code, print_gate_summary, read_json, violation, write_gate_result
 
@@ -91,6 +92,14 @@ H09_REQUIRED_GATE_RESULTS = [
     "assert_no_legacy_m1_pass",
     "assert_no_simulated_subagents",
 ]
+H10_REQUIRED_GATE_RESULTS = [
+    "build_evidence_manifest",
+    "assert_evidence_taxonomy",
+    "assert_final_milestone1_hardened",
+    "assert_no_fixture_fallback",
+    "assert_no_legacy_m1_pass",
+    "assert_no_simulated_subagents",
+]
 STAGE_REQUIRED_GATE_RESULTS = {
     "H00_BOOTSTRAP_HARD_GATES": H00_REQUIRED_GATE_RESULTS,
     "H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET": H01_REQUIRED_GATE_RESULTS,
@@ -102,6 +111,7 @@ STAGE_REQUIRED_GATE_RESULTS = {
     "H07_FAULT_FAILOVER_TIMELINE_REAL_PATH_HARDENING": H07_REQUIRED_GATE_RESULTS,
     "H08_SYSTEM_METRICS_REAL_WINDOW_HARDENING": H08_REQUIRED_GATE_RESULTS,
     "H09_CHINESE_REPORT_INPUT_QUALITY_HARDENING": H09_REQUIRED_GATE_RESULTS,
+    H10_STAGE_ID: H10_REQUIRED_GATE_RESULTS,
 }
 REQUIRED_SCRIPTS = [
     "build_evidence_manifest.py",
@@ -125,6 +135,12 @@ H01_REQUIRED_ACCEPTANCE_ARTIFACTS = [
 ]
 H02_REQUIRED_ACCEPTANCE_ARTIFACTS = [
     "artifacts/milestone1_acceptance_report.json",
+]
+H10_REQUIRED_ACCEPTANCE_ARTIFACTS = [
+    "artifacts/milestone1_hardened_acceptance.json",
+]
+H10_REQUIRED_FINAL_HANDOFF_ARTIFACTS = [
+    "handoff/FINAL_HANDOFF.md",
 ]
 REQUIRED_STAGE_ARTIFACTS = [
     "agents/design.md",
@@ -164,6 +180,16 @@ def validate_stage_exit(root: Path, stage_id: str) -> tuple[list[dict[str, Any]]
         for rel in H02_REQUIRED_ACCEPTANCE_ARTIFACTS:
             path = stage_root / rel
             _validate_h02_acceptance_report(root, path, violations, blocked)
+    if stage_id == H10_STAGE_ID:
+        for rel in H10_REQUIRED_ACCEPTANCE_ARTIFACTS:
+            path = stage_root / rel
+            _validate_h10_hardened_acceptance(root, path, violations, blocked)
+        for rel in H10_REQUIRED_FINAL_HANDOFF_ARTIFACTS:
+            path = stage_root / rel
+            if not path.exists():
+                blocked.append(f"runs/m1-hardening/{stage_id}/{rel} is missing.")
+            elif "milestone1_hardened_acceptance.json" not in path.read_text(encoding="utf-8"):
+                violations.append(violation("final_handoff_missing_acceptance_ref", "H10 final handoff must reference the hardened acceptance artifact.", path=str(path)))
     review_path = stage_root / "handoff" / "REVIEW.md"
     if review_path.exists() and "Decision: PASS" not in review_path.read_text(encoding="utf-8"):
         violations.append(violation("review_not_pass", "Review artifact exists but does not contain Decision: PASS.", path=str(review_path)))
@@ -239,6 +265,25 @@ def _validate_h02_acceptance_report(root: Path, path: Path, violations: list[dic
                 details={"actual": payload.get("milestone1_status")},
             )
         )
+
+
+def _validate_h10_hardened_acceptance(root: Path, path: Path, violations: list[dict[str, Any]], blocked: list[str]) -> None:
+    if not path.exists():
+        blocked.append(f"{path.as_posix()} is missing.")
+        return
+    payload = read_json(path)
+    if not isinstance(payload, dict):
+        violations.append(violation("hardened_acceptance_invalid_json", "H10 hardened acceptance is not valid JSON.", path=str(path)))
+        return
+    current_violations, _current_blocked = validate_acceptance_report(
+        root,
+        payload,
+        report_path=path,
+        expected_stage_id=H10_STAGE_ID,
+        expected_artifact_type=H10_ARTIFACT_TYPE,
+    )
+    violations.extend(current_violations)
+    violations.extend(validate_hardened_acceptance_contract(root, payload, report_path=path))
 
 
 def _validate_gate_result(path: Path, gate_name: str, stage_id: str, violations: list[dict[str, Any]], blocked: list[str]) -> None:
