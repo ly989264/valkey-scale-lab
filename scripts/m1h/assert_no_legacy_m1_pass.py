@@ -14,6 +14,7 @@ from manifest import ALLOWED_PASS_KINDS, REQUIRED_CLAIMS, claim_id
 GATE = "assert_no_legacy_m1_pass"
 H00_STAGE = "H00_BOOTSTRAP_HARD_GATES"
 H01_STAGE = "H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET"
+H02_STAGE = "H02_ACCEPTANCE_GATE_FAIL_CLOSED"
 DEFAULT_HISTORICAL_REPORT = "runs/m1-s09-local/artifacts/goal_loop/M1-S09/milestone1_acceptance_report.json"
 DISALLOWED_REQUIRED_PASS = {
     "LEGACY_EVIDENCE_ONLY",
@@ -258,10 +259,12 @@ def main() -> int:
         acceptance_default = args.acceptance_report
     elif args.stage == H01_STAGE:
         acceptance_default = f"runs/m1-hardening/{H01_STAGE}/artifacts/milestone1_acceptance_reset.json"
+    elif args.stage == H02_STAGE:
+        acceptance_default = f"runs/m1-hardening/{H02_STAGE}/artifacts/milestone1_acceptance_report.json"
     else:
         acceptance_default = DEFAULT_HISTORICAL_REPORT
     historical_default = args.historical_acceptance_report
-    if historical_default is None and args.stage == H01_STAGE:
+    if historical_default is None and args.stage in {H01_STAGE, H02_STAGE}:
         historical_default = DEFAULT_HISTORICAL_REPORT
 
     acceptance_path = Path(acceptance_default)
@@ -280,7 +283,7 @@ def main() -> int:
         extra["deferred_violations"] = violations
         violations = []
     status = "FAIL" if violations else "BLOCKED_WITH_REASON" if blocked else "PASS"
-    if args.stage in {H00_STAGE, H01_STAGE} and not violations:
+    if args.stage in {H00_STAGE, H01_STAGE, H02_STAGE} and not violations:
         status = "PASS"
     inputs = [str(manifest_path), str(acceptance_path)]
     if historical_path is not None:

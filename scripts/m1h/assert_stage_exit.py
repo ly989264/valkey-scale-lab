@@ -8,6 +8,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from build_acceptance_reset import validate_acceptance_report
 from common import exit_code, print_gate_summary, read_json, violation, write_gate_result
 
 GATE = "assert_stage_exit"
@@ -26,9 +27,18 @@ H01_REQUIRED_GATE_RESULTS = [
     "assert_no_legacy_m1_pass",
     "assert_no_simulated_subagents",
 ]
+H02_REQUIRED_GATE_RESULTS = [
+    "build_evidence_manifest",
+    "assert_evidence_taxonomy",
+    "assert_final_milestone1_hardened",
+    "assert_no_fixture_fallback",
+    "assert_no_legacy_m1_pass",
+    "assert_no_simulated_subagents",
+]
 STAGE_REQUIRED_GATE_RESULTS = {
     "H00_BOOTSTRAP_HARD_GATES": H00_REQUIRED_GATE_RESULTS,
     "H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET": H01_REQUIRED_GATE_RESULTS,
+    "H02_ACCEPTANCE_GATE_FAIL_CLOSED": H02_REQUIRED_GATE_RESULTS,
 }
 REQUIRED_SCRIPTS = [
     "build_evidence_manifest.py",
@@ -49,6 +59,9 @@ REQUIRED_SCRIPTS = [
 ]
 H01_REQUIRED_ACCEPTANCE_ARTIFACTS = [
     "artifacts/milestone1_acceptance_reset.json",
+]
+H02_REQUIRED_ACCEPTANCE_ARTIFACTS = [
+    "artifacts/milestone1_acceptance_report.json",
 ]
 REQUIRED_STAGE_ARTIFACTS = [
     "agents/design.md",
@@ -84,6 +97,10 @@ def validate_stage_exit(root: Path, stage_id: str) -> tuple[list[dict[str, Any]]
         for rel in H01_REQUIRED_ACCEPTANCE_ARTIFACTS:
             path = stage_root / rel
             _validate_h01_acceptance_reset(path, violations, blocked)
+    if stage_id == "H02_ACCEPTANCE_GATE_FAIL_CLOSED":
+        for rel in H02_REQUIRED_ACCEPTANCE_ARTIFACTS:
+            path = stage_root / rel
+            _validate_h02_acceptance_report(root, path, violations, blocked)
     review_path = stage_root / "handoff" / "REVIEW.md"
     if review_path.exists() and "Decision: PASS" not in review_path.read_text(encoding="utf-8"):
         violations.append(violation("review_not_pass", "Review artifact exists but does not contain Decision: PASS.", path=str(review_path)))
@@ -123,6 +140,42 @@ def _validate_h01_acceptance_reset(path: Path, violations: list[dict[str, Any]],
             violations.append(violation("acceptance_reset_unexpected_pass", "H01 reset cannot contain required claim PASS.", path=str(path), claim_id=str(claim.get("claim_id"))))
         if not isinstance(claim.get("reason"), str) or not claim.get("reason", "").strip():
             violations.append(violation("acceptance_reset_reason_missing", "H01 reset claim must include a reason.", path=str(path), claim_id=str(claim.get("claim_id"))))
+
+
+def _validate_h02_acceptance_report(root: Path, path: Path, violations: list[dict[str, Any]], blocked: list[str]) -> None:
+    if not path.exists():
+        blocked.append(f"{path.as_posix()} is missing.")
+        return
+    payload = read_json(path)
+    if not isinstance(payload, dict):
+        violations.append(violation("acceptance_report_invalid_json", "H02 acceptance report is not valid JSON.", path=str(path)))
+        return
+    current_violations, _current_blocked = validate_acceptance_report(
+        root,
+        payload,
+        report_path=path,
+        expected_stage_id="H02_ACCEPTANCE_GATE_FAIL_CLOSED",
+        expected_artifact_type="milestone1_acceptance_report",
+    )
+    violations.extend(current_violations)
+    if payload.get("hardening_loop_status") != "PASS":
+        violations.append(
+            violation(
+                "acceptance_report_hardening_not_pass",
+                "H02 acceptance report must prove fail-closed hardening logic passed.",
+                path=str(path),
+                details={"actual": payload.get("hardening_loop_status")},
+            )
+        )
+    if payload.get("milestone1_status") != "BLOCKED_WITH_REASON":
+        violations.append(
+            violation(
+                "acceptance_report_not_blocked",
+                "H02 current acceptance must remain blocked until exact-scale M1 claims are present.",
+                path=str(path),
+                details={"actual": payload.get("milestone1_status")},
+            )
+        )
 
 
 def _validate_gate_result(path: Path, gate_name: str, stage_id: str, violations: list[dict[str, Any]], blocked: list[str]) -> None:

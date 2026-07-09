@@ -9,7 +9,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from common import exit_code, print_gate_summary, read_json, relpath, violation, write_gate_result, write_json
-from manifest import ALLOWED_PASS_KINDS, REQUIRED_CLAIMS, claim_id
+from manifest import ALLOWED_PASS_KINDS, CAPABILITY_REQUIRED_CHECKS, REQUIRED_CLAIMS, claim_id
 
 GATE = "build_acceptance_reset"
 DEFAULT_HISTORICAL_REPORT = "runs/m1-s09-local/artifacts/goal_loop/M1-S09/milestone1_acceptance_report.json"
@@ -95,6 +95,157 @@ def build_acceptance_reset(
     return report, violations
 
 
+def validate_acceptance_report(
+    root: Path,
+    report: dict[str, Any],
+    *,
+    report_path: Path | None = None,
+    expected_stage_id: str | None = None,
+    expected_artifact_type: str | None = None,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Validate the C03 acceptance ledger and fail closed on unsafe PASS claims."""
+    violations: list[dict[str, Any]] = []
+    blocked: list[str] = []
+    path_text = relpath(root, report_path) if report_path else None
+    required_ids = {claim_id(capability, scale) for capability, scale in REQUIRED_CLAIMS}
+
+    expected_fields = {
+        "schema_version": "v1",
+        "hardening_loop_status": None,
+        "milestone1_status": None,
+        "false_pass_prevented": None,
+        "required_claim_count": None,
+        "passed_claim_count": None,
+        "blocked_claim_count": None,
+        "failed_claim_count": None,
+        "claims": None,
+    }
+    if expected_artifact_type is not None:
+        expected_fields["artifact_type"] = expected_artifact_type
+    if expected_stage_id is not None:
+        expected_fields["stage_id"] = expected_stage_id
+    for key, expected in expected_fields.items():
+        if key not in report:
+            violations.append(violation("acceptance_missing_c03_field", f"Acceptance report is missing C03 field {key}.", path=path_text))
+        elif expected is not None and report.get(key) != expected:
+            violations.append(
+                violation(
+                    "acceptance_bad_field",
+                    f"Acceptance report field {key} must be {expected!r}.",
+                    path=path_text,
+                    details={"actual": report.get(key)},
+                )
+            )
+
+    if report.get("hardening_loop_status") not in {"PASS", "FAIL", "BLOCKED_WITH_REASON"}:
+        violations.append(violation("acceptance_bad_status", "Acceptance report has invalid hardening_loop_status.", path=path_text))
+    if report.get("milestone1_status") not in {"PASS", "FAIL", "BLOCKED_WITH_REASON"}:
+        violations.append(violation("acceptance_bad_status", "Acceptance report has invalid milestone1_status.", path=path_text))
+
+    claims = report.get("claims")
+    if not isinstance(claims, list):
+        violations.append(violation("acceptance_claims_not_list", "Acceptance report claims must be a list.", path=path_text))
+        return violations, blocked
+
+    by_id: dict[str, dict[str, Any]] = {}
+    for claim in claims:
+        if not isinstance(claim, dict):
+            violations.append(violation("acceptance_claim_not_object", "Acceptance claim must be an object.", path=path_text))
+            continue
+        cid = str(claim.get("claim_id", ""))
+        if cid in by_id:
+            violations.append(violation("acceptance_duplicate_claim", "Acceptance report repeats a required claim.", path=path_text, claim_id=cid))
+        by_id[cid] = claim
+
+    missing = sorted(required_ids - set(by_id))
+    extra_required = sorted(
+        cid
+        for cid, claim in by_id.items()
+        if claim.get("required_for_milestone_pass") is True and cid not in required_ids
+    )
+    if missing:
+        violations.append(
+            violation(
+                "acceptance_required_claims_missing",
+                "Acceptance report omits required exact-scale claims.",
+                path=path_text,
+                details={"missing": missing},
+            )
+        )
+    if extra_required:
+        violations.append(
+            violation(
+                "acceptance_unknown_required_claims",
+                "Acceptance report contains unknown required milestone claims.",
+                path=path_text,
+                details={"unknown": extra_required},
+            )
+        )
+
+    counted = {"PASS": 0, "BLOCKED_WITH_REASON": 0, "FAIL": 0}
+    for cid in sorted(required_ids & set(by_id)):
+        claim = by_id[cid]
+        status = str(claim.get("acceptance_status", claim.get("status", "")))
+        if status not in counted:
+            violations.append(
+                violation(
+                    "acceptance_claim_bad_status",
+                    "Acceptance claim has invalid status.",
+                    path=path_text,
+                    claim_id=cid,
+                    details={"actual": status},
+                )
+            )
+            continue
+        counted[status] += 1
+        if claim.get("required_for_milestone_pass") is not True:
+            violations.append(violation("acceptance_required_flag_bad", "Required claim must be marked required_for_milestone_pass.", path=path_text, claim_id=cid))
+        if status == "PASS":
+            violations.extend(_pass_claim_violations(root, claim, path_text))
+        elif status == "BLOCKED_WITH_REASON":
+            reason = claim.get("reason")
+            if not isinstance(reason, str) or not reason.strip():
+                violations.append(violation("acceptance_blocked_reason_missing", "Blocked acceptance claim must include a reason.", path=path_text, claim_id=cid))
+            else:
+                blocked.append(f"{cid}: {reason}")
+
+    expected_counts = {
+        "required_claim_count": len(required_ids),
+        "passed_claim_count": counted["PASS"],
+        "blocked_claim_count": counted["BLOCKED_WITH_REASON"],
+        "failed_claim_count": counted["FAIL"],
+    }
+    for key, expected in expected_counts.items():
+        if report.get(key) != expected:
+            violations.append(
+                violation(
+                    "acceptance_count_mismatch",
+                    f"Acceptance report {key} does not match claim ledger.",
+                    path=path_text,
+                    details={"expected": expected, "actual": report.get(key)},
+                )
+            )
+
+    milestone = report.get("milestone1_status")
+    if milestone == "PASS" and counted["PASS"] != len(required_ids):
+        violations.append(violation("acceptance_false_pass", "Milestone PASS requires every required exact-scale claim to pass.", path=path_text))
+    if milestone == "BLOCKED_WITH_REASON" and counted["BLOCKED_WITH_REASON"] == 0:
+        violations.append(violation("acceptance_bad_blocked_status", "Blocked milestone status requires blocked claim reasons.", path=path_text))
+    if milestone == "FAIL" and counted["FAIL"] == 0:
+        violations.append(violation("acceptance_bad_fail_status", "Failed milestone status requires failed claims.", path=path_text))
+    if milestone != "PASS" and report.get("false_pass_prevented") is not True:
+        violations.append(violation("false_pass_not_prevented", "Blocked or failed milestone acceptance must set false_pass_prevented true.", path=path_text))
+    if milestone == "PASS" and report.get("false_pass_prevented") is not False:
+        violations.append(violation("false_pass_flag_bad", "Milestone PASS must set false_pass_prevented false.", path=path_text))
+
+    hardening = report.get("hardening_loop_status")
+    if violations and hardening == "PASS":
+        violations.append(violation("hardening_status_false_pass", "Hardening status cannot be PASS when acceptance violations are present.", path=path_text))
+    if counted["FAIL"] and hardening == "PASS":
+        violations.append(violation("hardening_status_false_pass", "Hardening status cannot be PASS when required claims failed.", path=path_text))
+    return violations, blocked
+
+
 def _reset_claim(root: Path, source: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     cid = str(source.get("claim_id", ""))
     kind = str(source.get("evidence_kind", ""))
@@ -104,13 +255,8 @@ def _reset_claim(root: Path, source: dict[str, Any]) -> tuple[dict[str, Any], li
     reason = source.get("reason") if isinstance(source.get("reason"), str) and source.get("reason").strip() else ""
     violations: list[dict[str, Any]] = []
 
-    pass_allowed = (
-        source_status == "PASS"
-        and kind in ALLOWED_PASS_KINDS
-        and semantic.get("m1_format_fields_complete") is True
-        and semantic.get("hardening_stage_accepted") is True
-        and not any(_is_fixture_source(str(item)) for item in sources)
-    )
+    failed_pass_checks = _failed_pass_checks(root, cid, kind, source_status, semantic, sources)
+    pass_allowed = source_status == "PASS" and not failed_pass_checks
     if pass_allowed:
         acceptance_status = "PASS"
         acceptance_reason = "Required exact-scale M1-format claim passed with promotable evidence."
@@ -128,6 +274,15 @@ def _reset_claim(root: Path, source: dict[str, Any]) -> tuple[dict[str, Any], li
                 details={"evidence_kind": kind, "source_status": source_status},
             )
         )
+        for check in failed_pass_checks:
+            violations.append(
+                violation(
+                    "required_pass_failed_semantics",
+                    "Required exact-scale claim attempted PASS without all mandatory semantics.",
+                    claim_id=cid,
+                    details=check,
+                )
+            )
     else:
         acceptance_status = "BLOCKED_WITH_REASON"
         acceptance_reason = reason or f"{cid} is missing required exact-scale M1-format evidence."
@@ -196,6 +351,59 @@ def _empty_report(
 
 def _is_fixture_source(source: str) -> bool:
     return "tests" in Path(source).parts and "fixtures" in Path(source).parts
+
+
+def _pass_claim_violations(root: Path, claim: dict[str, Any], path_text: str | None) -> list[dict[str, Any]]:
+    cid = str(claim.get("claim_id", ""))
+    kind = str(claim.get("evidence_kind", ""))
+    source_status = str(claim.get("source_status", claim.get("status", "PASS")))
+    semantic = claim.get("semantic_checks") if isinstance(claim.get("semantic_checks"), dict) else {}
+    sources = claim.get("source_artifacts") if isinstance(claim.get("source_artifacts"), list) else []
+    violations: list[dict[str, Any]] = []
+    for check in _failed_pass_checks(root, cid, kind, source_status, semantic, sources):
+        violations.append(
+            violation(
+                "acceptance_nonpromotable_pass",
+                "Acceptance PASS uses non-promotable evidence or incomplete semantics.",
+                path=path_text,
+                claim_id=cid,
+                details=check,
+            )
+        )
+    return violations
+
+
+def _failed_pass_checks(
+    root: Path,
+    cid: str,
+    kind: str,
+    source_status: str,
+    semantic: dict[str, Any],
+    sources: list[Any],
+) -> list[dict[str, Any]]:
+    failed: list[dict[str, Any]] = []
+    if source_status != "PASS":
+        failed.append({"check": "source_status", "expected": "PASS", "actual": source_status or "MISSING"})
+    if kind not in ALLOWED_PASS_KINDS:
+        failed.append({"check": "evidence_kind", "expected": sorted(ALLOWED_PASS_KINDS), "actual": kind or "MISSING"})
+    for check in ["m1_format_fields_complete", "hardening_stage_accepted", "exact_scale_observed"]:
+        if semantic.get(check) is not True:
+            failed.append({"check": check, "expected": True, "actual": semantic.get(check, "MISSING")})
+    capability = cid.split(".real_exact.", 1)[0] if ".real_exact." in cid else str(cid).split(".", 1)[0]
+    for check in CAPABILITY_REQUIRED_CHECKS.get(capability, []):
+        if semantic.get(check) is not True:
+            failed.append({"check": check, "expected": True, "actual": semantic.get(check, "MISSING")})
+    fixture_sources = [str(source) for source in sources if _is_fixture_source(str(source))]
+    if fixture_sources:
+        failed.append({"check": "no_fixture_path", "expected": True, "actual": False, "source_artifacts": fixture_sources})
+    skipped = [
+        name
+        for name, value in semantic.items()
+        if value in {"SKIPPED_WITH_REASON", "MISSING", "SKIPPED", "BLOCKED_WITH_REASON"}
+    ]
+    if skipped:
+        failed.append({"check": "no_skipped_semantics", "expected": True, "actual": skipped})
+    return failed
 
 
 def main() -> int:

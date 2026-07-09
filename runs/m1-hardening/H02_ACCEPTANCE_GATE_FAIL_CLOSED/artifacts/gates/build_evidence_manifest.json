@@ -1,0 +1,15 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T04:25:04Z",
+  "claim_count": 29,
+  "gate_name": "build_evidence_manifest",
+  "inputs": [
+    "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/runs/m1-hardening/evidence_manifest.json"
+  ],
+  "schema_version": "v1",
+  "source_commit": "577b37d3aaadc5bc87f81090b02014133d318b1f",
+  "stage_id": "H02_ACCEPTANCE_GATE_FAIL_CLOSED",
+  "status": "PASS",
+  "violations": []
+}

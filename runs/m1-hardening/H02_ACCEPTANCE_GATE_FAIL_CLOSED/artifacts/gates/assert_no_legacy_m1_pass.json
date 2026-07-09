@@ -1,0 +1,56 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [
+    "setup_telemetry.real_exact.50: legacy evidence is recorded but cannot satisfy M1 PASS until reconstructed or rerun.",
+    "setup_telemetry.real_exact.100: legacy evidence is recorded but cannot satisfy M1 PASS until reconstructed or rerun.",
+    "setup_telemetry.real_exact.200: legacy evidence is recorded but cannot satisfy M1 PASS until reconstructed or rerun.",
+    "cleanup.real_exact.100: cleanup.real_exact.100 only has non-promotable INVALID evidence.",
+    "cleanup.real_exact.200: cleanup.real_exact.200 only has non-promotable INVALID evidence.",
+    "cleanup.real_exact.30: cleanup.real_exact.30 only has non-promotable INVALID evidence.",
+    "cleanup.real_exact.50: cleanup.real_exact.50 only has non-promotable INVALID evidence.",
+    "command_audit.real_exact.100: command_audit.real_exact.100 only has non-promotable INVALID evidence.",
+    "command_audit.real_exact.200: command_audit.real_exact.200 only has non-promotable INVALID evidence.",
+    "command_audit.real_exact.50: command_audit.real_exact.50 only has non-promotable INVALID evidence.",
+    "fault_timeline.real_exact.100: fault_timeline.real_exact.100 only has non-promotable INVALID evidence.",
+    "fault_timeline.real_exact.200: fault_timeline.real_exact.200 only has non-promotable INVALID evidence.",
+    "fault_timeline.real_exact.50: fault_timeline.real_exact.50 only has non-promotable INVALID evidence.",
+    "management_matrix.real_exact.100: management_matrix.real_exact.100 only has non-promotable INVALID evidence.",
+    "management_matrix.real_exact.200: management_matrix.real_exact.200 only has non-promotable INVALID evidence.",
+    "management_matrix.real_exact.50: management_matrix.real_exact.50 only has non-promotable INVALID evidence.",
+    "report.real_exact.100: report.real_exact.100 only has non-promotable INVALID evidence.",
+    "report.real_exact.200: report.real_exact.200 only has non-promotable INVALID evidence.",
+    "report.real_exact.30: report.real_exact.30 is missing semantic checks: exact_scale_observed, report_index_present, accepted_inputs_only.",
+    "report.real_exact.50: report.real_exact.50 only has non-promotable INVALID evidence.",
+    "setup_telemetry.real_exact.100: setup_telemetry.real_exact.100 has historical real evidence, but it has not been accepted by the M1 hardening gate.",
+    "setup_telemetry.real_exact.200: setup_telemetry.real_exact.200 has historical real evidence, but it has not been accepted by the M1 hardening gate.",
+    "setup_telemetry.real_exact.30: setup_telemetry.real_exact.30 only has non-promotable INVALID evidence.",
+    "setup_telemetry.real_exact.50: setup_telemetry.real_exact.50 has historical real evidence, but it has not been accepted by the M1 hardening gate.",
+    "system_metrics.real_exact.100: system_metrics.real_exact.100 only has non-promotable INVALID evidence.",
+    "system_metrics.real_exact.200: system_metrics.real_exact.200 only has non-promotable INVALID evidence.",
+    "system_metrics.real_exact.30: system_metrics.real_exact.30 only has non-promotable FIXTURE_ONLY evidence.",
+    "system_metrics.real_exact.50: system_metrics.real_exact.50 only has non-promotable INVALID evidence.",
+    "workload_benchmark.real_exact.100: workload_benchmark.real_exact.100 only has non-promotable INVALID evidence.",
+    "workload_benchmark.real_exact.200: workload_benchmark.real_exact.200 only has non-promotable INVALID evidence.",
+    "workload_benchmark.real_exact.30: workload_benchmark.real_exact.30 only has non-promotable FIXTURE_ONLY evidence.",
+    "workload_benchmark.real_exact.50: workload_benchmark.real_exact.50 only has non-promotable INVALID evidence."
+  ],
+  "checked_at": "2026-07-09T04:25:14Z",
+  "gate_name": "assert_no_legacy_m1_pass",
+  "inputs": [
+    "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/runs/m1-hardening/evidence_manifest.json",
+    "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/runs/m1-hardening/H02_ACCEPTANCE_GATE_FAIL_CLOSED/artifacts/milestone1_acceptance_report.json",
+    "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/runs/m1-s09-local/artifacts/goal_loop/M1-S09/milestone1_acceptance_report.json"
+  ],
+  "schema_version": "v1",
+  "source_commit": "577b37d3aaadc5bc87f81090b02014133d318b1f",
+  "stage_id": "H02_ACCEPTANCE_GATE_FAIL_CLOSED",
+  "status": "PASS",
+  "superseded_inputs": [
+    {
+      "path": "runs/m1-s09-local/artifacts/goal_loop/M1-S09/milestone1_acceptance_report.json",
+      "reason": "Historical PASS report is superseded by current blocked hardening acceptance reset.",
+      "violation_count": 2
+    }
+  ],
+  "violations": []
+}

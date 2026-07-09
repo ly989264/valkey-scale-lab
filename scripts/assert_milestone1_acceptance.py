@@ -10,7 +10,7 @@ from typing import Any
 M1H = Path(__file__).resolve().parent / "m1h"
 sys.path.insert(0, str(M1H))
 
-from build_acceptance_reset import build_acceptance_reset
+from build_acceptance_reset import build_acceptance_reset, validate_acceptance_report
 from common import write_json
 from manifest import CAPABILITIES, REQUIRED_CLAIMS, build_manifest
 
@@ -68,6 +68,13 @@ def build_report(root: Path, manifest_path: Path) -> dict[str, Any]:
         historical_acceptance_report=None,
         artifact_type="milestone1_acceptance_report",
     )
+    validation_violations, _blocked = validate_acceptance_report(
+        root,
+        report,
+        expected_stage_id="M1-HARDENING",
+        expected_artifact_type="milestone1_acceptance_report",
+    )
+    violations = [*violations, *validation_violations]
     report["category_results"] = _category_results(report)
     report["heavy_real_rungs"] = _heavy_rungs(report)
     report["source_artifacts"] = _source_artifacts(report)

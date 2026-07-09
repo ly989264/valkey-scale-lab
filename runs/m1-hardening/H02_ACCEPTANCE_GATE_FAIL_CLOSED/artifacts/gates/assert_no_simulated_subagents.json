@@ -1,0 +1,15 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T04:28:13Z",
+  "gate_name": "assert_no_simulated_subagents",
+  "inputs": [
+    "runs/m1-hardening/H02_ACCEPTANCE_GATE_FAIL_CLOSED/agents",
+    "runs/m1-hardening/H02_ACCEPTANCE_GATE_FAIL_CLOSED/handoff"
+  ],
+  "schema_version": "v1",
+  "source_commit": "577b37d3aaadc5bc87f81090b02014133d318b1f",
+  "stage_id": "H02_ACCEPTANCE_GATE_FAIL_CLOSED",
+  "status": "PASS",
+  "violations": []
+}
