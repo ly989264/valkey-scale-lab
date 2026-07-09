@@ -13,14 +13,15 @@ from assert_no_legacy_m1_pass import validate_current_acceptance, validate_no_le
 from assert_no_simulated_subagents import scan_stage_artifacts
 from assert_setup_core_metrics import evaluate_setup_core_metrics
 from assert_final_milestone1_hardened import evaluate_final
-from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, H04_REQUIRED_GATE_RESULTS, H05_REQUIRED_GATE_RESULTS, H06_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
+from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, H04_REQUIRED_GATE_RESULTS, H05_REQUIRED_GATE_RESULTS, H06_REQUIRED_GATE_RESULTS, H07_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
+from assert_fault_timeline_real import evaluate_fault_timeline_real
 from build_acceptance_reset import build_acceptance_reset, validate_acceptance_report
 from capability_gate import evaluate_capability
 from assert_command_audit_real import evaluate_command_audit_real
 from assert_management_exact_scale import evaluate_management_exact_scale
 from assert_workload_benchmark_strength import evaluate_workload_benchmark_strength
 from common import gate_result_path, write_gate_result, write_json
-from manifest import C06_SETUP_CORE_METRICS, C07_REQUIRED_COMMAND_KINDS, H05_REQUIRED_MANAGEMENT_OPERATIONS, H06_REQUIRED_METRIC_ROW_COUNT, H06_REQUIRED_WORKLOAD_METRICS, H06_REQUIRED_WORKLOAD_PROFILES, H06_REQUIRED_WORKLOAD_WINDOWS, REQUIRED_CLAIMS, build_manifest, claim_id
+from manifest import C06_SETUP_CORE_METRICS, C07_REQUIRED_COMMAND_KINDS, H05_REQUIRED_MANAGEMENT_OPERATIONS, H06_REQUIRED_METRIC_ROW_COUNT, H06_REQUIRED_WORKLOAD_METRICS, H06_REQUIRED_WORKLOAD_PROFILES, H06_REQUIRED_WORKLOAD_WINDOWS, H07_REQUIRED_FAULT_TYPES, H07_REQUIRED_TIMELINE_EVENTS, H07_REQUIRED_TIMELINE_METRICS, REQUIRED_CLAIMS, build_manifest, claim_id
 
 
 def test_write_gate_result_shape(tmp_path: Path) -> None:
@@ -983,6 +984,375 @@ def test_h06_stage_exit_requires_workload_benchmark_gate(tmp_path: Path) -> None
     assert not blocked
 
 
+def test_fault_timeline_valid_exact_scale_can_pass_after_h07_hardening(tmp_path: Path) -> None:
+    _write_fault_timeline_exact_scale_evidence(tmp_path, 50)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "fault_timeline.real_exact.50")
+    assert claim["status"] == "PASS"
+    assert claim["evidence_kind"] == "REAL_EXACT_SCALE"
+    semantic = claim["semantic_checks"]
+    assert semantic["fault_required_types_present"] is True
+    assert semantic["fault_required_events_present"] is True
+    assert semantic["fault_required_metrics_numeric"] is True
+    assert semantic["workload_h06_dependency_accepted"] is True
+    assert semantic["cleanup_refs_resolve"] is True
+    assert semantic["clean_cluster_evidence"] is True
+    assert semantic["hardening_stage_accepted"] is True
+
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    violations, blocked, extra = evaluate_fault_timeline_real(manifest_path)
+    assert not violations
+    assert extra["passed_claims"] == ["fault_timeline.real_exact.50"]
+    assert any("fault_timeline.real_exact.100" in item for item in blocked)
+
+
+def test_fault_timeline_missing_report_events_or_samples_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    for missing_name, check in [
+        ("fault_timeline_report.json", "fault_timeline_report_present"),
+        ("fault_timeline_events.jsonl", "fault_timeline_events_present"),
+        ("failover_latency_samples.jsonl", "failover_latency_samples_present"),
+    ]:
+        root = tmp_path / missing_name
+        phase = _write_fault_timeline_exact_scale_evidence(root, 50)
+        (phase / missing_name).unlink()
+        claim = _claim(build_manifest(root), "fault_timeline.real_exact.50")
+        assert claim["status"] == "BLOCKED_WITH_REASON"
+        assert claim["semantic_checks"][check] is False
+        assert missing_name in claim["reason"]
+
+
+def test_fault_timeline_missing_fault_type_or_lifecycle_event_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    phase = _write_fault_timeline_exact_scale_evidence(tmp_path / "missing_fault", 50, omit_fault_type="network_loss")
+    claim = _claim(build_manifest(tmp_path / "missing_fault"), "fault_timeline.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["fault_required_types_present"] is False
+    assert "network_loss" in claim["reason"]
+
+    root = tmp_path / "missing_event"
+    phase = _write_fault_timeline_exact_scale_evidence(root, 50, omit_event=("primary_stop_failover", "promotion_observed"))
+    claim = _claim(build_manifest(root), "fault_timeline.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["fault_required_events_present"] is False
+    assert "promotion_observed" in claim["reason"]
+
+
+def test_fault_timeline_bad_metric_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    for mode in ["missing", "string", "skipped", "bool", "null"]:
+        root = tmp_path / mode
+        _write_fault_timeline_exact_scale_evidence(root, 50, metric_defect=mode)
+        claim = _claim(build_manifest(root), "fault_timeline.real_exact.50")
+        assert claim["status"] == "BLOCKED_WITH_REASON"
+        assert claim["semantic_checks"]["fault_required_metrics_numeric"] is False
+        assert "failover_latency_ms" in claim["reason"]
+
+
+def test_fault_timeline_partial_fake_or_non_real_status_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    for mode, check in [
+        ("report_partial", "fault_timeline_report_status_pass"),
+        ("row_partial", "fault_rows_status_pass"),
+        ("event_fake", "fault_execution_mode_real"),
+        ("row_non_real", "fault_rows_real_valkey"),
+    ]:
+        root = tmp_path / mode
+        _write_fault_timeline_exact_scale_evidence(root, 50, mode=mode)
+        claim = _claim(build_manifest(root), "fault_timeline.real_exact.50")
+        assert claim["status"] == "BLOCKED_WITH_REASON"
+        assert claim["semantic_checks"][check] is False
+
+
+def test_fault_timeline_scale_or_version_mismatch_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_fault_timeline_exact_scale_evidence(tmp_path / "scale", 50, valkey_nodes=49)
+    claim = _claim(build_manifest(tmp_path / "scale"), "fault_timeline.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["exact_scale_observed"] is False
+
+    _write_fault_timeline_exact_scale_evidence(tmp_path / "version", 50, valkey_versions=["9.0.9"])
+    claim = _claim(build_manifest(tmp_path / "version"), "fault_timeline.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["valkey_9_1_verified"] is False
+
+
+def test_fault_timeline_missing_workload_or_cleanup_refs_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    for mode, check in [("missing_workload_ref", "workload_refs_resolve"), ("missing_cleanup_ref", "cleanup_refs_resolve"), ("dirty_cleanup", "clean_cluster_evidence")]:
+        root = tmp_path / mode
+        _write_fault_timeline_exact_scale_evidence(root, 50, mode=mode)
+        claim = _claim(build_manifest(root), "fault_timeline.real_exact.50")
+        assert claim["status"] == "BLOCKED_WITH_REASON"
+        assert claim["semantic_checks"][check] is False
+
+
+def test_fault_timeline_h06_blocked_workload_dependency_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_fault_timeline_exact_scale_evidence(tmp_path, 50, h06_workload_defect=True)
+    claim = _claim(build_manifest(tmp_path), "fault_timeline.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["workload_h06_dependency_accepted"] is False
+    assert "H06 workload benchmark dependency" in claim["reason"]
+
+
+def test_fault_timeline_legacy_samples_not_accepted(tmp_path: Path) -> None:
+    phase = _write_fault_timeline_exact_scale_evidence(tmp_path, 50, mode="legacy_sample")
+    (phase / "fault_timeline_report.json").unlink()
+    (phase / "fault_timeline_events.jsonl").unlink()
+    claim = _claim(build_manifest(tmp_path), "fault_timeline.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["fault_timeline_report_present"] is False
+    assert claim["semantic_checks"]["no_legacy_fault_promotion"] is False
+
+
+def test_fault_timeline_split_directory_artifacts_cannot_be_spliced(tmp_path: Path) -> None:
+    phase = _write_fault_timeline_exact_scale_evidence(tmp_path, 50)
+    split = phase / "split"
+    split.mkdir(parents=True)
+    for name in ["fault_timeline_events.jsonl", "failover_latency_samples.jsonl", "workload_windows.json", "metrics_timeseries.jsonl", "cleanup_report.json", "valkey_e2e_evidence.json"]:
+        (split / name).write_text((phase / name).read_text(encoding="utf-8"), encoding="utf-8")
+        (phase / name).unlink()
+    claim = _claim(build_manifest(tmp_path), "fault_timeline.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["same_directory_bundle"] is False
+    assert "same directory" in claim["reason"]
+
+
+def test_fault_timeline_dedicated_gate_rejects_unsafe_pass_and_accepts_honest_blocked(tmp_path: Path) -> None:
+    manifest = build_manifest(tmp_path)
+    fault = _claim(manifest, "fault_timeline.real_exact.50")
+    fault.update(
+        {
+            "status": "PASS",
+            "evidence_kind": "REAL_EXACT_SCALE",
+            "source_artifacts": ["artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/fault_timeline_report.json"],
+            "semantic_checks": {"m1_format_fields_complete": True, "hardening_stage_accepted": True, "exact_scale_observed": True},
+        }
+    )
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    violations, _blocked, _extra = evaluate_fault_timeline_real(manifest_path)
+    assert "fault_pass_missing_artifact" in {item["code"] for item in violations}
+
+    manifest = build_manifest(tmp_path)
+    fault = _claim(manifest, "fault_timeline.real_exact.50")
+    fault.update(
+        {
+            "status": "PASS",
+            "evidence_kind": "REAL_EXACT_SCALE",
+            "source_artifacts": [
+                "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/fault_timeline_report.json",
+                "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/fault_timeline_events.jsonl",
+                "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/failover_latency_samples.jsonl",
+                "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/workload_windows.json",
+                "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/metrics_timeseries.jsonl",
+                "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/cleanup_report.json",
+                "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/valkey_e2e_evidence.json",
+            ],
+            "semantic_checks": _passing_semantic_checks("fault_timeline.real_exact.50"),
+            "diagnostics": {},
+        }
+    )
+    write_json(manifest_path, manifest)
+    violations, _blocked, _extra = evaluate_fault_timeline_real(manifest_path)
+    assert "fault_pass_h07_not_accepted" in {item["code"] for item in violations}
+
+    manifest = build_manifest(tmp_path)
+    write_json(manifest_path, manifest)
+    violations, blocked, extra = evaluate_fault_timeline_real(manifest_path)
+    assert not violations
+    assert extra["fault_claim_status"] == "BLOCKED_WITH_REASON"
+    assert len(blocked) == 3
+
+
+def test_h07_stage_exit_requires_fault_timeline_gate(tmp_path: Path) -> None:
+    _seed_stage_exit_base(tmp_path, "H07_FAULT_FAILOVER_TIMELINE_REAL_PATH_HARDENING", H07_REQUIRED_GATE_RESULTS)
+    gate = tmp_path / "runs" / "m1-hardening" / "H07_FAULT_FAILOVER_TIMELINE_REAL_PATH_HARDENING" / "artifacts" / "gates" / "assert_fault_timeline_real.json"
+    gate.unlink()
+    violations, blocked = validate_stage_exit(tmp_path, "H07_FAULT_FAILOVER_TIMELINE_REAL_PATH_HARDENING")
+    assert not violations
+    assert any("assert_fault_timeline_real.json is missing" in item for item in blocked)
+    write_json(gate, _gate_payload("H07_FAULT_FAILOVER_TIMELINE_REAL_PATH_HARDENING", "assert_fault_timeline_real"))
+    violations, blocked = validate_stage_exit(tmp_path, "H07_FAULT_FAILOVER_TIMELINE_REAL_PATH_HARDENING")
+    assert not violations
+    assert not blocked
+
+
+def _write_fault_timeline_exact_scale_evidence(
+    tmp_path: Path,
+    scale: int,
+    *,
+    omit_fault_type: str | None = None,
+    omit_event: tuple[str, str] | None = None,
+    metric_defect: str | None = None,
+    mode: str | None = None,
+    valkey_nodes: int | None = None,
+    valkey_versions: list[str] | None = None,
+    h06_workload_defect: bool = False,
+) -> Path:
+    phase_by_scale = {
+        50: "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+        100: "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+        200: "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+    }
+    phase = tmp_path / "artifacts" / "phases" / phase_by_scale[scale]
+    _write_workload_benchmark_exact_scale_evidence(
+        tmp_path,
+        scale,
+        base=phase,
+        metric_defect="string" if h06_workload_defect else None,
+    )
+    if valkey_nodes is not None or valkey_versions is not None:
+        _write_valkey_e2e_custom(phase, valkey_nodes if valkey_nodes is not None else scale, valkey_versions or ["9.1.0"])
+    cleanup_resources = [{"kind": "container", "name": "leftover"}] if mode == "dirty_cleanup" else []
+    write_json(
+        phase / "cleanup_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "cleanup_report",
+            "phase_id": phase_by_scale[scale],
+            "run_id": f"h07-{scale}",
+            "created_at": "2026-01-01T00:00:00Z",
+            "producer": {"name": "test", "version": "v1"},
+            "status": "FAIL" if cleanup_resources else "PASS",
+            "resources_remaining": cleanup_resources,
+            "cleanup_actions": [{"action": "cleanup", "status": "PASS"}],
+        },
+    )
+    events: list[dict[str, object]] = []
+    rows: list[dict[str, object]] = []
+    samples: list[dict[str, object]] = []
+    fault_types = [fault for fault in H07_REQUIRED_FAULT_TYPES if fault != omit_fault_type]
+    for fault_index, fault_type in enumerate(fault_types, start=1):
+        sample_id = f"h07-{scale}-{fault_type}"
+        fault_id = f"fault-{fault_index:02d}"
+        for event_index, event_name in enumerate(H07_REQUIRED_TIMELINE_EVENTS, start=1):
+            if omit_event == (fault_type, event_name):
+                continue
+            events.append(
+                {
+                    "schema_version": "v1",
+                    "artifact_type": "fault_timeline_event",
+                    "phase_id": phase_by_scale[scale],
+                    "run_id": f"h07-{scale}",
+                    "scenario_name": f"fault-{scale}",
+                    "sample_id": sample_id,
+                    "fault_id": fault_id,
+                    "fault_type": fault_type,
+                    "node_count": scale,
+                    "scale_rung": str(scale),
+                    "event_name": event_name,
+                    "event_status": "OBSERVED",
+                    "timestamp_unix_ms": 100000 + fault_index * 1000 + event_index,
+                    "monotonic_ms": float(fault_index * 1000 + event_index),
+                    "source": "test",
+                    "subject_type": "cluster",
+                    "subject_id": "cluster",
+                    "real_valkey": True,
+                    "execution_mode": "fake" if mode == "event_fake" and fault_index == 1 else "real_docker_valkey",
+                    "reason": "",
+                }
+            )
+        metrics: dict[str, object] = {metric: float(fault_index) for metric in H07_REQUIRED_TIMELINE_METRICS}
+        if metric_defect and fault_index == 1:
+            if metric_defect == "missing":
+                metrics.pop("failover_latency_ms")
+            elif metric_defect == "string":
+                metrics["failover_latency_ms"] = "1.0"
+            elif metric_defect == "skipped":
+                metrics["failover_latency_ms"] = {"status": "SKIPPED_WITH_REASON", "reason": "test"}
+            elif metric_defect == "bool":
+                metrics["failover_latency_ms"] = True
+            elif metric_defect == "null":
+                metrics["failover_latency_ms"] = None
+        workload_refs: list[str] = [] if mode == "missing_workload_ref" and fault_index == 1 else ["workload_windows.json"]
+        cleanup_ref = "missing_cleanup_report.json" if mode == "missing_cleanup_ref" and fault_index == 1 else "cleanup_report.json"
+        rows.append(
+            {
+                "schema_version": "v1",
+                "phase_id": phase_by_scale[scale],
+                "run_id": f"h07-{scale}",
+                "scenario_name": f"fault-{scale}",
+                "sample_id": sample_id,
+                "fault_id": fault_id,
+                "fault_type": fault_type,
+                "node_count": scale,
+                "scale_rung": str(scale),
+                "status": "PARTIAL" if mode == "row_partial" and fault_index == 1 else "PASS",
+                "execution_mode": "real_docker_valkey",
+                "real_valkey": False if mode == "row_non_real" and fault_index == 1 else True,
+                "timeline_status": "PARTIAL" if mode == "row_partial" and fault_index == 1 else "PASS",
+                "timeline_event_refs": [f"fault_timeline_events.jsonl#{sample_id}:{event}" for event in H07_REQUIRED_TIMELINE_EVENTS],
+                "metrics": metrics,
+                "metric_sources": {metric: "fault_timeline_events.jsonl+workload_windows.json" for metric in H07_REQUIRED_TIMELINE_METRICS},
+                "workload_window_refs": workload_refs,
+                "cleanup_ref": cleanup_ref,
+                "valkey_e2e_evidence_ref": "valkey_e2e_evidence.json",
+                "clean_cluster_evidence": {"status": "PASS", "ref": cleanup_ref},
+                "host_network_mutation": False,
+            }
+        )
+        samples.append(
+            {
+                "schema_version": "v1",
+                "phase_id": phase_by_scale[scale],
+                "node_count": scale,
+                "sample_id": sample_id,
+                "target_primary_logical_id": "node-0000",
+                "fault_injected_at_ms": 1000,
+                "replica_promoted_at_ms": 1010,
+                "slot_coverage_ok_at_ms": 1020,
+                "first_successful_read_at_ms": 1030,
+                "first_successful_write_at_ms": 1040,
+                "promotion_latency_ms": 10.0,
+                "cluster_recovery_latency_ms": 20.0,
+                "read_unavailability_ms": 30.0,
+                "write_unavailability_ms": 40.0,
+                "workload_impact_ref": "workload_windows.json",
+                "timeline_ref": f"fault_timeline_events.jsonl#{sample_id}",
+                "fault_type": fault_type,
+                "fault_id": fault_id,
+                "source_event_start": "failover_started",
+                "source_event_end": "cluster_recovered",
+                "derived_from_timeline": False if mode == "legacy_sample" and fault_index == 1 else True,
+                "workload_recovery_ref": "workload_windows.json",
+            }
+        )
+    _write_jsonl(phase / "fault_timeline_events.jsonl", events)
+    _write_jsonl(phase / "failover_latency_samples.jsonl", samples)
+    write_json(
+        phase / "fault_timeline_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "fault_timeline_report",
+            "phase_id": phase_by_scale[scale],
+            "run_id": f"h07-{scale}",
+            "status": "PARTIAL" if mode == "report_partial" else "PASS",
+            "required_fault_types": H07_REQUIRED_FAULT_TYPES,
+            "observed_fault_types": sorted(fault_types),
+            "required_scale_rungs": ["small", "30", "50", "100", "200"],
+            "observed_scale_rungs": [str(scale)],
+            "timeline_events_ref": "fault_timeline_events.jsonl",
+            "failover_latency_samples_ref": "failover_latency_samples.jsonl",
+            "fault_workload_impact_ref": "workload_windows.json",
+            "fault_rows": rows,
+            "missing_metrics": [],
+        },
+    )
+    return phase
+
+
+def _write_valkey_e2e_custom(phase: Path, nodes_observed: int, versions: list[str]) -> None:
+    write_json(
+        phase / "valkey_e2e_evidence.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "valkey_e2e_evidence",
+            "status": "PASS",
+            "real_valkey": True,
+            "nodes_requested": nodes_observed,
+            "nodes_observed": nodes_observed,
+            "cluster_state_observed": "ok",
+            "valkey_versions": versions,
+        },
+    )
+
+
 def _claim(manifest: dict[str, object], cid: str) -> dict[str, object]:
     for claim in manifest["claims"]:  # type: ignore[index]
         if isinstance(claim, dict) and claim.get("claim_id") == cid:
@@ -1747,7 +2117,32 @@ def _passing_semantic_checks(claim: str) -> dict[str, object]:
             "fake_or_partial_not_promoted",
             "no_fixture_workload_artifacts",
         ],
-        "fault_timeline": ["fault_timeline_present", "real_fault_events_present", "fake_or_partial_not_promoted"],
+        "fault_timeline": [
+            "real_valkey_verified",
+            "valkey_9_1_verified",
+            "same_directory_bundle",
+            "fault_timeline_report_present",
+            "fault_timeline_report_schema_valid",
+            "fault_timeline_report_status_pass",
+            "fault_timeline_events_present",
+            "fault_timeline_events_schema_valid",
+            "failover_latency_samples_present",
+            "failover_latency_samples_schema_valid",
+            "fault_required_types_present",
+            "fault_required_events_present",
+            "fault_required_metrics_numeric",
+            "fault_rows_status_pass",
+            "fault_rows_exact_scale",
+            "fault_rows_real_valkey",
+            "fault_execution_mode_real",
+            "workload_refs_resolve",
+            "workload_h06_dependency_accepted",
+            "cleanup_refs_resolve",
+            "clean_cluster_evidence",
+            "no_fixture_fault_artifacts",
+            "fake_or_partial_not_promoted",
+            "no_legacy_fault_promotion",
+        ],
         "system_metrics": ["system_windows_present", "core_metrics_present"],
         "report": ["report_index_present", "accepted_inputs_only"],
         "cleanup": ["cleanup_report_clean"],

@@ -122,6 +122,48 @@ H06_REQUIRED_WORKLOAD_METRICS = [
 ]
 H06_MIN_OPERATIONS_PER_WINDOW = 6
 H06_REQUIRED_METRIC_ROW_COUNT = len(H06_REQUIRED_WORKLOAD_PROFILES) * len(H06_REQUIRED_WORKLOAD_WINDOWS) * len(H06_REQUIRED_WORKLOAD_METRICS)
+H07_REQUIRED_FAULT_TYPES = [
+    "primary_stop_failover",
+    "replica_stop",
+    "node_host_stop",
+    "az_stop",
+    "network_delay",
+    "network_loss",
+    "network_flap",
+    "network_partition",
+    "minority_partition",
+    "majority_partition",
+    "split_brain_window_detection",
+    "fault_period_workload_impact",
+]
+H07_REQUIRED_TIMELINE_EVENTS = [
+    "fault_planned",
+    "fault_apply_started",
+    "fault_apply_completed",
+    "fault_effect_observed",
+    "cluster_impact_started",
+    "failover_started",
+    "promotion_observed",
+    "cluster_recovered",
+    "workload_recovered",
+    "fault_clear_started",
+    "fault_clear_completed",
+    "cleanup_verified",
+]
+H07_REQUIRED_TIMELINE_METRICS = [
+    "apply_duration_ms",
+    "effect_observed_delay_ms",
+    "cluster_impact_ms",
+    "failover_latency_ms",
+    "promotion_latency_ms",
+    "client_unavailability_ms",
+    "workload_recovery_ms",
+    "clear_duration_ms",
+    "cleanup_duration_ms",
+    "split_brain_window_ms",
+    "cluster_down_window_ms",
+]
+H07_BLOCKED_EXECUTION_MODES = {"fake", "fixture", "dry-run", "dry_run", "dryrun", "legacy", "partial"}
 
 REQUIRED_CLAIMS: list[tuple[str, int]] = [
     ("setup_telemetry", 30),
@@ -194,7 +236,17 @@ CAPABILITY_FILES = {
         "valkey_e2e_evidence.json",
     ],
     "workload_benchmark": ["workload_windows.json", "metrics_timeseries.jsonl", "valkey_e2e_evidence.json"],
-    "fault_timeline": ["fault_timeline_report.json", "fault_timeline_events.jsonl", "failover_latency_samples.jsonl", "fault_sequence.json", "fault_command_log.jsonl"],
+    "fault_timeline": [
+        "fault_timeline_report.json",
+        "fault_timeline_events.jsonl",
+        "failover_latency_samples.jsonl",
+        "fault_sequence.json",
+        "fault_command_log.jsonl",
+        "workload_windows.json",
+        "metrics_timeseries.jsonl",
+        "cleanup_report.json",
+        "valkey_e2e_evidence.json",
+    ],
     "system_metrics": ["system_metrics_report.json", "system_metrics_timeseries.jsonl", "metrics_timeseries.jsonl"],
     "report": ["report_index.json", "report.md", "index.html"],
     "cleanup": ["cleanup_report.json"],
@@ -279,7 +331,33 @@ CAPABILITY_REQUIRED_CHECKS = {
         "fake_or_partial_not_promoted",
         "no_fixture_workload_artifacts",
     ],
-    "fault_timeline": ["exact_scale_observed", "fault_timeline_present", "real_fault_events_present", "fake_or_partial_not_promoted"],
+    "fault_timeline": [
+        "real_valkey_verified",
+        "exact_scale_observed",
+        "valkey_9_1_verified",
+        "same_directory_bundle",
+        "fault_timeline_report_present",
+        "fault_timeline_report_schema_valid",
+        "fault_timeline_report_status_pass",
+        "fault_timeline_events_present",
+        "fault_timeline_events_schema_valid",
+        "failover_latency_samples_present",
+        "failover_latency_samples_schema_valid",
+        "fault_required_types_present",
+        "fault_required_events_present",
+        "fault_required_metrics_numeric",
+        "fault_rows_status_pass",
+        "fault_rows_exact_scale",
+        "fault_rows_real_valkey",
+        "fault_execution_mode_real",
+        "workload_refs_resolve",
+        "workload_h06_dependency_accepted",
+        "cleanup_refs_resolve",
+        "clean_cluster_evidence",
+        "no_fixture_fault_artifacts",
+        "fake_or_partial_not_promoted",
+        "no_legacy_fault_promotion",
+    ],
     "system_metrics": ["exact_scale_observed", "system_windows_present", "core_metrics_present"],
     "report": ["exact_scale_observed", "report_index_present", "accepted_inputs_only"],
     "cleanup": ["exact_scale_observed", "cleanup_report_clean"],
@@ -336,6 +414,9 @@ def build_claim(root: Path, capability: str, scale: int) -> dict[str, Any]:
     workload_diagnostics = semantic_checks.pop("workload_h06_acceptance", None)
     if workload_diagnostics is not None:
         diagnostics["workload_h06_acceptance"] = workload_diagnostics
+    fault_diagnostics = semantic_checks.pop("fault_h07_acceptance", None)
+    if fault_diagnostics is not None:
+        diagnostics["fault_h07_acceptance"] = fault_diagnostics
     claim: dict[str, Any] = {
         "claim_id": claim_id(capability, scale),
         "stage_id": "M1H",
@@ -402,9 +483,9 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         checks.update(workload_evaluation["checks"])
         checks["workload_h06_acceptance"] = workload_evaluation
     elif capability == "fault_timeline":
-        checks["fault_timeline_present"] = any("fault" in path.name for path in paths)
-        checks["real_fault_events_present"] = _jsonl_has_rows(paths, "fault") or "fault_sequence.json" in by_name
-        checks["fake_or_partial_not_promoted"] = not _contains_fake_or_partial(root, paths)
+        fault_evaluation = evaluate_fault_timeline_claim(root, scale, paths)
+        checks.update(fault_evaluation["checks"])
+        checks["fault_h07_acceptance"] = fault_evaluation
     elif capability == "system_metrics":
         checks["system_windows_present"] = any(path.name in {"system_metrics_timeseries.jsonl", "metrics_timeseries.jsonl"} for path in paths)
         checks["core_metrics_present"] = _jsonl_has_rows(paths, "metric")
@@ -425,6 +506,8 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         if capability == "management_matrix"
         else bool(checks.get("workload_h06_acceptance", {}).get("accepted"))
         if capability == "workload_benchmark"
+        else bool(checks.get("fault_h07_acceptance", {}).get("accepted"))
+        if capability == "fault_timeline"
         else False
     )
     return checks
@@ -1374,6 +1457,440 @@ def _workload_fake_or_partial_reasons(root: Path, paths: list[Path], workload: A
     return _dedupe(reasons)
 
 
+def evaluate_fault_timeline_claim(root: Path, scale: int, paths: list[Path]) -> dict[str, Any]:
+    non_fixture_paths = [path for path in paths if not _is_fixture_path(root, path)]
+    candidate_dirs = sorted({path.parent for path in non_fixture_paths}) or sorted({path.parent for path in paths})
+    best: dict[str, Any] | None = None
+    for directory in candidate_dirs:
+        bundle_paths = [path for path in paths if path.parent == directory]
+        candidate = _evaluate_fault_timeline_bundle(root, scale, bundle_paths)
+        if best is None or _fault_score(candidate["checks"]) > _fault_score(best["checks"]):
+            best = candidate
+    if best is not None:
+        return best
+    return {
+        "accepted": False,
+        "checks": _empty_fault_checks(False, False),
+        "reasons": ["No same-directory C09 fault timeline artifact bundle was found for this exact-scale claim."],
+        "report_path": None,
+        "events_path": None,
+        "samples_path": None,
+        "required_fault_types": H07_REQUIRED_FAULT_TYPES,
+        "required_timeline_events": H07_REQUIRED_TIMELINE_EVENTS,
+        "required_metrics": H07_REQUIRED_TIMELINE_METRICS,
+    }
+
+
+def _fault_score(checks: dict[str, bool]) -> int:
+    return sum(1 for value in checks.values() if value is True)
+
+
+def _empty_fault_checks(real_exact: bool, valkey_9_1: bool) -> dict[str, bool]:
+    return {
+        "same_directory_bundle": False,
+        "fault_timeline_report_present": False,
+        "fault_timeline_report_schema_valid": False,
+        "fault_timeline_report_status_pass": False,
+        "fault_timeline_events_present": False,
+        "fault_timeline_events_schema_valid": False,
+        "failover_latency_samples_present": False,
+        "failover_latency_samples_schema_valid": False,
+        "fault_required_types_present": False,
+        "fault_required_events_present": False,
+        "fault_required_metrics_numeric": False,
+        "fault_rows_status_pass": False,
+        "fault_rows_exact_scale": False,
+        "fault_rows_real_valkey": False,
+        "fault_execution_mode_real": False,
+        "workload_refs_resolve": False,
+        "workload_h06_dependency_accepted": False,
+        "cleanup_refs_resolve": False,
+        "clean_cluster_evidence": False,
+        "no_fixture_fault_artifacts": False,
+        "fake_or_partial_not_promoted": False,
+        "no_legacy_fault_promotion": False,
+        "real_valkey_exact_scale": real_exact,
+        "valkey_9_1_verified": valkey_9_1,
+    }
+
+
+def _evaluate_fault_timeline_bundle(root: Path, scale: int, paths: list[Path]) -> dict[str, Any]:
+    evidence = _best_evidence(root, paths)
+    real_exact = _real_valkey_exact_scale(evidence, scale)
+    valkey_9_1 = isinstance(evidence, dict) and any(str(version).startswith("9.1.") for version in evidence.get("valkey_versions", []))
+    checks = _empty_fault_checks(real_exact, valkey_9_1)
+    non_fixture_paths = [path for path in paths if not _is_fixture_path(root, path)]
+    by_name = {path.name: path for path in non_fixture_paths}
+    report_path = by_name.get("fault_timeline_report.json")
+    events_path = by_name.get("fault_timeline_events.jsonl")
+    samples_path = by_name.get("failover_latency_samples.jsonl")
+    workload_path = by_name.get("workload_windows.json")
+    metrics_path = by_name.get("metrics_timeseries.jsonl")
+    cleanup_path = by_name.get("cleanup_report.json")
+    valkey_path = by_name.get("valkey_e2e_evidence.json")
+    bundle_dir = next(iter(sorted({path.parent for path in paths})), None)
+    report = read_json(report_path) if report_path else {}
+    events, event_jsonl_reasons = _read_workload_jsonl_strict(root, events_path)
+    samples, sample_jsonl_reasons = _read_workload_jsonl_strict(root, samples_path)
+    cleanup = read_json(cleanup_path) if cleanup_path else {}
+    reasons: list[str] = []
+    has_fixture = any(_is_fixture_path(root, path) for path in paths)
+    has_non_fixture = bool(non_fixture_paths)
+
+    if not report_path:
+        reasons.append("fault_timeline_report.json is missing from the same directory as C09 fault timeline evidence.")
+    if not events_path:
+        reasons.append("fault_timeline_events.jsonl is missing from the same directory as C09 fault timeline evidence.")
+    if not samples_path:
+        reasons.append("failover_latency_samples.jsonl is missing from the same directory as C09 fault timeline evidence.")
+    if not valkey_path:
+        reasons.append("valkey_e2e_evidence.json is missing from the same directory as C09 fault timeline evidence.")
+    if not workload_path:
+        reasons.append("workload_windows.json is missing from the same directory as C09 fault timeline evidence.")
+    if not metrics_path:
+        reasons.append("metrics_timeseries.jsonl is missing from the same directory as C09 fault timeline evidence.")
+    if not cleanup_path:
+        reasons.append("cleanup_report.json is missing from the same directory as C09 fault timeline evidence.")
+    if has_fixture and not has_non_fixture:
+        reasons.append("Only fixture fault timeline artifacts were found; fixtures cannot satisfy exact-scale C09 fault timeline.")
+
+    report_schema_reasons = _schema_reasons(root, report_path, report, "fault_timeline_report.schema.json")
+    event_schema_reasons: list[str] = []
+    for index, event in enumerate(events):
+        event_schema_reasons.extend(_schema_reasons(root, events_path, event, "fault_timeline_event.schema.json", label=f"row {index + 1}"))
+    sample_schema_reasons: list[str] = []
+    for index, sample in enumerate(samples):
+        sample_schema_reasons.extend(_schema_reasons(root, samples_path, sample, "failover_latency_sample.schema.json", label=f"row {index + 1}"))
+
+    row_checks, row_reasons = _fault_row_reasons(root, scale, bundle_dir, report_path, report, events, samples)
+    event_checks, event_reasons = _fault_event_reasons(root, scale, events_path, events, report)
+    sample_checks, sample_reasons = _fault_sample_reasons(root, scale, samples_path, samples, report)
+    ref_checks, ref_reasons = _fault_ref_reasons(root, scale, bundle_dir, report, cleanup)
+    workload_eval = evaluate_workload_benchmark_claim(root, scale, paths)
+    cleanup_ok = isinstance(cleanup, dict) and cleanup.get("status") == "PASS" and cleanup.get("resources_remaining") == []
+    fake_partial_reasons = _fault_fake_or_partial_reasons(root, paths, report, events, samples)
+    legacy_reasons = _fault_legacy_reasons(paths, report, events, samples)
+
+    reasons.extend(report_schema_reasons)
+    reasons.extend(event_jsonl_reasons)
+    reasons.extend(event_schema_reasons)
+    reasons.extend(sample_jsonl_reasons)
+    reasons.extend(sample_schema_reasons)
+    reasons.extend(row_reasons)
+    reasons.extend(event_reasons)
+    reasons.extend(sample_reasons)
+    reasons.extend(ref_reasons)
+    reasons.extend(fake_partial_reasons)
+    reasons.extend(legacy_reasons)
+    if workload_eval.get("accepted") is not True:
+        reasons.append("Same-directory workload refs do not have an accepted H06 workload benchmark dependency.")
+        reasons.extend(str(reason) for reason in workload_eval.get("reasons", [])[:12])
+    if not cleanup_ok:
+        reasons.append("cleanup_report.json must be PASS with an empty resources_remaining array for exact-scale C09 fault timeline PASS.")
+    if not real_exact:
+        observed = evidence.get("nodes_observed") if isinstance(evidence, dict) else None
+        reasons.append(f"Real Valkey evidence is not an exact-scale PASS for {scale} nodes (nodes_observed={observed!r}).")
+    if not valkey_9_1:
+        reasons.append("Real Valkey evidence does not prove a Valkey 9.1.x version.")
+
+    checks.update(
+        {
+            "same_directory_bundle": all(path is not None for path in [report_path, events_path, samples_path, workload_path, metrics_path, cleanup_path, valkey_path]),
+            "fault_timeline_report_present": report_path is not None and isinstance(report, dict) and not _is_fixture_path(root, report_path),
+            "fault_timeline_report_schema_valid": not report_schema_reasons,
+            "fault_timeline_report_status_pass": isinstance(report, dict) and report.get("status") == "PASS",
+            "fault_timeline_events_present": events_path is not None and bool(events) and not _is_fixture_path(root, events_path),
+            "fault_timeline_events_schema_valid": bool(events) and not event_jsonl_reasons and not event_schema_reasons,
+            "failover_latency_samples_present": samples_path is not None and bool(samples) and not _is_fixture_path(root, samples_path),
+            "failover_latency_samples_schema_valid": bool(samples) and not sample_jsonl_reasons and not sample_schema_reasons and sample_checks["failover_latency_samples_schema_valid"],
+            **row_checks,
+            **event_checks,
+            **ref_checks,
+            "fault_execution_mode_real": row_checks["fault_execution_mode_real"] and not any("execution_mode" in reason for reason in event_reasons),
+            "workload_h06_dependency_accepted": workload_eval.get("accepted") is True,
+            "clean_cluster_evidence": cleanup_ok and ref_checks["clean_cluster_evidence"],
+            "no_fixture_fault_artifacts": not has_fixture or has_non_fixture,
+            "fake_or_partial_not_promoted": not fake_partial_reasons,
+            "no_legacy_fault_promotion": not legacy_reasons,
+            "real_valkey_exact_scale": real_exact,
+            "valkey_9_1_verified": valkey_9_1,
+        }
+    )
+    accepted = real_exact and valkey_9_1 and all(checks.values())
+    return {
+        "accepted": accepted,
+        "checks": checks,
+        "reasons": _dedupe(reasons),
+        "report_path": relpath(root, report_path) if report_path else None,
+        "events_path": relpath(root, events_path) if events_path else None,
+        "samples_path": relpath(root, samples_path) if samples_path else None,
+        "workload_h06_acceptance": workload_eval,
+        "required_fault_types": H07_REQUIRED_FAULT_TYPES,
+        "required_timeline_events": H07_REQUIRED_TIMELINE_EVENTS,
+        "required_metrics": H07_REQUIRED_TIMELINE_METRICS,
+    }
+
+
+def _fault_row_reasons(root: Path, scale: int, bundle_dir: Path | None, report_path: Path | None, report: Any, events: list[Any], samples: list[Any]) -> tuple[dict[str, bool], list[str]]:
+    reasons: list[str] = []
+    rows = report.get("fault_rows") if isinstance(report, dict) else None
+    if not isinstance(rows, list) or not rows:
+        return {
+            "fault_required_types_present": False,
+            "fault_required_metrics_numeric": False,
+            "fault_rows_status_pass": False,
+            "fault_rows_exact_scale": False,
+            "fault_rows_real_valkey": False,
+            "fault_execution_mode_real": False,
+        }, ["fault_timeline_report.json fault_rows must be a non-empty array."]
+    observed_fault_types = {str(row.get("fault_type")) for row in rows if isinstance(row, dict)}
+    missing_fault_types = sorted(set(H07_REQUIRED_FAULT_TYPES) - observed_fault_types)
+    if missing_fault_types:
+        reasons.append(f"fault_timeline_report.json is missing required C09 fault types: {', '.join(missing_fault_types)}.")
+    event_sample_ids = {str(event.get("sample_id")) for event in events if isinstance(event, dict)}
+    sample_ids = {str(sample.get("sample_id")) for sample in samples if isinstance(sample, dict)}
+    metrics_ok = True
+    rows_status_ok = True
+    exact_scale_ok = True
+    real_valkey_ok = True
+    execution_mode_ok = True
+    for index, row in enumerate(rows):
+        label = f"fault_timeline_report.json fault_rows[{index}]"
+        if not isinstance(row, dict):
+            reasons.append(f"{label} is not an object.")
+            metrics_ok = False
+            rows_status_ok = False
+            exact_scale_ok = False
+            real_valkey_ok = False
+            execution_mode_ok = False
+            continue
+        sample_id = str(row.get("sample_id", "MISSING"))
+        if row.get("status", row.get("timeline_status")) != "PASS" or row.get("timeline_status") != "PASS":
+            reasons.append(f"{label} {sample_id} status/timeline_status must both be PASS, not {row.get('status')!r}/{row.get('timeline_status')!r}.")
+            rows_status_ok = False
+        if row.get("node_count") != scale or row.get("scale_rung") != str(scale):
+            reasons.append(f"{label} {sample_id} does not match exact scale {scale}.")
+            exact_scale_ok = False
+        if row.get("real_valkey") is not True:
+            reasons.append(f"{label} {sample_id} real_valkey must be true.")
+            real_valkey_ok = False
+        mode = row.get("execution_mode")
+        if _fault_execution_mode_blocked(mode):
+            reasons.append(f"{label} {sample_id} execution_mode {mode!r} is not real C09 execution.")
+            execution_mode_ok = False
+        metrics = row.get("metrics")
+        if not isinstance(metrics, dict):
+            reasons.append(f"{label} {sample_id} metrics must be an object.")
+            metrics_ok = False
+        else:
+            for metric in H07_REQUIRED_TIMELINE_METRICS:
+                value = metrics.get(metric)
+                if not _is_non_negative_number(value):
+                    metrics_ok = False
+                    if _is_missing_placeholder(value):
+                        reasons.append(f"{label} {sample_id} metric {metric} is MISSING or SKIPPED_WITH_REASON.")
+                    else:
+                        reasons.append(f"{label} {sample_id} metric {metric} is missing or non-numeric.")
+        if sample_id not in event_sample_ids:
+            reasons.append(f"{label} {sample_id} has no matching fault_timeline_events.jsonl rows.")
+            rows_status_ok = False
+        if sample_id not in sample_ids:
+            reasons.append(f"{label} {sample_id} has no matching failover_latency_samples.jsonl row.")
+            rows_status_ok = False
+        for field in ["cleanup_ref", "valkey_e2e_evidence_ref"]:
+            if not _ref_resolves_to_bundle_file(root, bundle_dir, row.get(field)):
+                reasons.append(f"{label} {sample_id} {field} {row.get(field)!r} does not resolve in the same C09 bundle directory.")
+    return {
+        "fault_required_types_present": not missing_fault_types,
+        "fault_required_metrics_numeric": metrics_ok,
+        "fault_rows_status_pass": rows_status_ok,
+        "fault_rows_exact_scale": exact_scale_ok,
+        "fault_rows_real_valkey": real_valkey_ok,
+        "fault_execution_mode_real": execution_mode_ok,
+    }, _dedupe(reasons)
+
+
+def _fault_event_reasons(root: Path, scale: int, events_path: Path | None, events: list[Any], report: Any) -> tuple[dict[str, bool], list[str]]:
+    reasons: list[str] = []
+    rows = report.get("fault_rows") if isinstance(report, dict) and isinstance(report.get("fault_rows"), list) else []
+    events_by_sample: dict[str, list[dict[str, Any]]] = {}
+    for event in events:
+        if isinstance(event, dict):
+            events_by_sample.setdefault(str(event.get("sample_id", "MISSING")), []).append(event)
+    required_events_ok = bool(events_by_sample)
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        sample_id = str(row.get("sample_id", "MISSING"))
+        row_events = events_by_sample.get(sample_id, [])
+        observed_events = {str(event.get("event_name")) for event in row_events if event.get("event_status") == "OBSERVED"}
+        missing_events = sorted(set(H07_REQUIRED_TIMELINE_EVENTS) - observed_events)
+        if missing_events:
+            required_events_ok = False
+            reasons.append(f"fault_timeline_events.jsonl sample {sample_id} is missing observed C09 lifecycle events: {', '.join(missing_events)}.")
+    for index, event in enumerate(events):
+        label = f"{relpath(root, events_path) if events_path else 'fault_timeline_events.jsonl'} line {index + 1}"
+        if not isinstance(event, dict):
+            reasons.append(f"{label} is not a JSON object.")
+            required_events_ok = False
+            continue
+        if event.get("node_count") != scale or event.get("scale_rung") != str(scale):
+            reasons.append(f"{label} does not match exact scale {scale}.")
+            required_events_ok = False
+        if event.get("event_status") != "OBSERVED":
+            reasons.append(f"{label} event_status {event.get('event_status')!r} is not OBSERVED.")
+            required_events_ok = False
+        if event.get("real_valkey") is not True:
+            reasons.append(f"{label} real_valkey must be true.")
+            required_events_ok = False
+        if _fault_execution_mode_blocked(event.get("execution_mode")):
+            reasons.append(f"{label} execution_mode {event.get('execution_mode')!r} is not real C09 execution.")
+            required_events_ok = False
+        if not isinstance(event.get("timestamp_unix_ms"), int) or isinstance(event.get("timestamp_unix_ms"), bool):
+            reasons.append(f"{label} timestamp_unix_ms must be an integer for real C09 PASS.")
+            required_events_ok = False
+        if not _is_non_negative_number(event.get("monotonic_ms")):
+            reasons.append(f"{label} monotonic_ms must be numeric for real C09 PASS.")
+            required_events_ok = False
+    return {"fault_required_events_present": required_events_ok}, _dedupe(reasons)
+
+
+def _fault_sample_reasons(root: Path, scale: int, samples_path: Path | None, samples: list[Any], report: Any) -> tuple[dict[str, bool], list[str]]:
+    reasons: list[str] = []
+    rows = report.get("fault_rows") if isinstance(report, dict) and isinstance(report.get("fault_rows"), list) else []
+    row_sample_ids = {str(row.get("sample_id")) for row in rows if isinstance(row, dict)}
+    schema_ok = bool(samples)
+    for index, sample in enumerate(samples):
+        label = f"{relpath(root, samples_path) if samples_path else 'failover_latency_samples.jsonl'} line {index + 1}"
+        if not isinstance(sample, dict):
+            reasons.append(f"{label} is not a JSON object.")
+            schema_ok = False
+            continue
+        if sample.get("sample_id") not in row_sample_ids:
+            reasons.append(f"{label} sample_id {sample.get('sample_id')!r} is not present in fault_timeline_report.json.")
+            schema_ok = False
+        if sample.get("node_count") != scale:
+            reasons.append(f"{label} node_count {sample.get('node_count')!r} does not equal exact scale {scale}.")
+            schema_ok = False
+        if sample.get("derived_from_timeline") is not True:
+            reasons.append(f"{label} derived_from_timeline must be true; legacy latency samples cannot satisfy H07.")
+            schema_ok = False
+        for field in ["fault_injected_at_ms", "replica_promoted_at_ms", "slot_coverage_ok_at_ms", "first_successful_read_at_ms", "first_successful_write_at_ms"]:
+            if not (isinstance(sample.get(field), int) and not isinstance(sample.get(field), bool)):
+                reasons.append(f"{label} {field} must be an integer for real C09 PASS.")
+                schema_ok = False
+        for field in ["promotion_latency_ms", "cluster_recovery_latency_ms", "read_unavailability_ms", "write_unavailability_ms"]:
+            if not _is_non_negative_number(sample.get(field)):
+                reasons.append(f"{label} {field} must be numeric for real C09 PASS.")
+                schema_ok = False
+        for field in ["timeline_ref", "fault_type", "fault_id", "source_event_start", "source_event_end", "workload_recovery_ref", "workload_impact_ref"]:
+            if _is_missing_placeholder(sample.get(field)):
+                reasons.append(f"{label} {field} is missing.")
+                schema_ok = False
+    return {"failover_latency_samples_schema_valid": schema_ok}, _dedupe(reasons)
+
+
+def _fault_ref_reasons(root: Path, scale: int, bundle_dir: Path | None, report: Any, cleanup: Any) -> tuple[dict[str, bool], list[str]]:
+    reasons: list[str] = []
+    rows = report.get("fault_rows") if isinstance(report, dict) and isinstance(report.get("fault_rows"), list) else []
+    workload_refs_ok = bool(rows)
+    cleanup_refs_ok = bool(rows)
+    clean_cluster_ok = bool(rows)
+    for top_ref, expected_name in [
+        (report.get("timeline_events_ref") if isinstance(report, dict) else None, "fault_timeline_events.jsonl"),
+        (report.get("failover_latency_samples_ref") if isinstance(report, dict) else None, "failover_latency_samples.jsonl"),
+        (report.get("fault_workload_impact_ref") if isinstance(report, dict) else None, "workload_windows.json"),
+    ]:
+        if not _ref_resolves_to_bundle_file(root, bundle_dir, top_ref):
+            reasons.append(f"fault_timeline_report.json top-level ref {top_ref!r} does not resolve in the same C09 bundle directory.")
+        elif expected_name != "workload_windows.json" and Path(str(top_ref).split("#", 1)[0]).name != expected_name:
+            reasons.append(f"fault_timeline_report.json top-level ref {top_ref!r} must point to {expected_name}.")
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            continue
+        label = f"fault_timeline_report.json fault_rows[{index}] {row.get('sample_id', 'MISSING')}"
+        workload_refs = row.get("workload_window_refs")
+        if not isinstance(workload_refs, list) or not workload_refs:
+            reasons.append(f"{label} workload_window_refs is missing.")
+            workload_refs_ok = False
+        else:
+            for ref in workload_refs:
+                if not isinstance(ref, str) or not _ref_resolves_to_bundle_file(root, bundle_dir, ref):
+                    reasons.append(f"{label} workload ref {ref!r} does not resolve in the same C09 bundle directory.")
+                    workload_refs_ok = False
+        if not _ref_resolves_to_bundle_file(root, bundle_dir, row.get("cleanup_ref")):
+            reasons.append(f"{label} cleanup_ref {row.get('cleanup_ref')!r} does not resolve in the same C09 bundle directory.")
+            cleanup_refs_ok = False
+        clean = row.get("clean_cluster_evidence")
+        if not isinstance(clean, dict) or clean.get("status") != "PASS" or not _ref_resolves_to_bundle_file(root, bundle_dir, clean.get("ref")):
+            reasons.append(f"{label} clean_cluster_evidence must be PASS and resolve in the same C09 bundle directory.")
+            clean_cluster_ok = False
+    if not isinstance(cleanup, dict) or cleanup.get("status") != "PASS" or cleanup.get("resources_remaining") != []:
+        cleanup_refs_ok = False
+        clean_cluster_ok = False
+    return {
+        "workload_refs_resolve": workload_refs_ok,
+        "cleanup_refs_resolve": cleanup_refs_ok,
+        "clean_cluster_evidence": clean_cluster_ok,
+    }, _dedupe(reasons)
+
+
+def _fault_fake_or_partial_reasons(root: Path, paths: list[Path], report: Any, events: list[Any], samples: list[Any]) -> list[str]:
+    reasons: list[str] = []
+    if _contains_fake_or_partial(root, paths):
+        reasons.append("Fault timeline source path contains fake, partial, or fixture marker.")
+    payloads: list[Any] = [report, *events, *samples]
+    for payload in payloads:
+        if not isinstance(payload, dict):
+            continue
+        for key in ["status", "timeline_status", "evidence_kind", "evidence_class", "source_kind", "execution_mode"]:
+            value = payload.get(key)
+            if isinstance(value, str) and value.upper() in {"FAKE", "PARTIAL", "FIXTURE", "DRY_RUN", "DRY-RUN", "LEGACY"}:
+                reasons.append(f"Fault timeline artifact contains {key}={value!r}; fake, fixture, legacy, dry-run, or PARTIAL evidence cannot promote.")
+    return _dedupe(reasons)
+
+
+def _fault_legacy_reasons(paths: list[Path], report: Any, events: list[Any], samples: list[Any]) -> list[str]:
+    reasons: list[str] = []
+    path_names = {path.name for path in paths}
+    if "fault_sequence.json" in path_names and not {"fault_timeline_report.json", "fault_timeline_events.jsonl", "failover_latency_samples.jsonl"}.issubset(path_names):
+        reasons.append("Legacy fault_sequence.json evidence cannot satisfy H07 without a complete C09 timeline bundle.")
+    if not events and samples:
+        reasons.append("Legacy failover latency samples without C09 timeline events cannot satisfy H07.")
+    if isinstance(report, dict) and report.get("artifact_type") not in {None, "fault_timeline_report"}:
+        reasons.append("Fault report artifact is legacy or not a C09 fault_timeline_report.")
+    for sample in samples:
+        if isinstance(sample, dict) and sample.get("derived_from_timeline") is not True:
+            reasons.append("Legacy failover latency sample without derived_from_timeline=true cannot satisfy H07.")
+    return _dedupe(reasons)
+
+
+def _fault_execution_mode_blocked(value: Any) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return True
+    normalized = value.strip().lower()
+    return normalized in H07_BLOCKED_EXECUTION_MODES or any(token in normalized for token in H07_BLOCKED_EXECUTION_MODES)
+
+
+def _ref_resolves_to_bundle_file(root: Path, bundle_dir: Path | None, ref: Any) -> bool:
+    if bundle_dir is None or not isinstance(ref, str) or not ref.strip():
+        return False
+    ref_path = ref.split("#", 1)[0]
+    if not ref_path:
+        return False
+    candidate = Path(ref_path)
+    if not candidate.is_absolute():
+        if len(candidate.parts) >= 2 and candidate.parts[0] in {"artifacts", "runs", "tests"}:
+            candidate = root / candidate
+        else:
+            candidate = bundle_dir / candidate
+    try:
+        candidate.resolve().relative_to(bundle_dir.resolve())
+    except ValueError:
+        return False
+    return candidate.exists() and candidate.is_file()
+
+
 def _observed_evidence(workload: Any, rows: list[Any], *, top_keys: tuple[str, ...], evidence_key: str, row_metrics: set[str]) -> bool:
     if isinstance(workload, dict):
         if any(_positive_number(workload.get(key)) for key in top_keys):
@@ -2104,6 +2621,8 @@ def _evidence_kind(capability: str, source_artifacts: list[str], semantic_checks
         return "REAL_EXACT_SCALE"
     if capability == "workload_benchmark" and semantic_checks.get("workload_h06_acceptance", {}).get("accepted") is True:
         return "REAL_EXACT_SCALE"
+    if capability == "fault_timeline" and semantic_checks.get("fault_h07_acceptance", {}).get("accepted") is True:
+        return "REAL_EXACT_SCALE"
     if semantic_checks.get("real_valkey_verified") and semantic_checks.get("exact_scale_observed"):
         return "LEGACY_EVIDENCE_ONLY"
     if semantic_checks.get("real_valkey_verified"):
@@ -2140,6 +2659,11 @@ def _blocked_reason(capability: str, scale: int, evidence_kind: str, semantic_ch
         reasons = workload.get("reasons", []) if isinstance(workload, dict) else []
         if reasons:
             return f"{claim_id(capability, scale)} lacks H06 exact-scale workload benchmark evidence: {'; '.join(str(reason) for reason in reasons)}"
+    if capability == "fault_timeline":
+        fault = semantic_checks.get("fault_h07_acceptance")
+        reasons = fault.get("reasons", []) if isinstance(fault, dict) else []
+        if reasons:
+            return f"{claim_id(capability, scale)} lacks H07/C09 exact-scale fault timeline evidence: {'; '.join(str(reason) for reason in reasons)}"
     missing = [name for name in CAPABILITY_REQUIRED_CHECKS[capability] if semantic_checks.get(name) is not True]
     if evidence_kind == "LEGACY_EVIDENCE_ONLY":
         return f"{claim_id(capability, scale)} has historical real evidence, but it has not been accepted by the M1 hardening gate."
