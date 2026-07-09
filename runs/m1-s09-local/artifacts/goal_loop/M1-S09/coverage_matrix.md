@@ -1,0 +1,5 @@
+# M1-S09 Coverage Matrix
+
+| stage_id | change_id | field_or_behavior | execution_shape | scale_rung | functional_path | data_path | outcome_class | coverage_status | evidence_path | test_or_gate | missing_or_skipped_reason | owner_notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| M1-S09 | milestone1_acceptance_gate | final structured milestone1 status with per-category PASS/FAIL/BLOCKED | fake,unit,integration,smoke,real_local_run,dry_run,blocked_run,cleanup,failure_path | small_cluster,scale_30,scale_50,scale_100,scale_200,scale_200_plus_dry_run_planning | cluster_setup,management_ops,fault_failover,workload_benchmark,system_metrics,analysis,visual_report_zh,cleanup,cross_scenario_coverage | schema,artifact_reader,gate,regression_check,docs | success,blocked_run,missing_metric,empty_artifact,fake_real_failure | IN_PROGRESS | MISSING_WITH_REASON: worker not started | MISSING_WITH_REASON: worker not started | MISSING_WITH_REASON: worker not started | Gate must distinguish PASS from BLOCKED_WITH_REASON. |

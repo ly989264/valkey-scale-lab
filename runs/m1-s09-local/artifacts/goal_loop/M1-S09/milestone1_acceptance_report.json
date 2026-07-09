@@ -1,0 +1,225 @@
+{
+  "analysis": "PASS",
+  "artifact_type": "milestone1_acceptance_report",
+  "category_results": {
+    "analysis": {
+      "missing_count": 24,
+      "reason": "analysis summary exists and aggregates missing metric reasons",
+      "status": "PASS"
+    },
+    "cleanup": {
+      "reason": "cleanup report has no resources_remaining",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    "cluster_setup": {
+      "evidence_ref": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/valkey_e2e_evidence.json",
+      "reason": "bounded real local Valkey setup evidence",
+      "status": "PASS"
+    },
+    "cross_scenario_coverage": {
+      "missing": [],
+      "reason": "cross-scenario fixture coverage spans 30/50/100/200 for management, fault, and system metrics",
+      "status": "PASS"
+    },
+    "fault_failover": {
+      "event_count": 720,
+      "latency_sample_count": 60,
+      "reason": "fault timeline events, report, and failover latency samples are non-empty",
+      "status": "PASS"
+    },
+    "management_ops": {
+      "command_count": 11,
+      "operation_count": 11,
+      "reason": "management matrix and command log are non-empty",
+      "status": "PASS"
+    },
+    "system_metrics": {
+      "metric_count": 480,
+      "reason": "system metrics rows are non-empty and missing rows have reasons",
+      "status": "PASS"
+    },
+    "visual_report_zh": {
+      "asset_count": 11,
+      "export_count": 22,
+      "reason": "Chinese offline report exists with local assets/exports and no-LLM policy",
+      "status": "PASS"
+    },
+    "workload_benchmark": {
+      "metric_count": 1,
+      "reason": "workload windows and metrics timeseries are non-empty",
+      "status": "PASS"
+    }
+  },
+  "cleanup": "PASS",
+  "cluster_setup": "PASS",
+  "cross_scenario_coverage": "PASS",
+  "fault_failover": "PASS",
+  "heavy_real_rungs": [
+    {
+      "fixture_ref": "tests/fixtures/system_metrics/scale_30/system_metrics_timeseries.jsonl",
+      "reason": "M1-S07 implemented and verified the unified sampling contract with fixtures and a bounded real 6-node Valkey smoke. This turn did not run exact heavy scale system metrics gates because 30/50/100/200 require explicit resource preflight and a longer resource window; no PASS is claimed for these rungs.",
+      "required_before_milestone_acceptance": true,
+      "scale": 30,
+      "source": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/real_system_metrics_gate_matrix.json",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "fixture_ref": "tests/fixtures/system_metrics/scale_50/system_metrics_timeseries.jsonl",
+      "reason": "M1-S07 implemented and verified the unified sampling contract with fixtures and a bounded real 6-node Valkey smoke. This turn did not run exact heavy scale system metrics gates because 30/50/100/200 require explicit resource preflight and a longer resource window; no PASS is claimed for these rungs.",
+      "required_before_milestone_acceptance": true,
+      "scale": 50,
+      "source": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/real_system_metrics_gate_matrix.json",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "fixture_ref": "tests/fixtures/system_metrics/scale_100/system_metrics_timeseries.jsonl",
+      "reason": "M1-S07 implemented and verified the unified sampling contract with fixtures and a bounded real 6-node Valkey smoke. This turn did not run exact heavy scale system metrics gates because 30/50/100/200 require explicit resource preflight and a longer resource window; no PASS is claimed for these rungs.",
+      "required_before_milestone_acceptance": true,
+      "scale": 100,
+      "source": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/real_system_metrics_gate_matrix.json",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "fixture_ref": "tests/fixtures/system_metrics/scale_200/system_metrics_timeseries.jsonl",
+      "reason": "M1-S07 implemented and verified the unified sampling contract with fixtures and a bounded real 6-node Valkey smoke. This turn did not run exact heavy scale system metrics gates because 30/50/100/200 require explicit resource preflight and a longer resource window; no PASS is claimed for these rungs.",
+      "required_before_milestone_acceptance": true,
+      "scale": 200,
+      "source": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/real_system_metrics_gate_matrix.json",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "reason": "M1-S08 renderer is scale-generic and fixture-covered, but exact real 30/50/100/200 report generation depends on those source real runs and resource preflight artifacts; no heavy PASS is claimed in this stage.",
+      "required_before_milestone_acceptance": true,
+      "scale": 30,
+      "source": "runs/m1-s08-local/artifacts/goal_loop/M1-S08/real_report_gate_matrix.json",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "reason": "M1-S08 renderer is scale-generic and fixture-covered, but exact real 30/50/100/200 report generation depends on those source real runs and resource preflight artifacts; no heavy PASS is claimed in this stage.",
+      "required_before_milestone_acceptance": true,
+      "scale": 50,
+      "source": "runs/m1-s08-local/artifacts/goal_loop/M1-S08/real_report_gate_matrix.json",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "reason": "M1-S08 renderer is scale-generic and fixture-covered, but exact real 30/50/100/200 report generation depends on those source real runs and resource preflight artifacts; no heavy PASS is claimed in this stage.",
+      "required_before_milestone_acceptance": true,
+      "scale": 100,
+      "source": "runs/m1-s08-local/artifacts/goal_loop/M1-S08/real_report_gate_matrix.json",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "reason": "M1-S08 renderer is scale-generic and fixture-covered, but exact real 30/50/100/200 report generation depends on those source real runs and resource preflight artifacts; no heavy PASS is claimed in this stage.",
+      "required_before_milestone_acceptance": true,
+      "scale": 200,
+      "source": "runs/m1-s08-local/artifacts/goal_loop/M1-S08/real_report_gate_matrix.json",
+      "status": "BLOCKED_WITH_REASON"
+    }
+  ],
+  "management_ops": "PASS",
+  "milestone1_status": "BLOCKED_WITH_REASON",
+  "schema_version": "v1",
+  "source_artifacts": [
+    {
+      "path": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/valkey_e2e_evidence.json",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/management_ops_matrix.json",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s04-local/artifacts/command_log.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s06-local/artifacts/fault_timeline_events.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s06-local/artifacts/failover_latency_samples.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s05-local/artifacts/workload_windows.json",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s05-local/artifacts/metrics_timeseries.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/system_metrics_timeseries.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/system_metrics_report.json",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/analysis_summary.json",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s08-local/artifacts/goal_loop/M1-S08/reports/report_index.json",
+      "status": "PASS"
+    },
+    {
+      "path": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/cleanup_report.json",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/management_matrix/scale_30/management_ops_matrix.json",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/management_matrix/scale_50/management_ops_matrix.json",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/management_matrix/scale_100/management_ops_matrix.json",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/management_matrix/scale_200/management_ops_matrix.json",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/fault_timeline/scale_30/fault_timeline_events.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/fault_timeline/scale_50/fault_timeline_events.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/fault_timeline/scale_100/fault_timeline_events.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/fault_timeline/scale_200/fault_timeline_events.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/system_metrics/scale_30/system_metrics_timeseries.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/system_metrics/scale_50/system_metrics_timeseries.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/system_metrics/scale_100/system_metrics_timeseries.jsonl",
+      "status": "PASS"
+    },
+    {
+      "path": "tests/fixtures/system_metrics/scale_200/system_metrics_timeseries.jsonl",
+      "status": "PASS"
+    }
+  ],
+  "stage_id": "M1-S09",
+  "system_metrics": "PASS",
+  "visual_report_zh": "PASS",
+  "workload_benchmark": "PASS"
+}
