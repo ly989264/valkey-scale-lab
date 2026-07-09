@@ -1,0 +1,16 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T06:10:16Z",
+  "gate_name": "assert_no_fixture_fallback",
+  "inputs": [
+    "scripts/assert_milestone1_acceptance.py",
+    "scripts/m1h",
+    "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/runs/m1-hardening/evidence_manifest.json"
+  ],
+  "schema_version": "v1",
+  "source_commit": "ceb735053a4d1ca05a0084c286e19c67f0b7e800",
+  "stage_id": "H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING",
+  "status": "PASS",
+  "violations": []
+}

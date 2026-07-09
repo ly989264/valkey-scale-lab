@@ -85,6 +85,19 @@ C07_COMMAND_ROW_REQUIRED_FIELDS = {
     "host_network_mutated",
     "global_firewall_mutated",
 }
+H05_REQUIRED_MANAGEMENT_OPERATIONS = {
+    "create_cluster",
+    "meet_nodes",
+    "add_replica",
+    "remove_replica",
+    "remove_primary_drained_or_safe_replaced",
+    "remove_failed_node",
+    "reshard_slot_range",
+    "reshard_with_keys",
+    "rebalance_after_imbalance",
+    "rolling_restart_replica_first",
+    "rolling_restart_primary_safe",
+}
 
 REQUIRED_CLAIMS: list[tuple[str, int]] = [
     ("setup_telemetry", 30),
@@ -150,8 +163,11 @@ CAPABILITY_FILES = {
         "management_ops_matrix.json",
         "management_operation_results.jsonl",
         "management_topology_snapshots.jsonl",
+        "management_topology_diffs.jsonl",
         "management_workload_impact.json",
+        "workload_windows.json",
         "management_command_log.jsonl",
+        "valkey_e2e_evidence.json",
     ],
     "workload_benchmark": ["workload_windows.json", "metrics_timeseries.jsonl"],
     "fault_timeline": ["fault_timeline_report.json", "fault_timeline_events.jsonl", "failover_latency_samples.jsonl", "fault_sequence.json", "fault_command_log.jsonl"],
@@ -191,7 +207,32 @@ CAPABILITY_REQUIRED_CHECKS = {
         "summary_missing_or_skipped_empty",
         "empty_legacy_management_log_absent",
     ],
-    "management_matrix": ["exact_scale_observed", "management_matrix_present", "operation_semantics_present", "workload_telemetry_present"],
+    "management_matrix": [
+        "real_valkey_verified",
+        "exact_scale_observed",
+        "valkey_9_1_verified",
+        "management_matrix_present",
+        "management_matrix_schema_valid",
+        "management_matrix_status_pass",
+        "management_required_operations_present",
+        "operation_results_present",
+        "operation_results_schema_valid",
+        "operation_results_exact_scale",
+        "operation_semantics_present",
+        "topology_refs_resolve",
+        "topology_diff_present",
+        "topology_diff_schema_valid",
+        "topology_diff_refs_resolve",
+        "workload_telemetry_present",
+        "workload_artifacts_schema_valid",
+        "workload_metrics_numeric",
+        "workload_refs_resolve",
+        "command_refs_resolve",
+        "command_refs_c07_valid",
+        "command_refs_operation_traceable",
+        "topology_exact_health",
+        "no_fixture_management_artifacts",
+    ],
     "workload_benchmark": ["exact_scale_observed", "workload_windows_present", "qps_latency_error_metrics_present"],
     "fault_timeline": ["exact_scale_observed", "fault_timeline_present", "real_fault_events_present", "fake_or_partial_not_promoted"],
     "system_metrics": ["exact_scale_observed", "system_windows_present", "core_metrics_present"],
@@ -227,6 +268,9 @@ def build_claim(root: Path, capability: str, scale: int) -> dict[str, Any]:
             or (capability == "command_audit" and path.suffix == ".jsonl" and "command" in path.name)
         )
     ]
+    non_fixture_existing = [path for path in existing if not _is_fixture_path(root, path)]
+    if non_fixture_existing:
+        existing = non_fixture_existing
     source_artifacts = [relpath(root, path) for path in existing]
     semantic_checks = _semantic_checks(root, capability, scale, existing)
     evidence_kind = _evidence_kind(capability, source_artifacts, semantic_checks)
@@ -241,6 +285,9 @@ def build_claim(root: Path, capability: str, scale: int) -> dict[str, Any]:
     command_diagnostics = semantic_checks.pop("command_c07_acceptance", None)
     if command_diagnostics is not None:
         diagnostics["command_c07_acceptance"] = command_diagnostics
+    management_diagnostics = semantic_checks.pop("management_h05_acceptance", None)
+    if management_diagnostics is not None:
+        diagnostics["management_h05_acceptance"] = management_diagnostics
     claim: dict[str, Any] = {
         "claim_id": claim_id(capability, scale),
         "stage_id": "M1H",
@@ -299,17 +346,9 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         checks.update(command_evaluation["checks"])
         checks["command_c07_acceptance"] = command_evaluation
     elif capability == "management_matrix":
-        matrix = read_json(by_name.get("management_ops_matrix.json", Path()))
-        operations = matrix.get("operations", []) if isinstance(matrix, dict) else []
-        checks["management_matrix_present"] = bool(operations)
-        checks["operation_semantics_present"] = bool(operations) and all(
-            isinstance(row, dict)
-            and row.get("operation_status") == "PASS"
-            and row.get("real_execution_verified") is True
-            and row.get("command_log_ref")
-            for row in operations
-        )
-        checks["workload_telemetry_present"] = any(path.name == "workload_windows.json" for path in paths)
+        management_evaluation = evaluate_management_matrix_claim(root, scale, paths, evidence)
+        checks.update(management_evaluation["checks"])
+        checks["management_h05_acceptance"] = management_evaluation
     elif capability == "workload_benchmark":
         checks["workload_windows_present"] = "workload_windows.json" in by_name
         checks["qps_latency_error_metrics_present"] = _jsonl_has_rows(paths, "metric")
@@ -333,6 +372,8 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         if capability == "setup_telemetry"
         else bool(checks.get("command_c07_acceptance", {}).get("accepted"))
         if capability == "command_audit"
+        else bool(checks.get("management_h05_acceptance", {}).get("accepted"))
+        if capability == "management_matrix"
         else False
     )
     return checks
@@ -767,6 +808,522 @@ def _read_artifact_schema(root: Path, name: str) -> Any:
     return read_json(REPO_ROOT / "schemas" / "artifact" / name)
 
 
+def _schema_reasons(root: Path, path: Path | None, payload: Any, schema_name: str, *, label: str | None = None) -> list[str]:
+    if path is None:
+        return [f"{schema_name} cannot be validated because its artifact is missing."]
+    schema = _read_artifact_schema(root, schema_name)
+    if not isinstance(schema, dict):
+        return [f"schemas/artifact/{schema_name} is missing or invalid."]
+    prefix = relpath(root, path)
+    if label:
+        prefix = f"{prefix} {label}"
+    return [f"{prefix} schema: {error}" for error in _validate_json_schema(payload, schema)]
+
+
+def evaluate_management_matrix_claim(root: Path, scale: int, paths: list[Path], evidence: dict[str, Any] | None = None) -> dict[str, Any]:
+    non_fixture_paths = [path for path in paths if not _is_fixture_path(root, path)]
+    candidate_dirs = sorted({path.parent for path in non_fixture_paths}) or sorted({path.parent for path in paths})
+    best: dict[str, Any] | None = None
+    for directory in candidate_dirs:
+        bundle_paths = [path for path in paths if path.parent == directory]
+        candidate = _evaluate_management_matrix_bundle(root, scale, bundle_paths)
+        if best is None or _management_score(candidate["checks"]) > _management_score(best["checks"]):
+            best = candidate
+    if best is None:
+        evidence = evidence if isinstance(evidence, dict) else _best_evidence(root, paths)
+        real_exact = _real_valkey_exact_scale(evidence, scale)
+        valkey_9_1 = isinstance(evidence, dict) and any(str(version).startswith("9.1.") for version in evidence.get("valkey_versions", []))
+        checks = {
+            "management_matrix_present": False,
+            "management_matrix_schema_valid": False,
+            "management_matrix_status_pass": False,
+            "management_required_operations_present": False,
+            "operation_results_present": False,
+            "operation_results_schema_valid": False,
+            "operation_results_exact_scale": False,
+            "operation_semantics_present": False,
+            "topology_refs_resolve": False,
+            "topology_diff_present": False,
+            "topology_diff_schema_valid": False,
+            "topology_diff_refs_resolve": False,
+            "workload_telemetry_present": False,
+            "workload_artifacts_schema_valid": False,
+            "workload_metrics_numeric": False,
+            "workload_refs_resolve": False,
+            "command_refs_resolve": False,
+            "command_refs_c07_valid": False,
+            "command_refs_operation_traceable": False,
+            "topology_exact_health": False,
+            "no_fixture_management_artifacts": False,
+            "real_valkey_exact_scale": real_exact,
+            "valkey_9_1_verified": valkey_9_1,
+        }
+        return {
+            "accepted": False,
+            "checks": checks,
+            "reasons": ["No management matrix artifact bundle was found for this exact-scale claim."],
+            "matrix_path": None,
+            "results_path": None,
+            "required_operations": sorted(H05_REQUIRED_MANAGEMENT_OPERATIONS),
+        }
+    return best
+
+
+def _management_score(checks: dict[str, bool]) -> int:
+    return sum(1 for value in checks.values() if value is True)
+
+
+def _evaluate_management_matrix_bundle(root: Path, scale: int, paths: list[Path]) -> dict[str, Any]:
+    evidence = _best_evidence(root, paths)
+    real_exact = _real_valkey_exact_scale(evidence, scale)
+    valkey_9_1 = isinstance(evidence, dict) and any(str(version).startswith("9.1.") for version in evidence.get("valkey_versions", []))
+    non_fixture_paths = [path for path in paths if not _is_fixture_path(root, path)]
+    by_name = {path.name: path for path in non_fixture_paths}
+    matrix_path = by_name.get("management_ops_matrix.json")
+    results_path = by_name.get("management_operation_results.jsonl")
+    topology_path = by_name.get("management_topology_snapshots.jsonl")
+    topology_diff_path = by_name.get("management_topology_diffs.jsonl")
+    impact_path = by_name.get("management_workload_impact.json")
+    workload_windows_path = by_name.get("workload_windows.json")
+    command_log_path = by_name.get("management_command_log.jsonl")
+
+    matrix = read_json(matrix_path) if matrix_path else {}
+    results = _read_management_jsonl_strict(root, results_path)[0] if results_path else []
+    result_jsonl_reasons = _read_management_jsonl_strict(root, results_path)[1] if results_path else []
+    topology_rows, topology_reasons = _read_management_jsonl_strict(root, topology_path)
+    topology_diff_rows, topology_diff_jsonl_reasons = _read_management_jsonl_strict(root, topology_diff_path)
+    command_rows, command_reasons = _read_command_jsonl_strict(root, command_log_path)
+    impact = read_json(impact_path) if impact_path else {}
+    workload_windows = read_json(workload_windows_path) if workload_windows_path else {}
+
+    reasons: list[str] = []
+    if not matrix_path:
+        reasons.append("management_ops_matrix.json is missing for this exact-scale management claim.")
+    if not results_path:
+        reasons.append("management_operation_results.jsonl is missing for this exact-scale management claim.")
+    if not topology_path:
+        reasons.append("management_topology_snapshots.jsonl is missing for this exact-scale management claim.")
+    if not topology_diff_path:
+        reasons.append("management_topology_diffs.jsonl is missing for this exact-scale management claim.")
+    if not impact_path:
+        reasons.append("management_workload_impact.json is missing for this exact-scale management claim.")
+    if not workload_windows_path:
+        reasons.append("workload_windows.json is missing for this exact-scale management claim.")
+    if not command_log_path:
+        reasons.append("management_command_log.jsonl is missing for this exact-scale management claim.")
+    has_fixture = any(_is_fixture_path(root, path) for path in paths)
+    has_non_fixture = any(not _is_fixture_path(root, path) for path in paths)
+    if has_fixture and not has_non_fixture:
+        reasons.append("Fixture management artifacts were found and cannot satisfy exact-scale management matrix.")
+
+    matrix_checks, matrix_reasons = _management_matrix_reasons(root, matrix_path, matrix, scale)
+    result_checks, result_reasons = _management_result_reasons(root, results_path, results, scale)
+    topology_ok, topology_health_ok, topology_ref_reasons = _management_topology_ref_reasons(results, topology_rows, scale)
+    matrix_operations = matrix.get("operations", []) if isinstance(matrix, dict) and isinstance(matrix.get("operations"), list) else []
+    topology_diff_ok, topology_diff_schema_ok, topology_diff_ref_ok, topology_diff_reasons = _management_topology_diff_reasons(root, topology_diff_path, topology_diff_rows, results, matrix_operations)
+    workload_ok, workload_metrics_ok, workload_schema_ok, workload_reasons = _management_workload_reasons(root, impact_path, impact, workload_windows_path, workload_windows, results)
+    command_ok, command_c07_ok, command_trace_ok, command_ref_reasons = _management_command_ref_reasons(root, command_log_path, command_rows, matrix, results)
+    reasons.extend(matrix_reasons)
+    reasons.extend(result_reasons)
+    reasons.extend(result_jsonl_reasons)
+    reasons.extend(topology_reasons)
+    reasons.extend(topology_diff_jsonl_reasons)
+    reasons.extend(topology_diff_reasons)
+    reasons.extend(workload_reasons)
+    reasons.extend(command_reasons)
+    reasons.extend(command_ref_reasons)
+    reasons.extend(topology_ref_reasons)
+    if not real_exact:
+        observed = evidence.get("nodes_observed") if isinstance(evidence, dict) else None
+        reasons.append(f"Real Valkey evidence is not an exact-scale PASS for {scale} nodes (nodes_observed={observed!r}).")
+    if not valkey_9_1:
+        reasons.append("Real Valkey evidence does not prove a Valkey 9.1.x version.")
+
+    checks = {
+        **matrix_checks,
+        **result_checks,
+        "topology_refs_resolve": topology_ok,
+        "topology_diff_present": topology_diff_ok,
+        "topology_diff_schema_valid": topology_diff_schema_ok,
+        "topology_diff_refs_resolve": topology_diff_ref_ok,
+        "workload_telemetry_present": bool(impact_path and workload_windows_path),
+        "workload_artifacts_schema_valid": workload_schema_ok,
+        "workload_metrics_numeric": workload_metrics_ok,
+        "workload_refs_resolve": workload_ok,
+        "command_refs_resolve": command_ok,
+        "command_refs_c07_valid": command_c07_ok,
+        "command_refs_operation_traceable": command_trace_ok,
+        "topology_exact_health": topology_health_ok,
+        "no_fixture_management_artifacts": not has_fixture or has_non_fixture,
+        "real_valkey_exact_scale": real_exact,
+        "valkey_9_1_verified": valkey_9_1,
+    }
+    accepted = real_exact and valkey_9_1 and all(checks.values())
+    return {
+        "accepted": accepted,
+        "checks": checks,
+        "reasons": _dedupe(reasons),
+        "matrix_path": relpath(root, matrix_path) if matrix_path else None,
+        "results_path": relpath(root, results_path) if results_path else None,
+        "required_operations": sorted(H05_REQUIRED_MANAGEMENT_OPERATIONS),
+    }
+
+
+def _read_management_jsonl_strict(root: Path, path: Path | None) -> tuple[list[Any], list[str]]:
+    if path is None:
+        return [], []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        return [], [f"{relpath(root, path)} could not be read: {exc}."]
+    rows: list[Any] = []
+    reasons: list[str] = []
+    for line_no, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError as exc:
+            reasons.append(f"{relpath(root, path)} line {line_no} is invalid JSON: {exc.msg}.")
+            continue
+        if not isinstance(value, dict):
+            reasons.append(f"{relpath(root, path)} line {line_no} is not a JSON object.")
+        rows.append(value)
+    return rows, reasons
+
+
+def _management_matrix_reasons(root: Path, path: Path | None, matrix: Any, scale: int) -> tuple[dict[str, bool], list[str]]:
+    operations = matrix.get("operations", []) if isinstance(matrix, dict) else []
+    observed = {str(row.get("operation_name")) for row in operations if isinstance(row, dict)}
+    missing = sorted(H05_REQUIRED_MANAGEMENT_OPERATIONS - observed)
+    reasons: list[str] = []
+    schema_reasons = _schema_reasons(root, path, matrix, "management_ops_matrix.schema.json")
+    reasons.extend(schema_reasons)
+    if not isinstance(matrix, dict):
+        reasons.append("management_ops_matrix.json is missing or invalid JSON.")
+    else:
+        if matrix.get("artifact_type") != "management_ops_matrix":
+            reasons.append("management_ops_matrix.json artifact_type is not management_ops_matrix.")
+        if matrix.get("status") != "PASS":
+            reasons.append(f"management_ops_matrix.json status {matrix.get('status')!r} is not PASS.")
+        if missing:
+            reasons.append(f"management_ops_matrix.json is missing required operations: {', '.join(missing)}.")
+    for row in operations if isinstance(operations, list) else []:
+        if not isinstance(row, dict):
+            reasons.append("management_ops_matrix.operations contains a non-object row.")
+            continue
+        op = str(row.get("operation_name"))
+        if row.get("node_count") != scale:
+            reasons.append(f"matrix operation {op} node_count {row.get('node_count')!r} does not equal {scale}.")
+        if row.get("coverage_id") != f"{scale}.management.{op}":
+            reasons.append(f"matrix operation {op} coverage_id does not match exact scale {scale}.")
+        if row.get("operation_status") != "PASS":
+            reasons.append(f"matrix operation {op} operation_status {row.get('operation_status')!r} is not PASS.")
+        if row.get("real_execution_verified") is not True:
+            reasons.append(f"matrix operation {op} real_execution_verified is not true.")
+        if _is_missing_placeholder(row.get("command_log_ref")):
+            reasons.append(f"matrix operation {op} command_log_ref is missing.")
+        if not isinstance(row.get("topology_refs"), list) or not row.get("topology_refs"):
+            reasons.append(f"matrix operation {op} topology_refs is missing.")
+        if _is_missing_placeholder(row.get("workload_window_ref")):
+            reasons.append(f"matrix operation {op} workload_window_ref is missing.")
+    checks = {
+        "management_matrix_present": bool(operations),
+        "management_matrix_schema_valid": not schema_reasons,
+        "management_matrix_status_pass": isinstance(matrix, dict) and matrix.get("status") == "PASS",
+        "management_required_operations_present": not missing and bool(operations),
+    }
+    return checks, reasons
+
+
+def _management_result_reasons(root: Path, path: Path | None, rows: list[Any], scale: int) -> tuple[dict[str, bool], list[str]]:
+    observed = {str(row.get("operation_name")) for row in rows if isinstance(row, dict)}
+    missing = sorted(H05_REQUIRED_MANAGEMENT_OPERATIONS - observed)
+    reasons: list[str] = []
+    schema_reasons: list[str] = []
+    for index, row in enumerate(rows):
+        schema_reasons.extend(_schema_reasons(root, path, row, "management_operation_result.schema.json", label=f"row {index + 1}"))
+    reasons.extend(schema_reasons)
+    if not rows:
+        reasons.append("management_operation_results.jsonl has no operation rows.")
+    if missing:
+        reasons.append(f"management_operation_results.jsonl is missing required operations: {', '.join(missing)}.")
+    required_fields = {
+        "operation_id",
+        "operation_name",
+        "coverage_id",
+        "node_count",
+        "scale",
+        "operation_status",
+        "real_execution_verified",
+        "started_at_unix_ms",
+        "ended_at_unix_ms",
+        "duration_ms",
+        "command_ms",
+        "convergence_ms",
+        "cleanup_ms",
+        "cluster_state_before",
+        "cluster_state_after",
+        "cluster_known_nodes_before",
+        "cluster_known_nodes_after",
+        "slots_before",
+        "slots_after",
+        "workload_window_ref",
+        "topology_before_ref",
+        "topology_after_ref",
+        "command_log_ref",
+        "source_evidence_refs",
+    }
+    semantics_ok = bool(rows) and not missing
+    exact_scale_ok = bool(rows)
+    for index, row in enumerate(rows):
+        label = f"management_operation_results.jsonl row {index + 1}"
+        if not isinstance(row, dict):
+            reasons.append(f"{label} is not an object.")
+            semantics_ok = False
+            exact_scale_ok = False
+            continue
+        op = str(row.get("operation_name"))
+        for field in sorted(required_fields):
+            if field not in row or _is_missing_placeholder(row.get(field)):
+                reasons.append(f"{label} {op} required field {field} is missing.")
+                semantics_ok = False
+        if row.get("node_count") != scale or row.get("scale") != scale:
+            reasons.append(f"{label} {op} does not match exact scale {scale}.")
+            exact_scale_ok = False
+        if row.get("coverage_id") != f"{scale}.management.{op}":
+            reasons.append(f"{label} {op} coverage_id does not match exact scale {scale}.")
+            semantics_ok = False
+        if row.get("operation_status") != "PASS" or row.get("real_execution_verified") is not True:
+            reasons.append(f"{label} {op} is not a real PASS operation.")
+            semantics_ok = False
+        if row.get("cluster_state_before") != "ok" or row.get("cluster_state_after") != "ok":
+            reasons.append(f"{label} {op} cluster state before/after is not ok.")
+            semantics_ok = False
+        if row.get("cluster_known_nodes_before") != scale or row.get("cluster_known_nodes_after") != scale:
+            reasons.append(f"{label} {op} known nodes before/after do not equal exact scale {scale}.")
+            semantics_ok = False
+        if row.get("slots_before") != 16384 or row.get("slots_after") != 16384:
+            reasons.append(f"{label} {op} slots_before/after are not 16384.")
+            semantics_ok = False
+        for field in ["started_at_unix_ms", "ended_at_unix_ms"]:
+            if not (isinstance(row.get(field), int) and not isinstance(row.get(field), bool)):
+                reasons.append(f"{label} {op} {field} must be an integer.")
+                semantics_ok = False
+        if isinstance(row.get("started_at_unix_ms"), int) and isinstance(row.get("ended_at_unix_ms"), int):
+            if row["ended_at_unix_ms"] < row["started_at_unix_ms"]:
+                reasons.append(f"{label} {op} ended_at_unix_ms is earlier than started_at_unix_ms.")
+                semantics_ok = False
+        for field in ["duration_ms", "command_ms", "convergence_ms", "cleanup_ms"]:
+            if not _is_non_negative_number(row.get(field)):
+                reasons.append(f"{label} {op} {field} is missing or non-numeric.")
+                semantics_ok = False
+        if not isinstance(row.get("source_evidence_refs"), list) or not row.get("source_evidence_refs"):
+            reasons.append(f"{label} {op} source_evidence_refs is missing.")
+            semantics_ok = False
+    return {"operation_results_present": bool(rows), "operation_results_schema_valid": not schema_reasons, "operation_results_exact_scale": exact_scale_ok, "operation_semantics_present": semantics_ok}, reasons
+
+
+def _management_topology_ref_reasons(results: list[Any], topology_rows: list[Any], scale: int) -> tuple[bool, bool, list[str]]:
+    labels = {str(row.get("label")) for row in topology_rows if isinstance(row, dict) and row.get("label")}
+    labels.update(
+        f"{row.get('operation_id')}:{row.get('label')}"
+        for row in topology_rows
+        if isinstance(row, dict) and row.get("operation_id") and row.get("label")
+    )
+    labels.update(
+        f"{row.get('operation_id')}-{row.get('label')}"
+        for row in topology_rows
+        if isinstance(row, dict) and row.get("operation_id") and row.get("label")
+    )
+    reasons: list[str] = []
+    if not labels:
+        reasons.append("management_topology_snapshots.jsonl has no labelled snapshots.")
+    health_ok = True
+    for index, snapshot in enumerate(topology_rows):
+        if not isinstance(snapshot, dict):
+            health_ok = False
+            reasons.append(f"management_topology_snapshots.jsonl row {index + 1} is not an object.")
+            continue
+        nodes = snapshot.get("nodes")
+        if not isinstance(nodes, list) or len(nodes) != scale:
+            health_ok = False
+            reasons.append(f"topology snapshot {snapshot.get('operation_id')}:{snapshot.get('label')} has {len(nodes) if isinstance(nodes, list) else 'MISSING'} nodes, expected {scale}.")
+        slots = snapshot.get("slots")
+        slots_ok = slots == 16384 or (isinstance(slots, dict) and slots.get("assigned") == 16384 and slots.get("ok") == 16384 and slots.get("known_nodes") == scale and slots.get("cluster_state") == "ok")
+        if not slots_ok:
+            health_ok = False
+            reasons.append(f"topology snapshot {snapshot.get('operation_id')}:{snapshot.get('label')} slots is not 16384.")
+        for node in nodes if isinstance(nodes, list) else []:
+            if not isinstance(node, dict):
+                health_ok = False
+                continue
+            flags = node.get("flags", [])
+            if isinstance(flags, list) and any(str(flag).lower() in {"fail", "fail?", "pfail", "handshake", "noaddr"} for flag in flags):
+                health_ok = False
+                reasons.append(f"topology snapshot {snapshot.get('operation_id')}:{snapshot.get('label')} contains unhealthy node flags.")
+            if node.get("link_state") not in {None, "connected"}:
+                health_ok = False
+                reasons.append(f"topology snapshot {snapshot.get('operation_id')}:{snapshot.get('label')} contains non-connected link state.")
+    for row in results:
+        if not isinstance(row, dict):
+            continue
+        op = str(row.get("operation_name"))
+        for field in ["topology_before_ref", "topology_after_ref"]:
+            ref = row.get(field)
+            if not isinstance(ref, str) or ref not in labels:
+                reasons.append(f"management operation {op} {field} {ref!r} does not resolve to a topology snapshot label.")
+    ref_ok = not [reason for reason in reasons if "topology_before_ref" in reason or "topology_after_ref" in reason or "no labelled" in reason]
+    return ref_ok, health_ok, reasons
+
+
+def _management_workload_reasons(root: Path, impact_path: Path | None, impact: Any, workload_windows_path: Path | None, workload_windows: Any, results: list[Any]) -> tuple[bool, bool, bool, list[str]]:
+    reasons: list[str] = []
+    schema_reasons = [
+        *_schema_reasons(root, impact_path, impact, "workload_impact_report.schema.json"),
+        *_schema_reasons(root, workload_windows_path, workload_windows, "workload_windows.schema.json"),
+    ]
+    reasons.extend(schema_reasons)
+    if not isinstance(impact, dict) or impact.get("status") != "PASS":
+        reasons.append("management_workload_impact.json is missing or status is not PASS.")
+    if not isinstance(workload_windows, dict):
+        reasons.append("workload_windows.json is missing or invalid JSON.")
+        window_ids: set[str] = set()
+        metrics_ok = False
+    else:
+        windows = workload_windows.get("windows", [])
+        window_ids = set()
+        metrics_ok = isinstance(windows, list) and bool(windows)
+        for item in windows if isinstance(windows, list) else []:
+            if not isinstance(item, dict):
+                metrics_ok = False
+                continue
+            if item.get("window_id") or item.get("id"):
+                window_ids.add(str(item.get("window_id") or item.get("id")))
+            if item.get("operation_id") and item.get("window_name"):
+                window_ids.add(f"{item['operation_id']}:{item['window_name']}")
+            metrics = item.get("metrics") if isinstance(item.get("metrics"), dict) else item
+            for field in [
+                "achieved_qps",
+                "latency_p95_ms",
+                "error_rate",
+                "timeout_count",
+                "moved_count",
+                "ask_count",
+                "cluster_down_count",
+                "readonly_count",
+                "tryagain_count",
+                "connection_error_count",
+            ]:
+                if not _is_non_negative_number(metrics.get(field) if isinstance(metrics, dict) else None):
+                    metrics_ok = False
+                    reasons.append(f"workload window {item.get('operation_id')}:{item.get('window_name')} metric {field} is missing or non-numeric.")
+    impact_ops = {str(row.get("operation_id")) for row in impact.get("operations", [])} if isinstance(impact, dict) else set()
+    for row in results:
+        if not isinstance(row, dict):
+            continue
+        op_id = str(row.get("operation_id"))
+        ref = row.get("workload_window_ref")
+        if op_id not in impact_ops:
+            reasons.append(f"management operation {op_id} is missing from management_workload_impact operations.")
+        if not isinstance(ref, str) or ref not in window_ids:
+            reasons.append(f"management operation {op_id} workload_window_ref {ref!r} does not resolve to workload_windows.json.")
+    ref_reasons = [reason for reason in reasons if "workload_window_ref" in reason or "workload_impact" in reason or "workload_windows" in reason]
+    return not ref_reasons, metrics_ok, not schema_reasons, reasons
+
+
+def _management_topology_diff_reasons(root: Path, path: Path | None, diff_rows: list[Any], results: list[Any], matrix_operations: list[Any]) -> tuple[bool, bool, bool, list[str]]:
+    reasons: list[str] = []
+    schema_reasons: list[str] = []
+    if path is None:
+        return False, False, False, ["management_topology_diffs.jsonl is missing."]
+    if not diff_rows:
+        return False, False, False, ["management_topology_diffs.jsonl has no rows."]
+    by_operation = {str(row.get("operation_id")): row for row in diff_rows if isinstance(row, dict)}
+    for index, row in enumerate(diff_rows):
+        schema_reasons.extend(_schema_reasons(root, path, row, "management_topology_diff.schema.json", label=f"row {index + 1}"))
+    reasons.extend(schema_reasons)
+    result_by_operation = {str(row.get("operation_id")): row for row in results if isinstance(row, dict)}
+    for matrix_row in matrix_operations:
+        if not isinstance(matrix_row, dict):
+            continue
+        op_id = str(matrix_row.get("operation_id"))
+        diff_ref = matrix_row.get("topology_diff_ref")
+        if op_id not in by_operation:
+            reasons.append(f"management matrix topology diff missing operation_id {op_id}.")
+            continue
+        if diff_ref != f"management_topology_diffs.jsonl#{op_id}":
+            reasons.append(f"management matrix operation {op_id} topology_diff_ref {diff_ref!r} does not resolve to required diff ref.")
+        result = result_by_operation.get(op_id)
+        if isinstance(result, dict) and result.get("topology_diff_ref") != diff_ref:
+            reasons.append(f"management matrix operation {op_id} topology_diff_ref does not match operation result topology_diff_ref.")
+    for result in results:
+        if not isinstance(result, dict):
+            continue
+        op_id = str(result.get("operation_id"))
+        diff_ref = result.get("topology_diff_ref")
+        matrix_ref_ok = isinstance(diff_ref, str) and diff_ref
+        if op_id not in by_operation:
+            reasons.append(f"management topology diff missing operation_id {op_id}.")
+            continue
+        diff = by_operation[op_id]
+        if matrix_ref_ok and diff_ref != f"management_topology_diffs.jsonl#{op_id}":
+            reasons.append(f"management operation {op_id} topology_diff_ref {diff_ref!r} does not match required diff ref.")
+        if diff.get("before_snapshot_ref") != result.get("before_topology_snapshot_ref") or diff.get("after_snapshot_ref") != result.get("after_topology_snapshot_ref"):
+            reasons.append(f"management topology diff {op_id} before/after refs do not match operation result refs.")
+    ref_reasons = [reason for reason in reasons if "topology diff" in reason or "topology_diff_ref" in reason]
+    return bool(diff_rows), not schema_reasons, not ref_reasons, reasons
+
+
+def _management_command_ref_reasons(root: Path, command_log_path: Path | None, command_rows: list[Any], matrix: Any, results: list[Any]) -> tuple[bool, bool, bool, list[str]]:
+    command_by_id = {str(row.get("command_id")): row for row in command_rows if isinstance(row, dict) and row.get("command_id")}
+    command_ids = set(command_by_id)
+    reasons: list[str] = []
+    row_reasons = _command_row_reasons(root, command_log_path, command_rows)
+    jsonl_reasons = _read_command_jsonl_strict(root, command_log_path)[1]
+    output_reasons = _output_hash_reasons(root, command_log_path, command_rows)
+    placeholder_reasons = _placeholder_command_reasons(command_rows)
+    kind_reasons = _command_kind_argv_reasons(command_rows)
+    c07_ok = bool(command_rows) and not row_reasons and not jsonl_reasons and not output_reasons and not placeholder_reasons and not kind_reasons
+    reasons.extend(row_reasons)
+    reasons.extend(jsonl_reasons)
+    reasons.extend(output_reasons)
+    reasons.extend(placeholder_reasons)
+    reasons.extend(kind_reasons)
+    if not command_ids:
+        reasons.append("management_command_log.jsonl has no command ids.")
+    rows: list[Any] = []
+    if isinstance(matrix, dict) and isinstance(matrix.get("operations"), list):
+        rows.extend(matrix["operations"])
+    rows.extend(results)
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        op = str(row.get("operation_name"))
+        ref = row.get("command_log_ref")
+        refs = row.get("command_log_refs") if isinstance(row.get("command_log_refs"), list) else []
+        all_refs = [ref] if isinstance(ref, str) else []
+        all_refs.extend(str(item) for item in refs if isinstance(item, str))
+        if not all_refs:
+            reasons.append(f"management operation {op} has no command refs.")
+            continue
+        for item in all_refs:
+            if "#" not in item:
+                reasons.append(f"management operation {op} command ref {item!r} is file-level only; exact PASS requires a command id fragment.")
+                continue
+            command_id = item.rsplit("#", 1)[1]
+            if command_id not in command_ids:
+                reasons.append(f"management operation {op} command ref {item!r} does not resolve to management_command_log.jsonl.")
+                continue
+            command_operation = str(command_by_id[command_id].get("operation_id"))
+            row_operation = str(row.get("operation_id"))
+            if command_operation != row_operation:
+                reasons.append(f"management operation {op} command ref {item!r} points to operation_id {command_operation!r}, expected {row_operation!r}.")
+    ref_reasons = [reason for reason in reasons if "command ref" in reason or "no command ids" in reason]
+    trace_reasons = [reason for reason in reasons if "points to operation_id" in reason]
+    return not ref_reasons, c07_ok, not trace_reasons, reasons
+
+
 def _summary_missing_or_skipped_reasons(summary: Any) -> list[str]:
     if not isinstance(summary, dict):
         return ["command_audit_summary.json is missing or invalid, so missing_or_skipped cannot be checked."]
@@ -1114,6 +1671,8 @@ def _evidence_kind(capability: str, source_artifacts: list[str], semantic_checks
         return "REAL_EXACT_SCALE"
     if capability == "command_audit" and semantic_checks.get("command_c07_acceptance", {}).get("accepted") is True:
         return "REAL_EXACT_SCALE"
+    if capability == "management_matrix" and semantic_checks.get("management_h05_acceptance", {}).get("accepted") is True:
+        return "REAL_EXACT_SCALE"
     if semantic_checks.get("real_valkey_verified") and semantic_checks.get("exact_scale_observed"):
         return "LEGACY_EVIDENCE_ONLY"
     if semantic_checks.get("real_valkey_verified"):
@@ -1140,6 +1699,11 @@ def _blocked_reason(capability: str, scale: int, evidence_kind: str, semantic_ch
         reasons = command.get("reasons", []) if isinstance(command, dict) else []
         if reasons:
             return f"{claim_id(capability, scale)} lacks C07 exact-scale command audit evidence: {'; '.join(str(reason) for reason in reasons)}"
+    if capability == "management_matrix":
+        management = semantic_checks.get("management_h05_acceptance")
+        reasons = management.get("reasons", []) if isinstance(management, dict) else []
+        if reasons:
+            return f"{claim_id(capability, scale)} lacks H05 exact-scale management matrix evidence: {'; '.join(str(reason) for reason in reasons)}"
     missing = [name for name in CAPABILITY_REQUIRED_CHECKS[capability] if semantic_checks.get(name) is not True]
     if evidence_kind == "LEGACY_EVIDENCE_ONLY":
         return f"{claim_id(capability, scale)} has historical real evidence, but it has not been accepted by the M1 hardening gate."

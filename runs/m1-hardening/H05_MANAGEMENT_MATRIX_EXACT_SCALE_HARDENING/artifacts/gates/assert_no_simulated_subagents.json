@@ -1,0 +1,15 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T06:14:50Z",
+  "gate_name": "assert_no_simulated_subagents",
+  "inputs": [
+    "runs/m1-hardening/H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING/agents",
+    "runs/m1-hardening/H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING/handoff"
+  ],
+  "schema_version": "v1",
+  "source_commit": "ceb735053a4d1ca05a0084c286e19c67f0b7e800",
+  "stage_id": "H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING",
+  "status": "PASS",
+  "violations": []
+}

@@ -13,12 +13,13 @@ from assert_no_legacy_m1_pass import validate_current_acceptance, validate_no_le
 from assert_no_simulated_subagents import scan_stage_artifacts
 from assert_setup_core_metrics import evaluate_setup_core_metrics
 from assert_final_milestone1_hardened import evaluate_final
-from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, H04_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
+from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, H04_REQUIRED_GATE_RESULTS, H05_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
 from build_acceptance_reset import build_acceptance_reset, validate_acceptance_report
 from capability_gate import evaluate_capability
 from assert_command_audit_real import evaluate_command_audit_real
+from assert_management_exact_scale import evaluate_management_exact_scale
 from common import gate_result_path, write_gate_result, write_json
-from manifest import C06_SETUP_CORE_METRICS, C07_REQUIRED_COMMAND_KINDS, REQUIRED_CLAIMS, build_manifest, claim_id
+from manifest import C06_SETUP_CORE_METRICS, C07_REQUIRED_COMMAND_KINDS, H05_REQUIRED_MANAGEMENT_OPERATIONS, REQUIRED_CLAIMS, build_manifest, claim_id
 
 
 def test_write_gate_result_shape(tmp_path: Path) -> None:
@@ -743,6 +744,113 @@ def test_h04_stage_exit_requires_command_audit_gate(tmp_path: Path) -> None:
     assert not blocked
 
 
+def test_management_matrix_valid_exact_scale_can_pass_after_h05_hardening(tmp_path: Path) -> None:
+    _write_management_exact_scale_evidence(tmp_path, 50)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "management_matrix.real_exact.50")
+    assert claim["status"] == "PASS"
+    assert claim["evidence_kind"] == "REAL_EXACT_SCALE"
+    assert claim["semantic_checks"]["command_refs_resolve"] is True
+    assert claim["semantic_checks"]["command_refs_c07_valid"] is True
+    assert claim["semantic_checks"]["command_refs_operation_traceable"] is True
+    assert claim["semantic_checks"]["topology_exact_health"] is True
+    assert claim["semantic_checks"]["workload_metrics_numeric"] is True
+    assert claim["semantic_checks"]["hardening_stage_accepted"] is True
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    violations, blocked, extra = evaluate_management_exact_scale(manifest_path)
+    assert not violations
+    assert extra["passed_claims"] == ["management_matrix.real_exact.50"]
+    assert any("management_matrix.real_exact.100" in item for item in blocked)
+
+
+def test_management_matrix_file_level_command_refs_block_exact_scale_pass(tmp_path: Path) -> None:
+    _write_management_exact_scale_evidence(tmp_path, 50, command_ref_mode="file")
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "management_matrix.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["command_refs_resolve"] is False
+    assert "file-level only" in claim["reason"]
+
+
+def test_management_matrix_command_ref_wrong_operation_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_management_exact_scale_evidence(tmp_path, 50, wrong_command_operation=True)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "management_matrix.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["command_refs_operation_traceable"] is False
+    assert "points to operation_id" in claim["reason"]
+
+
+def test_management_matrix_command_output_hash_mismatch_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_management_exact_scale_evidence(tmp_path, 50, bad_command_hash=True)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "management_matrix.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["command_refs_c07_valid"] is False
+    assert "stdout_sha256 does not match" in claim["reason"]
+
+
+def test_management_matrix_bad_matrix_topology_diff_ref_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_management_exact_scale_evidence(tmp_path, 50, bad_matrix_topology_diff_ref=True)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "management_matrix.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["topology_diff_refs_resolve"] is False
+    assert "topology_diff_ref" in claim["reason"]
+
+
+def test_management_matrix_missing_topology_slots_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_management_exact_scale_evidence(tmp_path, 50, omit_topology_slots=True)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "management_matrix.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["topology_exact_health"] is False
+    assert "slots is not 16384" in claim["reason"]
+
+
+def test_management_matrix_string_workload_counts_block_exact_scale_pass(tmp_path: Path) -> None:
+    _write_management_exact_scale_evidence(tmp_path, 50, string_workload_counts=True)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "management_matrix.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["workload_metrics_numeric"] is False
+    assert "timeout_count is missing or non-numeric" in claim["reason"]
+
+
+def test_management_matrix_missing_workload_ref_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_management_exact_scale_evidence(tmp_path, 50, omit_workload_window=True)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "management_matrix.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["workload_refs_resolve"] is False
+    assert "workload_window_ref" in claim["reason"]
+
+
+def test_management_matrix_fixture_never_satisfies_exact_scale_claim(tmp_path: Path) -> None:
+    fixture = tmp_path / "tests" / "fixtures" / "management_matrix" / "scale_50"
+    _write_management_exact_scale_evidence(tmp_path, 50, base=fixture)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "management_matrix.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["evidence_kind"] == "FIXTURE_ONLY"
+    assert claim["semantic_checks"]["no_fixture_management_artifacts"] is False
+    assert "Fixture management artifacts" in claim["reason"]
+
+
+def test_h05_stage_exit_requires_management_exact_gate(tmp_path: Path) -> None:
+    _seed_stage_exit_base(tmp_path, "H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING", H05_REQUIRED_GATE_RESULTS)
+    gate = tmp_path / "runs" / "m1-hardening" / "H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING" / "artifacts" / "gates" / "assert_management_exact_scale.json"
+    gate.unlink()
+    violations, blocked = validate_stage_exit(tmp_path, "H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING")
+    assert not violations
+    assert any("assert_management_exact_scale.json is missing" in item for item in blocked)
+    write_json(gate, _gate_payload("H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING", "assert_management_exact_scale"))
+    violations, blocked = validate_stage_exit(tmp_path, "H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING")
+    assert not violations
+    assert not blocked
+
+
 def _claim(manifest: dict[str, object], cid: str) -> dict[str, object]:
     for claim in manifest["claims"]:  # type: ignore[index]
         if isinstance(claim, dict) and claim.get("claim_id") == cid:
@@ -998,6 +1106,245 @@ def _write_command_output_logs(tmp_path: Path, rows: list[dict[str, object]]) ->
             output.write_text("", encoding="utf-8")
 
 
+def _write_management_exact_scale_evidence(
+    tmp_path: Path,
+    scale: int,
+    *,
+    base: Path | None = None,
+    command_ref_mode: str = "fragment",
+    omit_workload_window: bool = False,
+    wrong_command_operation: bool = False,
+    bad_command_hash: bool = False,
+    bad_matrix_topology_diff_ref: bool = False,
+    omit_topology_slots: bool = False,
+    string_workload_counts: bool = False,
+) -> None:
+    phase_by_scale = {
+        50: "P30_MANAGEMENT_MATRIX_50_REAL",
+        100: "P31_MANAGEMENT_MATRIX_100_REAL",
+        200: "P32_MANAGEMENT_MATRIX_200_REAL",
+    }
+    phase = base or tmp_path / "artifacts" / "phases" / phase_by_scale[scale]
+    command_rows: list[dict[str, object]] = []
+    matrix_ops: list[dict[str, object]] = []
+    result_rows: list[dict[str, object]] = []
+    topology_rows: list[dict[str, object]] = []
+    topology_diff_rows: list[dict[str, object]] = []
+    impact_ops: list[dict[str, object]] = []
+    windows: list[dict[str, object]] = []
+    for index, op in enumerate(sorted(H05_REQUIRED_MANAGEMENT_OPERATIONS), start=1):
+        command_id = f"cmd-{index:06d}"
+        command_rows.append(
+            {
+                "schema_version": "v1",
+                "artifact_type": "runtime_command_log_entry",
+                "phase_id": f"test-{scale}",
+                "run_id": f"test-{scale}",
+                "scenario": f"management-{scale}",
+                "sequence": index,
+                "operation_id": "wrong-operation" if wrong_command_operation and index == 1 else f"h05-{op}-{scale}",
+                "step_id": "cluster_probe",
+                "command_id": command_id,
+                "command_kind": "cluster_probe",
+                "command_scope": "owned_docker_or_local_valkey_client",
+                "host_id": "local",
+                "node_logical_id": "node-0",
+                "nodehost_id": "nh-0",
+                "container_name": "vslab-nodehost-0",
+                "client_port": 7000,
+                "argv": ["valkey-cli", "-p", "7000", "CLUSTER", "INFO"],
+                "started_at_unix_ms": 1000 + index,
+                "ended_at_unix_ms": 1010 + index,
+                "duration_ms": 10,
+                "exit_code": 0,
+                "stdout_path": f"logs/management-{command_id}.stdout.log",
+                "stdout_sha256": "1" * 64 if bad_command_hash and index == 1 else "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "stderr_path": f"logs/management-{command_id}.stderr.log",
+                "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "retry_index": 0,
+                "attempt_count": 1,
+                "timeout_ms": 30000,
+                "status": "PASS",
+                "error_type": "",
+                "host_network_mutated": False,
+                "global_firewall_mutated": False,
+                "trace_refs": [],
+            }
+        )
+        command_ref = f"management_command_log.jsonl#{command_id}" if command_ref_mode == "fragment" else "management_command_log.jsonl"
+        op_id = f"h05-{op}-{scale}"
+        window_id = f"{op_id}:event"
+        before = f"{op_id}-before"
+        after = f"{op_id}-after"
+        topology_diff_ref = f"management_topology_diffs.jsonl#{op_id}"
+        topology_rows.extend(
+            [
+                {"label": before, "operation_id": op_id, **({} if omit_topology_slots and index == 1 else {"slots": 16384}), "nodes": _topology_nodes(scale)},
+                {"label": after, "operation_id": op_id, **({} if omit_topology_slots and index == 1 else {"slots": 16384}), "nodes": _topology_nodes(scale)},
+            ]
+        )
+        if not omit_workload_window:
+            windows.append(
+                {
+                    "id": window_id,
+                    "window_id": window_id,
+                    "operation_id": op_id,
+                    "window_name": "event",
+                    "start_event_id": f"{op_id}-start",
+                    "end_event_id": f"{op_id}-end",
+                    "status": "PASS",
+                    "metrics": {
+                        "requested_qps": 100.0,
+                        "achieved_qps": 100.0,
+                        "throughput_ratio": 1.0,
+                        "ok_ops": 100,
+                        "error_ops": 0,
+                        "error_rate": 0.0,
+                        "latency_p50_ms": 1.0,
+                        "latency_p90_ms": 1.5,
+                        "latency_p95_ms": 2.0,
+                        "latency_p99_ms": 2.5,
+                        "latency_p999_ms": 3.0,
+                        "timeout_count": "0" if string_workload_counts and index == 1 else 0,
+                        "connection_error_count": 0,
+                        "moved_count": "0" if string_workload_counts and index == 1 else 0,
+                        "ask_count": "0" if string_workload_counts and index == 1 else 0,
+                        "cluster_down_count": 0,
+                        "readonly_count": 0,
+                        "tryagain_count": 0,
+                    },
+                }
+            )
+        impact_ops.append({"operation_id": op_id, "operation_name": op, "coverage_id": f"{scale}.management.{op}", "window_refs": [window_id]})
+        topology_diff_rows.append(
+            {
+                "schema_version": "v1",
+                "artifact_type": "management_topology_diff",
+                "phase_id": phase_by_scale[scale],
+                "run_id": f"test-{scale}",
+                "operation_id": op_id,
+                "before_snapshot_ref": before,
+                "after_snapshot_ref": after,
+                "slot_diff": {"status": "PASS"},
+                "role_diff": {"status": "PASS"},
+                "known_nodes_delta": 0,
+                "fail_pfail_handshake_delta": {"fail": 0, "pfail": 0, "handshake": 0},
+                "changed_nodes": [],
+                "moved_slots": [],
+                "status": "PASS",
+            }
+        )
+        common = {
+            "coverage_id": f"{scale}.management.{op}",
+            "operation_id": op_id,
+            "operation_name": op,
+            "node_count": scale,
+            "operation_status": "PASS",
+            "real_execution_verified": True,
+            "command_log_ref": command_ref,
+            "workload_window_ref": window_id,
+        }
+        matrix_ops.append(
+            {
+                **common,
+                "scale": scale,
+                "operation_result_ref": f"management_operation_results.jsonl#{op_id}",
+                "before_topology_snapshot_ref": before,
+                "after_topology_snapshot_ref": after,
+                "topology_diff_ref": "management_topology_diffs.jsonl#bogus" if bad_matrix_topology_diff_ref and index == 1 else topology_diff_ref,
+                "command_count": 1,
+                "command_log_refs": [command_ref],
+                "workload_impact_ref": f"management_workload_impact.json#{op_id}",
+                "cleanup_ref": "cleanup_report.json",
+                "topology_refs": [before, after],
+            }
+        )
+        result_rows.append(
+            {
+                **common,
+                "schema_version": "v1",
+                "artifact_type": "management_operation_result",
+                "phase_id": phase_by_scale[scale],
+                "run_id": f"test-{scale}",
+                "scenario": f"management-{scale}",
+                "scale": scale,
+                "started_at_unix_ms": 1000 + index,
+                "ended_at_unix_ms": 2000 + index,
+                "duration_ms": 100.0,
+                "operation_duration_ms": 100.0,
+                "wall_ms": 100.0,
+                "prepare_ms": 0.0,
+                "command_ms": 10.0,
+                "convergence_ms": 1.0,
+                "cleanup_ms": 0.0,
+                "status_reason": "test pass",
+                "before_topology_snapshot": {"ref": before},
+                "after_topology_snapshot": {"ref": after},
+                "before_topology_snapshot_ref": before,
+                "after_topology_snapshot_ref": after,
+                "topology_diff": {"ref": topology_diff_ref},
+                "topology_diff_ref": topology_diff_ref,
+                "slot_diff": {"status": "PASS"},
+                "role_diff": {"status": "PASS"},
+                "cluster_state_before": "ok",
+                "cluster_state_after": "ok",
+                "known_nodes_before": scale,
+                "known_nodes_after": scale,
+                "fail_pfail_handshake_before": {"fail": 0, "pfail": 0, "handshake": 0},
+                "fail_pfail_handshake_after": {"fail": 0, "pfail": 0, "handshake": 0},
+                "command_count": 1,
+                "retry_count": 0,
+                "error_count": 0,
+                "command_log_refs": [command_ref],
+                "workload_impact_ref": f"management_workload_impact.json#{op_id}",
+                "cleanup_ref": "cleanup_report.json",
+                "cluster_known_nodes_before": scale,
+                "cluster_known_nodes_after": scale,
+                "slots_before": 16384,
+                "slots_after": 16384,
+                "topology_before_ref": before,
+                "topology_after_ref": after,
+                "source_evidence_refs": ["management_operation_results.jsonl", "management_command_log.jsonl"],
+                "missing_fields": [],
+            }
+        )
+    write_json(
+        phase / "management_ops_matrix.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "management_ops_matrix",
+            "phase_id": phase_by_scale[scale],
+            "run_id": f"test-{scale}",
+            "scenario": f"management-{scale}",
+            "status": "PASS",
+            "required_operations": sorted(H05_REQUIRED_MANAGEMENT_OPERATIONS),
+            "operations": matrix_ops,
+        },
+    )
+    _write_jsonl(phase / "management_operation_results.jsonl", result_rows)
+    _write_jsonl(phase / "management_topology_snapshots.jsonl", topology_rows)
+    _write_jsonl(phase / "management_topology_diffs.jsonl", topology_diff_rows)
+    _write_jsonl(phase / "management_command_log.jsonl", command_rows)
+    _write_command_output_logs(tmp_path, command_rows)
+    write_json(phase / "management_workload_impact.json", {"schema_version": "v1", "artifact_type": "workload_impact_report", "phase_id": phase_by_scale[scale], "run_id": f"test-{scale}", "status": "PASS", "windows": windows, "comparisons": [], "operations": impact_ops})
+    write_json(phase / "workload_windows.json", {"schema_version": "v1", "artifact_type": "workload_windows", "phase_id": phase_by_scale[scale], "run_id": f"test-{scale}", "status": "PASS", "windows": windows})
+    _write_valkey_e2e(phase, scale)
+
+
+def _topology_nodes(scale: int) -> list[dict[str, object]]:
+    return [
+        {
+            "logical_id": f"node-{index:04d}",
+            "node_id": f"{index:040x}"[-40:],
+            "role": "primary" if index % 2 == 0 else "replica",
+            "flags": ["master"] if index % 2 == 0 else ["slave"],
+            "link_state": "connected",
+            "slots": [index] if index % 2 == 0 else [],
+        }
+        for index in range(scale)
+    ]
+
+
 def _seed_stage_exit_base(tmp_path: Path, stage_id: str, required_gates: list[str]) -> None:
     for script in REQUIRED_SCRIPTS:
         path = tmp_path / "scripts" / "m1h" / script
@@ -1090,7 +1437,31 @@ def _passing_semantic_checks(claim: str) -> dict[str, object]:
             "summary_missing_or_skipped_empty",
             "empty_legacy_management_log_absent",
         ],
-        "management_matrix": ["management_matrix_present", "operation_semantics_present", "workload_telemetry_present"],
+        "management_matrix": [
+            "real_valkey_verified",
+            "valkey_9_1_verified",
+            "management_matrix_present",
+            "management_matrix_schema_valid",
+            "management_matrix_status_pass",
+            "management_required_operations_present",
+            "operation_results_present",
+            "operation_results_schema_valid",
+            "operation_results_exact_scale",
+            "operation_semantics_present",
+            "topology_refs_resolve",
+            "topology_diff_present",
+            "topology_diff_schema_valid",
+            "topology_diff_refs_resolve",
+            "workload_telemetry_present",
+            "workload_artifacts_schema_valid",
+            "workload_metrics_numeric",
+            "workload_refs_resolve",
+            "command_refs_resolve",
+            "command_refs_c07_valid",
+            "command_refs_operation_traceable",
+            "topology_exact_health",
+            "no_fixture_management_artifacts",
+        ],
         "workload_benchmark": ["workload_windows_present", "qps_latency_error_metrics_present"],
         "fault_timeline": ["fault_timeline_present", "real_fault_events_present", "fake_or_partial_not_promoted"],
         "system_metrics": ["system_windows_present", "core_metrics_present"],
