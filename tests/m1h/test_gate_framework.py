@@ -13,11 +13,12 @@ from assert_no_legacy_m1_pass import validate_current_acceptance, validate_no_le
 from assert_no_simulated_subagents import scan_stage_artifacts
 from assert_setup_core_metrics import evaluate_setup_core_metrics
 from assert_final_milestone1_hardened import evaluate_final
-from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
+from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, H04_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
 from build_acceptance_reset import build_acceptance_reset, validate_acceptance_report
 from capability_gate import evaluate_capability
+from assert_command_audit_real import evaluate_command_audit_real
 from common import gate_result_path, write_gate_result, write_json
-from manifest import C06_SETUP_CORE_METRICS, REQUIRED_CLAIMS, build_manifest, claim_id
+from manifest import C06_SETUP_CORE_METRICS, C07_REQUIRED_COMMAND_KINDS, REQUIRED_CLAIMS, build_manifest, claim_id
 
 
 def test_write_gate_result_shape(tmp_path: Path) -> None:
@@ -524,6 +525,224 @@ def test_h03_stage_exit_requires_setup_core_metrics_gate(tmp_path: Path) -> None
     assert not blocked
 
 
+def test_command_audit_valid_exact_scale_can_pass_after_c07_hardening(tmp_path: Path) -> None:
+    _write_command_audit_exact_scale_evidence(tmp_path, 50)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "PASS"
+    assert claim["evidence_kind"] == "REAL_EXACT_SCALE"
+    semantic = claim["semantic_checks"]
+    assert semantic["command_log_schema_valid"] is True
+    assert semantic["required_command_kinds_present"] is True
+    assert semantic["operation_traceability_present"] is True
+    assert semantic["hardening_stage_accepted"] is True
+
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    violations, blocked, extra = evaluate_command_audit_real(manifest_path)
+    assert not violations
+    assert extra["passed_claims"] == ["command_audit.real_exact.50"]
+    assert any("command_audit.real_exact.100" in item for item in blocked)
+
+
+def test_command_audit_empty_log_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_command_audit_exact_scale_evidence(tmp_path, 50, rows=[])
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["command_log_non_empty"] is False
+    assert "has no command rows" in claim["reason"]
+
+
+def test_command_audit_placeholder_command_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    rows = _command_rows(50)
+    rows[0]["argv"] = ["valkey-cli", "cluster", "create_cluster"]
+    manifest = _manifest_with_command_rows(tmp_path, 50, rows)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["no_placeholder_commands"] is False
+    assert "placeholder command" in claim["reason"]
+
+
+def test_command_audit_missing_required_kind_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    rows = [row for row in _command_rows(50) if row["command_kind"] != "cluster_replicate"]
+    manifest = _manifest_with_command_rows(tmp_path, 50, rows)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["required_command_kinds_present"] is False
+    assert "cluster_replicate" in claim["reason"]
+
+
+def test_command_audit_missing_row_value_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    rows = _command_rows(50)
+    rows[0]["host_id"] = "MISSING"
+    manifest = _manifest_with_command_rows(tmp_path, 50, rows)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["command_log_schema_valid"] is False
+    assert "required field host_id is MISSING" in claim["reason"]
+
+
+def test_command_audit_empty_management_sidecar_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_command_audit_exact_scale_evidence(tmp_path, 50)
+    phase = tmp_path / "artifacts" / "phases" / "P30_MANAGEMENT_MATRIX_50_REAL"
+    (phase / "management_command_log.jsonl").write_text("", encoding="utf-8")
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["empty_legacy_management_log_absent"] is False
+    assert "empty management command log" in claim["reason"]
+
+
+def test_command_audit_summary_missing_or_skipped_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    rows = _command_rows(50)
+    _write_command_audit_exact_scale_evidence(tmp_path, 50, rows=rows)
+    phase = tmp_path / "artifacts" / "phases" / "P30_MANAGEMENT_MATRIX_50_REAL"
+    summary = _command_summary(rows)
+    summary["missing_or_skipped"] = [{"metric": "command_log.total_commands", "status": "SKIPPED_WITH_REASON", "reason": "probe"}]
+    write_json(phase / "command_audit_summary.json", summary)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["summary_missing_or_skipped_empty"] is False
+    assert "missing_or_skipped must be empty" in claim["reason"]
+
+
+def test_command_audit_summary_schema_error_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    rows = _command_rows(50)
+    _write_command_audit_exact_scale_evidence(tmp_path, 50, rows=rows)
+    phase = tmp_path / "artifacts" / "phases" / "P30_MANAGEMENT_MATRIX_50_REAL"
+    summary = _command_summary(rows)
+    summary.pop("operation_traceability")
+    write_json(phase / "command_audit_summary.json", summary)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["command_audit_summary_schema_valid"] is False
+    assert "missing required key 'operation_traceability'" in claim["reason"]
+
+
+def test_command_audit_kind_argv_mismatch_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    rows = _command_rows(50)
+    rows[0]["argv"] = ["bash", "-lc", "true"]
+    manifest = _manifest_with_command_rows(tmp_path, 50, rows)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["command_kind_argv_consistent"] is False
+    assert "is not supported by argv shape" in claim["reason"]
+
+
+def test_command_audit_inconsistent_timing_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    rows = _command_rows(50)
+    rows[0]["ended_at_unix_ms"] = 1
+    manifest = _manifest_with_command_rows(tmp_path, 50, rows)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["command_log_schema_valid"] is False
+    assert "ended_at_unix_ms is earlier than started_at_unix_ms" in claim["reason"]
+
+
+def test_command_audit_failed_row_must_be_summarized(tmp_path: Path) -> None:
+    rows = _command_rows(50)
+    rows[0]["status"] = "FAIL"
+    rows[0]["exit_code"] = 1
+    summary = _command_summary(rows)
+    summary["failed_commands"] = []
+    phase = tmp_path / "artifacts" / "phases" / "P30_MANAGEMENT_MATRIX_50_REAL"
+    _write_jsonl(phase / "command_log.jsonl", rows)
+    write_json(phase / "command_audit_summary.json", summary)
+    _write_command_output_logs(tmp_path, rows)
+    _write_valkey_e2e(phase, 50)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["failure_timeout_retry_rows_summarized"] is False
+    assert "failed_commands is missing command ids" in claim["reason"]
+
+
+def test_command_audit_output_hash_mismatch_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    rows = _command_rows(50)
+    rows[0]["stdout_sha256"] = "1" * 64
+    manifest = _manifest_with_command_rows(tmp_path, 50, rows)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["output_hashes_verified"] is False
+    assert "stdout_sha256 does not match" in claim["reason"]
+
+
+def test_command_audit_malformed_jsonl_line_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_command_audit_exact_scale_evidence(tmp_path, 50)
+    phase = tmp_path / "artifacts" / "phases" / "P30_MANAGEMENT_MATRIX_50_REAL"
+    with (phase / "command_log.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write("{not-json\n")
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["command_log_schema_valid"] is False
+    assert "line 6 is invalid JSON" in claim["reason"]
+
+
+def test_command_audit_legacy_management_log_stays_blocked(tmp_path: Path) -> None:
+    phase = tmp_path / "artifacts" / "phases" / "P30_MANAGEMENT_MATRIX_50_REAL"
+    write_json(
+        phase / "valkey_e2e_evidence.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "valkey_e2e_evidence",
+            "status": "PASS",
+            "real_valkey": True,
+            "nodes_observed": 50,
+            "valkey_versions": ["9.1.0"],
+        },
+    )
+    legacy_row = {
+        "schema_version": "v1",
+        "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+        "run_id": "legacy",
+        "operation_id": "legacy",
+        "command_id": "p30-legacy-cmd-0001",
+        "command_kind": "cluster_setslot_node",
+        "argv": ["CLUSTER", "SETSLOT", "1", "NODE", "abc"],
+        "started_at_unix_ms": 1,
+        "ended_at_unix_ms": 2,
+        "status": "PASS",
+    }
+    _write_jsonl(phase / "management_command_log.jsonl", [legacy_row])
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["evidence_kind"] == "LEGACY_EVIDENCE_ONLY"
+    assert claim["semantic_checks"]["command_log_schema_valid"] is False
+    assert "command_audit_summary.json is missing" in claim["reason"]
+
+
+def test_command_audit_fixture_never_satisfies_exact_scale_claim(tmp_path: Path) -> None:
+    fixture = tmp_path / "tests" / "fixtures" / "command_log" / "scale_50"
+    rows = _command_rows(50)
+    _write_jsonl(fixture / "command_log.jsonl", rows)
+    write_json(fixture / "command_audit_summary.json", _command_summary(rows))
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "command_audit.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["evidence_kind"] == "FIXTURE_ONLY"
+    assert claim["semantic_checks"]["command_log_present"] is False
+    assert "fixture" in claim["reason"]
+
+
+def test_h04_stage_exit_requires_command_audit_gate(tmp_path: Path) -> None:
+    _seed_stage_exit_base(tmp_path, "H04_COMMAND_AUDIT_REAL_PATH_HARDENING", H04_REQUIRED_GATE_RESULTS)
+    gate = tmp_path / "runs" / "m1-hardening" / "H04_COMMAND_AUDIT_REAL_PATH_HARDENING" / "artifacts" / "gates" / "assert_command_audit_real.json"
+    gate.unlink()
+    violations, blocked = validate_stage_exit(tmp_path, "H04_COMMAND_AUDIT_REAL_PATH_HARDENING")
+    assert not violations
+    assert any("assert_command_audit_real.json is missing" in item for item in blocked)
+
+    write_json(gate, _gate_payload("H04_COMMAND_AUDIT_REAL_PATH_HARDENING", "assert_command_audit_real"))
+    violations, blocked = validate_stage_exit(tmp_path, "H04_COMMAND_AUDIT_REAL_PATH_HARDENING")
+    assert not violations
+    assert not blocked
+
+
 def _claim(manifest: dict[str, object], cid: str) -> dict[str, object]:
     for claim in manifest["claims"]:  # type: ignore[index]
         if isinstance(claim, dict) and claim.get("claim_id") == cid:
@@ -629,6 +848,156 @@ def _write_valkey_e2e(phase: Path, scale: int) -> None:
     )
 
 
+def _manifest_with_command_rows(tmp_path: Path, scale: int, rows: list[dict[str, object]]) -> dict[str, object]:
+    _write_command_audit_exact_scale_evidence(tmp_path, scale, rows=rows)
+    return build_manifest(tmp_path)
+
+
+def _write_command_audit_exact_scale_evidence(
+    tmp_path: Path,
+    scale: int,
+    *,
+    rows: list[dict[str, object]] | None = None,
+) -> None:
+    phase_by_scale = {
+        50: "P30_MANAGEMENT_MATRIX_50_REAL",
+        100: "P31_MANAGEMENT_MATRIX_100_REAL",
+        200: "P32_MANAGEMENT_MATRIX_200_REAL",
+    }
+    phase = tmp_path / "artifacts" / "phases" / phase_by_scale[scale]
+    rows = _command_rows(scale) if rows is None else rows
+    _write_jsonl(phase / "command_log.jsonl", rows)
+    write_json(phase / "command_audit_summary.json", _command_summary(rows))
+    _write_command_output_logs(tmp_path, rows)
+    _write_valkey_e2e(phase, scale)
+
+
+def _command_rows(scale: int) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    commands = [
+        ("cluster_meet", ["valkey-cli", "-p", "7000", "CLUSTER", "MEET", "127.0.0.1", "7001"]),
+        ("cluster_addslots", ["valkey-cli", "-p", "7000", "CLUSTER", "ADDSLOTS", "0", "1"]),
+        ("cluster_replicate", ["valkey-cli", "-p", "7001", "CLUSTER", "REPLICATE", "abc"]),
+        ("cluster_probe", ["valkey-cli", "-p", "7000", "CLUSTER", "INFO"]),
+        ("cleanup", ["docker", "rm", "-f", "vslab-nodehost-0"]),
+    ]
+    for index, (kind, argv) in enumerate(commands, start=1):
+        rows.append(
+            {
+                "schema_version": "v1",
+                "artifact_type": "runtime_command_log_entry",
+                "phase_id": f"test-{scale}",
+                "run_id": f"test-{scale}",
+                "scenario": f"scale-{scale}",
+                "sequence": index,
+                "operation_id": "cluster_setup" if kind != "cleanup" else "cleanup",
+                "step_id": kind,
+                "command_id": f"cmd-{index:06d}",
+                "command_kind": kind,
+                "command_scope": "owned_docker_or_local_valkey_client",
+                "host_id": "local",
+                "node_logical_id": "node-0",
+                "nodehost_id": "nh-0",
+                "container_name": "vslab-nodehost-0",
+                "client_port": 7000,
+                "argv": argv,
+                "started_at_unix_ms": 1000 + index,
+                "ended_at_unix_ms": 1010 + index,
+                "duration_ms": 10,
+                "exit_code": 0,
+                "stdout_path": f"logs/cmd-{index:06d}.stdout.log",
+                "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "stderr_path": f"logs/cmd-{index:06d}.stderr.log",
+                "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "retry_index": 0,
+                "attempt_count": 1,
+                "timeout_ms": 30000,
+                "status": "PASS",
+                "error_type": "",
+                "host_network_mutated": False,
+                "global_firewall_mutated": False,
+                "trace_refs": [],
+            }
+        )
+    assert {str(row["command_kind"]) for row in rows} == C07_REQUIRED_COMMAND_KINDS
+    return rows
+
+
+def _command_summary(rows: list[dict[str, object]]) -> dict[str, object]:
+    by_kind: dict[str, int] = {}
+    operations: dict[str, list[str]] = {}
+    for row in rows:
+        by_kind[str(row.get("command_kind"))] = by_kind.get(str(row.get("command_kind")), 0) + 1
+        operations.setdefault(str(row.get("operation_id")), []).append(str(row.get("command_id")))
+    return {
+        "schema_version": "v1",
+        "artifact_type": "command_audit_summary",
+        "phase_id": "test",
+        "run_id": "test",
+        "scenario": "test",
+        "status": "PASS",
+        "command_log_ref": "command_log.jsonl",
+        "total_commands": len(rows),
+        "pass_count": sum(1 for row in rows if row.get("status") == "PASS"),
+        "failure_count": sum(1 for row in rows if row.get("status") == "FAIL"),
+        "timeout_count": sum(1 for row in rows if row.get("status") == "TIMEOUT"),
+        "retry_count": sum(1 for row in rows if int(row.get("retry_index", 0) or 0) > 0 or row.get("status") == "RETRY"),
+        "by_command_kind": by_kind,
+        "slowest_commands_topN": [
+            {
+                "command_id": row.get("command_id"),
+                "operation_id": row.get("operation_id"),
+                "step_id": row.get("step_id"),
+                "command_kind": row.get("command_kind"),
+                "duration_ms": row.get("duration_ms"),
+                "status": row.get("status"),
+                "exit_code": row.get("exit_code"),
+                "retry_index": row.get("retry_index"),
+                "error_type": row.get("error_type"),
+            }
+            for row in rows[:5]
+        ],
+        "failed_commands": [
+            {
+                "command_id": row.get("command_id"),
+                "operation_id": row.get("operation_id"),
+                "step_id": row.get("step_id"),
+                "command_kind": row.get("command_kind"),
+                "duration_ms": row.get("duration_ms"),
+                "status": row.get("status"),
+                "exit_code": row.get("exit_code"),
+                "retry_index": row.get("retry_index"),
+                "error_type": row.get("error_type"),
+            }
+            for row in rows
+            if row.get("status") == "FAIL"
+        ],
+        "timeout_commands": [],
+        "retry_commands": [],
+        "operation_traceability": [
+            {"operation_id": operation_id, "command_log_refs": [f"command_log.jsonl#{command_id}" for command_id in command_ids], "status": "PASS"}
+            for operation_id, command_ids in sorted(operations.items())
+        ],
+        "coverage": {"required_command_kinds": sorted(C07_REQUIRED_COMMAND_KINDS), "observed_command_kinds": sorted(by_kind)},
+        "missing_or_skipped": [],
+    }
+
+
+def _write_jsonl(path: Path, rows: list[dict[str, object]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+
+
+def _write_command_output_logs(tmp_path: Path, rows: list[dict[str, object]]) -> None:
+    for row in rows:
+        for key in ["stdout_path", "stderr_path"]:
+            path_value = row.get(key)
+            assert isinstance(path_value, str)
+            output = tmp_path / path_value
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text("", encoding="utf-8")
+
+
 def _seed_stage_exit_base(tmp_path: Path, stage_id: str, required_gates: list[str]) -> None:
     for script in REQUIRED_SCRIPTS:
         path = tmp_path / "scripts" / "m1h" / script
@@ -702,7 +1071,25 @@ def _passing_semantic_checks(claim: str) -> dict[str, object]:
             "setup_core_metrics_numeric",
             "setup_per_node_samples_complete",
         ],
-        "command_audit": ["command_log_present", "required_command_kinds_present"],
+        "command_audit": [
+            "real_valkey_verified",
+            "valkey_9_1_verified",
+            "command_audit_summary_present",
+            "command_audit_summary_schema_valid",
+            "command_log_present",
+            "command_log_non_empty",
+            "command_log_schema_valid",
+            "required_command_kinds_present",
+            "no_placeholder_commands",
+            "command_kind_argv_consistent",
+            "command_output_refs_present",
+            "output_hashes_verified",
+            "retry_failure_timeout_summary_present",
+            "operation_traceability_present",
+            "failure_timeout_retry_rows_summarized",
+            "summary_missing_or_skipped_empty",
+            "empty_legacy_management_log_absent",
+        ],
         "management_matrix": ["management_matrix_present", "operation_semantics_present", "workload_telemetry_present"],
         "workload_benchmark": ["workload_windows_present", "qps_latency_error_metrics_present"],
         "fault_timeline": ["fault_timeline_present", "real_fault_events_present", "fake_or_partial_not_promoted"],
