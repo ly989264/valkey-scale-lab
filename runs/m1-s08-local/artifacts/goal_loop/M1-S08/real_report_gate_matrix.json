@@ -1,0 +1,43 @@
+{
+  "artifact_type": "m1_s08_report_real_gate_matrix",
+  "heavy_rungs": [
+    {
+      "reason": "M1-S08 renderer is scale-generic and fixture-covered, but exact real 30/50/100/200 report generation depends on those source real runs and resource preflight artifacts; no heavy PASS is claimed in this stage.",
+      "required_before_milestone_acceptance": true,
+      "scale": 30,
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "reason": "M1-S08 renderer is scale-generic and fixture-covered, but exact real 30/50/100/200 report generation depends on those source real runs and resource preflight artifacts; no heavy PASS is claimed in this stage.",
+      "required_before_milestone_acceptance": true,
+      "scale": 50,
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "reason": "M1-S08 renderer is scale-generic and fixture-covered, but exact real 30/50/100/200 report generation depends on those source real runs and resource preflight artifacts; no heavy PASS is claimed in this stage.",
+      "required_before_milestone_acceptance": true,
+      "scale": 100,
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "reason": "M1-S08 renderer is scale-generic and fixture-covered, but exact real 30/50/100/200 report generation depends on those source real runs and resource preflight artifacts; no heavy PASS is claimed in this stage.",
+      "required_before_milestone_acceptance": true,
+      "scale": 200,
+      "status": "BLOCKED_WITH_REASON"
+    }
+  ],
+  "offline_policy": {
+    "artifact_only": true,
+    "external_urls_allowed": false,
+    "llm_used": false
+  },
+  "real_local_report": {
+    "gate": "scripts/assert_zh_offline_report_m1.py",
+    "reports_dir": "runs/m1-s08-local/artifacts/goal_loop/M1-S08/reports",
+    "source_analysis": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/analysis_summary.json",
+    "status": "PASS"
+  },
+  "schema_version": "v1",
+  "stage_id": "M1-S08",
+  "status": "PASS_WITH_BLOCKED_HEAVY_RUNS"
+}

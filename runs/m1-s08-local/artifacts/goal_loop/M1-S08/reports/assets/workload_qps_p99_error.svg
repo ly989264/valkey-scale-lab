@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="148" role="img" aria-label="Workload QPS p99 错误率">
+<rect width="100%" height="100%" fill="white"/>
+<text x="20" y="28" font-size="16" font-family="sans-serif">Workload QPS / p99 / 错误率</text>
+<text x="20" y="64" font-size="13" font-family="sans-serif">SKIPPED_WITH_REASON: 无 workload benchmark 行</text>
+</svg>

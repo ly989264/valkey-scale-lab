@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import html
 import json
+import shutil
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
@@ -71,6 +72,7 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
         _write_markdown(report_dir / "report.md", analysis),
         _write_html(report_dir / "index.html", analysis),
     ]
+    canonical = _write_canonical_layout(report_dir, generated)
 
     index_path = Path(index_out)
     index = {
@@ -95,6 +97,24 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
             "impact": "Report cannot link back to run metadata.",
         },
         "reports": [_report_record(path) for path in generated],
+        "exports": [_report_record(path) for path in canonical["exports"]],
+        "assets": [_report_record(path) for path in canonical["assets"]],
+        "layout": {
+            "root": _rel(report_dir),
+            "html": _rel(report_dir / "index.html"),
+            "markdown": _rel(report_dir / "report.md"),
+            "exports_dir": _rel(report_dir / "exports"),
+            "assets_dir": _rel(report_dir / "assets"),
+            "report_index": _rel(index_path),
+        },
+        "offline_policy": {
+            "artifact_only": True,
+            "llm_used": False,
+            "external_urls_allowed": False,
+            "cdn_allowed": False,
+            "online_chart_service_allowed": False,
+        },
+        "conclusion_summary": _conclusion_summary(analysis),
         "setup_report_inputs": {
             "setup_telemetry": analysis.get("setup_telemetry", {"status": "SKIPPED_WITH_REASON", "reason": "analysis did not include setup telemetry"}),
             "csv": "setup_phase_durations.csv",
@@ -161,6 +181,25 @@ def render_report(analysis_path: str | Path, out_dir: str | Path, index_out: str
     _write_json(index_path, index)
     _write_phase_summary(index_path.parent, analysis, index_path, generated)
     return index
+
+
+def _write_canonical_layout(report_dir: Path, generated: list[Path]) -> dict[str, list[Path]]:
+    exports_dir = report_dir / "exports"
+    assets_dir = report_dir / "assets"
+    exports_dir.mkdir(parents=True, exist_ok=True)
+    assets_dir.mkdir(parents=True, exist_ok=True)
+    exports: list[Path] = []
+    assets: list[Path] = []
+    for path in generated:
+        if path.suffix.lower() == ".csv":
+            target = exports_dir / path.name
+            shutil.copyfile(path, target)
+            exports.append(target)
+        elif path.suffix.lower() == ".svg":
+            target = assets_dir / path.name
+            shutil.copyfile(path, target)
+            assets.append(target)
+    return {"exports": exports, "assets": assets}
 
 
 def _write_metrics_csv(path: Path, metrics: list[dict[str, Any]]) -> Path:
@@ -533,6 +572,69 @@ def _metric_field(metrics: dict[str, Any], name: str, field: str) -> Any:
     return item.get(field, "") if isinstance(item, dict) else ""
 
 
+def _conclusion_summary(analysis: dict[str, Any]) -> dict[str, Any]:
+    setup = analysis.get("setup_aggregates", {})
+    command = analysis.get("command_audit", {})
+    management = analysis.get("management_ops", {})
+    workload = analysis.get("workload_benchmark", {})
+    fault = analysis.get("fault_timeline", {})
+    system = analysis.get("system_metrics", {})
+    findings = {str(item.get("name")): item for item in analysis.get("findings", []) if isinstance(item, dict)}
+    slow_setup = (setup.get("phase_duration_ranking") or [{}])[0] if isinstance(setup, dict) else {}
+    slow_node = (setup.get("slowest_nodes_topN") or [{}])[0] if isinstance(setup, dict) else {}
+    slow_command = (command.get("slowest_commands_topN") or [{}])[0] if isinstance(command, dict) else {}
+    slow_management = (management.get("duration_ranking_topN") or [{}])[0] if isinstance(management, dict) else {}
+    abnormal_node = (system.get("abnormal_nodes_topN") or [{}])[0] if isinstance(system, dict) else {}
+    workload_windows = workload.get("windows", []) if isinstance(workload, dict) else []
+    worst_workload = max(
+        [row for row in workload_windows if isinstance(row, dict)],
+        key=lambda row: (
+            float(row.get("latency_p99_ms", 0) or 0) if isinstance(row.get("latency_p99_ms"), (int, float)) else 0,
+            float(row.get("error_rate", 0) or 0) if isinstance(row.get("error_rate"), (int, float)) else 0,
+        ),
+        default={},
+    )
+    failover_p95 = (fault.get("failover_latency", {}) if isinstance(fault, dict) else {}).get("p95_ms", "MISSING")
+    split_brain_max = (fault.get("split_brain_window", {}) if isinstance(fault, dict) else {}).get("max_ms", "MISSING")
+    cleanup = findings.get("cleanup", {})
+    missing_count = len(analysis.get("missing_metrics", []))
+    return {
+        "slowest_setup_phase": slow_setup,
+        "slowest_node": slow_node,
+        "slowest_command": slow_command,
+        "slowest_management_operation": slow_management,
+        "worst_workload_window": worst_workload,
+        "failover_latency_p95_ms": failover_p95,
+        "split_brain_window_max_ms": split_brain_max,
+        "top_resource_node": abnormal_node,
+        "cleanup_status": cleanup.get("status", "MISSING"),
+        "cleanup_resources_remaining": cleanup.get("resources_remaining", "MISSING"),
+        "missing_metric_count": missing_count,
+        "source": "artifact_derived",
+    }
+
+
+def _conclusion_lines(analysis: dict[str, Any]) -> list[str]:
+    summary = _conclusion_summary(analysis)
+    slow_setup = summary.get("slowest_setup_phase", {})
+    slow_node = summary.get("slowest_node", {})
+    slow_command = summary.get("slowest_command", {})
+    slow_mgmt = summary.get("slowest_management_operation", {})
+    worst_workload = summary.get("worst_workload_window", {})
+    top_resource = summary.get("top_resource_node", {})
+    return [
+        f"- 主要启动耗时: {slow_setup.get('metric', 'MISSING')} = {slow_setup.get('value_ms', 'MISSING')} ms。",
+        f"- 最慢节点: {slow_node.get('logical_id', slow_node.get('node_id', 'MISSING'))}，ready_ms={slow_node.get('node_ready_ms', 'MISSING')}。",
+        f"- 最慢命令: {slow_command.get('command_id', 'MISSING')} {slow_command.get('command_kind', 'MISSING')} = {slow_command.get('duration_ms', 'MISSING')} ms。",
+        f"- 最慢管理操作: {slow_mgmt.get('operation_name', 'MISSING')} = {slow_mgmt.get('operation_duration_ms', 'MISSING')} ms。",
+        f"- Workload 瓶颈窗口: {worst_workload.get('profile', 'MISSING')} {worst_workload.get('window_name', 'MISSING')}，p99={worst_workload.get('latency_p99_ms', 'MISSING')} ms，错误率={worst_workload.get('error_rate', 'MISSING')}。",
+        f"- Failover p95={summary.get('failover_latency_p95_ms', 'MISSING')} ms；split-brain max={summary.get('split_brain_window_max_ms', 'MISSING')} ms。",
+        f"- 资源异常节点: {top_resource.get('node_id', 'MISSING')}，rss_max={_metric_field(top_resource.get('metrics', {}) if isinstance(top_resource, dict) else {}, 'rss_bytes', 'max') or 'MISSING'} bytes。",
+        f"- Cleanup 状态: {summary.get('cleanup_status', 'MISSING')}，剩余资源={summary.get('cleanup_resources_remaining', 'MISSING')}。",
+        f"- 缺失指标数量: {summary.get('missing_metric_count', 0)}；缺失项保留原因，不用估算值替代。",
+    ]
+
+
 def _csv_value(value: Any) -> Any:
     if isinstance(value, dict):
         return value.get("status", "MISSING")
@@ -851,10 +953,18 @@ def _write_markdown(path: Path, analysis: dict[str, Any]) -> Path:
     fault = analysis.get("fault_timeline", {})
     system = analysis.get("system_metrics", {})
     lines = [
-        "# P09 Analysis Report",
+        "# 中文自动化可视化分析报告",
         "",
-        f"Status: {analysis.get('status', 'MISSING')}",
-        f"Source phase: {analysis.get('source', {}).get('phase_id', 'MISSING')}",
+        f"状态: {analysis.get('status', 'MISSING')}",
+        f"来源阶段: {analysis.get('source', {}).get('phase_id', 'MISSING')}",
+        "",
+        "## 总览页",
+        "",
+        "本报告由本地 artifact 自动生成，不调用 LLM、不访问外网、不依赖在线图表服务。所有结论来自 schema 化 JSON/JSONL、CSV 和本地 SVG 产物。",
+        "",
+        "## 结论摘要",
+        "",
+        *_conclusion_lines(analysis),
         "",
         "## 运行元数据",
         "",
@@ -1037,6 +1147,10 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         )
         for item in analysis.get("missing_metrics", [])
     ) or '<tr><td colspan="3">none</td></tr>'
+    conclusion_rows = "\n".join(
+        "<tr><td>{}</td></tr>".format(html.escape(line.lstrip("- ")))
+        for line in _conclusion_lines(analysis)
+    )
     setup_rows = "\n".join(
         "<tr><td>{}</td><td>{}</td></tr>".format(html.escape(str(item.get("metric", "MISSING"))), html.escape(str(item.get("value_ms", "MISSING"))))
         for item in setup.get("phase_duration_ranking", [])[:12]
@@ -1143,10 +1257,10 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
         for item in system.get("abnormal_nodes_topN", [])[:10]
     ) or '<tr><td colspan="4">SKIPPED_WITH_REASON: 无异常节点排序输入</td></tr>'
     document = f"""<!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <title>P09 Analysis Report</title>
+  <title>中文自动化可视化分析报告</title>
   <style>
     body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; color: #202124; }}
     table {{ border-collapse: collapse; width: 100%; margin: 16px 0 24px; }}
@@ -1156,9 +1270,13 @@ def _write_html(path: Path, analysis: dict[str, Any]) -> Path:
   </style>
 </head>
 <body>
-  <h1>P09 Analysis Report</h1>
-  <p>Status: <code>{html.escape(str(analysis.get("status", "MISSING")))}</code></p>
-  <p>Source phase: <code>{html.escape(str(analysis.get("source", {}).get("phase_id", "MISSING")))}</code></p>
+  <h1>中文自动化可视化分析报告</h1>
+  <p>状态: <code>{html.escape(str(analysis.get("status", "MISSING")))}</code></p>
+  <p>来源阶段: <code>{html.escape(str(analysis.get("source", {}).get("phase_id", "MISSING")))}</code></p>
+  <h2>总览页</h2>
+  <p>本报告由本地 artifact 自动生成，不调用 LLM、不访问外网、不依赖在线图表服务。所有结论来自 schema 化 JSON/JSONL、CSV 和本地 SVG 产物。</p>
+  <h2>结论摘要</h2>
+  <table><thead><tr><th>artifact 派生结论</th></tr></thead><tbody>{conclusion_rows}</tbody></table>
   <h2>运行元数据</h2>
   <table><thead><tr><th>字段</th><th>值</th></tr></thead><tbody>{metadata_rows}</tbody></table>
   <h2>分析发现</h2>

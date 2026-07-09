@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>中文自动化可视化分析报告</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; color: #202124; }
+    table { border-collapse: collapse; width: 100%; margin: 16px 0 24px; }
+    th, td { border: 1px solid #d0d7de; padding: 8px; text-align: left; }
+    th { background: #f6f8fa; }
+    code { background: #f6f8fa; padding: 2px 4px; }
+  </style>
+</head>
+<body>
+  <h1>中文自动化可视化分析报告</h1>
+  <p>状态: <code>PASS</code></p>
+  <p>来源阶段: <code>M1-S07</code></p>
+  <h2>总览页</h2>
+  <p>本报告由本地 artifact 自动生成，不调用 LLM、不访问外网、不依赖在线图表服务。所有结论来自 schema 化 JSON/JSONL、CSV 和本地 SVG 产物。</p>
+  <h2>结论摘要</h2>
+  <table><thead><tr><th>artifact 派生结论</th></tr></thead><tbody><tr><td>主要启动耗时: total_setup_ms = 38779.334 ms。</td></tr>
+<tr><td>最慢节点: MISSING，ready_ms=MISSING。</td></tr>
+<tr><td>最慢命令: cmd-000079 runtime_command = 2022 ms。</td></tr>
+<tr><td>最慢管理操作: MISSING = MISSING ms。</td></tr>
+<tr><td>Workload 瓶颈窗口: MISSING MISSING，p99=MISSING ms，错误率=MISSING。</td></tr>
+<tr><td>Failover p95=MISSING ms；split-brain max=MISSING ms。</td></tr>
+<tr><td>资源异常节点: shard-0001-replica-00，rss_max=15151923.0 bytes。</td></tr>
+<tr><td>Cleanup 状态: PASS，剩余资源=[]。</td></tr>
+<tr><td>缺失指标数量: 24；缺失项保留原因，不用估算值替代。</td></tr></tbody></table>
+  <h2>运行元数据</h2>
+  <table><thead><tr><th>字段</th><th>值</th></tr></thead><tbody><tr><td>run_id</td><td><code>MISSING: run_id absent from run metadata</code></td></tr>
+<tr><td>created_at</td><td><code>MISSING: created_at absent from run metadata</code></td></tr>
+<tr><td>git_sha</td><td><code>MISSING: git_sha absent from run metadata</code></td></tr>
+<tr><td>valkey_version</td><td><code>MISSING: valkey_version absent from run metadata</code></td></tr>
+<tr><td>artifact_root</td><td><code>MISSING: artifact_root absent from run metadata</code></td></tr></tbody></table>
+  <h2>分析发现</h2>
+  <table><thead><tr><th>Name</th><th>Status</th></tr></thead><tbody><tr><td>source_phase</td><td>PASS</td></tr>
+<tr><td>real_valkey_evidence</td><td>PASS</td></tr>
+<tr><td>failover</td><td>SKIPPED_WITH_REASON</td></tr>
+<tr><td>cleanup</td><td>PASS</td></tr>
+<tr><td>setup_telemetry</td><td>PASS</td></tr>
+<tr><td>command_audit</td><td>PASS</td></tr>
+<tr><td>management_ops</td><td>SKIPPED_WITH_REASON</td></tr>
+<tr><td>workload_benchmark</td><td>SKIPPED_WITH_REASON</td></tr>
+<tr><td>fault_timeline</td><td>SKIPPED_WITH_REASON</td></tr>
+<tr><td>system_metrics</td><td>PASS</td></tr></tbody></table>
+  <h2>缺失指标</h2>
+  <table><thead><tr><th>指标</th><th>状态</th><th>原因</th></tr></thead><tbody><tr><td>fault_timeline.row_count</td><td>SKIPPED_WITH_REASON</td><td>Fault timeline artifacts were not present.</td></tr>
+<tr><td>management.operation_count</td><td>SKIPPED_WITH_REASON</td><td>Management operation artifacts were not present.</td></tr>
+<tr><td>setup.cluster_convergence_probe_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.cluster_meet_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.cluster_slots_assign_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.full_cluster_probe_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.node_config_distribute_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.node_config_generate_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.nodehost_start_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.process_ready_wait_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.process_start_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.replica_replicate_ms</td><td>SKIPPED_WITH_REASON</td><td>This metric is only available after a live local setup reaches the corresponding runtime step.</td></tr>
+<tr><td>setup.resource_preflight_ms</td><td>SKIPPED_WITH_REASON</td><td>Resource preflight is only executed by stages that require bounded scale admission.</td></tr>
+<tr><td>system.cpu_system_percent</td><td>MISSING</td><td>Docker stats exposes aggregate CPU percent, not per-process system CPU percent</td></tr>
+<tr><td>system.cpu_user_percent</td><td>MISSING</td><td>Docker stats exposes aggregate CPU percent, not per-process user CPU percent</td></tr>
+<tr><td>system.fd_count</td><td>MISSING</td><td>fd_count requires container namespace inspection and is unsupported by the safe Docker stats path</td></tr>
+<tr><td>system.log_error_count</td><td>MISSING</td><td>log file was unavailable for error counting</td></tr>
+<tr><td>system.replication_lag</td><td>MISSING</td><td>Valkey INFO does not expose a direct replication_lag metric in all roles</td></tr>
+<tr><td>system.rx_packets</td><td>MISSING</td><td>Docker stats NetIO does not expose packet counters</td></tr>
+<tr><td>system.slave_repl_offset</td><td>MISSING</td><td>Valkey INFO did not include slave_repl_offset</td></tr>
+<tr><td>system.tcp_retransmits</td><td>MISSING</td><td>TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector</td></tr>
+<tr><td>system.tx_packets</td><td>MISSING</td><td>Docker stats NetIO does not expose packet counters</td></tr>
+<tr><td>system.vms_bytes</td><td>MISSING</td><td>container-scoped VMS is not exposed by Docker stats</td></tr>
+<tr><td>workload.window_count</td><td>SKIPPED_WITH_REASON</td><td>Workload benchmark artifacts were not present.</td></tr></tbody></table>
+  <h2>集群拉起瀑布图</h2>
+  <img src="setup_waterfall.svg" alt="集群拉起瀑布图">
+  <h2>阶段耗时排序</h2>
+  <table><thead><tr><th>阶段指标</th><th>耗时 ms</th></tr></thead><tbody><tr><td>total_setup_ms</td><td>38779.334</td></tr>
+<tr><td>cleanup_ms</td><td>980.804</td></tr>
+<tr><td>config_validate_ms</td><td>0.613</td></tr>
+<tr><td>config_parse_ms</td><td>0.403</td></tr>
+<tr><td>port_check_ms</td><td>0.125</td></tr>
+<tr><td>plan_build_ms</td><td>0.05</td></tr></tbody></table>
+  <h2>慢节点 TopN</h2>
+  <table><thead><tr><th>节点</th><th>ready ms</th><th>角色</th><th>状态</th></tr></thead><tbody><tr><td>SKIPPED_WITH_REASON</td><td></td><td></td><td>Slow-node ranking requires numeric per-node readiness samples.</td></tr></tbody></table>
+  <h2>慢命令 TopN</h2>
+  <img src="command_latency.svg" alt="命令耗时分布">
+  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody><tr><td>cmd-000079</td><td>runtime</td><td>runtime_command</td><td>2022</td><td>PASS</td></tr>
+<tr><td>cmd-000099</td><td>runtime</td><td>runtime_command</td><td>2002</td><td>PASS</td></tr>
+<tr><td>cmd-000042</td><td>runtime</td><td>runtime_command</td><td>1991</td><td>PASS</td></tr>
+<tr><td>cmd-000083</td><td>runtime</td><td>runtime_command</td><td>1990</td><td>PASS</td></tr>
+<tr><td>cmd-000087</td><td>runtime</td><td>runtime_command</td><td>1990</td><td>PASS</td></tr>
+<tr><td>cmd-000071</td><td>runtime</td><td>runtime_command</td><td>1989</td><td>PASS</td></tr>
+<tr><td>cmd-000095</td><td>runtime</td><td>runtime_command</td><td>1989</td><td>PASS</td></tr>
+<tr><td>cmd-000107</td><td>runtime</td><td>runtime_command</td><td>1987</td><td>PASS</td></tr>
+<tr><td>cmd-000091</td><td>runtime</td><td>runtime_command</td><td>1986</td><td>PASS</td></tr>
+<tr><td>cmd-000057</td><td>runtime</td><td>runtime_command</td><td>1984</td><td>PASS</td></tr></tbody></table>
+  <h2>失败命令</h2>
+  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody><tr><td colspan="5">none</td></tr></tbody></table>
+  <h2>重试命令</h2>
+  <table><thead><tr><th>命令</th><th>操作</th><th>类型</th><th>耗时 ms</th><th>状态</th></tr></thead><tbody><tr><td colspan="5">none</td></tr></tbody></table>
+  <h2>命令审计覆盖</h2>
+  <table><thead><tr><th>命令类型</th><th>数量</th></tr></thead><tbody><tr><td>cleanup</td><td>10</td></tr>
+<tr><td>cluster_probe</td><td>42</td></tr>
+<tr><td>runtime_command</td><td>63</td></tr></tbody></table>
+  <h2>管理操作矩阵</h2>
+  <img src="management_operation_duration.svg" alt="管理操作耗时排序">
+  <table><thead><tr><th>操作</th><th>耗时 ms</th><th>状态</th><th>命令数</th></tr></thead><tbody><tr><td colspan="4">SKIPPED_WITH_REASON: 无管理操作样本</td></tr></tbody></table>
+  <h2>管理 topology diff 摘要</h2>
+  <img src="management_topology_diff.svg" alt="管理 topology diff 摘要">
+  <table><thead><tr><th>操作</th><th>known_nodes_delta</th><th>moved_slot_ranges</th><th>状态</th></tr></thead><tbody><tr><td colspan="4">SKIPPED_WITH_REASON: 无 topology diff 样本</td></tr></tbody></table>
+  <h2>Workload 基准压测</h2>
+  <p>覆盖 profile: <code></code>；全 slot 覆盖: <code>MISSING</code>。该结论来自本地 workload artifact，不依赖 LLM 或外网。</p>
+  <img src="workload_qps_p99_error.svg" alt="Workload QPS p99 错误率对比">
+  <table><thead><tr><th>压测 profile</th><th>采集窗口</th><th>实际 QPS</th><th>p99 延迟 ms</th><th>错误率</th></tr></thead><tbody><tr><td colspan="5">SKIPPED_WITH_REASON: 无 workload benchmark 样本</td></tr></tbody></table>
+  <h2>故障 Timeline</h2>
+  <img src="fault_timeline.svg" alt="故障 Timeline">
+  <table><thead><tr><th>样本</th><th>观察事件数</th><th>缺失事件</th></tr></thead><tbody><tr><td colspan="3">SKIPPED_WITH_REASON: 无 fault timeline 样本</td></tr></tbody></table>
+  <h2>Failover 延迟分布</h2>
+  <img src="failover_latency_distribution.svg" alt="Failover 延迟分布">
+  <table><thead><tr><th>指标</th><th>p50 ms</th><th>p95 ms</th><th>max ms</th><th>状态</th></tr></thead><tbody><tr><td>failover_latency</td><td>MISSING</td><td>MISSING</td><td>MISSING</td><td>MISSING</td></tr>
+<tr><td>promotion_latency</td><td>MISSING</td><td>MISSING</td><td>MISSING</td><td>MISSING</td></tr>
+<tr><td>client_unavailability</td><td>MISSING</td><td>MISSING</td><td>MISSING</td><td>MISSING</td></tr>
+<tr><td>workload_recovery</td><td>MISSING</td><td>MISSING</td><td>MISSING</td><td>MISSING</td></tr></tbody></table>
+  <h2>Split-brain 窗口</h2>
+  <img src="split_brain_window.svg" alt="Split-brain 窗口">
+  <table><thead><tr><th>指标</th><th>p95 ms</th><th>max ms</th><th>状态</th></tr></thead><tbody><tr><td>split_brain_window</td><td>MISSING</td><td>MISSING</td><td>MISSING</td></tr>
+<tr><td>cluster_down_window</td><td>MISSING</td><td>MISSING</td><td>MISSING</td></tr></tbody></table>
+  <h2>故障期间 Workload 影响</h2>
+  <img src="fault_workload_impact.svg" alt="故障期间 Workload 影响">
+  <table><thead><tr><th>故障类型</th><th>样本</th><th>客户端不可用 ms</th><th>workload 恢复 ms</th><th>状态</th></tr></thead><tbody><tr><td colspan="5">SKIPPED_WITH_REASON: 无故障期间 workload impact 输入</td></tr></tbody></table>
+  <h2>系统资源趋势</h2>
+  <img src="system_resource_trends.svg" alt="系统资源趋势">
+  <table><thead><tr><th>窗口</th><th>样本数</th><th>rss max bytes</th><th>connected clients max</th><th>缺失数</th></tr></thead><tbody><tr><td>cleanup</td><td>240</td><td>15151923.0</td><td>2.0</td><td>57</td></tr>
+<tr><td>setup</td><td>240</td><td>14900264.0</td><td>2.0</td><td>57</td></tr></tbody></table>
+  <h2>系统异常节点 TopN</h2>
+  <table><thead><tr><th>节点</th><th>rss max bytes</th><th>used_memory max bytes</th><th>缺失数</th></tr></thead><tbody><tr><td>shard-0001-replica-00</td><td>15151923.0</td><td>2993864.0</td><td>18</td></tr>
+<tr><td>shard-0002-replica-00</td><td>14900264.0</td><td>2993672.0</td><td>18</td></tr>
+<tr><td>shard-0000-replica-00</td><td>14889779.0</td><td>2994312.0</td><td>18</td></tr>
+<tr><td>shard-0000-primary</td><td>14638120.0</td><td>3092760.0</td><td>20</td></tr>
+<tr><td>shard-0001-primary</td><td>14313062.0</td><td>3067880.0</td><td>20</td></tr>
+<tr><td>shard-0002-primary</td><td>14313062.0</td><td>3067752.0</td><td>20</td></tr></tbody></table>
+  <h2>图表</h2>
+  <img src="metric_chart.svg" alt="P09 artifact metrics chart">
+</body>
+</html>

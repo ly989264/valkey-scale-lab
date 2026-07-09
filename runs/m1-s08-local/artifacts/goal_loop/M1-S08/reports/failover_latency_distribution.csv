@@ -1,0 +1,5 @@
+metric,sample_count,p50_ms,p95_ms,max_ms,status,reason
+failover_latency,0,MISSING,MISSING,MISSING,MISSING,
+promotion_latency,0,MISSING,MISSING,MISSING,MISSING,
+client_unavailability,0,MISSING,MISSING,MISSING,MISSING,
+workload_recovery,0,MISSING,MISSING,MISSING,MISSING,

@@ -1,0 +1,25 @@
+metric,status,reason,impact
+fault_timeline.row_count,SKIPPED_WITH_REASON,Fault timeline artifacts were not present.,"Report cannot display fault timeline, failover distribution, split-brain windows, or fault-period workload impact."
+management.operation_count,SKIPPED_WITH_REASON,Management operation artifacts were not present.,Report cannot display management operation timing or topology diff data.
+setup.cluster_convergence_probe_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.cluster_meet_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.cluster_slots_assign_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.full_cluster_probe_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.node_config_distribute_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.node_config_generate_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.nodehost_start_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.process_ready_wait_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.process_start_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.replica_replicate_ms,SKIPPED_WITH_REASON,This metric is only available after a live local setup reaches the corresponding runtime step.,
+setup.resource_preflight_ms,SKIPPED_WITH_REASON,Resource preflight is only executed by stages that require bounded scale admission.,
+system.cpu_system_percent,MISSING,"Docker stats exposes aggregate CPU percent, not per-process system CPU percent",This metric is excluded from numeric resource aggregation.
+system.cpu_user_percent,MISSING,"Docker stats exposes aggregate CPU percent, not per-process user CPU percent",This metric is excluded from numeric resource aggregation.
+system.fd_count,MISSING,fd_count requires container namespace inspection and is unsupported by the safe Docker stats path,This metric is excluded from numeric resource aggregation.
+system.log_error_count,MISSING,log file was unavailable for error counting,This metric is excluded from numeric resource aggregation.
+system.replication_lag,MISSING,Valkey INFO does not expose a direct replication_lag metric in all roles,This metric is excluded from numeric resource aggregation.
+system.rx_packets,MISSING,Docker stats NetIO does not expose packet counters,This metric is excluded from numeric resource aggregation.
+system.slave_repl_offset,MISSING,Valkey INFO did not include slave_repl_offset,This metric is excluded from numeric resource aggregation.
+system.tcp_retransmits,MISSING,TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector,This metric is excluded from numeric resource aggregation.
+system.tx_packets,MISSING,Docker stats NetIO does not expose packet counters,This metric is excluded from numeric resource aggregation.
+system.vms_bytes,MISSING,container-scoped VMS is not exposed by Docker stats,This metric is excluded from numeric resource aggregation.
+workload.window_count,SKIPPED_WITH_REASON,Workload benchmark artifacts were not present.,"Report cannot display workload QPS, latency, error-rate, or slot coverage."

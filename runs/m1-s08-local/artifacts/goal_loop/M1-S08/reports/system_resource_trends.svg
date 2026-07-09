@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="178" viewBox="0 0 860 178">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="16" y="28" font-size="16" font-weight="700">系统资源趋势</text>
+<text x="16" y="70" font-size="12">cleanup</text>
+<rect x="170" y="56" width="360" height="18" fill="#28666e"/>
+<text x="540" y="70" font-size="12">rss_max=15151923.0 clients_max=2.0 missing=57</text>
+<text x="16" y="104" font-size="12">setup</text>
+<rect x="170" y="90" width="354" height="18" fill="#28666e"/>
+<text x="534" y="104" font-size="12">rss_max=14900264.0 clients_max=2.0 missing=57</text>
+</svg>

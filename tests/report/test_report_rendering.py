@@ -96,12 +96,18 @@ def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: P
     assert "workload_report_inputs" in index
     assert "fault_timeline_report_inputs" in index
     assert "system_metrics_report_inputs" in index
+    assert index["offline_policy"]["artifact_only"] is True
+    assert index["offline_policy"]["llm_used"] is False
+    assert index["conclusion_summary"]["source"] == "artifact_derived"
+    assert (tmp_path / "report" / "exports" / "metrics.csv").exists()
+    assert (tmp_path / "report" / "assets" / "metric_chart.svg").exists()
     assert (tmp_path / "phase_summary.json").exists()
     assert "MISSING" in (tmp_path / "report" / "missing_metrics.csv").read_text(encoding="utf-8")
     assert "慢命令 TopN" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
     assert "Workload 基准压测" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
     assert "故障 Timeline" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
     assert "系统资源趋势" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
+    assert "结论摘要" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
 
 
 def test_report_renderer_marks_empty_missing_metrics_as_none(tmp_path: Path) -> None:

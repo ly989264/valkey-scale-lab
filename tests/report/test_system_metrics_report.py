@@ -20,4 +20,6 @@ def test_report_renders_system_resource_trends_and_topn(tmp_path: Path) -> None:
     assert (tmp_path / "report" / "system_metrics_by_window.csv").exists()
     assert (tmp_path / "report" / "system_metrics_abnormal_nodes.csv").exists()
     assert (tmp_path / "report" / "system_resource_trends.svg").exists()
+    assert (tmp_path / "report" / "exports" / "system_metrics_by_window.csv").exists()
+    assert (tmp_path / "report" / "assets" / "system_resource_trends.svg").exists()
     assert index["system_metrics_report_inputs"]["csv"] == ["system_metrics_by_window.csv", "system_metrics_abnormal_nodes.csv"]

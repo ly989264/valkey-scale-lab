@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="382" viewBox="0 0 760 382">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="12" y="24" font-size="16" font-weight="700">命令耗时分布</text>
+<text x="12" y="56" font-size="12">runtime_command cmd-000079</text>
+<rect x="230" y="42" width="380" height="18" fill="#475f9b"/>
+<text x="620" y="56" font-size="12">2022.000 ms</text>
+<text x="12" y="88" font-size="12">runtime_command cmd-000099</text>
+<rect x="230" y="74" width="376" height="18" fill="#475f9b"/>
+<text x="616" y="88" font-size="12">2002.000 ms</text>
+<text x="12" y="120" font-size="12">runtime_command cmd-000042</text>
+<rect x="230" y="106" width="374" height="18" fill="#475f9b"/>
+<text x="614" y="120" font-size="12">1991.000 ms</text>
+<text x="12" y="152" font-size="12">runtime_command cmd-000083</text>
+<rect x="230" y="138" width="373" height="18" fill="#475f9b"/>
+<text x="613" y="152" font-size="12">1990.000 ms</text>
+<text x="12" y="184" font-size="12">runtime_command cmd-000087</text>
+<rect x="230" y="170" width="373" height="18" fill="#475f9b"/>
+<text x="613" y="184" font-size="12">1990.000 ms</text>
+<text x="12" y="216" font-size="12">runtime_command cmd-000071</text>
+<rect x="230" y="202" width="373" height="18" fill="#475f9b"/>
+<text x="613" y="216" font-size="12">1989.000 ms</text>
+<text x="12" y="248" font-size="12">runtime_command cmd-000095</text>
+<rect x="230" y="234" width="373" height="18" fill="#475f9b"/>
+<text x="613" y="248" font-size="12">1989.000 ms</text>
+<text x="12" y="280" font-size="12">runtime_command cmd-000107</text>
+<rect x="230" y="266" width="373" height="18" fill="#475f9b"/>
+<text x="613" y="280" font-size="12">1987.000 ms</text>
+<text x="12" y="312" font-size="12">runtime_command cmd-000091</text>
+<rect x="230" y="298" width="373" height="18" fill="#475f9b"/>
+<text x="613" y="312" font-size="12">1986.000 ms</text>
+<text x="12" y="344" font-size="12">runtime_command cmd-000057</text>
+<rect x="230" y="330" width="372" height="18" fill="#475f9b"/>
+<text x="612" y="344" font-size="12">1984.000 ms</text>
+</svg>
