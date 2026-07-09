@@ -1,0 +1,15 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T08:34:12Z",
+  "gate_name": "assert_no_simulated_subagents",
+  "inputs": [
+    "runs/m1-hardening/H09_CHINESE_REPORT_INPUT_QUALITY_HARDENING/agents",
+    "runs/m1-hardening/H09_CHINESE_REPORT_INPUT_QUALITY_HARDENING/handoff"
+  ],
+  "schema_version": "v1",
+  "source_commit": "273df0227414977ee9bc1c569e152bb330e87469",
+  "stage_id": "H09_CHINESE_REPORT_INPUT_QUALITY_HARDENING",
+  "status": "PASS",
+  "violations": []
+}

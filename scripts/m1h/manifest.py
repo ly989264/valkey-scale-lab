@@ -261,7 +261,7 @@ CAPABILITY_FILES = {
         "valkey_e2e_evidence.json",
     ],
     "system_metrics": ["system_metrics_report.json", "system_metrics_timeseries.jsonl", "metrics_timeseries.jsonl", "valkey_e2e_evidence.json"],
-    "report": ["report_index.json", "report.md", "index.html"],
+    "report": ["report_index.json", "final_report_index.json", "report.md", "index.html"],
     "cleanup": ["cleanup_report.json"],
 }
 
@@ -392,8 +392,51 @@ CAPABILITY_REQUIRED_CHECKS = {
         "fake_or_partial_not_promoted",
         "no_fixture_system_artifacts",
     ],
-    "report": ["exact_scale_observed", "report_index_present", "accepted_inputs_only"],
+    "report": [
+        "exact_scale_observed",
+        "report_index_present",
+        "render_status_pass",
+        "offline_policy_valid",
+        "required_sections_present",
+        "section_source_refs_resolve",
+        "accepted_m1h_source_claims_cited",
+        "blocked_source_claims_preserved",
+        "no_fixture_report_sources",
+        "no_legacy_report_sources",
+        "report_source_quality_diagnostics_present",
+        "accepted_inputs_only",
+    ],
     "cleanup": ["exact_scale_observed", "cleanup_report_clean"],
+}
+
+H09_REPORT_REQUIRED_SOURCE_CLAIMS = {
+    30: ["setup_telemetry", "workload_benchmark", "system_metrics", "cleanup"],
+    50: ["setup_telemetry", "command_audit", "management_matrix", "workload_benchmark", "fault_timeline", "system_metrics", "cleanup"],
+    100: ["setup_telemetry", "command_audit", "management_matrix", "workload_benchmark", "fault_timeline", "system_metrics", "cleanup"],
+    200: ["setup_telemetry", "command_audit", "management_matrix", "workload_benchmark", "fault_timeline", "system_metrics", "cleanup"],
+}
+H09_OFFLINE_POLICY_FIELDS = {
+    "artifact_only": True,
+    "llm_used": False,
+    "external_urls_allowed": False,
+    "cdn_allowed": False,
+    "online_chart_service_allowed": False,
+}
+H09_CANONICAL_REPORT_INPUT_KEYS = [
+    "setup_report_inputs",
+    "command_audit_report_inputs",
+    "management_report_inputs",
+    "workload_report_inputs",
+    "fault_timeline_report_inputs",
+    "system_metrics_report_inputs",
+    "cleanup_report_inputs",
+    "missing_metrics_report_inputs",
+]
+H09_RENDERED_REPORT_BASENAMES = {
+    "report_index.json",
+    "final_report_index.json",
+    "report.md",
+    "index.html",
 }
 
 
@@ -402,7 +445,15 @@ def claim_id(capability: str, scale: int) -> str:
 
 
 def build_manifest(root: Path) -> dict[str, Any]:
-    claims = [build_claim(root, capability, scale) for capability, scale in REQUIRED_CLAIMS]
+    built_claims: dict[tuple[str, int], dict[str, Any]] = {}
+    for capability, scale in REQUIRED_CLAIMS:
+        if capability == "report":
+            continue
+        built_claims[(capability, scale)] = build_claim(root, capability, scale)
+    claims = [
+        build_report_claim(root, scale, built_claims) if capability == "report" else built_claims[(capability, scale)]
+        for capability, scale in REQUIRED_CLAIMS
+    ]
     return {
         "schema_version": "v1",
         "artifact_type": "m1h_evidence_manifest",
@@ -453,6 +504,9 @@ def build_claim(root: Path, capability: str, scale: int) -> dict[str, Any]:
     system_diagnostics = semantic_checks.pop("system_h08_acceptance", None)
     if system_diagnostics is not None:
         diagnostics["system_h08_acceptance"] = system_diagnostics
+    report_diagnostics = semantic_checks.pop("report_h09_acceptance", None)
+    if report_diagnostics is not None:
+        diagnostics["report_h09_acceptance"] = report_diagnostics
     claim: dict[str, Any] = {
         "claim_id": claim_id(capability, scale),
         "stage_id": "M1H",
@@ -469,6 +523,349 @@ def build_claim(root: Path, capability: str, scale: int) -> dict[str, Any]:
     if diagnostics:
         claim["diagnostics"] = diagnostics
     return claim
+
+
+def build_report_claim(root: Path, scale: int, claim_ledger: dict[tuple[str, int], dict[str, Any]]) -> dict[str, Any]:
+    candidate_paths = _candidate_paths(root, "report", scale)
+    existing = [path for path in candidate_paths if path.exists() and (not path.is_file() or path.stat().st_size > 0)]
+    non_fixture_existing = [path for path in existing if not _is_fixture_path(root, path)]
+    if non_fixture_existing:
+        existing = non_fixture_existing
+    evaluation = evaluate_report_h09_claim(root, scale, existing, claim_ledger)
+    report_inputs = [
+        str(ref)
+        for ref in evaluation.get("source_artifact_refs", [])
+        if isinstance(ref, str) and not _is_rendered_report_ref(ref)
+    ]
+    source_artifacts = _dedupe([*(relpath(root, path) for path in existing), *report_inputs])
+    semantic_checks = dict(evaluation["checks"])
+    semantic_checks["m1_format_fields_complete"] = all(bool(semantic_checks.get(name)) for name in CAPABILITY_REQUIRED_CHECKS["report"])
+    semantic_checks["hardening_stage_accepted"] = bool(evaluation.get("accepted"))
+    evidence_kind = "REAL_EXACT_SCALE" if evaluation.get("accepted") is True else "BLOCKED_WITH_REASON"
+    status = "PASS" if _claim_passes(evidence_kind, semantic_checks) else "BLOCKED_WITH_REASON"
+    claim: dict[str, Any] = {
+        "claim_id": claim_id("report", scale),
+        "stage_id": "M1H",
+        "capability": "report",
+        "scale": scale,
+        "evidence_kind": evidence_kind,
+        "required_for_milestone_pass": True,
+        "source_artifacts": source_artifacts,
+        "semantic_checks": semantic_checks,
+        "status": status,
+        "diagnostics": {"report_h09_acceptance": evaluation},
+    }
+    if status != "PASS":
+        claim["reason"] = _report_blocked_reason(scale, evaluation)
+    return claim
+
+
+def evaluate_report_h09_claim(
+    root: Path,
+    scale: int,
+    paths: list[Path],
+    claim_ledger: dict[tuple[str, int], dict[str, Any]],
+) -> dict[str, Any]:
+    report_index_path, report_index = _best_report_index(root, paths, scale)
+    required_capabilities = H09_REPORT_REQUIRED_SOURCE_CLAIMS.get(scale, [])
+    required_claim_ids = [claim_id(capability, scale) for capability in required_capabilities]
+    cited_claim_ids = _report_cited_claim_ids(report_index)
+    source_artifact_refs = _report_source_artifact_refs(report_index)
+    dependency_results = _report_dependency_results(scale, claim_ledger, required_capabilities)
+    dependency_reasons = [
+        f"{item['claim_id']}: {item['reason']}"
+        for item in dependency_results
+        if item["status"] != "PASS"
+    ]
+    index_reasons = _report_index_reasons(root, report_index_path, report_index, scale)
+    citation_reasons: list[str] = []
+    missing_citations = sorted(set(required_claim_ids) - set(cited_claim_ids))
+    if missing_citations:
+        citation_reasons.append(f"report index does not cite required exact-scale source claims: {', '.join(missing_citations)}.")
+    if _paths_contain_fixture([*source_artifact_refs, *(relpath(root, path) for path in paths)]):
+        citation_reasons.append("report source refs include tests/fixtures paths, which cannot back milestone report PASS.")
+    if _paths_contain_legacy_only(source_artifact_refs):
+        citation_reasons.append("report source refs include legacy-only artifacts, which cannot back milestone report PASS.")
+
+    report_index_present = report_index_path is not None and isinstance(report_index, dict)
+    render_status = _report_render_status(report_index)
+    accepted_source_claims = [item["claim_id"] for item in dependency_results if item["status"] == "PASS"]
+    blocked_source_claims = [item for item in dependency_results if item["status"] != "PASS"]
+    checks = {
+        "exact_scale_observed": _report_exact_scale(report_index, scale),
+        "report_index_present": report_index_present,
+        "render_status_pass": render_status == "PASS",
+        "offline_policy_valid": _report_offline_policy_valid(report_index),
+        "required_sections_present": _report_required_sections_present(report_index),
+        "section_source_refs_resolve": _report_section_source_refs_resolve(root, report_index_path, report_index),
+        "accepted_m1h_source_claims_cited": not missing_citations and all(item["status"] == "PASS" for item in dependency_results),
+        "blocked_source_claims_preserved": bool(blocked_source_claims) or all(item["status"] == "PASS" for item in dependency_results),
+        "no_fixture_report_sources": not _paths_contain_fixture([*source_artifact_refs, *(relpath(root, path) for path in paths)]),
+        "no_legacy_report_sources": not _paths_contain_legacy_only(source_artifact_refs),
+        "report_source_quality_diagnostics_present": True,
+        "accepted_inputs_only": False,
+    }
+    acceptance_reasons = _dedupe([*index_reasons, *dependency_reasons, *citation_reasons])
+    accepted = all(checks[name] is True for name in CAPABILITY_REQUIRED_CHECKS["report"] if name != "accepted_inputs_only") and not acceptance_reasons
+    checks["accepted_inputs_only"] = accepted
+    source_quality_status = "PASS" if accepted else "BLOCKED_WITH_REASON"
+    return {
+        "accepted": accepted,
+        "render_status": render_status or "MISSING",
+        "source_quality_status": source_quality_status,
+        "required_source_claims": required_claim_ids,
+        "cited_source_claims": cited_claim_ids,
+        "accepted_source_claims": accepted_source_claims,
+        "blocked_source_claims": blocked_source_claims,
+        "source_artifact_refs": source_artifact_refs,
+        "report_index_path": relpath(root, report_index_path) if report_index_path else None,
+        "checks": checks,
+        "reasons": acceptance_reasons,
+    }
+
+
+def _report_blocked_reason(scale: int, evaluation: dict[str, Any]) -> str:
+    reasons = evaluation.get("reasons")
+    if isinstance(reasons, list) and reasons:
+        return f"{claim_id('report', scale)} source quality is blocked by H09: {'; '.join(str(reason) for reason in reasons)}"
+    return f"{claim_id('report', scale)} lacks H09 accepted report input-quality diagnostics."
+
+
+def _best_report_index(root: Path, paths: list[Path], scale: int) -> tuple[Path | None, dict[str, Any] | None]:
+    index_paths = [path for path in paths if path.name in {"report_index.json", "final_report_index.json"}]
+    for path in index_paths:
+        value = read_json(path)
+        if isinstance(value, dict) and _report_exact_scale(value, scale):
+            return path, value
+    for path in index_paths:
+        value = read_json(path)
+        if isinstance(value, dict):
+            return path, value
+    return None, None
+
+
+def _report_render_status(report_index: Any) -> str | None:
+    if not isinstance(report_index, dict):
+        return None
+    value = report_index.get("render_status", report_index.get("status"))
+    return str(value) if value is not None else None
+
+
+def _report_exact_scale(report_index: Any, scale: int) -> bool:
+    if not isinstance(report_index, dict):
+        return False
+    for key in ["scale", "node_count", "nodes_observed"]:
+        value = report_index.get(key)
+        if isinstance(value, int) and not isinstance(value, bool) and value == scale:
+            return True
+        if isinstance(value, str) and value.isdigit() and int(value) == scale:
+            return True
+    return False
+
+
+def _report_offline_policy_valid(report_index: Any) -> bool:
+    if not isinstance(report_index, dict):
+        return False
+    policy = report_index.get("offline_policy")
+    return isinstance(policy, dict) and all(policy.get(key) is expected for key, expected in H09_OFFLINE_POLICY_FIELDS.items())
+
+
+def _report_required_sections_present(report_index: Any) -> bool:
+    if not isinstance(report_index, dict):
+        return False
+    if report_index.get("artifact_type") == "final_report_index":
+        if not _non_empty_list(report_index.get("source_artifacts")):
+            return False
+        reports = report_index.get("reports")
+        exports = report_index.get("exports")
+        if not _non_empty_list(reports) or not _non_empty_list(exports):
+            return False
+        records = [item for item in [*reports, *exports] if isinstance(item, dict)]
+        return len(records) == len(reports) + len(exports) and all(_non_rendered_source_refs(_source_refs_from_obj(record)) for record in records)
+    return all(key in report_index and isinstance(report_index.get(key), dict) for key in H09_CANONICAL_REPORT_INPUT_KEYS)
+
+
+def _report_section_source_refs_resolve(root: Path, report_index_path: Path | None, report_index: Any) -> bool:
+    if not isinstance(report_index, dict):
+        return False
+    if report_index.get("artifact_type") == "final_report_index":
+        source_refs = _source_refs_from_obj({"source_artifacts": report_index.get("source_artifacts")})
+        if not _non_rendered_source_refs(source_refs) or not all(_report_ref_resolves(root, report_index_path, ref) for ref in _non_rendered_source_refs(source_refs)):
+            return False
+        for record in [*(report_index.get("reports") or []), *(report_index.get("exports") or [])]:
+            if not isinstance(record, dict):
+                return False
+            refs = _source_refs_from_obj(record)
+            source_refs = _non_rendered_source_refs(refs)
+            if not source_refs or not all(_report_ref_resolves(root, report_index_path, ref) for ref in source_refs):
+                return False
+        return True
+    for key in H09_CANONICAL_REPORT_INPUT_KEYS:
+        section = report_index.get(key)
+        if not isinstance(section, dict):
+            return False
+        refs = _source_refs_from_obj(section)
+        source_refs = _non_rendered_source_refs(refs)
+        if not source_refs or not all(_report_ref_resolves(root, report_index_path, ref) for ref in source_refs):
+            return False
+    return True
+
+
+def _report_index_reasons(root: Path, report_index_path: Path | None, report_index: Any, scale: int) -> list[str]:
+    reasons: list[str] = []
+    if report_index_path is None or not isinstance(report_index, dict):
+        return ["report_index.json or final_report_index.json is missing."]
+    if not _report_exact_scale(report_index, scale):
+        reasons.append(f"{relpath(root, report_index_path)} does not prove exact scale {scale}.")
+    if _report_render_status(report_index) != "PASS":
+        reasons.append(f"{relpath(root, report_index_path)} render status is {_report_render_status(report_index)!r}, not PASS.")
+    if not _report_offline_policy_valid(report_index):
+        reasons.append(f"{relpath(root, report_index_path)} lacks the exact required offline_policy fields.")
+    if not _report_required_sections_present(report_index):
+        reasons.append(f"{relpath(root, report_index_path)} is missing required report input sections or final-report source records.")
+    if not _report_section_source_refs_resolve(root, report_index_path, report_index):
+        reasons.append(f"{relpath(root, report_index_path)} required report sections do not cite resolving source input refs.")
+    return reasons
+
+
+def _report_dependency_results(
+    scale: int,
+    claim_ledger: dict[tuple[str, int], dict[str, Any]],
+    required_capabilities: list[str],
+) -> list[dict[str, Any]]:
+    results: list[dict[str, Any]] = []
+    for capability in required_capabilities:
+        cid = claim_id(capability, scale)
+        claim = claim_ledger.get((capability, scale))
+        if not isinstance(claim, dict):
+            results.append({"claim_id": cid, "capability": capability, "status": "MISSING", "reason": "required source claim is missing from the M1H manifest."})
+            continue
+        semantic = claim.get("semantic_checks") if isinstance(claim.get("semantic_checks"), dict) else {}
+        sources = [str(source) for source in claim.get("source_artifacts", []) if isinstance(source, str)]
+        dependency_passes = (
+            claim.get("status") == "PASS"
+            and claim.get("evidence_kind") in ALLOWED_PASS_KINDS
+            and semantic.get("m1_format_fields_complete") is True
+            and semantic.get("hardening_stage_accepted") is True
+            and not _paths_contain_fixture(sources)
+        )
+        status = "PASS" if dependency_passes else str(claim.get("status", "BLOCKED_WITH_REASON"))
+        reason = None
+        if not dependency_passes:
+            reason = (
+                f"{cid} is not an H09-promotable source claim "
+                f"(status={claim.get('status')!r}, evidence_kind={claim.get('evidence_kind')!r})."
+            )
+        results.append(
+            {
+                "claim_id": cid,
+                "capability": capability,
+                "status": status,
+                "evidence_kind": claim.get("evidence_kind"),
+                "reason": reason,
+            }
+        )
+    return results
+
+
+def _report_cited_claim_ids(report_index: Any) -> list[str]:
+    values: list[Any] = []
+    if isinstance(report_index, dict):
+        for key in ["source_claim_refs", "required_source_claims", "accepted_source_claims"]:
+            values.append(report_index.get(key))
+        source_quality = report_index.get("source_quality")
+        if isinstance(source_quality, dict):
+            for key in ["source_claim_refs", "required_source_claims", "accepted_source_claims"]:
+                values.append(source_quality.get(key))
+        values.append(report_index.get("source_artifacts"))
+    claim_ids: list[str] = []
+    for value in values:
+        for item in _flatten_values(value):
+            if isinstance(item, str) and ".real_exact." in item:
+                claim_ids.append(item)
+            elif isinstance(item, dict):
+                cid = item.get("claim_id") or item.get("claim_ref")
+                if isinstance(cid, str) and ".real_exact." in cid:
+                    claim_ids.append(cid)
+    return sorted(set(claim_ids))
+
+
+def _report_source_artifact_refs(report_index: Any) -> list[str]:
+    refs: list[str] = []
+    if isinstance(report_index, dict):
+        for key in ["source_artifacts", "source_artifact_refs", "source_refs", "rendered_from"]:
+            refs.extend(_source_refs_from_obj({key: report_index.get(key)}))
+        source_quality = report_index.get("source_quality")
+        if isinstance(source_quality, dict):
+            refs.extend(_source_refs_from_obj(source_quality))
+    return sorted(set(ref for ref in refs if ".real_exact." not in ref))
+
+
+def _source_refs_from_obj(obj: Any) -> list[str]:
+    refs: list[str] = []
+    if not isinstance(obj, dict):
+        return refs
+    for key in ["source_artifacts", "source_artifact_refs", "source_refs", "refs"]:
+        refs.extend(_path_refs(obj.get(key)))
+    for value in obj.values():
+        if isinstance(value, dict):
+            refs.extend(_source_refs_from_obj(value))
+    return sorted(set(refs))
+
+
+def _path_refs(value: Any) -> list[str]:
+    refs: list[str] = []
+    for item in _flatten_values(value):
+        if isinstance(item, str) and item and ".real_exact." not in item:
+            refs.append(item)
+        elif isinstance(item, dict):
+            path = item.get("path") or item.get("artifact") or item.get("ref")
+            if isinstance(path, str) and path and ".real_exact." not in path:
+                refs.append(path)
+    return refs
+
+
+def _flatten_values(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        flattened: list[Any] = []
+        for item in value:
+            flattened.extend(_flatten_values(item))
+        return flattened
+    if isinstance(value, dict):
+        return [value, *[nested for nested_value in value.values() for nested in _flatten_values(nested_value)]]
+    return [value]
+
+
+def _report_ref_resolves(root: Path, report_index_path: Path | None, ref: str) -> bool:
+    if not ref or ref in {"MISSING", "SKIPPED_WITH_REASON"}:
+        return False
+    path = Path(ref)
+    if path.is_absolute():
+        return path.exists()
+    if (root / path).exists():
+        return True
+    return report_index_path is not None and (report_index_path.parent / path).exists()
+
+
+def _is_rendered_report_ref(ref: str) -> bool:
+    return Path(ref.split("#", 1)[0]).name in H09_RENDERED_REPORT_BASENAMES
+
+
+def _non_rendered_source_refs(refs: list[str]) -> list[str]:
+    return [ref for ref in refs if not _is_rendered_report_ref(ref)]
+
+
+def _non_empty_list(value: Any) -> bool:
+    return isinstance(value, list) and bool(value)
+
+
+def _paths_contain_fixture(paths: list[str]) -> bool:
+    return any("tests/fixtures/" in path.replace("\\", "/") for path in paths)
+
+
+def _paths_contain_legacy_only(paths: list[str]) -> bool:
+    lowered = [path.lower().replace("\\", "/") for path in paths]
+    return any("/legacy" in path or "legacy_" in path or "_legacy" in path for path in lowered)
 
 
 def _candidate_paths(root: Path, capability: str, scale: int) -> list[Path]:
@@ -527,8 +924,9 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         checks.update(system_evaluation["checks"])
         checks["system_h08_acceptance"] = system_evaluation
     elif capability == "report":
-        checks["report_index_present"] = "report_index.json" in by_name
-        checks["accepted_inputs_only"] = False
+        report_evaluation = evaluate_report_h09_claim(root, scale, paths, {})
+        checks.update(report_evaluation["checks"])
+        checks["report_h09_acceptance"] = report_evaluation
     elif capability == "cleanup":
         cleanup = read_json(by_name.get("cleanup_report.json", Path()))
         checks["cleanup_report_clean"] = isinstance(cleanup, dict) and cleanup.get("status") == "PASS" and not cleanup.get("resources_remaining")
@@ -547,6 +945,8 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         if capability == "fault_timeline"
         else bool(checks.get("system_h08_acceptance", {}).get("accepted"))
         if capability == "system_metrics"
+        else bool(checks.get("report_h09_acceptance", {}).get("accepted"))
+        if capability == "report"
         else False
     )
     return checks
@@ -3107,6 +3507,8 @@ def _evidence_kind(capability: str, source_artifacts: list[str], semantic_checks
         return "REAL_EXACT_SCALE"
     if capability == "system_metrics" and semantic_checks.get("system_h08_acceptance", {}).get("accepted") is True:
         return "REAL_EXACT_SCALE"
+    if capability == "report" and semantic_checks.get("report_h09_acceptance", {}).get("accepted") is True:
+        return "REAL_EXACT_SCALE"
     if semantic_checks.get("real_valkey_verified") and semantic_checks.get("exact_scale_observed"):
         return "LEGACY_EVIDENCE_ONLY"
     if semantic_checks.get("real_valkey_verified"):
@@ -3153,6 +3555,11 @@ def _blocked_reason(capability: str, scale: int, evidence_kind: str, semantic_ch
         reasons = system.get("reasons", []) if isinstance(system, dict) else []
         if reasons:
             return f"{claim_id(capability, scale)} lacks H08/C10 exact-scale system metrics evidence: {'; '.join(str(reason) for reason in reasons)}"
+    if capability == "report":
+        report = semantic_checks.get("report_h09_acceptance")
+        reasons = report.get("reasons", []) if isinstance(report, dict) else []
+        if reasons:
+            return f"{claim_id(capability, scale)} source quality is blocked by H09: {'; '.join(str(reason) for reason in reasons)}"
     missing = [name for name in CAPABILITY_REQUIRED_CHECKS[capability] if semantic_checks.get(name) is not True]
     if evidence_kind == "LEGACY_EVIDENCE_ONLY":
         return f"{claim_id(capability, scale)} has historical real evidence, but it has not been accepted by the M1 hardening gate."
