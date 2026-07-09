@@ -3,6 +3,8 @@
 next_stage_id: H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET
 previous_stage_status: PASS
 previous_review_decision: PASS
+previous_stage_commit: 030f71e7a8b8d71c36104c43dd0378a611622cca
+previous_stage_pushed: true
 
 ## Inputs To Reload
 
