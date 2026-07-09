@@ -1,0 +1,15 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T03:44:02Z",
+  "gate_name": "assert_no_simulated_subagents",
+  "inputs": [
+    "runs/m1-hardening/H00_BOOTSTRAP_HARD_GATES/agents",
+    "runs/m1-hardening/H00_BOOTSTRAP_HARD_GATES/handoff"
+  ],
+  "schema_version": "v1",
+  "source_commit": "5faa7e1a5b0aaa8c98111d3334613f04733e7387",
+  "stage_id": "H00_BOOTSTRAP_HARD_GATES",
+  "status": "PASS",
+  "violations": []
+}

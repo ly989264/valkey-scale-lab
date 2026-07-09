@@ -1,0 +1,779 @@
+{
+  "artifact_type": "m1h_evidence_manifest",
+  "claims": [
+    {
+      "capability": "setup_telemetry",
+      "claim_id": "setup_telemetry.real_exact.30",
+      "evidence_kind": "INVALID",
+      "reason": "setup_telemetry.real_exact.30 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 30,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "setup_core_metrics_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/runtime_timing_breakdown_scale_10.json",
+        "artifacts/phases/P12_SCALE_LADDER_10_30/runtime_timing_breakdown_scale_30.json",
+        "tests/fixtures/fault_timeline/scale_30/valkey_e2e_evidence.json",
+        "tests/fixtures/system_metrics/scale_30/valkey_e2e_evidence.json",
+        "tests/fixtures/management_matrix/scale_30/valkey_e2e_evidence.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "setup_telemetry",
+      "claim_id": "setup_telemetry.real_exact.50",
+      "evidence_kind": "LEGACY_EVIDENCE_ONLY",
+      "reason": "setup_telemetry.real_exact.50 has historical real evidence, but it has not been accepted by the M1 hardening gate.",
+      "required_for_milestone_pass": true,
+      "scale": 50,
+      "semantic_checks": {
+        "exact_scale_observed": true,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": true,
+        "real_valkey_verified": true,
+        "setup_core_metrics_present": true,
+        "valkey_9_1_verified": true
+      },
+      "source_artifacts": [
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/runtime_timing_breakdown_strict_management_matrix_50.json",
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/valkey_e2e_evidence.json",
+        "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/_p33_fault_matrix_work/runtime_timing_breakdown_strict_fault_matrix_50.json",
+        "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/valkey_e2e_evidence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/runtime_timing_breakdown_strict_full_flow_50.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/valkey_e2e_evidence.json",
+        "tests/fixtures/fault_timeline/scale_50/valkey_e2e_evidence.json",
+        "tests/fixtures/system_metrics/scale_50/valkey_e2e_evidence.json",
+        "tests/fixtures/management_matrix/scale_50/valkey_e2e_evidence.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "setup_telemetry",
+      "claim_id": "setup_telemetry.real_exact.100",
+      "evidence_kind": "LEGACY_EVIDENCE_ONLY",
+      "reason": "setup_telemetry.real_exact.100 has historical real evidence, but it has not been accepted by the M1 hardening gate.",
+      "required_for_milestone_pass": true,
+      "scale": 100,
+      "semantic_checks": {
+        "exact_scale_observed": true,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": true,
+        "real_valkey_verified": true,
+        "setup_core_metrics_present": true,
+        "valkey_9_1_verified": true
+      },
+      "source_artifacts": [
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/runtime_timing_breakdown_strict_management_matrix_100.json",
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/valkey_e2e_evidence.json",
+        "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/runtime_timing_breakdown_strict_fault_matrix_100.json",
+        "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/valkey_e2e_evidence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/runtime_timing_breakdown_strict_full_flow_100.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/valkey_e2e_evidence.json",
+        "tests/fixtures/fault_timeline/scale_100/valkey_e2e_evidence.json",
+        "tests/fixtures/system_metrics/scale_100/valkey_e2e_evidence.json",
+        "tests/fixtures/management_matrix/scale_100/valkey_e2e_evidence.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "setup_telemetry",
+      "claim_id": "setup_telemetry.real_exact.200",
+      "evidence_kind": "LEGACY_EVIDENCE_ONLY",
+      "reason": "setup_telemetry.real_exact.200 has historical real evidence, but it has not been accepted by the M1 hardening gate.",
+      "required_for_milestone_pass": true,
+      "scale": 200,
+      "semantic_checks": {
+        "exact_scale_observed": true,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": true,
+        "real_valkey_verified": true,
+        "setup_core_metrics_present": true,
+        "valkey_9_1_verified": true
+      },
+      "source_artifacts": [
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/runtime_timing_breakdown_strict_management_matrix_200.json",
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/valkey_e2e_evidence.json",
+        "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/_p35_fault_matrix_work/runtime_timing_breakdown_strict_fault_matrix_200.json",
+        "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/valkey_e2e_evidence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/runtime_timing_breakdown_strict_full_flow_200.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/valkey_e2e_evidence.json",
+        "tests/fixtures/fault_timeline/scale_200/valkey_e2e_evidence.json",
+        "tests/fixtures/system_metrics/scale_200/valkey_e2e_evidence.json",
+        "tests/fixtures/management_matrix/scale_200/valkey_e2e_evidence.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "command_audit",
+      "claim_id": "command_audit.real_exact.50",
+      "evidence_kind": "INVALID",
+      "reason": "command_audit.real_exact.50 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 50,
+      "semantic_checks": {
+        "command_log_present": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "required_command_kinds_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_command_log.jsonl",
+        "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/fault_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/management_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/fault_command_log.jsonl",
+        "tests/fixtures/management_matrix/scale_50/command_audit_summary.json",
+        "tests/fixtures/management_matrix/scale_50/command_log.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "command_audit",
+      "claim_id": "command_audit.real_exact.100",
+      "evidence_kind": "INVALID",
+      "reason": "command_audit.real_exact.100 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 100,
+      "semantic_checks": {
+        "command_log_present": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "required_command_kinds_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/management_command_log.jsonl",
+        "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/fault_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/management_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/fault_command_log.jsonl",
+        "tests/fixtures/management_matrix/scale_100/command_audit_summary.json",
+        "tests/fixtures/management_matrix/scale_100/command_log.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "command_audit",
+      "claim_id": "command_audit.real_exact.200",
+      "evidence_kind": "INVALID",
+      "reason": "command_audit.real_exact.200 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 200,
+      "semantic_checks": {
+        "command_log_present": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "required_command_kinds_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_command_log.jsonl",
+        "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/management_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/fault_command_log.jsonl",
+        "tests/fixtures/management_matrix/scale_200/command_audit_summary.json",
+        "tests/fixtures/management_matrix/scale_200/command_log.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "management_matrix",
+      "claim_id": "management_matrix.real_exact.50",
+      "evidence_kind": "INVALID",
+      "reason": "management_matrix.real_exact.50 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 50,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "management_matrix_present": true,
+        "operation_semantics_present": false,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false,
+        "workload_telemetry_present": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_ops_matrix.json",
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_operation_results.jsonl",
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_topology_snapshots.jsonl",
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_workload_impact.json",
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/management_command_log.jsonl",
+        "tests/fixtures/management_matrix/scale_50/management_ops_matrix.json",
+        "tests/fixtures/management_matrix/scale_50/management_operation_results.jsonl",
+        "tests/fixtures/management_matrix/scale_50/management_topology_snapshots.jsonl",
+        "tests/fixtures/management_matrix/scale_50/management_workload_impact.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "management_matrix",
+      "claim_id": "management_matrix.real_exact.100",
+      "evidence_kind": "INVALID",
+      "reason": "management_matrix.real_exact.100 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 100,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "management_matrix_present": true,
+        "operation_semantics_present": false,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false,
+        "workload_telemetry_present": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/management_ops_matrix.json",
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/management_operation_results.jsonl",
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/management_topology_snapshots.jsonl",
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/management_workload_impact.json",
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/management_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/management_command_log.jsonl",
+        "tests/fixtures/management_matrix/scale_100/management_ops_matrix.json",
+        "tests/fixtures/management_matrix/scale_100/management_operation_results.jsonl",
+        "tests/fixtures/management_matrix/scale_100/management_topology_snapshots.jsonl",
+        "tests/fixtures/management_matrix/scale_100/management_workload_impact.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "management_matrix",
+      "claim_id": "management_matrix.real_exact.200",
+      "evidence_kind": "INVALID",
+      "reason": "management_matrix.real_exact.200 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 200,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "management_matrix_present": true,
+        "operation_semantics_present": false,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false,
+        "workload_telemetry_present": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_ops_matrix.json",
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_operation_results.jsonl",
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_topology_snapshots.jsonl",
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_workload_impact.json",
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/management_command_log.jsonl",
+        "tests/fixtures/management_matrix/scale_200/management_ops_matrix.json",
+        "tests/fixtures/management_matrix/scale_200/management_operation_results.jsonl",
+        "tests/fixtures/management_matrix/scale_200/management_topology_snapshots.jsonl",
+        "tests/fixtures/management_matrix/scale_200/management_workload_impact.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "workload_benchmark",
+      "claim_id": "workload_benchmark.real_exact.30",
+      "evidence_kind": "FIXTURE_ONLY",
+      "reason": "workload_benchmark.real_exact.30 only has non-promotable FIXTURE_ONLY evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 30,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "qps_latency_error_metrics_present": false,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false,
+        "workload_windows_present": true
+      },
+      "source_artifacts": [
+        "tests/fixtures/fault_timeline/scale_30/workload_windows.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "workload_benchmark",
+      "claim_id": "workload_benchmark.real_exact.50",
+      "evidence_kind": "INVALID",
+      "reason": "workload_benchmark.real_exact.50 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 50,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "qps_latency_error_metrics_present": true,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false,
+        "workload_windows_present": true
+      },
+      "source_artifacts": [
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/workload_windows.json",
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/workload_windows.json",
+        "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/workload_windows.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/metrics_timeseries.jsonl",
+        "tests/fixtures/fault_timeline/scale_50/workload_windows.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "workload_benchmark",
+      "claim_id": "workload_benchmark.real_exact.100",
+      "evidence_kind": "INVALID",
+      "reason": "workload_benchmark.real_exact.100 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 100,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "qps_latency_error_metrics_present": true,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false,
+        "workload_windows_present": true
+      },
+      "source_artifacts": [
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/workload_windows.json",
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/workload_windows.json",
+        "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/workload_windows.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/metrics_timeseries.jsonl",
+        "tests/fixtures/fault_timeline/scale_100/workload_windows.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "workload_benchmark",
+      "claim_id": "workload_benchmark.real_exact.200",
+      "evidence_kind": "INVALID",
+      "reason": "workload_benchmark.real_exact.200 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 200,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "qps_latency_error_metrics_present": true,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false,
+        "workload_windows_present": true
+      },
+      "source_artifacts": [
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/workload_windows.json",
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/workload_windows.json",
+        "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/workload_windows.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/metrics_timeseries.jsonl",
+        "tests/fixtures/fault_timeline/scale_200/workload_windows.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "fault_timeline",
+      "claim_id": "fault_timeline.real_exact.50",
+      "evidence_kind": "INVALID",
+      "reason": "fault_timeline.real_exact.50 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 50,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "fake_or_partial_not_promoted": false,
+        "fault_timeline_present": true,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_fault_events_present": true,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/fault_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/fault_sequence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/fault_command_log.jsonl",
+        "tests/fixtures/fault_timeline/scale_50/fault_timeline_report.json",
+        "tests/fixtures/fault_timeline/scale_50/fault_timeline_events.jsonl",
+        "tests/fixtures/fault_timeline/scale_50/failover_latency_samples.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "fault_timeline",
+      "claim_id": "fault_timeline.real_exact.100",
+      "evidence_kind": "INVALID",
+      "reason": "fault_timeline.real_exact.100 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 100,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "fake_or_partial_not_promoted": false,
+        "fault_timeline_present": true,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_fault_events_present": true,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/fault_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/fault_sequence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/fault_command_log.jsonl",
+        "tests/fixtures/fault_timeline/scale_100/fault_timeline_report.json",
+        "tests/fixtures/fault_timeline/scale_100/fault_timeline_events.jsonl",
+        "tests/fixtures/fault_timeline/scale_100/failover_latency_samples.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "fault_timeline",
+      "claim_id": "fault_timeline.real_exact.200",
+      "evidence_kind": "INVALID",
+      "reason": "fault_timeline.real_exact.200 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 200,
+      "semantic_checks": {
+        "exact_scale_observed": false,
+        "fake_or_partial_not_promoted": false,
+        "fault_timeline_present": true,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_fault_events_present": true,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_command_log.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/fault_sequence.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/fault_command_log.jsonl",
+        "tests/fixtures/fault_timeline/scale_200/fault_timeline_report.json",
+        "tests/fixtures/fault_timeline/scale_200/fault_timeline_events.jsonl",
+        "tests/fixtures/fault_timeline/scale_200/failover_latency_samples.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "system_metrics",
+      "claim_id": "system_metrics.real_exact.30",
+      "evidence_kind": "FIXTURE_ONLY",
+      "reason": "system_metrics.real_exact.30 only has non-promotable FIXTURE_ONLY evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 30,
+      "semantic_checks": {
+        "core_metrics_present": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "system_windows_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "tests/fixtures/system_metrics/scale_30/system_metrics_report.json",
+        "tests/fixtures/system_metrics/scale_30/system_metrics_timeseries.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "system_metrics",
+      "claim_id": "system_metrics.real_exact.50",
+      "evidence_kind": "INVALID",
+      "reason": "system_metrics.real_exact.50 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 50,
+      "semantic_checks": {
+        "core_metrics_present": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "system_windows_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/metrics_timeseries.jsonl",
+        "tests/fixtures/system_metrics/scale_50/system_metrics_report.json",
+        "tests/fixtures/system_metrics/scale_50/system_metrics_timeseries.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "system_metrics",
+      "claim_id": "system_metrics.real_exact.100",
+      "evidence_kind": "INVALID",
+      "reason": "system_metrics.real_exact.100 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 100,
+      "semantic_checks": {
+        "core_metrics_present": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "system_windows_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/metrics_timeseries.jsonl",
+        "tests/fixtures/system_metrics/scale_100/system_metrics_report.json",
+        "tests/fixtures/system_metrics/scale_100/system_metrics_timeseries.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "system_metrics",
+      "claim_id": "system_metrics.real_exact.200",
+      "evidence_kind": "INVALID",
+      "reason": "system_metrics.real_exact.200 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 200,
+      "semantic_checks": {
+        "core_metrics_present": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "system_windows_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/metrics_timeseries.jsonl",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/metrics_timeseries.jsonl",
+        "tests/fixtures/system_metrics/scale_200/system_metrics_report.json",
+        "tests/fixtures/system_metrics/scale_200/system_metrics_timeseries.jsonl"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "report",
+      "claim_id": "report.real_exact.30",
+      "evidence_kind": "BLOCKED_WITH_REASON",
+      "reason": "report.real_exact.30 is missing semantic checks: exact_scale_observed, report_index_present, accepted_inputs_only.",
+      "required_for_milestone_pass": true,
+      "scale": 30,
+      "semantic_checks": {
+        "accepted_inputs_only": false,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "report_index_present": false,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "report",
+      "claim_id": "report.real_exact.50",
+      "evidence_kind": "INVALID",
+      "reason": "report.real_exact.50 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 50,
+      "semantic_checks": {
+        "accepted_inputs_only": false,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "report_index_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/report_index.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "report",
+      "claim_id": "report.real_exact.100",
+      "evidence_kind": "INVALID",
+      "reason": "report.real_exact.100 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 100,
+      "semantic_checks": {
+        "accepted_inputs_only": false,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "report_index_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/report_index.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "report",
+      "claim_id": "report.real_exact.200",
+      "evidence_kind": "INVALID",
+      "reason": "report.real_exact.200 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 200,
+      "semantic_checks": {
+        "accepted_inputs_only": false,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "report_index_present": true,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/report_index.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "cleanup",
+      "claim_id": "cleanup.real_exact.30",
+      "evidence_kind": "INVALID",
+      "reason": "cleanup.real_exact.30 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 30,
+      "semantic_checks": {
+        "cleanup_report_clean": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P12_SCALE_LADDER_10_30/cleanup_report.json",
+        "tests/fixtures/fault_timeline/scale_30/cleanup_report.json",
+        "tests/fixtures/system_metrics/scale_30/cleanup_report.json",
+        "tests/fixtures/management_matrix/scale_30/cleanup_report.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "cleanup",
+      "claim_id": "cleanup.real_exact.50",
+      "evidence_kind": "INVALID",
+      "reason": "cleanup.real_exact.50 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 50,
+      "semantic_checks": {
+        "cleanup_report_clean": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/cleanup_report.json",
+        "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/cleanup_report.json",
+        "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/_p33_fault_matrix_work/cleanup_report.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_50/cleanup_report.json",
+        "tests/fixtures/fault_timeline/scale_50/cleanup_report.json",
+        "tests/fixtures/system_metrics/scale_50/cleanup_report.json",
+        "tests/fixtures/management_matrix/scale_50/cleanup_report.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "cleanup",
+      "claim_id": "cleanup.real_exact.100",
+      "evidence_kind": "INVALID",
+      "reason": "cleanup.real_exact.100 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 100,
+      "semantic_checks": {
+        "cleanup_report_clean": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/cleanup_report.json",
+        "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/cleanup_report.json",
+        "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/_p34_fault_matrix_work/cleanup_report.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_100/cleanup_report.json",
+        "tests/fixtures/fault_timeline/scale_100/cleanup_report.json",
+        "tests/fixtures/system_metrics/scale_100/cleanup_report.json",
+        "tests/fixtures/management_matrix/scale_100/cleanup_report.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "capability": "cleanup",
+      "claim_id": "cleanup.real_exact.200",
+      "evidence_kind": "INVALID",
+      "reason": "cleanup.real_exact.200 only has non-promotable INVALID evidence.",
+      "required_for_milestone_pass": true,
+      "scale": 200,
+      "semantic_checks": {
+        "cleanup_report_clean": true,
+        "exact_scale_observed": false,
+        "hardening_stage_accepted": false,
+        "m1_format_fields_complete": false,
+        "real_valkey_verified": false,
+        "valkey_9_1_verified": false
+      },
+      "source_artifacts": [
+        "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/cleanup_report.json",
+        "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/cleanup_report.json",
+        "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/_p35_fault_matrix_work/cleanup_report.json",
+        "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/full_flow_200/cleanup_report.json",
+        "tests/fixtures/fault_timeline/scale_200/cleanup_report.json",
+        "tests/fixtures/system_metrics/scale_200/cleanup_report.json",
+        "tests/fixtures/management_matrix/scale_200/cleanup_report.json"
+      ],
+      "stage_id": "M1H",
+      "status": "BLOCKED_WITH_REASON"
+    }
+  ],
+  "created_at": "2026-07-09T03:40:45Z",
+  "schema_version": "v1",
+  "source_commit": "5faa7e1a5b0aaa8c98111d3334613f04733e7387"
+}

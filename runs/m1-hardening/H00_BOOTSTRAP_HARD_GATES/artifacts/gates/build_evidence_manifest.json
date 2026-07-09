@@ -1,0 +1,15 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T03:40:45Z",
+  "claim_count": 29,
+  "gate_name": "build_evidence_manifest",
+  "inputs": [
+    "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/runs/m1-hardening/evidence_manifest.json"
+  ],
+  "schema_version": "v1",
+  "source_commit": "5faa7e1a5b0aaa8c98111d3334613f04733e7387",
+  "stage_id": "H00_BOOTSTRAP_HARD_GATES",
+  "status": "PASS",
+  "violations": []
+}
