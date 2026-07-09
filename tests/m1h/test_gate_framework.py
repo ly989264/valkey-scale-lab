@@ -11,12 +11,13 @@ from assert_evidence_taxonomy import validate_manifest
 from assert_no_fixture_fallback import scan_fixture_fallbacks
 from assert_no_legacy_m1_pass import validate_current_acceptance, validate_no_legacy_pass
 from assert_no_simulated_subagents import scan_stage_artifacts
+from assert_setup_core_metrics import evaluate_setup_core_metrics
 from assert_final_milestone1_hardened import evaluate_final
-from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
+from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
 from build_acceptance_reset import build_acceptance_reset, validate_acceptance_report
 from capability_gate import evaluate_capability
 from common import gate_result_path, write_gate_result, write_json
-from manifest import REQUIRED_CLAIMS, build_manifest, claim_id
+from manifest import C06_SETUP_CORE_METRICS, REQUIRED_CLAIMS, build_manifest, claim_id
 
 
 def test_write_gate_result_shape(tmp_path: Path) -> None:
@@ -197,7 +198,7 @@ def test_acceptance_rejects_pass_without_exact_scale_and_required_semantics(tmp_
                 "exact_scale_observed": False,
                 "real_valkey_verified": True,
                 "valkey_9_1_verified": True,
-                "setup_core_metrics_present": "SKIPPED_WITH_REASON",
+                "setup_core_metrics_numeric": "SKIPPED_WITH_REASON",
             },
         }
     )
@@ -208,7 +209,7 @@ def test_acceptance_rejects_pass_without_exact_scale_and_required_semantics(tmp_
     assert report["failed_claim_count"] == 1
     details = [item.get("details", {}) for item in violations if item["code"] == "required_pass_failed_semantics"]
     assert any(item.get("check") == "exact_scale_observed" for item in details)
-    assert any(item.get("check") == "setup_core_metrics_present" for item in details)
+    assert any(item.get("check") == "setup_core_metrics_numeric" for item in details)
 
 
 def test_current_acceptance_rejects_fixture_backed_pass(tmp_path: Path) -> None:
@@ -440,6 +441,210 @@ def test_capability_gate_pass_and_blocked(tmp_path: Path) -> None:
     assert blocked
 
 
+def test_setup_telemetry_valid_exact_scale_can_pass_after_c06_hardening(tmp_path: Path) -> None:
+    _write_setup_exact_scale_evidence(tmp_path, 30)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "setup_telemetry.real_exact.30")
+    assert claim["status"] == "PASS"
+    assert claim["evidence_kind"] == "REAL_EXACT_SCALE"
+    semantic = claim["semantic_checks"]
+    assert semantic["setup_core_metrics_numeric"] is True
+    assert semantic["setup_per_node_samples_complete"] is True
+    assert semantic["hardening_stage_accepted"] is True
+
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    violations, blocked, extra = evaluate_setup_core_metrics(manifest_path)
+    assert not violations
+    assert extra["passed_claims"] == ["setup_telemetry.real_exact.30"]
+    assert any("setup_telemetry.real_exact.50" in item for item in blocked)
+
+
+def test_setup_telemetry_skipped_c06_metric_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_setup_exact_scale_evidence(
+        tmp_path,
+        30,
+        metric_overrides={"cleanup_ms": {"status": "SKIPPED_WITH_REASON", "reason": "cleanup was not run"}},
+    )
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "setup_telemetry.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["setup_core_metrics_numeric"] is False
+    assert "cleanup_ms is SKIPPED_WITH_REASON" in claim["reason"]
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    violations, _blocked, extra = evaluate_setup_core_metrics(manifest_path)
+    assert not violations
+    assert extra["setup_claim_status"] == "BLOCKED_WITH_REASON"
+
+
+def test_setup_telemetry_missing_per_node_fields_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_setup_exact_scale_evidence(tmp_path, 30, sample_overrides={0: {"node_pid": None}})
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "setup_telemetry.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["setup_per_node_samples_complete"] is False
+    assert "per_node_samples[0].pid" in claim["reason"]
+
+
+def test_setup_telemetry_legacy_timing_plus_real_e2e_stays_blocked(tmp_path: Path) -> None:
+    phase = tmp_path / "artifacts" / "phases" / "P30_MANAGEMENT_MATRIX_50_REAL"
+    write_json(phase / "runtime_timing_breakdown_50.json", {"artifact_type": "p13_setup_exhaustive_timeline", "node_count": 50})
+    _write_valkey_e2e(phase, 50)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "setup_telemetry.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["evidence_kind"] == "LEGACY_EVIDENCE_ONLY"
+    assert claim["semantic_checks"]["setup_telemetry_artifact_present"] is False
+    assert "runtime_timing_breakdown artifacts are legacy timing evidence only" in claim["reason"]
+
+
+def test_setup_telemetry_fixture_never_satisfies_exact_scale_claim(tmp_path: Path) -> None:
+    fixture = tmp_path / "tests" / "fixtures" / "setup_telemetry" / "scale_30"
+    write_json(fixture / "setup_telemetry.json", _setup_telemetry_payload(30))
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "setup_telemetry.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["evidence_kind"] == "FIXTURE_ONLY"
+    assert claim["semantic_checks"]["setup_telemetry_artifact_present"] is False
+    assert "fixture" in claim["reason"]
+
+
+def test_h03_stage_exit_requires_setup_core_metrics_gate(tmp_path: Path) -> None:
+    _seed_stage_exit_base(tmp_path, "H03_SETUP_TELEMETRY_REAL_PATH_HARDENING", H03_REQUIRED_GATE_RESULTS)
+    gate = tmp_path / "runs" / "m1-hardening" / "H03_SETUP_TELEMETRY_REAL_PATH_HARDENING" / "artifacts" / "gates" / "assert_setup_core_metrics.json"
+    gate.unlink()
+    violations, blocked = validate_stage_exit(tmp_path, "H03_SETUP_TELEMETRY_REAL_PATH_HARDENING")
+    assert not violations
+    assert any("assert_setup_core_metrics.json is missing" in item for item in blocked)
+
+    write_json(gate, _gate_payload("H03_SETUP_TELEMETRY_REAL_PATH_HARDENING", "assert_setup_core_metrics"))
+    violations, blocked = validate_stage_exit(tmp_path, "H03_SETUP_TELEMETRY_REAL_PATH_HARDENING")
+    assert not violations
+    assert not blocked
+
+
+def _claim(manifest: dict[str, object], cid: str) -> dict[str, object]:
+    for claim in manifest["claims"]:  # type: ignore[index]
+        if isinstance(claim, dict) and claim.get("claim_id") == cid:
+            return claim
+    raise AssertionError(f"claim {cid} missing")
+
+
+def _write_setup_exact_scale_evidence(
+    tmp_path: Path,
+    scale: int,
+    *,
+    metric_overrides: dict[str, object] | None = None,
+    sample_overrides: dict[int, dict[str, object]] | None = None,
+) -> None:
+    phase_by_scale = {
+        30: "P12_SCALE_LADDER_10_30",
+        50: "P30_MANAGEMENT_MATRIX_50_REAL",
+        100: "P31_MANAGEMENT_MATRIX_100_REAL",
+        200: "P32_MANAGEMENT_MATRIX_200_REAL",
+    }
+    phase = tmp_path / "artifacts" / "phases" / phase_by_scale[scale]
+    write_json(phase / "setup_telemetry.json", _setup_telemetry_payload(scale, metric_overrides=metric_overrides, sample_overrides=sample_overrides))
+    _write_valkey_e2e(phase, scale)
+
+
+def _setup_telemetry_payload(
+    scale: int,
+    *,
+    metric_overrides: dict[str, object] | None = None,
+    sample_overrides: dict[int, dict[str, object]] | None = None,
+) -> dict[str, object]:
+    metrics: dict[str, object] = {metric: 10.0 for metric in C06_SETUP_CORE_METRICS}
+    metrics.update(
+        {
+            "config_parse_ms": 1.0,
+            "config_validate_ms": 1.0,
+            "resource_preflight_ms": 1.0,
+            "plan_build_ms": 1.0,
+            "port_check_ms": 1.0,
+        }
+    )
+    if metric_overrides:
+        metrics.update(metric_overrides)
+    samples: list[dict[str, object]] = []
+    for index in range(scale):
+        sample = {
+            "logical_id": f"node-{index:04d}",
+            "nodehost_id": f"nodehost-{index % 2}",
+            "node_ready_ms": float(index + 1),
+            "node_ping_ready_ms": float(index + 1),
+            "node_cluster_known_nodes": scale,
+            "node_cluster_state": "ok",
+            "node_role": "primary" if index % 2 == 0 else "replica",
+            "node_pid": 1000 + index,
+        }
+        if sample_overrides and index in sample_overrides:
+            sample.update(sample_overrides[index])
+        samples.append(sample)
+    return {
+        "schema_version": "v1",
+        "artifact_type": "setup_telemetry",
+        "phase_id": "test",
+        "run_id": "test",
+        "scenario": "test",
+        "created_at": "2026-01-01T00:00:00Z",
+        "producer": {"name": "test", "version": "v1"},
+        "status": "PASS",
+        "node_count": scale,
+        "same_schema_scale_rungs": [30, 50, 100, 200],
+        "metrics": metrics,
+        "per_node_samples": samples,
+        "per_nodehost_samples": [
+            {
+                "nodehost_id": "nodehost-0",
+                "az_id": "az-a",
+                "host_id": "local",
+                "container_name": "nodehost-0",
+                "nodehost_start_ms": 10.0,
+                "nodehost_process_count": scale,
+            }
+        ],
+        "slowest_nodes_topN": samples[:1],
+        "slowest_replica_replicate_topN": samples[1:2] or samples[:1],
+        "cleanup": {"status": "PASS", "cleanup_ms": 10.0, "resources_remaining": []},
+        "missing_metrics": [],
+        "source_artifacts": [],
+    }
+
+
+def _write_valkey_e2e(phase: Path, scale: int) -> None:
+    write_json(
+        phase / "valkey_e2e_evidence.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "valkey_e2e_evidence",
+            "status": "PASS",
+            "real_valkey": True,
+            "nodes_requested": scale,
+            "nodes_observed": scale,
+            "cluster_state_observed": "ok",
+            "valkey_versions": ["9.1.0"],
+        },
+    )
+
+
+def _seed_stage_exit_base(tmp_path: Path, stage_id: str, required_gates: list[str]) -> None:
+    for script in REQUIRED_SCRIPTS:
+        path = tmp_path / "scripts" / "m1h" / script
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# script\n", encoding="utf-8")
+    write_json(tmp_path / "runs" / "m1-hardening" / "evidence_manifest.json", {"claims": []})
+    stage = tmp_path / "runs" / "m1-hardening" / stage_id
+    for gate in required_gates:
+        write_json(stage / "artifacts" / "gates" / f"{gate}.json", _gate_payload(stage_id, gate))
+    for rel in ["agents/design.md", "agents/worker.md", "agents/review.md", "handoff/DESIGN_BRIEF.md", "handoff/WORKER_SUMMARY.md"]:
+        path = stage / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("ok\n", encoding="utf-8")
+    (stage / "handoff" / "REVIEW.md").write_text("Decision: PASS\n", encoding="utf-8")
+
+
 def _minimal_acceptance_reset(
     tmp_path: Path,
     *,
@@ -488,7 +693,15 @@ def _passing_semantic_checks(claim: str) -> dict[str, object]:
         "exact_scale_observed": True,
     }
     required = {
-        "setup_telemetry": ["real_valkey_verified", "valkey_9_1_verified", "setup_core_metrics_present"],
+        "setup_telemetry": [
+            "real_valkey_verified",
+            "valkey_9_1_verified",
+            "setup_telemetry_artifact_present",
+            "setup_telemetry_exact_scale",
+            "setup_telemetry_status_pass",
+            "setup_core_metrics_numeric",
+            "setup_per_node_samples_complete",
+        ],
         "command_audit": ["command_log_present", "required_command_kinds_present"],
         "management_matrix": ["management_matrix_present", "operation_semantics_present", "workload_telemetry_present"],
         "workload_benchmark": ["workload_windows_present", "qps_latency_error_metrics_present"],

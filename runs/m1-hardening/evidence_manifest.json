@@ -4,16 +4,59 @@
     {
       "capability": "setup_telemetry",
       "claim_id": "setup_telemetry.real_exact.30",
+      "diagnostics": {
+        "setup_c06_acceptance": {
+          "accepted": false,
+          "artifact_node_count": null,
+          "artifact_path": null,
+          "artifact_status": null,
+          "checks": {
+            "real_valkey_exact_scale": false,
+            "setup_core_metrics_numeric": false,
+            "setup_per_node_samples_complete": false,
+            "setup_telemetry_artifact_present": false,
+            "setup_telemetry_exact_scale": false,
+            "setup_telemetry_status_pass": false,
+            "valkey_9_1_verified": false
+          },
+          "core_metrics": [
+            "nodehost_start_ms",
+            "node_config_generate_ms",
+            "node_config_distribute_ms",
+            "process_start_ms",
+            "process_ready_wait_ms",
+            "cluster_meet_ms",
+            "cluster_slots_assign_ms",
+            "replica_replicate_ms",
+            "cluster_convergence_probe_ms",
+            "full_cluster_probe_ms",
+            "cleanup_ms",
+            "total_setup_ms"
+          ],
+          "reasons": [
+            "M1-format setup_telemetry.json is missing for this exact-scale setup claim.",
+            "Real Valkey evidence is not an exact-scale PASS for 30 nodes (nodes_observed=0).",
+            "Real Valkey evidence does not prove a Valkey 9.1.x version.",
+            "runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry."
+          ]
+        }
+      },
       "evidence_kind": "INVALID",
-      "reason": "setup_telemetry.real_exact.30 only has non-promotable INVALID evidence.",
+      "reason": "setup_telemetry.real_exact.30 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; Real Valkey evidence is not an exact-scale PASS for 30 nodes (nodes_observed=0).; Real Valkey evidence does not prove a Valkey 9.1.x version.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
       "required_for_milestone_pass": true,
       "scale": 30,
       "semantic_checks": {
         "exact_scale_observed": false,
         "hardening_stage_accepted": false,
         "m1_format_fields_complete": false,
+        "real_valkey_exact_scale": false,
         "real_valkey_verified": false,
-        "setup_core_metrics_present": true,
+        "setup_core_metrics_numeric": false,
+        "setup_core_metrics_present": false,
+        "setup_per_node_samples_complete": false,
+        "setup_telemetry_artifact_present": false,
+        "setup_telemetry_exact_scale": false,
+        "setup_telemetry_status_pass": false,
         "valkey_9_1_verified": false
       },
       "source_artifacts": [
@@ -29,16 +72,57 @@
     {
       "capability": "setup_telemetry",
       "claim_id": "setup_telemetry.real_exact.50",
+      "diagnostics": {
+        "setup_c06_acceptance": {
+          "accepted": false,
+          "artifact_node_count": null,
+          "artifact_path": null,
+          "artifact_status": null,
+          "checks": {
+            "real_valkey_exact_scale": true,
+            "setup_core_metrics_numeric": false,
+            "setup_per_node_samples_complete": false,
+            "setup_telemetry_artifact_present": false,
+            "setup_telemetry_exact_scale": false,
+            "setup_telemetry_status_pass": false,
+            "valkey_9_1_verified": true
+          },
+          "core_metrics": [
+            "nodehost_start_ms",
+            "node_config_generate_ms",
+            "node_config_distribute_ms",
+            "process_start_ms",
+            "process_ready_wait_ms",
+            "cluster_meet_ms",
+            "cluster_slots_assign_ms",
+            "replica_replicate_ms",
+            "cluster_convergence_probe_ms",
+            "full_cluster_probe_ms",
+            "cleanup_ms",
+            "total_setup_ms"
+          ],
+          "reasons": [
+            "M1-format setup_telemetry.json is missing for this exact-scale setup claim.",
+            "runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry."
+          ]
+        }
+      },
       "evidence_kind": "LEGACY_EVIDENCE_ONLY",
-      "reason": "setup_telemetry.real_exact.50 has historical real evidence, but it has not been accepted by the M1 hardening gate.",
+      "reason": "setup_telemetry.real_exact.50 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
       "required_for_milestone_pass": true,
       "scale": 50,
       "semantic_checks": {
         "exact_scale_observed": true,
         "hardening_stage_accepted": false,
-        "m1_format_fields_complete": true,
+        "m1_format_fields_complete": false,
+        "real_valkey_exact_scale": true,
         "real_valkey_verified": true,
-        "setup_core_metrics_present": true,
+        "setup_core_metrics_numeric": false,
+        "setup_core_metrics_present": false,
+        "setup_per_node_samples_complete": false,
+        "setup_telemetry_artifact_present": false,
+        "setup_telemetry_exact_scale": false,
+        "setup_telemetry_status_pass": false,
         "valkey_9_1_verified": true
       },
       "source_artifacts": [
@@ -58,16 +142,57 @@
     {
       "capability": "setup_telemetry",
       "claim_id": "setup_telemetry.real_exact.100",
+      "diagnostics": {
+        "setup_c06_acceptance": {
+          "accepted": false,
+          "artifact_node_count": null,
+          "artifact_path": null,
+          "artifact_status": null,
+          "checks": {
+            "real_valkey_exact_scale": true,
+            "setup_core_metrics_numeric": false,
+            "setup_per_node_samples_complete": false,
+            "setup_telemetry_artifact_present": false,
+            "setup_telemetry_exact_scale": false,
+            "setup_telemetry_status_pass": false,
+            "valkey_9_1_verified": true
+          },
+          "core_metrics": [
+            "nodehost_start_ms",
+            "node_config_generate_ms",
+            "node_config_distribute_ms",
+            "process_start_ms",
+            "process_ready_wait_ms",
+            "cluster_meet_ms",
+            "cluster_slots_assign_ms",
+            "replica_replicate_ms",
+            "cluster_convergence_probe_ms",
+            "full_cluster_probe_ms",
+            "cleanup_ms",
+            "total_setup_ms"
+          ],
+          "reasons": [
+            "M1-format setup_telemetry.json is missing for this exact-scale setup claim.",
+            "runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry."
+          ]
+        }
+      },
       "evidence_kind": "LEGACY_EVIDENCE_ONLY",
-      "reason": "setup_telemetry.real_exact.100 has historical real evidence, but it has not been accepted by the M1 hardening gate.",
+      "reason": "setup_telemetry.real_exact.100 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
       "required_for_milestone_pass": true,
       "scale": 100,
       "semantic_checks": {
         "exact_scale_observed": true,
         "hardening_stage_accepted": false,
-        "m1_format_fields_complete": true,
+        "m1_format_fields_complete": false,
+        "real_valkey_exact_scale": true,
         "real_valkey_verified": true,
-        "setup_core_metrics_present": true,
+        "setup_core_metrics_numeric": false,
+        "setup_core_metrics_present": false,
+        "setup_per_node_samples_complete": false,
+        "setup_telemetry_artifact_present": false,
+        "setup_telemetry_exact_scale": false,
+        "setup_telemetry_status_pass": false,
         "valkey_9_1_verified": true
       },
       "source_artifacts": [
@@ -87,16 +212,57 @@
     {
       "capability": "setup_telemetry",
       "claim_id": "setup_telemetry.real_exact.200",
+      "diagnostics": {
+        "setup_c06_acceptance": {
+          "accepted": false,
+          "artifact_node_count": null,
+          "artifact_path": null,
+          "artifact_status": null,
+          "checks": {
+            "real_valkey_exact_scale": true,
+            "setup_core_metrics_numeric": false,
+            "setup_per_node_samples_complete": false,
+            "setup_telemetry_artifact_present": false,
+            "setup_telemetry_exact_scale": false,
+            "setup_telemetry_status_pass": false,
+            "valkey_9_1_verified": true
+          },
+          "core_metrics": [
+            "nodehost_start_ms",
+            "node_config_generate_ms",
+            "node_config_distribute_ms",
+            "process_start_ms",
+            "process_ready_wait_ms",
+            "cluster_meet_ms",
+            "cluster_slots_assign_ms",
+            "replica_replicate_ms",
+            "cluster_convergence_probe_ms",
+            "full_cluster_probe_ms",
+            "cleanup_ms",
+            "total_setup_ms"
+          ],
+          "reasons": [
+            "M1-format setup_telemetry.json is missing for this exact-scale setup claim.",
+            "runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry."
+          ]
+        }
+      },
       "evidence_kind": "LEGACY_EVIDENCE_ONLY",
-      "reason": "setup_telemetry.real_exact.200 has historical real evidence, but it has not been accepted by the M1 hardening gate.",
+      "reason": "setup_telemetry.real_exact.200 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
       "required_for_milestone_pass": true,
       "scale": 200,
       "semantic_checks": {
         "exact_scale_observed": true,
         "hardening_stage_accepted": false,
-        "m1_format_fields_complete": true,
+        "m1_format_fields_complete": false,
+        "real_valkey_exact_scale": true,
         "real_valkey_verified": true,
-        "setup_core_metrics_present": true,
+        "setup_core_metrics_numeric": false,
+        "setup_core_metrics_present": false,
+        "setup_per_node_samples_complete": false,
+        "setup_telemetry_artifact_present": false,
+        "setup_telemetry_exact_scale": false,
+        "setup_telemetry_status_pass": false,
         "valkey_9_1_verified": true
       },
       "source_artifacts": [
@@ -773,7 +939,7 @@
       "status": "BLOCKED_WITH_REASON"
     }
   ],
-  "created_at": "2026-07-09T04:25:04Z",
+  "created_at": "2026-07-09T04:48:23Z",
   "schema_version": "v1",
-  "source_commit": "577b37d3aaadc5bc87f81090b02014133d318b1f"
+  "source_commit": "65089a70901e8ccb7be4af89bf0bee92ad4e2016"
 }

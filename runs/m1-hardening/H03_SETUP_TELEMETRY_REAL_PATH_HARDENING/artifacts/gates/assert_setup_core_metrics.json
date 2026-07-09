@@ -1,0 +1,76 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_claims": [
+    {
+      "claim_id": "setup_telemetry.real_exact.30",
+      "failed_c06_reasons": [
+        "M1-format setup_telemetry.json is missing for this exact-scale setup claim.",
+        "Real Valkey evidence is not an exact-scale PASS for 30 nodes (nodes_observed=0).",
+        "Real Valkey evidence does not prove a Valkey 9.1.x version.",
+        "runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry."
+      ],
+      "reason": "setup_telemetry.real_exact.30 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; Real Valkey evidence is not an exact-scale PASS for 30 nodes (nodes_observed=0).; Real Valkey evidence does not prove a Valkey 9.1.x version.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
+      "scale": 30
+    },
+    {
+      "claim_id": "setup_telemetry.real_exact.50",
+      "failed_c06_reasons": [
+        "M1-format setup_telemetry.json is missing for this exact-scale setup claim.",
+        "runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry."
+      ],
+      "reason": "setup_telemetry.real_exact.50 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
+      "scale": 50
+    },
+    {
+      "claim_id": "setup_telemetry.real_exact.100",
+      "failed_c06_reasons": [
+        "M1-format setup_telemetry.json is missing for this exact-scale setup claim.",
+        "runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry."
+      ],
+      "reason": "setup_telemetry.real_exact.100 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
+      "scale": 100
+    },
+    {
+      "claim_id": "setup_telemetry.real_exact.200",
+      "failed_c06_reasons": [
+        "M1-format setup_telemetry.json is missing for this exact-scale setup claim.",
+        "runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry."
+      ],
+      "reason": "setup_telemetry.real_exact.200 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
+      "scale": 200
+    }
+  ],
+  "blocked_reasons": [
+    "setup_telemetry.real_exact.30: setup_telemetry.real_exact.30 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; Real Valkey evidence is not an exact-scale PASS for 30 nodes (nodes_observed=0).; Real Valkey evidence does not prove a Valkey 9.1.x version.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
+    "setup_telemetry.real_exact.50: setup_telemetry.real_exact.50 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
+    "setup_telemetry.real_exact.100: setup_telemetry.real_exact.100 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry.",
+    "setup_telemetry.real_exact.200: setup_telemetry.real_exact.200 lacks C06 exact-scale setup telemetry: M1-format setup_telemetry.json is missing for this exact-scale setup claim.; runtime_timing_breakdown artifacts are legacy timing evidence only and cannot satisfy C06 setup telemetry."
+  ],
+  "c06_core_metrics": [
+    "nodehost_start_ms",
+    "node_config_generate_ms",
+    "node_config_distribute_ms",
+    "process_start_ms",
+    "process_ready_wait_ms",
+    "cluster_meet_ms",
+    "cluster_slots_assign_ms",
+    "replica_replicate_ms",
+    "cluster_convergence_probe_ms",
+    "full_cluster_probe_ms",
+    "cleanup_ms",
+    "total_setup_ms"
+  ],
+  "checked_at": "2026-07-09T04:48:31Z",
+  "checked_claim_count": 4,
+  "gate_name": "assert_setup_core_metrics",
+  "inputs": [
+    "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/runs/m1-hardening/evidence_manifest.json"
+  ],
+  "passed_claims": [],
+  "schema_version": "v1",
+  "setup_claim_status": "BLOCKED_WITH_REASON",
+  "source_commit": "65089a70901e8ccb7be4af89bf0bee92ad4e2016",
+  "stage_id": "H03_SETUP_TELEMETRY_REAL_PATH_HARDENING",
+  "status": "PASS",
+  "violations": []
+}

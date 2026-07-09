@@ -1,0 +1,15 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T04:48:23Z",
+  "claim_count": 29,
+  "gate_name": "build_evidence_manifest",
+  "inputs": [
+    "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/runs/m1-hardening/evidence_manifest.json"
+  ],
+  "schema_version": "v1",
+  "source_commit": "65089a70901e8ccb7be4af89bf0bee92ad4e2016",
+  "stage_id": "H03_SETUP_TELEMETRY_REAL_PATH_HARDENING",
+  "status": "PASS",
+  "violations": []
+}
