@@ -98,6 +98,30 @@ H05_REQUIRED_MANAGEMENT_OPERATIONS = {
     "rolling_restart_replica_first",
     "rolling_restart_primary_safe",
 }
+H06_REQUIRED_WORKLOAD_PROFILES = ["smoke", "uniform", "hotspot", "mixed_rw", "write_heavy", "read_heavy"]
+H06_REQUIRED_WORKLOAD_WINDOWS = ["baseline", "pre_event", "event", "recovery", "post_recovery", "all_run"]
+H06_REQUIRED_WORKLOAD_METRICS = [
+    "requested_qps",
+    "achieved_qps",
+    "throughput_ratio",
+    "ok_ops",
+    "error_ops",
+    "error_rate",
+    "latency_p50_ms",
+    "latency_p90_ms",
+    "latency_p95_ms",
+    "latency_p99_ms",
+    "latency_p999_ms",
+    "timeout_count",
+    "connection_error_count",
+    "moved_count",
+    "ask_count",
+    "cluster_down_count",
+    "readonly_count",
+    "tryagain_count",
+]
+H06_MIN_OPERATIONS_PER_WINDOW = 6
+H06_REQUIRED_METRIC_ROW_COUNT = len(H06_REQUIRED_WORKLOAD_PROFILES) * len(H06_REQUIRED_WORKLOAD_WINDOWS) * len(H06_REQUIRED_WORKLOAD_METRICS)
 
 REQUIRED_CLAIMS: list[tuple[str, int]] = [
     ("setup_telemetry", 30),
@@ -169,7 +193,7 @@ CAPABILITY_FILES = {
         "management_command_log.jsonl",
         "valkey_e2e_evidence.json",
     ],
-    "workload_benchmark": ["workload_windows.json", "metrics_timeseries.jsonl"],
+    "workload_benchmark": ["workload_windows.json", "metrics_timeseries.jsonl", "valkey_e2e_evidence.json"],
     "fault_timeline": ["fault_timeline_report.json", "fault_timeline_events.jsonl", "failover_latency_samples.jsonl", "fault_sequence.json", "fault_command_log.jsonl"],
     "system_metrics": ["system_metrics_report.json", "system_metrics_timeseries.jsonl", "metrics_timeseries.jsonl"],
     "report": ["report_index.json", "report.md", "index.html"],
@@ -233,7 +257,28 @@ CAPABILITY_REQUIRED_CHECKS = {
         "topology_exact_health",
         "no_fixture_management_artifacts",
     ],
-    "workload_benchmark": ["exact_scale_observed", "workload_windows_present", "qps_latency_error_metrics_present"],
+    "workload_benchmark": [
+        "real_valkey_verified",
+        "exact_scale_observed",
+        "valkey_9_1_verified",
+        "workload_windows_present",
+        "workload_windows_schema_valid",
+        "workload_windows_status_pass",
+        "workload_profiles_complete",
+        "workload_windows_complete",
+        "workload_required_metrics_numeric",
+        "metrics_timeseries_present",
+        "metrics_timeseries_schema_valid",
+        "metrics_row_count_sufficient",
+        "metrics_rows_cover_required_matrix",
+        "metrics_core_values_numeric",
+        "operations_per_window_sufficient",
+        "connection_evidence_observed",
+        "pipeline_evidence_observed",
+        "full_slot_coverage_non_smoke",
+        "fake_or_partial_not_promoted",
+        "no_fixture_workload_artifacts",
+    ],
     "fault_timeline": ["exact_scale_observed", "fault_timeline_present", "real_fault_events_present", "fake_or_partial_not_promoted"],
     "system_metrics": ["exact_scale_observed", "system_windows_present", "core_metrics_present"],
     "report": ["exact_scale_observed", "report_index_present", "accepted_inputs_only"],
@@ -288,6 +333,9 @@ def build_claim(root: Path, capability: str, scale: int) -> dict[str, Any]:
     management_diagnostics = semantic_checks.pop("management_h05_acceptance", None)
     if management_diagnostics is not None:
         diagnostics["management_h05_acceptance"] = management_diagnostics
+    workload_diagnostics = semantic_checks.pop("workload_h06_acceptance", None)
+    if workload_diagnostics is not None:
+        diagnostics["workload_h06_acceptance"] = workload_diagnostics
     claim: dict[str, Any] = {
         "claim_id": claim_id(capability, scale),
         "stage_id": "M1H",
@@ -350,8 +398,9 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         checks.update(management_evaluation["checks"])
         checks["management_h05_acceptance"] = management_evaluation
     elif capability == "workload_benchmark":
-        checks["workload_windows_present"] = "workload_windows.json" in by_name
-        checks["qps_latency_error_metrics_present"] = _jsonl_has_rows(paths, "metric")
+        workload_evaluation = evaluate_workload_benchmark_claim(root, scale, paths)
+        checks.update(workload_evaluation["checks"])
+        checks["workload_h06_acceptance"] = workload_evaluation
     elif capability == "fault_timeline":
         checks["fault_timeline_present"] = any("fault" in path.name for path in paths)
         checks["real_fault_events_present"] = _jsonl_has_rows(paths, "fault") or "fault_sequence.json" in by_name
@@ -374,6 +423,8 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         if capability == "command_audit"
         else bool(checks.get("management_h05_acceptance", {}).get("accepted"))
         if capability == "management_matrix"
+        else bool(checks.get("workload_h06_acceptance", {}).get("accepted"))
+        if capability == "workload_benchmark"
         else False
     )
     return checks
@@ -967,6 +1018,384 @@ def _evaluate_management_matrix_bundle(root: Path, scale: int, paths: list[Path]
         "results_path": relpath(root, results_path) if results_path else None,
         "required_operations": sorted(H05_REQUIRED_MANAGEMENT_OPERATIONS),
     }
+
+
+def evaluate_workload_benchmark_claim(root: Path, scale: int, paths: list[Path]) -> dict[str, Any]:
+    non_fixture_paths = [path for path in paths if not _is_fixture_path(root, path)]
+    candidate_dirs = sorted({path.parent for path in non_fixture_paths}) or sorted({path.parent for path in paths})
+    best: dict[str, Any] | None = None
+    for directory in candidate_dirs:
+        bundle_paths = [path for path in paths if path.parent == directory]
+        candidate = _evaluate_workload_benchmark_bundle(root, scale, bundle_paths)
+        if best is None or _workload_score(candidate["checks"]) > _workload_score(best["checks"]):
+            best = candidate
+    if best is not None:
+        return best
+    checks = _empty_workload_checks(_real_valkey_exact_scale({}, scale), False)
+    return {
+        "accepted": False,
+        "checks": checks,
+        "reasons": ["No same-directory workload benchmark artifact bundle was found for this exact-scale claim."],
+        "workload_windows_path": None,
+        "metrics_path": None,
+        "required_profiles": H06_REQUIRED_WORKLOAD_PROFILES,
+        "required_windows": H06_REQUIRED_WORKLOAD_WINDOWS,
+        "required_metrics": H06_REQUIRED_WORKLOAD_METRICS,
+        "minimum_metric_rows": H06_REQUIRED_METRIC_ROW_COUNT,
+        "minimum_operations_per_window": H06_MIN_OPERATIONS_PER_WINDOW,
+    }
+
+
+def _workload_score(checks: dict[str, bool]) -> int:
+    return sum(1 for value in checks.values() if value is True)
+
+
+def _empty_workload_checks(real_exact: bool, valkey_9_1: bool) -> dict[str, bool]:
+    return {
+        "workload_windows_present": False,
+        "workload_windows_schema_valid": False,
+        "workload_windows_status_pass": False,
+        "workload_profiles_complete": False,
+        "workload_windows_complete": False,
+        "workload_required_metrics_numeric": False,
+        "metrics_timeseries_present": False,
+        "metrics_timeseries_schema_valid": False,
+        "metrics_row_count_sufficient": False,
+        "metrics_rows_cover_required_matrix": False,
+        "metrics_core_values_numeric": False,
+        "operations_per_window_sufficient": False,
+        "connection_evidence_observed": False,
+        "pipeline_evidence_observed": False,
+        "full_slot_coverage_non_smoke": False,
+        "fake_or_partial_not_promoted": False,
+        "no_fixture_workload_artifacts": False,
+        "real_valkey_exact_scale": real_exact,
+        "valkey_9_1_verified": valkey_9_1,
+    }
+
+
+def _evaluate_workload_benchmark_bundle(root: Path, scale: int, paths: list[Path]) -> dict[str, Any]:
+    evidence = _best_evidence(root, paths)
+    real_exact = _real_valkey_exact_scale(evidence, scale)
+    valkey_9_1 = isinstance(evidence, dict) and any(str(version).startswith("9.1.") for version in evidence.get("valkey_versions", []))
+    non_fixture_paths = [path for path in paths if not _is_fixture_path(root, path)]
+    by_name = {path.name: path for path in non_fixture_paths}
+    workload_path = by_name.get("workload_windows.json")
+    metrics_path = by_name.get("metrics_timeseries.jsonl")
+    workload = read_json(workload_path) if workload_path else {}
+    metric_rows, metric_jsonl_reasons = _read_workload_jsonl_strict(root, metrics_path)
+
+    reasons: list[str] = []
+    has_fixture = any(_is_fixture_path(root, path) for path in paths)
+    has_non_fixture = bool(non_fixture_paths)
+    if not workload_path:
+        reasons.append("workload_windows.json is missing from the same directory as exact-scale workload benchmark evidence.")
+    if not metrics_path:
+        reasons.append("metrics_timeseries.jsonl is missing from the same directory as exact-scale workload benchmark evidence.")
+    if not any(path.name == "valkey_e2e_evidence.json" and not _is_fixture_path(root, path) for path in paths):
+        reasons.append("valkey_e2e_evidence.json is missing from the same directory as workload benchmark artifacts.")
+    if has_fixture and not has_non_fixture:
+        reasons.append("Only fixture workload benchmark artifacts were found; fixtures cannot satisfy exact-scale workload benchmark.")
+
+    schema_reasons = _schema_reasons(root, workload_path, workload, "workload_windows.schema.json")
+    metric_schema_reasons: list[str] = []
+    for index, row in enumerate(metric_rows):
+        metric_schema_reasons.extend(_schema_reasons(root, metrics_path, row, "goal_loop_metric_sample.schema.json", label=f"row {index + 1}"))
+    window_checks, window_reasons = _workload_window_reasons(root, workload_path, workload, scale)
+    metric_checks, metric_reasons, metric_stats = _workload_metric_row_reasons(root, metrics_path, metric_rows)
+    connection_ok = _workload_observed_connection_evidence(workload, metric_rows)
+    pipeline_ok = _workload_observed_pipeline_evidence(workload, metric_rows)
+    fake_partial_reasons = _workload_fake_or_partial_reasons(root, paths, workload, metric_rows)
+
+    reasons.extend(schema_reasons)
+    reasons.extend(metric_jsonl_reasons)
+    reasons.extend(metric_schema_reasons)
+    reasons.extend(window_reasons)
+    reasons.extend(metric_reasons)
+    reasons.extend(fake_partial_reasons)
+    if not connection_ok:
+        reasons.append("Observed connection evidence is missing; config-only connection settings cannot satisfy H06.")
+    if not pipeline_ok:
+        reasons.append("Observed pipeline evidence is missing; config-only pipeline settings cannot satisfy H06.")
+    if not real_exact:
+        observed = evidence.get("nodes_observed") if isinstance(evidence, dict) else None
+        reasons.append(f"Real Valkey evidence is not an exact-scale PASS for {scale} nodes (nodes_observed={observed!r}).")
+    if not valkey_9_1:
+        reasons.append("Real Valkey evidence does not prove a Valkey 9.1.x version.")
+
+    checks = {
+        "workload_windows_present": workload_path is not None and isinstance(workload, dict) and not _is_fixture_path(root, workload_path),
+        "workload_windows_schema_valid": not schema_reasons,
+        **window_checks,
+        "metrics_timeseries_present": metrics_path is not None and bool(metric_rows) and not _is_fixture_path(root, metrics_path),
+        "metrics_timeseries_schema_valid": bool(metric_rows) and not metric_jsonl_reasons and not metric_schema_reasons,
+        **metric_checks,
+        "connection_evidence_observed": connection_ok,
+        "pipeline_evidence_observed": pipeline_ok,
+        "fake_or_partial_not_promoted": not fake_partial_reasons,
+        "no_fixture_workload_artifacts": not has_fixture or has_non_fixture,
+        "real_valkey_exact_scale": real_exact,
+        "valkey_9_1_verified": valkey_9_1,
+    }
+    accepted = real_exact and valkey_9_1 and all(checks.values())
+    return {
+        "accepted": accepted,
+        "checks": checks,
+        "reasons": _dedupe(reasons),
+        "workload_windows_path": relpath(root, workload_path) if workload_path else None,
+        "metrics_path": relpath(root, metrics_path) if metrics_path else None,
+        "metric_row_count": metric_stats["core_row_count"],
+        "minimum_metric_rows": H06_REQUIRED_METRIC_ROW_COUNT,
+        "minimum_operations_per_window": H06_MIN_OPERATIONS_PER_WINDOW,
+        "required_profiles": H06_REQUIRED_WORKLOAD_PROFILES,
+        "required_windows": H06_REQUIRED_WORKLOAD_WINDOWS,
+        "required_metrics": H06_REQUIRED_WORKLOAD_METRICS,
+    }
+
+
+def _workload_window_reasons(root: Path, path: Path | None, workload: Any, scale: int) -> tuple[dict[str, bool], list[str]]:
+    reasons: list[str] = []
+    if not isinstance(workload, dict):
+        return {
+            "workload_windows_status_pass": False,
+            "workload_profiles_complete": False,
+            "workload_windows_complete": False,
+            "workload_required_metrics_numeric": False,
+            "operations_per_window_sufficient": False,
+            "full_slot_coverage_non_smoke": False,
+        }, ["workload_windows.json is missing or invalid JSON."]
+    if workload.get("status") != "PASS":
+        reasons.append(f"workload_windows.json status {workload.get('status')!r} is not PASS.")
+    windows = workload.get("windows")
+    if not isinstance(windows, list) or not windows:
+        reasons.append("workload_windows.json windows is missing or empty.")
+        windows = []
+    profiles_covered = {str(item) for item in workload.get("profiles_covered", []) if isinstance(item, str)}
+    profile_windows: dict[tuple[str, str], dict[str, Any]] = {}
+    observed_profiles: set[str] = set(profiles_covered)
+    metrics_numeric_ok = True
+    operations_ok = True
+    full_slot_ok = True
+    for index, item in enumerate(windows):
+        label = f"workload_windows.json windows[{index}]"
+        if not isinstance(item, dict):
+            reasons.append(f"{label} is not an object.")
+            metrics_numeric_ok = False
+            operations_ok = False
+            continue
+        profile = _workload_profile_from_window(item)
+        window_name = str(item.get("window_name", ""))
+        if profile:
+            observed_profiles.add(profile)
+        if profile and window_name:
+            profile_windows[(profile, window_name)] = item
+        if item.get("status") != "PASS":
+            reasons.append(f"{label} status {item.get('status')!r} is not PASS.")
+        metrics = item.get("metrics")
+        if not isinstance(metrics, dict):
+            reasons.append(f"{label} metrics is missing or not an object.")
+            metrics_numeric_ok = False
+            operations_ok = False
+            continue
+        for metric in H06_REQUIRED_WORKLOAD_METRICS:
+            value = metrics.get(metric)
+            if not _is_non_negative_number(value):
+                metrics_numeric_ok = False
+                if _is_missing_placeholder(value):
+                    reasons.append(f"{label} metric {metric} is MISSING or SKIPPED_WITH_REASON.")
+                else:
+                    reasons.append(f"{label} metric {metric} is missing or non-numeric.")
+        ok_ops = metrics.get("ok_ops")
+        error_ops = metrics.get("error_ops")
+        if _is_non_negative_number(ok_ops) and _is_non_negative_number(error_ops):
+            if float(ok_ops) + float(error_ops) < H06_MIN_OPERATIONS_PER_WINDOW:
+                operations_ok = False
+                reasons.append(f"{label} operations {float(ok_ops) + float(error_ops):g} is below H06 minimum {H06_MIN_OPERATIONS_PER_WINDOW}.")
+        else:
+            operations_ok = False
+        if profile in set(H06_REQUIRED_WORKLOAD_PROFILES) - {"smoke"}:
+            coverage = item.get("key_slot_coverage") if isinstance(item.get("key_slot_coverage"), dict) else {}
+            if not _coverage_is_full_slot(coverage):
+                full_slot_ok = False
+                reasons.append(f"{label} profile {profile} lacks full-slot coverage.")
+    missing_profiles = sorted(set(H06_REQUIRED_WORKLOAD_PROFILES) - observed_profiles)
+    if missing_profiles:
+        reasons.append(f"workload benchmark is missing required profiles: {', '.join(missing_profiles)}.")
+    missing_windows: list[str] = []
+    for profile in H06_REQUIRED_WORKLOAD_PROFILES:
+        for window_name in H06_REQUIRED_WORKLOAD_WINDOWS:
+            if (profile, window_name) not in profile_windows:
+                missing_windows.append(f"{profile}:{window_name}")
+    if missing_windows:
+        reasons.append(f"workload benchmark is missing required profile windows: {', '.join(missing_windows[:12])}.")
+    coverage_by_profile = workload.get("hash_slot_coverage") if isinstance(workload.get("hash_slot_coverage"), dict) else {}
+    for profile in H06_REQUIRED_WORKLOAD_PROFILES:
+        if profile == "smoke":
+            continue
+        coverage = coverage_by_profile.get(profile) if isinstance(coverage_by_profile, dict) else None
+        if not _coverage_is_full_slot(coverage):
+            full_slot_ok = False
+            reasons.append(f"workload profile {profile} lacks top-level full-slot coverage.")
+    return {
+        "workload_windows_status_pass": workload.get("status") == "PASS",
+        "workload_profiles_complete": not missing_profiles,
+        "workload_windows_complete": not missing_windows,
+        "workload_required_metrics_numeric": metrics_numeric_ok and bool(windows),
+        "operations_per_window_sufficient": operations_ok and bool(windows),
+        "full_slot_coverage_non_smoke": full_slot_ok and bool(windows),
+    }, _dedupe(reasons)
+
+
+def _workload_metric_row_reasons(root: Path, path: Path | None, rows: list[Any]) -> tuple[dict[str, bool], list[str], dict[str, int]]:
+    reasons: list[str] = []
+    required_pairs = {
+        (profile, window_name, metric)
+        for profile in H06_REQUIRED_WORKLOAD_PROFILES
+        for window_name in H06_REQUIRED_WORKLOAD_WINDOWS
+        for metric in H06_REQUIRED_WORKLOAD_METRICS
+    }
+    observed_pairs: set[tuple[str, str, str]] = set()
+    core_row_count = 0
+    values_numeric_ok = True
+    for index, row in enumerate(rows):
+        label = f"{relpath(root, path) if path else 'metrics_timeseries.jsonl'} line {index + 1}"
+        if not isinstance(row, dict):
+            reasons.append(f"{label} is not a JSON object.")
+            values_numeric_ok = False
+            continue
+        metric = str(row.get("metric_name", ""))
+        if metric not in H06_REQUIRED_WORKLOAD_METRICS:
+            continue
+        profile = _workload_profile_from_metric_row(row)
+        window_name = _workload_window_from_metric_row(row)
+        value = row.get("metric_value")
+        core_row_count += 1
+        if profile and window_name:
+            observed_pairs.add((profile, window_name, metric))
+        if not _is_non_negative_number(value):
+            values_numeric_ok = False
+            if _is_missing_placeholder(value) or str(row.get("missing_reason", "")).strip():
+                reasons.append(f"{label} {profile}:{window_name}:{metric} is MISSING or SKIPPED_WITH_REASON.")
+            else:
+                reasons.append(f"{label} {profile}:{window_name}:{metric} metric_value is missing or non-numeric.")
+    missing_pairs = sorted(required_pairs - observed_pairs)
+    if missing_pairs:
+        formatted = [":".join(item) for item in missing_pairs[:12]]
+        reasons.append(f"metrics_timeseries.jsonl is missing required metric rows: {', '.join(formatted)}.")
+    if core_row_count < H06_REQUIRED_METRIC_ROW_COUNT:
+        reasons.append(f"metrics_timeseries.jsonl has {core_row_count} H06 core metric rows but requires at least {H06_REQUIRED_METRIC_ROW_COUNT}.")
+    return {
+        "metrics_row_count_sufficient": core_row_count >= H06_REQUIRED_METRIC_ROW_COUNT,
+        "metrics_rows_cover_required_matrix": not missing_pairs,
+        "metrics_core_values_numeric": values_numeric_ok and bool(rows),
+    }, _dedupe(reasons), {"core_row_count": core_row_count}
+
+
+def _read_workload_jsonl_strict(root: Path, path: Path | None) -> tuple[list[Any], list[str]]:
+    if path is None:
+        return [], []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        return [], [f"{relpath(root, path)} could not be read: {exc}."]
+    rows: list[Any] = []
+    reasons: list[str] = []
+    for line_no, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError as exc:
+            reasons.append(f"{relpath(root, path)} line {line_no} is invalid JSON: {exc.msg}.")
+            continue
+        if not isinstance(value, dict):
+            reasons.append(f"{relpath(root, path)} line {line_no} is not a JSON object.")
+        rows.append(value)
+    return rows, reasons
+
+
+def _workload_profile_from_window(item: dict[str, Any]) -> str:
+    profile = item.get("profile")
+    return str(profile) if isinstance(profile, str) and profile else ""
+
+
+def _workload_profile_from_metric_row(row: dict[str, Any]) -> str:
+    labels = row.get("labels") if isinstance(row.get("labels"), dict) else {}
+    profile = labels.get("profile")
+    if isinstance(profile, str) and profile:
+        return profile
+    source_id = row.get("source_id")
+    if isinstance(source_id, str) and ":" in source_id:
+        return source_id.split(":", 1)[0]
+    return ""
+
+
+def _workload_window_from_metric_row(row: dict[str, Any]) -> str:
+    labels = row.get("labels") if isinstance(row.get("labels"), dict) else {}
+    window_name = labels.get("window_name")
+    if isinstance(window_name, str) and window_name:
+        return window_name
+    source_id = row.get("source_id")
+    if isinstance(source_id, str) and ":" in source_id:
+        return source_id.split(":", 1)[1]
+    return ""
+
+
+def _coverage_is_full_slot(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    if value.get("fixed_hash_tag_only") is True:
+        return False
+    if value.get("hash_slot_distribution") in {"single_tag", "fixed_hash_tag"}:
+        return False
+    return value.get("full_slot_requested") is True and value.get("full_slot_covered") is True and value.get("slot_count_observed") == 16384
+
+
+def _workload_observed_connection_evidence(workload: Any, rows: list[Any]) -> bool:
+    return _observed_evidence(workload, rows, top_keys=("observed_connections", "connections_observed"), evidence_key="connection_evidence", row_metrics={"observed_connections", "connections_observed", "active_connections", "client_connections"})
+
+
+def _workload_observed_pipeline_evidence(workload: Any, rows: list[Any]) -> bool:
+    return _observed_evidence(workload, rows, top_keys=("observed_pipeline", "pipeline_observed", "max_pipeline_depth_observed"), evidence_key="pipeline_evidence", row_metrics={"observed_pipeline", "pipeline_observed", "pipeline_depth_observed", "max_pipeline_depth_observed"})
+
+
+def _workload_fake_or_partial_reasons(root: Path, paths: list[Path], workload: Any, rows: list[Any]) -> list[str]:
+    reasons: list[str] = []
+    if _contains_fake_or_partial(root, paths):
+        reasons.append("Workload benchmark source path contains fake, partial, or fixture marker.")
+    payloads: list[Any] = [workload, *rows]
+    for payload in payloads:
+        if not isinstance(payload, dict):
+            continue
+        for key in ["status", "evidence_kind", "evidence_class", "source_kind", "workload_mode"]:
+            value = payload.get(key)
+            if isinstance(value, str) and value.upper() in {"FAKE", "PARTIAL"}:
+                reasons.append(f"Workload benchmark artifact contains {key}={value!r}; fake or partial evidence cannot promote.")
+    return _dedupe(reasons)
+
+
+def _observed_evidence(workload: Any, rows: list[Any], *, top_keys: tuple[str, ...], evidence_key: str, row_metrics: set[str]) -> bool:
+    if isinstance(workload, dict):
+        if any(_positive_number(workload.get(key)) for key in top_keys):
+            return True
+        evidence = workload.get(evidence_key)
+        if isinstance(evidence, dict) and evidence.get("status") == "PASS":
+            observed_flag = evidence.get("observed") is True or bool(evidence.get("source") or evidence.get("source_artifacts") or evidence.get("probe"))
+            if observed_flag and any(_positive_number(evidence.get(key)) for key in top_keys + ("count", "value")):
+                return True
+        windows = workload.get("windows")
+        if isinstance(windows, list):
+            for item in windows:
+                if isinstance(item, dict) and any(_positive_number(item.get(key)) for key in top_keys):
+                    return True
+    for row in rows:
+        if isinstance(row, dict) and row.get("metric_name") in row_metrics and _positive_number(row.get("metric_value")):
+            return True
+    return False
+
+
+def _positive_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and float(value) > 0
 
 
 def _read_management_jsonl_strict(root: Path, path: Path | None) -> tuple[list[Any], list[str]]:
@@ -1673,6 +2102,8 @@ def _evidence_kind(capability: str, source_artifacts: list[str], semantic_checks
         return "REAL_EXACT_SCALE"
     if capability == "management_matrix" and semantic_checks.get("management_h05_acceptance", {}).get("accepted") is True:
         return "REAL_EXACT_SCALE"
+    if capability == "workload_benchmark" and semantic_checks.get("workload_h06_acceptance", {}).get("accepted") is True:
+        return "REAL_EXACT_SCALE"
     if semantic_checks.get("real_valkey_verified") and semantic_checks.get("exact_scale_observed"):
         return "LEGACY_EVIDENCE_ONLY"
     if semantic_checks.get("real_valkey_verified"):
@@ -1704,6 +2135,11 @@ def _blocked_reason(capability: str, scale: int, evidence_kind: str, semantic_ch
         reasons = management.get("reasons", []) if isinstance(management, dict) else []
         if reasons:
             return f"{claim_id(capability, scale)} lacks H05 exact-scale management matrix evidence: {'; '.join(str(reason) for reason in reasons)}"
+    if capability == "workload_benchmark":
+        workload = semantic_checks.get("workload_h06_acceptance")
+        reasons = workload.get("reasons", []) if isinstance(workload, dict) else []
+        if reasons:
+            return f"{claim_id(capability, scale)} lacks H06 exact-scale workload benchmark evidence: {'; '.join(str(reason) for reason in reasons)}"
     missing = [name for name in CAPABILITY_REQUIRED_CHECKS[capability] if semantic_checks.get(name) is not True]
     if evidence_kind == "LEGACY_EVIDENCE_ONLY":
         return f"{claim_id(capability, scale)} has historical real evidence, but it has not been accepted by the M1 hardening gate."

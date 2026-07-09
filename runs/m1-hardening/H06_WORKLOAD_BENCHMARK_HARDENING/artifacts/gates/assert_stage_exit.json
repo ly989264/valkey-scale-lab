@@ -1,0 +1,15 @@
+{
+  "artifact_type": "m1h_gate_result",
+  "blocked_reasons": [],
+  "checked_at": "2026-07-09T06:41:35Z",
+  "gate_name": "assert_stage_exit",
+  "inputs": [
+    "runs/m1-hardening/evidence_manifest.json",
+    "runs/m1-hardening/H06_WORKLOAD_BENCHMARK_HARDENING/artifacts/gates"
+  ],
+  "schema_version": "v1",
+  "source_commit": "038bf1cf50aa04b1c575352e4f326eeb91886e74",
+  "stage_id": "H06_WORKLOAD_BENCHMARK_HARDENING",
+  "status": "PASS",
+  "violations": []
+}

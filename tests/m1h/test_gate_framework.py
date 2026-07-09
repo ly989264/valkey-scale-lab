@@ -13,13 +13,14 @@ from assert_no_legacy_m1_pass import validate_current_acceptance, validate_no_le
 from assert_no_simulated_subagents import scan_stage_artifacts
 from assert_setup_core_metrics import evaluate_setup_core_metrics
 from assert_final_milestone1_hardened import evaluate_final
-from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, H04_REQUIRED_GATE_RESULTS, H05_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
+from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, H04_REQUIRED_GATE_RESULTS, H05_REQUIRED_GATE_RESULTS, H06_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
 from build_acceptance_reset import build_acceptance_reset, validate_acceptance_report
 from capability_gate import evaluate_capability
 from assert_command_audit_real import evaluate_command_audit_real
 from assert_management_exact_scale import evaluate_management_exact_scale
+from assert_workload_benchmark_strength import evaluate_workload_benchmark_strength
 from common import gate_result_path, write_gate_result, write_json
-from manifest import C06_SETUP_CORE_METRICS, C07_REQUIRED_COMMAND_KINDS, H05_REQUIRED_MANAGEMENT_OPERATIONS, REQUIRED_CLAIMS, build_manifest, claim_id
+from manifest import C06_SETUP_CORE_METRICS, C07_REQUIRED_COMMAND_KINDS, H05_REQUIRED_MANAGEMENT_OPERATIONS, H06_REQUIRED_METRIC_ROW_COUNT, H06_REQUIRED_WORKLOAD_METRICS, H06_REQUIRED_WORKLOAD_PROFILES, H06_REQUIRED_WORKLOAD_WINDOWS, REQUIRED_CLAIMS, build_manifest, claim_id
 
 
 def test_write_gate_result_shape(tmp_path: Path) -> None:
@@ -851,6 +852,137 @@ def test_h05_stage_exit_requires_management_exact_gate(tmp_path: Path) -> None:
     assert not blocked
 
 
+def test_workload_benchmark_valid_exact_scale_can_pass_after_h06_hardening(tmp_path: Path) -> None:
+    _write_workload_benchmark_exact_scale_evidence(tmp_path, 30)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "workload_benchmark.real_exact.30")
+    assert claim["status"] == "PASS"
+    assert claim["evidence_kind"] == "REAL_EXACT_SCALE"
+    semantic = claim["semantic_checks"]
+    assert semantic["metrics_row_count_sufficient"] is True
+    assert semantic["metrics_rows_cover_required_matrix"] is True
+    assert semantic["connection_evidence_observed"] is True
+    assert semantic["pipeline_evidence_observed"] is True
+    assert semantic["full_slot_coverage_non_smoke"] is True
+    assert semantic["hardening_stage_accepted"] is True
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    violations, blocked, extra = evaluate_workload_benchmark_strength(manifest_path)
+    assert not violations
+    assert extra["passed_claims"] == ["workload_benchmark.real_exact.30"]
+    assert any("workload_benchmark.real_exact.50" in item for item in blocked)
+
+
+def test_workload_benchmark_missing_profile_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_workload_benchmark_exact_scale_evidence(tmp_path, 30, omit_profile="read_heavy")
+    claim = _claim(build_manifest(tmp_path), "workload_benchmark.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["workload_profiles_complete"] is False
+    assert "read_heavy" in claim["reason"]
+
+
+def test_workload_benchmark_missing_window_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_workload_benchmark_exact_scale_evidence(tmp_path, 30, omit_window=("uniform", "event"))
+    claim = _claim(build_manifest(tmp_path), "workload_benchmark.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["workload_windows_complete"] is False
+    assert "uniform:event" in claim["reason"]
+
+
+def test_workload_benchmark_shallow_metric_rows_block_exact_scale_pass(tmp_path: Path) -> None:
+    _write_workload_benchmark_exact_scale_evidence(tmp_path, 30, shallow_metric_rows=True)
+    claim = _claim(build_manifest(tmp_path), "workload_benchmark.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["metrics_row_count_sufficient"] is False
+    assert str(H06_REQUIRED_METRIC_ROW_COUNT) in claim["reason"]
+
+
+def test_workload_benchmark_missing_string_or_skipped_metric_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    for mode in ["missing", "string", "skipped"]:
+        root = tmp_path / mode
+        _write_workload_benchmark_exact_scale_evidence(root, 30, metric_defect=mode)
+        claim = _claim(build_manifest(root), "workload_benchmark.real_exact.30")
+        assert claim["status"] == "BLOCKED_WITH_REASON"
+        assert claim["semantic_checks"]["workload_required_metrics_numeric"] is False
+        assert "latency_p99_ms" in claim["reason"]
+
+
+def test_workload_benchmark_low_ops_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_workload_benchmark_exact_scale_evidence(tmp_path, 30, low_ops=True)
+    claim = _claim(build_manifest(tmp_path), "workload_benchmark.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["operations_per_window_sufficient"] is False
+    assert "below H06 minimum" in claim["reason"]
+
+
+def test_workload_benchmark_missing_connection_or_pipeline_evidence_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    for mode, check in [("connection", "connection_evidence_observed"), ("pipeline", "pipeline_evidence_observed")]:
+        root = tmp_path / mode
+        _write_workload_benchmark_exact_scale_evidence(root, 30, omit_connection_evidence=mode == "connection", omit_pipeline_evidence=mode == "pipeline")
+        claim = _claim(build_manifest(root), "workload_benchmark.real_exact.30")
+        assert claim["status"] == "BLOCKED_WITH_REASON"
+        assert claim["semantic_checks"][check] is False
+        assert mode in claim["reason"]
+
+
+def test_workload_benchmark_missing_full_slot_or_fixed_hash_tag_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    for mode in ["missing_full_slot", "fixed_hash_tag"]:
+        root = tmp_path / mode
+        _write_workload_benchmark_exact_scale_evidence(root, 30, full_slot_defect=mode)
+        claim = _claim(build_manifest(root), "workload_benchmark.real_exact.30")
+        assert claim["status"] == "BLOCKED_WITH_REASON"
+        assert claim["semantic_checks"]["full_slot_coverage_non_smoke"] is False
+        assert "full-slot coverage" in claim["reason"]
+
+
+def test_workload_benchmark_fixture_never_satisfies_exact_scale_claim(tmp_path: Path) -> None:
+    fixture = tmp_path / "tests" / "fixtures" / "workload_benchmark" / "scale_30"
+    _write_workload_benchmark_exact_scale_evidence(tmp_path, 30, base=fixture)
+    claim = _claim(build_manifest(tmp_path), "workload_benchmark.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["evidence_kind"] == "FIXTURE_ONLY"
+    assert claim["semantic_checks"]["no_fixture_workload_artifacts"] is False
+    assert "fixtures cannot satisfy" in claim["reason"]
+
+
+def test_workload_benchmark_fake_or_partial_artifact_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    phase = _write_workload_benchmark_exact_scale_evidence(tmp_path, 30)
+    workload = json.loads((phase / "workload_windows.json").read_text(encoding="utf-8"))
+    workload["evidence_kind"] = "PARTIAL"
+    write_json(phase / "workload_windows.json", workload)
+    claim = _claim(build_manifest(tmp_path), "workload_benchmark.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["fake_or_partial_not_promoted"] is False
+    assert "partial evidence cannot promote" in claim["reason"]
+
+
+def test_workload_benchmark_split_directory_artifacts_cannot_be_spliced(tmp_path: Path) -> None:
+    phase = _write_workload_benchmark_exact_scale_evidence(tmp_path, 30)
+    split = phase / "split"
+    split.mkdir(parents=True)
+    (split / "metrics_timeseries.jsonl").write_text((phase / "metrics_timeseries.jsonl").read_text(encoding="utf-8"), encoding="utf-8")
+    (split / "valkey_e2e_evidence.json").write_text((phase / "valkey_e2e_evidence.json").read_text(encoding="utf-8"), encoding="utf-8")
+    (phase / "metrics_timeseries.jsonl").unlink()
+    (phase / "valkey_e2e_evidence.json").unlink()
+    claim = _claim(build_manifest(tmp_path), "workload_benchmark.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["metrics_timeseries_present"] is False or claim["semantic_checks"]["workload_windows_present"] is False
+    assert "same directory" in claim["reason"]
+
+
+def test_h06_stage_exit_requires_workload_benchmark_gate(tmp_path: Path) -> None:
+    _seed_stage_exit_base(tmp_path, "H06_WORKLOAD_BENCHMARK_HARDENING", H06_REQUIRED_GATE_RESULTS)
+    gate = tmp_path / "runs" / "m1-hardening" / "H06_WORKLOAD_BENCHMARK_HARDENING" / "artifacts" / "gates" / "assert_workload_benchmark_strength.json"
+    gate.unlink()
+    violations, blocked = validate_stage_exit(tmp_path, "H06_WORKLOAD_BENCHMARK_HARDENING")
+    assert not violations
+    assert any("assert_workload_benchmark_strength.json is missing" in item for item in blocked)
+    write_json(gate, _gate_payload("H06_WORKLOAD_BENCHMARK_HARDENING", "assert_workload_benchmark_strength"))
+    violations, blocked = validate_stage_exit(tmp_path, "H06_WORKLOAD_BENCHMARK_HARDENING")
+    assert not violations
+    assert not blocked
+
+
 def _claim(manifest: dict[str, object], cid: str) -> dict[str, object]:
     for claim in manifest["claims"]:  # type: ignore[index]
         if isinstance(claim, dict) and claim.get("claim_id") == cid:
@@ -1331,6 +1463,138 @@ def _write_management_exact_scale_evidence(
     _write_valkey_e2e(phase, scale)
 
 
+def _write_workload_benchmark_exact_scale_evidence(
+    tmp_path: Path,
+    scale: int,
+    *,
+    base: Path | None = None,
+    omit_profile: str | None = None,
+    omit_window: tuple[str, str] | None = None,
+    shallow_metric_rows: bool = False,
+    metric_defect: str | None = None,
+    low_ops: bool = False,
+    omit_connection_evidence: bool = False,
+    omit_pipeline_evidence: bool = False,
+    full_slot_defect: str | None = None,
+) -> Path:
+    phase_by_scale = {
+        30: "P12_SCALE_LADDER_10_30",
+        50: "P30_MANAGEMENT_MATRIX_50_REAL",
+        100: "P31_MANAGEMENT_MATRIX_100_REAL",
+        200: "P32_MANAGEMENT_MATRIX_200_REAL",
+    }
+    phase = base or tmp_path / "artifacts" / "phases" / phase_by_scale[scale]
+    profiles = [profile for profile in H06_REQUIRED_WORKLOAD_PROFILES if profile != omit_profile]
+    coverage = {profile: _workload_slot_coverage(full=True) for profile in profiles}
+    if full_slot_defect and "uniform" in coverage:
+        coverage["uniform"] = _workload_slot_coverage(full=False, fixed=full_slot_defect == "fixed_hash_tag")
+    windows: list[dict[str, object]] = []
+    metric_rows: list[dict[str, object]] = []
+    for profile in profiles:
+        for window_name in H06_REQUIRED_WORKLOAD_WINDOWS:
+            if omit_window == (profile, window_name):
+                continue
+            metrics = _h06_workload_metrics()
+            if low_ops and profile == "uniform" and window_name == "event":
+                metrics["ok_ops"] = 1
+                metrics["error_ops"] = 0
+            if metric_defect and profile == "uniform" and window_name == "event":
+                if metric_defect == "missing":
+                    metrics.pop("latency_p99_ms")
+                elif metric_defect == "string":
+                    metrics["latency_p99_ms"] = "4"
+                elif metric_defect == "skipped":
+                    metrics["latency_p99_ms"] = {"status": "SKIPPED_WITH_REASON", "reason": "test"}
+            slot_coverage = coverage.get(profile, _workload_slot_coverage(full=True))
+            windows.append(
+                {
+                    "window_name": window_name,
+                    "profile": profile,
+                    "workload_mode": "smoke" if profile == "smoke" else "benchmark",
+                    "status": "PASS",
+                    "start_event_id": f"evt-start-{profile}-{window_name}",
+                    "end_event_id": f"evt-end-{profile}-{window_name}",
+                    "key_slot_coverage": slot_coverage,
+                    "config": {"target_qps": 100, "connections": 8, "pipeline": 4},
+                    "metrics": metrics,
+                }
+            )
+            for metric_name in H06_REQUIRED_WORKLOAD_METRICS:
+                if shallow_metric_rows and metric_rows:
+                    continue
+                metric_rows.append(
+                    {
+                        "schema_version": "v1",
+                        "run_id": f"h06-{scale}",
+                        "phase_id": phase_by_scale[scale],
+                        "scenario_name": f"workload-{scale}",
+                        "sample_id": f"{profile}-{window_name}-{metric_name}",
+                        "timestamp_unix_ms": 1000,
+                        "monotonic_ms": 1000.0,
+                        "source_type": "workload",
+                        "source_id": f"{profile}:{window_name}",
+                        "metric_name": metric_name,
+                        "metric_value": metrics.get(metric_name, 1.0),
+                        "metric_unit": "count" if metric_name.endswith("_count") or metric_name.endswith("_ops") else "ms" if metric_name.startswith("latency_") else "ratio" if metric_name == "error_rate" else "ops_per_second" if metric_name.endswith("qps") else "value",
+                        "labels": {"profile": profile, "window_name": window_name},
+                        "missing_reason": "",
+                    }
+                )
+    workload: dict[str, object] = {
+        "schema_version": "v1",
+        "artifact_type": "workload_windows",
+        "phase_id": phase_by_scale[scale],
+        "run_id": f"h06-{scale}",
+        "status": "PASS",
+        "workload_mode": "benchmark",
+        "profiles_covered": profiles,
+        "hash_slot_coverage": coverage,
+        "windows": windows,
+    }
+    if not omit_connection_evidence:
+        workload["connection_evidence"] = {"status": "PASS", "observed": True, "observed_connections": 8, "source": "client_probe"}
+    if not omit_pipeline_evidence:
+        workload["pipeline_evidence"] = {"status": "PASS", "observed": True, "observed_pipeline": 4, "source": "client_probe"}
+    write_json(phase / "workload_windows.json", workload)
+    _write_jsonl(phase / "metrics_timeseries.jsonl", metric_rows)
+    _write_valkey_e2e(phase, scale)
+    return phase
+
+
+def _h06_workload_metrics() -> dict[str, object]:
+    return {
+        "requested_qps": 100.0,
+        "achieved_qps": 96.0,
+        "throughput_ratio": 0.96,
+        "ok_ops": 6,
+        "error_ops": 0,
+        "error_rate": 0.0,
+        "latency_p50_ms": 1.0,
+        "latency_p90_ms": 2.0,
+        "latency_p95_ms": 3.0,
+        "latency_p99_ms": 4.0,
+        "latency_p999_ms": 5.0,
+        "timeout_count": 0,
+        "connection_error_count": 0,
+        "moved_count": 0,
+        "ask_count": 0,
+        "cluster_down_count": 0,
+        "readonly_count": 0,
+        "tryagain_count": 0,
+    }
+
+
+def _workload_slot_coverage(*, full: bool, fixed: bool = False) -> dict[str, object]:
+    return {
+        "hash_slot_distribution": "single_tag" if fixed else "full_slot",
+        "slot_count_observed": 1 if fixed else 100 if not full else 16384,
+        "slot_sample": [0] if fixed else [0, 1],
+        "full_slot_requested": True,
+        "full_slot_covered": full and not fixed,
+        "fixed_hash_tag_only": fixed,
+    }
+
+
 def _topology_nodes(scale: int) -> list[dict[str, object]]:
     return [
         {
@@ -1462,7 +1726,27 @@ def _passing_semantic_checks(claim: str) -> dict[str, object]:
             "topology_exact_health",
             "no_fixture_management_artifacts",
         ],
-        "workload_benchmark": ["workload_windows_present", "qps_latency_error_metrics_present"],
+        "workload_benchmark": [
+            "real_valkey_verified",
+            "valkey_9_1_verified",
+            "workload_windows_present",
+            "workload_windows_schema_valid",
+            "workload_windows_status_pass",
+            "workload_profiles_complete",
+            "workload_windows_complete",
+            "workload_required_metrics_numeric",
+            "metrics_timeseries_present",
+            "metrics_timeseries_schema_valid",
+            "metrics_row_count_sufficient",
+            "metrics_rows_cover_required_matrix",
+            "metrics_core_values_numeric",
+            "operations_per_window_sufficient",
+            "connection_evidence_observed",
+            "pipeline_evidence_observed",
+            "full_slot_coverage_non_smoke",
+            "fake_or_partial_not_promoted",
+            "no_fixture_workload_artifacts",
+        ],
         "fault_timeline": ["fault_timeline_present", "real_fault_events_present", "fake_or_partial_not_promoted"],
         "system_metrics": ["system_windows_present", "core_metrics_present"],
         "report": ["report_index_present", "accepted_inputs_only"],
