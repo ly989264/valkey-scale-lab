@@ -1,0 +1,921 @@
+{
+  "artifact_type": "system_metrics_report",
+  "coverage": {
+    "missing_required_metrics": [],
+    "observed_metrics": [
+      "blocked_clients",
+      "client_connection_count",
+      "cluster_bus_connections",
+      "cluster_known_nodes",
+      "cluster_slots_assigned",
+      "cluster_slots_fail",
+      "cluster_slots_ok",
+      "cluster_state",
+      "connected_clients",
+      "cpu_system_percent",
+      "cpu_user_percent",
+      "evicted_keys",
+      "expired_keys",
+      "fd_count",
+      "instantaneous_ops_per_sec",
+      "keyspace_hits",
+      "keyspace_misses",
+      "log_error_count",
+      "master_repl_offset",
+      "mem_fragmentation_ratio",
+      "process_pid",
+      "process_uptime",
+      "rejected_connections",
+      "replication_lag",
+      "restart_count",
+      "rss_bytes",
+      "rx_bytes",
+      "rx_packets",
+      "slave_repl_offset",
+      "tcp_connection_count",
+      "tcp_retransmits",
+      "thread_count",
+      "total_commands_processed",
+      "total_net_input_bytes",
+      "total_net_output_bytes",
+      "tx_bytes",
+      "tx_packets",
+      "used_memory",
+      "used_memory_rss",
+      "vms_bytes"
+    ],
+    "required_metrics": [
+      "process_pid",
+      "process_uptime",
+      "cpu_user_percent",
+      "cpu_system_percent",
+      "rss_bytes",
+      "vms_bytes",
+      "fd_count",
+      "thread_count",
+      "tcp_connection_count",
+      "client_connection_count",
+      "restart_count",
+      "log_error_count",
+      "rx_bytes",
+      "tx_bytes",
+      "rx_packets",
+      "tx_packets",
+      "tcp_retransmits",
+      "cluster_bus_connections",
+      "connected_clients",
+      "blocked_clients",
+      "used_memory",
+      "used_memory_rss",
+      "mem_fragmentation_ratio",
+      "instantaneous_ops_per_sec",
+      "total_commands_processed",
+      "total_net_input_bytes",
+      "total_net_output_bytes",
+      "rejected_connections",
+      "expired_keys",
+      "evicted_keys",
+      "keyspace_hits",
+      "keyspace_misses",
+      "master_repl_offset",
+      "slave_repl_offset",
+      "replication_lag",
+      "cluster_state",
+      "cluster_known_nodes",
+      "cluster_slots_assigned",
+      "cluster_slots_ok",
+      "cluster_slots_fail"
+    ],
+    "rows_by_node": {
+      "shard-0000-primary": 80,
+      "shard-0000-replica-00": 80,
+      "shard-0001-primary": 80,
+      "shard-0001-replica-00": 80,
+      "shard-0002-primary": 80,
+      "shard-0002-replica-00": 80
+    },
+    "rows_by_window": {
+      "cleanup": 240,
+      "setup": 240
+    }
+  },
+  "lifecycle_windows": [
+    "setup",
+    "cleanup"
+  ],
+  "missing_metric_count": 114,
+  "missing_metrics": [
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0000-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0000-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0000-primary",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0000-primary",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0000-primary",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0000-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0000-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0000-primary",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "slave_repl_offset",
+      "node_id": "shard-0000-primary",
+      "reason": "Valkey INFO did not include slave_repl_offset",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0000-primary",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0001-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0001-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0001-primary",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0001-primary",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0001-primary",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0001-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0001-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0001-primary",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "slave_repl_offset",
+      "node_id": "shard-0001-primary",
+      "reason": "Valkey INFO did not include slave_repl_offset",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0001-primary",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0002-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0002-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0002-primary",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0002-primary",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0002-primary",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0002-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0002-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0002-primary",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "slave_repl_offset",
+      "node_id": "shard-0002-primary",
+      "reason": "Valkey INFO did not include slave_repl_offset",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0002-primary",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0000-replica-00",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0000-replica-00",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0000-replica-00",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0000-replica-00",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0001-replica-00",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0001-replica-00",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0001-replica-00",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0001-replica-00",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0002-replica-00",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0002-replica-00",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0002-replica-00",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0002-replica-00",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0000-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0000-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0000-primary",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0000-primary",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0000-primary",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0000-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0000-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0000-primary",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "slave_repl_offset",
+      "node_id": "shard-0000-primary",
+      "reason": "Valkey INFO did not include slave_repl_offset",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0000-primary",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0001-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0001-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0001-primary",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0001-primary",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0001-primary",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0001-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0001-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0001-primary",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "slave_repl_offset",
+      "node_id": "shard-0001-primary",
+      "reason": "Valkey INFO did not include slave_repl_offset",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0001-primary",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0002-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0002-primary",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0002-primary",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0002-primary",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0002-primary",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0002-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0002-primary",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0002-primary",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "slave_repl_offset",
+      "node_id": "shard-0002-primary",
+      "reason": "Valkey INFO did not include slave_repl_offset",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0002-primary",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0000-replica-00",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0000-replica-00",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0000-replica-00",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0000-replica-00",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0000-replica-00",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0001-replica-00",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0001-replica-00",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0001-replica-00",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0001-replica-00",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0001-replica-00",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process user CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Docker stats exposes aggregate CPU percent, not per-process system CPU percent",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "shard-0002-replica-00",
+      "reason": "container-scoped VMS is not exposed by Docker stats",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "shard-0002-replica-00",
+      "reason": "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "log_error_count",
+      "node_id": "shard-0002-replica-00",
+      "reason": "log file was unavailable for error counting",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Docker stats NetIO does not expose packet counters",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "shard-0002-replica-00",
+      "reason": "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector",
+      "status": "MISSING",
+      "window": "cleanup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "shard-0002-replica-00",
+      "reason": "Valkey INFO does not expose a direct replication_lag metric in all roles",
+      "status": "MISSING",
+      "window": "cleanup"
+    }
+  ],
+  "node_count": 6,
+  "phase_id": "P06_OBSERVABILITY_METRICS",
+  "run_id": "P06_OBSERVABILITY_METRICS-observability_smoke-20260628",
+  "sample_count": 480,
+  "sample_errors": [],
+  "scale": 6,
+  "scenario_name": "observability_smoke",
+  "schema_version": "v1",
+  "source_refs": {
+    "metrics_timeseries": "metrics_timeseries.jsonl",
+    "system_metrics_timeseries": "system_metrics_timeseries.jsonl"
+  },
+  "stage_id": "P06_OBSERVABILITY_METRICS",
+  "status": "PASS"
+}

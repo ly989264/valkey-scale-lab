@@ -87,16 +87,21 @@ def test_report_renderer_writes_index_tables_chart_and_phase_summary(tmp_path: P
         "failover_latency_distribution.svg",
         "split_brain_window.svg",
         "fault_workload_impact.svg",
+        "system_metrics_by_window.csv",
+        "system_metrics_abnormal_nodes.csv",
+        "system_resource_trends.svg",
     } == report_paths
     assert "command_audit_report_inputs" in index
     assert "management_report_inputs" in index
     assert "workload_report_inputs" in index
     assert "fault_timeline_report_inputs" in index
+    assert "system_metrics_report_inputs" in index
     assert (tmp_path / "phase_summary.json").exists()
     assert "MISSING" in (tmp_path / "report" / "missing_metrics.csv").read_text(encoding="utf-8")
     assert "慢命令 TopN" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
     assert "Workload 基准压测" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
     assert "故障 Timeline" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
+    assert "系统资源趋势" in (tmp_path / "report" / "report.md").read_text(encoding="utf-8")
 
 
 def test_report_renderer_marks_empty_missing_metrics_as_none(tmp_path: Path) -> None:

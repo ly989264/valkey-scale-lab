@@ -1,0 +1,265 @@
+{
+  "artifact_type": "system_metrics_report",
+  "coverage": {
+    "missing_required_metrics": [],
+    "observed_metrics": [
+      "blocked_clients",
+      "client_connection_count",
+      "cluster_bus_connections",
+      "cluster_known_nodes",
+      "cluster_slots_assigned",
+      "cluster_slots_fail",
+      "cluster_slots_ok",
+      "cluster_state",
+      "connected_clients",
+      "cpu_system_percent",
+      "cpu_user_percent",
+      "evicted_keys",
+      "expired_keys",
+      "fd_count",
+      "instantaneous_ops_per_sec",
+      "keyspace_hits",
+      "keyspace_misses",
+      "log_error_count",
+      "master_repl_offset",
+      "mem_fragmentation_ratio",
+      "process_pid",
+      "process_uptime",
+      "rejected_connections",
+      "replication_lag",
+      "restart_count",
+      "rss_bytes",
+      "rx_bytes",
+      "rx_packets",
+      "slave_repl_offset",
+      "tcp_connection_count",
+      "tcp_retransmits",
+      "thread_count",
+      "total_commands_processed",
+      "total_net_input_bytes",
+      "total_net_output_bytes",
+      "tx_bytes",
+      "tx_packets",
+      "used_memory",
+      "used_memory_rss",
+      "vms_bytes"
+    ],
+    "required_metrics": [
+      "process_pid",
+      "process_uptime",
+      "cpu_user_percent",
+      "cpu_system_percent",
+      "rss_bytes",
+      "vms_bytes",
+      "fd_count",
+      "thread_count",
+      "tcp_connection_count",
+      "client_connection_count",
+      "restart_count",
+      "log_error_count",
+      "rx_bytes",
+      "tx_bytes",
+      "rx_packets",
+      "tx_packets",
+      "tcp_retransmits",
+      "cluster_bus_connections",
+      "connected_clients",
+      "blocked_clients",
+      "used_memory",
+      "used_memory_rss",
+      "mem_fragmentation_ratio",
+      "instantaneous_ops_per_sec",
+      "total_commands_processed",
+      "total_net_input_bytes",
+      "total_net_output_bytes",
+      "rejected_connections",
+      "expired_keys",
+      "evicted_keys",
+      "keyspace_hits",
+      "keyspace_misses",
+      "master_repl_offset",
+      "slave_repl_offset",
+      "replication_lag",
+      "cluster_state",
+      "cluster_known_nodes",
+      "cluster_slots_assigned",
+      "cluster_slots_ok",
+      "cluster_slots_fail"
+    ],
+    "rows_by_node": {
+      "node-0001": 200,
+      "node-0002": 200
+    },
+    "rows_by_window": {
+      "cleanup": 80,
+      "fault": 80,
+      "management": 80,
+      "setup": 80,
+      "workload": 80
+    }
+  },
+  "lifecycle_windows": [
+    "setup",
+    "workload",
+    "management",
+    "fault",
+    "cleanup"
+  ],
+  "missing_metric_count": 80,
+  "missing_metrics": [
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "node-0001",
+      "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "node-0001",
+      "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "node-0001",
+      "reason": "container VMS unsupported",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "node-0001",
+      "reason": "safe collector does not inspect /proc fd",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "node-0001",
+      "reason": "Docker stats NetIO lacks packets",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "node-0001",
+      "reason": "Docker stats NetIO lacks packets",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "node-0001",
+      "reason": "safe collector does not inspect TCP diagnostics",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "node-0001",
+      "reason": "Valkey INFO lacks direct replication_lag on this role",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "node-0002",
+      "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "node-0002",
+      "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "node-0002",
+      "reason": "container VMS unsupported",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "node-0002",
+      "reason": "safe collector does not inspect /proc fd",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "rx_packets",
+      "node_id": "node-0002",
+      "reason": "Docker stats NetIO lacks packets",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tx_packets",
+      "node_id": "node-0002",
+      "reason": "Docker stats NetIO lacks packets",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "tcp_retransmits",
+      "node_id": "node-0002",
+      "reason": "safe collector does not inspect TCP diagnostics",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "replication_lag",
+      "node_id": "node-0002",
+      "reason": "Valkey INFO lacks direct replication_lag on this role",
+      "status": "MISSING",
+      "window": "setup"
+    },
+    {
+      "metric": "cpu_user_percent",
+      "node_id": "node-0001",
+      "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+      "status": "MISSING",
+      "window": "workload"
+    },
+    {
+      "metric": "cpu_system_percent",
+      "node_id": "node-0001",
+      "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+      "status": "MISSING",
+      "window": "workload"
+    },
+    {
+      "metric": "vms_bytes",
+      "node_id": "node-0001",
+      "reason": "container VMS unsupported",
+      "status": "MISSING",
+      "window": "workload"
+    },
+    {
+      "metric": "fd_count",
+      "node_id": "node-0001",
+      "reason": "safe collector does not inspect /proc fd",
+      "status": "MISSING",
+      "window": "workload"
+    }
+  ],
+  "node_count": 100,
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "run_id": "system-metrics-100",
+  "sample_count": 400,
+  "sample_errors": [],
+  "scale": 100,
+  "scenario_name": "fixture",
+  "schema_version": "v1",
+  "source_refs": {
+    "metrics_timeseries": "metrics_timeseries.jsonl",
+    "system_metrics_timeseries": "system_metrics_timeseries.jsonl"
+  },
+  "stage_id": "P09_ANALYSIS_REPORTING",
+  "status": "PASS"
+}

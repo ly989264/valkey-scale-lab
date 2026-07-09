@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="254" viewBox="0 0 720 254">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="12" y="24" font-size="16" font-weight="700">集群拉起瀑布图</text>
+<text x="12" y="56" font-size="12">total_setup_ms</text>
+<rect x="210" y="42" width="380" height="18" fill="#326c7a"/>
+<text x="600" y="56" font-size="12">38779.334 ms</text>
+<text x="12" y="88" font-size="12">cleanup_ms</text>
+<rect x="210" y="74" width="9" height="18" fill="#326c7a"/>
+<text x="229" y="88" font-size="12">980.804 ms</text>
+<text x="12" y="120" font-size="12">config_validate_ms</text>
+<rect x="210" y="106" width="2" height="18" fill="#326c7a"/>
+<text x="222" y="120" font-size="12">0.613 ms</text>
+<text x="12" y="152" font-size="12">config_parse_ms</text>
+<rect x="210" y="138" width="2" height="18" fill="#326c7a"/>
+<text x="222" y="152" font-size="12">0.403 ms</text>
+<text x="12" y="184" font-size="12">port_check_ms</text>
+<rect x="210" y="170" width="2" height="18" fill="#326c7a"/>
+<text x="222" y="184" font-size="12">0.125 ms</text>
+<text x="12" y="216" font-size="12">plan_build_ms</text>
+<rect x="210" y="202" width="2" height="18" fill="#326c7a"/>
+<text x="222" y="216" font-size="12">0.050 ms</text>
+</svg>

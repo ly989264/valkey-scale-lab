@@ -1,0 +1,13 @@
+metric,status,reason,impact
+command_log.total_commands,SKIPPED_WITH_REASON,Input artifacts did not include command_log.jsonl.,Report cannot display command-level traceability.
+fault_timeline.row_count,SKIPPED_WITH_REASON,Fault timeline artifacts were not present.,"Report cannot display fault timeline, failover distribution, split-brain windows, or fault-period workload impact."
+management.operation_count,SKIPPED_WITH_REASON,Management operation artifacts were not present.,Report cannot display management operation timing or topology diff data.
+system.cpu_system_percent,MISSING,"Docker stats exposes aggregate CPU percent, not system CPU percent",This metric is excluded from numeric resource aggregation.
+system.cpu_user_percent,MISSING,"Docker stats exposes aggregate CPU percent, not user CPU percent",This metric is excluded from numeric resource aggregation.
+system.fd_count,MISSING,safe collector does not inspect /proc fd,This metric is excluded from numeric resource aggregation.
+system.replication_lag,MISSING,Valkey INFO lacks direct replication_lag on this role,This metric is excluded from numeric resource aggregation.
+system.rx_packets,MISSING,Docker stats NetIO lacks packets,This metric is excluded from numeric resource aggregation.
+system.tcp_retransmits,MISSING,safe collector does not inspect TCP diagnostics,This metric is excluded from numeric resource aggregation.
+system.tx_packets,MISSING,Docker stats NetIO lacks packets,This metric is excluded from numeric resource aggregation.
+system.vms_bytes,MISSING,container VMS unsupported,This metric is excluded from numeric resource aggregation.
+workload.window_count,SKIPPED_WITH_REASON,Workload benchmark artifacts were not present.,"Report cannot display workload QPS, latency, error-rate, or slot coverage."

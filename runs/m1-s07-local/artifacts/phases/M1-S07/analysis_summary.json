@@ -1,0 +1,4041 @@
+{
+  "artifact_type": "analysis_summary",
+  "baseline_comparison": {
+    "artifact_type": "baseline_comparison",
+    "baseline_source": {
+      "reason": "No versioned baseline artifact exists for the first analysis-reporting phase.",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    "comparisons": [
+      {
+        "baseline_value": null,
+        "current_value": 6,
+        "delta": null,
+        "metric": "nodes_observed_after_fault",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "failover_latency_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "split_brain_duration_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": 0,
+        "delta": null,
+        "metric": "cleanup_resources_remaining",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "workload_achieved_qps",
+        "status": "MISSING",
+        "unit": "ops_per_second"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "workload_latency_p99_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "workload_error_rate",
+        "status": "MISSING",
+        "unit": "ratio"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "fault_failover_latency_p95_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "fault_client_unavailability_p95_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "fault_workload_recovery_p95_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "fault_split_brain_window_max_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": null,
+        "delta": null,
+        "metric": "fault_cluster_down_window_max_ms",
+        "status": "MISSING",
+        "unit": "ms"
+      },
+      {
+        "baseline_value": null,
+        "current_value": 104857600.0,
+        "delta": null,
+        "metric": "system_rss_bytes_max",
+        "status": "NO_BASELINE_YET",
+        "unit": "bytes"
+      },
+      {
+        "baseline_value": null,
+        "current_value": 2.0,
+        "delta": null,
+        "metric": "system_connected_clients_max",
+        "status": "NO_BASELINE_YET",
+        "unit": "count"
+      },
+      {
+        "baseline_value": null,
+        "current_value": 8888.0,
+        "delta": null,
+        "metric": "system_total_net_input_bytes_max",
+        "status": "NO_BASELINE_YET",
+        "unit": "bytes"
+      }
+    ],
+    "created_at": "2026-06-28T00:00:00Z",
+    "phase_id": "P09_ANALYSIS_REPORTING",
+    "producer": {
+      "name": "valkey-scale-lab",
+      "version": "0.0.0"
+    },
+    "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+    "schema_version": "v1",
+    "source_dir": "runs/m1-s07-local/artifacts/phases/M1-S07",
+    "status": "NO_BASELINE_YET"
+  },
+  "command_audit": {
+    "by_command_kind": {},
+    "failed_commands": [],
+    "failure_count": 0,
+    "missing_or_skipped": [
+      {
+        "impact": "Report cannot display command-level traceability.",
+        "metric": "command_log.total_commands",
+        "reason": "Input artifacts did not include command_log.jsonl.",
+        "status": "SKIPPED_WITH_REASON"
+      }
+    ],
+    "operation_traceability": [],
+    "reason": "Input artifacts did not include command_log.jsonl.",
+    "retry_commands": [],
+    "retry_count": 0,
+    "slowest_commands_topN": [],
+    "status": "SKIPPED_WITH_REASON",
+    "timeout_commands": [],
+    "timeout_count": 0,
+    "total_commands": 0
+  },
+  "created_at": "2026-06-28T00:00:00Z",
+  "fault_timeline": {
+    "event_count": 0,
+    "fault_type_coverage": {
+      "missing": [
+        "primary_stop_failover",
+        "replica_stop",
+        "node_host_stop",
+        "az_stop",
+        "network_delay",
+        "network_loss",
+        "network_flap",
+        "network_partition",
+        "minority_partition",
+        "majority_partition",
+        "split_brain_window_detection",
+        "fault_period_workload_impact"
+      ],
+      "observed": [],
+      "required": [
+        "primary_stop_failover",
+        "replica_stop",
+        "node_host_stop",
+        "az_stop",
+        "network_delay",
+        "network_loss",
+        "network_flap",
+        "network_partition",
+        "minority_partition",
+        "majority_partition",
+        "split_brain_window_detection",
+        "fault_period_workload_impact"
+      ]
+    },
+    "missing_metrics": [
+      {
+        "impact": "Report cannot display fault timeline, failover distribution, split-brain windows, or fault-period workload impact.",
+        "metric": "row_count",
+        "reason": "Fault timeline artifacts were not present.",
+        "status": "SKIPPED_WITH_REASON"
+      }
+    ],
+    "reason": "Input artifacts did not include fault_timeline_report.json or fault_timeline_events.jsonl.",
+    "row_count": 0,
+    "scale_coverage": {
+      "missing": [
+        "small",
+        "30",
+        "50",
+        "100",
+        "200"
+      ],
+      "observed": [],
+      "required": [
+        "small",
+        "30",
+        "50",
+        "100",
+        "200"
+      ]
+    },
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "findings": [
+    {
+      "name": "source_phase",
+      "source_phase_id": "P09_ANALYSIS_REPORTING",
+      "source_run_id": "system-metrics-6",
+      "status": "PASS"
+    },
+    {
+      "cluster_state_observed": "ok",
+      "name": "real_valkey_evidence",
+      "nodes_observed": 6,
+      "real_valkey": false,
+      "status": "PASS",
+      "valkey_versions": [
+        "fixture"
+      ]
+    },
+    {
+      "failover_latency_ms": "MISSING",
+      "name": "failover",
+      "old_primary_node_id": "MISSING",
+      "promoted_node_id": "MISSING",
+      "status": "SKIPPED_WITH_REASON",
+      "target_logical_id": "MISSING"
+    },
+    {
+      "name": "cleanup",
+      "resources_remaining": [],
+      "status": "PASS"
+    },
+    {
+      "name": "setup_telemetry",
+      "node_count": "MISSING",
+      "status": "SKIPPED_WITH_REASON",
+      "total_setup_ms": "MISSING"
+    },
+    {
+      "failure_count": 0,
+      "name": "command_audit",
+      "retry_count": 0,
+      "status": "SKIPPED_WITH_REASON",
+      "timeout_count": 0,
+      "total_commands": 0
+    },
+    {
+      "missing_required_operations": [
+        "create_cluster",
+        "meet_nodes",
+        "add_replica",
+        "remove_replica",
+        "remove_primary_drained_or_safe_replaced",
+        "remove_failed_node",
+        "reshard_slot_range",
+        "reshard_with_keys",
+        "rebalance_after_imbalance",
+        "rolling_restart_replica_first",
+        "rolling_restart_primary_safe"
+      ],
+      "name": "management_ops",
+      "operation_count": 0,
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "full_slot_covered": "MISSING",
+      "name": "workload_benchmark",
+      "profiles_covered": [],
+      "status": "SKIPPED_WITH_REASON",
+      "window_count": 0
+    },
+    {
+      "fault_type_coverage": {
+        "missing": [
+          "primary_stop_failover",
+          "replica_stop",
+          "node_host_stop",
+          "az_stop",
+          "network_delay",
+          "network_loss",
+          "network_flap",
+          "network_partition",
+          "minority_partition",
+          "majority_partition",
+          "split_brain_window_detection",
+          "fault_period_workload_impact"
+        ],
+        "observed": [],
+        "required": [
+          "primary_stop_failover",
+          "replica_stop",
+          "node_host_stop",
+          "az_stop",
+          "network_delay",
+          "network_loss",
+          "network_flap",
+          "network_partition",
+          "minority_partition",
+          "majority_partition",
+          "split_brain_window_detection",
+          "fault_period_workload_impact"
+        ]
+      },
+      "name": "fault_timeline",
+      "row_count": 0,
+      "scale_coverage": {
+        "missing": [
+          "small",
+          "30",
+          "50",
+          "100",
+          "200"
+        ],
+        "observed": [],
+        "required": [
+          "small",
+          "30",
+          "50",
+          "100",
+          "200"
+        ]
+      },
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "name": "system_metrics",
+      "node_count": 2,
+      "sample_count": 400,
+      "status": "PASS",
+      "windows": [
+        "cleanup",
+        "fault",
+        "management",
+        "setup",
+        "workload"
+      ]
+    }
+  ],
+  "management_ops": {
+    "missing_metrics": [
+      {
+        "impact": "Report cannot display management operation timing or topology diff data.",
+        "metric": "operation_count",
+        "reason": "Management operation artifacts were not present.",
+        "status": "SKIPPED_WITH_REASON"
+      }
+    ],
+    "missing_required_operations": [
+      "create_cluster",
+      "meet_nodes",
+      "add_replica",
+      "remove_replica",
+      "remove_primary_drained_or_safe_replaced",
+      "remove_failed_node",
+      "reshard_slot_range",
+      "reshard_with_keys",
+      "rebalance_after_imbalance",
+      "rolling_restart_replica_first",
+      "rolling_restart_primary_safe"
+    ],
+    "operation_count": 0,
+    "reason": "Input artifacts did not include management_ops_matrix.json or management_operation_results.jsonl.",
+    "required_operations_observed": [],
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "metrics": [
+    {
+      "name": "nodes_observed_after_fault",
+      "status": "PASS",
+      "unit": "count",
+      "value": 6
+    },
+    {
+      "name": "failover_latency_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "split_brain_duration_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "cleanup_resources_remaining",
+      "status": "PASS",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "name": "workload_achieved_qps",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ops_per_second",
+      "value": null
+    },
+    {
+      "name": "workload_latency_p99_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "workload_error_rate",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ratio",
+      "value": null
+    },
+    {
+      "name": "fault_failover_latency_p95_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "fault_client_unavailability_p95_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "fault_workload_recovery_p95_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "fault_split_brain_window_max_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "fault_cluster_down_window_max_ms",
+      "reason": "source artifact did not provide metric",
+      "status": "MISSING",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "name": "system_rss_bytes_max",
+      "status": "PASS",
+      "unit": "bytes",
+      "value": 104857600.0
+    },
+    {
+      "name": "system_connected_clients_max",
+      "status": "PASS",
+      "unit": "count",
+      "value": 2.0
+    },
+    {
+      "name": "system_total_net_input_bytes_max",
+      "status": "PASS",
+      "unit": "bytes",
+      "value": 8888.0
+    }
+  ],
+  "missing_metrics": [
+    {
+      "impact": "Report cannot display command-level traceability.",
+      "metric": "command_log.total_commands",
+      "reason": "Input artifacts did not include command_log.jsonl.",
+      "source": "command_audit.missing_or_skipped",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "impact": "Report cannot display fault timeline, failover distribution, split-brain windows, or fault-period workload impact.",
+      "metric": "fault_timeline.row_count",
+      "reason": "Fault timeline artifacts were not present.",
+      "source": "fault_timeline.missing_metrics",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "impact": "Report cannot display management operation timing or topology diff data.",
+      "metric": "management.operation_count",
+      "reason": "Management operation artifacts were not present.",
+      "source": "management_ops.missing_metrics",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.cpu_system_percent",
+      "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.cpu_user_percent",
+      "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.fd_count",
+      "reason": "safe collector does not inspect /proc fd",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.replication_lag",
+      "reason": "Valkey INFO lacks direct replication_lag on this role",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.rx_packets",
+      "reason": "Docker stats NetIO lacks packets",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.tcp_retransmits",
+      "reason": "safe collector does not inspect TCP diagnostics",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.tx_packets",
+      "reason": "Docker stats NetIO lacks packets",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.vms_bytes",
+      "reason": "container VMS unsupported",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Report cannot display workload QPS, latency, error-rate, or slot coverage.",
+      "metric": "workload.window_count",
+      "reason": "Workload benchmark artifacts were not present.",
+      "source": "workload_benchmark.missing_metrics",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+  "run_manifest_ref": {
+    "reason": "Legacy artifact directory input did not include a run_manifest.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata": {
+    "reason": "Legacy artifact directory input did not include run metadata.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata_ref": {
+    "reason": "Legacy artifact directory input did not include a run_metadata.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "schema_version": "v1",
+  "setup_aggregates": {
+    "reason": "setup_telemetry.json was not present in the input artifacts.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "setup_telemetry": {
+    "reason": "Input artifacts did not include setup_telemetry.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "sidecars": [
+    {
+      "artifact_type": "baseline_comparison",
+      "path": "runs/m1-s07-local/artifacts/phases/M1-S07/baseline_comparison.json",
+      "sha256": "388492caf628e46c9c3278a9fde048be09171d1f001f945fcc7dbddbe80f3a87"
+    }
+  ],
+  "source": {
+    "input_dir": "runs/m1-s07-local/artifacts/phases/M1-S07",
+    "input_kind": "artifact_dir",
+    "phase_id": "P09_ANALYSIS_REPORTING",
+    "run_id": "system-metrics-6"
+  },
+  "source_artifacts": [
+    {
+      "path": "runs/m1-s07-local/artifacts/phases/M1-S07/cleanup_report.json",
+      "sha256": "9ebb3ae65ae529e108211e12ac0f7c9bf89ac0057d1be734f62e7a872f988b8e"
+    },
+    {
+      "path": "runs/m1-s07-local/artifacts/phases/M1-S07/failover_report.json",
+      "sha256": "9d5d4d01cb66021bb44459d222acdab331e6dfa57c9f3138017f8bffc4f66859"
+    },
+    {
+      "path": "runs/m1-s07-local/artifacts/phases/M1-S07/phase_summary.json",
+      "sha256": "d7328f8262765ee2fa1c2179fd0921cb6c8aeb19933a5493a407b919f0a740d0"
+    },
+    {
+      "path": "runs/m1-s07-local/artifacts/phases/M1-S07/system_metrics_report.json",
+      "sha256": "4ab132f5610fb59d345a847c12ac3c1a840e93e80179cfd9b189e0c5f404319c"
+    },
+    {
+      "path": "runs/m1-s07-local/artifacts/phases/M1-S07/system_metrics_timeseries.jsonl",
+      "sha256": "7d634bb5641e8d82ea87ff7ab9633f87d7af50826584afa20da667d920ab18b7"
+    },
+    {
+      "path": "runs/m1-s07-local/artifacts/phases/M1-S07/valkey_e2e_evidence.json",
+      "sha256": "595c609006e3425dea31419bbd04ef7f93de658760f40ed5f16372d07f298eed"
+    }
+  ],
+  "status": "PASS",
+  "system_metrics": {
+    "abnormal_nodes_topN": [
+      {
+        "metrics": {
+          "blocked_clients": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "client_connection_count": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_bus_connections": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_known_nodes": {
+            "avg": 6.0,
+            "max": 6.0,
+            "min": 6.0,
+            "p95": 6.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_assigned": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_fail": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_ok": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "connected_clients": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "evicted_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "expired_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "instantaneous_ops_per_sec": {
+            "avg": 123.0,
+            "max": 123.0,
+            "min": 123.0,
+            "p95": 123.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "keyspace_hits": {
+            "avg": 44.0,
+            "max": 44.0,
+            "min": 44.0,
+            "p95": 44.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "keyspace_misses": {
+            "avg": 3.0,
+            "max": 3.0,
+            "min": 3.0,
+            "p95": 3.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "log_error_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "master_repl_offset": {
+            "avg": 100.0,
+            "max": 100.0,
+            "min": 100.0,
+            "p95": 100.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "mem_fragmentation_ratio": {
+            "avg": 1.2,
+            "max": 1.2,
+            "min": 1.2,
+            "p95": 1.2,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "process_pid": {
+            "avg": 701.0,
+            "max": 701.0,
+            "min": 701.0,
+            "p95": 701.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "process_uptime": {
+            "avg": 34.0,
+            "max": 34.0,
+            "min": 34.0,
+            "p95": 34.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rejected_connections": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "restart_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rss_bytes": {
+            "avg": 104857600.0,
+            "max": 104857600.0,
+            "min": 104857600.0,
+            "p95": 104857600.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rx_bytes": {
+            "avg": 2048.0,
+            "max": 2048.0,
+            "min": 2048.0,
+            "p95": 2048.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "slave_repl_offset": {
+            "avg": 95.0,
+            "max": 95.0,
+            "min": 95.0,
+            "p95": 95.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "tcp_connection_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "thread_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_commands_processed": {
+            "avg": 4567.0,
+            "max": 4567.0,
+            "min": 4567.0,
+            "p95": 4567.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_net_input_bytes": {
+            "avg": 8888.0,
+            "max": 8888.0,
+            "min": 8888.0,
+            "p95": 8888.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_net_output_bytes": {
+            "avg": 9999.0,
+            "max": 9999.0,
+            "min": 9999.0,
+            "p95": 9999.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "tx_bytes": {
+            "avg": 4096.0,
+            "max": 4096.0,
+            "min": 4096.0,
+            "p95": 4096.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "used_memory": {
+            "avg": 8388608.0,
+            "max": 8388608.0,
+            "min": 8388608.0,
+            "p95": 8388608.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "used_memory_rss": {
+            "avg": 12582912.0,
+            "max": 12582912.0,
+            "min": 12582912.0,
+            "p95": 12582912.0,
+            "sample_count": 5,
+            "status": "PASS"
+          }
+        },
+        "missing_count": 40,
+        "node_id": "node-0001",
+        "sample_count": 200,
+        "windows": [
+          "cleanup",
+          "fault",
+          "management",
+          "setup",
+          "workload"
+        ]
+      },
+      {
+        "metrics": {
+          "blocked_clients": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "client_connection_count": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_bus_connections": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_known_nodes": {
+            "avg": 6.0,
+            "max": 6.0,
+            "min": 6.0,
+            "p95": 6.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_assigned": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_fail": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_ok": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "connected_clients": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "evicted_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "expired_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "instantaneous_ops_per_sec": {
+            "avg": 123.0,
+            "max": 123.0,
+            "min": 123.0,
+            "p95": 123.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "keyspace_hits": {
+            "avg": 44.0,
+            "max": 44.0,
+            "min": 44.0,
+            "p95": 44.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "keyspace_misses": {
+            "avg": 3.0,
+            "max": 3.0,
+            "min": 3.0,
+            "p95": 3.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "log_error_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "master_repl_offset": {
+            "avg": 100.0,
+            "max": 100.0,
+            "min": 100.0,
+            "p95": 100.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "mem_fragmentation_ratio": {
+            "avg": 1.2,
+            "max": 1.2,
+            "min": 1.2,
+            "p95": 1.2,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "process_pid": {
+            "avg": 701.0,
+            "max": 701.0,
+            "min": 701.0,
+            "p95": 701.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "process_uptime": {
+            "avg": 34.0,
+            "max": 34.0,
+            "min": 34.0,
+            "p95": 34.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rejected_connections": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "restart_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rss_bytes": {
+            "avg": 104857600.0,
+            "max": 104857600.0,
+            "min": 104857600.0,
+            "p95": 104857600.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rx_bytes": {
+            "avg": 2048.0,
+            "max": 2048.0,
+            "min": 2048.0,
+            "p95": 2048.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "slave_repl_offset": {
+            "avg": 95.0,
+            "max": 95.0,
+            "min": 95.0,
+            "p95": 95.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "tcp_connection_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "thread_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_commands_processed": {
+            "avg": 4567.0,
+            "max": 4567.0,
+            "min": 4567.0,
+            "p95": 4567.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_net_input_bytes": {
+            "avg": 8888.0,
+            "max": 8888.0,
+            "min": 8888.0,
+            "p95": 8888.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_net_output_bytes": {
+            "avg": 9999.0,
+            "max": 9999.0,
+            "min": 9999.0,
+            "p95": 9999.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "tx_bytes": {
+            "avg": 4096.0,
+            "max": 4096.0,
+            "min": 4096.0,
+            "p95": 4096.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "used_memory": {
+            "avg": 8388608.0,
+            "max": 8388608.0,
+            "min": 8388608.0,
+            "p95": 8388608.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "used_memory_rss": {
+            "avg": 12582912.0,
+            "max": 12582912.0,
+            "min": 12582912.0,
+            "p95": 12582912.0,
+            "sample_count": 5,
+            "status": "PASS"
+          }
+        },
+        "missing_count": 40,
+        "node_id": "node-0002",
+        "sample_count": 200,
+        "windows": [
+          "cleanup",
+          "fault",
+          "management",
+          "setup",
+          "workload"
+        ]
+      }
+    ],
+    "aggregate": {
+      "blocked_clients": {
+        "avg": 0.0,
+        "max": 0.0,
+        "min": 0.0,
+        "p95": 0.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "client_connection_count": {
+        "avg": 2.0,
+        "max": 2.0,
+        "min": 2.0,
+        "p95": 2.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "cluster_bus_connections": {
+        "avg": 5.0,
+        "max": 5.0,
+        "min": 5.0,
+        "p95": 5.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "cluster_known_nodes": {
+        "avg": 6.0,
+        "max": 6.0,
+        "min": 6.0,
+        "p95": 6.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "cluster_slots_assigned": {
+        "avg": 16384.0,
+        "max": 16384.0,
+        "min": 16384.0,
+        "p95": 16384.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "cluster_slots_fail": {
+        "avg": 0.0,
+        "max": 0.0,
+        "min": 0.0,
+        "p95": 0.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "cluster_slots_ok": {
+        "avg": 16384.0,
+        "max": 16384.0,
+        "min": 16384.0,
+        "p95": 16384.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "connected_clients": {
+        "avg": 2.0,
+        "max": 2.0,
+        "min": 2.0,
+        "p95": 2.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "evicted_keys": {
+        "avg": 0.0,
+        "max": 0.0,
+        "min": 0.0,
+        "p95": 0.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "expired_keys": {
+        "avg": 0.0,
+        "max": 0.0,
+        "min": 0.0,
+        "p95": 0.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "instantaneous_ops_per_sec": {
+        "avg": 123.0,
+        "max": 123.0,
+        "min": 123.0,
+        "p95": 123.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "keyspace_hits": {
+        "avg": 44.0,
+        "max": 44.0,
+        "min": 44.0,
+        "p95": 44.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "keyspace_misses": {
+        "avg": 3.0,
+        "max": 3.0,
+        "min": 3.0,
+        "p95": 3.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "log_error_count": {
+        "avg": 0.0,
+        "max": 0.0,
+        "min": 0.0,
+        "p95": 0.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "master_repl_offset": {
+        "avg": 100.0,
+        "max": 100.0,
+        "min": 100.0,
+        "p95": 100.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "mem_fragmentation_ratio": {
+        "avg": 1.2,
+        "max": 1.2,
+        "min": 1.2,
+        "p95": 1.2,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "process_pid": {
+        "avg": 701.0,
+        "max": 701.0,
+        "min": 701.0,
+        "p95": 701.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "process_uptime": {
+        "avg": 34.0,
+        "max": 34.0,
+        "min": 34.0,
+        "p95": 34.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "rejected_connections": {
+        "avg": 0.0,
+        "max": 0.0,
+        "min": 0.0,
+        "p95": 0.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "restart_count": {
+        "avg": 0.0,
+        "max": 0.0,
+        "min": 0.0,
+        "p95": 0.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "rss_bytes": {
+        "avg": 104857600.0,
+        "max": 104857600.0,
+        "min": 104857600.0,
+        "p95": 104857600.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "rx_bytes": {
+        "avg": 2048.0,
+        "max": 2048.0,
+        "min": 2048.0,
+        "p95": 2048.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "slave_repl_offset": {
+        "avg": 95.0,
+        "max": 95.0,
+        "min": 95.0,
+        "p95": 95.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "tcp_connection_count": {
+        "avg": 5.0,
+        "max": 5.0,
+        "min": 5.0,
+        "p95": 5.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "thread_count": {
+        "avg": 5.0,
+        "max": 5.0,
+        "min": 5.0,
+        "p95": 5.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "total_commands_processed": {
+        "avg": 4567.0,
+        "max": 4567.0,
+        "min": 4567.0,
+        "p95": 4567.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "total_net_input_bytes": {
+        "avg": 8888.0,
+        "max": 8888.0,
+        "min": 8888.0,
+        "p95": 8888.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "total_net_output_bytes": {
+        "avg": 9999.0,
+        "max": 9999.0,
+        "min": 9999.0,
+        "p95": 9999.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "tx_bytes": {
+        "avg": 4096.0,
+        "max": 4096.0,
+        "min": 4096.0,
+        "p95": 4096.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "used_memory": {
+        "avg": 8388608.0,
+        "max": 8388608.0,
+        "min": 8388608.0,
+        "p95": 8388608.0,
+        "sample_count": 10,
+        "status": "PASS"
+      },
+      "used_memory_rss": {
+        "avg": 12582912.0,
+        "max": 12582912.0,
+        "min": 12582912.0,
+        "p95": 12582912.0,
+        "sample_count": 10,
+        "status": "PASS"
+      }
+    },
+    "missing_metrics": [
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0001",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0001",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0002",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0002",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0001",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0001",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0002",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0002",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0001",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0001",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0002",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0002",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "management"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0001",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0001",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0002",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0002",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "fault"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0001",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0001",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_user_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "cpu_system_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "vms_bytes",
+        "node_id": "node-0002",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "fd_count",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "rx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "tcp_retransmits",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "impact": "This metric is excluded from numeric resource aggregation.",
+        "metric": "replication_lag",
+        "node_id": "node-0002",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "cleanup"
+      },
+      {
+        "metric": "cpu_user_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "cpu_system_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "vms_bytes",
+        "node_id": "node-0001",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "fd_count",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "rx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "tx_packets",
+        "node_id": "node-0001",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "tcp_retransmits",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "replication_lag",
+        "node_id": "node-0001",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "cpu_user_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "cpu_system_percent",
+        "node_id": "node-0002",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "vms_bytes",
+        "node_id": "node-0002",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "fd_count",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "rx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "tx_packets",
+        "node_id": "node-0002",
+        "reason": "Docker stats NetIO lacks packets",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "tcp_retransmits",
+        "node_id": "node-0002",
+        "reason": "safe collector does not inspect TCP diagnostics",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "replication_lag",
+        "node_id": "node-0002",
+        "reason": "Valkey INFO lacks direct replication_lag on this role",
+        "status": "MISSING",
+        "window": "setup"
+      },
+      {
+        "metric": "cpu_user_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "metric": "cpu_system_percent",
+        "node_id": "node-0001",
+        "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "metric": "vms_bytes",
+        "node_id": "node-0001",
+        "reason": "container VMS unsupported",
+        "status": "MISSING",
+        "window": "workload"
+      },
+      {
+        "metric": "fd_count",
+        "node_id": "node-0001",
+        "reason": "safe collector does not inspect /proc fd",
+        "status": "MISSING",
+        "window": "workload"
+      }
+    ],
+    "node_count": 2,
+    "per_node": [
+      {
+        "metrics": {
+          "blocked_clients": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "client_connection_count": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_bus_connections": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_known_nodes": {
+            "avg": 6.0,
+            "max": 6.0,
+            "min": 6.0,
+            "p95": 6.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_assigned": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_fail": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_ok": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "connected_clients": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "evicted_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "expired_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "instantaneous_ops_per_sec": {
+            "avg": 123.0,
+            "max": 123.0,
+            "min": 123.0,
+            "p95": 123.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "keyspace_hits": {
+            "avg": 44.0,
+            "max": 44.0,
+            "min": 44.0,
+            "p95": 44.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "keyspace_misses": {
+            "avg": 3.0,
+            "max": 3.0,
+            "min": 3.0,
+            "p95": 3.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "log_error_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "master_repl_offset": {
+            "avg": 100.0,
+            "max": 100.0,
+            "min": 100.0,
+            "p95": 100.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "mem_fragmentation_ratio": {
+            "avg": 1.2,
+            "max": 1.2,
+            "min": 1.2,
+            "p95": 1.2,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "process_pid": {
+            "avg": 701.0,
+            "max": 701.0,
+            "min": 701.0,
+            "p95": 701.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "process_uptime": {
+            "avg": 34.0,
+            "max": 34.0,
+            "min": 34.0,
+            "p95": 34.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rejected_connections": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "restart_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rss_bytes": {
+            "avg": 104857600.0,
+            "max": 104857600.0,
+            "min": 104857600.0,
+            "p95": 104857600.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rx_bytes": {
+            "avg": 2048.0,
+            "max": 2048.0,
+            "min": 2048.0,
+            "p95": 2048.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "slave_repl_offset": {
+            "avg": 95.0,
+            "max": 95.0,
+            "min": 95.0,
+            "p95": 95.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "tcp_connection_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "thread_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_commands_processed": {
+            "avg": 4567.0,
+            "max": 4567.0,
+            "min": 4567.0,
+            "p95": 4567.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_net_input_bytes": {
+            "avg": 8888.0,
+            "max": 8888.0,
+            "min": 8888.0,
+            "p95": 8888.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_net_output_bytes": {
+            "avg": 9999.0,
+            "max": 9999.0,
+            "min": 9999.0,
+            "p95": 9999.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "tx_bytes": {
+            "avg": 4096.0,
+            "max": 4096.0,
+            "min": 4096.0,
+            "p95": 4096.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "used_memory": {
+            "avg": 8388608.0,
+            "max": 8388608.0,
+            "min": 8388608.0,
+            "p95": 8388608.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "used_memory_rss": {
+            "avg": 12582912.0,
+            "max": 12582912.0,
+            "min": 12582912.0,
+            "p95": 12582912.0,
+            "sample_count": 5,
+            "status": "PASS"
+          }
+        },
+        "missing_count": 40,
+        "node_id": "node-0001",
+        "sample_count": 200,
+        "windows": [
+          "cleanup",
+          "fault",
+          "management",
+          "setup",
+          "workload"
+        ]
+      },
+      {
+        "metrics": {
+          "blocked_clients": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "client_connection_count": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_bus_connections": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_known_nodes": {
+            "avg": 6.0,
+            "max": 6.0,
+            "min": 6.0,
+            "p95": 6.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_assigned": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_fail": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "cluster_slots_ok": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "connected_clients": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "evicted_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "expired_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "instantaneous_ops_per_sec": {
+            "avg": 123.0,
+            "max": 123.0,
+            "min": 123.0,
+            "p95": 123.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "keyspace_hits": {
+            "avg": 44.0,
+            "max": 44.0,
+            "min": 44.0,
+            "p95": 44.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "keyspace_misses": {
+            "avg": 3.0,
+            "max": 3.0,
+            "min": 3.0,
+            "p95": 3.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "log_error_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "master_repl_offset": {
+            "avg": 100.0,
+            "max": 100.0,
+            "min": 100.0,
+            "p95": 100.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "mem_fragmentation_ratio": {
+            "avg": 1.2,
+            "max": 1.2,
+            "min": 1.2,
+            "p95": 1.2,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "process_pid": {
+            "avg": 701.0,
+            "max": 701.0,
+            "min": 701.0,
+            "p95": 701.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "process_uptime": {
+            "avg": 34.0,
+            "max": 34.0,
+            "min": 34.0,
+            "p95": 34.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rejected_connections": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "restart_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rss_bytes": {
+            "avg": 104857600.0,
+            "max": 104857600.0,
+            "min": 104857600.0,
+            "p95": 104857600.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "rx_bytes": {
+            "avg": 2048.0,
+            "max": 2048.0,
+            "min": 2048.0,
+            "p95": 2048.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "slave_repl_offset": {
+            "avg": 95.0,
+            "max": 95.0,
+            "min": 95.0,
+            "p95": 95.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "tcp_connection_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "thread_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_commands_processed": {
+            "avg": 4567.0,
+            "max": 4567.0,
+            "min": 4567.0,
+            "p95": 4567.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_net_input_bytes": {
+            "avg": 8888.0,
+            "max": 8888.0,
+            "min": 8888.0,
+            "p95": 8888.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "total_net_output_bytes": {
+            "avg": 9999.0,
+            "max": 9999.0,
+            "min": 9999.0,
+            "p95": 9999.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "tx_bytes": {
+            "avg": 4096.0,
+            "max": 4096.0,
+            "min": 4096.0,
+            "p95": 4096.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "used_memory": {
+            "avg": 8388608.0,
+            "max": 8388608.0,
+            "min": 8388608.0,
+            "p95": 8388608.0,
+            "sample_count": 5,
+            "status": "PASS"
+          },
+          "used_memory_rss": {
+            "avg": 12582912.0,
+            "max": 12582912.0,
+            "min": 12582912.0,
+            "p95": 12582912.0,
+            "sample_count": 5,
+            "status": "PASS"
+          }
+        },
+        "missing_count": 40,
+        "node_id": "node-0002",
+        "sample_count": 200,
+        "windows": [
+          "cleanup",
+          "fault",
+          "management",
+          "setup",
+          "workload"
+        ]
+      }
+    ],
+    "per_window": [
+      {
+        "metrics": {
+          "blocked_clients": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "client_connection_count": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_bus_connections": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_known_nodes": {
+            "avg": 6.0,
+            "max": 6.0,
+            "min": 6.0,
+            "p95": 6.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_assigned": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_fail": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_ok": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "connected_clients": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "evicted_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "expired_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "instantaneous_ops_per_sec": {
+            "avg": 123.0,
+            "max": 123.0,
+            "min": 123.0,
+            "p95": 123.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_hits": {
+            "avg": 44.0,
+            "max": 44.0,
+            "min": 44.0,
+            "p95": 44.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_misses": {
+            "avg": 3.0,
+            "max": 3.0,
+            "min": 3.0,
+            "p95": 3.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "log_error_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "master_repl_offset": {
+            "avg": 100.0,
+            "max": 100.0,
+            "min": 100.0,
+            "p95": 100.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "mem_fragmentation_ratio": {
+            "avg": 1.2,
+            "max": 1.2,
+            "min": 1.2,
+            "p95": 1.2,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_pid": {
+            "avg": 701.0,
+            "max": 701.0,
+            "min": 701.0,
+            "p95": 701.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_uptime": {
+            "avg": 34.0,
+            "max": 34.0,
+            "min": 34.0,
+            "p95": 34.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rejected_connections": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "restart_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rss_bytes": {
+            "avg": 104857600.0,
+            "max": 104857600.0,
+            "min": 104857600.0,
+            "p95": 104857600.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rx_bytes": {
+            "avg": 2048.0,
+            "max": 2048.0,
+            "min": 2048.0,
+            "p95": 2048.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "slave_repl_offset": {
+            "avg": 95.0,
+            "max": 95.0,
+            "min": 95.0,
+            "p95": 95.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tcp_connection_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "thread_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_commands_processed": {
+            "avg": 4567.0,
+            "max": 4567.0,
+            "min": 4567.0,
+            "p95": 4567.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_input_bytes": {
+            "avg": 8888.0,
+            "max": 8888.0,
+            "min": 8888.0,
+            "p95": 8888.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_output_bytes": {
+            "avg": 9999.0,
+            "max": 9999.0,
+            "min": 9999.0,
+            "p95": 9999.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tx_bytes": {
+            "avg": 4096.0,
+            "max": 4096.0,
+            "min": 4096.0,
+            "p95": 4096.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory": {
+            "avg": 8388608.0,
+            "max": 8388608.0,
+            "min": 8388608.0,
+            "p95": 8388608.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory_rss": {
+            "avg": 12582912.0,
+            "max": 12582912.0,
+            "min": 12582912.0,
+            "p95": 12582912.0,
+            "sample_count": 2,
+            "status": "PASS"
+          }
+        },
+        "missing_count": 16,
+        "node_count": 2,
+        "sample_count": 80,
+        "window": "cleanup"
+      },
+      {
+        "metrics": {
+          "blocked_clients": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "client_connection_count": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_bus_connections": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_known_nodes": {
+            "avg": 6.0,
+            "max": 6.0,
+            "min": 6.0,
+            "p95": 6.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_assigned": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_fail": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_ok": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "connected_clients": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "evicted_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "expired_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "instantaneous_ops_per_sec": {
+            "avg": 123.0,
+            "max": 123.0,
+            "min": 123.0,
+            "p95": 123.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_hits": {
+            "avg": 44.0,
+            "max": 44.0,
+            "min": 44.0,
+            "p95": 44.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_misses": {
+            "avg": 3.0,
+            "max": 3.0,
+            "min": 3.0,
+            "p95": 3.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "log_error_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "master_repl_offset": {
+            "avg": 100.0,
+            "max": 100.0,
+            "min": 100.0,
+            "p95": 100.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "mem_fragmentation_ratio": {
+            "avg": 1.2,
+            "max": 1.2,
+            "min": 1.2,
+            "p95": 1.2,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_pid": {
+            "avg": 701.0,
+            "max": 701.0,
+            "min": 701.0,
+            "p95": 701.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_uptime": {
+            "avg": 34.0,
+            "max": 34.0,
+            "min": 34.0,
+            "p95": 34.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rejected_connections": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "restart_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rss_bytes": {
+            "avg": 104857600.0,
+            "max": 104857600.0,
+            "min": 104857600.0,
+            "p95": 104857600.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rx_bytes": {
+            "avg": 2048.0,
+            "max": 2048.0,
+            "min": 2048.0,
+            "p95": 2048.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "slave_repl_offset": {
+            "avg": 95.0,
+            "max": 95.0,
+            "min": 95.0,
+            "p95": 95.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tcp_connection_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "thread_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_commands_processed": {
+            "avg": 4567.0,
+            "max": 4567.0,
+            "min": 4567.0,
+            "p95": 4567.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_input_bytes": {
+            "avg": 8888.0,
+            "max": 8888.0,
+            "min": 8888.0,
+            "p95": 8888.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_output_bytes": {
+            "avg": 9999.0,
+            "max": 9999.0,
+            "min": 9999.0,
+            "p95": 9999.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tx_bytes": {
+            "avg": 4096.0,
+            "max": 4096.0,
+            "min": 4096.0,
+            "p95": 4096.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory": {
+            "avg": 8388608.0,
+            "max": 8388608.0,
+            "min": 8388608.0,
+            "p95": 8388608.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory_rss": {
+            "avg": 12582912.0,
+            "max": 12582912.0,
+            "min": 12582912.0,
+            "p95": 12582912.0,
+            "sample_count": 2,
+            "status": "PASS"
+          }
+        },
+        "missing_count": 16,
+        "node_count": 2,
+        "sample_count": 80,
+        "window": "fault"
+      },
+      {
+        "metrics": {
+          "blocked_clients": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "client_connection_count": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_bus_connections": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_known_nodes": {
+            "avg": 6.0,
+            "max": 6.0,
+            "min": 6.0,
+            "p95": 6.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_assigned": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_fail": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_ok": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "connected_clients": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "evicted_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "expired_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "instantaneous_ops_per_sec": {
+            "avg": 123.0,
+            "max": 123.0,
+            "min": 123.0,
+            "p95": 123.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_hits": {
+            "avg": 44.0,
+            "max": 44.0,
+            "min": 44.0,
+            "p95": 44.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_misses": {
+            "avg": 3.0,
+            "max": 3.0,
+            "min": 3.0,
+            "p95": 3.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "log_error_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "master_repl_offset": {
+            "avg": 100.0,
+            "max": 100.0,
+            "min": 100.0,
+            "p95": 100.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "mem_fragmentation_ratio": {
+            "avg": 1.2,
+            "max": 1.2,
+            "min": 1.2,
+            "p95": 1.2,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_pid": {
+            "avg": 701.0,
+            "max": 701.0,
+            "min": 701.0,
+            "p95": 701.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_uptime": {
+            "avg": 34.0,
+            "max": 34.0,
+            "min": 34.0,
+            "p95": 34.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rejected_connections": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "restart_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rss_bytes": {
+            "avg": 104857600.0,
+            "max": 104857600.0,
+            "min": 104857600.0,
+            "p95": 104857600.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rx_bytes": {
+            "avg": 2048.0,
+            "max": 2048.0,
+            "min": 2048.0,
+            "p95": 2048.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "slave_repl_offset": {
+            "avg": 95.0,
+            "max": 95.0,
+            "min": 95.0,
+            "p95": 95.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tcp_connection_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "thread_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_commands_processed": {
+            "avg": 4567.0,
+            "max": 4567.0,
+            "min": 4567.0,
+            "p95": 4567.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_input_bytes": {
+            "avg": 8888.0,
+            "max": 8888.0,
+            "min": 8888.0,
+            "p95": 8888.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_output_bytes": {
+            "avg": 9999.0,
+            "max": 9999.0,
+            "min": 9999.0,
+            "p95": 9999.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tx_bytes": {
+            "avg": 4096.0,
+            "max": 4096.0,
+            "min": 4096.0,
+            "p95": 4096.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory": {
+            "avg": 8388608.0,
+            "max": 8388608.0,
+            "min": 8388608.0,
+            "p95": 8388608.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory_rss": {
+            "avg": 12582912.0,
+            "max": 12582912.0,
+            "min": 12582912.0,
+            "p95": 12582912.0,
+            "sample_count": 2,
+            "status": "PASS"
+          }
+        },
+        "missing_count": 16,
+        "node_count": 2,
+        "sample_count": 80,
+        "window": "management"
+      },
+      {
+        "metrics": {
+          "blocked_clients": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "client_connection_count": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_bus_connections": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_known_nodes": {
+            "avg": 6.0,
+            "max": 6.0,
+            "min": 6.0,
+            "p95": 6.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_assigned": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_fail": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_ok": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "connected_clients": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "evicted_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "expired_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "instantaneous_ops_per_sec": {
+            "avg": 123.0,
+            "max": 123.0,
+            "min": 123.0,
+            "p95": 123.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_hits": {
+            "avg": 44.0,
+            "max": 44.0,
+            "min": 44.0,
+            "p95": 44.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_misses": {
+            "avg": 3.0,
+            "max": 3.0,
+            "min": 3.0,
+            "p95": 3.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "log_error_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "master_repl_offset": {
+            "avg": 100.0,
+            "max": 100.0,
+            "min": 100.0,
+            "p95": 100.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "mem_fragmentation_ratio": {
+            "avg": 1.2,
+            "max": 1.2,
+            "min": 1.2,
+            "p95": 1.2,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_pid": {
+            "avg": 701.0,
+            "max": 701.0,
+            "min": 701.0,
+            "p95": 701.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_uptime": {
+            "avg": 34.0,
+            "max": 34.0,
+            "min": 34.0,
+            "p95": 34.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rejected_connections": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "restart_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rss_bytes": {
+            "avg": 104857600.0,
+            "max": 104857600.0,
+            "min": 104857600.0,
+            "p95": 104857600.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rx_bytes": {
+            "avg": 2048.0,
+            "max": 2048.0,
+            "min": 2048.0,
+            "p95": 2048.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "slave_repl_offset": {
+            "avg": 95.0,
+            "max": 95.0,
+            "min": 95.0,
+            "p95": 95.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tcp_connection_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "thread_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_commands_processed": {
+            "avg": 4567.0,
+            "max": 4567.0,
+            "min": 4567.0,
+            "p95": 4567.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_input_bytes": {
+            "avg": 8888.0,
+            "max": 8888.0,
+            "min": 8888.0,
+            "p95": 8888.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_output_bytes": {
+            "avg": 9999.0,
+            "max": 9999.0,
+            "min": 9999.0,
+            "p95": 9999.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tx_bytes": {
+            "avg": 4096.0,
+            "max": 4096.0,
+            "min": 4096.0,
+            "p95": 4096.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory": {
+            "avg": 8388608.0,
+            "max": 8388608.0,
+            "min": 8388608.0,
+            "p95": 8388608.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory_rss": {
+            "avg": 12582912.0,
+            "max": 12582912.0,
+            "min": 12582912.0,
+            "p95": 12582912.0,
+            "sample_count": 2,
+            "status": "PASS"
+          }
+        },
+        "missing_count": 16,
+        "node_count": 2,
+        "sample_count": 80,
+        "window": "setup"
+      },
+      {
+        "metrics": {
+          "blocked_clients": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "client_connection_count": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_bus_connections": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_known_nodes": {
+            "avg": 6.0,
+            "max": 6.0,
+            "min": 6.0,
+            "p95": 6.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_assigned": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_fail": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "cluster_slots_ok": {
+            "avg": 16384.0,
+            "max": 16384.0,
+            "min": 16384.0,
+            "p95": 16384.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "connected_clients": {
+            "avg": 2.0,
+            "max": 2.0,
+            "min": 2.0,
+            "p95": 2.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "evicted_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "expired_keys": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "instantaneous_ops_per_sec": {
+            "avg": 123.0,
+            "max": 123.0,
+            "min": 123.0,
+            "p95": 123.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_hits": {
+            "avg": 44.0,
+            "max": 44.0,
+            "min": 44.0,
+            "p95": 44.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "keyspace_misses": {
+            "avg": 3.0,
+            "max": 3.0,
+            "min": 3.0,
+            "p95": 3.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "log_error_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "master_repl_offset": {
+            "avg": 100.0,
+            "max": 100.0,
+            "min": 100.0,
+            "p95": 100.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "mem_fragmentation_ratio": {
+            "avg": 1.2,
+            "max": 1.2,
+            "min": 1.2,
+            "p95": 1.2,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_pid": {
+            "avg": 701.0,
+            "max": 701.0,
+            "min": 701.0,
+            "p95": 701.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "process_uptime": {
+            "avg": 34.0,
+            "max": 34.0,
+            "min": 34.0,
+            "p95": 34.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rejected_connections": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "restart_count": {
+            "avg": 0.0,
+            "max": 0.0,
+            "min": 0.0,
+            "p95": 0.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rss_bytes": {
+            "avg": 104857600.0,
+            "max": 104857600.0,
+            "min": 104857600.0,
+            "p95": 104857600.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "rx_bytes": {
+            "avg": 2048.0,
+            "max": 2048.0,
+            "min": 2048.0,
+            "p95": 2048.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "slave_repl_offset": {
+            "avg": 95.0,
+            "max": 95.0,
+            "min": 95.0,
+            "p95": 95.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tcp_connection_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "thread_count": {
+            "avg": 5.0,
+            "max": 5.0,
+            "min": 5.0,
+            "p95": 5.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_commands_processed": {
+            "avg": 4567.0,
+            "max": 4567.0,
+            "min": 4567.0,
+            "p95": 4567.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_input_bytes": {
+            "avg": 8888.0,
+            "max": 8888.0,
+            "min": 8888.0,
+            "p95": 8888.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "total_net_output_bytes": {
+            "avg": 9999.0,
+            "max": 9999.0,
+            "min": 9999.0,
+            "p95": 9999.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "tx_bytes": {
+            "avg": 4096.0,
+            "max": 4096.0,
+            "min": 4096.0,
+            "p95": 4096.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory": {
+            "avg": 8388608.0,
+            "max": 8388608.0,
+            "min": 8388608.0,
+            "p95": 8388608.0,
+            "sample_count": 2,
+            "status": "PASS"
+          },
+          "used_memory_rss": {
+            "avg": 12582912.0,
+            "max": 12582912.0,
+            "min": 12582912.0,
+            "p95": 12582912.0,
+            "sample_count": 2,
+            "status": "PASS"
+          }
+        },
+        "missing_count": 16,
+        "node_count": 2,
+        "sample_count": 80,
+        "window": "workload"
+      }
+    ],
+    "sample_count": 400,
+    "source_refs": {
+      "metrics_timeseries": "metrics_timeseries.jsonl",
+      "system_metrics_timeseries": "system_metrics_timeseries.jsonl"
+    },
+    "status": "PASS",
+    "windows": [
+      "cleanup",
+      "fault",
+      "management",
+      "setup",
+      "workload"
+    ]
+  },
+  "workload_benchmark": {
+    "missing_metrics": [
+      {
+        "impact": "Report cannot display workload QPS, latency, error-rate, or slot coverage.",
+        "metric": "window_count",
+        "reason": "Workload benchmark artifacts were not present.",
+        "status": "SKIPPED_WITH_REASON"
+      }
+    ],
+    "profiles_covered": [],
+    "reason": "Input artifacts did not include workload_windows.json or workload_report.json.",
+    "status": "SKIPPED_WITH_REASON",
+    "window_count": 0
+  }
+}

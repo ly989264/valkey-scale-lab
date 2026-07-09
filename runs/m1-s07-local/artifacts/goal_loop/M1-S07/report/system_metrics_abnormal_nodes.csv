@@ -1,0 +1,7 @@
+node_id,sample_count,missing_count,rss_bytes_max,used_memory_max,connected_clients_max,windows
+shard-0001-replica-00,80,18,15151923.0,2993864.0,2.0,"cleanup,setup"
+shard-0002-replica-00,80,18,14900264.0,2993672.0,2.0,"cleanup,setup"
+shard-0000-replica-00,80,18,14889779.0,2994312.0,2.0,"cleanup,setup"
+shard-0000-primary,80,20,14638120.0,3092760.0,1.0,"cleanup,setup"
+shard-0001-primary,80,20,14313062.0,3067880.0,1.0,"cleanup,setup"
+shard-0002-primary,80,20,14313062.0,3067752.0,1.0,"cleanup,setup"

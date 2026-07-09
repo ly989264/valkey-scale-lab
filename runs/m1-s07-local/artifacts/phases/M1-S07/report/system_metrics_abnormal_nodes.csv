@@ -1,0 +1,3 @@
+node_id,sample_count,missing_count,rss_bytes_max,used_memory_max,connected_clients_max,windows
+node-0001,200,40,104857600.0,8388608.0,2.0,"cleanup,fault,management,setup,workload"
+node-0002,200,40,104857600.0,8388608.0,2.0,"cleanup,fault,management,setup,workload"

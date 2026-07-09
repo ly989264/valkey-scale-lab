@@ -464,6 +464,14 @@ def create_scenario(
             write_p18_management_reshard_rebalance_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         if phase == "P19_MANAGEMENT_ROLLING_RESTART":
             write_p19_management_rolling_restart_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        write_system_metrics_artifacts(
+            artifacts,
+            phase,
+            scenario,
+            run_id,
+            nodes,
+            lifecycle_windows=_m1_system_metric_windows_for_artifacts(artifacts),
+        )
         _write_state(Path(state_out), state)
         return state
     except Exception as exc:
@@ -1004,6 +1012,14 @@ def _create_process_scenario(
         with _timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
             if not strict_management and not strict_full_flow:
                 write_scale_ladder_artifacts(artifacts, phase, scenario, run_id, config, nodes)
+        write_system_metrics_artifacts(
+            artifacts,
+            phase,
+            scenario,
+            run_id,
+            nodes,
+            lifecycle_windows=_m1_system_metric_windows_for_artifacts(artifacts),
+        )
         return state
     except Exception:
         cleanup_by_label(phase=phase, run_id=run_id)
@@ -4631,6 +4647,376 @@ def write_observability_artifacts(
     event_lines.append(_event(phase, run_id, "observability_collection_finished", "info", {"sample_count": len(metric_lines)}))
     metrics_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in metric_lines) + "\n", encoding="utf-8")
     events_path.write_text("\n".join(json.dumps(line, sort_keys=True) for line in event_lines) + "\n", encoding="utf-8")
+
+
+M1_SYSTEM_PROCESS_METRICS = [
+    "process_pid",
+    "process_uptime",
+    "cpu_user_percent",
+    "cpu_system_percent",
+    "rss_bytes",
+    "vms_bytes",
+    "fd_count",
+    "thread_count",
+    "tcp_connection_count",
+    "client_connection_count",
+    "restart_count",
+    "log_error_count",
+]
+M1_SYSTEM_NETWORK_METRICS = [
+    "rx_bytes",
+    "tx_bytes",
+    "rx_packets",
+    "tx_packets",
+    "tcp_retransmits",
+    "cluster_bus_connections",
+]
+M1_SYSTEM_VALKEY_METRICS = [
+    "connected_clients",
+    "blocked_clients",
+    "used_memory",
+    "used_memory_rss",
+    "mem_fragmentation_ratio",
+    "instantaneous_ops_per_sec",
+    "total_commands_processed",
+    "total_net_input_bytes",
+    "total_net_output_bytes",
+    "rejected_connections",
+    "expired_keys",
+    "evicted_keys",
+    "keyspace_hits",
+    "keyspace_misses",
+    "master_repl_offset",
+    "slave_repl_offset",
+    "replication_lag",
+    "cluster_state",
+    "cluster_known_nodes",
+    "cluster_slots_assigned",
+    "cluster_slots_ok",
+    "cluster_slots_fail",
+]
+
+
+def _m1_system_metric_windows_for_artifacts(artifacts: Path) -> list[str]:
+    windows = ["setup", "cleanup"]
+    if (artifacts / "management_ops_matrix.json").exists() or (artifacts / "management_operation_results.jsonl").exists():
+        windows.append("management")
+    if (artifacts / "workload_windows.json").exists() or (artifacts / "workload_report.json").exists():
+        windows.append("workload")
+    if (artifacts / "fault_timeline_report.json").exists() or (artifacts / "fault_timeline_events.jsonl").exists():
+        windows.append("fault")
+    return list(dict.fromkeys(windows))
+
+
+def write_system_metrics_artifacts(
+    artifacts: Path,
+    phase: str,
+    scenario: str,
+    run_id: str,
+    nodes: list[dict[str, Any]],
+    *,
+    lifecycle_windows: list[str] | None = None,
+) -> None:
+    """Emit M1-S07 process/network/Valkey metrics from the owned runtime only."""
+    if not nodes:
+        return
+    telemetry = TelemetryRun(
+        phase_id=phase,
+        scenario_name=scenario,
+        run_id=run_id,
+        coverage_id="m1-s07.system_metrics.runtime_collection",
+        scale=len(nodes),
+        node_count=len(nodes),
+    )
+    windows = lifecycle_windows or ["setup", "cleanup"]
+    rows: list[dict[str, Any]] = []
+    sample_errors: list[dict[str, Any]] = []
+    for window_name in windows:
+        for node in nodes:
+            try:
+                rows.extend(_system_metric_rows_for_node(telemetry, node, window_name))
+            except Exception as exc:  # noqa: BLE001
+                logical_id = str(node.get("logical_id", "MISSING"))
+                sample_errors.append({"logical_id": logical_id, "window_name": window_name, "error": repr(exc)})
+                rows.append(
+                    telemetry.metric(
+                        source_type="system_process",
+                        source_id=logical_id,
+                        metric_name="system_metric_sample",
+                        metric_value=MISSING,
+                        metric_unit="status",
+                        labels=_m1_system_node_labels(node, window_name),
+                        missing_reason_text=f"system metric sample failed: {exc!r}",
+                    )
+                )
+    write_jsonl(artifacts / "system_metrics_timeseries.jsonl", rows)
+    _append_jsonl_artifact(artifacts / "metrics_timeseries.jsonl", rows)
+    report = _m1_system_metrics_report(phase, scenario, run_id, nodes, windows, rows, sample_errors)
+    (artifacts / "system_metrics_report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _system_metric_rows_for_node(telemetry: TelemetryRun, node: dict[str, Any], window_name: str) -> list[dict[str, Any]]:
+    logical_id = str(node.get("logical_id", "MISSING"))
+    labels = _m1_system_node_labels(node, window_name)
+    rows: list[dict[str, Any]] = []
+    info: dict[str, str] = {}
+    cluster_info: dict[str, str] = {}
+    cluster_nodes_raw = ""
+    try:
+        info = _parse_info(_node_command(node, "INFO", "default", timeout=10))
+    except Exception as exc:  # noqa: BLE001
+        rows.append(
+            telemetry.metric(
+                source_type="valkey_info",
+                source_id=logical_id,
+                metric_name="valkey_info_sample",
+                metric_value=MISSING,
+                metric_unit="status",
+                labels=labels,
+                missing_reason_text=f"Valkey INFO sample failed for system metrics: {exc!r}",
+            )
+        )
+    try:
+        cluster_info = _parse_info(_node_command(node, "CLUSTER", "INFO", timeout=10))
+    except Exception as exc:  # noqa: BLE001
+        rows.append(
+            telemetry.metric(
+                source_type="cluster_info",
+                source_id=logical_id,
+                metric_name="cluster_info_sample",
+                metric_value=MISSING,
+                metric_unit="status",
+                labels=labels,
+                missing_reason_text=f"CLUSTER INFO sample failed for system metrics: {exc!r}",
+            )
+        )
+    try:
+        cluster_nodes_raw = _node_command(node, "CLUSTER", "NODES", timeout=10)
+    except Exception:
+        cluster_nodes_raw = ""
+    docker_stats = _docker_stats(str(node.get("container_name") or node.get("nodehost_container_name") or "MISSING"))
+    log_error_count = _m1_count_log_errors(node)
+    process_values: dict[str, tuple[Any, str, str]] = {
+        "process_pid": (_int_or_missing(node.get("pid")), "pid", "runtime state did not include numeric process pid"),
+        "process_uptime": (_int_or_missing(info.get("uptime_in_seconds")), "seconds", "Valkey INFO did not include uptime_in_seconds"),
+        "cpu_user_percent": (MISSING, "percent", "Docker stats exposes aggregate CPU percent, not per-process user CPU percent"),
+        "cpu_system_percent": (MISSING, "percent", "Docker stats exposes aggregate CPU percent, not per-process system CPU percent"),
+        "rss_bytes": (_m1_memory_usage_bytes(docker_stats), "bytes", "docker stats did not expose parseable memory usage"),
+        "vms_bytes": (MISSING, "bytes", "container-scoped VMS is not exposed by Docker stats"),
+        "fd_count": (MISSING, "count", "fd_count requires container namespace inspection and is unsupported by the safe Docker stats path"),
+        "thread_count": (_int_or_missing(docker_stats.get("pids")) if docker_stats.get("status") == "PASS" else MISSING, "count", "docker stats did not expose PIDs/thread count"),
+        "tcp_connection_count": (_m1_cluster_connected_count(cluster_nodes_raw), "count", "CLUSTER NODES did not include connected peer rows"),
+        "client_connection_count": (_int_or_missing(info.get("connected_clients")), "count", "Valkey INFO did not include connected_clients"),
+        "restart_count": (0, "count", "owned runtime does not restart nodes before rolling-restart stages"),
+        "log_error_count": (log_error_count, "count", "log file was unavailable for error counting"),
+    }
+    for name in M1_SYSTEM_PROCESS_METRICS:
+        value, unit, reason = process_values[name]
+        rows.append(_m1_system_metric(telemetry, "system_process", logical_id, name, value, unit, labels, reason))
+    rx_bytes, tx_bytes, net_reason = _m1_docker_net_bytes(docker_stats)
+    network_values: dict[str, tuple[Any, str, str]] = {
+        "rx_bytes": (rx_bytes, "bytes", net_reason or "docker stats did not expose NetIO receive bytes"),
+        "tx_bytes": (tx_bytes, "bytes", net_reason or "docker stats did not expose NetIO transmit bytes"),
+        "rx_packets": (MISSING, "count", "Docker stats NetIO does not expose packet counters"),
+        "tx_packets": (MISSING, "count", "Docker stats NetIO does not expose packet counters"),
+        "tcp_retransmits": (MISSING, "count", "TCP retransmits require host or namespace TCP diagnostics and are unsupported in the safe default collector"),
+        "cluster_bus_connections": (_m1_cluster_connected_count(cluster_nodes_raw), "count", "CLUSTER NODES did not include connected peer rows"),
+    }
+    for name in M1_SYSTEM_NETWORK_METRICS:
+        value, unit, reason = network_values[name]
+        rows.append(_m1_system_metric(telemetry, "system_network", logical_id, name, value, unit, labels, reason))
+    valkey_values: dict[str, tuple[Any, str, str]] = {
+        "connected_clients": (_int_or_missing(info.get("connected_clients")), "count", "Valkey INFO did not include connected_clients"),
+        "blocked_clients": (_int_or_missing(info.get("blocked_clients")), "count", "Valkey INFO did not include blocked_clients"),
+        "used_memory": (_int_or_missing(info.get("used_memory")), "bytes", "Valkey INFO did not include used_memory"),
+        "used_memory_rss": (_int_or_missing(info.get("used_memory_rss")), "bytes", "Valkey INFO did not include used_memory_rss"),
+        "mem_fragmentation_ratio": (_float_or_missing(info.get("mem_fragmentation_ratio")), "ratio", "Valkey INFO did not include mem_fragmentation_ratio"),
+        "instantaneous_ops_per_sec": (_int_or_missing(info.get("instantaneous_ops_per_sec")), "ops_per_second", "Valkey INFO did not include instantaneous_ops_per_sec"),
+        "total_commands_processed": (_int_or_missing(info.get("total_commands_processed")), "count", "Valkey INFO did not include total_commands_processed"),
+        "total_net_input_bytes": (_int_or_missing(info.get("total_net_input_bytes")), "bytes", "Valkey INFO did not include total_net_input_bytes"),
+        "total_net_output_bytes": (_int_or_missing(info.get("total_net_output_bytes")), "bytes", "Valkey INFO did not include total_net_output_bytes"),
+        "rejected_connections": (_int_or_missing(info.get("rejected_connections")), "count", "Valkey INFO did not include rejected_connections"),
+        "expired_keys": (_int_or_missing(info.get("expired_keys")), "count", "Valkey INFO did not include expired_keys"),
+        "evicted_keys": (_int_or_missing(info.get("evicted_keys")), "count", "Valkey INFO did not include evicted_keys"),
+        "keyspace_hits": (_int_or_missing(info.get("keyspace_hits")), "count", "Valkey INFO did not include keyspace_hits"),
+        "keyspace_misses": (_int_or_missing(info.get("keyspace_misses")), "count", "Valkey INFO did not include keyspace_misses"),
+        "master_repl_offset": (_int_or_missing(info.get("master_repl_offset")), "offset", "Valkey INFO did not include master_repl_offset"),
+        "slave_repl_offset": (_int_or_missing(info.get("slave_repl_offset")), "offset", "Valkey INFO did not include slave_repl_offset"),
+        "replication_lag": (MISSING, "seconds", "Valkey INFO does not expose a direct replication_lag metric in all roles"),
+        "cluster_state": (cluster_info.get("cluster_state", MISSING), "state", "CLUSTER INFO did not include cluster_state"),
+        "cluster_known_nodes": (_int_or_missing(cluster_info.get("cluster_known_nodes")), "count", "CLUSTER INFO did not include cluster_known_nodes"),
+        "cluster_slots_assigned": (_int_or_missing(cluster_info.get("cluster_slots_assigned")), "count", "CLUSTER INFO did not include cluster_slots_assigned"),
+        "cluster_slots_ok": (_int_or_missing(cluster_info.get("cluster_slots_ok")), "count", "CLUSTER INFO did not include cluster_slots_ok"),
+        "cluster_slots_fail": (_int_or_missing(cluster_info.get("cluster_slots_fail")), "count", "CLUSTER INFO did not include cluster_slots_fail"),
+    }
+    for name in M1_SYSTEM_VALKEY_METRICS:
+        value, unit, reason = valkey_values[name]
+        rows.append(_m1_system_metric(telemetry, "valkey_info", logical_id, name, value, unit, labels, reason))
+    return rows
+
+
+def _m1_system_node_labels(node: dict[str, Any], window_name: str) -> dict[str, Any]:
+    return {
+        "logical_node_id": node.get("logical_id", MISSING),
+        "node_id": node.get("logical_id", MISSING),
+        "nodehost_id": node.get("nodehost_id", MISSING),
+        "host_id": node.get("host_id", MISSING),
+        "az_id": node.get("az_id", MISSING),
+        "role": node.get("role", MISSING),
+        "lifecycle_window": window_name,
+        "stage_window": window_name,
+    }
+
+
+def _m1_system_metric(
+    telemetry: TelemetryRun,
+    source_type: str,
+    source_id: str,
+    metric_name: str,
+    metric_value: Any,
+    metric_unit: str,
+    labels: dict[str, Any],
+    missing_reason: str,
+) -> dict[str, Any]:
+    is_missing = metric_value == MISSING
+    return telemetry.metric(
+        source_type=source_type,
+        source_id=source_id,
+        metric_name=metric_name,
+        metric_value=metric_value,
+        metric_unit=metric_unit,
+        labels=labels,
+        missing_reason_text=missing_reason if is_missing else "",
+    )
+
+
+def _m1_system_metrics_report(
+    phase: str,
+    scenario: str,
+    run_id: str,
+    nodes: list[dict[str, Any]],
+    windows: list[str],
+    rows: list[dict[str, Any]],
+    sample_errors: list[dict[str, Any]],
+) -> dict[str, Any]:
+    required = M1_SYSTEM_PROCESS_METRICS + M1_SYSTEM_NETWORK_METRICS + M1_SYSTEM_VALKEY_METRICS
+    observed = {str(row.get("metric_name")) for row in rows}
+    missing_rows = [row for row in rows if row.get("metric_value") == MISSING]
+    by_window: dict[str, int] = {}
+    by_node: dict[str, int] = {}
+    for row in rows:
+        labels = row.get("labels", {}) if isinstance(row.get("labels"), dict) else {}
+        window = str(labels.get("lifecycle_window", "MISSING"))
+        node_id = str(labels.get("logical_node_id", row.get("source_id", "MISSING")))
+        by_window[window] = by_window.get(window, 0) + 1
+        by_node[node_id] = by_node.get(node_id, 0) + 1
+    return {
+        "schema_version": "v1",
+        "artifact_type": "system_metrics_report",
+        "phase_id": phase,
+        "stage_id": phase,
+        "run_id": run_id,
+        "scenario_name": scenario,
+        "status": "PASS" if rows and not sample_errors and all(row.get("missing_reason") for row in missing_rows) else "FAIL",
+        "node_count": len(nodes),
+        "scale": len(nodes),
+        "sample_count": len(rows),
+        "lifecycle_windows": windows,
+        "coverage": {
+            "required_metrics": required,
+            "observed_metrics": sorted(observed),
+            "missing_required_metrics": [name for name in required if name not in observed],
+            "rows_by_window": by_window,
+            "rows_by_node": by_node,
+        },
+        "missing_metric_count": len(missing_rows),
+        "missing_metrics": [
+            {
+                "node_id": row.get("source_id", MISSING),
+                "metric": row.get("metric_name", MISSING),
+                "status": "MISSING",
+                "reason": row.get("missing_reason", "missing reason absent"),
+                "window": (row.get("labels", {}) if isinstance(row.get("labels"), dict) else {}).get("lifecycle_window", MISSING),
+            }
+            for row in missing_rows[:200]
+        ],
+        "sample_errors": sample_errors,
+        "source_refs": {
+            "system_metrics_timeseries": "system_metrics_timeseries.jsonl",
+            "metrics_timeseries": "metrics_timeseries.jsonl",
+        },
+    }
+
+
+def _append_jsonl_artifact(path: Path, rows: list[dict[str, Any]]) -> None:
+    if not rows:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    prefix = ""
+    if path.exists() and path.read_text(encoding="utf-8").strip():
+        prefix = path.read_text(encoding="utf-8").rstrip("\n") + "\n"
+    path.write_text(prefix + "\n".join(json.dumps(row, sort_keys=True, allow_nan=False) for row in rows) + "\n", encoding="utf-8")
+
+
+def _m1_count_log_errors(node: dict[str, Any]) -> int | str:
+    log_path = Path(str(node.get("log_file", "")))
+    if not log_path.exists() or not log_path.is_file():
+        return MISSING
+    text = log_path.read_text(encoding="utf-8", errors="replace").lower()
+    return text.count("error") + text.count("panic") + text.count("fatal")
+
+
+def _m1_cluster_connected_count(cluster_nodes_raw: str) -> int | str:
+    if not cluster_nodes_raw.strip():
+        return MISSING
+    return sum(1 for line in cluster_nodes_raw.splitlines() if " connected" in line)
+
+
+def _m1_memory_usage_bytes(stats: dict[str, Any]) -> int | str:
+    if stats.get("status") != "PASS":
+        return MISSING
+    text = str(stats.get("memory_usage", ""))
+    first = text.split("/", 1)[0].strip()
+    return _m1_size_to_bytes(first)
+
+
+def _m1_docker_net_bytes(stats: dict[str, Any]) -> tuple[int | str, int | str, str]:
+    if stats.get("status") != "PASS":
+        return MISSING, MISSING, str(stats.get("reason", "docker stats unavailable"))
+    text = str(stats.get("net_io", ""))
+    if "/" not in text:
+        return MISSING, MISSING, "docker stats NetIO was not parseable"
+    rx_raw, tx_raw = [part.strip() for part in text.split("/", 1)]
+    return _m1_size_to_bytes(rx_raw), _m1_size_to_bytes(tx_raw), ""
+
+
+def _m1_size_to_bytes(value: str) -> int | str:
+    match = re.match(r"^\s*([0-9.]+)\s*([KMGTPE]?i?B|B|kB|MB|GB|TB)?\s*$", value, flags=re.IGNORECASE)
+    if not match:
+        return MISSING
+    number = float(match.group(1))
+    unit = (match.group(2) or "B").lower()
+    factors = {
+        "b": 1,
+        "kb": 1000,
+        "mb": 1000**2,
+        "gb": 1000**3,
+        "tb": 1000**4,
+        "kib": 1024,
+        "mib": 1024**2,
+        "gib": 1024**3,
+        "tib": 1024**4,
+    }
+    return int(number * factors.get(unit, 1))
+
+
+def _float_or_missing(value: Any) -> float | str:
+    if value is None:
+        return MISSING
+    try:
+        return float(str(value))
+    except ValueError:
+        return MISSING
 
 
 def write_goal_loop_quant_telemetry_artifacts(

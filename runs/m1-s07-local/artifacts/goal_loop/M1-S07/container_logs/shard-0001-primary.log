@@ -1,0 +1,29 @@
+1:M 09 Jul 2026 00:23:43.592 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+1:M 09 Jul 2026 00:23:43.592 * Valkey version=9.1.0, bits=64, commit=00000000, modified=0, pid=1, just started
+1:M 09 Jul 2026 00:23:43.592 * Configuration loaded
+1:M 09 Jul 2026 00:23:43.592 * monotonic clock: ARM CNTVCT @ 24 ticks/us
+1:M 09 Jul 2026 00:23:43.592 * Running mode=cluster, port=6379.
+1:M 09 Jul 2026 00:23:43.593 * No cluster configuration found, I'm 579279ecb576b8fffc61ba12949db34927d2dca6
+1:M 09 Jul 2026 00:23:43.595 * Static Module 'lua' successfully loaded
+1:M 09 Jul 2026 00:23:43.596 * Server initialized
+1:M 09 Jul 2026 00:23:43.596 * Ready to accept connections tcp
+1:M 09 Jul 2026 00:23:44.569 * IP address for this node updated to 172.18.0.3
+1:M 09 Jul 2026 00:23:45.295 * Mismatch in topology information for sender node 9c898c5edc6adc754ea06cff931445ba9a7e8288 (172.18.0.2:6379) in shard ad4b3da33fa0a692d94dff991c98146c9274af1e
+1:M 09 Jul 2026 00:23:45.295 * configEpoch collision with node 9c898c5edc6adc754ea06cff931445ba9a7e8288 (172.18.0.2:6379). configEpoch set to 2
+1:M 09 Jul 2026 00:23:45.341 * Mismatch in topology information for sender node 014b685e476c8d625a0b7fa0f46d32e3c7e0dda3 (172.18.0.4:6379) in shard 0a02ed90a47861df5da981136c1f764273f48b18
+1:M 09 Jul 2026 00:23:45.646 * Cluster state changed: ok
+1:M 09 Jul 2026 00:23:45.674 * Successfully completed handshake with ad414e02b60bfd7e7c820fc7580e80c65876de5c (172.18.0.6:6379)
+1:M 09 Jul 2026 00:23:45.703 * Successfully completed handshake with 3aa2ac72700fefc33e0a3a9193e9ea667a728ec0 (172.18.0.5:6379)
+1:M 09 Jul 2026 00:23:46.534 * Node bac8d800ea58e4c5d6146a588f8692f3c4b710d8 (172.18.0.7:6379) is no longer primary of shard aabbc61d8338351aa2f717092d72cbf8ba3406e3; removed all 0 slot(s) it used to own
+1:M 09 Jul 2026 00:23:46.534 * Node bac8d800ea58e4c5d6146a588f8692f3c4b710d8 (172.18.0.7:6379) is now part of shard 25e71dcad5b10514ecda7ea7083311bf8c9f335c
+1:M 09 Jul 2026 00:23:46.534 * Node bac8d800ea58e4c5d6146a588f8692f3c4b710d8 (172.18.0.7:6379) is now a replica of node 014b685e476c8d625a0b7fa0f46d32e3c7e0dda3 (172.18.0.4:6379) in shard 25e71dcad5b10514ecda7ea7083311bf8c9f335c
+1:M 09 Jul 2026 00:23:46.534 * Node 3aa2ac72700fefc33e0a3a9193e9ea667a728ec0 (172.18.0.5:6379) is no longer primary of shard 0317d9bf9372472d8dcdc3c2c04e81576716f5d5; removed all 0 slot(s) it used to own
+1:M 09 Jul 2026 00:23:46.534 * Node 3aa2ac72700fefc33e0a3a9193e9ea667a728ec0 (172.18.0.5:6379) is now part of shard 5b2d5acff7e32c0c474ba72646bf8c3deb437fd6
+1:M 09 Jul 2026 00:23:46.534 * Node 3aa2ac72700fefc33e0a3a9193e9ea667a728ec0 (172.18.0.5:6379) is now a replica of node 9c898c5edc6adc754ea06cff931445ba9a7e8288 (172.18.0.2:6379) in shard 5b2d5acff7e32c0c474ba72646bf8c3deb437fd6
+1:M 09 Jul 2026 00:23:46.534 * Node ad414e02b60bfd7e7c820fc7580e80c65876de5c (172.18.0.6:6379) is no longer primary of shard 43705a9779065c6e1e11e008988ec83086bd1406; removed all 0 slot(s) it used to own
+1:M 09 Jul 2026 00:23:46.534 * Node ad414e02b60bfd7e7c820fc7580e80c65876de5c (172.18.0.6:6379) is now part of shard 5ebe0ccf598bce6342cd82739609294b6ffed9a3
+1:M 09 Jul 2026 00:23:46.534 * Node ad414e02b60bfd7e7c820fc7580e80c65876de5c (172.18.0.6:6379) is now a replica of node 579279ecb576b8fffc61ba12949db34927d2dca6 (172.18.0.3:6379) in shard 5ebe0ccf598bce6342cd82739609294b6ffed9a3
+1:M 09 Jul 2026 00:23:46.543 * Replica 172.18.0.6:6379 asks for synchronization
+1:M 09 Jul 2026 00:23:46.543 * Full resync requested by replica 172.18.0.6:6379
+1:M 09 Jul 2026 00:23:46.543 * Replication backlog created, my new replication IDs are 'ce475add5838673bb5866b35aa45f2ad3622d714' and '0000000000000000000000000000000000000000'
+1:M 09 Jul 2026 00:23:46.543 * Delay next BGSAVE for diskless SYNC

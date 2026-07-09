@@ -1,0 +1,2 @@
+sample_id,fault_type,scale_rung,node_count,status,failover_latency_ms,client_unavailability_ms,cleanup_duration_ms
+SKIPPED_WITH_REASON,,,,SKIPPED_WITH_REASON,,,

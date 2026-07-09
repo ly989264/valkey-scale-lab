@@ -1,0 +1,6 @@
+{
+  "failovers": [],
+  "reason": "M1-S07 system metrics smoke does not exercise failover.",
+  "status": "SKIPPED_WITH_REASON",
+  "summary": {}
+}

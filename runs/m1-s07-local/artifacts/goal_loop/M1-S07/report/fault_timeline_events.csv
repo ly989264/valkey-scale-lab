@@ -1,0 +1,2 @@
+sample_id,observed_event_count,missing_events,status
+SKIPPED_WITH_REASON,0,Input artifacts did not include fault_timeline_report.json or fault_timeline_events.jsonl.,SKIPPED_WITH_REASON

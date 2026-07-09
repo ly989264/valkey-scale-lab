@@ -1,0 +1,147 @@
+{
+  "artifact_type": "cleanup_report",
+  "artifacts_dir": "runs/m1-s07-local/artifacts/goal_loop/M1-S07",
+  "cleanup_actions": [
+    {
+      "action": "stop",
+      "id": "1676684776c0",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "1676684776c0",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "7174b8502d43",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "7174b8502d43",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "488518dc4574",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "488518dc4574",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "06659816888b",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "06659816888b",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "4755f886fa88",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "4755f886fa88",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "stop",
+      "id": "7cc53b63026a",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "7cc53b63026a",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "container"
+    },
+    {
+      "action": "remove",
+      "id": "9d0c5bc17d9c",
+      "reason": "",
+      "status": "PASS",
+      "stderr": "",
+      "type": "network"
+    }
+  ],
+  "cleanup_timing": {
+    "cleanup_remove_containers_seconds": 0.744903,
+    "cleanup_remove_networks_seconds": 0.200156,
+    "cleanup_residual_scan_seconds": 0.035745,
+    "cleanup_terminate_processes_seconds": 0.0,
+    "cleanup_verify_nodehost_empty_seconds": 0.0,
+    "cleanup_verify_process_exit_seconds": 0.0
+  },
+  "command_audit_summary_ref": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/command_audit_summary.json",
+  "command_log_ref": "runs/m1-s07-local/artifacts/goal_loop/M1-S07/command_log.jsonl",
+  "created_at": "2026-06-28T00:00:00Z",
+  "nodehost_density": {
+    "actual_nodehost_count": 6,
+    "logical_nodes_per_nodehost": {
+      "shard-0000-primary": 1,
+      "shard-0000-replica-00": 1,
+      "shard-0001-primary": 1,
+      "shard-0001-replica-00": 1,
+      "shard-0002-primary": 1,
+      "shard-0002-replica-00": 1
+    },
+    "max_logical_nodes_per_nodehost": 25,
+    "max_nodehosts": 64,
+    "node_count": 6,
+    "nodehost_distribution": "round_robin_by_az",
+    "nodehost_strategy": "density_limited",
+    "nodehosts_per_az": 2
+  },
+  "phase_id": "P06_OBSERVABILITY_METRICS",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "resources_remaining": [],
+  "run_id": "P06_OBSERVABILITY_METRICS-observability_smoke-20260628",
+  "schema_version": "v1",
+  "status": "PASS"
+}

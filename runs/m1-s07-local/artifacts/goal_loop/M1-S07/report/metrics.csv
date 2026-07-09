@@ -1,0 +1,16 @@
+metric,status,value,unit,reason
+nodes_observed_after_fault,PASS,6,count,
+failover_latency_ms,MISSING,,ms,source artifact did not provide metric
+split_brain_duration_ms,MISSING,,ms,source artifact did not provide metric
+cleanup_resources_remaining,PASS,0,count,
+workload_achieved_qps,MISSING,,ops_per_second,source artifact did not provide metric
+workload_latency_p99_ms,MISSING,,ms,source artifact did not provide metric
+workload_error_rate,MISSING,,ratio,source artifact did not provide metric
+fault_failover_latency_p95_ms,MISSING,,ms,source artifact did not provide metric
+fault_client_unavailability_p95_ms,MISSING,,ms,source artifact did not provide metric
+fault_workload_recovery_p95_ms,MISSING,,ms,source artifact did not provide metric
+fault_split_brain_window_max_ms,MISSING,,ms,source artifact did not provide metric
+fault_cluster_down_window_max_ms,MISSING,,ms,source artifact did not provide metric
+system_rss_bytes_max,PASS,15151923.0,bytes,
+system_connected_clients_max,PASS,2.0,count,
+system_total_net_input_bytes_max,PASS,61626.0,bytes,

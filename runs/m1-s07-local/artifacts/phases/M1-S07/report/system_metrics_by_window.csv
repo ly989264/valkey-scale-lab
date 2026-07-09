@@ -1,0 +1,6 @@
+window,sample_count,node_count,missing_count,rss_bytes_max,connected_clients_max,total_net_input_bytes_max
+cleanup,80,2,16,104857600.0,2.0,8888.0
+fault,80,2,16,104857600.0,2.0,8888.0
+management,80,2,16,104857600.0,2.0,8888.0
+setup,80,2,16,104857600.0,2.0,8888.0
+workload,80,2,16,104857600.0,2.0,8888.0

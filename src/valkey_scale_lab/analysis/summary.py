@@ -50,8 +50,18 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         failover_latency_samples,
         fault_workload_impact,
     )
+    system_metrics_report = _load_optional(source_dir / "system_metrics_report.json")
+    system_metric_rows = _load_optional_jsonl(source_dir / "system_metrics_timeseries.jsonl")
+    if not system_metric_rows:
+        system_metric_rows = [
+            row for row in _load_optional_jsonl(source_dir / "metrics_timeseries.jsonl")
+            if row.get("source_type") in {"system_process", "system_network", "valkey_info", "cluster_info"}
+            and isinstance(row.get("labels"), dict)
+            and row.get("labels", {}).get("lifecycle_window")
+        ]
+    system_metrics = _system_metrics_aggregates(system_metrics_report, system_metric_rows)
 
-    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit, management_ops, workload_benchmark, fault_timeline)
+    missing_metrics = _collect_missing_metrics(phase_summary, failover, setup_telemetry, command_audit, management_ops, workload_benchmark, fault_timeline, system_metrics)
     failovers = list(failover.get("failovers", []))
     primary_failover = failovers[0] if failovers else {}
     failover_latency = primary_failover.get("failover_latency_ms", "MISSING")
@@ -70,6 +80,9 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         _metric("fault_workload_recovery_p95_ms", fault_timeline.get("workload_recovery", {}).get("p95_ms", "MISSING"), "ms"),
         _metric("fault_split_brain_window_max_ms", fault_timeline.get("split_brain_window", {}).get("max_ms", "MISSING"), "ms"),
         _metric("fault_cluster_down_window_max_ms", fault_timeline.get("cluster_down_window", {}).get("max_ms", "MISSING"), "ms"),
+        _metric("system_rss_bytes_max", system_metrics.get("aggregate", {}).get("rss_bytes", {}).get("max", "MISSING"), "bytes"),
+        _metric("system_connected_clients_max", system_metrics.get("aggregate", {}).get("connected_clients", {}).get("max", "MISSING"), "count"),
+        _metric("system_total_net_input_bytes_max", system_metrics.get("aggregate", {}).get("total_net_input_bytes", {}).get("max", "MISSING"), "bytes"),
     ]
     findings = [
         {
@@ -133,6 +146,13 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
             "scale_coverage": fault_timeline.get("scale_coverage", {}),
             "row_count": fault_timeline.get("row_count", 0),
         },
+        {
+            "name": "system_metrics",
+            "status": system_metrics.get("status", "MISSING"),
+            "sample_count": system_metrics.get("sample_count", 0),
+            "node_count": system_metrics.get("node_count", 0),
+            "windows": system_metrics.get("windows", []),
+        },
     ]
 
     out = Path(out_path)
@@ -176,6 +196,7 @@ def create_analysis_summary(input_dir: str | Path, out_path: str | Path) -> dict
         "management_ops": management_ops,
         "workload_benchmark": workload_benchmark,
         "fault_timeline": fault_timeline,
+        "system_metrics": system_metrics,
         "baseline_comparison": baseline,
         "sidecars": [
             {
@@ -289,6 +310,7 @@ def _collect_missing_metrics(
     management_ops: dict[str, Any] | None = None,
     workload_benchmark: dict[str, Any] | None = None,
     fault_timeline: dict[str, Any] | None = None,
+    system_metrics: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     found: dict[str, dict[str, Any]] = {}
     for item in phase_summary.get("missing_metrics", []):
@@ -375,7 +397,133 @@ def _collect_missing_metrics(
                         "source": "fault_timeline.missing_metrics",
                     },
                 )
+    if system_metrics:
+        for item in system_metrics.get("missing_metrics", []):
+            if isinstance(item, dict) and item.get("metric"):
+                metric = f"system.{item['metric']}"
+                found.setdefault(
+                    metric,
+                    {
+                        "metric": metric,
+                        "status": item.get("status", "MISSING"),
+                        "reason": item.get("reason", "system metrics reported unavailable metric"),
+                        "impact": item.get("impact", "System resource trend analysis is incomplete."),
+                        "source": "system_metrics.missing_metrics",
+                    },
+                )
     return [found[key] for key in sorted(found)]
+
+
+def _system_metrics_aggregates(report: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
+    if not rows:
+        return report or {
+            "status": "SKIPPED_WITH_REASON",
+            "reason": "Input artifacts did not include system_metrics_timeseries.jsonl.",
+            "sample_count": 0,
+            "node_count": 0,
+            "windows": [],
+            "per_node": [],
+            "per_window": [],
+            "aggregate": {},
+            "abnormal_nodes_topN": [],
+            "missing_metrics": [
+                {
+                    "metric": "system_metrics_timeseries",
+                    "status": "SKIPPED_WITH_REASON",
+                    "reason": "System metrics artifact was not present.",
+                    "impact": "Report cannot display resource trends or abnormal node TopN.",
+                }
+            ],
+        }
+    numeric_by_metric: dict[str, list[float]] = {}
+    by_node: dict[str, dict[str, Any]] = {}
+    by_window: dict[str, dict[str, Any]] = {}
+    missing_metrics: list[dict[str, Any]] = []
+    for row in rows:
+        labels = row.get("labels", {}) if isinstance(row.get("labels"), dict) else {}
+        node_id = str(labels.get("logical_node_id", row.get("source_id", "MISSING")))
+        window = str(labels.get("lifecycle_window", labels.get("stage_window", "MISSING")))
+        metric_name = str(row.get("metric_name", "MISSING"))
+        value = row.get("metric_value", "MISSING")
+        by_node.setdefault(node_id, {"node_id": node_id, "sample_count": 0, "missing_count": 0, "windows": set(), "numeric": {}})
+        by_window.setdefault(window, {"window": window, "sample_count": 0, "missing_count": 0, "nodes": set(), "numeric": {}})
+        by_node[node_id]["sample_count"] += 1
+        by_node[node_id]["windows"].add(window)
+        by_window[window]["sample_count"] += 1
+        by_window[window]["nodes"].add(node_id)
+        if value == "MISSING":
+            by_node[node_id]["missing_count"] += 1
+            by_window[window]["missing_count"] += 1
+            missing_metrics.append(
+                {
+                    "node_id": node_id,
+                    "metric": metric_name,
+                    "status": "MISSING",
+                    "reason": row.get("missing_reason", "metric was MISSING without a source reason"),
+                    "window": window,
+                    "impact": "This metric is excluded from numeric resource aggregation.",
+                }
+            )
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            numeric_by_metric.setdefault(metric_name, []).append(float(value))
+            by_node[node_id]["numeric"].setdefault(metric_name, []).append(float(value))
+            by_window[window]["numeric"].setdefault(metric_name, []).append(float(value))
+    aggregate = {name: _numeric_distribution(values) for name, values in sorted(numeric_by_metric.items())}
+    per_node = [
+        {
+            "node_id": node_id,
+            "sample_count": item["sample_count"],
+            "missing_count": item["missing_count"],
+            "windows": sorted(item["windows"]),
+            "metrics": {name: _numeric_distribution(values) for name, values in sorted(item["numeric"].items())},
+        }
+        for node_id, item in sorted(by_node.items())
+    ]
+    per_window = [
+        {
+            "window": window,
+            "sample_count": item["sample_count"],
+            "missing_count": item["missing_count"],
+            "node_count": len(item["nodes"]),
+            "metrics": {name: _numeric_distribution(values) for name, values in sorted(item["numeric"].items())},
+        }
+        for window, item in sorted(by_window.items())
+    ]
+    abnormal_nodes = sorted(
+        per_node,
+        key=lambda item: (
+            float(item.get("metrics", {}).get("rss_bytes", {}).get("max", 0) or 0),
+            float(item.get("metrics", {}).get("connected_clients", {}).get("max", 0) or 0),
+            item.get("missing_count", 0),
+        ),
+        reverse=True,
+    )[:10]
+    return {
+        "status": report.get("status", "PASS") if report else "PASS",
+        "sample_count": len(rows),
+        "node_count": len(by_node),
+        "windows": sorted(by_window),
+        "aggregate": aggregate,
+        "per_node": per_node,
+        "per_window": per_window,
+        "abnormal_nodes_topN": abnormal_nodes,
+        "missing_metrics": missing_metrics + list(report.get("missing_metrics", []) if report else []),
+        "source_refs": report.get("source_refs", {"system_metrics_timeseries": "system_metrics_timeseries.jsonl"}) if report else {"system_metrics_timeseries": "system_metrics_timeseries.jsonl"},
+    }
+
+
+def _numeric_distribution(values: list[float]) -> dict[str, Any]:
+    if not values:
+        return {"sample_count": 0, "status": "MISSING", "reason": "no numeric samples"}
+    ordered = sorted(values)
+    return {
+        "sample_count": len(values),
+        "min": round(ordered[0], 6),
+        "max": round(ordered[-1], 6),
+        "avg": round(sum(ordered) / len(ordered), 6),
+        "p95": _nearest_rank(ordered, 0.95),
+        "status": "PASS",
+    }
 
 
 def _fault_timeline_aggregates(
@@ -877,7 +1025,7 @@ def _artifact_record(path: Path) -> dict[str, str]:
 
 def _source_artifact_paths(source_dir: Path, out: Path, baseline_path: Path) -> list[Path]:
     excluded = {out.resolve(), baseline_path.resolve()}
-    return [path for path in sorted(source_dir.glob("*.json")) if path.resolve() not in excluded]
+    return [path for path in sorted(list(source_dir.glob("*.json")) + list(source_dir.glob("*.jsonl"))) if path.resolve() not in excluded]
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:

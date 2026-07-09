@@ -1,0 +1,39 @@
+1:M 09 Jul 2026 00:23:44.401 * oO0OoO0OoO0Oo Valkey is starting oO0OoO0OoO0Oo
+1:M 09 Jul 2026 00:23:44.401 * Valkey version=9.1.0, bits=64, commit=00000000, modified=0, pid=1, just started
+1:M 09 Jul 2026 00:23:44.401 * Configuration loaded
+1:M 09 Jul 2026 00:23:44.401 * monotonic clock: ARM CNTVCT @ 24 ticks/us
+1:M 09 Jul 2026 00:23:44.401 * Running mode=cluster, port=6379.
+1:M 09 Jul 2026 00:23:44.403 * No cluster configuration found, I'm bac8d800ea58e4c5d6146a588f8692f3c4b710d8
+1:M 09 Jul 2026 00:23:44.405 * Static Module 'lua' successfully loaded
+1:M 09 Jul 2026 00:23:44.406 * Server initialized
+1:M 09 Jul 2026 00:23:44.406 * Ready to accept connections tcp
+1:M 09 Jul 2026 00:23:45.609 * IP address for this node updated to 172.18.0.7
+1:M 09 Jul 2026 00:23:45.646 * Mismatch in topology information for sender node 579279ecb576b8fffc61ba12949db34927d2dca6 (172.18.0.3:6379) in shard 429ff0e277268f8c5b18a2b69f026c35876fc2ff
+1:M 09 Jul 2026 00:23:45.649 * Mismatch in topology information for sender node 014b685e476c8d625a0b7fa0f46d32e3c7e0dda3 (172.18.0.4:6379) in shard a7eed56c62fa9bdcdcdc1a98617fd27fbb52f330
+1:M 09 Jul 2026 00:23:45.748 * Mismatch in topology information for sender node 9c898c5edc6adc754ea06cff931445ba9a7e8288 (172.18.0.2:6379) in shard 0e587411ee5bc5158a69e180bf934ec7ac9c3a5c
+1:M 09 Jul 2026 00:23:46.470 * Cluster state changed: ok
+1:S 09 Jul 2026 00:23:46.533 * Connecting to PRIMARY 172.18.0.4:6379
+1:S 09 Jul 2026 00:23:46.533 * PRIMARY <-> REPLICA sync started
+1:S 09 Jul 2026 00:23:46.533 * Non blocking connect for SYNC fired the event.
+1:S 09 Jul 2026 00:23:46.534 * Node 3aa2ac72700fefc33e0a3a9193e9ea667a728ec0 (172.18.0.5:6379) is no longer primary of shard 0317d9bf9372472d8dcdc3c2c04e81576716f5d5; removed all 0 slot(s) it used to own
+1:S 09 Jul 2026 00:23:46.534 * Node 3aa2ac72700fefc33e0a3a9193e9ea667a728ec0 (172.18.0.5:6379) is now part of shard 5b2d5acff7e32c0c474ba72646bf8c3deb437fd6
+1:S 09 Jul 2026 00:23:46.534 * Node 3aa2ac72700fefc33e0a3a9193e9ea667a728ec0 (172.18.0.5:6379) is now a replica of node 9c898c5edc6adc754ea06cff931445ba9a7e8288 (172.18.0.2:6379) in shard 5b2d5acff7e32c0c474ba72646bf8c3deb437fd6
+1:S 09 Jul 2026 00:23:46.541 * Node ad414e02b60bfd7e7c820fc7580e80c65876de5c (172.18.0.6:6379) is no longer primary of shard 43705a9779065c6e1e11e008988ec83086bd1406; removed all 0 slot(s) it used to own
+1:S 09 Jul 2026 00:23:46.541 * Node ad414e02b60bfd7e7c820fc7580e80c65876de5c (172.18.0.6:6379) is now part of shard 5ebe0ccf598bce6342cd82739609294b6ffed9a3
+1:S 09 Jul 2026 00:23:46.541 * Node ad414e02b60bfd7e7c820fc7580e80c65876de5c (172.18.0.6:6379) is now a replica of node 579279ecb576b8fffc61ba12949db34927d2dca6 (172.18.0.3:6379) in shard 5ebe0ccf598bce6342cd82739609294b6ffed9a3
+1:S 09 Jul 2026 00:23:46.546 * Primary replied to PING, replication can continue...
+1:S 09 Jul 2026 00:23:46.546 * Partial resynchronization not possible (no cached primary)
+1:S 09 Jul 2026 00:23:52.025 * Full resync from primary: 42e2d9410a54ef6ab0fe30445b0089932338da6c:0
+1:S 09 Jul 2026 00:23:52.027 * Replica main thread creating Bio thread to save RDB to disk
+1:S 09 Jul 2026 00:23:52.027 * Replica bio thread: PRIMARY <-> REPLICA sync: receiving streamed RDB from primary with EOF to disk
+1:S 09 Jul 2026 00:23:52.028 * Replica bio thread: Done downloading RDB
+1:S 09 Jul 2026 00:23:52.642 * Replica main thread detected RDB download completion in Bio thread
+1:S 09 Jul 2026 00:23:52.642 * Loading the RDB and finalizing primary-replica sync...
+1:S 09 Jul 2026 00:23:52.646 * PRIMARY <-> REPLICA sync: Loading DB in memory
+1:S 09 Jul 2026 00:23:52.646 * Cleaning slot migration log in anticipation of a load operation.
+1:S 09 Jul 2026 00:23:52.646 * RDB signature and version check passed. Flushing old data
+1:S 09 Jul 2026 00:23:52.646 * Loading RDB produced by Valkey version 9.1.0
+1:S 09 Jul 2026 00:23:52.646 * RDB age 0 seconds
+1:S 09 Jul 2026 00:23:52.646 * RDB memory usage when created 2.89 Mb
+1:S 09 Jul 2026 00:23:52.646 * Done loading RDB, keys loaded: 0, keys expired: 0, all fields expired hashes: 0.
+1:S 09 Jul 2026 00:23:52.646 * PRIMARY <-> REPLICA sync: Finished with success

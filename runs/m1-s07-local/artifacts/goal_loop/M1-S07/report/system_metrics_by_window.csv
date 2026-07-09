@@ -1,0 +1,3 @@
+window,sample_count,node_count,missing_count,rss_bytes_max,connected_clients_max,total_net_input_bytes_max
+cleanup,240,6,57,15151923.0,2.0,61626.0
+setup,240,6,57,14900264.0,2.0,61159.0

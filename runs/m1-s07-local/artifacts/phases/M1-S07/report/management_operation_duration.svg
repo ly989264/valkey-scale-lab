@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="100" viewBox="0 0 820 100">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="12" y="24" font-size="16" font-weight="700">管理操作耗时排序</text>
+<text x="12" y="56" font-size="13">management_operation_results.jsonl 未提供可绘制的管理操作耗时。</text>
+</svg>

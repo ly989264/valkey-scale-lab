@@ -1,0 +1,50 @@
+{
+  "artifact_type": "m1_s07_real_system_metrics_gate_matrix",
+  "heavy_rungs": [
+    {
+      "fixture_ref": "tests/fixtures/system_metrics/scale_30/system_metrics_timeseries.jsonl",
+      "reason": "M1-S07 implemented and verified the unified sampling contract with fixtures and a bounded real 6-node Valkey smoke. This turn did not run exact heavy scale system metrics gates because 30/50/100/200 require explicit resource preflight and a longer resource window; no PASS is claimed for these rungs.",
+      "required_before_milestone_acceptance": true,
+      "scale": 30,
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "fixture_ref": "tests/fixtures/system_metrics/scale_50/system_metrics_timeseries.jsonl",
+      "reason": "M1-S07 implemented and verified the unified sampling contract with fixtures and a bounded real 6-node Valkey smoke. This turn did not run exact heavy scale system metrics gates because 30/50/100/200 require explicit resource preflight and a longer resource window; no PASS is claimed for these rungs.",
+      "required_before_milestone_acceptance": true,
+      "scale": 50,
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "fixture_ref": "tests/fixtures/system_metrics/scale_100/system_metrics_timeseries.jsonl",
+      "reason": "M1-S07 implemented and verified the unified sampling contract with fixtures and a bounded real 6-node Valkey smoke. This turn did not run exact heavy scale system metrics gates because 30/50/100/200 require explicit resource preflight and a longer resource window; no PASS is claimed for these rungs.",
+      "required_before_milestone_acceptance": true,
+      "scale": 100,
+      "status": "BLOCKED_WITH_REASON"
+    },
+    {
+      "fixture_ref": "tests/fixtures/system_metrics/scale_200/system_metrics_timeseries.jsonl",
+      "reason": "M1-S07 implemented and verified the unified sampling contract with fixtures and a bounded real 6-node Valkey smoke. This turn did not run exact heavy scale system metrics gates because 30/50/100/200 require explicit resource preflight and a longer resource window; no PASS is claimed for these rungs.",
+      "required_before_milestone_acceptance": true,
+      "scale": 200,
+      "status": "BLOCKED_WITH_REASON"
+    }
+  ],
+  "real_small_gate": {
+    "evidence_ref": "real_small_valkey_system_metrics_gate.json",
+    "scale": 6,
+    "status": "PASS",
+    "system_metrics_ref": "system_metrics_timeseries.jsonl",
+    "valkey_versions": [
+      "9.1.0"
+    ]
+  },
+  "safety": {
+    "host_network_modified": false,
+    "scope": "owned Docker containers only",
+    "sudo_used_for_network": false
+  },
+  "schema_version": "v1",
+  "stage_id": "M1-S07",
+  "status": "PASS_WITH_BLOCKED_HEAVY_RUNS"
+}

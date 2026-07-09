@@ -26,7 +26,7 @@
     "sample_id": {"type": "string", "minLength": 1},
     "timestamp_unix_ms": {"type": ["integer", "string"]},
     "monotonic_ms": {"type": ["number", "string"]},
-    "source_type": {"type": "string", "enum": ["valkey_info", "cluster_info", "cluster_nodes", "docker_stats", "workload", "harness"]},
+    "source_type": {"type": "string", "enum": ["valkey_info", "cluster_info", "cluster_nodes", "docker_stats", "workload", "harness", "system_process", "system_network"]},
     "source_id": {"type": "string", "minLength": 1},
     "metric_name": {"type": "string", "minLength": 1},
     "metric_value": {"type": ["number", "string", "boolean"]},

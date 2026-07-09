@@ -1,0 +1,159 @@
+{
+  "artifact_type": "phase_summary",
+  "created_at": "2026-06-28T00:00:00Z",
+  "missing_metrics": [
+    {
+      "impact": "Report cannot display command-level traceability.",
+      "metric": "command_log.total_commands",
+      "reason": "Input artifacts did not include command_log.jsonl.",
+      "source": "command_audit.missing_or_skipped",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "impact": "Report cannot display fault timeline, failover distribution, split-brain windows, or fault-period workload impact.",
+      "metric": "fault_timeline.row_count",
+      "reason": "Fault timeline artifacts were not present.",
+      "source": "fault_timeline.missing_metrics",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "impact": "Report cannot display management operation timing or topology diff data.",
+      "metric": "management.operation_count",
+      "reason": "Management operation artifacts were not present.",
+      "source": "management_ops.missing_metrics",
+      "status": "SKIPPED_WITH_REASON"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.cpu_system_percent",
+      "reason": "Docker stats exposes aggregate CPU percent, not system CPU percent",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.cpu_user_percent",
+      "reason": "Docker stats exposes aggregate CPU percent, not user CPU percent",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.fd_count",
+      "reason": "safe collector does not inspect /proc fd",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.replication_lag",
+      "reason": "Valkey INFO lacks direct replication_lag on this role",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.rx_packets",
+      "reason": "Docker stats NetIO lacks packets",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.tcp_retransmits",
+      "reason": "safe collector does not inspect TCP diagnostics",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.tx_packets",
+      "reason": "Docker stats NetIO lacks packets",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "This metric is excluded from numeric resource aggregation.",
+      "metric": "system.vms_bytes",
+      "reason": "container VMS unsupported",
+      "source": "system_metrics.missing_metrics",
+      "status": "MISSING"
+    },
+    {
+      "impact": "Report cannot display workload QPS, latency, error-rate, or slot coverage.",
+      "metric": "workload.window_count",
+      "reason": "Workload benchmark artifacts were not present.",
+      "source": "workload_benchmark.missing_metrics",
+      "status": "SKIPPED_WITH_REASON"
+    }
+  ],
+  "phase_id": "P09_ANALYSIS_REPORTING",
+  "producer": {
+    "name": "valkey-scale-lab",
+    "version": "0.0.0"
+  },
+  "report_index": "runs/m1-s07-local/artifacts/phases/M1-S07/report_index.json",
+  "report_outputs": [
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/metrics.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/missing_metrics.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/baseline_comparison.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/setup_phase_durations.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/setup_slowest_nodes.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/command_slowest.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/command_failures.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/command_retries.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/management_ops_matrix.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/management_operation_durations.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/management_topology_diffs.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/management_rolling_restart.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/management_reshard_rebalance.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/workload_benchmark_windows.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/workload_profile_summary.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/fault_timeline_events.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/fault_timeline_summary.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/failover_latency_distribution.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/split_brain_windows.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/fault_workload_impact.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/system_metrics_by_window.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/system_metrics_abnormal_nodes.csv",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/metric_chart.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/setup_waterfall.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/command_latency.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/management_operation_duration.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/management_topology_diff.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/workload_qps_p99_error.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/fault_timeline.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/failover_latency_distribution.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/split_brain_window.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/fault_workload_impact.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/system_resource_trends.svg",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/report.md",
+    "runs/m1-s07-local/artifacts/phases/M1-S07/report/index.html"
+  ],
+  "required_artifacts": [
+    "artifacts/phases/P09_ANALYSIS_REPORTING/phase_summary.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/valkey_e2e_evidence.json",
+    "artifacts/phases/P09_ANALYSIS_REPORTING/cleanup_report.json"
+  ],
+  "risks": [
+    {
+      "required_before_next_phase": false,
+      "risk": "Baseline comparison is initialized with NO_BASELINE_YET until a versioned baseline exists.",
+      "severity": "low"
+    }
+  ],
+  "run_id": "P09_ANALYSIS_REPORTING-analysis-20260628",
+  "run_manifest_ref": {
+    "reason": "Legacy artifact directory input did not include a run_manifest.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "run_metadata_ref": {
+    "reason": "Legacy artifact directory input did not include a run_metadata.json.",
+    "status": "SKIPPED_WITH_REASON"
+  },
+  "schema_version": "v1",
+  "status": "PASS",
+  "summary": "P09 analyzed prior real Valkey failover artifacts and rendered deterministic machine-readable, tabular, chart, HTML, and markdown report outputs without inventing missing metrics."
+}
