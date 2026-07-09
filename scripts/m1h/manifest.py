@@ -164,6 +164,19 @@ H07_REQUIRED_TIMELINE_METRICS = [
     "cluster_down_window_ms",
 ]
 H07_BLOCKED_EXECUTION_MODES = {"fake", "fixture", "dry-run", "dry_run", "dryrun", "legacy", "partial"}
+H08_REQUIRED_SYSTEM_SCALES = {30, 50, 100, 200}
+H08_BASE_LIFECYCLE_WINDOWS = ["setup", "workload", "cleanup"]
+H08_MANAGEMENT_FAULT_SCALES = {50, 100, 200}
+H08_ACCEPTED_SYSTEM_SOURCE_TYPES = {
+    "system_process",
+    "system_network",
+    "container_stats",
+    "docker_stats",
+    "valkey_info",
+    "cluster_info",
+}
+H08_HIGH_VALUE_METRIC_GROUPS = ["cpu", "rss_memory", "network_io", "valkey_info", "cluster_info"]
+H08_BLOCKED_EXECUTION_MODES = {"fake", "fixture", "dry-run", "dry_run", "dryrun", "legacy", "partial"}
 
 REQUIRED_CLAIMS: list[tuple[str, int]] = [
     ("setup_telemetry", 30),
@@ -247,7 +260,7 @@ CAPABILITY_FILES = {
         "cleanup_report.json",
         "valkey_e2e_evidence.json",
     ],
-    "system_metrics": ["system_metrics_report.json", "system_metrics_timeseries.jsonl", "metrics_timeseries.jsonl"],
+    "system_metrics": ["system_metrics_report.json", "system_metrics_timeseries.jsonl", "metrics_timeseries.jsonl", "valkey_e2e_evidence.json"],
     "report": ["report_index.json", "report.md", "index.html"],
     "cleanup": ["cleanup_report.json"],
 }
@@ -358,7 +371,27 @@ CAPABILITY_REQUIRED_CHECKS = {
         "fake_or_partial_not_promoted",
         "no_legacy_fault_promotion",
     ],
-    "system_metrics": ["exact_scale_observed", "system_windows_present", "core_metrics_present"],
+    "system_metrics": [
+        "real_valkey_verified",
+        "exact_scale_observed",
+        "valkey_9_1_verified",
+        "same_directory_bundle",
+        "system_metrics_report_present",
+        "system_metrics_report_schema_valid",
+        "system_metrics_report_status_pass",
+        "system_metrics_report_semantics_valid",
+        "system_metrics_timeseries_present",
+        "system_metrics_timeseries_schema_valid",
+        "system_rows_exact_scale",
+        "lifecycle_windows_present",
+        "node_coverage_complete",
+        "high_value_numeric_coverage",
+        "high_value_window_coverage",
+        "missing_values_structured",
+        "source_refs_resolve",
+        "fake_or_partial_not_promoted",
+        "no_fixture_system_artifacts",
+    ],
     "report": ["exact_scale_observed", "report_index_present", "accepted_inputs_only"],
     "cleanup": ["exact_scale_observed", "cleanup_report_clean"],
 }
@@ -417,6 +450,9 @@ def build_claim(root: Path, capability: str, scale: int) -> dict[str, Any]:
     fault_diagnostics = semantic_checks.pop("fault_h07_acceptance", None)
     if fault_diagnostics is not None:
         diagnostics["fault_h07_acceptance"] = fault_diagnostics
+    system_diagnostics = semantic_checks.pop("system_h08_acceptance", None)
+    if system_diagnostics is not None:
+        diagnostics["system_h08_acceptance"] = system_diagnostics
     claim: dict[str, Any] = {
         "claim_id": claim_id(capability, scale),
         "stage_id": "M1H",
@@ -487,8 +523,9 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         checks.update(fault_evaluation["checks"])
         checks["fault_h07_acceptance"] = fault_evaluation
     elif capability == "system_metrics":
-        checks["system_windows_present"] = any(path.name in {"system_metrics_timeseries.jsonl", "metrics_timeseries.jsonl"} for path in paths)
-        checks["core_metrics_present"] = _jsonl_has_rows(paths, "metric")
+        system_evaluation = evaluate_system_metrics_claim(root, scale, paths, evidence)
+        checks.update(system_evaluation["checks"])
+        checks["system_h08_acceptance"] = system_evaluation
     elif capability == "report":
         checks["report_index_present"] = "report_index.json" in by_name
         checks["accepted_inputs_only"] = False
@@ -508,6 +545,8 @@ def _semantic_checks(root: Path, capability: str, scale: int, paths: list[Path])
         if capability == "workload_benchmark"
         else bool(checks.get("fault_h07_acceptance", {}).get("accepted"))
         if capability == "fault_timeline"
+        else bool(checks.get("system_h08_acceptance", {}).get("accepted"))
+        if capability == "system_metrics"
         else False
     )
     return checks
@@ -669,6 +708,449 @@ def _real_valkey_exact_scale(evidence: dict[str, Any], scale: int) -> bool:
     if not isinstance(evidence, dict):
         return False
     return evidence.get("status") == "PASS" and evidence.get("real_valkey") is True and evidence.get("nodes_observed") == scale
+
+
+def evaluate_system_metrics_claim(root: Path, scale: int, paths: list[Path], evidence: dict[str, Any] | None = None) -> dict[str, Any]:
+    non_fixture_paths = [path for path in paths if not _is_fixture_path(root, path)]
+    candidate_dirs = sorted({path.parent for path in non_fixture_paths}) or sorted({path.parent for path in paths})
+    best: dict[str, Any] | None = None
+    for directory in candidate_dirs:
+        bundle_paths = [path for path in paths if path.parent == directory]
+        candidate = _evaluate_system_metrics_bundle(root, scale, bundle_paths)
+        if best is None or _system_metrics_score(candidate["checks"]) > _system_metrics_score(best["checks"]):
+            best = candidate
+    if best is not None:
+        return best
+    evidence = evidence if isinstance(evidence, dict) else _best_evidence(root, paths)
+    real_exact = _real_valkey_exact_scale(evidence, scale)
+    valkey_9_1 = isinstance(evidence, dict) and any(str(version).startswith("9.1.") for version in evidence.get("valkey_versions", []))
+    return {
+        "accepted": False,
+        "checks": _empty_system_metrics_checks(real_exact, valkey_9_1),
+        "reasons": ["No same-directory H08 system_metrics_report.json, system_metrics_timeseries.jsonl, and valkey_e2e_evidence.json bundle was found."],
+        "report_path": None,
+        "timeseries_path": None,
+        "valkey_evidence_path": None,
+        "required_windows": _h08_required_windows(scale),
+        "high_value_metric_groups": H08_HIGH_VALUE_METRIC_GROUPS,
+        "system_row_count": 0,
+        "rejected_non_system_row_count": 0,
+        "unique_node_count": 0,
+    }
+
+
+def _system_metrics_score(checks: dict[str, bool]) -> int:
+    return sum(1 for value in checks.values() if value is True)
+
+
+def _h08_required_windows(scale: int) -> list[str]:
+    windows = list(H08_BASE_LIFECYCLE_WINDOWS)
+    if scale in H08_MANAGEMENT_FAULT_SCALES:
+        windows.insert(1, "management")
+        windows.insert(3, "fault_or_failover")
+    return windows
+
+
+def _empty_system_metrics_checks(real_exact: bool, valkey_9_1: bool) -> dict[str, bool]:
+    return {
+        "real_valkey_verified": real_exact,
+        "exact_scale_observed": real_exact,
+        "valkey_9_1_verified": valkey_9_1,
+        "same_directory_bundle": False,
+        "system_metrics_report_present": False,
+        "system_metrics_report_schema_valid": False,
+        "system_metrics_report_status_pass": False,
+        "system_metrics_report_semantics_valid": False,
+        "system_metrics_timeseries_present": False,
+        "system_metrics_timeseries_schema_valid": False,
+        "system_rows_exact_scale": False,
+        "lifecycle_windows_present": False,
+        "node_coverage_complete": False,
+        "high_value_numeric_coverage": False,
+        "high_value_window_coverage": False,
+        "missing_values_structured": False,
+        "source_refs_resolve": False,
+        "fake_or_partial_not_promoted": False,
+        "no_fixture_system_artifacts": False,
+    }
+
+
+def _evaluate_system_metrics_bundle(root: Path, scale: int, paths: list[Path]) -> dict[str, Any]:
+    evidence = _best_evidence(root, paths)
+    real_exact = _real_valkey_exact_scale(evidence, scale)
+    valkey_9_1 = isinstance(evidence, dict) and any(str(version).startswith("9.1.") for version in evidence.get("valkey_versions", []))
+    checks = _empty_system_metrics_checks(real_exact, valkey_9_1)
+    all_by_name = {path.name: path for path in paths}
+    non_fixture_paths = [path for path in paths if not _is_fixture_path(root, path)]
+    non_fixture_by_name = {path.name: path for path in non_fixture_paths}
+    by_name = non_fixture_by_name or all_by_name
+    report_path = by_name.get("system_metrics_report.json")
+    timeseries_path = by_name.get("system_metrics_timeseries.jsonl")
+    generic_metrics_path = by_name.get("metrics_timeseries.jsonl")
+    valkey_path = by_name.get("valkey_e2e_evidence.json")
+    bundle_dir = next(iter(sorted({path.parent for path in paths})), None)
+    report = read_json(report_path) if report_path else {}
+    rows, row_jsonl_reasons = _read_system_metrics_jsonl_strict(root, timeseries_path)
+    generic_rows, _generic_reasons = _read_system_metrics_jsonl_strict(root, generic_metrics_path)
+    required_windows = _h08_required_windows(scale)
+    reasons: list[str] = []
+    has_fixture = any(_is_fixture_path(root, path) for path in paths)
+    has_non_fixture = bool(non_fixture_paths)
+
+    if not report_path:
+        reasons.append("system_metrics_report.json is missing from the same directory as H08 system metrics evidence.")
+    if not timeseries_path:
+        reasons.append("system_metrics_timeseries.jsonl is missing from the same directory as H08 system metrics evidence; generic metrics_timeseries.jsonl cannot satisfy C10.")
+    if not valkey_path:
+        reasons.append("valkey_e2e_evidence.json is missing from the same directory as H08 system metrics evidence.")
+    if generic_metrics_path and not timeseries_path:
+        reasons.append(f"{relpath(root, generic_metrics_path)} contains generic metrics rows; workload/fault/management metrics_timeseries rows do not count as system metrics coverage.")
+    if has_fixture and not has_non_fixture:
+        reasons.append("Only fixture system metrics artifacts were found; fixtures cannot satisfy exact-scale H08 system metrics.")
+
+    report_schema_reasons = _schema_reasons(root, report_path, report, "system_metrics_report.schema.json")
+    report_checks, report_reasons = _system_metrics_report_reasons(root, report_path, report, rows, scale, required_windows, bundle_dir)
+    row_checks, row_reasons, row_stats = _system_metric_row_reasons(root, scale, timeseries_path, rows, required_windows)
+    fake_partial_reasons = _system_metrics_fake_or_partial_reasons(root, paths, report, rows)
+    generic_rejected = sum(
+        1
+        for row in generic_rows
+        if isinstance(row, dict) and str(row.get("source_type", "")) not in H08_ACCEPTED_SYSTEM_SOURCE_TYPES
+    )
+
+    reasons.extend(report_schema_reasons)
+    reasons.extend(report_reasons)
+    reasons.extend(row_jsonl_reasons)
+    reasons.extend(row_reasons)
+    reasons.extend(fake_partial_reasons)
+    if not real_exact:
+        observed = evidence.get("nodes_observed") if isinstance(evidence, dict) else None
+        reasons.append(f"Real Valkey evidence is not an exact-scale PASS for {scale} nodes (nodes_observed={observed!r}).")
+    if not valkey_9_1:
+        reasons.append("Real Valkey evidence does not prove a Valkey 9.1.x version.")
+
+    checks.update(
+        {
+            "real_valkey_verified": isinstance(evidence, dict) and evidence.get("real_valkey") is True,
+            "exact_scale_observed": real_exact,
+            "valkey_9_1_verified": valkey_9_1,
+            "same_directory_bundle": all(path is not None and path.parent == bundle_dir for path in [report_path, timeseries_path, valkey_path]),
+            "system_metrics_report_present": report_path is not None and isinstance(report, dict) and not _is_fixture_path(root, report_path),
+            "system_metrics_report_schema_valid": not report_schema_reasons,
+            "system_metrics_report_status_pass": isinstance(report, dict) and report.get("status") == "PASS",
+            "system_metrics_report_semantics_valid": not report_reasons,
+            "system_metrics_timeseries_present": timeseries_path is not None and bool(rows) and not _is_fixture_path(root, timeseries_path),
+            "system_metrics_timeseries_schema_valid": bool(rows) and not row_jsonl_reasons and not row_reasons,
+            **row_checks,
+            **report_checks,
+            "fake_or_partial_not_promoted": not fake_partial_reasons,
+            "no_fixture_system_artifacts": not has_fixture or has_non_fixture,
+        }
+    )
+    accepted = real_exact and valkey_9_1 and all(checks.values())
+    return {
+        "accepted": accepted,
+        "checks": checks,
+        "reasons": _dedupe(reasons),
+        "report_path": relpath(root, report_path) if report_path else None,
+        "timeseries_path": relpath(root, timeseries_path) if timeseries_path else None,
+        "valkey_evidence_path": relpath(root, valkey_path) if valkey_path else None,
+        "required_windows": required_windows,
+        "high_value_metric_groups": H08_HIGH_VALUE_METRIC_GROUPS,
+        "system_row_count": len(rows),
+        "rejected_non_system_row_count": row_stats["rejected_non_system_row_count"] + generic_rejected,
+        "unique_node_count": row_stats["unique_node_count"],
+        "numeric_groups_covered": sorted(row_stats["numeric_groups_covered"]),
+        "numeric_groups_by_window": {window: sorted(groups) for window, groups in row_stats["numeric_groups_by_window"].items()},
+    }
+
+
+def _read_system_metrics_jsonl_strict(root: Path, path: Path | None) -> tuple[list[Any], list[str]]:
+    if path is None:
+        return [], []
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        return [], [f"{relpath(root, path)} could not be read: {exc}."]
+    rows: list[Any] = []
+    reasons: list[str] = []
+    for line_no, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError as exc:
+            reasons.append(f"{relpath(root, path)} line {line_no} is invalid JSON: {exc.msg}.")
+            continue
+        if not isinstance(value, dict):
+            reasons.append(f"{relpath(root, path)} line {line_no} is not a JSON object.")
+        rows.append(value)
+    return rows, reasons
+
+
+def _system_metric_row_reasons(root: Path, scale: int, path: Path | None, rows: list[Any], required_windows: list[str]) -> tuple[dict[str, bool], list[str], dict[str, Any]]:
+    reasons: list[str] = []
+    windows_observed: set[str] = set()
+    node_ids: set[str] = set()
+    row_counts_by_window: dict[str, int] = {}
+    row_counts_by_node: dict[str, int] = {}
+    numeric_groups: set[str] = set()
+    numeric_groups_by_window: dict[str, set[str]] = {window: set() for window in required_windows}
+    exact_scale_ok = bool(rows)
+    missing_structured_ok = bool(rows)
+    rejected_non_system_rows = 0
+    for index, row in enumerate(rows):
+        label = f"{relpath(root, path) if path else 'system_metrics_timeseries.jsonl'} line {index + 1}"
+        if not isinstance(row, dict):
+            reasons.append(f"{label} is not a JSON object.")
+            exact_scale_ok = False
+            missing_structured_ok = False
+            continue
+        if row.get("schema_version") != "v1":
+            reasons.append(f"{label} schema_version is not v1.")
+            exact_scale_ok = False
+        row_scale = row.get("node_count", row.get("scale"))
+        if row_scale != scale:
+            reasons.append(f"{label} node_count/scale {row_scale!r} does not equal required scale {scale}.")
+            exact_scale_ok = False
+        labels = row.get("labels") if isinstance(row.get("labels"), dict) else {}
+        node_id = _first_present(row, "node_id", "logical_node_id", "node_logical_id")
+        if node_id is None:
+            node_id = _first_present(labels, "logical_node_id", "node_id", "node_logical_id")
+        if not isinstance(node_id, str) or not node_id.strip():
+            reasons.append(f"{label} node_id/logical_node_id is missing from the row and labels.")
+            exact_scale_ok = False
+        else:
+            node_ids.add(node_id)
+            row_counts_by_node[node_id] = row_counts_by_node.get(node_id, 0) + 1
+        window = row.get("lifecycle_window")
+        if window is None:
+            window = labels.get("lifecycle_window", labels.get("stage_window"))
+        if not isinstance(window, str) or window not in required_windows:
+            reasons.append(f"{label} lifecycle_window {window!r} is not one of required windows: {', '.join(required_windows)}.")
+            exact_scale_ok = False
+        else:
+            windows_observed.add(window)
+            row_counts_by_window[window] = row_counts_by_window.get(window, 0) + 1
+        source_type = row.get("source_type")
+        if source_type not in H08_ACCEPTED_SYSTEM_SOURCE_TYPES:
+            rejected_non_system_rows += 1
+            reasons.append(f"{label} source_type {source_type!r} is not accepted H08 system metrics source coverage.")
+            exact_scale_ok = False
+        metric_name = row.get("metric_name")
+        if not isinstance(metric_name, str) or not metric_name.strip():
+            reasons.append(f"{label} metric_name is missing.")
+            exact_scale_ok = False
+        if not _is_non_negative_number(row.get("timestamp_unix_ms")):
+            reasons.append(f"{label} timestamp_unix_ms is missing or non-numeric.")
+            exact_scale_ok = False
+        if not _is_non_negative_number(row.get("monotonic_ms")):
+            reasons.append(f"{label} monotonic_ms is missing or non-numeric.")
+            exact_scale_ok = False
+        value = row.get("metric_value")
+        value_is_numeric = _is_non_negative_number(value)
+        value_is_missing = _h08_value_is_missing(value)
+        if not value_is_numeric:
+            if value_is_missing:
+                reason = row.get("missing_reason")
+                dict_reason = value.get("reason") if isinstance(value, dict) else None
+                if not ((isinstance(reason, str) and reason.strip()) or (isinstance(dict_reason, str) and dict_reason.strip())):
+                    reasons.append(f"{label} metric_value is {value!r} without a non-empty missing_reason.")
+                    missing_structured_ok = False
+            else:
+                reasons.append(f"{label} metric_value is neither numeric nor MISSING/SKIPPED_WITH_REASON.")
+                missing_structured_ok = False
+        if value_is_numeric and source_type in H08_ACCEPTED_SYSTEM_SOURCE_TYPES and isinstance(metric_name, str) and isinstance(window, str):
+            group = _h08_metric_group(source_type, metric_name)
+            if group:
+                numeric_groups.add(group)
+                if window in numeric_groups_by_window:
+                    numeric_groups_by_window[window].add(group)
+
+    missing_windows = [window for window in required_windows if window not in windows_observed]
+    if missing_windows:
+        reasons.append(f"system_metrics_timeseries.jsonl is missing lifecycle windows: {', '.join(missing_windows)}.")
+    if len(node_ids) != scale:
+        reasons.append(f"system_metrics_timeseries.jsonl covers {len(node_ids)} unique nodes but exact-scale H08 requires exactly {scale}.")
+    missing_groups = [group for group in H08_HIGH_VALUE_METRIC_GROUPS if group not in numeric_groups]
+    if missing_groups:
+        reasons.append(f"system_metrics_timeseries.jsonl lacks numeric high-value metric groups: {', '.join(missing_groups)}.")
+    missing_window_groups = {
+        window: [group for group in H08_HIGH_VALUE_METRIC_GROUPS if group not in numeric_groups_by_window[window]]
+        for window in required_windows
+        if window in numeric_groups_by_window and any(group not in numeric_groups_by_window[window] for group in H08_HIGH_VALUE_METRIC_GROUPS)
+    }
+    if missing_window_groups:
+        formatted = [f"{window}:{','.join(groups)}" for window, groups in missing_window_groups.items()]
+        reasons.append(f"system_metrics_timeseries.jsonl lacks per-window high-value numeric coverage: {'; '.join(formatted)}.")
+
+    checks = {
+        "system_rows_exact_scale": exact_scale_ok,
+        "lifecycle_windows_present": not missing_windows and bool(rows),
+        "node_coverage_complete": len(node_ids) == scale,
+        "high_value_numeric_coverage": not missing_groups,
+        "high_value_window_coverage": not missing_window_groups,
+        "missing_values_structured": missing_structured_ok,
+    }
+    return checks, _dedupe(reasons), {
+        "unique_node_count": len(node_ids),
+        "row_counts_by_window": row_counts_by_window,
+        "row_counts_by_node": row_counts_by_node,
+        "rejected_non_system_row_count": rejected_non_system_rows,
+        "numeric_groups_covered": numeric_groups,
+        "numeric_groups_by_window": numeric_groups_by_window,
+    }
+
+
+def _system_metrics_report_reasons(
+    root: Path,
+    path: Path | None,
+    report: Any,
+    rows: list[Any],
+    scale: int,
+    required_windows: list[str],
+    bundle_dir: Path | None,
+) -> tuple[dict[str, bool], list[str]]:
+    if not isinstance(report, dict):
+        return {"source_refs_resolve": False}, ["system_metrics_report.json is missing or invalid JSON."]
+    reasons: list[str] = []
+    if report.get("status") != "PASS":
+        reasons.append(f"system_metrics_report.json status {report.get('status')!r} is not PASS.")
+    report_scale = report.get("node_count", report.get("scale"))
+    if report_scale != scale:
+        reasons.append(f"system_metrics_report.json node_count/scale {report_scale!r} does not equal required scale {scale}.")
+    if report.get("sample_count") != len(rows):
+        reasons.append(f"system_metrics_report.json sample_count {report.get('sample_count')!r} does not match system_metrics_timeseries.jsonl row count {len(rows)}.")
+    windows = report.get("lifecycle_windows")
+    if not isinstance(windows, list):
+        reasons.append("system_metrics_report.json lifecycle_windows is missing or not an array.")
+        windows = []
+    missing_windows = [window for window in required_windows if window not in windows]
+    if missing_windows:
+        reasons.append(f"system_metrics_report.json lifecycle_windows is missing required windows: {', '.join(missing_windows)}.")
+    coverage = report.get("coverage") if isinstance(report.get("coverage"), dict) else {}
+    rows_by_window = coverage.get("rows_by_window") if isinstance(coverage.get("rows_by_window"), dict) else {}
+    report_missing_windows = [window for window in required_windows if not isinstance(rows_by_window.get(window), int) or rows_by_window.get(window, 0) <= 0]
+    if report_missing_windows:
+        reasons.append(f"system_metrics_report.json coverage.rows_by_window lacks positive counts for: {', '.join(report_missing_windows)}.")
+    parsed_rows_by_window = _h08_row_counts_by_window(rows)
+    for window in required_windows:
+        expected = parsed_rows_by_window.get(window, 0)
+        actual = rows_by_window.get(window)
+        if actual != expected:
+            reasons.append(f"system_metrics_report.json coverage.rows_by_window[{window!r}] {actual!r} does not match parsed row count {expected}.")
+    rows_by_node = coverage.get("rows_by_node") if isinstance(coverage.get("rows_by_node"), dict) else {}
+    if len(rows_by_node) != scale:
+        reasons.append(f"system_metrics_report.json coverage.rows_by_node covers {len(rows_by_node)} nodes but exact-scale H08 requires exactly {scale}.")
+    parsed_rows_by_node = _h08_row_counts_by_node(rows)
+    if set(rows_by_node) != set(parsed_rows_by_node):
+        reasons.append("system_metrics_report.json coverage.rows_by_node keys do not match parsed timeseries node ids.")
+    for node_id, expected in sorted(parsed_rows_by_node.items()):
+        actual = rows_by_node.get(node_id)
+        if actual != expected:
+            reasons.append(f"system_metrics_report.json coverage.rows_by_node[{node_id!r}] {actual!r} does not match parsed row count {expected}.")
+    missing_metrics = report.get("missing_metrics")
+    if not isinstance(missing_metrics, list):
+        reasons.append("system_metrics_report.json missing_metrics is missing or not an array.")
+    else:
+        for index, item in enumerate(missing_metrics):
+            if not isinstance(item, dict):
+                reasons.append(f"system_metrics_report.json missing_metrics[{index}] is not an object.")
+                continue
+            if item.get("status") not in {"MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON"}:
+                reasons.append(f"system_metrics_report.json missing_metrics[{index}] status {item.get('status')!r} is not structured.")
+            if not isinstance(item.get("reason"), str) or not item.get("reason", "").strip():
+                reasons.append(f"system_metrics_report.json missing_metrics[{index}] reason is missing.")
+    ref_reasons = _h08_source_ref_reasons(root, bundle_dir, report.get("source_refs"))
+    reasons.extend(ref_reasons)
+    return {"source_refs_resolve": not ref_reasons}, _dedupe(reasons)
+
+
+def _h08_row_counts_by_window(rows: list[Any]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        labels = row.get("labels") if isinstance(row.get("labels"), dict) else {}
+        window = row.get("lifecycle_window")
+        if window is None:
+            window = labels.get("lifecycle_window", labels.get("stage_window"))
+        if isinstance(window, str) and window:
+            counts[window] = counts.get(window, 0) + 1
+    return counts
+
+
+def _h08_row_counts_by_node(rows: list[Any]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        labels = row.get("labels") if isinstance(row.get("labels"), dict) else {}
+        node_id = _first_present(row, "node_id", "logical_node_id", "node_logical_id")
+        if node_id is None:
+            node_id = _first_present(labels, "logical_node_id", "node_id", "node_logical_id")
+        if isinstance(node_id, str) and node_id:
+            counts[node_id] = counts.get(node_id, 0) + 1
+    return counts
+
+
+def _h08_source_ref_reasons(root: Path, bundle_dir: Path | None, source_refs: Any) -> list[str]:
+    if bundle_dir is None:
+        return ["system_metrics_report.json source_refs cannot resolve without a bundle directory."]
+    if not isinstance(source_refs, dict):
+        return ["system_metrics_report.json source_refs is missing or not an object."]
+    values: list[str] = []
+    for value in source_refs.values():
+        if isinstance(value, str):
+            values.append(value)
+        elif isinstance(value, list):
+            values.extend(item for item in value if isinstance(item, str))
+    reasons: list[str] = []
+    for required in ["system_metrics_timeseries.jsonl", "valkey_e2e_evidence.json"]:
+        matching = [value for value in values if Path(value).name == required]
+        if not matching:
+            reasons.append(f"system_metrics_report.json source_refs does not cite {required}.")
+            continue
+        if not any((bundle_dir / value).exists() for value in matching):
+            reasons.append(f"system_metrics_report.json source_refs cites {required}, but it does not resolve within {relpath(root, bundle_dir)}.")
+    return reasons
+
+
+def _h08_value_is_missing(value: Any) -> bool:
+    if isinstance(value, str):
+        return value in {"MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON"}
+    if isinstance(value, dict):
+        return value.get("status") in {"MISSING", "SKIPPED_WITH_REASON", "UNSUPPORTED_WITH_REASON"}
+    return False
+
+
+def _h08_metric_group(source_type: str, metric_name: str) -> str | None:
+    lowered = metric_name.lower()
+    if source_type in {"system_process", "container_stats", "docker_stats"} and "cpu" in lowered:
+        return "cpu"
+    if source_type in {"system_process", "container_stats", "docker_stats", "valkey_info"} and any(token in lowered for token in ["rss", "resident", "memory", "mem", "used_memory"]):
+        return "rss_memory"
+    if source_type in {"system_network", "container_stats", "docker_stats", "valkey_info"} and any(token in lowered for token in ["network", "net_", "rx", "tx", "bytes_in", "bytes_out", "input_kbps", "output_kbps", "instantaneous_input", "instantaneous_output"]):
+        return "network_io"
+    if source_type == "valkey_info":
+        return "valkey_info"
+    if source_type == "cluster_info":
+        return "cluster_info"
+    return None
+
+
+def _system_metrics_fake_or_partial_reasons(root: Path, paths: list[Path], report: Any, rows: list[Any]) -> list[str]:
+    reasons: list[str] = []
+    if _contains_fake_or_partial(root, paths):
+        reasons.append("System metrics source path contains fake, partial, or fixture marker.")
+    for payload in [report, *rows]:
+        if not isinstance(payload, dict):
+            continue
+        for key in ["status", "evidence_kind", "evidence_class", "source_kind", "execution_mode", "workload_mode"]:
+            value = payload.get(key)
+            if isinstance(value, str) and value.lower() in H08_BLOCKED_EXECUTION_MODES:
+                reasons.append(f"System metrics artifact contains {key}={value!r}; fake, partial, dry-run, or legacy evidence cannot promote.")
+    return _dedupe(reasons)
 
 
 def evaluate_command_audit_claim(root: Path, scale: int, paths: list[Path], evidence: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -2623,6 +3105,8 @@ def _evidence_kind(capability: str, source_artifacts: list[str], semantic_checks
         return "REAL_EXACT_SCALE"
     if capability == "fault_timeline" and semantic_checks.get("fault_h07_acceptance", {}).get("accepted") is True:
         return "REAL_EXACT_SCALE"
+    if capability == "system_metrics" and semantic_checks.get("system_h08_acceptance", {}).get("accepted") is True:
+        return "REAL_EXACT_SCALE"
     if semantic_checks.get("real_valkey_verified") and semantic_checks.get("exact_scale_observed"):
         return "LEGACY_EVIDENCE_ONLY"
     if semantic_checks.get("real_valkey_verified"):
@@ -2664,6 +3148,11 @@ def _blocked_reason(capability: str, scale: int, evidence_kind: str, semantic_ch
         reasons = fault.get("reasons", []) if isinstance(fault, dict) else []
         if reasons:
             return f"{claim_id(capability, scale)} lacks H07/C09 exact-scale fault timeline evidence: {'; '.join(str(reason) for reason in reasons)}"
+    if capability == "system_metrics":
+        system = semantic_checks.get("system_h08_acceptance")
+        reasons = system.get("reasons", []) if isinstance(system, dict) else []
+        if reasons:
+            return f"{claim_id(capability, scale)} lacks H08/C10 exact-scale system metrics evidence: {'; '.join(str(reason) for reason in reasons)}"
     missing = [name for name in CAPABILITY_REQUIRED_CHECKS[capability] if semantic_checks.get(name) is not True]
     if evidence_kind == "LEGACY_EVIDENCE_ONLY":
         return f"{claim_id(capability, scale)} has historical real evidence, but it has not been accepted by the M1 hardening gate."

@@ -75,6 +75,14 @@ H07_REQUIRED_GATE_RESULTS = [
     "assert_no_legacy_m1_pass",
     "assert_no_simulated_subagents",
 ]
+H08_REQUIRED_GATE_RESULTS = [
+    "build_evidence_manifest",
+    "assert_evidence_taxonomy",
+    "assert_system_metrics_real_windows",
+    "assert_no_fixture_fallback",
+    "assert_no_legacy_m1_pass",
+    "assert_no_simulated_subagents",
+]
 STAGE_REQUIRED_GATE_RESULTS = {
     "H00_BOOTSTRAP_HARD_GATES": H00_REQUIRED_GATE_RESULTS,
     "H01_EVIDENCE_TAXONOMY_AND_FALSE_PASS_RESET": H01_REQUIRED_GATE_RESULTS,
@@ -84,6 +92,7 @@ STAGE_REQUIRED_GATE_RESULTS = {
     "H05_MANAGEMENT_MATRIX_EXACT_SCALE_HARDENING": H05_REQUIRED_GATE_RESULTS,
     "H06_WORKLOAD_BENCHMARK_HARDENING": H06_REQUIRED_GATE_RESULTS,
     "H07_FAULT_FAILOVER_TIMELINE_REAL_PATH_HARDENING": H07_REQUIRED_GATE_RESULTS,
+    "H08_SYSTEM_METRICS_REAL_WINDOW_HARDENING": H08_REQUIRED_GATE_RESULTS,
 }
 REQUIRED_SCRIPTS = [
     "build_evidence_manifest.py",

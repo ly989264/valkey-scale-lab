@@ -13,15 +13,16 @@ from assert_no_legacy_m1_pass import validate_current_acceptance, validate_no_le
 from assert_no_simulated_subagents import scan_stage_artifacts
 from assert_setup_core_metrics import evaluate_setup_core_metrics
 from assert_final_milestone1_hardened import evaluate_final
-from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, H04_REQUIRED_GATE_RESULTS, H05_REQUIRED_GATE_RESULTS, H06_REQUIRED_GATE_RESULTS, H07_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
+from assert_stage_exit import H00_REQUIRED_GATE_RESULTS, H01_REQUIRED_GATE_RESULTS, H02_REQUIRED_GATE_RESULTS, H03_REQUIRED_GATE_RESULTS, H04_REQUIRED_GATE_RESULTS, H05_REQUIRED_GATE_RESULTS, H06_REQUIRED_GATE_RESULTS, H07_REQUIRED_GATE_RESULTS, H08_REQUIRED_GATE_RESULTS, REQUIRED_SCRIPTS, validate_stage_exit
 from assert_fault_timeline_real import evaluate_fault_timeline_real
+from assert_system_metrics_real_windows import evaluate_system_metrics_real_windows
 from build_acceptance_reset import build_acceptance_reset, validate_acceptance_report
 from capability_gate import evaluate_capability
 from assert_command_audit_real import evaluate_command_audit_real
 from assert_management_exact_scale import evaluate_management_exact_scale
 from assert_workload_benchmark_strength import evaluate_workload_benchmark_strength
 from common import gate_result_path, write_gate_result, write_json
-from manifest import C06_SETUP_CORE_METRICS, C07_REQUIRED_COMMAND_KINDS, H05_REQUIRED_MANAGEMENT_OPERATIONS, H06_REQUIRED_METRIC_ROW_COUNT, H06_REQUIRED_WORKLOAD_METRICS, H06_REQUIRED_WORKLOAD_PROFILES, H06_REQUIRED_WORKLOAD_WINDOWS, H07_REQUIRED_FAULT_TYPES, H07_REQUIRED_TIMELINE_EVENTS, H07_REQUIRED_TIMELINE_METRICS, REQUIRED_CLAIMS, build_manifest, claim_id
+from manifest import C06_SETUP_CORE_METRICS, C07_REQUIRED_COMMAND_KINDS, H05_REQUIRED_MANAGEMENT_OPERATIONS, H06_REQUIRED_METRIC_ROW_COUNT, H06_REQUIRED_WORKLOAD_METRICS, H06_REQUIRED_WORKLOAD_PROFILES, H06_REQUIRED_WORKLOAD_WINDOWS, H07_REQUIRED_FAULT_TYPES, H07_REQUIRED_TIMELINE_EVENTS, H07_REQUIRED_TIMELINE_METRICS, H08_HIGH_VALUE_METRIC_GROUPS, REQUIRED_CLAIMS, build_manifest, claim_id
 
 
 def test_write_gate_result_shape(tmp_path: Path) -> None:
@@ -1173,6 +1174,164 @@ def test_h07_stage_exit_requires_fault_timeline_gate(tmp_path: Path) -> None:
     assert not blocked
 
 
+def test_system_metrics_valid_exact_scale_can_pass_after_h08_hardening(tmp_path: Path) -> None:
+    _write_system_metrics_exact_scale_evidence(tmp_path, 30)
+    manifest = build_manifest(tmp_path)
+    claim = _claim(manifest, "system_metrics.real_exact.30")
+    assert claim["status"] == "PASS"
+    assert claim["evidence_kind"] == "REAL_EXACT_SCALE"
+    semantic = claim["semantic_checks"]
+    assert semantic["lifecycle_windows_present"] is True
+    assert semantic["node_coverage_complete"] is True
+    assert semantic["high_value_numeric_coverage"] is True
+    assert semantic["high_value_window_coverage"] is True
+    assert semantic["system_metrics_report_semantics_valid"] is True
+    assert semantic["hardening_stage_accepted"] is True
+
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    violations, blocked, extra = evaluate_system_metrics_real_windows(manifest_path)
+    assert not violations
+    assert extra["passed_claims"] == ["system_metrics.real_exact.30"]
+    assert any("system_metrics.real_exact.50" in item for item in blocked)
+
+
+def test_system_metrics_generic_metrics_timeseries_never_satisfies_h08(tmp_path: Path) -> None:
+    _write_workload_benchmark_exact_scale_evidence(tmp_path, 30)
+    claim = _claim(build_manifest(tmp_path), "system_metrics.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["system_metrics_timeseries_present"] is False
+    assert "generic metrics_timeseries.jsonl cannot satisfy C10" in claim["reason"]
+
+
+def test_system_metrics_missing_lifecycle_window_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_system_metrics_exact_scale_evidence(tmp_path, 50, omit_window="fault_or_failover")
+    claim = _claim(build_manifest(tmp_path), "system_metrics.real_exact.50")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["lifecycle_windows_present"] is False
+    assert "fault_or_failover" in claim["reason"]
+
+
+def test_system_metrics_missing_required_row_fields_block_exact_scale_pass(tmp_path: Path) -> None:
+    _write_system_metrics_exact_scale_evidence(tmp_path, 30, row_defect="missing_timestamp")
+    claim = _claim(build_manifest(tmp_path), "system_metrics.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["system_metrics_timeseries_schema_valid"] is False
+    assert "timestamp_unix_ms" in claim["reason"]
+
+
+def test_system_metrics_accepts_runtime_label_node_and_window_fields(tmp_path: Path) -> None:
+    _write_system_metrics_exact_scale_evidence(tmp_path, 30, row_defect="labels_only_node_window")
+    claim = _claim(build_manifest(tmp_path), "system_metrics.real_exact.30")
+    assert claim["status"] == "PASS"
+    assert claim["semantic_checks"]["lifecycle_windows_present"] is True
+    assert claim["semantic_checks"]["node_coverage_complete"] is True
+
+
+def test_system_metrics_bad_report_cross_checks_block_exact_scale_pass(tmp_path: Path) -> None:
+    phase = _write_system_metrics_exact_scale_evidence(tmp_path, 30)
+    report_path = phase / "system_metrics_report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["sample_count"] = 0
+    report["lifecycle_windows"] = ["setup"]
+    report["coverage"]["rows_by_window"] = {"setup": 1}
+    report["coverage"]["rows_by_node"] = {"node-0000": 1}
+    write_json(report_path, report)
+
+    claim = _claim(build_manifest(tmp_path), "system_metrics.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["system_metrics_report_semantics_valid"] is False
+    assert claim["semantic_checks"]["hardening_stage_accepted"] is False
+    assert "sample_count" in claim["reason"]
+    assert "lifecycle_windows" in claim["reason"]
+
+
+def test_system_metrics_report_count_mismatch_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    phase = _write_system_metrics_exact_scale_evidence(tmp_path, 30)
+    report_path = phase / "system_metrics_report.json"
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report["coverage"]["rows_by_window"] = {"setup": 1, "workload": 1, "cleanup": 1}
+    report["coverage"]["rows_by_node"] = {f"node-{index:04d}": 1 for index in range(30)}
+    write_json(report_path, report)
+
+    claim = _claim(build_manifest(tmp_path), "system_metrics.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["system_metrics_report_semantics_valid"] is False
+    assert "rows_by_window" in claim["reason"]
+    assert "rows_by_node" in claim["reason"]
+
+
+def test_system_metrics_extra_node_coverage_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    phase = _write_system_metrics_exact_scale_evidence(tmp_path, 30, extra_node=True)
+    claim = _claim(build_manifest(tmp_path), "system_metrics.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["node_coverage_complete"] is False
+    assert "exact-scale H08 requires exactly 30" in claim["reason"]
+
+
+def test_system_metrics_skipped_high_value_group_blocks_exact_scale_pass(tmp_path: Path) -> None:
+    _write_system_metrics_exact_scale_evidence(tmp_path, 30, row_defect="skip_valkey_info")
+    claim = _claim(build_manifest(tmp_path), "system_metrics.real_exact.30")
+    assert claim["status"] == "BLOCKED_WITH_REASON"
+    assert claim["semantic_checks"]["high_value_numeric_coverage"] is False
+    assert "valkey_info" in claim["reason"]
+
+
+def test_system_metrics_missing_node_coverage_or_wrong_valkey_version_blocks(tmp_path: Path) -> None:
+    _write_system_metrics_exact_scale_evidence(tmp_path / "node", 30, omit_node_index=29)
+    node_claim = _claim(build_manifest(tmp_path / "node"), "system_metrics.real_exact.30")
+    assert node_claim["status"] == "BLOCKED_WITH_REASON"
+    assert node_claim["semantic_checks"]["node_coverage_complete"] is False
+
+    _write_system_metrics_exact_scale_evidence(tmp_path / "version", 30, valkey_versions=["9.0.9"])
+    version_claim = _claim(build_manifest(tmp_path / "version"), "system_metrics.real_exact.30")
+    assert version_claim["status"] == "BLOCKED_WITH_REASON"
+    assert version_claim["semantic_checks"]["valkey_9_1_verified"] is False
+
+
+def test_system_metrics_dedicated_gate_rejects_unsafe_pass_and_accepts_honest_blocked(tmp_path: Path) -> None:
+    manifest = build_manifest(tmp_path)
+    system = _claim(manifest, "system_metrics.real_exact.30")
+    system.update(
+        {
+            "status": "PASS",
+            "evidence_kind": "REAL_EXACT_SCALE",
+            "source_artifacts": [
+                "artifacts/phases/P12_SCALE_LADDER_10_30/system_metrics_report.json",
+                "artifacts/phases/P12_SCALE_LADDER_10_30/system_metrics_timeseries.jsonl",
+                "artifacts/phases/P12_SCALE_LADDER_10_30/valkey_e2e_evidence.json",
+            ],
+            "semantic_checks": _passing_semantic_checks("system_metrics.real_exact.30"),
+            "diagnostics": {},
+        }
+    )
+    manifest_path = tmp_path / "manifest.json"
+    write_json(manifest_path, manifest)
+    violations, _blocked, _extra = evaluate_system_metrics_real_windows(manifest_path)
+    assert "system_metrics_pass_h08_not_accepted" in {item["code"] for item in violations}
+
+    manifest = build_manifest(tmp_path)
+    write_json(manifest_path, manifest)
+    violations, blocked, extra = evaluate_system_metrics_real_windows(manifest_path)
+    assert not violations
+    assert extra["system_metrics_claim_status"] == "BLOCKED_WITH_REASON"
+    assert extra["passed_claims"] == []
+    assert len(blocked) == 4
+
+
+def test_h08_stage_exit_requires_system_metrics_gate(tmp_path: Path) -> None:
+    _seed_stage_exit_base(tmp_path, "H08_SYSTEM_METRICS_REAL_WINDOW_HARDENING", H08_REQUIRED_GATE_RESULTS)
+    gate = tmp_path / "runs" / "m1-hardening" / "H08_SYSTEM_METRICS_REAL_WINDOW_HARDENING" / "artifacts" / "gates" / "assert_system_metrics_real_windows.json"
+    gate.unlink()
+    violations, blocked = validate_stage_exit(tmp_path, "H08_SYSTEM_METRICS_REAL_WINDOW_HARDENING")
+    assert not violations
+    assert any("assert_system_metrics_real_windows.json is missing" in item for item in blocked)
+    write_json(gate, _gate_payload("H08_SYSTEM_METRICS_REAL_WINDOW_HARDENING", "assert_system_metrics_real_windows"))
+    violations, blocked = validate_stage_exit(tmp_path, "H08_SYSTEM_METRICS_REAL_WINDOW_HARDENING")
+    assert not violations
+    assert not blocked
+
+
 def _write_fault_timeline_exact_scale_evidence(
     tmp_path: Path,
     scale: int,
@@ -1456,6 +1615,145 @@ def _write_valkey_e2e(phase: Path, scale: int) -> None:
             "valkey_versions": ["9.1.0"],
         },
     )
+
+
+def _write_system_metrics_exact_scale_evidence(
+    tmp_path: Path,
+    scale: int,
+    *,
+    omit_window: str | None = None,
+    row_defect: str | None = None,
+    omit_node_index: int | None = None,
+    valkey_versions: list[str] | None = None,
+    extra_node: bool = False,
+) -> Path:
+    phase_by_scale = {
+        30: "P12_SCALE_LADDER_10_30",
+        50: "P30_MANAGEMENT_MATRIX_50_REAL",
+        100: "P31_MANAGEMENT_MATRIX_100_REAL",
+        200: "P32_MANAGEMENT_MATRIX_200_REAL",
+    }
+    phase = tmp_path / "artifacts" / "phases" / phase_by_scale[scale]
+    windows = ["setup", "workload", "cleanup"] if scale == 30 else ["setup", "management", "workload", "fault_or_failover", "cleanup"]
+    windows = [window for window in windows if window != omit_window]
+    metric_templates = [
+        ("docker_stats", "cpu_percent", "percent"),
+        ("docker_stats", "memory_rss_bytes", "bytes"),
+        ("system_network", "rx_bytes", "bytes"),
+        ("valkey_info", "connected_clients", "count"),
+        ("cluster_info", "cluster_known_nodes", "count"),
+    ]
+    rows: list[dict[str, object]] = []
+    for node_index in range(scale):
+        if node_index == omit_node_index:
+            continue
+        for window in windows:
+            for metric_index, (source_type, metric_name, unit) in enumerate(metric_templates, start=1):
+                value: object = float(node_index + metric_index)
+                missing_reason = ""
+                if row_defect == "skip_valkey_info" and source_type == "valkey_info":
+                    value = "SKIPPED_WITH_REASON"
+                    missing_reason = "test deliberately skipped valkey info group"
+                row: dict[str, object] = {
+                    "schema_version": "v1",
+                    "phase_id": phase_by_scale[scale],
+                    "run_id": f"h08-{scale}",
+                    "scenario_name": f"system-metrics-{scale}",
+                    "sample_id": f"node-{node_index:04d}-{window}-{metric_name}",
+                    "node_count": scale,
+                    "node_id": f"node-{node_index:04d}",
+                    "lifecycle_window": window,
+                    "timestamp_unix_ms": 100000 + node_index,
+                    "monotonic_ms": float(1000 + node_index),
+                    "source_type": source_type,
+                    "source_id": f"node-{node_index:04d}",
+                    "metric_name": metric_name,
+                    "metric_value": value,
+                    "metric_unit": unit,
+                    "labels": {
+                        "window": window,
+                        "lifecycle_window": window,
+                        "stage_window": window,
+                        "logical_node_id": f"node-{node_index:04d}",
+                    },
+                    "missing_reason": missing_reason,
+                }
+                if row_defect == "missing_timestamp" and not rows:
+                    row.pop("timestamp_unix_ms")
+                if row_defect == "labels_only_node_window":
+                    row.pop("node_id")
+                    row.pop("lifecycle_window")
+                rows.append(row)
+    if extra_node:
+        extra_rows = []
+        for row in rows[: len(metric_templates) * len(windows)]:
+            copied = dict(row)
+            copied["node_id"] = f"node-{scale:04d}"
+            copied["source_id"] = f"node-{scale:04d}"
+            copied["sample_id"] = f"node-{scale:04d}-{copied.get('lifecycle_window')}-{copied.get('metric_name')}"
+            labels = dict(copied.get("labels", {})) if isinstance(copied.get("labels"), dict) else {}
+            labels["logical_node_id"] = f"node-{scale:04d}"
+            labels["node_id"] = f"node-{scale:04d}"
+            copied["labels"] = labels
+            extra_rows.append(copied)
+        rows.extend(extra_rows)
+    _write_jsonl(phase / "system_metrics_timeseries.jsonl", rows)
+    if valkey_versions is None:
+        _write_valkey_e2e(phase, scale)
+    else:
+        _write_valkey_e2e_custom(phase, scale, valkey_versions)
+    rows_by_window = {
+        window: sum(
+            1
+            for row in rows
+            if (row.get("lifecycle_window") or (row.get("labels", {}) if isinstance(row.get("labels"), dict) else {}).get("lifecycle_window")) == window
+        )
+        for window in windows
+    }
+    rows_by_node: dict[str, int] = {}
+    for row in rows:
+        labels = row.get("labels", {}) if isinstance(row.get("labels"), dict) else {}
+        node_id = str(row.get("node_id") or labels.get("logical_node_id") or labels.get("node_id"))
+        rows_by_node[node_id] = rows_by_node.get(node_id, 0) + 1
+    missing_metrics = [
+        {
+            "node_id": str(row.get("node_id")),
+            "metric": str(row.get("metric_name")),
+            "status": str(row.get("metric_value")),
+            "reason": str(row.get("missing_reason")),
+            "window": str(row.get("lifecycle_window")),
+        }
+        for row in rows
+        if row.get("metric_value") == "SKIPPED_WITH_REASON"
+    ]
+    write_json(
+        phase / "system_metrics_report.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "system_metrics_report",
+            "phase_id": phase_by_scale[scale],
+            "run_id": f"h08-{scale}",
+            "scenario_name": f"system-metrics-{scale}",
+            "status": "PASS",
+            "node_count": scale,
+            "sample_count": len(rows),
+            "lifecycle_windows": windows,
+            "coverage": {
+                "required_metrics": [metric for _source, metric, _unit in metric_templates],
+                "observed_metrics": [metric for _source, metric, _unit in metric_templates],
+                "missing_required_metrics": [],
+                "rows_by_window": rows_by_window,
+                "rows_by_node": rows_by_node,
+            },
+            "missing_metric_count": len(missing_metrics),
+            "missing_metrics": missing_metrics,
+            "source_refs": {
+                "system_metrics_timeseries": "system_metrics_timeseries.jsonl",
+                "valkey_e2e_evidence": "valkey_e2e_evidence.json",
+            },
+        },
+    )
+    return phase
 
 
 def _manifest_with_command_rows(tmp_path: Path, scale: int, rows: list[dict[str, object]]) -> dict[str, object]:
@@ -2143,7 +2441,26 @@ def _passing_semantic_checks(claim: str) -> dict[str, object]:
             "fake_or_partial_not_promoted",
             "no_legacy_fault_promotion",
         ],
-        "system_metrics": ["system_windows_present", "core_metrics_present"],
+        "system_metrics": [
+            "real_valkey_verified",
+            "valkey_9_1_verified",
+            "same_directory_bundle",
+            "system_metrics_report_present",
+            "system_metrics_report_schema_valid",
+            "system_metrics_report_status_pass",
+            "system_metrics_report_semantics_valid",
+            "system_metrics_timeseries_present",
+            "system_metrics_timeseries_schema_valid",
+            "system_rows_exact_scale",
+            "lifecycle_windows_present",
+            "node_coverage_complete",
+            "high_value_numeric_coverage",
+            "high_value_window_coverage",
+            "missing_values_structured",
+            "source_refs_resolve",
+            "fake_or_partial_not_promoted",
+            "no_fixture_system_artifacts",
+        ],
         "report": ["report_index_present", "accepted_inputs_only"],
         "cleanup": ["cleanup_report_clean"],
     }
