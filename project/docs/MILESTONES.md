@@ -48,7 +48,12 @@ introducing distributed-host complexity.
   can safely model them;
 - failover and recovery measurement, including client-visible availability,
   workload impact, cluster convergence, and split-brain windows;
-- real scale rungs through 30, 50, 100, and a resource-preflight-gated 200 nodes;
+- an exact-node trigger interface for any requested scale from 30 through 2000,
+  with resource preflight allowed to block but never silently downscale a run;
+- required real acceptance gates at 50 and a resource-preflight-gated 200 nodes;
+- retained but non-required execution support at 30 and 100 nodes;
+- non-automatic real execution above 200 only after explicit operator opt-in,
+  resource preflight, and cost acknowledgement;
 - offline analysis and clear visual reports generated only from validated,
   versioned artifacts.
 
@@ -79,8 +84,9 @@ window. Missing data must be explicit rather than silently omitted or inferred.
 
 Milestone 1 is complete only when:
 
-- the full lifecycle passes on representative small real clusters and the
-  30/50/100/200 scale ladder, with 200 guarded by resource preflight;
+- the full lifecycle passes the exact 50-node and exact 200-node real gates,
+  with 200 guarded by resource preflight; 30 and 100 remain supported but are
+  not milestone completion gates;
 - required management, stability, fault, and failover scenarios have real
   evidence; an unresolved platform limitation keeps the milestone blocked unless
   the product scope is explicitly revised;

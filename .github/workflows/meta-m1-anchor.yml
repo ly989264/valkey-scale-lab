@@ -1,0 +1,34 @@
+name: meta-m1-anchor
+
+on:
+  pull_request:
+    paths:
+      - "project/**"
+      - ".github/workflows/meta-m1-anchor.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  control-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject post-bootstrap control changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if git cat-file -e "$BASE_SHA:project/codex/meta_m1/control_block.json" 2>/dev/null; then
+            git diff --exit-code "$BASE_SHA" -- \
+              project/codex/meta_m1/control_block.json \
+              project/src/valkey_scale_lab/meta_loop \
+              project/scripts/meta_m1_evidence_gate.py \
+              project/scripts/meta_m1_real_gate.py
+          fi
+      - name: Validate controller
+        working-directory: project
+        run: |
+          PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop doctor
+          python3 -m pytest -q tests/meta_loop

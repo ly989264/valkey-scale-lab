@@ -1,0 +1,196 @@
+{
+  "schema_version": "v2",
+  "goal_id": "milestone1-local-complete-v2",
+  "goal": "Complete the local Valkey lifecycle and admit exact real evidence at 50 and 200 nodes.",
+  "scope_freeze": {
+    "source": "docs/MILESTONES.md#milestone-1-complete-local-cluster-lifecycle-up-to-200-real-nodes",
+    "trigger_nodes": {"min": 30, "max": 2000, "exact": true},
+    "required_real_scales": [50, 200],
+    "supported_not_gated_scales": [30, 100],
+    "above_200": {
+      "automatic": false,
+      "operator_opt_in": true,
+      "resource_preflight": true,
+      "cost_acknowledgement": true,
+      "silent_downscale": false
+    }
+  },
+  "controller_policy": {
+    "max_attempts_per_objective": 3,
+    "stagnation_limit": 2,
+    "max_replans_per_objective": 1,
+    "max_review_rounds_per_objective": 2,
+    "max_new_gaps_per_review": 1,
+    "failure_excerpt_bytes": 2400,
+    "max_context_bytes": 12000,
+    "cache_unchanged_results": true,
+    "expensive_levels": [3, 4],
+    "max_expensive_runs_per_input": 1
+  },
+  "levels": {
+    "0": "syntax, static safety, and control-contract checks",
+    "1": "impacted unit and integration checks",
+    "2": "small-real or semantic artifact checks",
+    "3": "exact 50-node real full-flow evidence",
+    "4": "preflight-gated exact 200-node real full-flow evidence"
+  },
+  "common_checks": [
+    {
+      "id": "static-safety",
+      "level": 0,
+      "command": ["python3", "scripts/safety_scan.py"],
+      "timeout_seconds": 300,
+      "inputs": ["scripts/safety_scan.py", "src", "scripts"]
+    },
+    {
+      "id": "python-compile",
+      "level": 0,
+      "command": ["python3", "-m", "compileall", "-q", "src", "scripts"],
+      "timeout_seconds": 300,
+      "inputs": ["src", "scripts"]
+    }
+  ],
+  "objectives": [
+    {
+      "id": "O1_TRIGGER_AND_SAFETY",
+      "title": "Exact-node trigger and execution safety",
+      "depends_on": [],
+      "clauses": [
+        "Accept every exact requested node count from 30 through 2000 without silent downscaling.",
+        "Keep real execution above 200 non-automatic and require operator opt-in, resource preflight, and cost acknowledgement.",
+        "Confine fault injection and cleanup to owned runtime resources."
+      ],
+      "context_paths": ["src/valkey_scale_lab/config", "src/valkey_scale_lab/planner", "src/valkey_scale_lab/cli.py", "tests/config", "tests/planner", "tests/scale"],
+      "checks": [
+        {
+          "id": "trigger-and-planner-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/config", "tests/planner", "tests/scale", "tests/unit/test_p37_200_plus_dry_run.py"],
+          "timeout_seconds": 1200,
+          "inputs": ["src/valkey_scale_lab/config", "src/valkey_scale_lab/planner", "src/valkey_scale_lab/cli.py", "tests/config", "tests/planner", "tests/scale", "tests/unit/test_p37_200_plus_dry_run.py"]
+        }
+      ]
+    },
+    {
+      "id": "O2_LIFECYCLE_AND_TELEMETRY",
+      "title": "Lifecycle, ownership, cleanup, and diagnostic telemetry",
+      "depends_on": ["O1_TRIGGER_AND_SAFETY"],
+      "clauses": [
+        "Run deterministic preflight, start, form, stabilize, workload, cleanup, validate, analyze, and report lifecycle steps.",
+        "Record stable sub-stage timing, resource, Valkey, workload, command, retry, timeout, and error telemetry.",
+        "Make cleanup deterministic and reject missing or unowned resource cleanup."
+      ],
+      "context_paths": ["src/valkey_scale_lab/orchestrator", "src/valkey_scale_lab/runtime", "src/valkey_scale_lab/artifacts", "src/valkey_scale_lab/metrics", "tests/artifacts", "tests/integration"],
+      "checks": [
+        {
+          "id": "lifecycle-telemetry-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/artifacts", "tests/integration", "tests/metrics", "tests/orchestrator"],
+          "timeout_seconds": 1800,
+          "inputs": ["src/valkey_scale_lab/orchestrator", "src/valkey_scale_lab/runtime", "src/valkey_scale_lab/artifacts", "src/valkey_scale_lab/metrics", "tests/artifacts", "tests/integration", "tests/metrics", "tests/orchestrator"]
+        }
+      ]
+    },
+    {
+      "id": "O3_MANAGEMENT_AND_STABILITY",
+      "title": "Management matrix and bounded stability",
+      "depends_on": ["O2_LIFECYCLE_AND_TELEMETRY"],
+      "clauses": [
+        "Execute and quantify add/remove node, reshard, rebalance, and rolling restart against real Valkey.",
+        "Measure workload impact and convergence for each management operation.",
+        "Run bounded stability and soak checks with explicit health criteria."
+      ],
+      "context_paths": ["src/valkey_scale_lab/orchestrator", "src/valkey_scale_lab/workload", "tests/stability", "tests/artifacts/test_management_matrix.py"],
+      "checks": [
+        {
+          "id": "management-stability-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/stability", "tests/artifacts/test_management_matrix.py", "tests/analysis/test_workload_impact_cross_stage.py"],
+          "timeout_seconds": 1800,
+          "inputs": ["src/valkey_scale_lab/orchestrator", "src/valkey_scale_lab/workload", "tests/stability", "tests/artifacts/test_management_matrix.py", "tests/analysis/test_workload_impact_cross_stage.py"]
+        }
+      ]
+    },
+    {
+      "id": "O4_FAULT_FAILOVER_AND_RECOVERY",
+      "title": "Fault, failover, recovery, and split-brain matrix",
+      "depends_on": ["O2_LIFECYCLE_AND_TELEMETRY"],
+      "clauses": [
+        "Execute process, node-host, AZ, delay, loss, partition, flap, minority, and majority fault scenarios in owned sandboxes.",
+        "Measure promotion, convergence, client availability, workload impact, recovery, and split-brain windows.",
+        "Reject fixture, stale, generated, or unprobed evidence as real evidence."
+      ],
+      "context_paths": ["src/valkey_scale_lab/fault", "src/valkey_scale_lab/valkey", "tests/fault", "tests/failover"],
+      "checks": [
+        {
+          "id": "fault-failover-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/fault", "tests/failover", "tests/integration/test_fault_timeline_pipeline.py", "tests/integration/test_failover_timeline_artifacts.py"],
+          "timeout_seconds": 1800,
+          "inputs": ["src/valkey_scale_lab/fault", "src/valkey_scale_lab/valkey", "tests/fault", "tests/failover", "tests/integration/test_fault_timeline_pipeline.py", "tests/integration/test_failover_timeline_artifacts.py"]
+        }
+      ]
+    },
+    {
+      "id": "O5_EVIDENCE_REPORT_AND_SCALE_50",
+      "title": "Evidence integrity, offline reports, and exact 50-node admission",
+      "depends_on": ["O3_MANAGEMENT_AND_STABILITY", "O4_FAULT_FAILOVER_AND_RECOVERY"],
+      "clauses": [
+        "Generate analysis and reports only from validated, versioned machine-readable evidence.",
+        "Show topology, timing, bottlenecks, resources, workload impact, failover, recovery, errors, and missing evidence.",
+        "Pass the complete lifecycle against a real exact 50-node Valkey 9.1.x cluster."
+      ],
+      "context_paths": ["src/valkey_scale_lab/analysis", "src/valkey_scale_lab/report", "schemas", "tests/report", "tests/provenance"],
+      "checks": [
+        {
+          "id": "report-provenance-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/analysis", "tests/report", "tests/provenance", "tests/coverage"],
+          "timeout_seconds": 1800,
+          "inputs": ["src/valkey_scale_lab/analysis", "src/valkey_scale_lab/report", "schemas", "tests/analysis", "tests/report", "tests/provenance", "tests/coverage"]
+        },
+        {
+          "id": "exact-real-50",
+          "level": 3,
+          "command": ["python3", "scripts/meta_m1_real_gate.py", "--scale", "50"],
+          "timeout_seconds": 7200,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v2/evidence/scale-50"]
+        }
+      ]
+    },
+    {
+      "id": "O6_SCALE_200_AND_FINAL",
+      "title": "Exact 200-node admission and final regression",
+      "depends_on": ["O5_EVIDENCE_REPORT_AND_SCALE_50"],
+      "clauses": [
+        "Pass resource preflight before starting the exact 200-node real gate.",
+        "Pass the complete lifecycle against a real exact 200-node Valkey 9.1.x cluster without downscaling.",
+        "Keep every non-real regression and both exact-scale evidence admissions passing at final closure."
+      ],
+      "context_paths": ["src", "scripts", "tests", "../loop_evidence/meta_runs/milestone1-v2/evidence"],
+      "checks": [
+        {
+          "id": "full-non-real-regression",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "--ignore=tests/real_valkey"],
+          "timeout_seconds": 3600,
+          "inputs": ["src", "scripts", "schemas", "tests"]
+        },
+        {
+          "id": "exact-real-50-final",
+          "level": 3,
+          "command": ["python3", "scripts/meta_m1_real_gate.py", "--scale", "50"],
+          "timeout_seconds": 7200,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v2/evidence/scale-50"]
+        },
+        {
+          "id": "exact-real-200",
+          "level": 4,
+          "command": ["python3", "scripts/meta_m1_real_gate.py", "--scale", "200"],
+          "timeout_seconds": 14400,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v2/evidence/scale-200"]
+        }
+      ]
+    }
+  ]
+}

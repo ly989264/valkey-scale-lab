@@ -4,12 +4,20 @@
 
 ## Milestone1 Scope
 
-Current milestone1 work is organized under `codex_goal_loop_m1/` and runs stages `M1-S01` through `M1-S09`.
+New milestone1 work is controlled by the bounded objective loop documented in
+[`META_M1_START.md`](META_M1_START.md). Older M1-S, P, and H stages are retained
+as implementation and audit history, not as the current milestone completion
+authority.
 
 In scope:
 
 - local Docker/process-backed Valkey cluster runs on Mac/Linux;
-- real small, 30, 50, 100, and bounded 200 node runs after resource preflight;
+- an exact-node trigger interface for 30 through 2000 nodes, with no silent
+  downscaling;
+- required real Milestone 1 gates at 50 and resource-preflight-gated 200 nodes;
+- retained but non-required real-run support for 30 and 100 nodes;
+- non-automatic, explicitly approved and resource-gated real execution above
+  200 nodes;
 - run-scoped artifacts under `runs/<run_id>/artifacts|logs|reports|state`;
 - schema-validated metadata, metrics, timelines, management/fault artifacts, analysis, and reports;
 - stability and bounded soak runs with explicit health and convergence criteria;
