@@ -1,0 +1,546 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "historical_schema_compat_registry",
+  "entries": [
+    {
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "artifact_path": "artifacts/phases/P09_ANALYSIS_REPORTING/analysis_summary.json",
+      "artifact_sha256": "f4d23242efaaee1a25373dcf89a445c64fc490c7185b1bbf20cd80610effb174",
+      "current_schema_path": "schemas/artifact/analysis_summary.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/analysis_summary.schema.json",
+      "historical_schema_sha256": "41269eaa9086a55ed8e53a173da921f2b9366174eebfc81d45c7b413a5c737b6",
+      "gate_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8"
+    },
+    {
+      "phase_id": "P09_ANALYSIS_REPORTING",
+      "artifact_path": "artifacts/phases/P09_ANALYSIS_REPORTING/report_index.json",
+      "artifact_sha256": "b32a6da793ae78bcc2eddcf8645ffdfa9f63a2ea681f21fadd11237f4baf8fb7",
+      "current_schema_path": "schemas/artifact/report_index.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/report_index.schema.json",
+      "historical_schema_sha256": "8e094650ed3b45fed24cc7fb60614a648d50a4433f0a52f2bd5895f2e45ff7d1",
+      "gate_manifest_sha256": "5f96e9eb5697dba41d9bf0f1d0d5a585b71b7687b3a51c9fcafdb13b6073d7a8"
+    },
+    {
+      "phase_id": "P16_QUANT_TELEMETRY_UNIFICATION",
+      "artifact_path": "artifacts/phases/P16_QUANT_TELEMETRY_UNIFICATION/workload_windows.json",
+      "artifact_sha256": "837094fefeffb820beab369c944baa4e57f06f4cc530b9256a6c3821d2ed90a7",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+      "artifact_path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_command_log.jsonl",
+      "artifact_sha256": "32a30b9491082640b195162e3e041c7dc8b74f2637ca1e6586de90203dc85658",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+      "artifact_path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_operation_results.jsonl",
+      "artifact_sha256": "dbf854ec59eaabfc2ff25a0365a2415f054d7e6b163d55fa1718a7cd4a55159b",
+      "current_schema_path": "schemas/artifact/management_operation_result.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_operation_result.schema.json",
+      "historical_schema_sha256": "16b05d3da3257f3fa1fd8c5827348bd77fb917f51016d8a87a3cebf30fdf7ee1",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+      "artifact_path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/management_ops_matrix.json",
+      "artifact_sha256": "9a92705dfa7db9abff8a1eb95e52d80b3a7234d1c73c0b8ba82b2a27b3c31b6e",
+      "current_schema_path": "schemas/artifact/management_ops_matrix.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_ops_matrix.schema.json",
+      "historical_schema_sha256": "d8ae96b86392bc055d8e415c30c1e5a57c66cd8a26bb1929f1ec69f05007675d",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P17_MANAGEMENT_REMOVE_NODE",
+      "artifact_path": "artifacts/phases/P17_MANAGEMENT_REMOVE_NODE/workload_windows.json",
+      "artifact_sha256": "92e9c1702420d29015241751e9ffc386c8e92bd14a402ce8109640808a4a19de",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+      "artifact_path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_command_log.jsonl",
+      "artifact_sha256": "bd8195ddc02210541f694b87b9dbf3cc84920780f8a3e7790592b11a4eb6a27d",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+      "artifact_path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_operation_results.jsonl",
+      "artifact_sha256": "7fba1f1b9c2a65a4e9bbe388d4d0c706a252c250e5e94fd65db9e2679e616558",
+      "current_schema_path": "schemas/artifact/management_operation_result.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_operation_result.schema.json",
+      "historical_schema_sha256": "16b05d3da3257f3fa1fd8c5827348bd77fb917f51016d8a87a3cebf30fdf7ee1",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+      "artifact_path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/management_ops_matrix.json",
+      "artifact_sha256": "0f883c728eecad29afa7fdde41641027ab5c6144149d2355d1061ab495d1d00d",
+      "current_schema_path": "schemas/artifact/management_ops_matrix.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_ops_matrix.schema.json",
+      "historical_schema_sha256": "d8ae96b86392bc055d8e415c30c1e5a57c66cd8a26bb1929f1ec69f05007675d",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P18_MANAGEMENT_RESHARD_REBALANCE",
+      "artifact_path": "artifacts/phases/P18_MANAGEMENT_RESHARD_REBALANCE/workload_windows.json",
+      "artifact_sha256": "8ac294640a7d24728f7f6dcbd1274518192796c69443bc1a02df953cabd8b76c",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+      "artifact_path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_command_log.jsonl",
+      "artifact_sha256": "432e86ca2c24df863b882a0dbe34c058beb131284e095035b5b9fd8eee77dbd4",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+      "artifact_path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_operation_results.jsonl",
+      "artifact_sha256": "0b329388810316f14d83b91b50dc6e86045b0be14101c2f09dd67f1216598cf0",
+      "current_schema_path": "schemas/artifact/management_operation_result.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_operation_result.schema.json",
+      "historical_schema_sha256": "16b05d3da3257f3fa1fd8c5827348bd77fb917f51016d8a87a3cebf30fdf7ee1",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+      "artifact_path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/management_ops_matrix.json",
+      "artifact_sha256": "153d12ccc953fcd2f85e416aaa1ab5dbb5d029e5b45ee65746aa53d124db53e2",
+      "current_schema_path": "schemas/artifact/management_ops_matrix.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_ops_matrix.schema.json",
+      "historical_schema_sha256": "d8ae96b86392bc055d8e415c30c1e5a57c66cd8a26bb1929f1ec69f05007675d",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P19_MANAGEMENT_ROLLING_RESTART",
+      "artifact_path": "artifacts/phases/P19_MANAGEMENT_ROLLING_RESTART/workload_windows.json",
+      "artifact_sha256": "71991254c56905ca15eed33c90ec487969e71c23eff57ff8b6e0c9235283adb9",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P20_FAILOVER_LATENCY_CURVE_30_50_100",
+      "artifact_path": "artifacts/phases/P20_FAILOVER_LATENCY_CURVE_30_50_100/workload_windows.json",
+      "artifact_sha256": "3a95e34263798c89aa7b542b61dccecd4af8f9ca5342e62e4ed2cc29496eb080",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P21_FAILOVER_LATENCY_CURVE_200",
+      "artifact_path": "artifacts/phases/P21_FAILOVER_LATENCY_CURVE_200/workload_windows.json",
+      "artifact_sha256": "efa0c4b60521d34aeb407c309c1adaa7c0182f1dd7ac3e7820f8125a1c5b21bb",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P22_FAULT_REPLICA_HOST_AZ_STOP",
+      "artifact_path": "artifacts/phases/P22_FAULT_REPLICA_HOST_AZ_STOP/workload_windows.json",
+      "artifact_sha256": "9720bc3faf24a256ed441da4af347b15488aabfd51a18bba6ff68ccba92a3d63",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "artifact_path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/network_fault_command_log.jsonl",
+      "artifact_sha256": "348fc2208bb5bab55d9ba14f2d73b371731030b6f65cff9c213e5fc6c4d06f23",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P23_FAULT_NETWORK_DELAY_LOSS_FLAP",
+      "artifact_path": "artifacts/phases/P23_FAULT_NETWORK_DELAY_LOSS_FLAP/workload_windows.json",
+      "artifact_sha256": "487dd17e681c3301bf6d9f36bf178e03fe659f507f19f2b5e08cbed2c5cbb3a9",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P24_PARTITION_SPLIT_BRAIN_MATRIX",
+      "artifact_path": "artifacts/phases/P24_PARTITION_SPLIT_BRAIN_MATRIX/workload_windows.json",
+      "artifact_sha256": "7ea5910cf29480f5a740fa3aaf7fb21d9bb91a7fea65e46547faa080c3c4711c",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "3e23e6820b6fc067709118fb95a5c931ee4bbf2fc4a9ed923c73d2ea9a64cd38"
+    },
+    {
+      "phase_id": "P25_FAULT_WORKLOAD_IMPACT_ANALYSIS",
+      "artifact_path": "artifacts/phases/P25_FAULT_WORKLOAD_IMPACT_ANALYSIS/workload_windows.json",
+      "artifact_sha256": "f86491f972a1bce209e2d3db7efdc999e26e0e73c255808c2b053e813a2658cc",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "0f8af416b4c1a779daa0bb636e16aadbed80c32df3a650769d21681c1bb75e1f"
+    },
+    {
+      "phase_id": "P26_FINAL_REPORT_REGRESSION",
+      "artifact_path": "artifacts/phases/P26_FINAL_REPORT_REGRESSION/workload_windows.json",
+      "artifact_sha256": "fa1dce02b7edf633564e46365f6c092ffd90da55553d823a31addd9e879f9dd6",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "86305a8ad7823ef5adbd32e0208fdced9a7d712e32866415e7e2c6c8401b3137"
+    },
+    {
+      "phase_id": "P29_QUANT_TELEMETRY_COLLECTOR_HARDENING",
+      "artifact_path": "artifacts/phases/P29_QUANT_TELEMETRY_COLLECTOR_HARDENING/workload_windows.json",
+      "artifact_sha256": "9f1ba39a7febf8962aecc4e4caa79ef22ad04fd1b990cbfa67b6addbe8077ce5",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "f9a1fa5debba9e4b034a5ce7205e736c1e902cbb4097d4f19a461a63c68c8a53"
+    },
+    {
+      "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+      "artifact_path": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_command_log.jsonl",
+      "artifact_sha256": "f584d8660cc6e8651185972457b523e779edfe227bc7afb0993fec58b820015a",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "9ff6b434f7d72d2fb4d935a7e02ef093c5a5741535c8ae8bc4fc5f7ea5362382"
+    },
+    {
+      "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+      "artifact_path": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_operation_results.jsonl",
+      "artifact_sha256": "f2666c5f8d3055bca4e098bcfb5ee059a0f6065aa51c661ef29fd0e2c854ebbb",
+      "current_schema_path": "schemas/artifact/management_operation_result.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_operation_result.schema.json",
+      "historical_schema_sha256": "16b05d3da3257f3fa1fd8c5827348bd77fb917f51016d8a87a3cebf30fdf7ee1",
+      "gate_manifest_sha256": "9ff6b434f7d72d2fb4d935a7e02ef093c5a5741535c8ae8bc4fc5f7ea5362382"
+    },
+    {
+      "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+      "artifact_path": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/management_ops_matrix.json",
+      "artifact_sha256": "64fcb9e833d22f5f7be06acc1a7550e809cd36f1540ec5547a355fe17ac1d534",
+      "current_schema_path": "schemas/artifact/management_ops_matrix.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_ops_matrix.schema.json",
+      "historical_schema_sha256": "d8ae96b86392bc055d8e415c30c1e5a57c66cd8a26bb1929f1ec69f05007675d",
+      "gate_manifest_sha256": "9ff6b434f7d72d2fb4d935a7e02ef093c5a5741535c8ae8bc4fc5f7ea5362382"
+    },
+    {
+      "phase_id": "P30_MANAGEMENT_MATRIX_50_REAL",
+      "artifact_path": "artifacts/phases/P30_MANAGEMENT_MATRIX_50_REAL/workload_windows.json",
+      "artifact_sha256": "23ae0ac65a3878afc05a486f53c45f372a2999fac182fc6e15aa2a93769181fe",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "9ff6b434f7d72d2fb4d935a7e02ef093c5a5741535c8ae8bc4fc5f7ea5362382"
+    },
+    {
+      "phase_id": "P31_MANAGEMENT_MATRIX_100_REAL",
+      "artifact_path": "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/management_command_log.jsonl",
+      "artifact_sha256": "1b7c3a4c7821a444e90bb1ae68b0a6d5f56e36d67d711553343ccf79a71aeffd",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "1d45d63c5ed75f22180d7bc60a842a6f31dad3e8bd82801adf3590f1dfea3b55"
+    },
+    {
+      "phase_id": "P31_MANAGEMENT_MATRIX_100_REAL",
+      "artifact_path": "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/management_operation_results.jsonl",
+      "artifact_sha256": "b62ba4c72bbdae39aaaba5cb34cc8958482daa03873d49cdb2b741d4c9410e20",
+      "current_schema_path": "schemas/artifact/management_operation_result.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_operation_result.schema.json",
+      "historical_schema_sha256": "16b05d3da3257f3fa1fd8c5827348bd77fb917f51016d8a87a3cebf30fdf7ee1",
+      "gate_manifest_sha256": "1d45d63c5ed75f22180d7bc60a842a6f31dad3e8bd82801adf3590f1dfea3b55"
+    },
+    {
+      "phase_id": "P31_MANAGEMENT_MATRIX_100_REAL",
+      "artifact_path": "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/management_ops_matrix.json",
+      "artifact_sha256": "935db1b9fbbe450fa5aeeac8707727625dfbc75fdcfcbd7eba0e6166b32e80ac",
+      "current_schema_path": "schemas/artifact/management_ops_matrix.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_ops_matrix.schema.json",
+      "historical_schema_sha256": "d8ae96b86392bc055d8e415c30c1e5a57c66cd8a26bb1929f1ec69f05007675d",
+      "gate_manifest_sha256": "1d45d63c5ed75f22180d7bc60a842a6f31dad3e8bd82801adf3590f1dfea3b55"
+    },
+    {
+      "phase_id": "P31_MANAGEMENT_MATRIX_100_REAL",
+      "artifact_path": "artifacts/phases/P31_MANAGEMENT_MATRIX_100_REAL/workload_windows.json",
+      "artifact_sha256": "465d7a5c463bd3f1bf92d29279e5e0b9da69a732272c7a48a37582f05d5f62a0",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "1d45d63c5ed75f22180d7bc60a842a6f31dad3e8bd82801adf3590f1dfea3b55"
+    },
+    {
+      "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
+      "artifact_path": "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_command_log.jsonl",
+      "artifact_sha256": "1073fcd5c8572d3deafd9f24f9e32b914058a083f591187563bb2bc0a2cd46e4",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
+      "artifact_path": "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_operation_results.jsonl",
+      "artifact_sha256": "6d0b801fbbd37719f7d321568886221fc38a983ebbb03dfa167e339327e0d13a",
+      "current_schema_path": "schemas/artifact/management_operation_result.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_operation_result.schema.json",
+      "historical_schema_sha256": "16b05d3da3257f3fa1fd8c5827348bd77fb917f51016d8a87a3cebf30fdf7ee1",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
+      "artifact_path": "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/management_ops_matrix.json",
+      "artifact_sha256": "5a941eda590c366c395439d2735295bddc4d0ef40bf99a1b38afe65f4c7606f4",
+      "current_schema_path": "schemas/artifact/management_ops_matrix.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/management_ops_matrix.schema.json",
+      "historical_schema_sha256": "d8ae96b86392bc055d8e415c30c1e5a57c66cd8a26bb1929f1ec69f05007675d",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P32_MANAGEMENT_MATRIX_200_REAL",
+      "artifact_path": "artifacts/phases/P32_MANAGEMENT_MATRIX_200_REAL/workload_windows.json",
+      "artifact_sha256": "808f6f04d4e287438c06da04c6de79eaea9a57899feb758d480744ca464dc069",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+      "artifact_path": "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/fault_command_log.jsonl",
+      "artifact_sha256": "353931926e3e1cd817ad74932a8039d24ae225330ba1415531388e01b3cc6e81",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P33_FAULT_FAILOVER_MATRIX_50_REAL",
+      "artifact_path": "artifacts/phases/P33_FAULT_FAILOVER_MATRIX_50_REAL/workload_windows.json",
+      "artifact_sha256": "e1789041b6f951b9c6a328a210249888616a398821fcc92eab8fa9f994a18b30",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+      "artifact_path": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/fault_command_log.jsonl",
+      "artifact_sha256": "399877449a9ab358a13ecd3124f08c975d08353ba31797fea551124c49319ae5",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P34_FAULT_FAILOVER_MATRIX_100_REAL",
+      "artifact_path": "artifacts/phases/P34_FAULT_FAILOVER_MATRIX_100_REAL/workload_windows.json",
+      "artifact_sha256": "f4d902e83a9fcd7ca13ddf07a9338fc19c7c5e542917d926933c7e2277018820",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+      "artifact_path": "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/fault_command_log.jsonl",
+      "artifact_sha256": "aa39a7baa2f6d8f15a6451464c2e4b3fabf052d1d95d4176c7d2e9f8eadc3c43",
+      "current_schema_path": "schemas/artifact/command_log_entry.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/command_log_entry.schema.json",
+      "historical_schema_sha256": "68f3bf5474bccb6e50540d95c35a97adf11f8f3f3dff19bea274978bd608c6f9",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+      "artifact_path": "artifacts/phases/P35_FAULT_FAILOVER_MATRIX_200_REAL/workload_windows.json",
+      "artifact_sha256": "f50d404187992165cd60ba98c247b088590a8d17688cec47921e06667e592220",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+      "artifact_path": "artifacts/phases/P36_FULL_FLOW_E2E_50_100_200_REAL/workload_windows.json",
+      "artifact_sha256": "31606eccfc0233f97c8568658f880b313f360546513e4a849375ab34dbbd07bb",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "a3f5da2fbd093f8b42a77ad6065d9777d0e337893b09f81ec33f9bc87473034b"
+    },
+    {
+      "phase_id": "P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
+      "artifact_path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/analysis_summary.json",
+      "artifact_sha256": "18def3936ae8f972b2766490630573acab9911031e29e9883653b5292b766226",
+      "current_schema_path": "schemas/artifact/analysis_summary.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/analysis_summary.schema.json",
+      "historical_schema_sha256": "41269eaa9086a55ed8e53a173da921f2b9366174eebfc81d45c7b413a5c737b6",
+      "gate_manifest_sha256": "e94d8b1d953f7496b99c35bfd1502121109474b5a26c728297860b2012b305a5"
+    },
+    {
+      "phase_id": "P41_NODEHOST_DENSITY_GLOBAL_CONFIG",
+      "artifact_path": "artifacts/phases/P41_NODEHOST_DENSITY_GLOBAL_CONFIG/report_index.json",
+      "artifact_sha256": "d8d8b5e30d88cbfe18bb5aabd1dab7e4a9f6a3ed17e03ea875f7ffcefea029db",
+      "current_schema_path": "schemas/artifact/report_index.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/report_index.schema.json",
+      "historical_schema_sha256": "8e094650ed3b45fed24cc7fb60614a648d50a4433f0a52f2bd5895f2e45ff7d1",
+      "gate_manifest_sha256": "e94d8b1d953f7496b99c35bfd1502121109474b5a26c728297860b2012b305a5"
+    },
+    {
+      "phase_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+      "artifact_path": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/analysis_summary.json",
+      "artifact_sha256": "3e61628800b25a08c7c7bf74ab9f55b541769947ef457417922f0239439944c4",
+      "current_schema_path": "schemas/artifact/analysis_summary.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/analysis_summary.schema.json",
+      "historical_schema_sha256": "41269eaa9086a55ed8e53a173da921f2b9366174eebfc81d45c7b413a5c737b6",
+      "gate_manifest_sha256": "055be29c4a1fd715fcb0463ce0699416dc6c9766c212855d99e72b2e8dcb33b4"
+    },
+    {
+      "phase_id": "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG",
+      "artifact_path": "artifacts/phases/P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG/report_index.json",
+      "artifact_sha256": "0e54a102ba218bb3f4028aa4c352decf51adfa39b5e37787127c59d92764de46",
+      "current_schema_path": "schemas/artifact/report_index.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/report_index.schema.json",
+      "historical_schema_sha256": "8e094650ed3b45fed24cc7fb60614a648d50a4433f0a52f2bd5895f2e45ff7d1",
+      "gate_manifest_sha256": "055be29c4a1fd715fcb0463ce0699416dc6c9766c212855d99e72b2e8dcb33b4"
+    },
+    {
+      "phase_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
+      "artifact_path": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/analysis_summary.json",
+      "artifact_sha256": "8f5a8158cfd76dd854954c7ffdb0e87724bb564c4effe190a8f169d2e2bcfa90",
+      "current_schema_path": "schemas/artifact/analysis_summary.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/analysis_summary.schema.json",
+      "historical_schema_sha256": "41269eaa9086a55ed8e53a173da921f2b9366174eebfc81d45c7b413a5c737b6",
+      "gate_manifest_sha256": "7eac3e8bde57965680e3024d1343ce319d477755837652560283be9feb91eed9"
+    },
+    {
+      "phase_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
+      "artifact_path": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/report_index.json",
+      "artifact_sha256": "2420603348eb1b4b3c8635ed5ae6f6d9d3e9644f91ea07e9770c27bc7c351683",
+      "current_schema_path": "schemas/artifact/report_index.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/report_index.schema.json",
+      "historical_schema_sha256": "8e094650ed3b45fed24cc7fb60614a648d50a4433f0a52f2bd5895f2e45ff7d1",
+      "gate_manifest_sha256": "7eac3e8bde57965680e3024d1343ce319d477755837652560283be9feb91eed9"
+    },
+    {
+      "phase_id": "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE",
+      "artifact_path": "artifacts/phases/P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE/workload_windows.json",
+      "artifact_sha256": "973df116ce97fca5dd7fcc677fa34269d51595cfe61cb4dd4146f38079bf297d",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "7eac3e8bde57965680e3024d1343ce319d477755837652560283be9feb91eed9"
+    },
+    {
+      "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+      "artifact_path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/analysis_summary.json",
+      "artifact_sha256": "ab38e8984a5291dab75a27bb5739729f5e62d5185e5aba5c5a6b94d6ee6bfc55",
+      "current_schema_path": "schemas/artifact/analysis_summary.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/analysis_summary.schema.json",
+      "historical_schema_sha256": "41269eaa9086a55ed8e53a173da921f2b9366174eebfc81d45c7b413a5c737b6",
+      "gate_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea"
+    },
+    {
+      "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+      "artifact_path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/report_index.json",
+      "artifact_sha256": "8edb1cbea9539ea7ceb7bda5c6331a194fa0fecf3f4f2f263e4a847b1a5768e6",
+      "current_schema_path": "schemas/artifact/report_index.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/report_index.schema.json",
+      "historical_schema_sha256": "8e094650ed3b45fed24cc7fb60614a648d50a4433f0a52f2bd5895f2e45ff7d1",
+      "gate_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea"
+    },
+    {
+      "phase_id": "P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY",
+      "artifact_path": "artifacts/phases/P44_FAILOVER_RTO_TIMELINE_OBSERVABILITY/workload_windows.json",
+      "artifact_sha256": "4f780cac3059611403e5613f5ff8b9f5cd947b8aa544cc816ab4ec3642294a68",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "37c6213ab7f72e6d15119d68304ee6b97e9b0da99fb50b150d6e14ef05e52fea"
+    },
+    {
+      "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+      "artifact_path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/analysis_summary.json",
+      "artifact_sha256": "d44feeaa754df03954ccd8eea477a239f1c876f25b5a371333b44fa269c430d4",
+      "current_schema_path": "schemas/artifact/analysis_summary.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/analysis_summary.schema.json",
+      "historical_schema_sha256": "41269eaa9086a55ed8e53a173da921f2b9366174eebfc81d45c7b413a5c737b6",
+      "gate_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5"
+    },
+    {
+      "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+      "artifact_path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/report_index.json",
+      "artifact_sha256": "7b4e7b37dfe2aac2cbbcc5046d113f3374f5d904e497087ac18474d3a14ddeef",
+      "current_schema_path": "schemas/artifact/report_index.schema.json",
+      "historical_schema_path": "schemas/historical/8c639d/report_index.schema.json",
+      "historical_schema_sha256": "8e094650ed3b45fed24cc7fb60614a648d50a4433f0a52f2bd5895f2e45ff7d1",
+      "gate_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5"
+    },
+    {
+      "phase_id": "P45_CLEAN_GATE_LAYERED_DIAGNOSTICS",
+      "artifact_path": "artifacts/phases/P45_CLEAN_GATE_LAYERED_DIAGNOSTICS/workload_windows.json",
+      "artifact_sha256": "4c587cbc836ba39ffd2a2f60a2a520ffe026138542b6ebcf74451c137b8a02c4",
+      "current_schema_path": "schemas/artifact/workload_windows.schema.json",
+      "historical_schema_path": "schemas/historical/34f051/workload_windows.schema.json",
+      "historical_schema_sha256": "1426fb48c9d0defc00bc25fbf241fef02c4bd3ffbc7a0a2fa00d6fc2cddfbd66",
+      "gate_manifest_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5"
+    }
+  ],
+  "allowed_manifest_extensions": [
+    {
+      "path": "codex/phase_manifest.json",
+      "expected_historical_sha256": "12618facde16a32bd6219ad222cc3b0199062d5fbc49344b811a7244e5b718f5",
+      "current_sha256": "e9169c426d33ed45fff3225ec8fc9f934122e1bdd5167d07feb2eb502d5ee769",
+      "extension_phase": "P46_REPOSITORY_LAYOUT_MIGRATION",
+      "targets": [
+        "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/analysis_provenance.json",
+        "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_artifact_manifest.json"
+      ]
+    }
+  ],
+  "allowed_phase_state_extensions": [
+    {
+      "path": "codex/status/phase_state.json",
+      "expected_historical_sha256": "dea9d3f79201c0701769cffc80516664736a887b842dc092529e416d3f2646c3",
+      "current_sha256": "733d8d44563cd3b419a35ed11331eb2ba76f7471d1629adb1d7ed133351f4bef",
+      "extension_phase": "P46_REPOSITORY_LAYOUT_MIGRATION",
+      "targets": [
+        "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/analysis_provenance.json",
+        "artifacts/phases/P40_STRICT_FINAL_AUDIT_CLOSEOUT/final_artifact_manifest.json"
+      ]
+    }
+  ],
+  "allowed_historical_report_commit_bindings": [
+    {
+      "provenance_graph_path": "artifacts/loop_engineering/reports/provenance_graph.json",
+      "provenance_graph_sha256": "a556c9be99eea3266d939e78eafe54bf9ba9dbfd052617e7afe10d43802ae600",
+      "declared_root_commit_sha": "854fb0fe88482277a9c4f08d8fc7574df8b3f509",
+      "html_path": "artifacts/loop_engineering/reports/index.html",
+      "html_sha256": "fe927937a284821b6e0c10c09aa303c4134086f38b7560f748ae323367c09ee8",
+      "embedded_commit_sha256es": [
+        "c064c0b7f56d00bf51360d5e75663f84e8874b77"
+      ]
+    }
+  ]
+}

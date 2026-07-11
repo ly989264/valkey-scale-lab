@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Repository Layout Report",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "phase_id", "status", "repo_root", "project_root", "evidence_root", "expected_root_entries", "observed_root_entries", "unexpected_root_entries", "classifications", "links", "integrity", "errors"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "artifact_type": {"const": "repository_layout_report"},
+    "phase_id": {"const": "P46_REPOSITORY_LAYOUT_MIGRATION"},
+    "status": {"enum": ["PASS", "FAIL"]},
+    "repo_root": {"type": "string", "minLength": 1},
+    "project_root": {"type": "string", "minLength": 1},
+    "evidence_root": {"type": "string", "minLength": 1},
+    "expected_root_entries": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "observed_root_entries": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "unexpected_root_entries": {"type": "array", "items": {"type": "string"}},
+    "classifications": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "boolean"}},
+    "links": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["path", "expected_target", "observed_target", "resolved_target", "valid"],
+        "properties": {
+          "path": {"type": "string"},
+          "expected_target": {"type": "string"},
+          "observed_target": {"type": ["string", "null"]},
+          "resolved_target": {"type": ["string", "null"]},
+          "valid": {"type": "boolean"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "required": ["baseline", "observed", "missing", "changed", "unexpected"],
+      "properties": {
+        "baseline": {"$ref": "#/$defs/counts"},
+        "observed": {"$ref": "#/$defs/counts"},
+        "missing": {"type": "array", "items": {"type": "string"}},
+        "changed": {"type": "array", "items": {"type": "string"}},
+        "unexpected": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "errors": {"type": "array", "items": {"type": "string"}}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "PASS"}}, "required": ["status"]},
+      "then": {
+        "properties": {
+          "errors": {"maxItems": 0},
+          "unexpected_root_entries": {"maxItems": 0},
+          "links": {
+            "items": {"properties": {"valid": {"const": true}}, "required": ["valid"]}
+          },
+          "classifications": {"additionalProperties": {"const": true}},
+          "integrity": {
+            "properties": {
+              "missing": {"maxItems": 0},
+              "changed": {"maxItems": 0},
+              "unexpected": {"maxItems": 0}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "required": ["file_count", "byte_count", "tree_sha256"],
+      "properties": {
+        "file_count": {"type": "integer", "minimum": 0},
+        "byte_count": {"type": "integer", "minimum": 0},
+        "tree_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

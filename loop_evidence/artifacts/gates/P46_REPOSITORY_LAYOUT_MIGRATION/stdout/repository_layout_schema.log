@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/repository_layout_report.schema.json instance=artifacts/phases/P46_REPOSITORY_LAYOUT_MIGRATION/repository_layout_report.json

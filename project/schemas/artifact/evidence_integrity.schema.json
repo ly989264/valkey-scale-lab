@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Repository Evidence Integrity Baseline",
+  "type": "object",
+  "required": ["schema_version", "artifact_type", "hash_algorithm", "record_format", "source_logical_roots", "excluded_prefixes", "roots", "aggregate", "files"],
+  "properties": {
+    "schema_version": {"const": "v1"},
+    "artifact_type": {"const": "evidence_integrity"},
+    "hash_algorithm": {"const": "sha256"},
+    "record_format": {"const": "logical_path\\0byte_count\\0sha256\\n"},
+    "captured_at": {"type": "string", "minLength": 1},
+    "source_logical_roots": {"const": ["artifacts", "audit", "runs"]},
+    "excluded_prefixes": {
+      "type": "array", "minItems": 5, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "roots": {
+      "type": "object",
+      "required": ["artifacts", "audit", "runs"],
+      "properties": {
+        "artifacts": {"$ref": "#/$defs/counts"},
+        "audit": {"$ref": "#/$defs/counts"},
+        "runs": {"$ref": "#/$defs/counts"}
+      },
+      "additionalProperties": false
+    },
+    "aggregate": {"$ref": "#/$defs/counts"},
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["logical_path", "type", "byte_count", "sha256"],
+        "properties": {
+          "logical_path": {"type": "string", "pattern": "^(artifacts|audit|runs)/"},
+          "type": {"const": "regular"},
+          "byte_count": {"type": "integer", "minimum": 0},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "required": ["file_count", "byte_count", "tree_sha256"],
+      "properties": {
+        "file_count": {"type": "integer", "minimum": 0},
+        "byte_count": {"type": "integer", "minimum": 0},
+        "tree_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

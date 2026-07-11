@@ -1,0 +1,1 @@
+PASS schema=schemas/artifact/evidence_integrity.schema.json instance=artifacts/phases/P46_REPOSITORY_LAYOUT_MIGRATION/evidence_integrity.json

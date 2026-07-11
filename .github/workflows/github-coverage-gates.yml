@@ -9,6 +9,9 @@ jobs:
   fast-gates:
     name: fast gates / python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: project
     strategy:
       fail-fast: false
       matrix:

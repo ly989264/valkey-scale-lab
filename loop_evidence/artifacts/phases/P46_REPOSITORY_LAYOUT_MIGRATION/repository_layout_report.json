@@ -1,0 +1,94 @@
+{
+  "artifact_type": "repository_layout_report",
+  "classifications": {
+    "evidence/artifacts": true,
+    "evidence/audit": true,
+    "evidence/runs": true,
+    "project/codex": true,
+    "project/config": true,
+    "project/docs": true,
+    "project/schemas": true,
+    "project/scripts": true,
+    "project/src": true,
+    "project/templates": true,
+    "project/tests": true,
+    "project/tools": true,
+    "retired/GOAL_LOOP_PACKAGE_README.md": true,
+    "retired/MILESTONE1_GOAL_LOOP_PACKAGE_README.md": true,
+    "retired/MILESTONE1_HARDENING_V2_README.md": true,
+    "retired/PACKAGE_FILE_MANIFEST.md": true,
+    "retired/codex_goal_loop_m1": true,
+    "retired/codex_goal_loop_m1_hardening_v2": true
+  },
+  "errors": [],
+  "evidence_root": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/loop_evidence",
+  "expected_root_entries": [
+    ".git",
+    ".github",
+    ".gitignore",
+    "AGENTS.md",
+    "README.md",
+    "loop_evidence",
+    "project"
+  ],
+  "integrity": {
+    "baseline": {
+      "byte_count": 678927090,
+      "file_count": 17555,
+      "tree_sha256": "6f4232a19be65c1e0d5da0d0c8521e36e26e3facf4429d132f7dee1f7461b31f"
+    },
+    "changed": [],
+    "missing": [],
+    "observed": {
+      "byte_count": 678927090,
+      "file_count": 17555,
+      "tree_sha256": "6f4232a19be65c1e0d5da0d0c8521e36e26e3facf4429d132f7dee1f7461b31f"
+    },
+    "unexpected": []
+  },
+  "links": [
+    {
+      "expected_target": "../loop_evidence/artifacts",
+      "observed_target": "../loop_evidence/artifacts",
+      "path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/project/artifacts",
+      "resolved_target": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/loop_evidence/artifacts",
+      "valid": true
+    },
+    {
+      "expected_target": "../loop_evidence/audit",
+      "observed_target": "../loop_evidence/audit",
+      "path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/project/audit",
+      "resolved_target": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/loop_evidence/audit",
+      "valid": true
+    },
+    {
+      "expected_target": "../loop_evidence/runs",
+      "observed_target": "../loop_evidence/runs",
+      "path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/project/runs",
+      "resolved_target": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/loop_evidence/runs",
+      "valid": true
+    },
+    {
+      "expected_target": "../.github",
+      "observed_target": "../.github",
+      "path": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/project/.github",
+      "resolved_target": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/.github",
+      "valid": true
+    }
+  ],
+  "observed_root_entries": [
+    ".git",
+    ".github",
+    ".gitignore",
+    "AGENTS.md",
+    "README.md",
+    "loop_evidence",
+    "project"
+  ],
+  "phase_id": "P46_REPOSITORY_LAYOUT_MIGRATION",
+  "project_root": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab/project",
+  "repo_root": "/Users/allgood/centos_ex/projects/VibeCoding/valkey_scale_lab",
+  "schema_version": "v1",
+  "status": "PASS",
+  "unexpected_root_entries": []
+}

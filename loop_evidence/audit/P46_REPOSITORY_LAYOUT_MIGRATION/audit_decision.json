@@ -1,0 +1,23 @@
+{
+  "schema_version": "v1",
+  "artifact_type": "audit_decision",
+  "phase_id": "P46_REPOSITORY_LAYOUT_MIGRATION",
+  "decision": "PASS",
+  "fresh_context": true,
+  "auditor": "final-fresh-context-codex-reviewer",
+  "created_at": "2026-07-11T05:50:57Z",
+  "gate_result_path": "artifacts/gates/P46_REPOSITORY_LAYOUT_MIGRATION/gate_result.json",
+  "gate_result_sha256": "65e7020a7d4202c4a594baa017417b89d3a58993c02c78a81ce7a0218c5500b9",
+  "artifact_paths": [
+    "artifacts/phases/P46_REPOSITORY_LAYOUT_MIGRATION/phase_summary.json",
+    "artifacts/phases/P46_REPOSITORY_LAYOUT_MIGRATION/evidence_integrity.json",
+    "artifacts/phases/P46_REPOSITORY_LAYOUT_MIGRATION/repository_layout_report.json",
+    "artifacts/goal_loop/P46_REPOSITORY_LAYOUT_MIGRATION/CONTEXT_RELOAD.md",
+    "artifacts/goal_loop/P46_REPOSITORY_LAYOUT_MIGRATION/DESIGN_BRIEF.md",
+    "artifacts/goal_loop/P46_REPOSITORY_LAYOUT_MIGRATION/WORKER_SUMMARY.md",
+    "artifacts/goal_loop/P46_REPOSITORY_LAYOUT_MIGRATION/REVIEW.md",
+    "artifacts/gates/P46_REPOSITORY_LAYOUT_MIGRATION/gate_result.json"
+  ],
+  "risks": [],
+  "rationale": "Final fresh-context review confirms the single P46 commit over b22ea10d, exact seven-entry root, exact phase-state compatibility, 312 matching lock entries, latest 9/9 gate with 637 passed and 2 skipped, unchanged 17,555-file/678,927,090-byte evidence, and complete absence of discarded Autoplan V7 commits and paths from local ancestry."
+}
