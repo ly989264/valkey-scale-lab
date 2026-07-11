@@ -67,6 +67,19 @@ def nested(payload: Any, *keys: str) -> Any:
     return current
 
 
+def declares_fixture_or_generated_evidence(payload: dict[str, Any]) -> bool:
+    if payload.get("fixture") is True or payload.get("generated") is True or payload.get("synthetic") is True:
+        return True
+    markers = [
+        payload.get("evidence_origin"),
+        payload.get("origin"),
+        nested(payload, "provenance", "evidence_origin"),
+        nested(payload, "provenance", "origin"),
+    ]
+    forbidden = ("fixture", "generated", "synthetic", "fabricated", "stale")
+    return any(isinstance(marker, str) and any(token in marker.lower() for token in forbidden) for marker in markers)
+
+
 class Auditor:
     def __init__(self, root: Path) -> None:
         self.root = root
@@ -155,6 +168,7 @@ class Auditor:
 
         evidence = payloads["valkey_e2e_evidence"] or {}
         versions = evidence.get("valkey_versions") if isinstance(evidence.get("valkey_versions"), list) else []
+        self.check(not declares_fixture_or_generated_evidence(evidence), node_count=node_count, category="fixture_evidence_forbidden", description="Explicit fixture, generated, synthetic, fabricated, or stale evidence markers are forbidden for real admission", evidence=[rel(self.root, paths["valkey_e2e_evidence"]), str(evidence.get("fixture")), str(evidence.get("evidence_origin"))])
         self.check(evidence.get("producer", {}).get("name") == "scripts/fault_failover_gate.py", node_count=node_count, category="invalid_real_evidence", description="Evidence producer must be scripts/fault_failover_gate.py", evidence=[rel(self.root, paths["valkey_e2e_evidence"]), str(evidence.get("producer"))])
         self.check(evidence.get("real_valkey") is True, node_count=node_count, category="invalid_real_evidence", description="Evidence must be real Valkey", evidence=[rel(self.root, paths["valkey_e2e_evidence"])])
         self.check(evidence.get("status") == "PASS" and evidence.get("probe_result") == "PASS", node_count=node_count, category="invalid_real_evidence", description="Evidence status and probe_result must PASS", evidence=[rel(self.root, paths["valkey_e2e_evidence"]), str(evidence.get("status")), str(evidence.get("probe_result"))])

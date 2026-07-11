@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from meta_m1_evidence_gate import DEFAULT_EVIDENCE_ROOT, evaluate, source_tree_digest
+from valkey_scale_lab.meta_loop.digests import tree_digest
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -24,6 +25,8 @@ def main() -> int:
     args = _parser().parse_args()
     evidence_dir = (args.evidence_root / f"scale-{args.scale}").resolve()
     evidence_dir.mkdir(parents=True, exist_ok=True)
+    protected_root = PROJECT_ROOT.parent / "loop_evidence" / "artifacts"
+    protected_before = tree_digest(protected_root)
     command = [
         sys.executable,
         "-m",
@@ -37,8 +40,14 @@ def main() -> int:
     ]
     env = dict(os.environ)
     env["VSLAB_META_M1_CONTROLLER_OWNED"] = "1"
-    env["VSLAB_META_M1_SOURCE_DIGEST"] = source_tree_digest()
+    product_digest = source_tree_digest()
+    env["VSLAB_META_M1_PRODUCT_DIGEST"] = product_digest
+    env["VSLAB_META_M1_SOURCE_DIGEST"] = product_digest  # Compatibility until the product gate adopts admission v2.
     process = subprocess.run(command, cwd=PROJECT_ROOT, env=env, check=False)
+    protected_after = tree_digest(protected_root)
+    if protected_after != protected_before:
+        print("product real gate modified historical loop_evidence/artifacts; admission is forbidden", file=sys.stderr)
+        return 1
     if process.returncode != 0:
         print(f"product real gate failed with exit code {process.returncode}", file=sys.stderr)
         return process.returncode

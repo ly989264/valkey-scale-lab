@@ -29,6 +29,8 @@ def test_process_clear_waits_for_pid_and_ping(tmp_path: Path, monkeypatch: pytes
         {
             "fault_id": fault_id,
             "fault_type": "node_stop",
+            "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+            "run_id": "run-1",
             "target_logical_id": "node-0",
             "target": target,
             "observed_impact": {"action": "process_stop"},
@@ -40,6 +42,18 @@ def test_process_clear_waits_for_pid_and_ping(tmp_path: Path, monkeypatch: pytes
 
     def fake_run_docker(args, timeout=30, check=True):
         calls.append(list(args))
+        if args[:2] == ["inspect", "-f"]:
+            return SimpleNamespace(
+                returncode=0,
+                stdout=json.dumps(
+                    {
+                        "org.valkey-scale-lab.project": "valkey-scale-lab",
+                        "org.valkey-scale-lab.phase": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+                        "org.valkey-scale-lab.run_id": "run-1",
+                    }
+                ),
+                stderr="",
+            )
         if args[:3] == ["exec", "owned-nodehost", "cat"]:
             return SimpleNamespace(returncode=0, stdout="4321\n", stderr="")
         if args[:3] == ["exec", "owned-nodehost", "valkey-cli"]:
@@ -73,6 +87,8 @@ def test_process_clear_fails_if_restart_never_pings(tmp_path: Path, monkeypatch:
         {
             "fault_id": fault_id,
             "fault_type": "node_stop",
+            "phase_id": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+            "run_id": "run-1",
             "target_logical_id": "node-0",
             "target": target,
             "observed_impact": {"action": "process_stop"},
@@ -81,6 +97,18 @@ def test_process_clear_fails_if_restart_never_pings(tmp_path: Path, monkeypatch:
     )
 
     def fake_run_docker(args, timeout=30, check=True):
+        if args[:2] == ["inspect", "-f"]:
+            return SimpleNamespace(
+                returncode=0,
+                stdout=json.dumps(
+                    {
+                        "org.valkey-scale-lab.project": "valkey-scale-lab",
+                        "org.valkey-scale-lab.phase": "P35_FAULT_FAILOVER_MATRIX_200_REAL",
+                        "org.valkey-scale-lab.run_id": "run-1",
+                    }
+                ),
+                stderr="",
+            )
         if args[:3] == ["exec", "owned-nodehost", "cat"]:
             return SimpleNamespace(returncode=0, stdout="4321\n", stderr="")
         if args[:3] == ["exec", "owned-nodehost", "valkey-cli"]:
@@ -88,6 +116,8 @@ def test_process_clear_fails_if_restart_never_pings(tmp_path: Path, monkeypatch:
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr(sandbox, "run_docker", fake_run_docker)
+    monkeypatch.setattr(sandbox, "_process_restart_timeout_seconds", lambda _existing: 20.0)
+    monkeypatch.setattr(sandbox, "_process_restart_attempts", lambda _existing: 1)
     ticks = iter([0.0, 0.1, 21.0])
     monkeypatch.setattr(sandbox.time, "monotonic", lambda: next(ticks))
     monkeypatch.setattr(sandbox.time, "sleep", lambda _seconds: None)

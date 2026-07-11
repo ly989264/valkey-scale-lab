@@ -30,8 +30,8 @@ def sha256_file(path: Path) -> str:
 
 def validate_control_block(control: dict[str, Any]) -> None:
     errors: list[str] = []
-    if control.get("schema_version") != "v2":
-        errors.append("schema_version must be v2")
+    if control.get("schema_version") != "v3":
+        errors.append("schema_version must be v3")
     scope = control.get("scope_freeze")
     if not isinstance(scope, dict):
         errors.append("scope_freeze must be an object")
@@ -101,10 +101,25 @@ def validate_control_block(control: dict[str, Any]) -> None:
         for check in common:
             errors.extend(_check_errors(check, "common_checks"))
 
+    for group in ("closure_checks", "evaluator_guard_checks"):
+        checks = control.get(group)
+        if not isinstance(checks, list) or not checks:
+            errors.append(f"{group} must be a non-empty list")
+        else:
+            for check in checks:
+                errors.extend(_check_errors(check, group))
+
     if isinstance(common, list) and isinstance(objectives, list):
-        common_ids = {check.get("id") for check in common if isinstance(check, dict)}
-        if len(common_ids) != len(common):
-            errors.append("common check ids must be unique")
+        fixed_checks = [
+            check
+            for group in (common, control.get("closure_checks", []), control.get("evaluator_guard_checks", []))
+            if isinstance(group, list)
+            for check in group
+            if isinstance(check, dict)
+        ]
+        common_ids = {check.get("id") for check in fixed_checks}
+        if len(common_ids) != len(fixed_checks):
+            errors.append("common, closure, and evaluator guard check ids must be globally unique")
         for item in objectives:
             if not isinstance(item, dict) or not isinstance(item.get("checks"), list):
                 continue
@@ -135,4 +150,6 @@ def _check_errors(check: Any, location: str) -> list[str]:
     inputs = check.get("inputs")
     if not isinstance(inputs, list) or not inputs or not all(isinstance(v, str) and v for v in inputs):
         errors.append(f"{location}.{cid}: inputs must be non-empty paths")
+    if check.get("digest_mode") not in {None, "product_evidence"}:
+        errors.append(f"{location}.{cid}: digest_mode is invalid")
     return errors

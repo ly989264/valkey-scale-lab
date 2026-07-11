@@ -89,6 +89,7 @@ def test_current_repo_provenance_covers_p09_p11_p12_p13() -> None:
 
     assert report["status"] == "PASS"
     assert report["summary"]["blocking_findings_count"] == 0
+    assert report["summary"]["hash_mismatch_count"] == 0
     assert {entry["phase_id"]: entry["status"] for entry in report["phase_coverage"]} == {
         "P09_ANALYSIS_REPORTING": "PASS",
         "P11_STABILITY_SOAK": "PASS",

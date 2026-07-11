@@ -1998,6 +1998,16 @@ def p33_proxy_window(
     profile: StrictFaultProfile,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     target_ep = endpoint_by_logical(endpoints, target_logical_id) or endpoints[0]
+    ordered = sorted(endpoints, key=lambda endpoint: str(endpoint.logical_id))
+    majority_size = min(len(ordered), (len(ordered) // 2) + 1)
+    if row_name == "minority_partition":
+        target_eps = ordered[majority_size:]
+    elif row_name == "majority_partition":
+        target_eps = ordered[:majority_size]
+    else:
+        target_eps = [target_ep]
+    if not target_eps:
+        raise RuntimeError(f"{row_name} requires a non-empty partition target group")
     rules = {
         "network_delay": ProxyRule("network_delay", delay_ms=75, jitter_ms=5),
         "network_loss": ProxyRule("network_loss", loss_percent=50.0),
@@ -2006,32 +2016,49 @@ def p33_proxy_window(
         "minority_partition": ProxyRule("network_partition"),
         "majority_partition": ProxyRule("network_partition"),
     }
-    proxy = SandboxNetworkProxy(target_host=target_ep.host, target_port=target_ep.port, rule=rules[row_name])
-    proxy.start()
+    proxies = [SandboxNetworkProxy(target_host=endpoint.host, target_port=endpoint.port, rule=rules[row_name]) for endpoint in target_eps]
+    for proxy in proxies:
+        proxy.start()
     try:
-        proxy_ep = Endpoint(
-            logical_id=target_ep.logical_id,
-            host=proxy.listen_host,
-            port=proxy.listen_port,
-            password=getattr(target_ep, "password", None),
-            az_id=getattr(target_ep, "az_id", None),
-            role=getattr(target_ep, "role", None),
-            container_ip=getattr(target_ep, "container_ip", None),
-        )
-        target = workload_target_for_logical([target_ep], probes, target_logical_id) or {
+        proxy_eps = [
+            Endpoint(
+                logical_id=endpoint.logical_id,
+                host=proxy.listen_host,
+                port=proxy.listen_port,
+                password=getattr(endpoint, "password", None),
+                az_id=getattr(endpoint, "az_id", None),
+                role=getattr(endpoint, "role", None),
+                container_ip=getattr(endpoint, "container_ip", None),
+            )
+            for endpoint, proxy in zip(target_eps, proxies)
+        ]
+        workload_logical = str(target_eps[0].logical_id)
+        target = workload_target_for_logical(target_eps, probes, workload_logical) or {
             "scope": "sandbox_proxy_target",
-            "source_logical_id": target_logical_id,
+            "source_logical_id": workload_logical,
             "source_node_id": "MISSING",
             "slot_range": [0, 16383],
             "slot_key": f"{row_name}:{{{profile.label_lower}-proxy}}",
             "slot": key_slot(f"{row_name}:{{{profile.label_lower}-proxy}}"),
-            "entry_logical_id": target_logical_id,
+            "entry_logical_id": workload_logical,
         }
-        window = workload_window("event", [proxy_ep], 6, f"{run_id}:{row_name}", target)
-        snapshot = proxy.snapshot()
+        window = workload_window("event", proxy_eps, 6, f"{run_id}:{row_name}", target)
+        proxy_details = [proxy.snapshot() for proxy in proxies]
     finally:
-        proxy.close()
-    snapshot["fault_row"] = row_name
+        for proxy in reversed(proxies):
+            proxy.close()
+    snapshot = {
+        "implementation_path": "sandbox_proxy_group",
+        "target_logical_ids": [str(endpoint.logical_id) for endpoint in target_eps],
+        "target_count": len(target_eps),
+        "proxy_snapshots": proxy_details,
+        "accepted_connections": sum(int(item.get("accepted_connections", 0)) for item in proxy_details),
+        "dropped_connections": sum(int(item.get("dropped_connections", 0)) for item in proxy_details),
+        "flap_rejections": sum(int(item.get("flap_rejections", 0)) for item in proxy_details),
+        "delay_injections": sum(int(item.get("delay_injections", 0)) for item in proxy_details),
+        "host_network_mutated": False,
+        "fault_row": row_name,
+    }
     snapshot["effect_observed"] = bool(
         snapshot.get("accepted_connections", 0) > 0
         or snapshot.get("dropped_connections", 0) > 0
@@ -2628,6 +2655,7 @@ def run_p33_controller(args: argparse.Namespace) -> int:
                     details={"fault_type": row_name, "target_logical_id": target_logical, "proxy_snapshot": proxy_snapshot, "host_network_mutated": False},
                 ))
                 if row_name in {"network_partition", "minority_partition", "majority_partition"}:
+                    target_group = list(proxy_snapshot.get("target_logical_ids", target_group))
                     partition_rows.append({
                         "fault_type": row_name,
                         "coverage_id": coverage_id,

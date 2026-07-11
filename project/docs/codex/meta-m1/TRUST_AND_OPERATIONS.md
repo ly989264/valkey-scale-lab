@@ -2,49 +2,56 @@
 
 ## Threat Boundary
 
-This is a strong engineering harness, not a Byzantine security system. It is
-designed to resist context drift, accidental state edits, completion pressure,
-weak self-review, unchanged retries, skipped levels, fake-looking evidence, and
-unbounded review. It cannot prove honesty against an administrator who can
-rewrite the repository, controller, Git history, CI, and evidence together.
+This is a strong engineering harness, not a Byzantine security system. It
+resists context drift, accidental state edits, completion pressure, unchanged
+retries, skipped levels, shallow evidence, and unbounded review. It cannot prove
+honesty against an administrator who rewrites the repository, Git, CI, and all
+evidence together.
 
-Within that boundary it provides:
+V3 separates three trust domains:
 
-- a control-block digest that freezes goal, checks, dependencies, and budgets;
-- a controller/evaluator digest that rejects mid-run harness changes;
-- atomic single-writer state and a hash-chained event journal;
-- program-created pass/fail results with stored command logs;
-- input/environment keyed caching, including unchanged failures;
-- strict lower-level-before-expensive ordering;
-- exact-scale semantic admission and artifact hashes;
-- controller-owned real-gate launch and source-tree binding, so an old evidence
-  bundle does not pass changed product code;
-- reviewer findings that are accepted only after executable reproduction;
-- bounded attempt, replan, review, context, and expensive-run budgets.
+- Goal Contract: immutable scope, dependencies, levels, and 50/200 completion
+  gates.
+- Controller Kernel: immutable scheduling, state, budgets, command runner, and
+  real-gate launcher.
+- Evidence Evaluator: versioned semantic parser that may be strengthened only
+  through a reproduced `EVALUATOR_GAP` and controlled repair.
 
-Protect the frozen paths with normal repository controls after this meta version
-lands: required CI, branch protection, and review ownership. The repository CI
-anchor should reject later product branches that change the control block,
-controller package, or exact-scale evaluator relative to their base branch.
+The state store provides atomic single-writer updates, a hash-chained event
+journal, and a latest-event seal over objectives, cache, migration, and active
+work. Reviewer-added tests are content-anchored for the rest of the run, so a
+Worker cannot turn their failure into a pass by weakening the reproduction.
+Product, evaluator, kernel, and control digests are independent. An evaluator
+upgrade invalidates admission results but does not by itself invalidate or
+rerun raw real-cluster evidence.
 
 ## Operating Rules
 
-- Bootstrap once for a frozen control version. A legitimate controller repair
-  starts a new run ID; it never mutates an in-flight run.
-- Do not delete cache entries to gain another expensive attempt. Changed product
-  or evidence inputs naturally produce a new digest.
-- A reviewer may add a focused regression test, but not change product code,
-  fixed control checks, validation levels, or real gate semantics.
-- `BLOCKED` is a valid honest outcome for exhausted approaches or failed
-  resources. Only a user or external environment change should restart it.
-- Full evidence and logs remain in `../loop_evidence/meta_runs/milestone1-v2/`.
-  Prompts receive summaries, hashes, and paths rather than raw history.
+- V2 state/evidence is read-only. V3 migration verifies the v2 state hash,
+  event-chain tail, and evidence manifest before importing progress.
+- New Reviewer checks and newly reached gates receive their own attempt/replan
+  budget. Editing code while the same gate still fails never replenishes it. An
+  unchanged cached failure routes to replan early instead of consuming repeated
+  Worker turns.
+- Candidate objective completion runs the full non-real regression floor before
+  review or a real gate; unchanged results are reused by input digest.
+- Repository tests are hermetic. Checks over current-run evidence belong in the
+  versioned evaluator.
+- Raw real evidence uses a unique v3 run root. Real-gate execution fails if it
+  changes historical `loop_evidence/artifacts`.
+- JSON and JSONL artifacts are parsed and cross-checked; hashes alone are not
+  admission evidence.
+- `BLOCKED` is an honest outcome for exhausted product approaches or external
+  resource failure. It is not used for a repairable evaluator omission.
 
-## Self-Audit Boundary
+Protect the immutable Kernel and Goal Contract with required CI and branch
+protection. Evaluator changes require adversarial evaluator tests and an evented
+repair transition.
 
-The meta implementation is complete when its frozen four-role separation,
-level ordering, caching, retry/replan/review bounds, scope freeze, evidence
-semantics, tamper evidence, and Goal-mode prompt are covered by executable
-tests. Future hypothetical attacks outside the threat boundary are not reasons
-to expand the controller. Reviewer effort belongs on product requirements the
-program does not yet check.
+## Completion Boundary
+
+The meta implementation is ready when migration, controlled evaluator repair,
+gap-scoped budgets, cached-failure routing, closure regression, digest
+separation, evidence semantics, output isolation, and hermetic reviewer checks
+all have executable coverage. Hypothetical attacks beyond the stated threat
+boundary do not expand the controller.

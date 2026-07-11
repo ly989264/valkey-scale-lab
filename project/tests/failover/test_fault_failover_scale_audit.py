@@ -185,6 +185,23 @@ def test_fault_failover_scale_audit_accepts_complete_bundle(tmp_path: Path) -> N
     assert validate(payload, load_json(SCHEMA)) == []
 
 
+def test_fault_failover_scale_audit_rejects_explicit_fixture_evidence(tmp_path: Path) -> None:
+    _write_complete(tmp_path)
+    for node_count in [30, 50, 100]:
+        path = _phase_dir(tmp_path, node_count) / f"valkey_e2e_evidence_fault_{node_count}.json"
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["fixture"] = True
+        payload["evidence_origin"] = "generated_fixture"
+        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    out = tmp_path / "fault_failover_scale.json"
+    result = _run_audit(tmp_path, out)
+
+    assert result.returncode == 1
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert any(f["category"] == "fixture_evidence_forbidden" for f in payload["findings"])
+
+
 def test_fault_failover_scale_audit_rejects_missing_workload_window(tmp_path: Path) -> None:
     _write_complete(tmp_path)
     (_phase_dir(tmp_path, 50) / "workload_window_report_50.json").unlink()

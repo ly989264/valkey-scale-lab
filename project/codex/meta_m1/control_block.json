@@ -1,6 +1,6 @@
 {
-  "schema_version": "v2",
-  "goal_id": "milestone1-local-complete-v2",
+  "schema_version": "v3",
+  "goal_id": "milestone1-local-complete-v3",
   "goal": "Complete the local Valkey lifecycle and admit exact real evidence at 50 and 200 nodes.",
   "scope_freeze": {
     "source": "docs/MILESTONES.md#milestone-1-complete-local-cluster-lifecycle-up-to-200-real-nodes",
@@ -48,6 +48,24 @@
       "command": ["python3", "-m", "compileall", "-q", "src", "scripts"],
       "timeout_seconds": 300,
       "inputs": ["src", "scripts"]
+    }
+  ],
+  "closure_checks": [
+    {
+      "id": "full-non-real-regression-floor",
+      "level": 1,
+      "command": ["python3", "-m", "pytest", "-q", "--ignore=tests/real_valkey"],
+      "timeout_seconds": 3600,
+      "inputs": ["src", "scripts", "schemas", "tests"]
+    }
+  ],
+  "evaluator_guard_checks": [
+    {
+      "id": "meta-evaluator-adversarial-suite",
+      "level": 1,
+      "command": ["python3", "-m", "pytest", "-q", "tests/meta_loop", "tests/provenance/test_meta_m1_evidence_gate.py"],
+      "timeout_seconds": 1200,
+      "inputs": ["src/valkey_scale_lab/meta_loop", "scripts/meta_m1_evidence_gate.py", "tests/meta_loop", "tests/provenance/test_meta_m1_evidence_gate.py"]
     }
   ],
   "objectives": [
@@ -150,11 +168,26 @@
           "inputs": ["src/valkey_scale_lab/analysis", "src/valkey_scale_lab/report", "schemas", "tests/analysis", "tests/report", "tests/provenance", "tests/coverage"]
         },
         {
+          "id": "exact-scale-admission-adversarial-contract",
+          "level": 2,
+          "command": ["python3", "-m", "pytest", "-q", "tests/provenance/test_meta_m1_evidence_gate.py"],
+          "timeout_seconds": 1200,
+          "inputs": ["scripts/meta_m1_evidence_gate.py", "tests/provenance/test_meta_m1_evidence_gate.py"]
+        },
+        {
+          "id": "product-real-gate-source-contract",
+          "level": 2,
+          "command": ["python3", "scripts/meta_m1_product_gate_contract.py"],
+          "timeout_seconds": 300,
+          "inputs": ["src/valkey_scale_lab/milestone1_gate.py", "scripts/meta_m1_product_gate_contract.py"]
+        },
+        {
           "id": "exact-real-50",
           "level": 3,
           "command": ["python3", "scripts/meta_m1_real_gate.py", "--scale", "50"],
+          "digest_mode": "product_evidence",
           "timeout_seconds": 7200,
-          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v2/evidence/scale-50"]
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v3/evidence/scale-50"]
         }
       ]
     },
@@ -167,7 +200,7 @@
         "Pass the complete lifecycle against a real exact 200-node Valkey 9.1.x cluster without downscaling.",
         "Keep every non-real regression and both exact-scale evidence admissions passing at final closure."
       ],
-      "context_paths": ["src", "scripts", "tests", "../loop_evidence/meta_runs/milestone1-v2/evidence"],
+      "context_paths": ["src", "scripts", "tests", "../loop_evidence/meta_runs/milestone1-v3/evidence"],
       "checks": [
         {
           "id": "full-non-real-regression",
@@ -180,15 +213,17 @@
           "id": "exact-real-50-final",
           "level": 3,
           "command": ["python3", "scripts/meta_m1_real_gate.py", "--scale", "50"],
+          "digest_mode": "product_evidence",
           "timeout_seconds": 7200,
-          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v2/evidence/scale-50"]
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v3/evidence/scale-50"]
         },
         {
           "id": "exact-real-200",
           "level": 4,
           "command": ["python3", "scripts/meta_m1_real_gate.py", "--scale", "200"],
+          "digest_mode": "product_evidence",
           "timeout_seconds": 14400,
-          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v2/evidence/scale-200"]
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v3/evidence/scale-200"]
         }
       ]
     }

@@ -10,6 +10,8 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from .digests import product_tree_digest
+
 
 class ProgramRunnerError(RuntimeError):
     pass
@@ -26,11 +28,14 @@ class ProgramRunner:
 
     def run(self, check: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any]:
         self._validate_argv(check["command"])
-        input_digest = self.input_digest(check["inputs"])
+        input_digest = self.check_input_digest(check)
         cache_key = self._cache_key(check, input_digest)
         cached = cache.get(cache_key)
         if isinstance(cached, dict):
             result = dict(cached)
+            result["cached_from_check_id"] = result.get("check_id")
+            result["check_id"] = check["id"]
+            result["level"] = check["level"]
             result["cached"] = True
             return result
 
@@ -63,7 +68,7 @@ class ProgramRunner:
         self.logs_root.mkdir(parents=True, exist_ok=True)
         log_path = self.logs_root / f"{check['id']}-{uuid.uuid4().hex[:12]}.log"
         log_path.write_text(output, encoding="utf-8")
-        input_digest = self.input_digest(check["inputs"])
+        input_digest = self.check_input_digest(check)
         cache_key = self._cache_key(check, input_digest)
         result = {
             "check_id": check["id"],
@@ -100,6 +105,15 @@ class ProgramRunner:
                 with candidate.open("rb") as handle:
                     for chunk in iter(lambda: handle.read(1024 * 1024), b""):
                         digest.update(chunk)
+        return digest.hexdigest()
+
+    def check_input_digest(self, check: dict[str, Any]) -> str:
+        if check.get("digest_mode") != "product_evidence":
+            return self.input_digest(check["inputs"])
+        digest = hashlib.sha256()
+        digest.update(product_tree_digest(self.project_root).encode())
+        evidence_inputs = [raw for raw in check["inputs"] if "loop_evidence" in raw]
+        digest.update(self.input_digest(evidence_inputs).encode())
         return digest.hexdigest()
 
     def _validate_argv(self, command: list[str]) -> None:

@@ -120,6 +120,16 @@ def test_node_stop_stops_owned_container(tmp_path: Path, monkeypatch: pytest.Mon
 
     def fake_run_docker(args: list[str], **kwargs: object) -> Result:
         calls.append(args)
+        if args[0] == "inspect":
+            Result.stdout = json.dumps(
+                {
+                    "org.valkey-scale-lab.project": "valkey-scale-lab",
+                    "org.valkey-scale-lab.phase": "P07_FAULT_INJECTION_SANDBOX",
+                    "org.valkey-scale-lab.run_id": "test-run",
+                }
+            )
+        else:
+            Result.stdout = ""
         return Result()
 
     monkeypatch.setattr("valkey_scale_lab.fault.sandbox.run_docker", fake_run_docker)
@@ -130,7 +140,10 @@ def test_node_stop_stops_owned_container(tmp_path: Path, monkeypatch: pytest.Mon
         out_path=tmp_path / "fault_apply.json",
     )
     assert report["status"] == "PASS"
-    assert calls == [["stop", "-t", "5", "owned"]]
+    assert calls == [
+        ["inspect", "-f", "{{json .Config.Labels}}", "owned"],
+        ["stop", "-t", "5", "owned"],
+    ]
 
 
 def test_node_stop_process_runtime_targets_logical_pid_not_shared_nodehost(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -180,6 +193,16 @@ def test_node_stop_process_runtime_targets_logical_pid_not_shared_nodehost(tmp_p
 
     def fake_run_docker(args: list[str], **kwargs: object) -> Result:
         calls.append(args)
+        if args[0] == "inspect":
+            Result.stdout = json.dumps(
+                {
+                    "org.valkey-scale-lab.project": "valkey-scale-lab",
+                    "org.valkey-scale-lab.phase": "P13_SCALE_LADDER_50_100",
+                    "org.valkey-scale-lab.run_id": "test-run",
+                }
+            )
+        else:
+            Result.stdout = ""
         return Result()
 
     monkeypatch.setattr("valkey_scale_lab.fault.sandbox.run_docker", fake_run_docker)
@@ -190,12 +213,17 @@ def test_node_stop_process_runtime_targets_logical_pid_not_shared_nodehost(tmp_p
         out_path=tmp_path / "fault_apply.json",
     )
     assert report["status"] == "PASS"
-    assert calls == [["exec", "shared-nodehost", "sh", "-c", "kill -TERM 101"]]
+    assert calls == [
+        ["inspect", "-f", "{{json .Config.Labels}}", "shared-nodehost"],
+        ["exec", "shared-nodehost", "sh", "-c", "kill -TERM 101"],
+    ]
 
     clear_report = clear_fault(state_path=state, fault_id="fault-primary-stop", out_path=tmp_path / "fault_clear.json")
     assert clear_report["status"] == "PASS"
     assert clear_report["observed_impact"]["action"] == "process_restart"
     assert calls == [
+        ["inspect", "-f", "{{json .Config.Labels}}", "shared-nodehost"],
         ["exec", "shared-nodehost", "sh", "-c", "kill -TERM 101"],
+        ["inspect", "-f", "{{json .Config.Labels}}", "shared-nodehost"],
         ["exec", "shared-nodehost", "sh", "-c", "valkey-server /tmp/test-run/shard-0000-primary/valkey.conf"],
     ]

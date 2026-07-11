@@ -26,10 +26,10 @@ paths, last failing check, and attempts remaining. Codex owns the method.
 program checks, validation levels, retry limits, and the 30..2000/50/200 scale
 contract. `next` is idempotent while an item is active.
 
-Each objective gets three implementation attempts. Two non-improving results or
-budget exhaustion routes to one root-cause replan. Failure after that blocks the
-objective rather than looping forever. Independent objectives may proceed once
-their declared dependencies pass.
+Each distinct failure fingerprint or Reviewer gap gets three implementation
+attempts and one root-cause replan. A new gap receives a fresh budget; an
+unchanged cached failure routes to replan early. Independent objectives may
+proceed once their declared dependencies pass.
 
 Progress is executable: highest validation level passed plus failing-check
 count. Prose, changed line count, and agent confidence do not increase it.
@@ -46,11 +46,12 @@ Level 3 is exact 50-node real evidence. Level 4 is preflight-gated exact
 interface `python3 -m valkey_scale_lab.cli milestone1 real-gate --scale <N>
 --evidence-dir <PATH>`; Codex implements that outcome interface but does not
 manually launch the large gate. The wrapper exports
-`VSLAB_META_M1_CONTROLLER_OWNED=1` and the expected source-tree digest. The
+`VSLAB_META_M1_CONTROLLER_OWNED=1` and the expected product digest. The
 final objective reruns the non-real regression and admits both scales. The
-exact-scale evaluator rejects wrong node counts,
+exact-scale evaluator parses JSON/JSONL and rejects wrong node counts,
 non-9.1.x versions, incomplete matrices, missing hashes, fixture-like paths,
-failed cleanup, stale source digests, or missing independent probes.
+failed cleanup, stale product digests, invented timing, unreferenced scenario
+PASS claims, or missing independent probes.
 
 ## Reviewer
 
@@ -61,18 +62,18 @@ An acceptance reviewer has two valid outputs:
 - `GAP`: cite one exact frozen clause, explain one observable defect, and attach
   one level 0-2 program check that currently fails.
 
-The controller executes that check before accepting the finding. Once accepted,
-the check becomes part of the program evaluator and Codex receives a new work
-item. A reviewer cannot enlarge the milestone, submit a taste-based objection,
-add a new real-scale gate, or add multiple findings per round. Each objective
-has at most two acceptance-review rounds.
+The controller executes that check before accepting the finding. A
+`PRODUCT_GAP` becomes normal WORK. An `EVALUATOR_GAP` enters evaluator-only
+repair; the immutable Kernel and product digest must remain unchanged. A
+reviewer cannot enlarge the milestone, add a real-scale gate, or add multiple
+findings per round. Each objective has at most two acceptance-review rounds.
 
 ## Why It Converges
 
 - Six outcome objectives avoid dozens of tiny stages and repeated setup.
 - A fixed goal prevents reviewer-driven scope growth.
 - One active item prevents duplicate work.
-- Cached failures make blind retries cheap and visible.
+- Cached failures route away from blind retries after one unchanged result.
 - Improvement scoring and a single replan force an approach change.
 - Real gates occur only after lower levels pass and only once per input digest.
 - Reviewer findings become durable executable regressions, not recurring prose.

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from valkey_scale_lab import __version__
-from valkey_scale_lab.runtime.docker_runtime import run_docker
+from valkey_scale_lab.runtime.docker_runtime import LABEL_PREFIX, PROJECT, run_docker
 
 
 class FaultError(RuntimeError):
@@ -65,6 +65,7 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
         nodehost_container = target.get("nodehost_container_name")
         pid = target.get("pid")
         if nodehost_container and pid:
+            _require_owned_container(str(nodehost_container), phase=str(phase), run_id=str(run_id))
             try:
                 pid_text = str(int(pid))
             except (TypeError, ValueError) as exc:
@@ -85,6 +86,7 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
             container_name = target.get("container_name")
             if not container_name:
                 raise FaultError("node_stop requires target container_name or nodehost_container_name/pid in state")
+            _require_owned_container(str(container_name), phase=str(phase), run_id=str(run_id))
             result = _run_docker_audited(
                 ["stop", "-t", "5", str(container_name)],
                 timeout=30,
@@ -132,6 +134,30 @@ def apply_fault(*, state_path: str | Path, target_logical_id: str, fault_json: s
     _write_json(out_path, report)
     _write_fault_report(Path(out_path).parent / "fault_report.json", phase, run_id, [record], "PASS")
     return report
+
+
+def _require_owned_container(container: str, *, phase: str, run_id: str) -> None:
+    result = _run_docker_audited(
+        ["inspect", "-f", "{{json .Config.Labels}}", container],
+        timeout=30,
+        check=False,
+        operation_id="fault_ownership_check",
+        step_id="fault_ownership_check",
+        command_kind="fault_probe",
+    )
+    if result.returncode != 0:
+        raise FaultError(f"cannot verify ownership labels for container {container}: {result.stderr.strip()}")
+    try:
+        labels = json.loads(result.stdout.strip())
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise FaultError(f"cannot verify ownership labels for container {container}: invalid Docker inspect output") from exc
+    expected = {
+        f"{LABEL_PREFIX}.project": PROJECT,
+        f"{LABEL_PREFIX}.phase": phase,
+        f"{LABEL_PREFIX}.run_id": run_id,
+    }
+    if not isinstance(labels, dict) or any(labels.get(key) != value for key, value in expected.items()):
+        raise FaultError(f"container {container} is not an owned runtime resource for phase {phase} and run {run_id}")
 
 
 def clear_fault(*, state_path: str | Path, fault_id: str, out_path: str | Path) -> dict[str, Any]:
@@ -188,6 +214,7 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
         config_file = target.get("config_file")
         if not nodehost or not config_file:
             raise FaultError("node_stop process clear requires nodehost_container_name and config_file in fault state")
+        _require_fault_state_owned_container(existing, str(nodehost))
         pid_file = target.get("pid_file")
         command = f"valkey-server {shlex.quote(str(config_file))}"
         timeout_seconds = _process_restart_timeout_seconds(existing)
@@ -235,6 +262,7 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
         container_name = target.get("container_name") or observed.get("container_name")
         if not container_name:
             raise FaultError("node_stop container clear requires container_name in fault state")
+        _require_fault_state_owned_container(existing, str(container_name))
         result = _run_docker_audited(["start", str(container_name)], timeout=30, check=False, operation_id="fault_clear", step_id="fault_clear_container_start", command_kind="fault_clear", node=target)
         if result.returncode != 0:
             raise FaultError(f"node_stop container restart failed for {container_name}: {result.stderr.strip()}")
@@ -249,6 +277,14 @@ def _clear_observed_impact(existing: dict[str, Any]) -> dict[str, Any]:
         "status": "SKIPPED_WITH_REASON",
         "reason": "Fault state had no destructive node_stop impact to restore.",
     }
+
+
+def _require_fault_state_owned_container(existing: dict[str, Any], container: str) -> None:
+    phase = existing.get("phase_id")
+    run_id = existing.get("run_id")
+    if not phase or not run_id:
+        raise FaultError("node_stop clear requires phase_id and run_id ownership in fault state")
+    _require_owned_container(container, phase=str(phase), run_id=str(run_id))
 
 
 def _wait_for_process_restart(target: dict[str, Any], nodehost: str, *, timeout_seconds: float = 20.0, stable_seconds: float = 0.0) -> int:

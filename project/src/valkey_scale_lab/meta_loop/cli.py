@@ -21,9 +21,12 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor")
     commands.add_parser("bootstrap")
+    migrate = commands.add_parser("migrate-v2")
+    migrate.add_argument("--receipt", type=Path, required=True)
     commands.add_parser("status")
     commands.add_parser("next")
     commands.add_parser("evaluate")
+    commands.add_parser("accept-evaluator-repair")
     review = commands.add_parser("review")
     review.add_argument("--report", type=Path, required=True)
     return parser
@@ -38,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     controller = MetaLoopController(
         project_root=PROJECT_ROOT,
         control_path=PROJECT_ROOT / "codex" / "meta_m1" / "control_block.json",
-        state_root=WORKSPACE_ROOT / "loop_evidence" / "meta_runs" / "milestone1-v2",
+        state_root=WORKSPACE_ROOT / "loop_evidence" / "meta_runs" / "milestone1-v3",
         workspace_root=WORKSPACE_ROOT,
     )
     try:
@@ -46,12 +49,16 @@ def main(argv: list[str] | None = None) -> int:
             result = controller.doctor()
         elif args.command == "bootstrap":
             result = controller.bootstrap()
+        elif args.command == "migrate-v2":
+            result = controller.migrate_v2(args.receipt)
         elif args.command == "status":
             result = controller.status()
         elif args.command == "next":
             result = controller.next_work_item()
         elif args.command == "evaluate":
             result = controller.evaluate_active()
+        elif args.command == "accept-evaluator-repair":
+            result = controller.accept_evaluator_repair()
         elif args.command == "review":
             result = controller.submit_review(load_json(args.report))
         else:  # pragma: no cover

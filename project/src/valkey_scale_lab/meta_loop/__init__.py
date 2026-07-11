@@ -1,4 +1,4 @@
-"""Bounded controller for Codex Goal-mode milestone loops."""
+"""V3 bounded controller for Codex Goal-mode milestone loops."""
 
 from .controller import MetaLoopController, MetaLoopError
 

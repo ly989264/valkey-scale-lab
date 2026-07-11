@@ -7,9 +7,10 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from .contracts import ContractError, load_json, sha256_file, validate_control_block
-from .runner import ProgramRunner, ProgramRunnerError
-from .store import StateStore, StateStoreError
+from .contracts import _check_errors, load_json, sha256_file, validate_control_block
+from .digests import files_digest, product_tree_digest, repair_scope_digest
+from .runner import ProgramRunner
+from .store import StateStore
 
 
 class MetaLoopError(RuntimeError):
@@ -17,7 +18,7 @@ class MetaLoopError(RuntimeError):
 
 
 class MetaLoopController:
-    """Bounded scheduler around free-form Codex work and executable checks."""
+    """V3 scheduler: immutable kernel, versioned evaluator, gap-scoped budgets."""
 
     def __init__(self, project_root: Path, control_path: Path, state_root: Path, workspace_root: Path):
         self.project_root = project_root.resolve()
@@ -29,53 +30,143 @@ class MetaLoopController:
     def doctor(self) -> dict[str, Any]:
         control = self._control()
         errors: list[str] = []
+        notices: list[str] = []
         if self.store.exists():
             state = self.store.load()
             if state.get("control_digest") != sha256_file(self.control_path):
-                errors.append("control block changed after bootstrap; start a new run instead of changing the goal in flight")
-            if state.get("harness_digest") != self._harness_digest():
-                errors.append("controller or exact-scale evaluator changed after bootstrap; start a new run")
+                errors.append("control block changed after bootstrap")
+            if state.get("kernel_digest") != self._kernel_digest():
+                errors.append("controller kernel changed after bootstrap")
+            evaluator_changed = state.get("evaluator_digest") != self._evaluator_digest()
+            active = state.get("active_work_item")
+            if evaluator_changed and isinstance(active, dict) and active.get("type") == "EVALUATOR_REPAIR":
+                notices.append("evaluator differs as expected during an active controlled repair")
+            elif evaluator_changed:
+                errors.append("evaluator changed outside an active controlled repair")
+            errors.extend(self._review_check_anchor_errors(state, control))
             errors.extend(self.store.verify_event_chain(state))
+            errors.extend(self._state_seal_errors(state))
         return {
             "status": "PASS" if not errors else "FAIL",
             "goal_id": control["goal_id"],
             "objective_count": len(control["objectives"]),
             "errors": errors,
+            "notices": notices,
         }
 
     def bootstrap(self) -> dict[str, Any]:
         control = self._control()
         with self.store.locked():
             if self.store.exists():
-                state = self._state()
-                return self._status_view(state, control)
-            state = {
-                "schema_version": "v2",
-                "goal_id": control["goal_id"],
-                "control_digest": sha256_file(self.control_path),
-                "harness_digest": self._harness_digest(),
-                "created_at_unix": int(time.time()),
-                "iteration": 0,
-                "active_work_item": None,
-                "last_event_hash": None,
-                "events": [],
-                "cache": {},
-                "objectives": {
-                    objective["id"]: {
-                        "status": "PENDING",
-                        "attempts": 0,
-                        "replans": 0,
-                        "review_rounds": 0,
-                        "added_checks": [],
-                        "best_score": -1,
-                        "stagnant_attempts": 0,
-                        "last_result": None,
-                        "completion_reason": None,
-                    }
-                    for objective in control["objectives"]
-                },
-            }
+                return self._status_view(self._state(), control)
+            state = self._new_state(control)
+            state["migration"] = {"status": "PASS", "source_run": None, "attempts": 0, "last_result": None}
             self._event(state, "BOOTSTRAP", {"goal_id": control["goal_id"]})
+            self.store.save(state)
+            return self._status_view(state, control)
+
+    def migrate_v2(self, receipt_path: Path) -> dict[str, Any]:
+        control = self._control()
+        with self.store.locked():
+            if self.store.exists():
+                return self._status_view(self._state(), control)
+            receipt = load_json(receipt_path.resolve())
+            if receipt.get("schema_version") != "meta-m1-v3-migration-receipt-v1":
+                raise MetaLoopError("unsupported migration receipt")
+            if receipt.get("source_run") != "milestone1-v2":
+                raise MetaLoopError("migration receipt is not for milestone1-v2")
+            source_state_path = Path(str(receipt.get("source_state_path", ""))).resolve()
+            if not source_state_path.is_file() or sha256_file(source_state_path) != receipt.get("source_state_sha256"):
+                raise MetaLoopError("v2 state does not match the migration receipt")
+            manifest_path = Path(str(receipt.get("scale50_manifest_path", ""))).resolve()
+            if not manifest_path.is_file() or sha256_file(manifest_path) != receipt.get("scale50_manifest_sha256"):
+                raise MetaLoopError("v2 scale-50 manifest does not match the migration receipt")
+            source = load_json(source_state_path)
+            if source.get("last_event_hash") != receipt.get("source_last_event_hash"):
+                raise MetaLoopError("v2 last event hash does not match the migration receipt")
+            if StateStore.verify_event_chain(source):
+                raise MetaLoopError("v2 event chain is invalid")
+            if source.get("goal_id") != "milestone1-local-complete-v2":
+                raise MetaLoopError("migration source is not the blocked v2 Milestone 1 run")
+            if source.get("control_digest") != receipt.get("source_control_digest"):
+                raise MetaLoopError("v2 control digest does not match the migration receipt")
+            if source.get("harness_digest") != receipt.get("source_harness_digest"):
+                raise MetaLoopError("v2 harness digest does not match the migration receipt")
+            if source.get("iteration") != receipt.get("source_iteration"):
+                raise MetaLoopError("v2 iteration does not match the migration receipt")
+            expected_statuses = {
+                **{oid: "COMPLETE" for oid in (
+                    "O1_TRIGGER_AND_SAFETY",
+                    "O2_LIFECYCLE_AND_TELEMETRY",
+                    "O3_MANAGEMENT_AND_STABILITY",
+                    "O4_FAULT_FAILOVER_AND_RECOVERY",
+                )},
+                "O5_EVIDENCE_REPORT_AND_SCALE_50": "BLOCKED",
+                "O6_SCALE_200_AND_FINAL": "PENDING",
+            }
+            actual_statuses = {
+                oid: source.get("objectives", {}).get(oid, {}).get("status")
+                for oid in expected_statuses
+            }
+            if actual_statuses != expected_statuses:
+                raise MetaLoopError("v2 objective statuses do not match the reviewed blocked-run snapshot")
+
+            state = self._new_state(control)
+            superseded = {
+                "exact-50-report-required-surfaces",
+                "exact-scale-machine-readable-report-admission",
+            }
+            for objective in control["objectives"]:
+                oid = objective["id"]
+                old = source.get("objectives", {}).get(oid, {})
+                progress = state["objectives"][oid]
+                progress["added_checks"] = [
+                    check for check in old.get("added_checks", [])
+                    if isinstance(check, dict) and check.get("id") not in superseded
+                ]
+                progress["check_anchors"] = {
+                    check["id"]: self._review_check_anchor(check, control)
+                    for check in progress["added_checks"]
+                }
+                progress["review_rounds"] = int(old.get("review_rounds", 0))
+                progress["migration_notes"] = {
+                    "source_status": old.get("status"),
+                    "superseded_checks": sorted(
+                        check.get("id") for check in old.get("added_checks", [])
+                        if isinstance(check, dict) and check.get("id") in superseded
+                    ),
+                }
+                if oid in {"O1_TRIGGER_AND_SAFETY", "O2_LIFECYCLE_AND_TELEMETRY", "O3_MANAGEMENT_AND_STABILITY", "O4_FAULT_FAILOVER_AND_RECOVERY"}:
+                    progress["status"] = "COMPLETE"
+                    progress["completion_reason"] = "MIGRATED_PROVISIONAL_PENDING_GLOBAL_REGRESSION"
+                else:
+                    progress["status"] = "PENDING"
+                    progress["attempts"] = 0
+                    progress["replans"] = 0
+                    # Reopened v3 work receives fresh review under the strengthened evaluator.
+                    progress["review_rounds"] = 0
+
+            state["migration"] = {
+                "status": "PENDING_REGRESSION",
+                "source_run": "milestone1-v2",
+                "source_state_sha256": receipt["source_state_sha256"],
+                "source_last_event_hash": receipt["source_last_event_hash"],
+                "receipt_path": str(receipt_path.resolve()),
+                "receipt_sha256": sha256_file(receipt_path.resolve()),
+                "scale50_admission_status": "QUARANTINED_RAW_CAPTURE",
+                "scale50_admission_sha256": receipt.get("scale50_admission_sha256"),
+                "attempts": 0,
+                "last_result": None,
+            }
+            self._event(
+                state,
+                "MIGRATED_FROM_V2",
+                {
+                    "source_state_sha256": receipt["source_state_sha256"],
+                    "source_last_event_hash": receipt["source_last_event_hash"],
+                    "scale50_status": "QUARANTINED_RAW_CAPTURE",
+                },
+            )
             self.store.save(state)
             return self._status_view(state, control)
 
@@ -93,6 +184,25 @@ class MetaLoopController:
             if isinstance(active, dict):
                 return active
 
+            migration = state.get("migration", {})
+            if migration.get("status") != "PASS":
+                if migration.get("status") == "BLOCKED":
+                    return {"type": "BLOCKED", "reason": "migration regression budget exhausted", "migration": migration}
+                if int(migration.get("attempts", 0)) >= policy["max_attempts_per_objective"]:
+                    migration["status"] = "BLOCKED"
+                    self._event(state, "MIGRATION_BLOCKED", {"reason": "migration regression budget exhausted"})
+                    self.store.save(state)
+                    return {"type": "BLOCKED", "reason": "migration regression budget exhausted", "migration": migration}
+                migration["attempts"] = int(migration.get("attempts", 0)) + 1
+                work = {
+                    "type": "RECOVERY_WORK",
+                    "work_item_id": uuid.uuid4().hex,
+                    "attempt": migration["attempts"],
+                    "instruction": "Fix the reported non-real regression only, then run evaluate. Do not edit v2 evidence or controller state.",
+                    "last_program_result": self._compact_result(migration.get("last_result")),
+                }
+                return self._issue(state, work, policy)
+
             while True:
                 objective = self._next_ready_objective(state, control)
                 if objective is None:
@@ -102,6 +212,34 @@ class MetaLoopController:
 
                 oid = objective["id"]
                 progress = state["objectives"][oid]
+                if progress["status"] == "EVALUATOR_REPAIR_REQUIRED":
+                    if progress["attempts"] >= policy["max_attempts_per_objective"]:
+                        progress["status"] = "BLOCKED"
+                        self._event(state, "OBJECTIVE_BLOCKED", {"objective_id": oid, "reason": "evaluator repair budget exhausted"})
+                        self.store.save(state)
+                        continue
+                    progress["attempts"] += 1
+                    work = {
+                        "type": "EVALUATOR_REPAIR",
+                        "work_item_id": uuid.uuid4().hex,
+                        "objective_id": oid,
+                        "attempt": progress["attempts"],
+                        "allowed_paths": progress["active_gap"]["allowed_repair_paths"],
+                        "baseline_product_digest": progress["active_gap"]["baseline_product_digest"],
+                        "program_check": progress["active_gap"]["program_check"],
+                        "instruction": "Strengthen only the evaluator and hermetic evaluator tests. Then run accept-evaluator-repair; do not run normal evaluate.",
+                    }
+                    return self._issue(state, work, policy)
+
+                if progress["status"] == "REVERIFY":
+                    work = {
+                        "type": "VERIFY",
+                        "work_item_id": uuid.uuid4().hex,
+                        "objective_id": oid,
+                        "instruction": "Evaluator repair was accepted. Do not edit files; run evaluate to re-admit the objective under the new evaluator.",
+                    }
+                    return self._issue(state, work, policy)
+
                 if progress["status"] == "PROGRAM_PASS":
                     if not self._program_inputs_current(control, objective, progress):
                         progress["status"] = "PENDING"
@@ -112,23 +250,22 @@ class MetaLoopController:
                         continue
                     if progress["review_rounds"] >= policy["max_review_rounds_per_objective"]:
                         progress["status"] = "COMPLETE"
-                        progress["completion_reason"] = "PROGRAM_PASS_AND_REVIEW_BUDGET_EXHAUSTED"
+                        progress["completion_reason"] = "PROGRAM_PASS_AND_REVIEW_NOVELTY_BUDGET_EXHAUSTED"
                         self._event(state, "OBJECTIVE_COMPLETE", {"objective_id": oid, "reason": progress["completion_reason"]})
                         self.store.save(state)
                         continue
-                    work = self._review_item(objective, progress, "ACCEPTANCE", policy)
-                    break
+                    return self._issue(state, self._review_item(objective, progress, "ACCEPTANCE", policy), policy)
 
+                cached_stagnation = self._last_failure_cached(progress) and progress["stagnant_attempts"] >= 1
                 exhausted = progress["attempts"] >= policy["max_attempts_per_objective"]
-                stagnant = progress["stagnant_attempts"] >= policy["stagnation_limit"]
+                stagnant = progress["stagnant_attempts"] >= policy["stagnation_limit"] or cached_stagnation
                 if exhausted or stagnant:
                     if progress["replans"] >= policy["max_replans_per_objective"]:
                         progress["status"] = "BLOCKED"
-                        self._event(state, "OBJECTIVE_BLOCKED", {"objective_id": oid, "reason": "attempt and replan budget exhausted"})
+                        self._event(state, "OBJECTIVE_BLOCKED", {"objective_id": oid, "reason": "current gap budget exhausted"})
                         self.store.save(state)
                         continue
-                    work = self._review_item(objective, progress, "REPLAN", policy)
-                    break
+                    return self._issue(state, self._review_item(objective, progress, "REPLAN", policy), policy)
 
                 progress["attempts"] += 1
                 progress["status"] = "WORKING"
@@ -141,59 +278,65 @@ class MetaLoopController:
                     "attempts_remaining_after_this": policy["max_attempts_per_objective"] - progress["attempts"],
                     "contract_clauses": objective["clauses"],
                     "context_paths": objective["context_paths"],
+                    "gap": progress.get("active_gap"),
                     "last_program_result": self._compact_result(progress["last_result"]),
-                    "instruction": "Choose the best implementation approach. Change product code and focused tests; do not edit controller state or weaken checks. Then run evaluate.",
+                    "instruction": "Choose the best implementation approach for this product gap, then run evaluate. Do not edit controller state or weaken checks.",
                 }
-                break
-
-            state["iteration"] += 1
-            state["active_work_item"] = work
-            self._enforce_context_budget(work, policy)
-            self._event(state, "WORK_ISSUED", {"type": work["type"], "objective_id": work["objective_id"], "work_item_id": work["work_item_id"]})
-            self.store.save(state)
-            return work
+                return self._issue(state, work, policy)
 
     def evaluate_active(self) -> dict[str, Any]:
         control = self._control()
         with self.store.locked():
             state = self._state()
             work = state.get("active_work_item")
-            if not isinstance(work, dict) or work.get("type") != "WORK":
-                raise MetaLoopError("evaluate requires an active WORK item from next")
+            if not isinstance(work, dict) or work.get("type") not in {"WORK", "VERIFY", "RECOVERY_WORK"}:
+                raise MetaLoopError("evaluate requires an active WORK, VERIFY, or RECOVERY_WORK item")
+            if work["type"] == "RECOVERY_WORK":
+                results = self._run_checks(control["closure_checks"], state, control)
+                passed = len(results) == len(control["closure_checks"]) and all(item["status"] == "PASS" for item in results)
+                report = self._evaluation_report("RECOVERY_REGRESSION", results, len(control["closure_checks"]), passed)
+                migration = state["migration"]
+                migration["last_result"] = report
+                migration["status"] = "PASS" if passed else "FAILED_REGRESSION"
+                state["active_work_item"] = None
+                self._event(state, "MIGRATION_REGRESSION", {"status": report["status"], "failed_check": self._failed_check_id(report)})
+                self.store.save(state)
+                return self._compact_evaluation(report)
+
             objective = self._objective(control, work["objective_id"])
             progress = state["objectives"][objective["id"]]
-            checks = [*control["common_checks"], *objective["checks"], *progress["added_checks"]]
-            checks = sorted(enumerate(checks), key=lambda pair: (pair[1]["level"], pair[0]))
-            runner = self._runner(control)
-            results: list[dict[str, Any]] = []
-            for _, check in checks:
-                result = runner.run(check, state["cache"])
-                results.append(result)
-                if result["status"] != "PASS":
-                    break
-
-            passed = bool(results) and all(result["status"] == "PASS" for result in results) and len(results) == len(checks)
-            highest_level = max((result["level"] for result in results if result["status"] == "PASS"), default=-1)
-            failed_count = sum(result["status"] != "PASS" for result in results)
-            score = (highest_level + 1) * 100 - failed_count
-            if score > progress["best_score"]:
-                progress["best_score"] = score
-                progress["stagnant_attempts"] = 0
+            checks = self._objective_check_plan(control, objective, progress)
+            results = self._run_checks(checks, state, control)
+            passed = len(results) == len(checks) and all(item["status"] == "PASS" for item in results)
+            report = self._evaluation_report(objective["id"], results, len(checks), passed)
+            failed = next((item for item in results if item["status"] == "FAIL"), None)
+            if failed is not None:
+                # A code edit must not manufacture a fresh retry budget. Budget the
+                # failing gate; moving to another gate or a novel reviewer check is
+                # what establishes a new gap.
+                fingerprint = hashlib.sha256(str(failed["check_id"]).encode()).hexdigest()
+                if fingerprint != progress.get("failure_fingerprint"):
+                    progress["failure_fingerprint"] = fingerprint
+                    progress["attempts"] = 1
+                    progress["replans"] = 0
+                    progress["stagnant_attempts"] = 0
+                    progress["best_score"] = report["score"]
+                    if not isinstance(progress.get("active_gap"), dict) or progress["active_gap"].get("kind") != "EVALUATOR_GAP":
+                        progress["active_gap"] = {"kind": "PRODUCT_GAP", "failure_fingerprint": fingerprint, "failed_check": failed["check_id"]}
+                elif report["score"] > progress["best_score"]:
+                    progress["best_score"] = report["score"]
+                    progress["stagnant_attempts"] = 0
+                else:
+                    progress["stagnant_attempts"] += 1
             else:
-                progress["stagnant_attempts"] += 1
-            report = {
-                "status": "PASS" if passed else "FAIL",
-                "objective_id": objective["id"],
-                "score": score,
-                "highest_level_passed": highest_level,
-                "checks_run": len(results),
-                "checks_total": len(checks),
-                "results": results,
-            }
+                progress["failure_fingerprint"] = None
+                progress["stagnant_attempts"] = 0
+                progress["best_score"] = report["score"]
+                progress["active_gap"] = None
             progress["last_result"] = report
             progress["status"] = "PROGRAM_PASS" if passed else "PENDING"
             state["active_work_item"] = None
-            self._event(state, "PROGRAM_EVALUATED", {"objective_id": objective["id"], "status": report["status"], "score": score, "failed_check": self._failed_check_id(report)})
+            self._event(state, "PROGRAM_EVALUATED", {"objective_id": objective["id"], "status": report["status"], "score": report["score"], "failed_check": self._failed_check_id(report)})
             self.store.save(state)
             return self._compact_evaluation(report)
 
@@ -203,9 +346,9 @@ class MetaLoopController:
             state = self._state()
             work = state.get("active_work_item")
             if not isinstance(work, dict) or work.get("type") not in {"REVIEW_ACCEPTANCE", "REVIEW_REPLAN"}:
-                raise MetaLoopError("review requires an active reviewer item from next")
+                raise MetaLoopError("review requires an active reviewer item")
             if report.get("work_item_id") != work["work_item_id"]:
-                raise MetaLoopError("review work_item_id does not match the active item")
+                raise MetaLoopError("review work_item_id does not match")
             objective = self._objective(control, work["objective_id"])
             progress = state["objectives"][objective["id"]]
 
@@ -213,7 +356,7 @@ class MetaLoopController:
                 diagnosis = report.get("diagnosis")
                 focus = report.get("recommended_focus")
                 if not isinstance(diagnosis, str) or not diagnosis.strip() or not isinstance(focus, list) or not focus:
-                    raise MetaLoopError("replan review requires a diagnosis and non-empty recommended_focus")
+                    raise MetaLoopError("replan requires diagnosis and recommended_focus")
                 progress["replans"] += 1
                 progress["attempts"] = 0
                 progress["stagnant_attempts"] = 0
@@ -224,100 +367,253 @@ class MetaLoopController:
             else:
                 decision = report.get("decision")
                 if decision not in {"NO_GAP", "GAP"}:
-                    raise MetaLoopError("acceptance review decision must be NO_GAP or GAP")
+                    raise MetaLoopError("acceptance decision must be NO_GAP or GAP")
                 progress["review_rounds"] += 1
                 if decision == "NO_GAP":
                     if not self._program_inputs_current(control, objective, progress):
                         progress["review_rounds"] -= 1
                         progress["status"] = "PENDING"
-                        progress["attempts"] = max(0, progress["attempts"] - 1)
+                        progress["attempts"] = 0
                         progress["last_result"] = {"status": "STALE", "reason": "program inputs changed after PASS"}
                         state["active_work_item"] = None
                         self._event(state, "PROGRAM_RESULT_STALE", {"objective_id": objective["id"]})
                         self.store.save(state)
-                        return {"status": "STALE_PROGRAM_RESULT", "action": "run next, then evaluate again"}
+                        return {"status": "STALE_PROGRAM_RESULT", "action": "run next and evaluate"}
                     progress["status"] = "COMPLETE"
                     progress["completion_reason"] = "PROGRAM_PASS_AND_REVIEW_FOUND_NO_UNCHECKED_GAP"
                     event = {"objective_id": objective["id"], "decision": "NO_GAP"}
                 else:
+                    gap_kind = report.get("gap_kind")
+                    if gap_kind not in {"PRODUCT_GAP", "EVALUATOR_GAP"}:
+                        raise MetaLoopError("review GAP requires gap_kind PRODUCT_GAP or EVALUATOR_GAP")
                     check = self._validate_review_gap(report, objective)
                     reproduction = self._runner(control).run(check, state["cache"])
                     if reproduction["status"] != "FAIL":
-                        raise MetaLoopError("review gap was not reproduced: its program check already passes")
-                    if any(existing["id"] == check["id"] for existing in [*control["common_checks"], *objective["checks"], *progress["added_checks"]]):
+                        raise MetaLoopError("review gap was not reproduced")
+                    if any(existing["id"] == check["id"] for existing in self._all_checks(control, objective, progress)):
                         raise MetaLoopError("review check id is not novel")
+                    evaluator_inputs = {"scripts/meta_m1_evidence_gate.py", "scripts/meta_m1_product_gate_contract.py"}
+                    if gap_kind == "EVALUATOR_GAP" and evaluator_inputs.isdisjoint(check["inputs"]):
+                        raise MetaLoopError("EVALUATOR_GAP must directly cover a versioned evaluator")
+                    if gap_kind == "PRODUCT_GAP" and not evaluator_inputs.isdisjoint(check["inputs"]):
+                        raise MetaLoopError("a check covering the versioned evaluator must be classified EVALUATOR_GAP")
                     progress["added_checks"].append(check)
+                    progress["check_anchors"][check["id"]] = self._review_check_anchor(check, control)
                     progress["attempts"] = 0
+                    progress["replans"] = 0
                     progress["stagnant_attempts"] = 0
                     progress["best_score"] = -1
-                    progress["status"] = "PENDING"
-                    progress["last_result"] = {
-                        "status": "REVIEW_GAP",
-                        "contract_clause": report["contract_clause"],
+                    progress["failure_fingerprint"] = hashlib.sha256(str(check["id"]).encode()).hexdigest()
+                    allowed_repair_paths = [
+                        "scripts/meta_m1_evidence_gate.py",
+                        "scripts/meta_m1_product_gate_contract.py",
+                    ]
+                    progress["active_gap"] = {
+                        "kind": gap_kind,
                         "finding": report.get("finding"),
-                        "reproduction": reproduction,
+                        "contract_clause": report.get("contract_clause"),
+                        "program_check": check,
+                        "baseline_product_digest": product_tree_digest(self.project_root),
+                        "baseline_evaluator_digest": self._evaluator_digest(),
+                        "allowed_repair_paths": allowed_repair_paths,
+                        "baseline_repair_scope_digest": repair_scope_digest(self.project_root, allowed_repair_paths),
                     }
-                    event = {"objective_id": objective["id"], "decision": "GAP", "check_id": check["id"]}
+                    progress["status"] = "EVALUATOR_REPAIR_REQUIRED" if gap_kind == "EVALUATOR_GAP" else "PENDING"
+                    progress["last_result"] = {"status": "REVIEW_GAP", "finding": report.get("finding"), "reproduction": reproduction, "gap_kind": gap_kind}
+                    event = {"objective_id": objective["id"], "decision": "GAP", "gap_kind": gap_kind, "check_id": check["id"]}
 
             state["active_work_item"] = None
             self._event(state, "REVIEW_SUBMITTED", event)
             self.store.save(state)
             return self._status_view(state, control)
 
+    def accept_evaluator_repair(self) -> dict[str, Any]:
+        control = self._control()
+        with self.store.locked():
+            state = self._state(allow_evaluator_change=True)
+            work = state.get("active_work_item")
+            if not isinstance(work, dict) or work.get("type") != "EVALUATOR_REPAIR":
+                raise MetaLoopError("accept-evaluator-repair requires an active EVALUATOR_REPAIR item")
+            objective = self._objective(control, work["objective_id"])
+            progress = state["objectives"][objective["id"]]
+            gap = progress.get("active_gap")
+            if not isinstance(gap, dict) or gap.get("kind") != "EVALUATOR_GAP":
+                raise MetaLoopError("active evaluator gap is missing")
+            if product_tree_digest(self.project_root) != gap.get("baseline_product_digest"):
+                raise MetaLoopError("product inputs changed during evaluator-only repair")
+            if repair_scope_digest(self.project_root, gap["allowed_repair_paths"]) != gap.get("baseline_repair_scope_digest"):
+                raise MetaLoopError("files outside the evaluator repair allowlist changed")
+            checks = [gap["program_check"], *control["evaluator_guard_checks"]]
+            results = self._run_checks(checks, state, control)
+            passed = len(results) == len(checks) and all(item["status"] == "PASS" for item in results)
+            report = self._evaluation_report(objective["id"], results, len(checks), passed)
+            if passed:
+                state["active_work_item"] = None
+                state["evaluator_digest"] = self._evaluator_digest()
+                progress["status"] = "REVERIFY"
+                progress["attempts"] = 0
+                progress["replans"] = 0
+                progress["stagnant_attempts"] = 0
+                progress["best_score"] = -1
+                progress["last_result"] = {"status": "EVALUATOR_REPAIRED", "results": results}
+                progress["active_gap"] = None
+                self._event(state, "EVALUATOR_REPAIR_ACCEPTED", {"objective_id": objective["id"], "evaluator_digest": state["evaluator_digest"]})
+            else:
+                progress["status"] = "EVALUATOR_REPAIR_REQUIRED"
+                progress["last_result"] = report
+                gap["repair_failures"] = int(gap.get("repair_failures", 0)) + 1
+                self._event(state, "EVALUATOR_REPAIR_REJECTED", {"objective_id": objective["id"], "failed_check": self._failed_check_id(report)})
+            self.store.save(state)
+            return self._compact_evaluation(report)
+
+    def _new_state(self, control: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "schema_version": "v3",
+            "goal_id": control["goal_id"],
+            "control_digest": sha256_file(self.control_path),
+            "kernel_digest": self._kernel_digest(),
+            "evaluator_digest": self._evaluator_digest(),
+            "created_at_unix": int(time.time()),
+            "iteration": 0,
+            "active_work_item": None,
+            "last_event_hash": None,
+            "events": [],
+            "cache": {},
+            "objectives": {objective["id"]: self._new_progress() for objective in control["objectives"]},
+        }
+
+    @staticmethod
+    def _new_progress() -> dict[str, Any]:
+        return {
+            "status": "PENDING",
+            "attempts": 0,
+            "replans": 0,
+            "review_rounds": 0,
+            "added_checks": [],
+            "check_anchors": {},
+            "best_score": -1,
+            "stagnant_attempts": 0,
+            "failure_fingerprint": None,
+            "active_gap": None,
+            "last_result": None,
+            "completion_reason": None,
+        }
+
     def _control(self) -> dict[str, Any]:
         control = load_json(self.control_path)
         validate_control_block(control)
         return control
 
-    def _state(self) -> dict[str, Any]:
+    def _state(self, *, allow_evaluator_change: bool = False) -> dict[str, Any]:
         if not self.store.exists():
-            raise MetaLoopError("loop is not bootstrapped")
+            raise MetaLoopError("v3 loop is not bootstrapped or migrated")
         state = self.store.load()
+        if state.get("schema_version") != "v3":
+            raise MetaLoopError("state is not v3")
         if state.get("control_digest") != sha256_file(self.control_path):
-            raise MetaLoopError("control block changed after bootstrap; start a new run")
-        if state.get("harness_digest") != self._harness_digest():
-            raise MetaLoopError("controller or exact-scale evaluator changed after bootstrap; start a new run")
-        chain_errors = self.store.verify_event_chain(state)
-        if chain_errors:
-            raise MetaLoopError("state/event integrity failure: " + "; ".join(chain_errors))
+            raise MetaLoopError("control block changed after bootstrap")
+        if state.get("kernel_digest") != self._kernel_digest():
+            raise MetaLoopError("controller kernel changed after bootstrap")
+        if not allow_evaluator_change and state.get("evaluator_digest") != self._evaluator_digest():
+            raise MetaLoopError("evaluator changed outside controlled repair")
+        errors = self.store.verify_event_chain(state)
+        if errors:
+            raise MetaLoopError("state/event integrity failure: " + "; ".join(errors))
+        seal_errors = self._state_seal_errors(state)
+        if seal_errors:
+            raise MetaLoopError("state payload integrity failure: " + "; ".join(seal_errors))
+        anchor_errors = self._review_check_anchor_errors(state, self._control())
+        if anchor_errors:
+            raise MetaLoopError("review check integrity failure: " + "; ".join(anchor_errors))
         return state
 
-    def _harness_digest(self) -> str:
-        digest = hashlib.sha256()
+    def _kernel_digest(self) -> str:
         paths = sorted(Path(__file__).resolve().parent.glob("*.py"))
-        paths.extend(sorted((self.project_root / "scripts").glob("meta_m1_*gate.py")))
-        for path in paths:
-            digest.update(path.name.encode())
-            digest.update(path.read_bytes())
-        return digest.hexdigest()
+        paths.append(self.project_root / "scripts" / "meta_m1_real_gate.py")
+        return files_digest(paths, label_root=self.project_root)
 
-    def _runner(self, control: dict[str, Any]) -> ProgramRunner:
-        return ProgramRunner(
-            self.project_root,
-            self.workspace_root,
-            self.state_root / "logs",
-            int(control["controller_policy"]["failure_excerpt_bytes"]),
+    def _evaluator_digest(self) -> str:
+        return files_digest(
+            [
+                self.project_root / "scripts" / "meta_m1_evidence_gate.py",
+                self.project_root / "scripts" / "meta_m1_product_gate_contract.py",
+            ],
+            label_root=self.project_root,
         )
 
-    def _program_inputs_current(
-        self,
-        control: dict[str, Any],
-        objective: dict[str, Any],
-        progress: dict[str, Any],
-    ) -> bool:
+    def _runner(self, control: dict[str, Any]) -> ProgramRunner:
+        return ProgramRunner(self.project_root, self.workspace_root, self.state_root / "logs", int(control["controller_policy"]["failure_excerpt_bytes"]))
+
+    @staticmethod
+    def _review_check_targets(check: dict[str, Any]) -> list[str]:
+        return sorted(value.split("::", 1)[0] for value in check["command"][3:] if value.startswith("tests/"))
+
+    def _review_check_anchor(self, check: dict[str, Any], control: dict[str, Any]) -> dict[str, Any]:
+        targets = self._review_check_targets(check)
+        if not targets:
+            raise MetaLoopError(f"review check {check.get('id')} has no test target to anchor")
+        return {"targets": targets, "digest": self._runner(control).input_digest(targets)}
+
+    def _review_check_anchor_errors(self, state: dict[str, Any], control: dict[str, Any]) -> list[str]:
+        errors: list[str] = []
+        runner = self._runner(control)
+        for objective_id, progress in state.get("objectives", {}).items():
+            checks = {check.get("id"): check for check in progress.get("added_checks", []) if isinstance(check, dict)}
+            anchors = progress.get("check_anchors")
+            if not isinstance(anchors, dict) or set(anchors) != set(checks):
+                errors.append(f"{objective_id} reviewer check anchors do not match added checks")
+                continue
+            for check_id, check in checks.items():
+                anchor = anchors.get(check_id)
+                targets = self._review_check_targets(check)
+                if not isinstance(anchor, dict) or anchor.get("targets") != targets:
+                    errors.append(f"{objective_id}/{check_id} reviewer target anchor mismatch")
+                    continue
+                if anchor.get("digest") != runner.input_digest(targets):
+                    errors.append(f"{objective_id}/{check_id} reviewer test content changed")
+        return errors
+
+    def _run_checks(self, checks: list[dict[str, Any]], state: dict[str, Any], control: dict[str, Any]) -> list[dict[str, Any]]:
+        runner = self._runner(control)
+        results: list[dict[str, Any]] = []
+        for check in checks:
+            result = runner.run(check, state["cache"])
+            results.append(result)
+            if result["status"] != "PASS":
+                break
+        return results
+
+    def _objective_check_plan(self, control: dict[str, Any], objective: dict[str, Any], progress: dict[str, Any]) -> list[dict[str, Any]]:
+        base = [*control["common_checks"], *objective["checks"], *progress["added_checks"]]
+        low = sorted((check for check in base if check["level"] <= 2), key=lambda item: item["level"])
+        high = sorted((check for check in base if check["level"] >= 3), key=lambda item: item["level"])
+        return [*low, *control["closure_checks"], *high]
+
+    def _all_checks(self, control: dict[str, Any], objective: dict[str, Any], progress: dict[str, Any]) -> list[dict[str, Any]]:
+        return [*control["common_checks"], *control["closure_checks"], *objective["checks"], *progress["added_checks"]]
+
+    def _program_inputs_current(self, control: dict[str, Any], objective: dict[str, Any], progress: dict[str, Any]) -> bool:
         report = progress.get("last_result")
         if not isinstance(report, dict) or report.get("status") != "PASS":
             return False
         results = report.get("results")
         if not isinstance(results, list):
             return False
-        by_id = {result.get("check_id"): result for result in results if isinstance(result, dict)}
-        checks = [*control["common_checks"], *objective["checks"], *progress["added_checks"]]
+        checks = self._objective_check_plan(control, objective, progress)
+        by_id = {item.get("check_id"): item for item in results if isinstance(item, dict)}
         runner = self._runner(control)
         return len(results) == len(checks) and all(
-            check["id"] in by_id and by_id[check["id"]].get("input_digest") == runner.input_digest(check["inputs"])
+            check["id"] in by_id and by_id[check["id"]].get("input_digest") == runner.check_input_digest(check)
             for check in checks
         )
+
+    def _issue(self, state: dict[str, Any], work: dict[str, Any], policy: dict[str, Any]) -> dict[str, Any]:
+        state["iteration"] += 1
+        state["active_work_item"] = work
+        self._enforce_context_budget(work, policy)
+        self._event(state, "WORK_ISSUED", {"type": work["type"], "objective_id": work.get("objective_id"), "work_item_id": work["work_item_id"]})
+        self.store.save(state)
+        return work
 
     @staticmethod
     def _objective(control: dict[str, Any], objective_id: str) -> dict[str, Any]:
@@ -338,14 +634,8 @@ class MetaLoopController:
 
     @staticmethod
     def _review_item(objective: dict[str, Any], progress: dict[str, Any], purpose: str, policy: dict[str, Any]) -> dict[str, Any]:
-        item_type = f"REVIEW_{purpose}"
-        instruction = (
-            "Fresh reviewer: inspect the diff and program evidence. Return NO_GAP, or one demonstrated in-scope GAP with a failing level 0-2 program check. Do not broaden the frozen milestone."
-            if purpose == "ACCEPTANCE"
-            else "Fresh reviewer: diagnose the repeated failure and identify a materially different focus. Do not implement the fix or broaden scope."
-        )
         return {
-            "type": item_type,
+            "type": f"REVIEW_{purpose}",
             "work_item_id": uuid.uuid4().hex,
             "objective_id": objective["id"],
             "title": objective["title"],
@@ -353,34 +643,83 @@ class MetaLoopController:
             "review_round": progress["review_rounds"] + 1,
             "review_rounds_remaining_after_this": max(0, policy["max_review_rounds_per_objective"] - progress["review_rounds"] - 1),
             "last_program_result": MetaLoopController._compact_result(progress["last_result"]),
-            "instruction": instruction,
+            "instruction": (
+                "Fresh reviewer: return NO_GAP or one demonstrated GAP classified as PRODUCT_GAP or EVALUATOR_GAP. Do not broaden scope."
+                if purpose == "ACCEPTANCE"
+                else "Fresh reviewer: diagnose the current failure fingerprint and recommend a materially different approach."
+            ),
         }
 
     @staticmethod
     def _validate_review_gap(report: dict[str, Any], objective: dict[str, Any]) -> dict[str, Any]:
-        clause = report.get("contract_clause")
-        if clause not in objective["clauses"]:
-            raise MetaLoopError("review gap must cite one exact frozen contract clause")
-        finding = report.get("finding")
-        if not isinstance(finding, str) or not finding.strip():
+        if report.get("contract_clause") not in objective["clauses"]:
+            raise MetaLoopError("review gap must cite an exact frozen clause")
+        if not isinstance(report.get("finding"), str) or not report["finding"].strip():
             raise MetaLoopError("review gap requires a concrete finding")
         check = report.get("program_check")
         if not isinstance(check, dict):
             raise MetaLoopError("review gap requires program_check")
-        from .contracts import _check_errors
-
         errors = _check_errors(check, "review.program_check")
         if errors:
-            raise MetaLoopError("invalid review program check: " + "; ".join(errors))
+            raise MetaLoopError("invalid review check: " + "; ".join(errors))
         if check["level"] > 2:
-            raise MetaLoopError("review-created checks must be level 0-2; real-scale gates stay controller-owned")
+            raise MetaLoopError("review-created checks must be level 0-2")
+        targets = MetaLoopController._review_check_targets(check)
+        if check["command"][:3] != ["python3", "-m", "pytest"] or not targets:
+            raise MetaLoopError("review-created checks must be focused pytest commands under tests/")
+        if any(not any(target == raw or target.startswith(raw.rstrip("/") + "/") for raw in check["inputs"]) for target in targets):
+            raise MetaLoopError("review check inputs must cover every pytest target for cache correctness")
+        if any("../loop_evidence" in value for value in check["inputs"]):
+            raise MetaLoopError("review repository checks must be hermetic; current-run evidence checks belong in the evaluator")
         return check
+
+    @staticmethod
+    def _evaluation_report(objective_id: str, results: list[dict[str, Any]], total: int, passed: bool) -> dict[str, Any]:
+        highest = max((item["level"] for item in results if item["status"] == "PASS"), default=-1)
+        failed_count = sum(item["status"] != "PASS" for item in results)
+        return {
+            "status": "PASS" if passed else "FAIL",
+            "objective_id": objective_id,
+            "score": (highest + 1) * 100 - failed_count,
+            "highest_level_passed": highest,
+            "checks_run": len(results),
+            "checks_total": total,
+            "results": results,
+        }
+
+    @staticmethod
+    def _last_failure_cached(progress: dict[str, Any]) -> bool:
+        report = progress.get("last_result")
+        if not isinstance(report, dict):
+            return False
+        return any(item.get("status") == "FAIL" and item.get("cached") is True for item in report.get("results", []) if isinstance(item, dict))
 
     def _event(self, state: dict[str, Any], kind: str, payload: dict[str, Any]) -> None:
         self.store.append_event(
             state,
-            {"schema_version": "v2", "event": kind, "iteration": state["iteration"], "at_unix": int(time.time()), **payload},
+            {
+                "schema_version": "v3",
+                "event": kind,
+                "iteration": state["iteration"],
+                "at_unix": int(time.time()),
+                "state_payload_hash": self._state_payload_digest(state),
+                **payload,
+            },
         )
+
+    @staticmethod
+    def _state_payload_digest(state: dict[str, Any]) -> str:
+        payload = {key: value for key, value in state.items() if key not in {"events", "last_event_hash"}}
+        return hashlib.sha256(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
+
+    @classmethod
+    def _state_seal_errors(cls, state: dict[str, Any]) -> list[str]:
+        events = state.get("events")
+        if not isinstance(events, list) or not events:
+            return ["v3 state has no sealing event"]
+        claimed = events[-1].get("state_payload_hash") if isinstance(events[-1], dict) else None
+        actual = cls._state_payload_digest(state)
+        return [] if claimed == actual else ["latest event does not seal the current controller state"]
 
     @staticmethod
     def _failed_check_id(report: dict[str, Any]) -> str | None:
@@ -393,60 +732,36 @@ class MetaLoopController:
     def _compact_result(result: Any) -> Any:
         if not isinstance(result, dict):
             return result
-        if result.get("status") == "REPLAN":
-            return result
-        if result.get("status") == "STALE":
+        if result.get("status") in {"REPLAN", "STALE", "EVALUATOR_REPAIRED"}:
             return result
         if result.get("status") == "REVIEW_GAP":
             reproduction = result.get("reproduction", {})
-            return {
-                "status": "REVIEW_GAP",
-                "contract_clause": result.get("contract_clause"),
-                "finding": result.get("finding"),
-                "failed_check": reproduction.get("check_id"),
-                "excerpt": reproduction.get("excerpt"),
-            }
+            return {"status": "REVIEW_GAP", "gap_kind": result.get("gap_kind"), "finding": result.get("finding"), "failed_check": reproduction.get("check_id"), "excerpt": reproduction.get("excerpt")}
         return MetaLoopController._compact_evaluation(result)
 
     @staticmethod
     def _compact_evaluation(report: dict[str, Any]) -> dict[str, Any]:
-        failed = next((result for result in report.get("results", []) if result.get("status") == "FAIL"), None)
-        return {
-            "status": report.get("status"),
-            "objective_id": report.get("objective_id"),
-            "score": report.get("score"),
-            "highest_level_passed": report.get("highest_level_passed"),
-            "checks_run": report.get("checks_run"),
-            "checks_total": report.get("checks_total"),
-            "failed_check": failed,
-        }
+        failed = next((item for item in report.get("results", []) if item.get("status") == "FAIL"), None)
+        return {"status": report.get("status"), "objective_id": report.get("objective_id"), "score": report.get("score"), "highest_level_passed": report.get("highest_level_passed"), "checks_run": report.get("checks_run"), "checks_total": report.get("checks_total"), "failed_check": failed}
 
     @staticmethod
     def _compact_summary(state: dict[str, Any], control: dict[str, Any]) -> list[dict[str, Any]]:
-        return [
-            {
-                "id": objective["id"],
-                "status": state["objectives"][objective["id"]]["status"],
-                "attempts": state["objectives"][objective["id"]]["attempts"],
-                "replans": state["objectives"][objective["id"]]["replans"],
-                "review_rounds": state["objectives"][objective["id"]]["review_rounds"],
-            }
-            for objective in control["objectives"]
-        ]
+        return [{"id": objective["id"], "status": state["objectives"][objective["id"]]["status"], "attempts": state["objectives"][objective["id"]]["attempts"], "replans": state["objectives"][objective["id"]]["replans"], "review_rounds": state["objectives"][objective["id"]]["review_rounds"]} for objective in control["objectives"]]
 
     def _status_view(self, state: dict[str, Any], control: dict[str, Any]) -> dict[str, Any]:
         summary = self._compact_summary(state, control)
         completed = sum(item["status"] == "COMPLETE" for item in summary)
-        return {
-            "goal_id": control["goal_id"],
-            "status": "COMPLETE" if completed == len(summary) else "ACTIVE",
-            "progress": {"completed": completed, "total": len(summary)},
-            "active_work_item": state.get("active_work_item"),
-            "objectives": summary,
-        }
+        migration = state.get("migration", {})
+        if migration.get("status") == "BLOCKED" or any(item["status"] == "BLOCKED" for item in summary):
+            overall = "BLOCKED"
+        elif completed == len(summary) and migration.get("status") == "PASS":
+            overall = "COMPLETE"
+        else:
+            overall = "ACTIVE"
+        return {"goal_id": control["goal_id"], "status": overall, "progress": {"completed": completed, "total": len(summary)}, "migration": migration, "active_work_item": state.get("active_work_item"), "objectives": summary}
 
     @staticmethod
     def _enforce_context_budget(work: dict[str, Any], policy: dict[str, Any]) -> None:
         size = len(json.dumps(work, ensure_ascii=True).encode())
         if size > policy["max_context_bytes"]:
-            raise MetaLoopError(f"work item context is {size} bytes, over {policy['max_context_bytes']} byte budget")
+            raise MetaLoopError(f"work item context is {size} bytes, over budget")

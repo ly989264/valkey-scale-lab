@@ -488,14 +488,27 @@ def create_scenario(
 
 def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_path: str | Path) -> dict[str, Any]:
     state = json.loads(Path(state_path).read_text(encoding="utf-8"))
+    runtime = state.get("runtime")
+    if not isinstance(runtime, dict) or not runtime.get("run_id"):
+        raise DockerRuntimeError("cleanup requires runtime ownership with an explicit run_id in state")
     phase = state.get("phase_id", "P03_LOCAL_DOCKER_VALKEY")
-    run_id = state.get("runtime", {}).get("run_id", _run_id(str(phase), str(state.get("scenario", "cluster_smoke"))))
-    if state.get("runtime", {}).get("type") == "docker_process":
+    run_id = str(runtime["run_id"])
+    if runtime.get("type") == "docker_process":
         return _cleanup_process_scenario(state=state, artifacts_dir=Path(artifacts_dir), out_path=Path(out_path))
-    actions, cleanup_timing = _cleanup_resources_by_label(phase=phase, run_id=run_id)
+    cleanup_errors: list[str] = []
+    try:
+        actions, cleanup_timing = _cleanup_resources_by_label(phase=phase, run_id=run_id)
+    except DockerRuntimeError as exc:
+        cleanup_errors.append(str(exc))
+        actions = [{"type": "resource_discovery", "id": "owned-runtime", "action": "discover", "status": "FAIL", "stderr": str(exc)}]
+        cleanup_timing = {"cleanup_remove_containers_seconds": 0.0, "cleanup_remove_networks_seconds": 0.0}
     actions.extend(_cleanup_fault_state_files(Path(artifacts_dir)))
     residual_started = time.monotonic()
-    resources_remaining = owned_resources(phase=phase, run_id=run_id)
+    try:
+        resources_remaining = owned_resources(phase=phase, run_id=run_id)
+    except DockerRuntimeError as exc:
+        cleanup_errors.append(str(exc))
+        resources_remaining = [{"type": "UNKNOWN", "id": "owned-resource-discovery-failed", "reason": str(exc)}]
     cleanup_timing["cleanup_residual_scan_seconds"] = round(max(time.monotonic() - residual_started, 0.0), 6)
     cleanup_timing.setdefault("cleanup_terminate_processes_seconds", 0.0)
     cleanup_timing.setdefault("cleanup_verify_process_exit_seconds", 0.0)
@@ -518,8 +531,9 @@ def cleanup_scenario(*, state_path: str | Path, artifacts_dir: str | Path, out_p
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if not resources_remaining else "FAIL",
+        "status": "PASS" if not resources_remaining and not cleanup_errors else "FAIL",
         "resources_remaining": resources_remaining,
+        "cleanup_errors": cleanup_errors,
         "cleanup_actions": actions,
         "cleanup_timing": cleanup_timing,
         "nodehost_density": state.get("nodehost_density", state.get("runtime", {})),
@@ -2140,12 +2154,21 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     actions.extend(action for _idx, action in sorted(nodehost_results, key=lambda item: item[0]))
     cleanup_timing["cleanup_verify_nodehost_empty_seconds"] = round(max(time.monotonic() - nodehost_started, 0.0), 6)
 
-    resource_actions, resource_timing = _cleanup_resources_by_label(phase=phase, run_id=run_id)
-    cleanup_timing.update(resource_timing)
-    actions.extend(resource_actions)
+    cleanup_errors: list[str] = []
+    try:
+        resource_actions, resource_timing = _cleanup_resources_by_label(phase=phase, run_id=run_id)
+        cleanup_timing.update(resource_timing)
+        actions.extend(resource_actions)
+    except DockerRuntimeError as exc:
+        cleanup_errors.append(str(exc))
+        actions.append({"type": "resource_discovery", "id": "owned-runtime", "action": "discover", "status": "FAIL", "stderr": str(exc)})
     actions.extend(_cleanup_fault_state_files(artifacts_dir))
     residual_started = time.monotonic()
-    resources_remaining = owned_resources(phase=phase, run_id=run_id)
+    try:
+        resources_remaining = owned_resources(phase=phase, run_id=run_id)
+    except DockerRuntimeError as exc:
+        cleanup_errors.append(str(exc))
+        resources_remaining = [{"type": "UNKNOWN", "id": "owned-resource-discovery-failed", "reason": str(exc)}]
     cleanup_timing["cleanup_residual_scan_seconds"] = round(max(time.monotonic() - residual_started, 0.0), 6)
     report = {
         "schema_version": "v1",
@@ -2154,8 +2177,9 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if not resources_remaining and all(action.get("status") != "FAIL" for action in actions) else "FAIL",
+        "status": "PASS" if not resources_remaining and not cleanup_errors and all(action.get("status") != "FAIL" for action in actions) else "FAIL",
         "resources_remaining": resources_remaining,
+        "cleanup_errors": cleanup_errors,
         "cleanup_actions": actions,
         "cleanup_timing": cleanup_timing,
         "nodehost_density": state.get("nodehost_density", state.get("runtime", {})),
@@ -2270,7 +2294,7 @@ def owned_resources(*, phase: str, run_id: str) -> list[dict[str, Any]]:
 def _docker_ids(args: list[str]) -> list[str]:
     result = run_docker(args, timeout=30, check=False)
     if result.returncode != 0:
-        return []
+        raise DockerRuntimeError(f"Docker owned-resource discovery failed for {args!r}: {result.stderr.strip()}")
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
@@ -8150,7 +8174,11 @@ def _write_strict_management_blocked_artifact(artifacts: Path, preflight: dict[s
 
 
 def _write_strict_full_flow_blocked_artifact(artifacts: Path, preflight: dict[str, Any], profile: StrictFullFlowProfile) -> None:
-    blocked_dir = Path("artifacts/goal_loop_strict") / profile.stage
+    blocked_dir = (
+        artifacts / "blocked"
+        if os.environ.get("VSLAB_META_M1_CONTROLLER_OWNED") == "1"
+        else Path("artifacts/goal_loop_strict") / profile.stage
+    )
     blocked_dir.mkdir(parents=True, exist_ok=True)
     failed = [item for item in preflight.get("checks", []) if item.get("status") != "PASS"]
     lines = [
@@ -8558,6 +8586,52 @@ def _p36_analysis_summary(
             "workload_window_count": len(windows),
             "management_status": management["summary"].get("status", MISSING),
             "fault_status": fault["summary"].get("status", MISSING),
+            "topology_summary": {
+                "management_snapshot_count": len(management.get("topology", [])),
+                "fault_snapshot_count": len(fault.get("topology", [])),
+                "node_count": scale,
+                "source": "full_flow_topology_snapshots.jsonl",
+            },
+            "phase_durations": {
+                "management_duration_ms": management["summary"].get("result", {}).get("duration_ms", MISSING),
+                "failover_promotion_latency_ms": fault["summary"].get("failover_details", {}).get("promotion_latency_ms", MISSING),
+                "failover_recovery_latency_ms": fault["summary"].get("failover_details", {}).get("cluster_recovery_latency_ms", MISSING),
+            },
+            "bottlenecks": {
+                "slowest_commands_topn": sorted(
+                    [
+                        {"surface": "management", "duration_ms": management["summary"].get("result", {}).get("duration_ms", 0)},
+                        {"surface": "failover", "duration_ms": fault["summary"].get("failover_details", {}).get("cluster_recovery_latency_ms", 0)},
+                    ],
+                    key=lambda item: float(item["duration_ms"]) if isinstance(item["duration_ms"], (int, float)) else -1.0,
+                    reverse=True,
+                ),
+            },
+            "resources": {
+                "status": MISSING,
+                "reason": "P36 full-flow evidence does not include a dedicated system-resource sampler; the report preserves this as missing evidence.",
+                "source": "metrics_timeseries.jsonl",
+            },
+            "workload_impact": {
+                "window_count": len(windows),
+                "windows": [
+                    {"window_name": window.get("window_name", MISSING), "status": window.get("status", MISSING), "metrics": window.get("metrics", {})}
+                    for window in windows
+                ],
+            },
+            "failover": fault["summary"].get("failover_details", {"status": MISSING, "reason": "Fault sequence did not emit failover details."}),
+            "recovery": fault["summary"].get("recovery_health", {"status": MISSING, "reason": "Fault sequence did not emit recovery health."}),
+            "error_summary": {
+                "failed_window_count": sum(1 for window in windows if window.get("status") != "PASS"),
+                "failed_windows": [window.get("window_name", MISSING) for window in windows if window.get("status") != "PASS"],
+            },
+            "missing_evidence": [
+                {
+                    "surface": "resources",
+                    "status": MISSING,
+                    "reason": "Dedicated resource trends are not collected by this exact-scale full-flow path.",
+                }
+            ],
         }
     )
 
@@ -8580,7 +8654,7 @@ def _p36_report_index(phase: str, scenario: str, run_id: str, scale: int, analys
             "views": [
                 {
                     "format": "json",
-                    "path": "report_index.json",
+                    "path": "analysis_summary.json",
                     "status": "PASS",
                     "source_analysis_status": analysis.get("status", MISSING),
                 }
@@ -8764,6 +8838,8 @@ def _p36_coverage_ledger(parent: Path, scale_rows: list[dict[str, Any]]) -> dict
 
 
 def _p36_update_global_coverage_registry(scale_rows: list[dict[str, Any]]) -> None:
+    if os.environ.get("VSLAB_META_M1_CONTROLLER_OWNED") == "1":
+        return
     path = Path("artifacts/coverage/strict_coverage_registry.json")
     if not path.exists():
         return
@@ -9755,8 +9831,12 @@ def _p30_execute_operation(
     started = time.monotonic()
     extras: dict[str, Any] = {"slot_movements": [], "restart_results": []}
     base: dict[str, Any]
-    if operation_name in {"create_cluster", "meet_nodes", "add_replica"}:
+    if operation_name in {"create_cluster", "meet_nodes"}:
         base = _p30_verify_setup_row(phase, operation_name, operation_id, before)
+    elif operation_name == "add_replica":
+        base = _p30_remove_and_restore_row(telemetry, phase, run_id, "remove_replica", operation_id, nodes, command_log)
+        base["safe_path"] = "remove_owned_replica_then_rejoin_with_fresh_identity_as_live_add_replica"
+        base["management_mutation"] = "replica_removed_then_added_back"
     elif operation_name in {"remove_replica", "remove_failed_node", "remove_primary_drained_or_safe_replaced"}:
         base = _p30_remove_and_restore_row(telemetry, phase, run_id, operation_name, operation_id, nodes, command_log)
     elif operation_name in {"reshard_slot_range", "reshard_with_keys", "rebalance_after_imbalance"}:
@@ -10484,6 +10564,17 @@ def write_stability_artifacts(
 
     restart_after = {node["logical_id"]: _container_restart_count(node["container_name"]) for node in nodes}
     duration = max(time.monotonic() - started, 0.000001)
+    health_failures = [
+        {
+            "source": sample["source"],
+            "window": sample["window"],
+            "cluster_state": sample["metrics"]["cluster"]["cluster_state"],
+            "cluster_known_nodes": sample["metrics"]["cluster"]["cluster_known_nodes"],
+        }
+        for sample in samples
+        if sample["metrics"]["cluster"]["cluster_state"] != "ok"
+        or sample["metrics"]["cluster"]["cluster_known_nodes"] != len(nodes)
+    ]
     leak_summary = _memory_growth_summary(memory_by_node)
     restart_events = [
         {
@@ -10549,7 +10640,7 @@ def write_stability_artifacts(
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": "PASS" if not errors and all(_restart_delta(item["before"], item["after"]) == 0 for item in restart_events) else "FAIL",
+        "status": "PASS" if not errors and not health_failures and all(_restart_delta(item["before"], item["after"]) == 0 for item in restart_events) else "FAIL",
         "duration_seconds": round(duration, 6),
         "scenario": scenario,
         "soak_profile": {
@@ -10579,6 +10670,12 @@ def write_stability_artifacts(
                 "sample_count": len(samples),
                 "interval_count": interval_count,
                 "samples_per_interval": len(nodes),
+            },
+            "health": {
+                "status": "PASS" if not health_failures else "FAIL",
+                "criteria": {"cluster_state": "ok", "cluster_known_nodes": len(nodes)},
+                "failed_sample_count": len(health_failures),
+                "failed_samples": health_failures,
             },
             "restarts": {
                 "total_restart_delta": sum(max(0, _restart_delta(item["before"], item["after"])) for item in restart_events),

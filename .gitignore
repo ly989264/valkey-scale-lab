@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
+loop_evidence/meta_runs/
