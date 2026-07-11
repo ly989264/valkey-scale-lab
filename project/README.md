@@ -1,6 +1,6 @@
 # valkey-scale-lab
 
-`valkey-scale-lab` is a local-first harness for Valkey 9.1.x cluster experiments. The milestone1 loop targets real local clusters up to 200 nodes, management operations, sandboxed faults, failover measurement, metrics collection, analysis, and offline report generation from versioned artifacts.
+`valkey-scale-lab` is a local-first harness for Valkey 9.1.x cluster experiments. Its product roadmap progresses from complete local execution through native multi-ECS execution to 500/1000/2000-node multi-ECS scale. See [docs/MILESTONES.md](docs/MILESTONES.md) for milestone boundaries, dependencies, and acceptance criteria.
 
 ## Milestone1 Scope
 
@@ -12,13 +12,14 @@ In scope:
 - real small, 30, 50, 100, and bounded 200 node runs after resource preflight;
 - run-scoped artifacts under `runs/<run_id>/artifacts|logs|reports|state`;
 - schema-validated metadata, metrics, timelines, management/fault artifacts, analysis, and reports;
+- stability and bounded soak runs with explicit health and convergence criteria;
 - offline report generation from local artifacts only.
 
 Out of scope for milestone1:
 
 - ECS multi-host native runtime;
 - 500, 1000, or 2000 real-node execution;
-- long stability soak stages;
+- unbounded or production-duration stability soak stages;
 - reports that depend on external services, network access, or LLMs.
 
 ## Quick Start
