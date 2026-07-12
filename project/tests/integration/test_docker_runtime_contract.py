@@ -1631,3 +1631,252 @@ def test_event_shape() -> None:
     assert event["artifact_type"] == "event"
     assert event["severity"] == "info"
     assert event["details"]["node"] == "n1"
+
+
+def test_docker_stats_many_uses_one_command_for_all_nodehosts(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        calls.append(args)
+        rows = [
+            {"Name": "nodehost-a", "CPUPerc": "1.00%", "MemUsage": "10MiB / 1GiB", "NetIO": "1kB / 2kB", "PIDs": "4"},
+            {"Name": "nodehost-b", "CPUPerc": "2.00%", "MemUsage": "20MiB / 1GiB", "NetIO": "3kB / 4kB", "PIDs": "5"},
+        ]
+        return docker_runtime.DockerResult("\n".join(json.dumps(row) for row in rows), "", 0)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    result = docker_runtime._docker_stats_many(["nodehost-a", "nodehost-b", "nodehost-a"])
+
+    assert calls == [["stats", "--no-stream", "--format", "{{json .}}", "nodehost-a", "nodehost-b"]]
+    assert result["nodehost-a"]["memory_usage"] == "10MiB / 1GiB"
+    assert result["nodehost-b"]["pids"] == "5"
+
+
+def test_docker_stats_many_degrades_timeouts_to_structured_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda *args, **kwargs: (_ for _ in ()).throw(DockerRuntimeError("stats timeout")),
+    )
+
+    result = docker_runtime._docker_stats_many(["nodehost-a", "nodehost-b"])
+
+    assert set(result) == {"nodehost-a", "nodehost-b"}
+    assert all(item["status"] == "MISSING" for item in result.values())
+    assert all("timeout" in item["reason"] for item in result.values())
+
+
+def test_docker_stats_rejects_non_object_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda *args, **kwargs: docker_runtime.DockerResult("null\n", "", 0),
+    )
+
+    result = docker_runtime._docker_stats("nodehost-a")
+
+    assert result["status"] == "MISSING"
+    assert "not an object" in result["reason"]
+
+
+def test_system_metrics_batches_container_stats_once_per_window(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    batches: list[list[str]] = []
+    samples: list[tuple[str, str, dict[str, object]]] = []
+    nodes = [
+        {"logical_id": "node-a0", "container_name": "nodehost-a"},
+        {"logical_id": "node-a1", "container_name": "nodehost-a"},
+        {"logical_id": "node-b0", "container_name": "nodehost-b"},
+    ]
+
+    def fake_stats_many(containers):
+        batch = list(containers)
+        batches.append(batch)
+        return {container: {"status": "PASS", "memory_usage": container} for container in set(batch)}
+
+    def fake_rows(telemetry, node, window_name, *, docker_stats=None):
+        samples.append((node["logical_id"], window_name, docker_stats))
+        return [
+            {
+                "source_id": node["logical_id"],
+                "metric_name": "test_metric",
+                "metric_value": 0,
+                "labels": {"logical_node_id": node["logical_id"], "lifecycle_window": window_name},
+            }
+        ]
+
+    monkeypatch.setattr(docker_runtime, "_docker_stats_many", fake_stats_many)
+    monkeypatch.setattr(docker_runtime, "_system_metric_rows_for_node", fake_rows)
+
+    docker_runtime.write_system_metrics_artifacts(
+        tmp_path,
+        "P36_FULL_FLOW_E2E_50_100_200_REAL",
+        "strict_full_flow_50",
+        "run-1",
+        nodes,
+        lifecycle_windows=["setup", "workload"],
+    )
+
+    assert batches == [
+        ["nodehost-a", "nodehost-a", "nodehost-b"],
+        ["nodehost-a", "nodehost-a", "nodehost-b"],
+    ]
+    assert len(samples) == len(nodes) * 2
+    assert all(sample[2]["memory_usage"] == nodes[index % len(nodes)]["container_name"] for index, sample in enumerate(samples))
+    report = json.loads((tmp_path / "system_metrics_report.json").read_text(encoding="utf-8"))
+    assert report["source_refs"]["valkey_e2e_evidence"] == "valkey_e2e_evidence.json"
+
+
+def test_system_metrics_expose_numeric_container_cpu_and_cluster_source(monkeypatch: pytest.MonkeyPatch) -> None:
+    telemetry = docker_runtime.TelemetryRun(
+        phase_id="P36_FULL_FLOW_E2E_50_100_200_REAL",
+        scenario_name="strict_full_flow_50",
+        run_id="run-1",
+        coverage_id="system-metrics",
+        scale=1,
+        node_count=1,
+    )
+    node = {"logical_id": "node-1", "container_name": "nodehost-1", "pid": 101}
+
+    def fake_node_command(_node, *args, timeout):
+        del timeout
+        if args == ("INFO", "default"):
+            return "connected_clients:2\nused_memory:100\nused_memory_rss:120\n"
+        if args == ("CLUSTER", "INFO"):
+            return "cluster_state:ok\ncluster_known_nodes:1\ncluster_slots_assigned:16384\ncluster_slots_ok:16384\ncluster_slots_fail:0\n"
+        if args == ("CLUSTER", "NODES"):
+            return "id 127.0.0.1:7000@17000 myself,master - 0 0 1 connected\n"
+        raise AssertionError(args)
+
+    monkeypatch.setattr(docker_runtime, "_node_command", fake_node_command)
+    monkeypatch.setattr(docker_runtime, "_m1_count_log_errors", lambda _node: 0)
+    rows = docker_runtime._system_metric_rows_for_node(
+        telemetry,
+        node,
+        "workload",
+        docker_stats={
+            "status": "PASS",
+            "cpu_percent": "12.50%",
+            "memory_usage": "10MiB / 1GiB",
+            "net_io": "1kB / 2kB",
+            "pids": "4",
+        },
+    )
+
+    by_name = {row["metric_name"]: row for row in rows}
+    assert by_name["container_cpu_percent"]["source_type"] == "docker_stats"
+    assert by_name["container_cpu_percent"]["metric_value"] == 12.5
+    assert by_name["cluster_state"]["source_type"] == "cluster_info"
+    assert by_name["cluster_state"]["metric_value"] == 1
+    assert by_name["cpu_user_percent"]["metric_value"] == docker_runtime.MISSING
+
+
+def test_p36_posthoc_metrics_do_not_claim_unsampled_management_or_fault_windows(tmp_path: Path) -> None:
+    for name in ["management_sequence.json", "workload_windows.json", "fault_sequence.json"]:
+        (tmp_path / name).write_text("{}\n", encoding="utf-8")
+
+    assert docker_runtime._m1_system_metric_windows_for_artifacts(tmp_path) == ["setup", "cleanup", "workload"]
+
+
+def test_cleanup_process_scan_parsing_and_zombie_exit(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        calls.append(args)
+        return docker_runtime.DockerResult("alive=\nzombie=101\nunreadable=\nmissing=102\n", "", 0)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+    result = docker_runtime._wait_container_pids_gone("nodehost-a", ["101", "102"], timeout=1.0)
+
+    assert result["gone"] is True
+    assert result["zombie_pids"] == ["101"]
+    assert "/proc/$pid/stat" in calls[0][-1]
+    assert "kill -0" not in calls[0][-1]
+
+
+def test_cleanup_residual_scan_treats_unreadable_process_as_uncertain() -> None:
+    script = docker_runtime._cleanup_scan_valkey_script()
+    parsed = docker_runtime._cleanup_parse_process_scan("live=\nzombie=\nunreadable=101\n")
+
+    assert parsed["unreadable"] == ["101"]
+    assert 'unreadable="$unreadable ${proc_dir##*/}"' in script
+    assert 'test -z "$live" -a -z "$unreadable"' in script
+
+
+def test_nodehost_runtime_uses_init_for_process_reaping(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        docker_runtime,
+        "run_docker",
+        lambda args, timeout=120, check=True: calls.append(args) or docker_runtime.DockerResult("cid\n", "", 0),
+    )
+
+    docker_runtime._start_nodehost(
+        {"container_name": "nodehost-a", "nodehost_id": "nodehost-a", "ports": []},
+        "network-a",
+        "valkey:9.1",
+        "P36_FULL_FLOW_E2E_50_100_200_REAL",
+        "strict_full_flow_50",
+        "run-1",
+    )
+
+    assert calls[0][:4] == ["run", "-d", "--init", "--name"]
+
+
+def test_p36_fault_recovery_uses_one_strict_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+    nodes = [{"logical_id": f"node-{index}"} for index in range(6)]
+
+    def wait_snapshot(actual_nodes, **kwargs):
+        captured["nodes"] = actual_nodes
+        captured.update(kwargs)
+
+    monkeypatch.setattr(docker_runtime, "_wait_process_snapshot_clean", wait_snapshot)
+
+    docker_runtime._p36_wait_clean_cluster_snapshot(nodes, timeout=180.0)
+
+    assert captured == {
+        "nodes": nodes,
+        "expected_nodes": 6,
+        "expected_primaries": 3,
+        "expected_replicas": 3,
+        "timeout": 180.0,
+    }
+
+
+def test_p36_network_disconnect_reconnects_when_side_observation_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+    recovered: list[tuple[int, float]] = []
+    nodes = [
+        {
+            "logical_id": "target",
+            "nodehost_container_name": "nodehost-a",
+            "nodehost_container_ip": "172.18.0.2",
+            "client_port": 7000,
+        },
+        {"logical_id": "survivor", "nodehost_container_name": "nodehost-b", "client_port": 7001},
+    ]
+
+    def run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        calls.append(args)
+        if args[0] == "inspect":
+            return docker_runtime.DockerResult("{}\n", "", 0)
+        return docker_runtime.DockerResult("", "", 0)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", run_docker)
+    monkeypatch.setattr(
+        docker_runtime,
+        "_node_command",
+        lambda node, *args, timeout: (_ for _ in ()).throw(DockerRuntimeError("side probe failed")),
+    )
+    monkeypatch.setattr(
+        docker_runtime,
+        "_p36_wait_clean_cluster_snapshot",
+        lambda actual_nodes, timeout: recovered.append((len(actual_nodes), timeout)),
+    )
+
+    with pytest.raises(DockerRuntimeError, match="side probe failed"):
+        docker_runtime._p36_network_disconnect_probe("owned-network", "nodehost-a", nodes, "network_partition")
+
+    assert ["network", "connect", "--ip", "172.18.0.2", "owned-network", "nodehost-a"] in calls
+    assert recovered == [(2, 180.0)]

@@ -1136,6 +1136,7 @@ def _start_nodehost(
     args = [
         "run",
         "-d",
+        "--init",
         "--name",
         nodehost["container_name"],
         "--network",
@@ -2108,6 +2109,10 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
             "pid_count": len(pids),
             "alive_pid_count": len(alive_pids),
             "alive_pids": alive_pids,
+            "zombie_pid_count": len(gone.get("zombie_pids", [])),
+            "zombie_pids": gone.get("zombie_pids", []),
+            "unreadable_pid_count": len(gone.get("unreadable_pids", [])),
+            "unreadable_pids": gone.get("unreadable_pids", []),
             "stderr": gone.get("stderr", ""),
         }
 
@@ -2133,16 +2138,24 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
         idx, nodehost = item
         container = str(nodehost["container_name"])
         try:
-            pgrep = run_docker(["exec", container, "pgrep", "-x", "valkey-server"], timeout=PROCESS_NODEHOST_VERIFY_TIMEOUT_SECONDS, check=False)
+            scan = run_docker(
+                ["exec", container, "sh", "-c", _cleanup_scan_valkey_script()],
+                timeout=PROCESS_NODEHOST_VERIFY_TIMEOUT_SECONDS,
+                check=False,
+            )
+            parsed = _cleanup_parse_process_scan(scan.stdout)
             return idx, {
                 "type": "nodehost",
                 "id": nodehost["nodehost_id"],
                 "container_name": container,
                 "action": "verify_no_valkey_processes",
-                "status": "PASS" if pgrep.returncode != 0 else "SKIPPED_WITH_REASON",
-                "reason": "" if pgrep.returncode != 0 else "Valkey processes remained before owned nodehost container removal.",
-                "stdout": pgrep.stdout.strip(),
-                "stderr": pgrep.stderr.strip(),
+                "status": "PASS" if scan.returncode == 0 else "SKIPPED_WITH_REASON",
+                "reason": "" if scan.returncode == 0 else "Live or unreadable Valkey processes remained before owned nodehost container removal.",
+                "live_pids": parsed.get("live", []),
+                "zombie_pids": parsed.get("zombie", []),
+                "unreadable_pids": parsed.get("unreadable", []),
+                "stdout": scan.stdout.strip(),
+                "stderr": scan.stderr.strip(),
             }
         except DockerRuntimeError as exc:
             return idx, {
@@ -2283,17 +2296,50 @@ def _cleanup_verify_script(pids: list[str]) -> str:
     pid_list = " ".join(pids)
     return (
         f'PIDS="{pid_list}"; '
-        'alive=""; '
+        'alive=""; zombie=""; unreadable=""; missing=""; '
         'for pid in $PIDS; do '
-        'if kill -0 "$pid" 2>/dev/null; then alive="$alive $pid"; fi; '
+        'stat_path="/proc/$pid/stat"; '
+        'if [ ! -e "$stat_path" ]; then missing="$missing $pid"; continue; fi; '
+        'if ! stat_line=$(cat "$stat_path" 2>/dev/null); then unreadable="$unreadable $pid"; continue; fi; '
+        'stat_tail=${stat_line##*) }; state=${stat_tail%% *}; '
+        'case "$state" in Z|X) zombie="$zombie $pid" ;; "") unreadable="$unreadable $pid" ;; *) alive="$alive $pid" ;; esac; '
         'done; '
-        'if [ -n "$alive" ]; then printf "%s\\n" "$alive"; exit 1; fi'
+        'printf "alive=%s\\nzombie=%s\\nunreadable=%s\\nmissing=%s\\n" "$alive" "$zombie" "$unreadable" "$missing"; '
+        'test -z "$alive" -a -z "$unreadable"'
     )
+
+
+def _cleanup_scan_valkey_script() -> str:
+    return (
+        'live=""; zombie=""; unreadable=""; '
+        'for proc_dir in /proc/[0-9]*; do '
+        '[ -e "$proc_dir/comm" ] || continue; '
+        'if ! comm=$(cat "$proc_dir/comm" 2>/dev/null); then '
+        '[ -e "$proc_dir/comm" ] && unreadable="$unreadable ${proc_dir##*/}"; continue; fi; '
+        '[ "$comm" = "valkey-server" ] || continue; '
+        'pid=${proc_dir##*/}; '
+        '[ -e "$proc_dir/stat" ] || continue; '
+        'if ! stat_line=$(cat "$proc_dir/stat" 2>/dev/null); then unreadable="$unreadable $pid"; continue; fi; '
+        'stat_tail=${stat_line##*) }; state=${stat_tail%% *}; '
+        'case "$state" in Z|X) zombie="$zombie $pid" ;; "") unreadable="$unreadable $pid" ;; *) live="$live $pid" ;; esac; '
+        'done; '
+        'printf "live=%s\\nzombie=%s\\nunreadable=%s\\n" "$live" "$zombie" "$unreadable"; '
+        'test -z "$live" -a -z "$unreadable"'
+    )
+
+
+def _cleanup_parse_process_scan(stdout: str) -> dict[str, list[str]]:
+    parsed: dict[str, list[str]] = {}
+    for line in stdout.splitlines():
+        key, separator, raw_values = line.partition("=")
+        if separator and key in {"alive", "live", "zombie", "unreadable", "missing"}:
+            parsed[key] = [value for value in raw_values.split() if value.isdigit()]
+    return parsed
 
 
 def _wait_container_pids_gone(container: str, pids: list[str], timeout: float) -> dict[str, Any]:
     if not pids:
-        return {"gone": True, "alive_pids": [], "stderr": ""}
+        return {"gone": True, "alive_pids": [], "zombie_pids": [], "unreadable_pids": [], "stderr": ""}
     deadline = time.monotonic() + timeout
     last_stdout = ""
     last_stderr = ""
@@ -2311,10 +2357,23 @@ def _wait_container_pids_gone(container: str, pids: list[str], timeout: float) -
         last_stdout = result.stdout.strip()
         last_stderr = result.stderr.strip()
         if result.returncode == 0:
-            return {"gone": True, "alive_pids": [], "stderr": last_stderr}
+            parsed = _cleanup_parse_process_scan(last_stdout)
+            return {
+                "gone": True,
+                "alive_pids": [],
+                "zombie_pids": parsed.get("zombie", []),
+                "unreadable_pids": [],
+                "stderr": last_stderr,
+            }
         time.sleep(0.5)
-    alive = [pid for pid in last_stdout.split() if pid.isdigit()]
-    return {"gone": False, "alive_pids": alive, "stderr": last_stderr}
+    parsed = _cleanup_parse_process_scan(last_stdout)
+    return {
+        "gone": False,
+        "alive_pids": parsed.get("alive", []),
+        "zombie_pids": parsed.get("zombie", []),
+        "unreadable_pids": parsed.get("unreadable", []),
+        "stderr": last_stderr,
+    }
 
 
 def _wait_container_pid_gone(container: str, pid: str, timeout: float) -> bool:
@@ -4802,9 +4861,20 @@ def write_system_metrics_artifacts(
     rows: list[dict[str, Any]] = []
     sample_errors: list[dict[str, Any]] = []
     for window_name in windows:
+        stats_by_container = _docker_stats_many(
+            [str(node.get("container_name") or node.get("nodehost_container_name") or "MISSING") for node in nodes]
+        )
         for node in nodes:
             try:
-                rows.extend(_system_metric_rows_for_node(telemetry, node, window_name))
+                container = str(node.get("container_name") or node.get("nodehost_container_name") or "MISSING")
+                rows.extend(
+                    _system_metric_rows_for_node(
+                        telemetry,
+                        node,
+                        window_name,
+                        docker_stats=stats_by_container[container],
+                    )
+                )
             except Exception as exc:  # noqa: BLE001
                 logical_id = str(node.get("logical_id", "MISSING"))
                 sample_errors.append({"logical_id": logical_id, "window_name": window_name, "error": repr(exc)})
@@ -4825,7 +4895,13 @@ def write_system_metrics_artifacts(
     (artifacts / "system_metrics_report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _system_metric_rows_for_node(telemetry: TelemetryRun, node: dict[str, Any], window_name: str) -> list[dict[str, Any]]:
+def _system_metric_rows_for_node(
+    telemetry: TelemetryRun,
+    node: dict[str, Any],
+    window_name: str,
+    *,
+    docker_stats: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     logical_id = str(node.get("logical_id", "MISSING"))
     labels = _m1_system_node_labels(node, window_name)
     rows: list[dict[str, Any]] = []
@@ -4864,8 +4940,21 @@ def _system_metric_rows_for_node(telemetry: TelemetryRun, node: dict[str, Any], 
         cluster_nodes_raw = _node_command(node, "CLUSTER", "NODES", timeout=10)
     except Exception:
         cluster_nodes_raw = ""
-    docker_stats = _docker_stats(str(node.get("container_name") or node.get("nodehost_container_name") or "MISSING"))
+    if docker_stats is None:
+        docker_stats = _docker_stats(str(node.get("container_name") or node.get("nodehost_container_name") or "MISSING"))
     log_error_count = _m1_count_log_errors(node)
+    rows.append(
+        _m1_system_metric(
+            telemetry,
+            "docker_stats",
+            logical_id,
+            "container_cpu_percent",
+            _m1_docker_cpu_percent(docker_stats),
+            "percent",
+            labels,
+            "docker stats did not expose parseable aggregate container CPU percent",
+        )
+    )
     process_values: dict[str, tuple[Any, str, str]] = {
         "process_pid": (_int_or_missing(node.get("pid")), "pid", "runtime state did not include numeric process pid"),
         "process_uptime": (_int_or_missing(info.get("uptime_in_seconds")), "seconds", "Valkey INFO did not include uptime_in_seconds"),
@@ -4895,6 +4984,7 @@ def _system_metric_rows_for_node(telemetry: TelemetryRun, node: dict[str, Any], 
     for name in M1_SYSTEM_NETWORK_METRICS:
         value, unit, reason = network_values[name]
         rows.append(_m1_system_metric(telemetry, "system_network", logical_id, name, value, unit, labels, reason))
+    labels["cluster_state_raw"] = cluster_info.get("cluster_state", MISSING)
     valkey_values: dict[str, tuple[Any, str, str]] = {
         "connected_clients": (_int_or_missing(info.get("connected_clients")), "count", "Valkey INFO did not include connected_clients"),
         "blocked_clients": (_int_or_missing(info.get("blocked_clients")), "count", "Valkey INFO did not include blocked_clients"),
@@ -4913,7 +5003,11 @@ def _system_metric_rows_for_node(telemetry: TelemetryRun, node: dict[str, Any], 
         "master_repl_offset": (_int_or_missing(info.get("master_repl_offset")), "offset", "Valkey INFO did not include master_repl_offset"),
         "slave_repl_offset": (_int_or_missing(info.get("slave_repl_offset")), "offset", "Valkey INFO did not include slave_repl_offset"),
         "replication_lag": (MISSING, "seconds", "Valkey INFO does not expose a direct replication_lag metric in all roles"),
-        "cluster_state": (cluster_info.get("cluster_state", MISSING), "state", "CLUSTER INFO did not include cluster_state"),
+        "cluster_state": (
+            1 if cluster_info.get("cluster_state") == "ok" else 0 if "cluster_state" in cluster_info else MISSING,
+            "boolean",
+            "CLUSTER INFO did not include cluster_state",
+        ),
         "cluster_known_nodes": (_int_or_missing(cluster_info.get("cluster_known_nodes")), "count", "CLUSTER INFO did not include cluster_known_nodes"),
         "cluster_slots_assigned": (_int_or_missing(cluster_info.get("cluster_slots_assigned")), "count", "CLUSTER INFO did not include cluster_slots_assigned"),
         "cluster_slots_ok": (_int_or_missing(cluster_info.get("cluster_slots_ok")), "count", "CLUSTER INFO did not include cluster_slots_ok"),
@@ -4921,7 +5015,8 @@ def _system_metric_rows_for_node(telemetry: TelemetryRun, node: dict[str, Any], 
     }
     for name in M1_SYSTEM_VALKEY_METRICS:
         value, unit, reason = valkey_values[name]
-        rows.append(_m1_system_metric(telemetry, "valkey_info", logical_id, name, value, unit, labels, reason))
+        source_type = "cluster_info" if name.startswith("cluster_") else "valkey_info"
+        rows.append(_m1_system_metric(telemetry, source_type, logical_id, name, value, unit, labels, reason))
     return rows
 
 
@@ -4933,6 +5028,8 @@ def _m1_system_node_labels(node: dict[str, Any], window_name: str) -> dict[str, 
         "host_id": node.get("host_id", MISSING),
         "az_id": node.get("az_id", MISSING),
         "role": node.get("role", MISSING),
+        "container_name": node.get("container_name", node.get("nodehost_container_name", MISSING)),
+        "metric_scope": "logical_node_or_nodehost_container_as_named_by_source_type",
         "lifecycle_window": window_name,
         "stage_window": window_name,
     }
@@ -5014,6 +5111,7 @@ def _m1_system_metrics_report(
         "source_refs": {
             "system_metrics_timeseries": "system_metrics_timeseries.jsonl",
             "metrics_timeseries": "metrics_timeseries.jsonl",
+            "valkey_e2e_evidence": "valkey_e2e_evidence.json",
         },
     }
 
@@ -5048,6 +5146,19 @@ def _m1_memory_usage_bytes(stats: dict[str, Any]) -> int | str:
     text = str(stats.get("memory_usage", ""))
     first = text.split("/", 1)[0].strip()
     return _m1_size_to_bytes(first)
+
+
+def _m1_docker_cpu_percent(stats: dict[str, Any]) -> float | str:
+    if stats.get("status") != "PASS":
+        return MISSING
+    raw = str(stats.get("cpu_percent", "")).strip()
+    if raw.endswith("%"):
+        raw = raw[:-1].strip()
+    try:
+        value = float(raw)
+    except ValueError:
+        return MISSING
+    return value if value >= 0.0 else MISSING
 
 
 def _m1_docker_net_bytes(stats: dict[str, Any]) -> tuple[int | str, int | str, str]:
@@ -9108,6 +9219,8 @@ def _p36_network_disconnect_probe(network_name: str, container: str, nodes: list
     actions = [f"docker network disconnect {network_name} {container}", f"docker network connect --ip {ip} {network_name} {container}"]
     run_docker(["network", "disconnect", network_name, container], timeout=60)
     client_observations: list[dict[str, Any]] = []
+    reconnect_ms = 0.0
+    recovery_health_ms = 0.0
 
     def observe_client(side: str, node: dict[str, Any]) -> None:
         started = time.monotonic()
@@ -9141,8 +9254,12 @@ def _p36_network_disconnect_probe(network_name: str, container: str, nodes: list
         observe_client("majority", survivor)
         observe_client("isolated", target)
     finally:
+        reconnect_started = time.monotonic()
         run_docker(["network", "connect", "--ip", ip, network_name, container], timeout=60)
-        _p17_wait_clean_cluster(nodes, timeout=180.0)
+        reconnect_ms = round(max(time.monotonic() - reconnect_started, 0.0) * 1000.0, 6)
+        recovery_started = time.monotonic()
+        _p36_wait_clean_cluster_snapshot(nodes, timeout=180.0)
+        recovery_health_ms = round(max(time.monotonic() - recovery_started, 0.0) * 1000.0, 6)
     observe_client("recovery", target)
     recovery_verified = client_observations[-1]["success"] is True
     if not recovery_verified:
@@ -9155,7 +9272,31 @@ def _p36_network_disconnect_probe(network_name: str, container: str, nodes: list
         raise DockerRuntimeError(f"minority/majority observation was not fail-closed: majority_ok={majority_ok}, isolated_ok={isolated_ok}")
     if scenario_id == "split_brain_detection" and majority_ok and isolated_ok:
         raise DockerRuntimeError("split-brain detection observed writable-looking health on both partition sides")
-    return {"actions": actions, "target_container": container, "disconnect_verified": True, "majority_cluster_state_ok": majority_ok, "isolated_cluster_state_ok": isolated_ok, "majority_cluster_info": majority_info[-1000:], "isolated_cluster_info": isolated_info[-1000:], "client_observations": client_observations, "recovery_verified": recovery_verified}
+    return {
+        "actions": actions,
+        "target_container": container,
+        "disconnect_verified": True,
+        "majority_cluster_state_ok": majority_ok,
+        "isolated_cluster_state_ok": isolated_ok,
+        "majority_cluster_info": majority_info[-1000:],
+        "isolated_cluster_info": isolated_info[-1000:],
+        "client_observations": client_observations,
+        "recovery_verified": recovery_verified,
+        "reconnect_ms": reconnect_ms,
+        "recovery_health_ms": recovery_health_ms,
+        "recovery_health_strategy": "single_structured_clean_snapshot",
+    }
+
+
+def _p36_wait_clean_cluster_snapshot(nodes: list[dict[str, Any]], timeout: float) -> None:
+    expected_primaries = len(nodes) // 2
+    _wait_process_snapshot_clean(
+        nodes,
+        expected_nodes=len(nodes),
+        expected_primaries=expected_primaries,
+        expected_replicas=len(nodes) - expected_primaries,
+        timeout=timeout,
+    )
 
 
 def _p36_lifecycle_steps(scale: int, artifacts: Path, management: dict[str, Any], fault: dict[str, Any]) -> list[dict[str, Any]]:
@@ -10765,7 +10906,8 @@ def _p30_execute_process_rolling_restart(
     node_count = len(nodes)
     stage_label = phase.split("_", 1)[0]
     before = _p17_cluster_health(nodes)
-    plan_entries = _p30_rolling_restart_plan_entries(operation_name, operation_id, nodes)
+    initial_topology = _p19_live_topology(nodes)
+    plan_entries = _p30_rolling_restart_plan_entries(operation_name, operation_id, nodes, topology=initial_topology)
     batches = _p30_rolling_restart_batches(plan_entries, nodes)
     max_concurrent = max((len(batch) for batch in batches), default=0)
     plan = {
@@ -10807,9 +10949,14 @@ def _p30_execute_process_rolling_restart(
         safe_by_id: dict[str, dict[str, Any]] = {}
         for entry, target in zip(batch, targets):
             logical_id = str(target["logical_id"])
-            role_before = str(topology.get(logical_id, {}).get("role", entry["planned_role"]))
+            role_before = str(topology.get(logical_id, {}).get("role", MISSING))
+            if role_before != entry["planned_role"]:
+                raise DockerRuntimeError(
+                    f"strict rolling restart live role changed for {logical_id}: "
+                    f"planned={entry['planned_role']} actual={role_before}"
+                )
             safe_details: dict[str, Any] = {"safe_path": "not_required_for_replica_restart", "safe_command_ref": MISSING}
-            if operation_name == "rolling_restart_primary_safe" and entry["planned_role"] == "primary":
+            if entry["planned_role"] == "primary":
                 safe_details = _p30_make_primary_restart_safe(
                     telemetry=telemetry,
                     phase=phase,
@@ -10826,8 +10973,17 @@ def _p30_execute_process_rolling_restart(
                 **safe_details,
             }
 
-        if any(entry["planned_role"] == "primary" for entry in batch) and operation_name == "rolling_restart_primary_safe":
-            _, handoff_probe = _p30_wait_rolling_restart_health(nodes, timeout=120.0, full_probe=False)
+        if any(entry["planned_role"] == "primary" for entry in batch):
+            handoff_nodes = targets + [
+                nodes_by_id[str(safe_by_id[str(target["logical_id"])]["replacement_logical_id"])]
+                for target in targets
+            ]
+            _, handoff_probe = _p30_wait_rolling_restart_health(
+                nodes,
+                timeout=120.0,
+                full_probe=False,
+                required_nodes=handoff_nodes,
+            )
             handoff_probe["gate_kind"] = "primary_handoff"
             handoff_probe["batch_id"] = batch_index
             handoff_probe["command_ref"] = _p30_log_health_probe_summary(
@@ -10876,8 +11032,51 @@ def _p30_execute_process_rolling_restart(
         for entry in batch:
             _p30_merge_parallel_command_rows(command_log, process_by_sequence[int(entry["sequence"])].pop("command_rows"))
 
+        post_restart_topology = _p19_live_topology(nodes) if any(entry["planned_role"] == "replica" for entry in batch) else {}
+        for entry, target in zip(batch, targets):
+            if entry["planned_role"] != "replica":
+                continue
+            primary = next(
+                (
+                    node
+                    for node in nodes
+                    if node["shard_id"] == target["shard_id"]
+                    and post_restart_topology.get(str(node["logical_id"]), {}).get("role") == "primary"
+                ),
+                None,
+            )
+            if primary is None:
+                raise DockerRuntimeError(
+                    f"strict rolling restart could not find live primary after restarting replica {target['logical_id']}"
+                )
+            safe_by_id[str(target["logical_id"])]["replica_sync_after_restart"] = _p30_wait_replica_sync_ready(
+                target,
+                primary,
+                timeout=120.0,
+            )
+
+        if any(entry["planned_role"] == "primary" for entry in batch):
+            for target in targets:
+                safe_details = safe_by_id[str(target["logical_id"])]
+                replacement = nodes_by_id[str(safe_details["replacement_logical_id"])]
+                restore_details = _p30_restore_primary_placement(
+                    telemetry=telemetry,
+                    phase=phase,
+                    run_id=run_id,
+                    operation_id=operation_id,
+                    target=target,
+                    replacement=replacement,
+                    command_log=command_log,
+                )
+                safe_details.update(restore_details)
+
         health_started = telemetry.now_unix_ms()
-        health, probe = _p30_wait_rolling_restart_health(nodes, timeout=180.0, full_probe=False)
+        health, probe = _p30_wait_rolling_restart_health(
+            nodes,
+            timeout=180.0,
+            full_probe=False,
+            required_nodes=targets,
+        )
         health_completed = telemetry.now_unix_ms()
         probe["gate_kind"] = "post_batch"
         probe["batch_id"] = batch_index
@@ -10925,9 +11124,20 @@ def _p30_execute_process_rolling_restart(
                 "workload_impact_ref": f"{operation_id}:event",
                 "primary_safe_path": safe_details.get("safe_path", "not_required_for_replica_restart"),
                 "safe_command_ref": safe_details.get("safe_command_ref", MISSING),
+                "restore_command_ref": safe_details.get("restore_command_ref", MISSING),
+                "placement_restored": safe_details.get(
+                    "placement_restored",
+                    entry["planned_role"] != "primary",
+                ),
                 "replacement_logical_id": safe_details.get("replacement_logical_id", MISSING),
+                "replica_sync_after_restart": safe_details.get("replica_sync_after_restart", MISSING),
+                "replica_sync_before_handoff": safe_details.get("replica_sync_before_handoff", MISSING),
+                "replica_sync_before_restore": safe_details.get("replica_sync_before_restore", MISSING),
                 "promotion_latency_ms": safe_details.get("promotion_latency_ms", MISSING),
                 "cluster_recovery_latency_ms": safe_details.get("cluster_recovery_latency_ms", MISSING),
+                "handoff_wall_ms": safe_details.get("handoff_wall_ms", MISSING),
+                "restore_wall_ms": safe_details.get("restore_wall_ms", MISSING),
+                "restore_role_convergence_ms": safe_details.get("restore_role_convergence_ms", MISSING),
                 "read_unavailability_ms": safe_details.get("read_unavailability_ms", MISSING),
                 "write_unavailability_ms": safe_details.get("write_unavailability_ms", MISSING),
                 "missing_fields": safe_details.get("missing_fields", []),
@@ -10959,6 +11169,11 @@ def _p30_execute_process_rolling_restart(
     final_probe["batch_id"] = MISSING
     final_probe["command_ref"] = _p30_log_health_probe_summary(command_log, telemetry, phase, run_id, operation_id, final_probe)
     probe_summaries.append(final_probe)
+    final_topology = _p19_live_topology(nodes)
+    topology_placement_restored = bool(final_topology) and (
+        _p30_topology_placement_signature(final_topology)
+        == _p30_topology_placement_signature(initial_topology)
+    )
     probe_summary = {
         "batch_count": len(batches),
         "representative_probe_count": sum(int(item["representative_probe_count"]) for item in probe_summaries),
@@ -10969,7 +11184,14 @@ def _p30_execute_process_rolling_restart(
         "probes": probe_summaries,
     }
     plan["health_probe_summary"] = probe_summary
-    pass_status = bool(restart_rows and len(restart_rows) == node_count and all(row["health_gate_status"] == "PASS" for row in restart_rows) and before["cluster_state"] == "ok" and after["cluster_state"] == "ok")
+    pass_status = bool(
+        restart_rows
+        and len(restart_rows) == node_count
+        and all(row["health_gate_status"] == "PASS" and row["placement_restored"] is True for row in restart_rows)
+        and topology_placement_restored
+        and before["cluster_state"] == "ok"
+        and after["cluster_state"] == "ok"
+    )
     return {
         "operation_status": "PASS" if pass_status else "FAIL",
         "restart_count": len(restart_rows),
@@ -10979,27 +11201,67 @@ def _p30_execute_process_rolling_restart(
         "final_full_health_gate_count": 1,
         "restart_batch_count": len(batches),
         "max_concurrent_restarts": max_concurrent,
+        "role_placement_restored": topology_placement_restored,
+        "topology_placement_restored": topology_placement_restored,
         "health_probe_summary": probe_summary,
         "plan_ref": "rolling_restart_plan.json",
         "result_ref": "rolling_restart_results.jsonl",
-        "safe_primary_path": "cluster_failover_takeover_before_owned_process_restart" if operation_name == "rolling_restart_primary_safe" else "replica_first_owned_process_restart",
+        "safe_primary_path": "cluster_failover_after_replica_sync_before_owned_process_restart",
         "missing_fields": [field for row in restart_rows for field in row.get("missing_fields", [])],
     }, plan, restart_rows, events
 
 
-def _p30_rolling_restart_plan_entries(operation_name: str, operation_id: str, nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _p30_topology_placement_signature(topology: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    logical_by_node_id = {
+        str(row.get("node_id")): logical_id
+        for logical_id, row in topology.items()
+        if row.get("node_id") not in {None, MISSING}
+    }
+    return {
+        logical_id: {
+            "role": row.get("role", MISSING),
+            "master_logical_id": logical_by_node_id.get(str(row.get("master_id")), MISSING),
+            "slots": list(row.get("slots", [])) if isinstance(row.get("slots", []), list) else MISSING,
+        }
+        for logical_id, row in sorted(topology.items())
+    }
+
+
+def _p30_rolling_restart_plan_entries(
+    operation_name: str,
+    operation_id: str,
+    nodes: list[dict[str, Any]],
+    *,
+    topology: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     if operation_name not in {"rolling_restart_replica_first", "rolling_restart_primary_safe"}:
         raise DockerRuntimeError(f"unsupported strict rolling restart operation {operation_name}")
-    ordered = sorted(nodes, key=lambda node: (0 if node["role"] == "replica" else 1, str(node["shard_id"]), str(node["logical_id"])))
+    live_topology = topology if topology is not None else _p19_live_topology(nodes)
+    live_roles = {
+        str(node["logical_id"]): str(live_topology.get(str(node["logical_id"]), {}).get("role", "MISSING"))
+        for node in nodes
+    }
+    invalid = {logical_id: role for logical_id, role in live_roles.items() if role not in {"primary", "replica"}}
+    if invalid:
+        raise DockerRuntimeError(f"strict rolling restart could not determine live roles: {invalid}")
+    ordered = sorted(
+        nodes,
+        key=lambda node: (
+            0 if live_roles[str(node["logical_id"])] == "replica" else 1,
+            str(node["shard_id"]),
+            str(node["logical_id"]),
+        ),
+    )
     return [
         {
             "sequence": index,
             "logical_node_id": node["logical_id"],
-            "planned_role": node["role"],
+            "planned_role": live_roles[str(node["logical_id"])],
             "shard_id": node["shard_id"],
             "container_name": node.get("container_name", node["nodehost_container_name"]),
             "nodehost_container_name": node["nodehost_container_name"],
             "operation_id": operation_id,
+            "operation_name": operation_name,
         }
         for index, node in enumerate(ordered, start=1)
     ]
@@ -11015,6 +11277,7 @@ def _p30_rolling_restart_batches(plan_entries: list[dict[str, Any]], nodes: list
         used_shards: set[str] = set()
         used_nodehosts: set[str] = set()
         phase_role = str(pending[0]["planned_role"])
+        max_batch_size = ROLLING_RESTART_MAX_PARALLELISM
         for entry in pending:
             target = nodes_by_id[str(entry["logical_node_id"])]
             shard = str(entry["shard_id"])
@@ -11023,7 +11286,7 @@ def _p30_rolling_restart_batches(plan_entries: list[dict[str, Any]], nodes: list
                 str(entry["planned_role"]) == phase_role
                 and shard not in used_shards
                 and nodehost not in used_nodehosts
-                and len(batch) < ROLLING_RESTART_MAX_PARALLELISM
+                and len(batch) < max_batch_size
             )
             if eligible:
                 batch.append(entry)
@@ -11063,29 +11326,35 @@ def _p30_make_primary_restart_safe(
         raise DockerRuntimeError(f"strict rolling restart could not find a same-shard replica for {target['logical_id']}")
     started_ms = telemetry.now_unix_ms()
     started = time.monotonic()
+    sync_details = _p30_wait_replica_sync_ready(replacement, target, timeout=90.0)
+    promotion_started = time.monotonic()
     command = _p17_log_node_command(
         command_log,
         telemetry=telemetry,
         phase=phase,
         parent_run_id=run_id,
         operation_id=operation_id,
-        command_kind="cluster_failover_takeover_before_primary_restart",
+        command_kind="cluster_failover_before_primary_restart",
         target=replacement,
-        args=["CLUSTER", "FAILOVER", "TAKEOVER"],
+        args=["CLUSTER", "FAILOVER"],
         timeout=60,
     )
     _p17_wait_node_role(replacement, "master", timeout=90.0)
+    _p17_wait_node_role(target, "slave", timeout=90.0)
     completed_ms = telemetry.now_unix_ms()
-    elapsed_ms = round(max(time.monotonic() - started, 0.0) * 1000.0, 6)
+    promotion_ms = round(max(time.monotonic() - promotion_started, 0.0) * 1000.0, 6)
+    handoff_ms = round(max(time.monotonic() - started, 0.0) * 1000.0, 6)
     return {
-        "safe_path": "cluster_failover_takeover_before_owned_process_restart",
+        "safe_path": "cluster_failover_after_replica_sync_before_owned_process_restart",
         "safe_command_ref": command["command_id"],
         "replacement_logical_id": replacement["logical_id"],
         "role_before_restart": "replica",
-        "promotion_latency_ms": elapsed_ms,
-        "cluster_recovery_latency_ms": elapsed_ms,
+        "promotion_latency_ms": promotion_ms,
+        "cluster_recovery_latency_ms": promotion_ms,
+        "handoff_wall_ms": handoff_ms,
         "handoff_started_at_ms": started_ms,
         "handoff_completed_at_ms": completed_ms,
+        "replica_sync_before_handoff": sync_details,
         "read_unavailability_ms": MISSING,
         "write_unavailability_ms": MISSING,
         "missing_fields": [
@@ -11093,6 +11362,93 @@ def _p30_make_primary_restart_safe(
             {"field": "write_unavailability_ms", "status": MISSING, "reason": "No write outage was observed during controlled primary handoff."},
         ],
     }
+
+
+def _p30_restore_primary_placement(
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    run_id: str,
+    operation_id: str,
+    target: dict[str, Any],
+    replacement: dict[str, Any],
+    command_log: list[dict[str, Any]],
+) -> dict[str, Any]:
+    started = time.monotonic()
+    sync_details = _p30_wait_replica_sync_ready(target, replacement, timeout=120.0)
+    command = _p17_log_node_command(
+        command_log,
+        telemetry=telemetry,
+        phase=phase,
+        parent_run_id=run_id,
+        operation_id=operation_id,
+        command_kind="cluster_failover_restore_primary_placement",
+        target=target,
+        args=["CLUSTER", "FAILOVER"],
+        timeout=60,
+    )
+    role_convergence_started = time.monotonic()
+    _p17_wait_node_role(target, "master", timeout=90.0)
+    _p17_wait_node_role(replacement, "slave", timeout=90.0)
+    return {
+        "restore_command_ref": command["command_id"],
+        "placement_restored": True,
+        "role_after_restore": "primary",
+        "replacement_role_after_restore": "replica",
+        "replica_sync_before_restore": sync_details,
+        "restore_role_convergence_ms": round(
+            max(time.monotonic() - role_convergence_started, 0.0) * 1000.0,
+            6,
+        ),
+        "restore_wall_ms": round(max(time.monotonic() - started, 0.0) * 1000.0, 6),
+    }
+
+
+def _p30_wait_replica_sync_ready(
+    replica: dict[str, Any],
+    primary: dict[str, Any],
+    *,
+    timeout: float,
+) -> dict[str, Any]:
+    primary_id = _node_command(primary, "CLUSTER", "MYID", timeout=10).strip()
+    deadline = time.monotonic() + timeout
+    started = time.monotonic()
+    last: dict[str, Any] = {}
+    while time.monotonic() < deadline:
+        try:
+            primary_info = _parse_info(_node_command(primary, "INFO", "replication", timeout=5))
+            replica_info = _parse_info(_node_command(replica, "INFO", "replication", timeout=5))
+            primary_offset = int(primary_info.get("master_repl_offset", "-1"))
+            replica_offset = int(
+                replica_info.get("slave_repl_offset", replica_info.get("master_repl_offset", "-1"))
+            )
+            last = {
+                "primary_logical_id": primary["logical_id"],
+                "replica_logical_id": replica["logical_id"],
+                "primary_node_id": primary_id,
+                "master_link_status": replica_info.get("master_link_status", MISSING),
+                "master_sync_in_progress": replica_info.get("master_sync_in_progress", MISSING),
+                "primary_repl_offset": primary_offset,
+                "replica_repl_offset": replica_offset,
+            }
+            if (
+                _process_node_is_replica_of(replica, primary_id)
+                and replica_info.get("master_link_status") == "up"
+                and replica_info.get("master_sync_in_progress") == "0"
+                and primary_offset >= 0
+                and replica_offset >= primary_offset
+            ):
+                return {
+                    **last,
+                    "status": "PASS",
+                    "wait_ms": round(max(time.monotonic() - started, 0.0) * 1000.0, 6),
+                }
+        except (DockerRuntimeError, TypeError, ValueError):
+            pass
+        time.sleep(0.5)
+    raise DockerRuntimeError(
+        f"replica {replica['logical_id']} did not catch up to primary {primary['logical_id']} before failover; last={last}"
+    )
 
 
 def _p30_restart_process_target(
@@ -11206,25 +11562,44 @@ def _p30_wait_rolling_restart_health(
     *,
     timeout: float,
     full_probe: bool,
+    required_nodes: list[dict[str, Any]] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     node_count = len(nodes)
     deadline = time.monotonic() + timeout
     started = time.monotonic()
     representatives = _representative_nodes(nodes)
+    scoped_nodes = list(nodes) if full_probe else list(
+        {
+            str(node["logical_id"]): node
+            for node in [*representatives, *(required_nodes or [])]
+        }.values()
+    )
     representative_probe_count = 0
     full_probe_count = 0
     retry_count = 0
     last = _p30_health_from_process_snapshots([])
-    last_scope = "all_nodes" if full_probe else "representative_by_az"
+    last_scope = "all_nodes" if full_probe else "representative_by_az_and_required_nodes"
+    attempt_summaries: list[dict[str, Any]] = []
     while time.monotonic() < deadline:
-        scope_nodes = nodes if full_probe else representatives
-        snapshots = _process_node_snapshots_parallel(scope_nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
+        current_scope = "all_nodes" if full_probe else "representative_by_az_and_required_nodes"
+        attempt_started = time.monotonic()
+        snapshots = _process_node_snapshots_parallel(scoped_nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
         if full_probe:
             full_probe_count += len(snapshots)
         else:
             representative_probe_count += len(snapshots)
         last = _p30_health_from_process_snapshots(snapshots)
+        attempt_summaries.append(
+            {
+                "attempt": len(attempt_summaries) + 1,
+                "sample_scope": current_scope,
+                "probed_node_ids": [str(snapshot.get("logical_id", MISSING)) for snapshot in snapshots],
+                "wall_ms": round(max(time.monotonic() - attempt_started, 0.0) * 1000.0, 6),
+                "health": {key: value for key, value in last.items() if key != "snapshots"},
+            }
+        )
         if _p30_clean_health(last, node_count):
+            last_scope = current_scope
             break
 
         if not full_probe:
@@ -11232,6 +11607,15 @@ def _p30_wait_rolling_restart_health(
             full_probe_count += len(diagnostic)
             last = _p30_health_from_process_snapshots(diagnostic)
             last_scope = "all_nodes_diagnostic"
+            attempt_summaries.append(
+                {
+                    "attempt": len(attempt_summaries) + 1,
+                    "sample_scope": last_scope,
+                    "probed_node_ids": [str(snapshot.get("logical_id", MISSING)) for snapshot in diagnostic],
+                    "wall_ms": MISSING,
+                    "health": {key: value for key, value in last.items() if key != "snapshots"},
+                }
+            )
             if _p30_clean_health(last, node_count):
                 break
         retry_count += 1
@@ -11249,6 +11633,8 @@ def _p30_wait_rolling_restart_health(
         "cluster_state": last["cluster_state"],
         "known_nodes": last["known_nodes"],
         "slots_assigned": last["slots_assigned"],
+        "probed_node_ids": [str(node["logical_id"]) for node in scoped_nodes],
+        "attempts": attempt_summaries,
     }
     return last, probe
 
@@ -12107,6 +12493,64 @@ def _event(phase: str, run_id: str, event_type: str, severity: str, details: dic
     }
 
 
+def _docker_stats_many(containers: Iterable[str]) -> dict[str, dict[str, Any]]:
+    ordered = list(dict.fromkeys(str(container) for container in containers))
+    if not ordered:
+        return {}
+    try:
+        result = run_docker(
+            ["stats", "--no-stream", "--format", "{{json .}}", *ordered],
+            timeout=30,
+            check=False,
+        )
+    except DockerRuntimeError:
+        return {container: _docker_stats_best_effort(container) for container in ordered}
+    if result.returncode != 0 or not result.stdout.strip():
+        # Preserve the old per-container best-effort behavior when a Docker
+        # version or one bad container makes the batch command fail.
+        return {container: _docker_stats_best_effort(container) for container in ordered}
+
+    requested = {container.lstrip("/"): container for container in ordered}
+    collected: dict[str, dict[str, Any]] = {}
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            continue
+        try:
+            raw = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(raw, dict):
+            continue
+        identity = str(raw.get("Name") or raw.get("Container") or "").lstrip("/")
+        container = requested.get(identity)
+        if container is not None:
+            collected[container] = _docker_stats_payload(raw)
+
+    for container in ordered:
+        if container not in collected:
+            collected[container] = _docker_stats_best_effort(container)
+    return collected
+
+
+def _docker_stats_best_effort(container: str) -> dict[str, Any]:
+    try:
+        return _docker_stats(container)
+    except DockerRuntimeError as exc:
+        return {"status": "MISSING", "reason": f"docker stats failed: {exc}"}
+
+
+def _docker_stats_payload(raw: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "status": "PASS",
+        "cpu_percent": raw.get("CPUPerc", "MISSING"),
+        "memory_usage": raw.get("MemUsage", "MISSING"),
+        "memory_percent": raw.get("MemPerc", "MISSING"),
+        "net_io": raw.get("NetIO", "MISSING"),
+        "block_io": raw.get("BlockIO", "MISSING"),
+        "pids": raw.get("PIDs", "MISSING"),
+    }
+
+
 def _docker_stats(container: str) -> dict[str, Any]:
     result = run_docker(
         ["stats", "--no-stream", "--format", "{{json .}}", container],
@@ -12122,15 +12566,9 @@ def _docker_stats(container: str) -> dict[str, Any]:
         raw = json.loads(result.stdout.splitlines()[0])
     except json.JSONDecodeError as exc:
         return {"status": "MISSING", "reason": f"docker stats JSON parse failed: {exc}"}
-    return {
-        "status": "PASS",
-        "cpu_percent": raw.get("CPUPerc", "MISSING"),
-        "memory_usage": raw.get("MemUsage", "MISSING"),
-        "memory_percent": raw.get("MemPerc", "MISSING"),
-        "net_io": raw.get("NetIO", "MISSING"),
-        "block_io": raw.get("BlockIO", "MISSING"),
-        "pids": raw.get("PIDs", "MISSING"),
-    }
+    if not isinstance(raw, dict):
+        return {"status": "MISSING", "reason": "docker stats JSON payload was not an object"}
+    return _docker_stats_payload(raw)
 
 
 def _parse_info(text: str) -> dict[str, str]:
