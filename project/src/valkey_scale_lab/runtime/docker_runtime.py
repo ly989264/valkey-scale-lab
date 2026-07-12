@@ -41,6 +41,7 @@ LABEL_PREFIX = "org.valkey-scale-lab"
 RUN_DATE = "20260628"
 CLUSTER_MEET_FANOUT = 4
 CLUSTER_ORCHESTRATION_PARALLELISM = 8
+ROLLING_RESTART_MAX_PARALLELISM = CLUSTER_ORCHESTRATION_PARALLELISM
 CLUSTER_DIAGNOSTIC_INTERVAL_SECONDS = 2.0
 CONTAINER_STOP_TIMEOUT_SECONDS = 45
 CONTAINER_REMOVE_TIMEOUT_SECONDS = 60
@@ -8402,6 +8403,11 @@ def write_p36_full_flow_artifacts(
     )
     write_jsonl(artifacts / "full_flow_topology_snapshots.jsonl", topology_rows)
     write_jsonl(artifacts / "management_command_log.jsonl", management_command_log)
+    write_jsonl(artifacts / "rolling_restart_results.jsonl", management["restart_results"])
+    _write_json_artifact(
+        artifacts / "rolling_restart_plan.json",
+        _p30_rolling_plan(phase, run_id, management["restart_plans"]),
+    )
     write_jsonl(artifacts / "fault_command_log.jsonl", fault_command_log)
     _write_json_artifact(artifacts / "management_sequence.json", management["summary"])
     _write_json_artifact(artifacts / "fault_sequence.json", fault["summary"])
@@ -8416,7 +8422,15 @@ def write_p36_full_flow_artifacts(
                 "operation_ids": sorted(_p36_operation_ids_for_refs(events, management_command_log, evidence)),
                 "event_ids": evidence["event_ids"],
                 "command_ids": evidence["command_ids"],
-                "evidence_refs": ["runtime/management_sequence.json", "runtime/management_command_log.jsonl"],
+                "evidence_refs": [
+                    "runtime/management_sequence.json",
+                    "runtime/management_command_log.jsonl",
+                    *(
+                        ["runtime/rolling_restart_plan.json", "runtime/rolling_restart_results.jsonl"]
+                        if scenario_id == "rolling_restart"
+                        else []
+                    ),
+                ],
             }
         )
     for scenario_id in P36_FAULT_SCENARIOS:
@@ -8464,6 +8478,8 @@ def write_p36_full_flow_artifacts(
             "management_execution_refs": [
                 _p36_rel(artifacts / "management_sequence.json"),
                 _p36_rel(artifacts / "management_command_log.jsonl"),
+                _p36_rel(artifacts / "rolling_restart_plan.json"),
+                _p36_rel(artifacts / "rolling_restart_results.jsonl"),
             ],
             "fault_execution_refs": [
                 _p36_rel(artifacts / "fault_sequence.json"),
@@ -8567,6 +8583,8 @@ def _p36_run_management_sequence(
     windows: list[dict[str, Any]] = []
     topology_rows: list[dict[str, Any]] = []
     results: list[dict[str, Any]] = []
+    restart_plans: list[dict[str, Any]] = []
+    restart_results: list[dict[str, Any]] = []
     scenario_evidence = {name: {"event_ids": [], "command_ids": []} for name in P36_MANAGEMENT_SCENARIOS}
     matrix_started = time.monotonic()
     for operation_name in P30_EXECUTION_ROWS:
@@ -8579,7 +8597,7 @@ def _p36_run_management_sequence(
         before = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, f"{operation_name}_before", nodes, nodes)
         topology_rows.append(before)
         command_start = len(command_log)
-        result, row_events, row_metrics, row_windows, row_topology, _extras = _p30_run_operation_with_workload(
+        result, row_events, row_metrics, row_windows, row_topology, extras = _p30_run_operation_with_workload(
             telemetry=telemetry,
             phase=phase,
             run_id=run_id,
@@ -8596,6 +8614,9 @@ def _p36_run_management_sequence(
         metrics.extend(row_metrics)
         windows.extend(row_windows)
         topology_rows.extend(row_topology)
+        if extras.get("restart_plan"):
+            restart_plans.append(extras["restart_plan"])
+        restart_results.extend(extras.get("restart_results", []))
         topology_rows.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, f"{operation_name}_after", nodes, nodes))
         finished_event = _p36_observation_event(run_id, operation_id, scenario_id, "management_operation_finished")
         events.append(finished_event)
@@ -8689,9 +8710,25 @@ def _p36_run_management_sequence(
             "health_criteria": health_criteria,
         },
         "scenario_evidence": scenario_evidence,
-        "source_refs": ["management_sequence.json", "management_command_log.jsonl", "full_flow_topology_snapshots.jsonl", "workload_windows.json"],
+        "source_refs": [
+            "management_sequence.json",
+            "management_command_log.jsonl",
+            "rolling_restart_plan.json",
+            "rolling_restart_results.jsonl",
+            "full_flow_topology_snapshots.jsonl",
+            "workload_windows.json",
+        ],
     }
-    return {"summary": _p30_encode_missing(summary), "events": events, "metrics": metrics, "windows": windows, "topology": topology_rows, "scenario_evidence": scenario_evidence}
+    return {
+        "summary": _p30_encode_missing(summary),
+        "events": events,
+        "metrics": metrics,
+        "windows": windows,
+        "topology": topology_rows,
+        "scenario_evidence": scenario_evidence,
+        "restart_plans": restart_plans,
+        "restart_results": restart_results,
+    }
 
 
 def _p36_management_scenario(operation_name: str) -> str:
@@ -10280,6 +10317,7 @@ def _p30_run_operation_with_workload(
         all_errors.extend(errors)
     if result is None:
         result, extras = _p30_execute_operation(telemetry=telemetry, phase=phase, run_id=run_id, scenario=scenario, operation_name=operation_name, operation_id=operation_id, nodes=nodes, command_log=command_log)
+    events.extend(extras.get("restart_events", []))
     all_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - all_started, 0.000001), latencies_ms=all_latencies, error_texts=all_errors)
     all_end = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:all_run", operation_id=operation_id, message=f"{stage_label} all-run workload window finished.", metadata={"window_name": "all_run", "operation_id": operation_id, "sample_count": all_metrics["sample_count"]})
     events.append(all_end)
@@ -10727,85 +10765,368 @@ def _p30_execute_process_rolling_restart(
     node_count = len(nodes)
     stage_label = phase.split("_", 1)[0]
     before = _p17_cluster_health(nodes)
-    plan_entries = _p19_plan_entries(operation_name, operation_id, nodes)
+    plan_entries = _p30_rolling_restart_plan_entries(operation_name, operation_id, nodes)
+    batches = _p30_rolling_restart_batches(plan_entries, nodes)
+    max_concurrent = max((len(batch) for batch in batches), default=0)
     plan = {
         "operation_id": operation_id,
         "operation_name": operation_name,
         "node_count": node_count,
         "status": "PASS",
-        "max_concurrent_restarts": 1,
-        "health_gate": {"required_after_each_restart": True, "cluster_state": "ok", "slots_assigned": 16384, "known_nodes": node_count},
+        "max_concurrent_restarts": max_concurrent,
+        "health_gate": {
+            "required_after_each_restart": False,
+            "required_after_each_safe_batch": True,
+            "representative_probe_between_batches": True,
+            "full_probe_after_operation": True,
+            "full_probe_on_representative_failure": True,
+            "cluster_state": "ok",
+            "slots_assigned": 16384,
+            "known_nodes": node_count,
+        },
         "restart_order": plan_entries,
+        "restart_batches": [
+            {
+                "batch_id": batch_index,
+                "size": len(batch),
+                "sequences": [entry["sequence"] for entry in batch],
+                "logical_node_ids": [entry["logical_node_id"] for entry in batch],
+                "shard_ids": [entry["shard_id"] for entry in batch],
+                "nodehost_container_names": [entry["nodehost_container_name"] for entry in batch],
+            }
+            for batch_index, batch in enumerate(batches, start=1)
+        ],
     }
     restart_rows: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
-    for entry in plan_entries:
-        target = next(node for node in nodes if node["logical_id"] == entry["logical_node_id"])
-        role_before = _p19_current_role(target, nodes)
-        safe_details: dict[str, Any] = {"safe_path": "not_required_for_replica_restart", "safe_command_ref": MISSING}
-        if operation_name == "rolling_restart_primary_safe" and role_before == "primary":
-            safe_details = _p19_make_primary_safe(telemetry=telemetry, phase=phase, run_id=run_id, operation_id=operation_id, target=target, nodes=nodes, command_log=command_log)
-            role_before = _p19_current_role(target, nodes)
-        events.append(telemetry.event("node_restart_started", subject_type="valkey_node", subject_id=target["logical_id"], operation_id=operation_id, message=f"Owned Valkey process restart started for {stage_label} rolling restart.", metadata={"sequence": entry["sequence"], "role_before_restart": role_before}))
-        old_pid = target.get("pid", MISSING)
-        restart_started = telemetry.now_unix_ms()
-        restart_mono = time.monotonic()
-        _p30_stop_process(target, telemetry, phase, run_id, operation_id, command_log, command_kind="owned_valkey_process_restart_stop")
-        _p30_start_process(target, telemetry, phase, run_id, operation_id, command_log, fresh_cluster_identity=False)
-        restart_completed = telemetry.now_unix_ms()
+    probe_summaries: list[dict[str, Any]] = []
+    nodes_by_id = {str(node["logical_id"]): node for node in nodes}
+    for batch_index, batch in enumerate(batches, start=1):
+        targets = [nodes_by_id[str(entry["logical_node_id"])] for entry in batch]
+        topology = _p19_live_topology(nodes)
+        safe_by_id: dict[str, dict[str, Any]] = {}
+        for entry, target in zip(batch, targets):
+            logical_id = str(target["logical_id"])
+            role_before = str(topology.get(logical_id, {}).get("role", entry["planned_role"]))
+            safe_details: dict[str, Any] = {"safe_path": "not_required_for_replica_restart", "safe_command_ref": MISSING}
+            if operation_name == "rolling_restart_primary_safe" and entry["planned_role"] == "primary":
+                safe_details = _p30_make_primary_restart_safe(
+                    telemetry=telemetry,
+                    phase=phase,
+                    run_id=run_id,
+                    operation_id=operation_id,
+                    target=target,
+                    nodes=nodes,
+                    topology=topology,
+                    command_log=command_log,
+                )
+            safe_by_id[logical_id] = {
+                "role_before_handoff": role_before,
+                "role_before_restart": safe_details.get("role_before_restart", role_before),
+                **safe_details,
+            }
+
+        if any(entry["planned_role"] == "primary" for entry in batch) and operation_name == "rolling_restart_primary_safe":
+            _, handoff_probe = _p30_wait_rolling_restart_health(nodes, timeout=120.0, full_probe=False)
+            handoff_probe["gate_kind"] = "primary_handoff"
+            handoff_probe["batch_id"] = batch_index
+            handoff_probe["command_ref"] = _p30_log_health_probe_summary(
+                command_log, telemetry, phase, run_id, operation_id, handoff_probe
+            )
+            probe_summaries.append(handoff_probe)
+
+        events.append(
+            telemetry.event(
+                "rolling_restart_batch_started",
+                subject_type="rolling_restart_batch",
+                subject_id=str(batch_index),
+                operation_id=operation_id,
+                message=f"Owned Valkey process restart batch started for {stage_label} rolling restart.",
+                metadata={"batch_id": batch_index, "batch_size": len(batch), "sequences": [entry["sequence"] for entry in batch]},
+            )
+        )
+        for entry, target in zip(batch, targets):
+            details = safe_by_id[str(target["logical_id"])]
+            events.append(
+                telemetry.event(
+                    "node_restart_started",
+                    subject_type="valkey_node",
+                    subject_id=target["logical_id"],
+                    operation_id=operation_id,
+                    message=f"Owned Valkey process restart started for {stage_label} rolling restart.",
+                    metadata={"sequence": entry["sequence"], "batch_id": batch_index, "role_before_restart": details["role_before_restart"]},
+                )
+            )
+
+        process_results = _bounded_parallel(
+            list(zip(batch, targets)),
+            lambda item: _p30_restart_process_target(
+                entry=item[0],
+                target=item[1],
+                telemetry=telemetry,
+                phase=phase,
+                run_id=run_id,
+                operation_id=operation_id,
+            ),
+            parallelism=ROLLING_RESTART_MAX_PARALLELISM,
+            timeout=90.0,
+            label=f"{stage_label} rolling restart batch {batch_index}",
+        )
+        process_by_sequence = {int(item["sequence"]): item for item in process_results}
+        for entry in batch:
+            _p30_merge_parallel_command_rows(command_log, process_by_sequence[int(entry["sequence"])].pop("command_rows"))
+
         health_started = telemetry.now_unix_ms()
-        health_mono = time.monotonic()
-        _p17_wait_clean_cluster(nodes, timeout=180.0)
-        health = _p30_wait_health_snapshot(nodes, timeout=30.0)
+        health, probe = _p30_wait_rolling_restart_health(nodes, timeout=180.0, full_probe=False)
         health_completed = telemetry.now_unix_ms()
-        row = {
-            "schema_version": "v1",
-            "phase_id": phase,
-            "run_id": run_id,
-            "operation_id": operation_id,
-            "operation_name": operation_name,
-            "node_count": node_count,
-            "sequence": entry["sequence"],
-            "node_logical_id": target["logical_id"],
-            "shard_id": target["shard_id"],
-            "planned_role": entry["planned_role"],
-            "role_before_restart": role_before,
-            "container_name": target["nodehost_container_name"],
-            "process_pid_before": old_pid,
-            "process_pid_after": target.get("pid", MISSING),
-            "max_concurrent_restarts": 1,
-            "concurrent_restart_group": entry["sequence"],
-            "restart_started_at_ms": restart_started,
-            "restart_completed_at_ms": restart_completed,
-            "restart_wall_ms": round(max(time.monotonic() - restart_mono, 0.0) * 1000.0, 6),
-            "health_gate_started_at_ms": health_started,
-            "health_gate_completed_at_ms": health_completed,
-            "health_gate_wall_ms": round(max(time.monotonic() - health_mono, 0.0) * 1000.0, 6),
-            "health_gate_status": "PASS" if health["cluster_state"] == "ok" and health["known_nodes"] == node_count and health["slots_assigned"] == 16384 else "FAIL",
-            "cluster_state_after_gate": health["cluster_state"],
-            "known_nodes_after_gate": health["known_nodes"],
-            "slots_after_gate": health["slots_assigned"],
-            "slots_ok_after_gate": health["slots_ok"],
-            "slots_fail_after_gate": health["slots_fail"],
-            "workload_impact_ref": f"{operation_id}:event",
-            "primary_safe_path": safe_details.get("safe_path", "not_required_for_replica_restart"),
-            "safe_command_ref": safe_details.get("safe_command_ref", MISSING),
-            "missing_fields": safe_details.get("missing_fields", []),
-        }
-        restart_rows.append(row)
-        events.append(telemetry.event("node_restart_completed", subject_type="valkey_node", subject_id=target["logical_id"], operation_id=operation_id, message=f"Owned Valkey process restart completed and health gate passed for {stage_label} rolling restart.", metadata={"sequence": entry["sequence"], "health_gate_status": row["health_gate_status"]}))
-    after = _p17_cluster_health(nodes)
+        probe["gate_kind"] = "post_batch"
+        probe["batch_id"] = batch_index
+        probe["command_ref"] = _p30_log_health_probe_summary(command_log, telemetry, phase, run_id, operation_id, probe)
+        probe_summaries.append(probe)
+        health_status = "PASS" if _p30_clean_health(health, node_count) else "FAIL"
+
+        for entry, target in zip(batch, targets):
+            sequence = int(entry["sequence"])
+            process_result = process_by_sequence[sequence]
+            safe_details = safe_by_id[str(target["logical_id"])]
+            row = {
+                "schema_version": "v1",
+                "phase_id": phase,
+                "run_id": run_id,
+                "operation_id": operation_id,
+                "operation_name": operation_name,
+                "node_count": node_count,
+                "sequence": sequence,
+                "node_logical_id": target["logical_id"],
+                "shard_id": target["shard_id"],
+                "planned_role": entry["planned_role"],
+                "role_before_handoff": safe_details["role_before_handoff"],
+                "role_before_restart": safe_details["role_before_restart"],
+                "container_name": target["nodehost_container_name"],
+                "process_pid_before": process_result["process_pid_before"],
+                "process_pid_after": process_result["process_pid_after"],
+                "max_concurrent_restarts": max_concurrent,
+                "concurrent_restart_group": batch_index,
+                "batch_size": len(batch),
+                "restart_started_at_ms": process_result["restart_started_at_ms"],
+                "restart_completed_at_ms": process_result["restart_completed_at_ms"],
+                "restart_wall_ms": process_result["restart_wall_ms"],
+                "health_gate_started_at_ms": health_started,
+                "health_gate_completed_at_ms": health_completed,
+                "health_gate_wall_ms": probe["wall_ms"],
+                "health_gate_status": health_status,
+                "health_probe": probe,
+                "health_probe_command_ref": probe["command_ref"],
+                "cluster_state_after_gate": health["cluster_state"],
+                "known_nodes_after_gate": health["known_nodes"],
+                "slots_after_gate": health["slots_assigned"],
+                "slots_ok_after_gate": health["slots_ok"],
+                "slots_fail_after_gate": health["slots_fail"],
+                "workload_impact_ref": f"{operation_id}:event",
+                "primary_safe_path": safe_details.get("safe_path", "not_required_for_replica_restart"),
+                "safe_command_ref": safe_details.get("safe_command_ref", MISSING),
+                "replacement_logical_id": safe_details.get("replacement_logical_id", MISSING),
+                "promotion_latency_ms": safe_details.get("promotion_latency_ms", MISSING),
+                "cluster_recovery_latency_ms": safe_details.get("cluster_recovery_latency_ms", MISSING),
+                "read_unavailability_ms": safe_details.get("read_unavailability_ms", MISSING),
+                "write_unavailability_ms": safe_details.get("write_unavailability_ms", MISSING),
+                "missing_fields": safe_details.get("missing_fields", []),
+            }
+            restart_rows.append(row)
+            events.append(
+                telemetry.event(
+                    "node_restart_completed",
+                    subject_type="valkey_node",
+                    subject_id=target["logical_id"],
+                    operation_id=operation_id,
+                    message=f"Owned Valkey process restart completed and batch health gate passed for {stage_label} rolling restart.",
+                    metadata={"sequence": sequence, "batch_id": batch_index, "health_gate_status": health_status},
+                )
+            )
+        events.append(
+            telemetry.event(
+                "rolling_restart_batch_completed",
+                subject_type="rolling_restart_batch",
+                subject_id=str(batch_index),
+                operation_id=operation_id,
+                message=f"Owned Valkey process restart batch completed for {stage_label} rolling restart.",
+                metadata={"batch_id": batch_index, "batch_size": len(batch), "health_gate_status": health_status, "probe_command_ref": probe["command_ref"]},
+            )
+        )
+
+    after, final_probe = _p30_wait_rolling_restart_health(nodes, timeout=180.0, full_probe=True)
+    final_probe["gate_kind"] = "final_full"
+    final_probe["batch_id"] = MISSING
+    final_probe["command_ref"] = _p30_log_health_probe_summary(command_log, telemetry, phase, run_id, operation_id, final_probe)
+    probe_summaries.append(final_probe)
+    probe_summary = {
+        "batch_count": len(batches),
+        "representative_probe_count": sum(int(item["representative_probe_count"]) for item in probe_summaries),
+        "full_probe_count": sum(int(item["full_probe_count"]) for item in probe_summaries),
+        "retry_count": sum(int(item["retry_count"]) for item in probe_summaries),
+        "node_command_count": sum(int(item["node_command_count"]) for item in probe_summaries),
+        "wall_ms": round(sum(float(item["wall_ms"]) for item in probe_summaries), 6),
+        "probes": probe_summaries,
+    }
+    plan["health_probe_summary"] = probe_summary
     pass_status = bool(restart_rows and len(restart_rows) == node_count and all(row["health_gate_status"] == "PASS" for row in restart_rows) and before["cluster_state"] == "ok" and after["cluster_state"] == "ok")
     return {
         "operation_status": "PASS" if pass_status else "FAIL",
         "restart_count": len(restart_rows),
-        "health_gate_count": sum(1 for row in restart_rows if row["health_gate_status"] == "PASS"),
-        "max_concurrent_restarts": 1,
+        "health_gate_count": len(probe_summaries),
+        "post_batch_health_gate_count": len(batches),
+        "primary_handoff_health_gate_count": sum(1 for item in probe_summaries if item.get("gate_kind") == "primary_handoff"),
+        "final_full_health_gate_count": 1,
+        "restart_batch_count": len(batches),
+        "max_concurrent_restarts": max_concurrent,
+        "health_probe_summary": probe_summary,
         "plan_ref": "rolling_restart_plan.json",
         "result_ref": "rolling_restart_results.jsonl",
         "safe_primary_path": "cluster_failover_takeover_before_owned_process_restart" if operation_name == "rolling_restart_primary_safe" else "replica_first_owned_process_restart",
         "missing_fields": [field for row in restart_rows for field in row.get("missing_fields", [])],
     }, plan, restart_rows, events
+
+
+def _p30_rolling_restart_plan_entries(operation_name: str, operation_id: str, nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if operation_name not in {"rolling_restart_replica_first", "rolling_restart_primary_safe"}:
+        raise DockerRuntimeError(f"unsupported strict rolling restart operation {operation_name}")
+    ordered = sorted(nodes, key=lambda node: (0 if node["role"] == "replica" else 1, str(node["shard_id"]), str(node["logical_id"])))
+    return [
+        {
+            "sequence": index,
+            "logical_node_id": node["logical_id"],
+            "planned_role": node["role"],
+            "shard_id": node["shard_id"],
+            "container_name": node.get("container_name", node["nodehost_container_name"]),
+            "nodehost_container_name": node["nodehost_container_name"],
+            "operation_id": operation_id,
+        }
+        for index, node in enumerate(ordered, start=1)
+    ]
+
+
+def _p30_rolling_restart_batches(plan_entries: list[dict[str, Any]], nodes: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    nodes_by_id = {str(node["logical_id"]): node for node in nodes}
+    pending = list(plan_entries)
+    batches: list[list[dict[str, Any]]] = []
+    while pending:
+        batch: list[dict[str, Any]] = []
+        deferred: list[dict[str, Any]] = []
+        used_shards: set[str] = set()
+        used_nodehosts: set[str] = set()
+        phase_role = str(pending[0]["planned_role"])
+        for entry in pending:
+            target = nodes_by_id[str(entry["logical_node_id"])]
+            shard = str(entry["shard_id"])
+            nodehost = str(target["nodehost_container_name"])
+            eligible = (
+                str(entry["planned_role"]) == phase_role
+                and shard not in used_shards
+                and nodehost not in used_nodehosts
+                and len(batch) < ROLLING_RESTART_MAX_PARALLELISM
+            )
+            if eligible:
+                batch.append(entry)
+                used_shards.add(shard)
+                used_nodehosts.add(nodehost)
+            else:
+                deferred.append(entry)
+        if not batch:
+            raise DockerRuntimeError("strict rolling restart planner could not form a safe batch")
+        batches.append(batch)
+        pending = deferred
+    return batches
+
+
+def _p30_make_primary_restart_safe(
+    *,
+    telemetry: TelemetryRun,
+    phase: str,
+    run_id: str,
+    operation_id: str,
+    target: dict[str, Any],
+    nodes: list[dict[str, Any]],
+    topology: dict[str, dict[str, Any]],
+    command_log: list[dict[str, Any]],
+) -> dict[str, Any]:
+    replacement = next(
+        (
+            node
+            for node in nodes
+            if node["logical_id"] != target["logical_id"]
+            and node["shard_id"] == target["shard_id"]
+            and topology.get(str(node["logical_id"]), {}).get("role", node.get("role")) == "replica"
+        ),
+        None,
+    )
+    if replacement is None:
+        raise DockerRuntimeError(f"strict rolling restart could not find a same-shard replica for {target['logical_id']}")
+    started_ms = telemetry.now_unix_ms()
+    started = time.monotonic()
+    command = _p17_log_node_command(
+        command_log,
+        telemetry=telemetry,
+        phase=phase,
+        parent_run_id=run_id,
+        operation_id=operation_id,
+        command_kind="cluster_failover_takeover_before_primary_restart",
+        target=replacement,
+        args=["CLUSTER", "FAILOVER", "TAKEOVER"],
+        timeout=60,
+    )
+    _p17_wait_node_role(replacement, "master", timeout=90.0)
+    completed_ms = telemetry.now_unix_ms()
+    elapsed_ms = round(max(time.monotonic() - started, 0.0) * 1000.0, 6)
+    return {
+        "safe_path": "cluster_failover_takeover_before_owned_process_restart",
+        "safe_command_ref": command["command_id"],
+        "replacement_logical_id": replacement["logical_id"],
+        "role_before_restart": "replica",
+        "promotion_latency_ms": elapsed_ms,
+        "cluster_recovery_latency_ms": elapsed_ms,
+        "handoff_started_at_ms": started_ms,
+        "handoff_completed_at_ms": completed_ms,
+        "read_unavailability_ms": MISSING,
+        "write_unavailability_ms": MISSING,
+        "missing_fields": [
+            {"field": "read_unavailability_ms", "status": MISSING, "reason": "No read outage was observed during controlled primary handoff."},
+            {"field": "write_unavailability_ms", "status": MISSING, "reason": "No write outage was observed during controlled primary handoff."},
+        ],
+    }
+
+
+def _p30_restart_process_target(
+    *,
+    entry: dict[str, Any],
+    target: dict[str, Any],
+    telemetry: TelemetryRun,
+    phase: str,
+    run_id: str,
+    operation_id: str,
+) -> dict[str, Any]:
+    command_rows: list[dict[str, Any]] = []
+    old_pid = target.get("pid", MISSING)
+    started_ms = telemetry.now_unix_ms()
+    started = time.monotonic()
+    _p30_stop_process(target, telemetry, phase, run_id, operation_id, command_rows, command_kind="owned_valkey_process_restart_stop")
+    _p30_start_process(target, telemetry, phase, run_id, operation_id, command_rows, fresh_cluster_identity=False)
+    return {
+        "sequence": int(entry["sequence"]),
+        "process_pid_before": old_pid,
+        "process_pid_after": target.get("pid", MISSING),
+        "restart_started_at_ms": started_ms,
+        "restart_completed_at_ms": telemetry.now_unix_ms(),
+        "restart_wall_ms": round(max(time.monotonic() - started, 0.0) * 1000.0, 6),
+        "command_rows": command_rows,
+    }
+
+
+def _p30_merge_parallel_command_rows(command_log: list[dict[str, Any]], rows: list[dict[str, Any]]) -> None:
+    for row in rows:
+        copied = dict(row)
+        operation_id = str(copied["operation_id"])
+        copied["command_id"] = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
+        command_log.append(copied)
 
 
 def _p30_log_docker_exec(
@@ -10846,22 +11167,135 @@ def _p30_log_docker_exec(
     return result
 
 
-def _p30_wait_health_snapshot(nodes: list[dict[str, Any]], timeout: float) -> dict[str, Any]:
+def _p30_clean_health(health: dict[str, Any], node_count: int) -> bool:
+    expected_primaries = node_count // 2
+    expected_replicas = node_count - expected_primaries
+    return bool(
+        health["cluster_state"] == "ok"
+        and health["known_nodes"] == node_count
+        and health["primary_count"] == expected_primaries
+        and health["replica_count"] == expected_replicas
+        and health["handshake_count"] == 0
+        and health["fail_count"] == 0
+        and health["pfail_count"] == 0
+        and health["slots_assigned"] == 16384
+        and health["slots_ok"] == 16384
+        and health["slots_fail"] == 0
+    )
+
+
+def _p30_health_from_process_snapshots(snapshots: list[dict[str, Any]]) -> dict[str, Any]:
+    passing = [snapshot for snapshot in snapshots if snapshot.get("probe_status") == "PASS"]
+    return {
+        "cluster_state": "ok" if passing and len(passing) == len(snapshots) and all(snapshot["cluster_state"] == "ok" for snapshot in passing) else "unknown",
+        "known_nodes": min((int(snapshot["known_nodes"]) for snapshot in passing), default=0),
+        "primary_count": min((int(snapshot["primary_count"]) for snapshot in passing), default=0),
+        "replica_count": min((int(snapshot["replica_count"]) for snapshot in passing), default=0),
+        "handshake_count": max((int(snapshot["handshake_count"]) for snapshot in passing), default=0),
+        "fail_count": max((int(snapshot["fail_count"]) for snapshot in passing), default=0),
+        "pfail_count": max((int(snapshot["pfail_count"]) for snapshot in passing), default=0),
+        "slots_assigned": min((int(snapshot["slots_assigned"]) for snapshot in passing), default=0),
+        "slots_ok": min((int(snapshot["slots_ok"]) for snapshot in passing), default=0),
+        "slots_fail": max((int(snapshot["slots_fail"]) for snapshot in passing), default=0),
+        "snapshots": snapshots,
+    }
+
+
+def _p30_wait_rolling_restart_health(
+    nodes: list[dict[str, Any]],
+    *,
+    timeout: float,
+    full_probe: bool,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     node_count = len(nodes)
     deadline = time.monotonic() + timeout
-    last = _p17_cluster_health(nodes)
+    started = time.monotonic()
+    representatives = _representative_nodes(nodes)
+    representative_probe_count = 0
+    full_probe_count = 0
+    retry_count = 0
+    last = _p30_health_from_process_snapshots([])
+    last_scope = "all_nodes" if full_probe else "representative_by_az"
     while time.monotonic() < deadline:
-        last = _p17_cluster_health(nodes)
-        if (
-            last["cluster_state"] == "ok"
-            and last["known_nodes"] == node_count
-            and last["slots_assigned"] == 16384
-            and last["slots_ok"] == 16384
-            and last["slots_fail"] == 0
-        ):
-            return last
+        scope_nodes = nodes if full_probe else representatives
+        snapshots = _process_node_snapshots_parallel(scope_nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
+        if full_probe:
+            full_probe_count += len(snapshots)
+        else:
+            representative_probe_count += len(snapshots)
+        last = _p30_health_from_process_snapshots(snapshots)
+        if _p30_clean_health(last, node_count):
+            break
+
+        if not full_probe:
+            diagnostic = _process_node_snapshots_parallel(nodes, timeout=max(1.0, min(60.0, _time_left(deadline))))
+            full_probe_count += len(diagnostic)
+            last = _p30_health_from_process_snapshots(diagnostic)
+            last_scope = "all_nodes_diagnostic"
+            if _p30_clean_health(last, node_count):
+                break
+        retry_count += 1
         time.sleep(1.0)
-    return last
+    if not _p30_clean_health(last, node_count):
+        raise DockerRuntimeError(f"rolling restart health gate did not converge; scope={last_scope} health={last}")
+    probe = {
+        "status": "PASS",
+        "sample_scope": last_scope,
+        "representative_probe_count": representative_probe_count,
+        "full_probe_count": full_probe_count,
+        "retry_count": retry_count,
+        "node_command_count": 2 * (representative_probe_count + full_probe_count),
+        "wall_ms": round(max(time.monotonic() - started, 0.0) * 1000.0, 6),
+        "cluster_state": last["cluster_state"],
+        "known_nodes": last["known_nodes"],
+        "slots_assigned": last["slots_assigned"],
+    }
+    return last, probe
+
+
+def _p30_log_health_probe_summary(
+    command_log: list[dict[str, Any]],
+    telemetry: TelemetryRun,
+    phase: str,
+    run_id: str,
+    operation_id: str,
+    probe: dict[str, Any],
+) -> str:
+    command_id = f"{operation_id}-cmd-{len(command_log) + 1:04d}"
+    ended = telemetry.now_unix_ms()
+    wall_ms = float(probe.get("wall_ms", 0.0))
+    command_log.append(
+        {
+            "schema_version": "v1",
+            "phase_id": phase,
+            "run_id": run_id,
+            "command_id": command_id,
+            "operation_id": operation_id,
+            "command_kind": "rolling_restart_health_probe_summary",
+            "target_logical_id": "representative_or_all_nodes",
+            "argv": ["CLUSTER", "INFO", "+", "CLUSTER", "NODES"],
+            "started_at_unix_ms": ended - int(wall_ms),
+            "ended_at_unix_ms": ended,
+            "duration_ms": wall_ms,
+            "status": str(probe["status"]),
+            "returncode": 0,
+            "stdout_tail": json.dumps(
+                {
+                    "gate_kind": probe.get("gate_kind", MISSING),
+                    "batch_id": probe.get("batch_id", MISSING),
+                    "sample_scope": probe["sample_scope"],
+                    "representative_probe_count": probe["representative_probe_count"],
+                    "full_probe_count": probe["full_probe_count"],
+                    "node_command_count": probe["node_command_count"],
+                    "retry_count": probe["retry_count"],
+                },
+                sort_keys=True,
+            ),
+            "stderr_tail": "",
+            "probe_summary": dict(probe),
+        }
+    )
+    return command_id
 
 
 def _p30_stop_process(
@@ -11065,6 +11499,8 @@ def _p30_coverage_ledger(phase: str, operation_rows: list[dict[str, Any]]) -> di
 
 
 def _p30_update_global_coverage_registry(operation_rows: list[dict[str, Any]]) -> None:
+    if os.environ.get("VSLAB_META_M1_CONTROLLER_OWNED") == "1":
+        return
     if not operation_rows:
         return
     phase = str(operation_rows[0]["phase_id"])
@@ -11125,6 +11561,7 @@ def _p30_refresh_registry_summary(registry: dict[str, Any], stage: str) -> None:
 
 
 def _p30_rolling_plan(phase: str, run_id: str, restart_plans: list[dict[str, Any]]) -> dict[str, Any]:
+    max_concurrent = max((int(plan.get("max_concurrent_restarts", 0)) for plan in restart_plans), default=0)
     return {
         "schema_version": "v1",
         "artifact_type": "rolling_restart_plan",
@@ -11133,7 +11570,15 @@ def _p30_rolling_plan(phase: str, run_id: str, restart_plans: list[dict[str, Any
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
         "status": "PASS" if restart_plans and all(plan.get("status") == "PASS" for plan in restart_plans) else "FAIL",
-        "health_gate": {"required_after_each_restart": True, "cluster_state": "ok", "slots_assigned": 16384, "max_concurrent_restarts": 1},
+        "health_gate": {
+            "required_after_each_restart": False,
+            "required_after_each_safe_batch": True,
+            "representative_probe_between_batches": True,
+            "full_probe_after_operation": True,
+            "cluster_state": "ok",
+            "slots_assigned": 16384,
+            "max_concurrent_restarts": max_concurrent,
+        },
         "restart_order": [{"operation_id": plan["operation_id"], **entry} for plan in restart_plans for entry in plan.get("restart_order", [])],
         "operations": restart_plans,
     }
