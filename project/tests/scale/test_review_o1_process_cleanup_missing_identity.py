@@ -1,0 +1,47 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from valkey_scale_lab.runtime import docker_runtime
+
+
+def test_process_cleanup_rejects_pid_without_owned_container_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_path = tmp_path / "state.json"
+    state_path.write_text(
+        json.dumps(
+            {
+                "phase_id": "P36_FULL_FLOW_E2E_50_100_200_REAL",
+                "scenario": "strict_full_flow_50",
+                "runtime": {"type": "docker_process", "run_id": "claimed-run"},
+                "nodes": [
+                    {
+                        "ordinal": 0,
+                        "nodehost_id": "nodehost-az-a-00",
+                        "pid": 4242,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    commands: list[list[str]] = []
+
+    def fake_run_docker(args: list[str], **_kwargs: object) -> docker_runtime.DockerResult:
+        commands.append(args)
+        return docker_runtime.DockerResult(stdout="", stderr="", returncode=0)
+
+    monkeypatch.setattr(docker_runtime, "run_docker", fake_run_docker)
+
+    with pytest.raises(docker_runtime.DockerRuntimeError, match="owned runtime resource"):
+        docker_runtime.cleanup_scenario(
+            state_path=state_path,
+            artifacts_dir=tmp_path,
+            out_path=tmp_path / "cleanup.json",
+        )
+
+    assert not any(args[:2] == ["exec", "None"] for args in commands)

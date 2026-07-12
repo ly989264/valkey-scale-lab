@@ -11,11 +11,11 @@ reports are derived views over validated artifacts.
 
 ## Milestone 1 Goal Mode
 
-New Codex App Goal-mode work for Milestone 1 starts at `META_M1_START.md` and is
+New Codex App Goal-mode work for Milestone 1 starts at `META_M1_V6_START.md` and is
 scheduled only by:
 
 ```bash
-PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop next
+PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop_v6 next
 ```
 
 The four authorities are deliberately separate:
@@ -34,8 +34,9 @@ The four authorities are deliberately separate:
 The Controller Kernel and Goal Contract are immutable in a run. The evidence
 evaluator is separately versioned: a reproduced `EVALUATOR_GAP` must use the
 controller-owned `EVALUATOR_REPAIR` transition. Direct evaluator edits are
-rejected. Product and evaluator digests are separate, so strengthening an
-evaluator does not by itself force another real cluster run.
+rejected. Product capture and evaluator admission digests are separate.
+Strengthening an evaluator invalidates admission and reruns it against the
+preserved raw capture without forcing another real cluster run.
 
 Do not recreate the historical design/worker/review ceremony for each stage.
 Do not manually edit controller state. Do not rerun unchanged failing or

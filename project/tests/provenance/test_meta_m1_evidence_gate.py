@@ -180,3 +180,14 @@ def test_rejects_artifact_timestamp_outside_measured_run(tmp_path: Path) -> None
     _write_json(path, value)
     _rehash(base, "analysis_summary")
     assert any("analysis_summary.created_at_unix_ms" in error for error in gate.evaluate(50, tmp_path))
+
+
+def test_rejects_report_surface_that_does_not_show_evidence(tmp_path: Path) -> None:
+    base = build_complete_bundle(tmp_path)
+    path = base / "runtime/analysis_summary.json"
+    value = json.loads(path.read_text(encoding="utf-8"))
+    value["topology_summary"] = None
+    _write_json(path, value)
+    _rehash(base, "analysis_summary")
+
+    assert any("topology_summary" in error for error in gate.evaluate(50, tmp_path))

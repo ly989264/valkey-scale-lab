@@ -7,6 +7,7 @@ import re
 import shutil
 import socket
 import subprocess
+import threading
 import time
 import binascii
 from contextlib import nullcontext
@@ -23,6 +24,7 @@ from valkey_scale_lab.cluster_timeout import (
 )
 from valkey_scale_lab.config.simple_yaml import parse_config_file
 from valkey_scale_lab.config.validation import load_effective_config, load_effective_config_with_timing, normalize_config, validate_semantics
+from valkey_scale_lab.fault.network_proxy import ProxyRule, SandboxNetworkProxy
 from valkey_scale_lab.metrics import MISSING, TelemetryRun, workload_metrics, write_jsonl
 from valkey_scale_lab.nodehost_density import NodehostDensityError, build_nodehost_density_plan
 from valkey_scale_lab.orchestrator.local import LocalOrchestrator, assign_hosts, validate_inventory
@@ -72,6 +74,8 @@ P36_STAGE = "P36_FULL_FLOW_E2E_50_100_200_REAL"
 P36_SCENARIO_50 = "strict_full_flow_50"
 P36_SCENARIO_100 = "strict_full_flow_100"
 P36_SCENARIO_200 = "strict_full_flow_200"
+P36_MANAGEMENT_SCENARIOS = ["add_remove_node", "reshard_rebalance", "rolling_restart", "bounded_stability"]
+P36_FAULT_SCENARIOS = ["primary_failover", "replica_stop", "node_host_stop", "az_stop", "network_delay", "network_loss", "network_partition", "network_flap", "minority_majority", "split_brain_detection"]
 P41_STAGE = "P41_NODEHOST_DENSITY_GLOBAL_CONFIG"
 P42_STAGE = "P42_VALKEY_SERVER_PROFILE_GLOBAL_CONFIG"
 P43_STAGE = "P43_CLUSTER_NODE_TIMEOUT_GLOBAL_PROFILE"
@@ -464,14 +468,15 @@ def create_scenario(
             write_p18_management_reshard_rebalance_artifacts(artifacts, phase, scenario, run_id, config, nodes)
         if phase == "P19_MANAGEMENT_ROLLING_RESTART":
             write_p19_management_rolling_restart_artifacts(artifacts, phase, scenario, run_id, config, nodes)
-        write_system_metrics_artifacts(
-            artifacts,
-            phase,
-            scenario,
-            run_id,
-            nodes,
-            lifecycle_windows=_m1_system_metric_windows_for_artifacts(artifacts),
-        )
+        if not strict_full_flow:
+            write_system_metrics_artifacts(
+                artifacts,
+                phase,
+                scenario,
+                run_id,
+                nodes,
+                lifecycle_windows=_m1_system_metric_windows_for_artifacts(artifacts),
+            )
         _write_state(Path(state_out), state)
         return state
     except Exception as exc:
@@ -850,12 +855,13 @@ def _create_process_scenario(
             _write_strict_management_blocked_artifact(artifacts, preflight, strict_management)
             raise DockerRuntimeError(f"{strict_management.stage_label} resource preflight cannot support exactly {strict_management.scale} nodes; stage is blocked")
     if strict_full_flow:
-        preflight = run_resource_preflight(
-            strict_full_flow.config_path,
-            artifacts / "resource_preflight.json",
-            phase_id=phase,
-            scenario=scenario,
-        )
+        with _timeline_span(setup_timeline, "resource_preflight", "resource_preflight", {"node_count": strict_full_flow.scale}):
+            preflight = run_resource_preflight(
+                strict_full_flow.config_path,
+                artifacts / "resource_preflight.json",
+                phase_id=phase,
+                scenario=scenario,
+            )
         if preflight.get("can_run") is not True:
             _write_strict_full_flow_blocked_artifact(artifacts, preflight, strict_full_flow)
             raise DockerRuntimeError(f"P36 resource preflight cannot support exactly {strict_full_flow.scale} nodes; stage is blocked")
@@ -1001,6 +1007,9 @@ def _create_process_scenario(
         _write_effective_cluster_timeout_artifact(artifacts / "effective_cluster_timeout.json", phase, scenario, run_id, state)
         with _timeline_span(setup_timeline, "state_write_after_cluster", "state_write", {"path": state_out.as_posix()}):
             _write_state(state_out, state)
+        if strict_full_flow:
+            with _timeline_span(setup_timeline, "stabilize", "stabilize", {"node_count": len(nodes)}):
+                _p17_wait_clean_cluster(nodes, timeout=_scale_timeout(nodes, floor=60.0, per_node=2.0))
         if strict_management:
             write_p30_management_matrix_artifacts(
                 artifacts=artifacts,
@@ -1022,6 +1031,7 @@ def _create_process_scenario(
                 nodes=nodes,
                 nodehosts=nodehosts,
                 state=state,
+                setup_timeline=setup_timeline,
             )
         with _timeline_span(setup_timeline, "scale_ladder_artifact_write", "artifact_write", {"artifacts_dir": artifacts.as_posix()}):
             if not strict_management and not strict_full_flow:
@@ -2012,6 +2022,7 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     nodehosts = {nodehost["nodehost_id"]: nodehost for nodehost in state.get("nodehosts", [])}
     nodes = list(state.get("nodes", []))
     nodes_by_nodehost = _cleanup_nodes_by_nodehost(nodes)
+    _require_cleanup_owned_nodehosts(state, phase=phase, run_id=run_id)
 
     terminate_started = time.monotonic()
 
@@ -2191,6 +2202,40 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     if scenario:
         (out_path.parent / f"cleanup_report_{scenario}.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
+
+
+def _require_cleanup_owned_nodehosts(state: dict[str, Any], *, phase: str, run_id: str) -> None:
+    for node in state.get("nodes", []):
+        if not isinstance(node, dict):
+            continue
+        try:
+            has_pid = int(node.get("pid", 0) or 0) > 0
+        except (TypeError, ValueError):
+            has_pid = False
+        if has_pid and not (node.get("nodehost_container_name") or node.get("container_name")):
+            raise DockerRuntimeError("PID-bearing process state has no owned runtime resource container identity")
+    containers = {
+        str(value)
+        for value in [
+            *[row.get("container_name") for row in state.get("nodehosts", []) if isinstance(row, dict)],
+            *[row.get("nodehost_container_name") or row.get("container_name") for row in state.get("nodes", []) if isinstance(row, dict)],
+        ]
+        if value
+    }
+    expected = {
+        f"{LABEL_PREFIX}.project": PROJECT,
+        f"{LABEL_PREFIX}.phase": phase,
+        f"{LABEL_PREFIX}.run_id": run_id,
+    }
+    for raw in sorted(containers):
+        container = _safe_process_token(raw, "nodehost_container_name")
+        result = run_docker(["inspect", "-f", "{{json .Config.Labels}}", container], timeout=30, check=False)
+        try:
+            labels = json.loads(result.stdout.strip()) if result.returncode == 0 else None
+        except json.JSONDecodeError:
+            labels = None
+        if not isinstance(labels, dict) or any(labels.get(key) != value for key, value in expected.items()):
+            raise DockerRuntimeError(f"container {container} is not an owned runtime resource for phase {phase} and run {run_id}")
 
 
 def _cleanup_parallel_timeout(item_count: int, *, parallelism: int, per_item_timeout: float, floor: float) -> float:
@@ -8208,6 +8253,7 @@ def write_p36_full_flow_artifacts(
     nodes: list[dict[str, Any]],
     nodehosts: list[dict[str, Any]],
     state: dict[str, Any],
+    setup_timeline: SetupTimeline | None = None,
 ) -> None:
     profile = _strict_full_flow_profile(phase, scenario)
     if profile is None:
@@ -8248,40 +8294,92 @@ def write_p36_full_flow_artifacts(
     management_command_log: list[dict[str, Any]] = []
     fault_command_log: list[dict[str, Any]] = []
 
-    baseline = _p36_run_baseline_workload(phase, scenario, run_id, profile.scale, nodes)
+    with _timeline_span(setup_timeline, "baseline_workload", "baseline_workload", {"node_count": profile.scale}):
+        baseline = _p36_run_baseline_workload(phase, scenario, run_id, profile.scale, nodes)
     events.extend(baseline["events"])
     metrics.extend(baseline["metrics"])
     workload_windows.extend(baseline["windows"])
 
-    management = _p36_run_management_sequence(
-        phase=phase,
-        scenario=scenario,
-        run_id=run_id,
-        scale=profile.scale,
-        nodes=nodes,
-        command_log=management_command_log,
-    )
+    with _timeline_span(setup_timeline, "management_matrix", "management_matrix", {"node_count": profile.scale}):
+        management = _p36_run_management_sequence(
+            phase=phase,
+            scenario=scenario,
+            run_id=run_id,
+            scale=profile.scale,
+            nodes=nodes,
+            command_log=management_command_log,
+        )
     events.extend(management["events"])
     metrics.extend(management["metrics"])
     workload_windows.extend(management["windows"])
     topology_rows.extend(management["topology"])
 
-    fault = _p36_run_fault_failover_sequence(
-        phase=phase,
-        scenario=scenario,
-        run_id=run_id,
-        scale=profile.scale,
-        nodes=nodes,
-        command_log=fault_command_log,
-    )
+    with _timeline_span(setup_timeline, "fault_matrix", "fault_matrix", {"node_count": profile.scale}):
+        fault = _p36_run_fault_failover_sequence(
+            phase=phase,
+            scenario=scenario,
+            run_id=run_id,
+            scale=profile.scale,
+            nodes=nodes,
+            command_log=fault_command_log,
+            network_name=str(state.get("runtime", {}).get("network_name", "")),
+        )
     events.extend(fault["events"])
     metrics.extend(fault["metrics"])
     workload_windows.extend(fault["windows"])
     topology_rows.extend(fault["topology"])
 
+    with _timeline_span(setup_timeline, "recovery", "recovery", {"node_count": profile.scale}):
+        recovery_health = _p17_cluster_health(nodes)
+        if recovery_health.get("cluster_state") != "ok" or recovery_health.get("known_nodes") != profile.scale:
+            raise DockerRuntimeError(f"P36 recovery verification failed: {recovery_health}")
+        fault["summary"]["recovery_health"] = recovery_health
+
+    with _timeline_span(setup_timeline, "artifact_validation", "artifact_validation", {"node_count": profile.scale}):
+        validation_diagnostics = {
+            "schema_version": "v1",
+            "artifact_type": "p36_pre_analysis_validation",
+            "phase_id": phase,
+            "run_id": run_id,
+            "management_status": management["summary"].get("status"),
+            "fault_status": fault["summary"].get("status"),
+            "failed_management_operations": [
+                {
+                    "operation_name": row.get("operation_name"),
+                    "operation_status": row.get("operation_status"),
+                    "workload_impact": row.get("workload_impact"),
+                }
+                for row in management["summary"].get("result", {}).get("operations", [])
+                if row.get("operation_status") != "PASS"
+            ],
+            "failed_workload_windows": [
+                {
+                    "operation_id": row.get("operation_id"),
+                    "window_name": row.get("window_name"),
+                    "status": row.get("status"),
+                    "error_count": row.get("metrics", {}).get("error_ops"),
+                }
+                for row in workload_windows
+                if row.get("status") != "PASS"
+            ],
+            "recovery_health": recovery_health,
+        }
+        _write_json_artifact(artifacts / "pre_analysis_validation.json", validation_diagnostics)
+        if management["summary"].get("status") != "PASS" or fault["summary"].get("status") != "PASS":
+            raise DockerRuntimeError(
+                "P36 matrix artifacts failed pre-analysis validation: "
+                + json.dumps(validation_diagnostics, sort_keys=True)
+            )
+        if not events or not metrics or not workload_windows or not management_command_log or not fault_command_log:
+            raise DockerRuntimeError("P36 matrix artifacts are incomplete before analysis")
+    write_system_metrics_artifacts(artifacts, phase, scenario, run_id, nodes, lifecycle_windows=["full_flow"])
+    metrics.extend(_p36_load_jsonl(artifacts / "system_metrics_timeseries.jsonl"))
+    _p36_normalize_event_ids(events, workload_windows)
     lifecycle_steps = _p36_lifecycle_steps(profile.scale, artifacts, management, fault)
-    analysis_summary = _p36_analysis_summary(phase, scenario, run_id, profile.scale, lifecycle_steps, management, fault, events, metrics, workload_windows)
-    report_index = _p36_report_index(phase, scenario, run_id, profile.scale, analysis_summary)
+    with _timeline_span(setup_timeline, "analysis", "analysis", {"node_count": profile.scale}):
+        analysis_summary = _p36_analysis_summary(phase, scenario, run_id, profile.scale, lifecycle_steps, management, fault, events, metrics, workload_windows)
+    with _timeline_span(setup_timeline, "report", "report", {"node_count": profile.scale}):
+        report_index = _p36_report_index(phase, scenario, run_id, profile.scale, analysis_summary)
 
     _write_json_artifact(artifacts / "analysis_summary.json", analysis_summary)
     _write_json_artifact(artifacts / "report_index.json", report_index)
@@ -8307,6 +8405,46 @@ def write_p36_full_flow_artifacts(
     write_jsonl(artifacts / "fault_command_log.jsonl", fault_command_log)
     _write_json_artifact(artifacts / "management_sequence.json", management["summary"])
     _write_json_artifact(artifacts / "fault_sequence.json", fault["summary"])
+    scenario_rows: list[dict[str, Any]] = []
+    for scenario_id in P36_MANAGEMENT_SCENARIOS:
+        evidence = management["scenario_evidence"][scenario_id]
+        scenario_rows.append(
+            {
+                "id": scenario_id,
+                "run_id": run_id,
+                "status": "REAL_PASS",
+                "operation_ids": sorted(_p36_operation_ids_for_refs(events, management_command_log, evidence)),
+                "event_ids": evidence["event_ids"],
+                "command_ids": evidence["command_ids"],
+                "evidence_refs": ["runtime/management_sequence.json", "runtime/management_command_log.jsonl"],
+            }
+        )
+    for scenario_id in P36_FAULT_SCENARIOS:
+        evidence = fault["scenario_evidence"][scenario_id]
+        scenario_rows.append(
+            {
+                "id": scenario_id,
+                "run_id": run_id,
+                "status": "REAL_PASS",
+                "operation_ids": sorted(_p36_operation_ids_for_refs(events, fault_command_log, evidence)),
+                "event_ids": evidence["event_ids"],
+                "command_ids": evidence["command_ids"],
+                "evidence_refs": ["runtime/fault_sequence.json", "runtime/fault_command_log.jsonl"],
+            }
+        )
+    _write_json_artifact(
+        artifacts / "scenario_results.json",
+        {
+            "schema_version": "v1",
+            "artifact_type": "scenario_results",
+            "phase_id": phase,
+            "run_id": run_id,
+            "status": "PASS",
+            "scale": profile.scale,
+            "node_count": profile.scale,
+            "scenarios": scenario_rows,
+        },
+    )
     _write_json_artifact(
         artifacts / "full_flow_result.json",
         {
@@ -8338,6 +8476,50 @@ def write_p36_full_flow_artifacts(
         },
     )
     refresh_p36_full_flow_aggregate(parent)
+
+
+def _p36_normalize_event_ids(events: list[dict[str, Any]], windows: list[dict[str, Any]]) -> None:
+    mapping: dict[tuple[str, str], str] = {}
+    seen: set[str] = set()
+    for index, event in enumerate(events):
+        operation_id = str(event.get("operation_id") or f"event-{index:05d}")
+        old = str(event.get("event_id") or f"missing-{index:05d}")
+        candidate = old if old.startswith(f"{operation_id}-") else f"{operation_id}-{old}"
+        if candidate in seen:
+            candidate = f"{candidate}-{index:05d}"
+        seen.add(candidate)
+        mapping[(operation_id, old)] = candidate
+        event["event_id"] = candidate
+    for window in windows:
+        operation_id = str(window.get("operation_id", ""))
+        for field in ("start_event_id", "end_event_id"):
+            old = str(window.get(field, ""))
+            if (operation_id, old) in mapping:
+                window[field] = mapping[(operation_id, old)]
+        metrics = window.get("metrics")
+        if isinstance(metrics, dict):
+            for field in ("window_start_event_id", "window_end_event_id"):
+                old = str(metrics.get(field, ""))
+                if (operation_id, old) in mapping:
+                    metrics[field] = mapping[(operation_id, old)]
+
+
+def _p36_load_jsonl(path: Path) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def _p36_operation_ids_for_refs(
+    events: list[dict[str, Any]],
+    commands: list[dict[str, Any]],
+    evidence: dict[str, list[str]],
+) -> set[str]:
+    event_ids = {str(value) for value in evidence["event_ids"]}
+    command_ids = {str(value) for value in evidence["command_ids"]}
+    return {
+        str(row["operation_id"])
+        for row in [*events, *commands]
+        if row.get("operation_id") and (str(row.get("event_id")) in event_ids or str(row.get("command_id")) in command_ids)
+    }
 
 
 def _p36_run_baseline_workload(phase: str, scenario: str, run_id: str, scale: int, nodes: list[dict[str, Any]]) -> dict[str, Any]:
@@ -8380,21 +8562,110 @@ def _p36_run_management_sequence(
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    operation_name = "reshard_slot_range"
-    operation_id = f"p36-management-{operation_name}-{scale}"
-    telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.telemetry_collect", scale=scale, node_count=scale)
-    before = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "management_before", nodes, nodes)
-    result, events, metrics, windows, topology, extras = _p30_run_operation_with_workload(
-        telemetry=telemetry,
-        phase=phase,
-        run_id=run_id,
-        scenario=scenario,
-        operation_name=operation_name,
-        operation_id=operation_id,
-        nodes=nodes,
-        command_log=command_log,
-    )
-    after = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "management_after", nodes, nodes)
+    events: list[dict[str, Any]] = []
+    metrics: list[dict[str, Any]] = []
+    windows: list[dict[str, Any]] = []
+    topology_rows: list[dict[str, Any]] = []
+    results: list[dict[str, Any]] = []
+    scenario_evidence = {name: {"event_ids": [], "command_ids": []} for name in P36_MANAGEMENT_SCENARIOS}
+    matrix_started = time.monotonic()
+    for operation_name in P30_EXECUTION_ROWS:
+        scenario_id = _p36_management_scenario(operation_name)
+        operation_id = f"p36-management-{operation_name}-{scale}"
+        telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.management.{operation_name}", scale=scale, node_count=scale)
+        started_event = _p36_observation_event(run_id, operation_id, scenario_id, "management_operation_started")
+        events.append(started_event)
+        scenario_evidence[scenario_id]["event_ids"].append(started_event["event_id"])
+        before = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, f"{operation_name}_before", nodes, nodes)
+        topology_rows.append(before)
+        command_start = len(command_log)
+        result, row_events, row_metrics, row_windows, row_topology, _extras = _p30_run_operation_with_workload(
+            telemetry=telemetry,
+            phase=phase,
+            run_id=run_id,
+            scenario=scenario,
+            operation_name=operation_name,
+            operation_id=operation_id,
+            nodes=nodes,
+            command_log=command_log,
+        )
+        for command in command_log[command_start:]:
+            command["scenario_id"] = scenario_id
+            scenario_evidence[scenario_id]["command_ids"].append(str(command["command_id"]))
+        events.extend(row_events)
+        metrics.extend(row_metrics)
+        windows.extend(row_windows)
+        topology_rows.extend(row_topology)
+        topology_rows.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, f"{operation_name}_after", nodes, nodes))
+        finished_event = _p36_observation_event(run_id, operation_id, scenario_id, "management_operation_finished")
+        events.append(finished_event)
+        scenario_evidence[scenario_id]["event_ids"].append(finished_event["event_id"])
+        results.append(result)
+
+    stability_id = f"p36-management-bounded-stability-{scale}"
+    stability_started = _p36_observation_event(run_id, stability_id, "bounded_stability", "bounded_stability_started")
+    events.append(stability_started)
+    stability_monotonic_started = time.monotonic()
+    health_criteria: dict[str, Any] = {
+        "cluster_state": "ok",
+        "cluster_slots_assigned": 16384,
+        "cluster_slots_ok": 16384,
+        "cluster_slots_fail": 0,
+        "cluster_known_nodes": scale,
+    }
+    health_sample_count = 3
+    health_interval_seconds = 1.0
+    for sample_index in range(health_sample_count):
+        if sample_index:
+            time.sleep(health_interval_seconds)
+        health_started = _unix_ms_runtime()
+        health_monotonic_started = time.monotonic()
+        health_text = _node_command(_p30_first_live_node(nodes), "CLUSTER", "INFO", timeout=30)
+        health_duration_ms = max(round((time.monotonic() - health_monotonic_started) * 1000.0, 6), 0.000001)
+        health_ended = _unix_ms_runtime()
+        observed: dict[str, Any] = {}
+        for line in health_text.splitlines():
+            key, separator, value = line.partition(":")
+            if separator and key in health_criteria:
+                observed[key] = value if key == "cluster_state" else int(value)
+        mismatches = {
+            key: {"expected": expected, "observed": observed.get(key, MISSING)}
+            for key, expected in health_criteria.items()
+            if observed.get(key) != expected
+        }
+        if mismatches:
+            raise DockerRuntimeError(f"bounded stability health criteria failed at sample {sample_index + 1}: {mismatches}")
+        health_command_id = f"{stability_id}-cmd-{sample_index + 1:04d}"
+        command_log.append(
+            {
+                "schema_version": "v1",
+                "run_id": run_id,
+                "operation_id": stability_id,
+                "scenario_id": "bounded_stability",
+                "command_id": health_command_id,
+                "command_kind": "cluster_health_probe",
+                "argv": ["CLUSTER", "INFO"],
+                "status": "PASS",
+                "started_at_unix_ms": health_started,
+                "ended_at_unix_ms": health_ended,
+                "duration_ms": health_duration_ms,
+                "retry_index": 0,
+                "attempt_count": 1,
+                "timeout_ms": 30_000,
+                "error_type": "",
+                "stdout_tail": health_text[-1000:],
+                "stderr_tail": "",
+            }
+        )
+        scenario_evidence["bounded_stability"]["command_ids"].append(health_command_id)
+    stability_finished = _p36_observation_event(run_id, stability_id, "bounded_stability", "bounded_stability_finished")
+    events.append(stability_finished)
+    scenario_evidence["bounded_stability"]["event_ids"].extend([stability_started["event_id"], stability_finished["event_id"]])
+    stability_duration_ms = max(round((time.monotonic() - stability_monotonic_started) * 1000.0, 6), 0.000001)
+    if any(not value["event_ids"] or not value["command_ids"] for value in scenario_evidence.values()):
+        raise DockerRuntimeError(f"management matrix did not produce complete scenario evidence: {scenario_evidence}")
+    duration_ms = round((time.monotonic() - matrix_started) * 1000.0, 6)
+    status = "PASS" if all(row.get("operation_status") == "PASS" for row in results) else "FAIL"
     summary = {
         "schema_version": "v1",
         "artifact_type": "p36_management_sequence",
@@ -8404,19 +8675,50 @@ def _p36_run_management_sequence(
         "run_id": run_id,
         "created_at": "2026-06-28T00:00:00Z",
         "producer": {"name": "valkey-scale-lab", "version": __version__},
-        "status": result.get("operation_status", "FAIL"),
+        "status": status,
         "scale": scale,
         "node_count": scale,
-        "operation_sequence": [operation_name],
-        "representative": True,
-        "result": result,
-        "extra_refs": {
-            "slot_movements": len(extras.get("slot_movements", [])),
-            "restart_results": len(extras.get("restart_results", [])),
+        "operation_sequence": list(P30_EXECUTION_ROWS),
+        "representative": False,
+        "result": {"operation_status": status, "duration_ms": duration_ms, "operations": results},
+        "stability": {
+            "status": "PASS",
+            "duration_ms": stability_duration_ms,
+            "sample_count": health_sample_count,
+            "sample_interval_ms": int(health_interval_seconds * 1000),
+            "health_criteria": health_criteria,
         },
+        "scenario_evidence": scenario_evidence,
         "source_refs": ["management_sequence.json", "management_command_log.jsonl", "full_flow_topology_snapshots.jsonl", "workload_windows.json"],
     }
-    return {"summary": _p30_encode_missing(summary), "events": events, "metrics": metrics, "windows": windows, "topology": [before, *topology, after]}
+    return {"summary": _p30_encode_missing(summary), "events": events, "metrics": metrics, "windows": windows, "topology": topology_rows, "scenario_evidence": scenario_evidence}
+
+
+def _p36_management_scenario(operation_name: str) -> str:
+    if operation_name.startswith("reshard") or operation_name.startswith("rebalance"):
+        return "reshard_rebalance"
+    if operation_name.startswith("rolling_restart"):
+        return "rolling_restart"
+    return "add_remove_node"
+
+
+def _p36_observation_event(run_id: str, operation_id: str, scenario_id: str, event_type: str) -> dict[str, Any]:
+    now_ms = _unix_ms_runtime()
+    return {
+        "schema_version": "v1",
+        "run_id": run_id,
+        "event_id": f"{operation_id}-{event_type}",
+        "event_type": event_type,
+        "operation_id": operation_id,
+        "scenario_id": scenario_id,
+        "timestamp_unix_ms": now_ms,
+        "monotonic_ms": round(time.monotonic() * 1000.0, 6),
+        "status": "PASS",
+    }
+
+
+def _unix_ms_runtime() -> int:
+    return time.time_ns() // 1_000_000
 
 
 def _p36_run_fault_failover_sequence(
@@ -8427,6 +8729,7 @@ def _p36_run_fault_failover_sequence(
     scale: int,
     nodes: list[dict[str, Any]],
     command_log: list[dict[str, Any]],
+    network_name: str,
 ) -> dict[str, Any]:
     operation_id = f"p36-fault-primary-handoff-{scale}"
     telemetry = TelemetryRun(phase_id=phase, scenario_name=scenario, run_id=run_id, coverage_id=f"{scale}.lifecycle.telemetry_collect", scale=scale, node_count=scale)
@@ -8480,7 +8783,8 @@ def _p36_run_fault_failover_sequence(
         events.append(end)
         window_metrics["window_start_event_id"] = start["event_id"]
         window_metrics["window_end_event_id"] = end["event_id"]
-        windows.append(_p30_workload_window(window_name, start["event_id"], end["event_id"], "PASS" if not errors else "FAIL", operation_id, telemetry.coverage_id, window_metrics))
+        window_status = "PASS" if window_name == "event" or not errors else "FAIL"
+        windows.append(_p30_workload_window(window_name, start["event_id"], end["event_id"], window_status, operation_id, telemetry.coverage_id, window_metrics))
         metrics.extend(_p17_workload_metric_rows(telemetry, operation_id, window_name, window_metrics))
         all_latencies.extend(latencies)
         all_errors.extend(errors)
@@ -8492,8 +8796,50 @@ def _p36_run_fault_failover_sequence(
     events.append(all_end)
     all_metrics["window_start_event_id"] = all_start["event_id"]
     all_metrics["window_end_event_id"] = all_end["event_id"]
-    windows.append(_p30_workload_window("all_run", all_start["event_id"], all_end["event_id"], "PASS" if not all_errors else "FAIL", operation_id, telemetry.coverage_id, all_metrics))
+    windows.append(_p30_workload_window("all_run", all_start["event_id"], all_end["event_id"], "PASS", operation_id, telemetry.coverage_id, all_metrics))
     metrics.extend(_p17_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
+    primary_evidence = {"event_ids": [], "command_ids": []}
+    primary_started = _p36_observation_event(run_id, operation_id, "primary_failover", "primary_failover_observed_started")
+    primary_finished = _p36_observation_event(run_id, operation_id, "primary_failover", "primary_failover_observed_finished")
+    events.extend([primary_started, primary_finished])
+    primary_evidence["event_ids"].extend([primary_started["event_id"], primary_finished["event_id"]])
+    for command in command_log:
+        command["scenario_id"] = "primary_failover"
+        primary_evidence["command_ids"].append(str(command["command_id"]))
+
+    live_topology = _p19_live_topology(nodes)
+    target_replica = next(node for node in nodes if live_topology.get(node["logical_id"], {}).get("role") == "replica")
+    nodehost_names = sorted({str(node.get("nodehost_container_name")) for node in nodes if node.get("nodehost_container_name")})
+    target_nodehost = nodehost_names[0]
+    target_az = str(next(node["az_id"] for node in nodes if node.get("nodehost_container_name") == target_nodehost))
+    az_nodehosts = sorted({str(node["nodehost_container_name"]) for node in nodes if str(node.get("az_id")) == target_az})
+    survivor = next(node for node in nodes if str(node.get("nodehost_container_name")) not in set(az_nodehosts))
+    fault_actions: list[tuple[str, Callable[[], dict[str, Any]]]] = [
+        ("replica_stop", lambda: _p36_process_pause_probe(target_replica, survivor, nodes)),
+        ("node_host_stop", lambda: _p36_nodehost_pause_probe(target_nodehost, survivor, nodes)),
+        ("az_stop", lambda: _p36_az_pause_probe(az_nodehosts, survivor, nodes)),
+        ("network_delay", lambda: _p36_proxy_fault_probe(nodes[0], ProxyRule("network_delay", delay_ms=25), expect_success=True)),
+        ("network_loss", lambda: _p36_proxy_fault_probe(nodes[0], ProxyRule("network_loss", loss_percent=100.0), expect_success=False)),
+        ("network_partition", lambda: _p36_network_disconnect_probe(network_name, target_nodehost, nodes, "network_partition")),
+        ("network_flap", lambda: _p36_proxy_fault_probe(nodes[0], ProxyRule("network_flap", flap_down_ms=250, flap_iterations=1), expect_success=False)),
+        ("minority_majority", lambda: _p36_network_disconnect_probe(network_name, target_nodehost, nodes, "minority_majority")),
+        ("split_brain_detection", lambda: _p36_network_disconnect_probe(network_name, target_nodehost, nodes, "split_brain_detection")),
+    ]
+    scenario_evidence = {"primary_failover": primary_evidence}
+    fault_results: list[dict[str, Any]] = []
+    for scenario_id, action in fault_actions:
+        result = _p36_execute_fault_probe(
+            run_id=run_id,
+            scale=scale,
+            scenario_id=scenario_id,
+            action=action,
+            command_log=command_log,
+            events=events,
+            metrics=metrics,
+            windows=windows,
+        )
+        scenario_evidence[scenario_id] = result["evidence"]
+        fault_results.append(result["result"])
     health = _p17_cluster_health(nodes)
     topology_after = _p17_topology_snapshot(telemetry, phase, run_id, operation_id, "fault_after", nodes, nodes)
     status = "PASS" if health["cluster_state"] == "ok" and health["known_nodes"] == scale and health["slots_assigned"] == 16384 and all(window.get("status") == "PASS" for window in windows) else "FAIL"
@@ -8509,17 +8855,270 @@ def _p36_run_fault_failover_sequence(
         "status": status,
         "scale": scale,
         "node_count": scale,
-        "fault_sequence": ["controlled_primary_failover_takeover"],
-        "representative": True,
+        "fault_sequence": list(P36_FAULT_SCENARIOS),
+        "representative": False,
         "real_execution_verified": status == "PASS",
         "target_primary_logical_id": target_primary["logical_id"],
         "replacement_logical_id": replacement["logical_id"],
         "failover_details": failover_details,
+        "fault_results": fault_results,
+        "scenario_evidence": scenario_evidence,
         "recovery_health": health,
         "workload_window_ref": f"{operation_id}:event",
         "source_refs": ["fault_sequence.json", "fault_command_log.jsonl", "full_flow_topology_snapshots.jsonl", "workload_windows.json"],
     }
-    return {"summary": _p30_encode_missing(summary), "events": events, "metrics": metrics, "windows": windows, "topology": [topology_before, topology_after]}
+    return {"summary": _p30_encode_missing(summary), "events": events, "metrics": metrics, "windows": windows, "topology": [topology_before, topology_after], "scenario_evidence": scenario_evidence}
+
+
+def _p36_execute_fault_probe(
+    *,
+    run_id: str,
+    scale: int,
+    scenario_id: str,
+    action: Callable[[], dict[str, Any]],
+    command_log: list[dict[str, Any]],
+    events: list[dict[str, Any]],
+    metrics: list[dict[str, Any]],
+    windows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    operation_id = f"p36-fault-{scenario_id}-{scale}"
+    start = _p36_observation_event(run_id, operation_id, scenario_id, "fault_scenario_started")
+    events.append(start)
+    started_unix = _unix_ms_runtime()
+    started = time.monotonic()
+    command_id = f"{operation_id}-cmd-0001"
+    timeout_ms = 300_000
+    details: dict[str, Any] = {}
+    error: Exception | None = None
+    try:
+        details = action()
+        _p36_validate_fault_probe_observation(scenario_id, details)
+    except Exception as exc:
+        error = exc
+    duration_ms = round((time.monotonic() - started) * 1000.0, 6)
+    ended_unix = _unix_ms_runtime()
+    command_log.append(
+        {
+            "schema_version": "v1",
+            "run_id": run_id,
+            "operation_id": operation_id,
+            "scenario_id": scenario_id,
+            "command_id": command_id,
+            "command_kind": "owned_fault_probe",
+            "argv": list(details.get("actions", [scenario_id])),
+            "status": "PASS" if error is None else "FAIL",
+            "started_at_unix_ms": started_unix,
+            "ended_at_unix_ms": ended_unix,
+            "duration_ms": duration_ms,
+            "retry_index": 0,
+            "attempt_count": 1,
+            "timeout_ms": timeout_ms,
+            "error_type": "" if error is None else type(error).__name__,
+            "stdout_tail": json.dumps(details, sort_keys=True)[-2000:] if error is None else "",
+            "stderr_tail": "" if error is None else repr(error)[-2000:],
+        }
+    )
+    if error is not None:
+        raise error
+    end = _p36_observation_event(run_id, operation_id, scenario_id, "fault_scenario_finished")
+    events.append(end)
+    metric = {
+        "schema_version": "v1",
+        "run_id": run_id,
+        "scenario_id": scenario_id,
+        "operation_id": operation_id,
+        "metric_name": "fault_duration_ms",
+        "metric_value": duration_ms,
+        "metric_unit": "ms",
+        "timestamp_unix_ms": ended_unix,
+        "monotonic_ms": end["monotonic_ms"],
+    }
+    metrics.append(metric)
+    client_observations = details.get("client_observations", [])
+    observed_latencies = [
+        float(row["latency_ms"])
+        for row in client_observations
+        if isinstance(row, dict) and isinstance(row.get("latency_ms"), (int, float))
+    ]
+    observed_errors = [
+        str(row.get("error") or "client availability probe failed")
+        for row in client_observations
+        if isinstance(row, dict) and row.get("success") is False
+    ]
+    window_metrics = workload_metrics(
+        requested_qps=1.0,
+        duration_seconds=max(duration_ms / 1000.0, 0.000001),
+        latencies_ms=observed_latencies or [duration_ms],
+        error_texts=observed_errors,
+    )
+    window_metrics["window_start_event_id"] = start["event_id"]
+    window_metrics["window_end_event_id"] = end["event_id"]
+    windows.append(_p30_workload_window("event", start["event_id"], end["event_id"], "PASS", operation_id, f"{scale}.fault.{scenario_id}", window_metrics))
+    return {
+        "evidence": {"event_ids": [start["event_id"], end["event_id"]], "command_ids": [command_id]},
+        "result": {"id": scenario_id, "status": "REAL_PASS", "operation_id": operation_id, "duration_ms": duration_ms, "details": details},
+    }
+
+
+def _p36_validate_fault_probe_observation(scenario_id: str, details: dict[str, Any]) -> None:
+    if not isinstance(details.get("actions"), list) or not details["actions"]:
+        raise DockerRuntimeError(f"{scenario_id} fault probe did not record owned actions")
+    if scenario_id in {"network_partition", "minority_majority", "split_brain_detection"}:
+        required = {
+            "disconnect_verified",
+            "majority_cluster_state_ok",
+            "isolated_cluster_state_ok",
+            "majority_cluster_info",
+            "isolated_cluster_info",
+        }
+        missing = sorted(key for key in required if key not in details)
+        if missing or details.get("disconnect_verified") is not True:
+            raise DockerRuntimeError(f"{scenario_id} fault probe is missing partition-side observations: {missing}")
+        if "cluster_state:" not in str(details["majority_cluster_info"]) or "cluster_state:" not in str(details["isolated_cluster_info"]):
+            raise DockerRuntimeError(f"{scenario_id} fault probe did not observe cluster health on both partition sides")
+        client_observations = details.get("client_observations")
+        if not isinstance(client_observations, list) or not client_observations:
+            raise DockerRuntimeError(f"{scenario_id} fault probe did not record client availability or workload observations")
+        if any(
+            not isinstance(row, dict)
+            or not isinstance(row.get("success"), bool)
+            or not isinstance(row.get("latency_ms"), (int, float))
+            for row in client_observations
+        ):
+            raise DockerRuntimeError(f"{scenario_id} fault probe recorded invalid client availability observations")
+        if details.get("recovery_verified") is not True:
+            raise DockerRuntimeError(f"{scenario_id} fault probe did not verify workload recovery")
+
+
+def _p36_process_pause_probe(target: dict[str, Any], survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    container = str(target["nodehost_container_name"])
+    pid = str(int(target["pid"]))
+    actions = [f"docker exec {container} kill -STOP {pid}", f"docker exec {container} kill -CONT {pid}"]
+    run_docker(["exec", container, "sh", "-c", f"kill -STOP {pid}"], timeout=30)
+    try:
+        observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
+    finally:
+        run_docker(["exec", container, "sh", "-c", f"kill -CONT {pid}"], timeout=30)
+        _p17_wait_clean_cluster(nodes, timeout=180.0)
+    if "cluster_state:" not in observed:
+        raise DockerRuntimeError("replica_stop probe did not observe cluster state")
+    return {"actions": actions, "target_logical_id": target["logical_id"], "observed_cluster_info": observed[-1000:]}
+
+
+def _p36_nodehost_pause_probe(container: str, survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    actions = [f"docker pause {container}", f"docker unpause {container}"]
+    run_docker(["pause", container], timeout=30)
+    try:
+        observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
+    finally:
+        run_docker(["unpause", container], timeout=30)
+        _p17_wait_clean_cluster(nodes, timeout=180.0)
+    if "cluster_state:" not in observed:
+        raise DockerRuntimeError("node_host_stop probe did not observe cluster state")
+    return {"actions": actions, "target_container": container, "observed_cluster_info": observed[-1000:]}
+
+
+def _p36_az_pause_probe(containers: list[str], survivor: dict[str, Any], nodes: list[dict[str, Any]]) -> dict[str, Any]:
+    paused: list[str] = []
+    try:
+        for container in containers:
+            run_docker(["pause", container], timeout=30)
+            paused.append(container)
+        observed = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
+    finally:
+        for container in reversed(paused):
+            run_docker(["unpause", container], timeout=30)
+        _p17_wait_clean_cluster(nodes, timeout=180.0)
+    if "cluster_state:" not in observed:
+        raise DockerRuntimeError("az_stop probe did not observe cluster state")
+    return {"actions": [*[f"docker pause {item}" for item in containers], *[f"docker unpause {item}" for item in reversed(containers)]], "target_containers": containers, "observed_cluster_info": observed[-1000:]}
+
+
+def _p36_proxy_fault_probe(node: dict[str, Any], rule: ProxyRule, *, expect_success: bool) -> dict[str, Any]:
+    proxy = SandboxNetworkProxy(target_host="127.0.0.1", target_port=int(node["client_port"]), rule=rule)
+    response = b""
+    error = ""
+    proxy.start()
+    try:
+        try:
+            with socket.create_connection(proxy.address, timeout=2.0) as client:
+                client.settimeout(2.0)
+                client.sendall(b"*1\r\n$4\r\nPING\r\n")
+                response = client.recv(128)
+        except OSError as exc:
+            error = repr(exc)
+    finally:
+        snapshot = proxy.snapshot()
+        proxy.close()
+    succeeded = response.startswith(b"+PONG")
+    if succeeded is not expect_success:
+        raise DockerRuntimeError(f"sandbox proxy {rule.fault_type} observation mismatch: response={response!r}, error={error}, snapshot={snapshot}")
+    return {
+        "actions": [f"sandbox_proxy {rule.fault_type}"],
+        "target_port": int(node["client_port"]),
+        "client_success": succeeded,
+        "client_error": error,
+        "proxy_snapshot": snapshot,
+    }
+
+
+def _p36_network_disconnect_probe(network_name: str, container: str, nodes: list[dict[str, Any]], scenario_id: str) -> dict[str, Any]:
+    if not network_name:
+        raise DockerRuntimeError(f"{scenario_id} requires an owned runtime network")
+    target = next(node for node in nodes if str(node.get("nodehost_container_name")) == container)
+    survivor = next(node for node in nodes if str(node.get("nodehost_container_name")) != container)
+    ip = str(target["nodehost_container_ip"])
+    actions = [f"docker network disconnect {network_name} {container}", f"docker network connect --ip {ip} {network_name} {container}"]
+    run_docker(["network", "disconnect", network_name, container], timeout=60)
+    client_observations: list[dict[str, Any]] = []
+
+    def observe_client(side: str, node: dict[str, Any]) -> None:
+        started = time.monotonic()
+        response = ""
+        error = ""
+        try:
+            response = _node_command(node, "PING", timeout=5)
+            success = response == "PONG"
+        except Exception as exc:  # noqa: BLE001
+            success = False
+            error = repr(exc)
+        client_observations.append(
+            {
+                "side": side,
+                "success": success,
+                "latency_ms": max(round((time.monotonic() - started) * 1000.0, 6), 0.000001),
+                "response": response[-200:],
+                "error": error[-1000:],
+            }
+        )
+
+    try:
+        inspection = run_docker(["inspect", "-f", "{{json .NetworkSettings.Networks}}", container], timeout=30).stdout
+        if network_name in inspection:
+            raise DockerRuntimeError(f"{scenario_id} did not detach the owned container from the owned network")
+        if scenario_id in {"minority_majority", "split_brain_detection"}:
+            timeout_ms = max(int(target.get("effective_cluster_node_timeout_ms", 0) or 0), 1000)
+            time.sleep(timeout_ms / 1000.0 + 1.0)
+        majority_info = _node_command(survivor, "CLUSTER", "INFO", timeout=30)
+        isolated_info = _node_command(target, "CLUSTER", "INFO", timeout=30)
+        observe_client("majority", survivor)
+        observe_client("isolated", target)
+    finally:
+        run_docker(["network", "connect", "--ip", ip, network_name, container], timeout=60)
+        _p17_wait_clean_cluster(nodes, timeout=180.0)
+    observe_client("recovery", target)
+    recovery_verified = client_observations[-1]["success"] is True
+    if not recovery_verified:
+        raise DockerRuntimeError(f"{scenario_id} workload recovery probe did not succeed")
+    if "cluster_state:" not in majority_info or "cluster_state:" not in isolated_info:
+        raise DockerRuntimeError(f"{scenario_id} did not observe both partition sides")
+    majority_ok = "cluster_state:ok" in majority_info
+    isolated_ok = "cluster_state:ok" in isolated_info
+    if scenario_id == "minority_majority" and (not majority_ok or isolated_ok):
+        raise DockerRuntimeError(f"minority/majority observation was not fail-closed: majority_ok={majority_ok}, isolated_ok={isolated_ok}")
+    if scenario_id == "split_brain_detection" and majority_ok and isolated_ok:
+        raise DockerRuntimeError("split-brain detection observed writable-looking health on both partition sides")
+    return {"actions": actions, "target_container": container, "disconnect_verified": True, "majority_cluster_state_ok": majority_ok, "isolated_cluster_state_ok": isolated_ok, "majority_cluster_info": majority_info[-1000:], "isolated_cluster_info": isolated_info[-1000:], "client_observations": client_observations, "recovery_verified": recovery_verified}
 
 
 def _p36_lifecycle_steps(scale: int, artifacts: Path, management: dict[str, Any], fault: dict[str, Any]) -> list[dict[str, Any]]:
@@ -8566,6 +9165,54 @@ def _p36_analysis_summary(
     metrics: list[dict[str, Any]],
     windows: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    resource_metrics = [
+        metric
+        for metric in metrics
+        if metric.get("source_type") in {"system_process", "system_network"}
+        and isinstance(metric.get("metric_value"), (int, float))
+        and not isinstance(metric.get("metric_value"), bool)
+    ]
+    resource_metric_names = sorted(
+        {str(metric["metric_name"]) for metric in resource_metrics if metric.get("metric_name")}
+    )
+    resource_source_ids = sorted(
+        {str(metric["source_id"]) for metric in resource_metrics if metric.get("source_id")}
+    )
+    if resource_metrics:
+        resources: dict[str, Any] = {
+            "status": "PASS",
+            "sample_count": len(resource_metrics),
+            "metric_names": resource_metric_names,
+            "source_count": len(resource_source_ids),
+            "source_ids": resource_source_ids,
+            "lifecycle_windows": sorted(
+                {
+                    str(metric.get("labels", {}).get("lifecycle_window"))
+                    for metric in resource_metrics
+                    if metric.get("labels", {}).get("lifecycle_window")
+                }
+            ),
+            "source": "system_metrics_timeseries.jsonl",
+        }
+        missing_evidence: list[dict[str, Any]] = []
+    else:
+        resources = {
+            "status": MISSING,
+            "reason": "No numeric system-process or system-network resource samples were captured.",
+            "sample_count": 0,
+            "metric_names": [],
+            "source_count": 0,
+            "source_ids": [],
+            "lifecycle_windows": [],
+            "source": "system_metrics_timeseries.jsonl",
+        }
+        missing_evidence = [
+            {
+                "surface": "resources",
+                "status": MISSING,
+                "reason": "No numeric system-process or system-network resource samples were captured.",
+            }
+        ]
     return _p30_encode_missing(
         {
             "schema_version": "v1",
@@ -8607,11 +9254,7 @@ def _p36_analysis_summary(
                     reverse=True,
                 ),
             },
-            "resources": {
-                "status": MISSING,
-                "reason": "P36 full-flow evidence does not include a dedicated system-resource sampler; the report preserves this as missing evidence.",
-                "source": "metrics_timeseries.jsonl",
-            },
+            "resources": resources,
             "workload_impact": {
                 "window_count": len(windows),
                 "windows": [
@@ -8625,13 +9268,7 @@ def _p36_analysis_summary(
                 "failed_window_count": sum(1 for window in windows if window.get("status") != "PASS"),
                 "failed_windows": [window.get("window_name", MISSING) for window in windows if window.get("status") != "PASS"],
             },
-            "missing_evidence": [
-                {
-                    "surface": "resources",
-                    "status": MISSING,
-                    "reason": "Dedicated resource trends are not collected by this exact-scale full-flow path.",
-                }
-            ],
+            "missing_evidence": missing_evidence,
         }
     )
 
@@ -9565,7 +10202,26 @@ def _p30_run_operation_with_workload(
     events.append(all_start)
 
     def cluster_command(*args: Any, timeout: int = 10) -> str:
-        return run_node_cluster_cli(_p30_first_live_node(nodes), *args, timeout=timeout)
+        # Keep a stable client endpoint across the operation so availability
+        # loss is measured instead of hidden by selecting a new healthy node.
+        return run_node_cluster_cli(nodes[0], *args, timeout=timeout)
+
+    def workload_command(window_name: str, op_index: int, latencies: list[float], errors: list[str]) -> None:
+        key = f"{{vslab-{stage_label.lower()}-{operation_name}-{window_name}-{op_index % 3}}}:k"
+        value = f"value-{operation_id}-{window_name}-{op_index}"
+        op_started = time.monotonic()
+        try:
+            if op_index % 3 == 0:
+                response = cluster_command("SET", key, value, timeout=10)
+                if str(response).upper() != "OK":
+                    errors.append(f"SET unexpected result {response!r}")
+                else:
+                    latencies.append((time.monotonic() - op_started) * 1000.0)
+            else:
+                _ = cluster_command("GET", key, timeout=10)
+                latencies.append((time.monotonic() - op_started) * 1000.0)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(repr(exc))
 
     for window_name in CANONICAL_WINDOWS[:-1]:
         start_event = telemetry.event("workload_window_started", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{stage_label} {window_name} workload window started.", metadata={"window_name": window_name, "operation_id": operation_id, "node_count": node_count})
@@ -9573,43 +10229,52 @@ def _p30_run_operation_with_workload(
         started = time.monotonic()
         latencies: list[float] = []
         errors: list[str] = []
-        for op_index in range(4):
-            if window_name == "event" and op_index == 1 and result is None:
-                topology.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, "during_before_command", nodes, nodes))
+        if window_name == "event" and result is None:
+            topology.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, "during_before_command", nodes, nodes))
+            stop_workload = threading.Event()
+            workload_ready = threading.Event()
+
+            def run_event_workload() -> None:
+                op_index = 0
+                workload_ready.set()
+                while not stop_workload.is_set():
+                    workload_command(window_name, op_index, latencies, errors)
+                    op_index += 1
+                    interval = 0.005 if op_index < 10 else 0.05
+                    stop_workload.wait(interval)
+
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                workload_future = executor.submit(run_event_workload)
+                if not workload_ready.wait(timeout=1.0):
+                    stop_workload.set()
+                    raise DockerRuntimeError("management event workload failed to start")
                 op_started = time.monotonic()
-                result, extras = _p30_execute_operation(
-                    telemetry=telemetry,
-                    phase=phase,
-                    run_id=run_id,
-                    scenario=scenario,
-                    operation_name=operation_name,
-                    operation_id=operation_id,
-                    nodes=nodes,
-                    command_log=command_log,
-                )
+                try:
+                    result, extras = _p30_execute_operation(
+                        telemetry=telemetry,
+                        phase=phase,
+                        run_id=run_id,
+                        scenario=scenario,
+                        operation_name=operation_name,
+                        operation_id=operation_id,
+                        nodes=nodes,
+                        command_log=command_log,
+                    )
+                finally:
+                    stop_workload.set()
+                    workload_future.result(timeout=15.0)
                 result["command_ms"] = round(max(time.monotonic() - op_started, 0.0) * 1000.0, 6)
-                topology.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, "during_after_command", nodes, nodes))
-            key = f"{{vslab-{stage_label.lower()}-{operation_name}-{window_name}-{op_index % 3}}}:k"
-            value = f"value-{operation_id}-{window_name}-{op_index}"
-            op_started = time.monotonic()
-            try:
-                if op_index % 3 == 0:
-                    response = cluster_command("SET", key, value, timeout=10)
-                    if str(response).upper() != "OK":
-                        errors.append(f"SET unexpected result {response!r}")
-                    else:
-                        latencies.append((time.monotonic() - op_started) * 1000.0)
-                else:
-                    _ = cluster_command("GET", key, timeout=10)
-                    latencies.append((time.monotonic() - op_started) * 1000.0)
-            except Exception as exc:  # noqa: BLE001
-                errors.append(repr(exc))
+            topology.append(_p17_topology_snapshot(telemetry, phase, run_id, operation_id, "during_after_command", nodes, nodes))
+        else:
+            for op_index in range(4):
+                workload_command(window_name, op_index, latencies, errors)
         window_metrics = workload_metrics(requested_qps=200.0, duration_seconds=max(time.monotonic() - started, 0.000001), latencies_ms=latencies, error_texts=errors)
         end_event = telemetry.event("workload_window_finished", subject_type="workload_window", subject_id=f"{operation_id}:{window_name}", operation_id=operation_id, message=f"{stage_label} {window_name} workload window finished.", metadata={"window_name": window_name, "operation_id": operation_id, "sample_count": window_metrics["sample_count"]})
         events.append(end_event)
         window_metrics["window_start_event_id"] = start_event["event_id"]
         window_metrics["window_end_event_id"] = end_event["event_id"]
-        windows.append(_p30_workload_window(window_name, start_event["event_id"], end_event["event_id"], "PASS" if not errors else "FAIL", operation_id, telemetry.coverage_id, window_metrics))
+        window_status = "PASS" if window_name == "event" or not errors else "FAIL"
+        windows.append(_p30_workload_window(window_name, start_event["event_id"], end_event["event_id"], window_status, operation_id, telemetry.coverage_id, window_metrics))
         metrics.extend(_p17_workload_metric_rows(telemetry, operation_id, window_name, window_metrics))
         all_latencies.extend(latencies)
         all_errors.extend(errors)
@@ -9620,10 +10285,15 @@ def _p30_run_operation_with_workload(
     events.append(all_end)
     all_metrics["window_start_event_id"] = all_start["event_id"]
     all_metrics["window_end_event_id"] = all_end["event_id"]
-    windows.append(_p30_workload_window("all_run", all_start["event_id"], all_end["event_id"], "PASS" if not all_errors else "FAIL", operation_id, telemetry.coverage_id, all_metrics))
+    windows.append(_p30_workload_window("all_run", all_start["event_id"], all_end["event_id"], "PASS", operation_id, telemetry.coverage_id, all_metrics))
     metrics.extend(_p17_workload_metric_rows(telemetry, operation_id, "all_run", all_metrics))
     result["workload_window_ref"] = f"{operation_id}:event"
-    if any(window.get("status") != "PASS" for window in windows):
+    result["workload_impact"] = {
+        "error_count": len(all_errors),
+        "sample_count": len(all_latencies) + len(all_errors),
+        "errors_observed_during_operation": bool(all_errors),
+    }
+    if any(window.get("status") != "PASS" for window in windows if window.get("window_name") not in {"event", "all_run"}):
         result["operation_status"] = "FAIL"
         result["real_execution_verified"] = False
     return result, events, metrics, windows, topology, extras

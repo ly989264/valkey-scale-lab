@@ -1,24 +1,24 @@
 # Codex App Goal-Mode Start Prompt
 
-Resume Milestone 1 through the v3 controller. Continue automatically until it
+Resume Milestone 1 through the v6 controller. Continue automatically until it
 returns `DONE` or a genuine external `BLOCKED` result.
 
 Start from `project/`:
 
 ```bash
-PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop doctor
-PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop migrate-v2 --receipt ../loop_evidence/meta_runs/milestone1-v3/migration/v2_snapshot_receipt.json
-PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop next
+PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop_v6 doctor
+PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop_v6 migrate-v5 --state ../loop_evidence/meta_runs/milestone1-v5/state/loop_state.json
+PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop_v6 next
 ```
 
 For every iteration:
 
 1. `WORK`: solve the current product gap with your own engineering judgment,
-   run useful focused diagnostics, then run `... meta_loop evaluate`.
+   run useful focused diagnostics, then run `... meta_loop_v6 evaluate`.
 2. `RECOVERY_WORK`: fix only the reported regression, then run `evaluate`.
 3. `EVALUATOR_REPAIR`: change only the returned evaluator allowlist. Do not
    modify the already-failing Reviewer test or guard tests. Do
-   not change product inputs. Run `... meta_loop accept-evaluator-repair`.
+   not change product inputs. Run `... meta_loop_v6 accept-evaluator-repair`.
 4. `REVIEW_ACCEPTANCE`: launch a fresh reviewer. It returns `NO_GAP`, or one
    in-scope `GAP` with `gap_kind` equal to `PRODUCT_GAP` or `EVALUATOR_GAP`, an
    exact frozen clause, a concrete finding, and one failing Level 0-2 check.

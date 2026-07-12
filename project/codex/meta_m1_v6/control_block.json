@@ -1,6 +1,6 @@
 {
-  "schema_version": "v3",
-  "goal_id": "milestone1-local-complete-v3",
+  "schema_version": "v6",
+  "goal_id": "milestone1-local-complete-v6",
   "goal": "Complete the local Valkey lifecycle and admit exact real evidence at 50 and 200 nodes.",
   "scope_freeze": {
     "source": "docs/MILESTONES.md#milestone-1-complete-local-cluster-lifecycle-up-to-200-real-nodes",
@@ -63,9 +63,9 @@
     {
       "id": "meta-evaluator-adversarial-suite",
       "level": 1,
-      "command": ["python3", "-m", "pytest", "-q", "tests/meta_loop", "tests/provenance/test_meta_m1_evidence_gate.py"],
+      "command": ["python3", "-m", "pytest", "-q", "tests/meta_loop", "tests/meta_loop_v6", "tests/provenance/test_meta_m1_evidence_gate.py", "tests/provenance/test_meta_m1_evidence_gate_duplicate_streams.py", "tests/provenance/test_meta_m1_evidence_gate_operation_provenance.py", "tests/provenance/test_meta_m1_evidence_gate_preflight_order.py"],
       "timeout_seconds": 1200,
-      "inputs": ["src/valkey_scale_lab/meta_loop", "scripts/meta_m1_evidence_gate.py", "tests/meta_loop", "tests/provenance/test_meta_m1_evidence_gate.py"]
+      "inputs": ["src/valkey_scale_lab/meta_loop", "src/valkey_scale_lab/meta_loop_v6", "scripts/meta_m1_evidence_gate.py", "tests/meta_loop", "tests/meta_loop_v6", "tests/provenance/test_meta_m1_evidence_gate.py", "tests/provenance/test_meta_m1_evidence_gate_duplicate_streams.py", "tests/provenance/test_meta_m1_evidence_gate_operation_provenance.py", "tests/provenance/test_meta_m1_evidence_gate_preflight_order.py"]
     }
   ],
   "objectives": [
@@ -182,12 +182,12 @@
           "inputs": ["src/valkey_scale_lab/milestone1_gate.py", "scripts/meta_m1_product_gate_contract.py"]
         },
         {
-          "id": "exact-real-50",
+          "id": "exact-real-50-admission",
           "level": 3,
-          "command": ["python3", "scripts/meta_m1_real_gate.py", "--scale", "50"],
-          "digest_mode": "product_evidence",
-          "timeout_seconds": 7200,
-          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v3/evidence/scale-50"]
+          "command": ["python3", "scripts/meta_m1_real_gate_v6.py", "--mode", "admit", "--scale", "50", "--evidence-root", "../loop_evidence/meta_runs/milestone1-v5/evidence"],
+          "digest_mode": "admission",
+          "timeout_seconds": 1200,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v5/evidence/scale-50"]
         }
       ]
     },
@@ -200,7 +200,7 @@
         "Pass the complete lifecycle against a real exact 200-node Valkey 9.1.x cluster without downscaling.",
         "Keep every non-real regression and both exact-scale evidence admissions passing at final closure."
       ],
-      "context_paths": ["src", "scripts", "tests", "../loop_evidence/meta_runs/milestone1-v3/evidence"],
+      "context_paths": ["src", "scripts", "tests", "../loop_evidence/meta_runs/milestone1-v6/evidence"],
       "checks": [
         {
           "id": "full-non-real-regression",
@@ -210,20 +210,28 @@
           "inputs": ["src", "scripts", "schemas", "tests"]
         },
         {
-          "id": "exact-real-50-final",
+          "id": "exact-real-50-admission-final",
           "level": 3,
-          "command": ["python3", "scripts/meta_m1_real_gate.py", "--scale", "50"],
-          "digest_mode": "product_evidence",
-          "timeout_seconds": 7200,
-          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v3/evidence/scale-50"]
+          "command": ["python3", "scripts/meta_m1_real_gate_v6.py", "--mode", "admit", "--scale", "50", "--evidence-root", "../loop_evidence/meta_runs/milestone1-v5/evidence"],
+          "digest_mode": "admission",
+          "timeout_seconds": 1200,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v5/evidence/scale-50"]
         },
         {
-          "id": "exact-real-200",
+          "id": "exact-real-200-capture",
           "level": 4,
-          "command": ["python3", "scripts/meta_m1_real_gate.py", "--scale", "200"],
+          "command": ["python3", "scripts/meta_m1_real_gate_v6.py", "--mode", "capture", "--scale", "200"],
           "digest_mode": "product_evidence",
           "timeout_seconds": 14400,
-          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v3/evidence/scale-200"]
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v6/evidence/scale-200"]
+        },
+        {
+          "id": "exact-real-200-admission",
+          "level": 4,
+          "command": ["python3", "scripts/meta_m1_real_gate_v6.py", "--mode", "admit", "--scale", "200"],
+          "digest_mode": "admission",
+          "timeout_seconds": 1200,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v6/evidence/scale-200"]
         }
       ]
     }

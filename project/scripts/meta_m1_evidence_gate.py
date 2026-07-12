@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from valkey_scale_lab.meta_loop.digests import product_tree_digest
+from valkey_scale_lab.meta_loop_v5.digests import product_tree_digest
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -177,6 +177,15 @@ def evaluate(scale: int, evidence_root: Path) -> list[str]:
     missing = sorted(REQUIRED_ARTIFACT_KINDS - by_kind.keys())
     if missing:
         errors.append(f"missing artifact kinds: {missing}")
+    management_commands = by_kind.get("command_log")
+    fault_commands = by_kind.get("fault_command_log")
+    if (
+        isinstance(management_commands, dict)
+        and isinstance(fault_commands, dict)
+        and management_commands.get("sha256")
+        and management_commands.get("sha256") == fault_commands.get("sha256")
+    ):
+        errors.append("management and fault command streams must be distinct evidence artifacts")
 
     parsed_json: dict[str, dict[str, Any]] = {}
     parsed_jsonl: dict[str, list[dict[str, Any]]] = {}
@@ -222,6 +231,17 @@ def _validate_common(
     streams: dict[str, list[dict[str, Any]]],
     errors: list[str],
 ) -> None:
+    run_metadata = objects.get("run_metadata")
+    if isinstance(run_metadata, dict):
+        nodes = run_metadata.get("nodes")
+        node_rows = nodes if isinstance(nodes, list) else []
+        logical_ids = [
+            str(node.get("logical_id"))
+            for node in node_rows
+            if isinstance(node, dict) and isinstance(node.get("logical_id"), str) and node["logical_id"].strip()
+        ]
+        if len(node_rows) != scale or len(logical_ids) != scale or len(set(logical_ids)) != scale:
+            errors.append(f"run_metadata.nodes must contain {scale} unique non-empty logical_id values")
     for kind, value in objects.items():
         if value.get("schema_version") != "v1":
             errors.append(f"{kind}.schema_version must be 'v1'")
@@ -306,6 +326,12 @@ def _validate_lifecycle(run_id: str, value: dict[str, Any] | None, events: list[
             errors.append(f"lifecycle step {step_id} event references must identify the same step")
         if step.get("run_id") != run_id:
             errors.append(f"lifecycle step {step_id} run_id mismatch")
+    preflight = by_id.get("resource_preflight", {})
+    runtime_start = by_id.get("runtime_start", {})
+    preflight_end = preflight.get("ended_monotonic_ms")
+    runtime_begin = runtime_start.get("started_monotonic_ms")
+    if isinstance(preflight_end, (int, float)) and isinstance(runtime_begin, (int, float)) and preflight_end > runtime_begin:
+        errors.append("lifecycle resource_preflight must finish before runtime_start begins")
 
 
 def _validate_scenarios(
@@ -330,6 +356,7 @@ def _validate_scenarios(
         for item in streams.get(kind, [])
         if item.get("command_id")
     }
+    operation_scenarios: dict[str, set[str]] = {}
     for scenario_id in sorted(REQUIRED_SCENARIOS & by_id.keys()):
         row = by_id[scenario_id]
         if row.get("status") != "REAL_PASS" or row.get("run_id") != run_id:
@@ -352,6 +379,20 @@ def _validate_scenarios(
             errors.append(f"scenario {scenario_id} must reference existing command_ids")
         elif any(command_by_id[str(ref)].get("scenario_id") != scenario_id for ref in row_commands):
             errors.append(f"scenario {scenario_id} command_ids must identify the same scenario")
+        else:
+            for ref in row_commands:
+                operation_id = command_by_id[str(ref)].get("operation_id")
+                if isinstance(operation_id, str) and operation_id:
+                    operation_scenarios.setdefault(operation_id, set()).add(scenario_id)
+        if isinstance(row_events, list):
+            for ref in row_events:
+                event = event_by_id.get(str(ref), {})
+                operation_id = event.get("operation_id")
+                if isinstance(operation_id, str) and operation_id:
+                    operation_scenarios.setdefault(operation_id, set()).add(scenario_id)
+    shared = {operation: sorted(scenarios) for operation, scenarios in operation_scenarios.items() if len(scenarios) > 1}
+    if shared:
+        errors.append(f"operation provenance must not be relabelled across scenarios: {shared}")
 
 
 def _validate_cleanup(value: dict[str, Any] | None, summary: Any, errors: list[str]) -> None:
@@ -368,6 +409,16 @@ def _validate_report(analysis: dict[str, Any] | None, report: dict[str, Any] | N
         missing = sorted(REPORT_SURFACES - analysis.keys())
         if missing:
             errors.append(f"analysis_summary missing required report surfaces: {missing}")
+        shown_surfaces = {
+            surface
+            for surface in REPORT_SURFACES - {"missing_evidence"}
+            if isinstance(analysis.get(surface), dict) and bool(analysis[surface])
+        }
+        for surface in sorted(REPORT_SURFACES):
+            if analysis.get(surface) is None:
+                errors.append(f"analysis_summary.{surface} must show evidence or explicit missing evidence")
+            elif surface != "missing_evidence" and analysis.get(surface) == {} and shown_surfaces:
+                errors.append(f"analysis_summary.{surface} must not be empty when other report evidence is shown")
     if report is None:
         return
     views = report.get("views")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -1403,6 +1404,18 @@ def test_process_cleanup_records_timing_and_uses_bounded_parallelism(tmp_path: P
 
     def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
         calls.append(args)
+        if args[:2] == ["inspect", "-f"]:
+            return docker_runtime.DockerResult(
+                json.dumps(
+                    {
+                        f"{docker_runtime.LABEL_PREFIX}.project": docker_runtime.PROJECT,
+                        f"{docker_runtime.LABEL_PREFIX}.phase": state["phase_id"],
+                        f"{docker_runtime.LABEL_PREFIX}.run_id": state["runtime"]["run_id"],
+                    }
+                ),
+                "",
+                0,
+            )
         if args[:2] == ["exec", "nodehost-a"] or args[:2] == ["exec", "nodehost-b"]:
             if args[2:4] == ["sh", "-c"]:
                 if "kill -TERM" in args[4]:
@@ -1466,6 +1479,18 @@ def test_process_cleanup_tolerates_slow_bulk_termination_when_residuals_clear(tm
         return [worker(item) for item in list(items)]
 
     def fake_run_docker(args: list[str], timeout: int = 120, check: bool = True) -> docker_runtime.DockerResult:
+        if args[:2] == ["inspect", "-f"]:
+            return docker_runtime.DockerResult(
+                json.dumps(
+                    {
+                        f"{docker_runtime.LABEL_PREFIX}.project": docker_runtime.PROJECT,
+                        f"{docker_runtime.LABEL_PREFIX}.phase": state["phase_id"],
+                        f"{docker_runtime.LABEL_PREFIX}.run_id": state["runtime"]["run_id"],
+                    }
+                ),
+                "",
+                0,
+            )
         if args[:4] == ["exec", "nodehost-a", "sh", "-c"]:
             if "kill -TERM" in args[4]:
                 raise DockerRuntimeError("docker exec nodehost-a kill batch timed out after 60 seconds")
