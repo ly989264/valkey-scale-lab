@@ -13,7 +13,7 @@
     },
     {
       "path": "AGENTS.md",
-      "sha256": "3718b010118b4f4401d5deae4166b4bfe6a792f133ca33ddf806f4d4edcd7011"
+      "sha256": "da016b3ed25fa1ba1c7a75d4c99fb89e72730ad33f09da391815af7cceec0bd8"
     },
     {
       "path": "CODEX_GOAL_LOOP_START.md",
@@ -1041,7 +1041,7 @@
     },
     {
       "path": "scripts/audit_fault_failover_scale.py",
-      "sha256": "0cadc329252cdbe3e9fa07610d1d092ad2e7e0756751497b5339b43ce40fb70e"
+      "sha256": "f07dc6cdd3a30a4a38cdf63ed2df4f579af61f5b631acccec0d6a7d27f148a16"
     },
     {
       "path": "scripts/audit_p13_p14_scale.py",
@@ -1081,7 +1081,7 @@
     },
     {
       "path": "scripts/fault_failover_gate.py",
-      "sha256": "4fa64de7d2c3e8d4fad69c9aa5033087897bfbc589058794e1c50c049e21bcd1"
+      "sha256": "53969a66057d992a8db3cced3b20cbdf5ef29d7ad1443d1cc66fcf0de94164c1"
     },
     {
       "path": "scripts/fault_failover_timeline_gate.py",
