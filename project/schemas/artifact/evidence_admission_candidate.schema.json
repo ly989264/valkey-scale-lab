@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://valkey-scale-lab.local/schemas/evidence_admission_candidate.schema.json",
+  "title": "Valkey Scale Lab candidate admission envelope",
+  "type": "object",
+  "required": ["schema_version", "execution_kind", "run_id", "run_nonce", "run_started_unix_ms", "run_ended_unix_ms", "source_commit", "product_digest", "definition_digest", "capture_digest", "admission_digest", "requested_nodes", "observed_nodes", "status", "valkey_versions", "independent_probe", "cleanup", "artifacts"],
+  "properties": {
+    "schema_version": {"const": "meta-m1-admission-v2"},
+    "execution_kind": {"const": "REAL_VALKEY_EXACT_SCALE"},
+    "run_id": {"type": "string", "minLength": 1},
+    "run_nonce": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "run_started_unix_ms": {"type": "integer"},
+    "run_ended_unix_ms": {"type": "integer"},
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "product_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "definition_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "capture_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "admission_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "requested_nodes": {"type": "integer", "minimum": 30, "maximum": 2000},
+    "observed_nodes": {"type": "integer", "minimum": 30, "maximum": 2000},
+    "status": {"const": "PASS"},
+    "valkey_versions": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^9\\.1(?:\\.[0-9]+)?$"}},
+    "independent_probe": {"type": "object"},
+    "cleanup": {"type": "object"},
+    "capture_manifest": {"type": "object"},
+    "provenance": {"type": "object"},
+    "artifacts": {"type": "array", "minItems": 1, "items": {"type": "object"}}
+  }
+}

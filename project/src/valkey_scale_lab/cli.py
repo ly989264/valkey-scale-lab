@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from valkey_scale_lab import __version__
+from valkey_scale_lab import cli_compat
 from valkey_scale_lab.analysis import AnalysisError, WorkloadImpactError, build_workload_impact_analysis, create_analysis_summary
 from valkey_scale_lab.artifacts import build_run_metadata, create_run_context, write_run_manifest, write_run_metadata
 from valkey_scale_lab.config.validation import emit_schema_report, validate_config_file
@@ -37,18 +38,18 @@ def _unimplemented(args: argparse.Namespace) -> int:
 
 
 def _config_validate(args: argparse.Namespace) -> int:
-    report = validate_config_file(args.config, args.out, global_config_path=args.global_config, cli_overrides=_nodehost_cli_overrides(args))
+    report = cli_compat.validate_config_file(args.config, args.out, global_config_path=args.global_config, cli_overrides=_nodehost_cli_overrides(args))
     return 0 if report["valid"] else 1
 
 
 def _config_emit_schema(args: argparse.Namespace) -> int:
-    emit_schema_report(args.out)
+    cli_compat.emit_schema_report(args.out)
     return 0
 
 
 def _plan(args: argparse.Namespace) -> int:
     try:
-        create_plan_file(args.config, args.out, dry_run=args.dry_run, global_config_path=args.global_config, cli_overrides=_nodehost_cli_overrides(args))
+        cli_compat.create_plan_file(args.config, args.out, dry_run=args.dry_run, global_config_path=args.global_config, cli_overrides=_nodehost_cli_overrides(args))
     except PlannerError as exc:
         print(f"ERROR: plan: {exc}", file=sys.stderr)
         return 1
@@ -64,7 +65,7 @@ def _gate_scenario(args: argparse.Namespace) -> int:
     recorder = CommandRecorder(phase_id=args.phase, run_id=run_id, scenario=args.scenario, artifacts_dir=args.artifacts_dir)
     try:
         with command_recorder_context(recorder):
-            state = create_scenario(
+            state = cli_compat.create_scenario(
                 phase=args.phase,
                 scenario=args.scenario,
                 config_path=args.config,
@@ -199,7 +200,7 @@ def _gate_cleanup(args: argparse.Namespace) -> int:
         run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"phase-{phase_id}-{scenario}") if isinstance(state, dict) else f"phase-{phase_id}-{scenario}"
         recorder = CommandRecorder(phase_id=phase_id, run_id=run_id, scenario=scenario, artifacts_dir=args.artifacts_dir, append=True)
         with command_recorder_context(recorder):
-            report = cleanup_scenario(state_path=args.state, artifacts_dir=args.artifacts_dir, out_path=args.out)
+            report = cli_compat.cleanup_scenario(state_path=args.state, artifacts_dir=args.artifacts_dir, out_path=args.out)
         summary = recorder.close(status="PASS" if report.get("status") == "PASS" else "FAIL")
         report["command_log_ref"] = summary["command_log_ref"]
         report["command_audit_summary_ref"] = str(Path(args.artifacts_dir, "command_audit_summary.json"))
@@ -252,7 +253,7 @@ def _fault_apply(args: argparse.Namespace) -> int:
         run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{phase_id}-fault") if isinstance(state, dict) else f"{phase_id}-fault"
         recorder = CommandRecorder(phase_id=phase_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
         with command_recorder_context(recorder):
-            apply_fault(
+            cli_compat.apply_fault(
                 state_path=args.state,
                 target_logical_id=args.target_logical_id,
                 fault_json=args.fault_json,
@@ -273,7 +274,7 @@ def _fault_clear(args: argparse.Namespace) -> int:
         run_id = str(state.get("cluster_id") or state.get("runtime", {}).get("run_id") or f"{phase_id}-fault") if isinstance(state, dict) else f"{phase_id}-fault"
         recorder = CommandRecorder(phase_id=phase_id, run_id=run_id, scenario=scenario, artifacts_dir=Path(args.out).parent, append=True)
         with command_recorder_context(recorder):
-            clear_fault(state_path=args.state, fault_id=args.fault_id, out_path=args.out)
+            cli_compat.clear_fault(state_path=args.state, fault_id=args.fault_id, out_path=args.out)
         recorder.close()
     except FaultError as exc:
         print(f"ERROR: fault clear: {exc}", file=sys.stderr)
@@ -287,12 +288,12 @@ def _analyze(args: argparse.Namespace) -> int:
             if not args.out_dir:
                 print("ERROR: analyze: --out-dir is required for workload-impact analysis", file=sys.stderr)
                 return 2
-            build_workload_impact_analysis(args.input, args.out_dir, phase_id=args.phase)
+            cli_compat.build_workload_impact_analysis(args.input, args.out_dir, phase_id=args.phase)
         else:
             if not args.out:
                 print("ERROR: analyze: --out is required for summary analysis", file=sys.stderr)
                 return 2
-            create_analysis_summary(args.input, args.out)
+            cli_compat.create_analysis_summary(args.input, args.out)
     except (AnalysisError, WorkloadImpactError) as exc:
         print(f"ERROR: analyze: {exc}", file=sys.stderr)
         return 1
@@ -305,12 +306,12 @@ def _report(args: argparse.Namespace) -> int:
             if not args.input:
                 print("ERROR: report: --input is required for final-goal-loop reports", file=sys.stderr)
                 return 2
-            build_final_goal_loop_report(args.input, args.out_dir, phase_id=args.phase)
+            cli_compat.build_final_goal_loop_report(args.input, args.out_dir, phase_id=args.phase)
         else:
             if not args.analysis or not args.index_out:
                 print("ERROR: report: --analysis and --index-out are required for summary reports", file=sys.stderr)
                 return 2
-            render_report(args.analysis, args.out_dir, args.index_out)
+            cli_compat.render_report(args.analysis, args.out_dir, args.index_out)
     except (FinalReportError, ReportError) as exc:
         print(f"ERROR: report: {exc}", file=sys.stderr)
         return 1
@@ -356,7 +357,7 @@ def _run_init(args: argparse.Namespace) -> int:
 
 def _milestone1_real_gate(args: argparse.Namespace) -> int:
     try:
-        run_real_gate(args.scale, args.evidence_dir)
+        cli_compat.run_real_gate(args.scale, args.evidence_dir)
     except (DockerRuntimeError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"ERROR: milestone1 real-gate: {exc}", file=sys.stderr)
         return 1

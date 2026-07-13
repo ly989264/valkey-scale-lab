@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://valkey-scale-lab.local/schemas/evidence_capture_manifest.schema.json",
+  "title": "Valkey Scale Lab raw capture manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "requested_nodes", "observed_nodes", "definition_digest", "artifacts", "capture_digest"],
+  "properties": {
+    "schema_version": {"const": "valkey-scale-lab-capture-manifest-v1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "run_owner": {"type": "string", "minLength": 1},
+    "requested_nodes": {"type": "integer", "minimum": 30, "maximum": 2000},
+    "observed_nodes": {"type": "integer", "minimum": 30, "maximum": 2000},
+    "definition_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "capture_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "path", "format", "sha256", "run_id"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "path": {"type": "string", "pattern": "^runtime/[^/]+$"},
+          "format": {"enum": ["json", "jsonl"]},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "run_id": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

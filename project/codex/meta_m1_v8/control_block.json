@@ -1,0 +1,308 @@
+{
+  "schema_version": "v8",
+  "goal_id": "milestone1-pipeline-refactor-v8",
+  "goal": "Refactor Goal scheduling, Gate orchestration, scenario definition and execution, evidence validation, analysis, and reporting into configuration-driven modules without changing the frozen safety contract or real Valkey behavior.",
+  "scope_freeze": {
+    "source": "docs/MILESTONES.md#milestone-1-complete-local-cluster-lifecycle-up-to-200-real-nodes",
+    "trigger_nodes": {"min": 30, "max": 2000, "exact": true},
+    "required_real_scales": [50, 200],
+    "supported_not_gated_scales": [30, 100],
+    "normal_development_max_nodes": 100,
+    "required_200_bounded_exception": true,
+    "above_200": {
+      "automatic": false,
+      "operator_opt_in": true,
+      "resource_preflight": true,
+      "cost_acknowledgement": true,
+      "silent_downscale": false
+    }
+  },
+  "integrity": {
+    "kernel_manifest": "codex/meta_m1_v8/kernel_manifest.json",
+    "evaluator_paths": [
+      "scripts/meta_m1_evidence_gate_v8.py",
+      "scripts/meta_m1_product_gate_contract_v8.py"
+    ],
+    "evaluator_repair_allowed_paths": [
+      "scripts/meta_m1_evidence_gate_v8.py",
+      "scripts/meta_m1_product_gate_contract_v8.py"
+    ],
+    "product_roots": ["src", "scripts", "schemas", "config", "templates"],
+    "product_excludes": [
+      "src/valkey_scale_lab/goal",
+      "src/valkey_scale_lab/meta_loop",
+      "scripts/meta_m1_"
+    ]
+  },
+  "controller_policy": {
+    "max_attempts_per_objective": 3,
+    "stagnation_limit": 2,
+    "max_replans_per_objective": 1,
+    "max_review_rounds_per_objective": 2,
+    "max_new_gaps_per_review": 1,
+    "failure_excerpt_bytes": 2400,
+    "max_context_bytes": 12000,
+    "cache_unchanged_results": true,
+    "expensive_levels": [3, 4],
+    "max_expensive_runs_per_input": 1
+  },
+  "levels": {
+    "0": "syntax, static safety, control-contract, and immutable-kernel checks",
+    "1": "hermetic unit, integration, compatibility, and orchestration checks",
+    "2": "small-real parity or semantic artifact and adversarial checks",
+    "3": "fresh exact 50-node real full-flow capture and admission",
+    "4": "preflight-gated fresh exact 200-node real full-flow capture and admission"
+  },
+  "common_checks": [
+    {
+      "id": "static-safety",
+      "level": 0,
+      "command": ["python3", "scripts/safety_scan.py"],
+      "timeout_seconds": 300,
+      "inputs": ["scripts/safety_scan.py", "src", "scripts"]
+    },
+    {
+      "id": "python-compile",
+      "level": 0,
+      "command": ["python3", "-m", "compileall", "-q", "src", "scripts"],
+      "timeout_seconds": 300,
+      "inputs": ["src", "scripts"]
+    }
+  ],
+  "closure_checks": [
+    {
+      "id": "full-non-real-regression-floor",
+      "level": 1,
+      "command": ["python3", "-m", "pytest", "-q", "--ignore=tests/real_valkey", "--ignore=tests/meta_loop_v7/test_o1_retry_budget_gap.py"],
+      "timeout_seconds": 3600,
+      "inputs": ["src", "scripts", "schemas", "config", "templates", "tests"]
+    }
+  ],
+  "evaluator_guard_checks": [
+    {
+      "id": "v8-evaluator-adversarial-suite",
+      "level": 1,
+      "command": ["python3", "-m", "pytest", "-q", "tests/meta_loop_v8", "tests/provenance/test_meta_m1_evidence_gate_v8.py"],
+      "timeout_seconds": 1200,
+      "inputs": ["src/valkey_scale_lab/goal", "src/valkey_scale_lab/meta_loop_v8", "scripts/meta_m1_evidence_gate_v8.py", "scripts/meta_m1_product_gate_contract_v8.py", "tests/meta_loop_v8", "tests/provenance/test_meta_m1_evidence_gate_v8.py"]
+    }
+  ],
+  "objectives": [
+    {
+      "id": "O1_GOAL_SCHEDULER_AND_CONTRACTS",
+      "title": "Goal scheduler and immutable controller contracts",
+      "depends_on": [],
+      "clauses": [
+        "Keep Goal scheduling independent of mutable product pipeline modules and drive work only from the frozen control block and sealed controller state.",
+        "Verify completed v6 through a provenance-only migration that imports no completion status, review check, retry budget, cache entry, or PASS result.",
+        "Preserve bounded retries, stagnation routing, level ordering, executable completion evidence, controlled evaluator repair, and bounded work-item context.",
+        "Retain the sealed expected-failing v7 retry-budget reproduction as immutable kernel-gap evidence, exclude only that frozen test from v8 closure, and require its passing v8 successor."
+      ],
+      "context_paths": ["src/valkey_scale_lab/goal", "src/valkey_scale_lab/meta_loop_v8", "codex/meta_m1_v8", "tests/meta_loop_v8"],
+      "checks": [
+        {
+          "id": "v8-goal-controller-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/meta_loop_v7", "tests/meta_loop_v8", "--ignore=tests/meta_loop_v7/test_o1_retry_budget_gap.py"],
+          "timeout_seconds": 1200,
+          "inputs": ["src/valkey_scale_lab/goal", "src/valkey_scale_lab/meta_loop_v7", "src/valkey_scale_lab/meta_loop_v8", "codex/meta_m1_v8", "tests/meta_loop_v7", "tests/meta_loop_v8"]
+        },
+        {
+          "id": "o1-changing-failure-identity-budget-v8",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/meta_loop_v8/test_retry_budget.py"],
+          "timeout_seconds": 120,
+          "inputs": ["src/valkey_scale_lab/meta_loop_v8/controller.py", "tests/meta_loop_v8/test_retry_budget.py"]
+        }
+      ]
+    },
+    {
+      "id": "O2_CANONICAL_SCENARIO_DEFINITION",
+      "title": "Canonical versioned scenario definitions",
+      "depends_on": ["O1_GOAL_SCHEDULER_AND_CONTRACTS"],
+      "clauses": [
+        "Define lifecycle steps, management and fault scenario identities, required artifacts, report surfaces, and scale policy in one versioned validated definition.",
+        "Compile deterministic immutable Gate plans and reject duplicate, missing, reordered, unknown, or unsafe definition content.",
+        "Accept every exact requested node count from 30 through 2000, keep 30 and 100 runnable, require real completion only at 50 and 200, and never silently downscale."
+      ],
+      "context_paths": ["src/valkey_scale_lab/scenarios", "schemas/scenario", "tests/scenarios", "src/valkey_scale_lab/runtime/docker_runtime.py"],
+      "checks": [
+        {
+          "id": "scenario-definition-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/scenarios"],
+          "timeout_seconds": 1200,
+          "inputs": ["src/valkey_scale_lab/scenarios", "schemas/scenario", "tests/scenarios"]
+        },
+        {
+          "id": "scenario-registry-parity",
+          "level": 2,
+          "command": ["python3", "-m", "pytest", "-q", "tests/scenarios/test_milestone1_registry_parity.py"],
+          "timeout_seconds": 600,
+          "inputs": ["src/valkey_scale_lab/scenarios", "src/valkey_scale_lab/runtime/docker_runtime.py", "src/valkey_scale_lab/milestone1_gate.py", "scripts/meta_m1_evidence_gate_v8.py", "tests/scenarios/test_milestone1_registry_parity.py"]
+        }
+      ]
+    },
+    {
+      "id": "O3_GATE_ORCHESTRATION_AND_RUNTIME_ADAPTERS",
+      "title": "Deterministic Gate orchestration and execution adapters",
+      "depends_on": ["O2_CANONICAL_SCENARIO_DEFINITION"],
+      "clauses": [
+        "Execute the compiled lifecycle in deterministic order through narrow runtime, workload, management, fault, analysis, and report adapters.",
+        "Attempt owned-resource cleanup exactly once from the outer orchestration boundary and preserve both the primary failure and cleanup result.",
+        "Keep fault injection inside owned containers, namespaces, processes, or project-owned sandbox proxies and preserve collision-checked attributable ownership."
+      ],
+      "context_paths": ["src/valkey_scale_lab/gates", "src/valkey_scale_lab/runtime", "src/valkey_scale_lab/orchestrator", "tests/gates", "tests/integration"],
+      "checks": [
+        {
+          "id": "gate-orchestration-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/gates", "tests/integration/test_gate_orchestration.py"],
+          "timeout_seconds": 1800,
+          "inputs": ["src/valkey_scale_lab/gates", "src/valkey_scale_lab/runtime", "src/valkey_scale_lab/orchestrator", "tests/gates", "tests/integration/test_gate_orchestration.py"]
+        },
+        {
+          "id": "gate-small-real-parity",
+          "level": 2,
+          "command": ["python3", "-m", "pytest", "-q", "tests/real_valkey/test_gate_small_real_parity.py"],
+          "timeout_seconds": 1800,
+          "inputs": ["src/valkey_scale_lab/gates", "src/valkey_scale_lab/runtime", "src/valkey_scale_lab/orchestrator", "src/valkey_scale_lab/valkey", "tests/real_valkey/test_gate_small_real_parity.py"]
+        }
+      ]
+    },
+    {
+      "id": "O4_EVIDENCE_AND_ADMISSION",
+      "title": "Versioned evidence, provenance, and admission",
+      "depends_on": ["O3_GATE_ORCHESTRATION_AND_RUNTIME_ADAPTERS"],
+      "clauses": [
+        "Build versioned evidence envelopes only from observed raw artifacts with complete hashes, run identity, operation provenance, exact node counts, Valkey versions, cluster health, workload windows, telemetry, command logs, and cleanup.",
+        "Reject incomplete, fixture-derived, stale, relabelled, duplicated, fabricated, or cross-run evidence and represent absent values only with the frozen missing-data taxonomy and a reason.",
+        "Keep product capture and independent evaluator admission separate so evaluator strengthening reuses preserved raw capture only when product inputs remain unchanged."
+      ],
+      "context_paths": ["src/valkey_scale_lab/evidence", "src/valkey_scale_lab/artifacts", "schemas/artifact", "scripts/meta_m1_evidence_gate_v8.py", "tests/evidence", "tests/provenance"],
+      "checks": [
+        {
+          "id": "evidence-envelope-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/evidence", "tests/provenance/test_evidence_pipeline_v8.py"],
+          "timeout_seconds": 1800,
+          "inputs": ["src/valkey_scale_lab/evidence", "src/valkey_scale_lab/artifacts", "schemas/artifact", "tests/evidence", "tests/provenance/test_evidence_pipeline_v8.py"]
+        },
+        {
+          "id": "evidence-adversarial-contract",
+          "level": 2,
+          "command": ["python3", "-m", "pytest", "-q", "tests/provenance/test_meta_m1_evidence_gate_v8.py"],
+          "timeout_seconds": 1200,
+          "inputs": ["src/valkey_scale_lab/evidence", "scripts/meta_m1_evidence_gate_v8.py", "tests/provenance/test_meta_m1_evidence_gate_v8.py"]
+        },
+        {
+          "id": "v8-product-real-gate-source-contract",
+          "level": 2,
+          "command": ["python3", "scripts/meta_m1_product_gate_contract_v8.py"],
+          "timeout_seconds": 300,
+          "inputs": ["src/valkey_scale_lab/gates", "src/valkey_scale_lab/evidence", "src/valkey_scale_lab/milestone1_gate.py", "scripts/meta_m1_product_gate_contract_v8.py"]
+        }
+      ]
+    },
+    {
+      "id": "O5_ANALYSIS_AND_REPORT",
+      "title": "Validated-evidence analysis and reporting",
+      "depends_on": ["O4_EVIDENCE_AND_ADMISSION"],
+      "clauses": [
+        "Generate analysis and reports only from a validated versioned evidence envelope and preserve references to every source artifact and admission digest.",
+        "Report topology, lifecycle timing, bottlenecks, resources, workload impact, management operations, failover, recovery, errors, cleanup, and missing evidence.",
+        "Keep analysis and report rendering as derived views that cannot create, repair, or upgrade raw evidence claims."
+      ],
+      "context_paths": ["src/valkey_scale_lab/analysis", "src/valkey_scale_lab/report", "src/valkey_scale_lab/evidence", "tests/analysis", "tests/report"],
+      "checks": [
+        {
+          "id": "validated-analysis-report-contract",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/analysis", "tests/report"],
+          "timeout_seconds": 1800,
+          "inputs": ["src/valkey_scale_lab/analysis", "src/valkey_scale_lab/report", "src/valkey_scale_lab/evidence", "schemas/artifact", "tests/analysis", "tests/report"]
+        },
+        {
+          "id": "analysis-report-e2e-contract",
+          "level": 2,
+          "command": ["python3", "-m", "pytest", "-q", "tests/report/test_validated_evidence_pipeline_v8.py"],
+          "timeout_seconds": 1200,
+          "inputs": ["src/valkey_scale_lab/analysis", "src/valkey_scale_lab/report", "src/valkey_scale_lab/evidence", "tests/report/test_validated_evidence_pipeline_v8.py"]
+        }
+      ]
+    },
+    {
+      "id": "O6_COMPATIBILITY_SAFETY_AND_EXACT_50",
+      "title": "CLI compatibility, safety closure, and fresh exact 50",
+      "depends_on": ["O5_ANALYSIS_AND_REPORT"],
+      "clauses": [
+        "Preserve the established config, plan, gate scenario, gate cleanup, fault, analyze, report, and milestone1 real-gate CLI behavior through compatibility wrappers over the new modules.",
+        "Preserve all host-safety, ownership, deterministic cleanup, collision-checking, exact-node, and no-silent-downscale behavior.",
+        "Pass the complete refactored lifecycle and independent admission against a fresh real exact 50-node Valkey 9.1.x cluster."
+      ],
+      "context_paths": ["src/valkey_scale_lab/cli.py", "src/valkey_scale_lab/gates", "src/valkey_scale_lab/scenarios", "tests/cli", "tests/scale", "../loop_evidence/meta_runs/milestone1-v8/evidence/scale-50"],
+      "checks": [
+        {
+          "id": "cli-safety-compatibility",
+          "level": 1,
+          "command": ["python3", "-m", "pytest", "-q", "tests/cli", "tests/config", "tests/planner", "tests/scale", "tests/fault"],
+          "timeout_seconds": 1800,
+          "inputs": ["src/valkey_scale_lab/cli.py", "src/valkey_scale_lab/config", "src/valkey_scale_lab/planner", "src/valkey_scale_lab/gates", "src/valkey_scale_lab/fault", "tests/cli", "tests/config", "tests/planner", "tests/scale", "tests/fault"]
+        },
+        {
+          "id": "exact-real-50-capture-v8",
+          "level": 3,
+          "command": ["python3", "scripts/meta_m1_real_gate_v8.py", "--mode", "capture", "--scale", "50"],
+          "digest_mode": "product_evidence",
+          "timeout_seconds": 14400,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v8/evidence/scale-50"]
+        },
+        {
+          "id": "exact-real-50-admission-v8",
+          "level": 3,
+          "command": ["python3", "scripts/meta_m1_real_gate_v8.py", "--mode", "admit", "--scale", "50"],
+          "digest_mode": "admission",
+          "timeout_seconds": 1200,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v8/evidence/scale-50"]
+        }
+      ]
+    },
+    {
+      "id": "O7_EXACT_200_AND_FINAL_CLOSURE",
+      "title": "Fresh exact 200 and final closure",
+      "depends_on": ["O6_COMPATIBILITY_SAFETY_AND_EXACT_50"],
+      "clauses": [
+        "Pass resource preflight before starting the required exact 200-node bounded exception and never convert preflight failure into a smaller or simulated PASS.",
+        "Pass the complete refactored lifecycle and independent admission against a fresh real exact 200-node Valkey 9.1.x cluster without downscaling.",
+        "Keep the full non-real regression and fresh exact-50 and exact-200 admissions passing together at final closure."
+      ],
+      "context_paths": ["src", "scripts", "tests", "../loop_evidence/meta_runs/milestone1-v8/evidence"],
+      "checks": [
+        {
+          "id": "exact-real-50-admission-final-v8",
+          "level": 3,
+          "command": ["python3", "scripts/meta_m1_real_gate_v8.py", "--mode", "admit", "--scale", "50"],
+          "digest_mode": "admission",
+          "timeout_seconds": 1200,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v8/evidence/scale-50"]
+        },
+        {
+          "id": "exact-real-200-capture-v8",
+          "level": 4,
+          "command": ["python3", "scripts/meta_m1_real_gate_v8.py", "--mode", "capture", "--scale", "200"],
+          "digest_mode": "product_evidence",
+          "timeout_seconds": 14400,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v8/evidence/scale-200"]
+        },
+        {
+          "id": "exact-real-200-admission-v8",
+          "level": 4,
+          "command": ["python3", "scripts/meta_m1_real_gate_v8.py", "--mode", "admit", "--scale", "200"],
+          "digest_mode": "admission",
+          "timeout_seconds": 1200,
+          "inputs": ["src", "scripts", "schemas", "config", "templates", "../loop_evidence/meta_runs/milestone1-v8/evidence/scale-200"]
+        }
+      ]
+    }
+  ]
+}

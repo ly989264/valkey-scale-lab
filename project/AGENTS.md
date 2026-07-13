@@ -11,12 +11,17 @@ reports are derived views over validated artifacts.
 
 ## Milestone 1 Goal Mode
 
-New Codex App Goal-mode work for Milestone 1 starts at `META_M1_V6_START.md` and is
+New Codex App Goal-mode work for Milestone 1 starts at `META_M1_V9_START.md` and is
 scheduled only by:
 
 ```bash
-PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop_v6 next
+PYTHONPATH=src python3 -m valkey_scale_lab.meta_loop_v9 next
 ```
+
+V9 is anchored to the sealed v8 and v7 kernel-gap runs, which are in turn
+anchored to the completed v6 run. Do not edit any version's controller kernel,
+control block, manifest, state, reviewer evidence, or historical evidence
+after migration.
 
 The four authorities are deliberately separate:
 

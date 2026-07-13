@@ -2024,7 +2024,34 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     nodehosts = {nodehost["nodehost_id"]: nodehost for nodehost in state.get("nodehosts", [])}
     nodes = list(state.get("nodes", []))
     nodes_by_nodehost = _cleanup_nodes_by_nodehost(nodes)
-    _require_cleanup_owned_nodehosts(state, phase=phase, run_id=run_id)
+    missing_containers = _require_cleanup_owned_nodehosts(
+        state, phase=phase, run_id=run_id
+    )
+    for container in sorted(missing_containers):
+        actions.append(
+            {
+                "type": "nodehost",
+                "id": container,
+                "container_name": container,
+                "action": "already_absent",
+                "status": "PASS",
+                "reason": "Owned runtime resource was already removed before idempotent cleanup.",
+            }
+        )
+    nodes_by_nodehost = {
+        nodehost_id: hosted_nodes
+        for nodehost_id, hosted_nodes in nodes_by_nodehost.items()
+        if str(
+            hosted_nodes[0].get("nodehost_container_name")
+            or hosted_nodes[0].get("container_name")
+        )
+        not in missing_containers
+    }
+    nodehosts = {
+        nodehost_id: nodehost
+        for nodehost_id, nodehost in nodehosts.items()
+        if str(nodehost.get("container_name")) not in missing_containers
+    }
 
     terminate_started = time.monotonic()
 
@@ -2218,7 +2245,9 @@ def _cleanup_process_scenario(*, state: dict[str, Any], artifacts_dir: Path, out
     return report
 
 
-def _require_cleanup_owned_nodehosts(state: dict[str, Any], *, phase: str, run_id: str) -> None:
+def _require_cleanup_owned_nodehosts(
+    state: dict[str, Any], *, phase: str, run_id: str
+) -> set[str]:
     for node in state.get("nodes", []):
         if not isinstance(node, dict):
             continue
@@ -2241,15 +2270,23 @@ def _require_cleanup_owned_nodehosts(state: dict[str, Any], *, phase: str, run_i
         f"{LABEL_PREFIX}.phase": phase,
         f"{LABEL_PREFIX}.run_id": run_id,
     }
+    missing_containers: set[str] = set()
     for raw in sorted(containers):
         container = _safe_process_token(raw, "nodehost_container_name")
         result = run_docker(["inspect", "-f", "{{json .Config.Labels}}", container], timeout=30, check=False)
+        if result.returncode != 0 and any(
+            marker in result.stderr.lower()
+            for marker in ("no such object", "no such container")
+        ):
+            missing_containers.add(container)
+            continue
         try:
             labels = json.loads(result.stdout.strip()) if result.returncode == 0 else None
         except json.JSONDecodeError:
             labels = None
         if not isinstance(labels, dict) or any(labels.get(key) != value for key, value in expected.items()):
             raise DockerRuntimeError(f"container {container} is not an owned runtime resource for phase {phase} and run {run_id}")
+    return missing_containers
 
 
 def _cleanup_parallel_timeout(item_count: int, *, parallelism: int, per_item_timeout: float, floor: float) -> float:
@@ -9278,14 +9315,22 @@ def _p36_network_disconnect_probe(network_name: str, container: str, nodes: list
         "disconnect_verified": True,
         "majority_cluster_state_ok": majority_ok,
         "isolated_cluster_state_ok": isolated_ok,
-        "majority_cluster_info": majority_info[-1000:],
-        "isolated_cluster_info": isolated_info[-1000:],
+        "majority_cluster_info": _bounded_cluster_info_excerpt(majority_info),
+        "isolated_cluster_info": _bounded_cluster_info_excerpt(isolated_info),
         "client_observations": client_observations,
         "recovery_verified": recovery_verified,
         "reconnect_ms": reconnect_ms,
         "recovery_health_ms": recovery_health_ms,
         "recovery_health_strategy": "single_structured_clean_snapshot",
     }
+
+
+def _bounded_cluster_info_excerpt(value: str, limit: int = 1000) -> str:
+    if len(value) <= limit:
+        return value
+    marker = "\n...<truncated>...\n"
+    side = (limit - len(marker)) // 2
+    return value[:side] + marker + value[-side:]
 
 
 def _p36_wait_clean_cluster_snapshot(nodes: list[dict[str, Any]], timeout: float) -> None:

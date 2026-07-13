@@ -1,0 +1,145 @@
+{
+  "$schema": "../../../../schemas/scenario/gate_scenario.schema.json",
+  "schema_version": "gate-scenario-v1",
+  "definition_id": "milestone1_full_flow",
+  "version": 1,
+  "lifecycle": [
+    {"id": "resource_preflight", "handler_id": "legacy.resource_preflight", "depends_on": [], "always_run": false, "terminal": false},
+    {"id": "runtime_start", "handler_id": "legacy.runtime_start", "depends_on": ["resource_preflight"], "always_run": false, "terminal": false},
+    {"id": "cluster_form", "handler_id": "legacy.cluster_form", "depends_on": ["runtime_start"], "always_run": false, "terminal": false},
+    {"id": "stabilize", "handler_id": "legacy.stabilize", "depends_on": ["cluster_form"], "always_run": false, "terminal": false},
+    {"id": "baseline_workload", "handler_id": "legacy.baseline_workload", "depends_on": ["stabilize"], "always_run": false, "terminal": false},
+    {"id": "management_matrix", "handler_id": "legacy.management_matrix", "depends_on": ["baseline_workload"], "always_run": false, "terminal": false},
+    {"id": "fault_matrix", "handler_id": "legacy.fault_matrix", "depends_on": ["management_matrix"], "always_run": false, "terminal": false},
+    {"id": "recovery", "handler_id": "legacy.recovery", "depends_on": ["fault_matrix"], "always_run": false, "terminal": false},
+    {"id": "artifact_validation", "handler_id": "legacy.artifact_validation", "depends_on": ["recovery"], "always_run": false, "terminal": false},
+    {"id": "analysis", "handler_id": "legacy.analysis", "depends_on": ["artifact_validation"], "always_run": false, "terminal": false},
+    {"id": "report", "handler_id": "legacy.report", "depends_on": ["analysis"], "always_run": false, "terminal": false},
+    {"id": "cleanup", "handler_id": "legacy.cleanup", "depends_on": ["report"], "always_run": true, "terminal": true}
+  ],
+  "scenarios": {
+    "management": [
+      {
+        "id": "add_remove_node",
+        "handler_id": "legacy.management_operation",
+        "command_stream": "command_log",
+        "operations": [
+          "create_cluster",
+          "meet_nodes",
+          "add_replica",
+          "remove_replica",
+          "remove_failed_node",
+          "remove_primary_drained_or_safe_replaced"
+        ],
+        "parameters": {}
+      },
+      {
+        "id": "reshard_rebalance",
+        "handler_id": "legacy.management_operation",
+        "command_stream": "command_log",
+        "operations": ["reshard_slot_range", "reshard_with_keys", "rebalance_after_imbalance"],
+        "parameters": {}
+      },
+      {
+        "id": "rolling_restart",
+        "handler_id": "legacy.management_operation",
+        "command_stream": "command_log",
+        "operations": ["rolling_restart_replica_first", "rolling_restart_primary_safe"],
+        "parameters": {}
+      },
+      {
+        "id": "bounded_stability",
+        "handler_id": "legacy.bounded_stability",
+        "command_stream": "command_log",
+        "operations": [],
+        "parameters": {"health_sample_count": 3, "health_interval_seconds": 1.0}
+      }
+    ],
+    "fault": [
+      {"id": "primary_failover", "handler_id": "legacy.primary_failover", "command_stream": "fault_command_log", "operations": [], "parameters": {}},
+      {"id": "replica_stop", "handler_id": "legacy.process_pause", "command_stream": "fault_command_log", "operations": [], "parameters": {}},
+      {"id": "node_host_stop", "handler_id": "legacy.nodehost_pause", "command_stream": "fault_command_log", "operations": [], "parameters": {}},
+      {"id": "az_stop", "handler_id": "legacy.az_pause", "command_stream": "fault_command_log", "operations": [], "parameters": {}},
+      {"id": "network_delay", "handler_id": "legacy.proxy", "command_stream": "fault_command_log", "operations": [], "parameters": {"fault_type": "network_delay", "delay_ms": 25, "expect_success": true}},
+      {"id": "network_loss", "handler_id": "legacy.proxy", "command_stream": "fault_command_log", "operations": [], "parameters": {"fault_type": "network_loss", "loss_percent": 100.0, "expect_success": false}},
+      {"id": "network_partition", "handler_id": "legacy.network_disconnect", "command_stream": "fault_command_log", "operations": [], "parameters": {"observation": "network_partition"}},
+      {"id": "network_flap", "handler_id": "legacy.proxy", "command_stream": "fault_command_log", "operations": [], "parameters": {"fault_type": "network_flap", "flap_down_ms": 250, "flap_iterations": 1, "expect_success": false}},
+      {"id": "minority_majority", "handler_id": "legacy.network_disconnect", "command_stream": "fault_command_log", "operations": [], "parameters": {"observation": "minority_majority", "wait_cluster_timeout_plus_ms": 1000, "require_majority_ok": true, "require_isolated_not_ok": true}},
+      {"id": "split_brain_detection", "handler_id": "legacy.network_disconnect", "command_stream": "fault_command_log", "operations": [], "parameters": {"observation": "split_brain_detection", "wait_cluster_timeout_plus_ms": 1000, "forbid_both_ok": true}}
+    ]
+  },
+  "management_execution_order": [
+    "create_cluster",
+    "meet_nodes",
+    "add_replica",
+    "reshard_slot_range",
+    "reshard_with_keys",
+    "rebalance_after_imbalance",
+    "rolling_restart_replica_first",
+    "rolling_restart_primary_safe",
+    "remove_replica",
+    "remove_failed_node",
+    "remove_primary_drained_or_safe_replaced"
+  ],
+  "artifacts": [
+    {"raw_name": "run_state.json", "format": "json", "required_raw": true, "admissions": [{"kind": "run_metadata", "transform_id": "run_state_to_metadata"}]},
+    {"raw_name": "resource_preflight.json", "format": "json", "required_raw": true, "admissions": [{"kind": "resource_preflight"}]},
+    {"raw_name": "workload_windows.json", "format": "json", "required_raw": true, "admissions": [{"kind": "workload_windows"}]},
+    {"raw_name": "lifecycle_timeline.json", "format": "json", "required_raw": true, "admissions": [{"kind": "lifecycle_timeline"}]},
+    {"raw_name": "scenario_results.json", "format": "json", "required_raw": true, "admissions": [{"kind": "scenario_results"}]},
+    {"raw_name": "management_sequence.json", "format": "json", "required_raw": true, "admissions": [{"kind": "management_results"}]},
+    {"raw_name": "fault_sequence.json", "format": "json", "required_raw": true, "admissions": [{"kind": "fault_results"}, {"kind": "stability_results", "transform_id": "recovery_health", "source_selector": "recovery_health"}]},
+    {"raw_name": "cleanup_report.json", "format": "json", "required_raw": true, "admissions": [{"kind": "cleanup_report"}]},
+    {"raw_name": "analysis_summary.json", "format": "json", "required_raw": true, "admissions": [{"kind": "analysis_summary"}]},
+    {"raw_name": "report_index.json", "format": "json", "required_raw": true, "admissions": [{"kind": "report_index"}]},
+    {"raw_name": "full_flow_result.json", "format": "json", "required_raw": true, "admissions": []},
+    {"raw_name": "management_command_log.jsonl", "format": "jsonl", "required_raw": true, "admissions": [{"kind": "command_log", "transform_id": "normalize_timestamp"}]},
+    {"raw_name": "fault_command_log.jsonl", "format": "jsonl", "required_raw": true, "admissions": [{"kind": "fault_command_log", "transform_id": "normalize_timestamp"}]},
+    {"raw_name": "events.jsonl", "format": "jsonl", "required_raw": true, "admissions": [{"kind": "events"}]},
+    {"raw_name": "metrics_timeseries.jsonl", "format": "jsonl", "required_raw": true, "admissions": [{"kind": "metrics"}]}
+  ],
+  "report_surfaces": [
+    "topology_summary",
+    "phase_durations",
+    "bottlenecks",
+    "resources",
+    "workload_impact",
+    "failover",
+    "recovery",
+    "error_summary",
+    "missing_evidence"
+  ],
+  "scale_policy": {
+    "min_nodes": 30,
+    "max_nodes": 2000,
+    "required_real_scales": [50, 200],
+    "runnable_not_required_scales": [30, 100],
+    "normal_development_cap": 100,
+    "bounded_exception_scale": 200,
+    "exact_requested_nodes": true,
+    "no_silent_downscale": true,
+    "bounded_exception_requires_resource_preflight": true,
+    "above_200_requires_operator_opt_in": true,
+    "above_200_requires_resource_preflight": true,
+    "above_200_requires_cost_acknowledgement": true
+  },
+  "legacy_profiles": [
+    {"requested_nodes": 50, "runtime_phase": "P36_FULL_FLOW_E2E_50_100_200_REAL", "runtime_scenario": "strict_full_flow_50", "config_template": "templates/configs/scale_50.yaml"},
+    {"requested_nodes": 100, "runtime_phase": "P36_FULL_FLOW_E2E_50_100_200_REAL", "runtime_scenario": "strict_full_flow_100", "config_template": "templates/configs/scale_100.yaml"},
+    {"requested_nodes": 200, "runtime_phase": "P36_FULL_FLOW_E2E_50_100_200_REAL", "runtime_scenario": "strict_full_flow_200", "config_template": "templates/configs/scale_200.yaml"}
+  ],
+  "legacy_projection_steps": [
+    "config_validate",
+    "resource_preflight",
+    "plan_cluster",
+    "create_cluster",
+    "meet_nodes",
+    "assign_slots",
+    "add_replica",
+    "baseline_workload",
+    "telemetry_collect",
+    "analysis_build",
+    "report_render",
+    "cleanup_verify"
+  ]
+}

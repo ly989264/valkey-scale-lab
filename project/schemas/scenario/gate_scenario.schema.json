@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://valkey-scale-lab.local/schemas/scenario/gate_scenario.schema.json",
+  "title": "Valkey Scale Lab Gate Scenario Definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "definition_id",
+    "version",
+    "lifecycle",
+    "scenarios",
+    "management_execution_order",
+    "artifacts",
+    "report_surfaces",
+    "scale_policy",
+    "legacy_profiles",
+    "legacy_projection_steps"
+  ],
+  "properties": {
+    "$schema": {"type": "string", "minLength": 1},
+    "schema_version": {"const": "gate-scenario-v1"},
+    "definition_id": {"const": "milestone1_full_flow"},
+    "version": {"const": 1},
+    "lifecycle": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {"$ref": "#/$defs/lifecycleStep"}
+    },
+    "scenarios": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["management", "fault"],
+      "properties": {
+        "management": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {"$ref": "#/$defs/scenario"}
+        },
+        "fault": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/scenario"}
+        }
+      }
+    },
+    "management_execution_order": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 15,
+      "maxItems": 15,
+      "items": {"$ref": "#/$defs/artifact"}
+    },
+    "report_surfaces": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+    },
+    "scale_policy": {"$ref": "#/$defs/scalePolicy"},
+    "legacy_profiles": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/legacyProfile"}
+    },
+    "legacy_projection_steps": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+    }
+  },
+  "$defs": {
+    "identifier": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "handlerId": {"type": "string", "pattern": "^legacy\\.[a-z][a-z0-9_]*$"},
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$"
+    },
+    "lifecycleStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "handler_id", "depends_on", "always_run", "terminal"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "handler_id": {"$ref": "#/$defs/handlerId"},
+        "depends_on": {
+          "type": "array",
+          "maxItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "always_run": {"type": "boolean"},
+        "terminal": {"type": "boolean"}
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "handler_id", "command_stream", "operations", "parameters"],
+      "properties": {
+        "id": {"$ref": "#/$defs/identifier"},
+        "handler_id": {"$ref": "#/$defs/handlerId"},
+        "command_stream": {"enum": ["command_log", "fault_command_log"]},
+        "operations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/identifier"}
+        },
+        "parameters": {"type": "object"}
+      }
+    },
+    "admission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"$ref": "#/$defs/identifier"},
+        "transform_id": {"enum": ["run_state_to_metadata", "normalize_timestamp", "recovery_health"]},
+        "source_selector": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["raw_name", "format", "required_raw", "admissions"],
+      "properties": {
+        "raw_name": {"$ref": "#/$defs/safePath"},
+        "format": {"enum": ["json", "jsonl"]},
+        "required_raw": {"const": true},
+        "admissions": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/admission"}
+        }
+      }
+    },
+    "scalePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "min_nodes",
+        "max_nodes",
+        "required_real_scales",
+        "runnable_not_required_scales",
+        "normal_development_cap",
+        "bounded_exception_scale",
+        "exact_requested_nodes",
+        "no_silent_downscale",
+        "bounded_exception_requires_resource_preflight",
+        "above_200_requires_operator_opt_in",
+        "above_200_requires_resource_preflight",
+        "above_200_requires_cost_acknowledgement"
+      ],
+      "properties": {
+        "min_nodes": {"const": 30},
+        "max_nodes": {"const": 2000},
+        "required_real_scales": {"const": [50, 200]},
+        "runnable_not_required_scales": {"const": [30, 100]},
+        "normal_development_cap": {"const": 100},
+        "bounded_exception_scale": {"const": 200},
+        "exact_requested_nodes": {"const": true},
+        "no_silent_downscale": {"const": true},
+        "bounded_exception_requires_resource_preflight": {"const": true},
+        "above_200_requires_operator_opt_in": {"const": true},
+        "above_200_requires_resource_preflight": {"const": true},
+        "above_200_requires_cost_acknowledgement": {"const": true}
+      }
+    },
+    "legacyProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested_nodes", "runtime_phase", "runtime_scenario", "config_template"],
+      "properties": {
+        "requested_nodes": {"enum": [50, 100, 200]},
+        "runtime_phase": {"const": "P36_FULL_FLOW_E2E_50_100_200_REAL"},
+        "runtime_scenario": {"type": "string", "pattern": "^strict_full_flow_(50|100|200)$"},
+        "config_template": {"$ref": "#/$defs/safePath"}
+      }
+    }
+  }
+}
