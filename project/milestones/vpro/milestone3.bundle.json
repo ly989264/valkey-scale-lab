@@ -1,0 +1,185 @@
+{
+  "schema_version": "vpro-bundle-v1",
+  "milestone": {
+    "id": "Milestone3MultiECSScaleOut",
+    "version": "1.0.0",
+    "title": "Multi-ECS scale-out",
+    "goal": "Promote the proven native multi-ECS lifecycle through exact 500, 1000, and 2000 real Valkey nodes without reducing coverage, evidence quality, or cleanup safety."
+  },
+  "clauses": [
+    {"id": "M3ExplicitProfiles", "text": "Provide explicit real execution profiles for exactly 500, 1000, and 2000 Valkey nodes."},
+    {"id": "M3RungPreflight", "text": "Require quota, capacity, port, file-descriptor, memory, CPU, network, storage, credential, ownership, and cost preflight for every rung."},
+    {"id": "M3BoundedOrchestration", "text": "Use bounded concurrency, batching, backpressure, retries, and resumable execution so control-plane work remains attributable and bounded."},
+    {"id": "M3ScalableTelemetry", "text": "Scale metric ingestion and artifact transfer with explicit cardinality, retention, and sampling policies that preserve critical events and tail latency."},
+    {"id": "M3HierarchicalSafety", "text": "Use hierarchical health, convergence, fault-target, ownership, and cleanup verification at every rung."},
+    {"id": "M3SequentialPromotion", "text": "Admit exact 500 before 1000 and exact 1000 before 2000; dry runs, partial counts, and unbound prior evidence never satisfy promotion."},
+    {"id": "M3LifecycleParity", "text": "Run the Milestone 2 lifecycle, stability, representative management, fault, failover, recovery, and cleanup contracts at every rung."},
+    {"id": "M3NoReduction", "text": "Keep control and collection overhead bounded with no unexplained gaps, silent scenario reduction, fixture fallback, or cleanup residue."},
+    {"id": "M3ScaleComparison", "text": "Produce validated comparisons against 200 and earlier rungs for latency, failures, workload impact, resources, efficiency, and cost."}
+  ],
+  "tiers": [
+    {"id": "cheap", "rank": 0, "cost": "cheap", "reviewer_admissible": true},
+    {"id": "normal", "rank": 1, "cost": "normal", "reviewer_admissible": true},
+    {"id": "expensive", "rank": 2, "cost": "expensive", "reviewer_admissible": false},
+    {"id": "operator", "rank": 3, "cost": "operator", "reviewer_admissible": false}
+  ],
+  "checks": [
+    {
+      "id": "m3-static-safety", "tier": "cheap", "argv": ["python3", "checks/vpro/milestone_check.py", "static-safety"],
+      "cwd": ".", "timeout_seconds": 300, "inputs": ["checks/vpro/milestone_check.py", "src", "tests", "scripts", "templates/configs", "pyproject.toml", "requirements-dev.txt"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-prerequisite", "tier": "cheap", "argv": ["python3", "checks/vpro/milestone_check.py", "prerequisite", "--milestone", "3", "--receipt", "milestones/prerequisites/milestone2-completion.json"],
+      "cwd": ".", "timeout_seconds": 60, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_prerequisite.py", "milestones/prerequisites/milestone2-completion.json"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-profiles-preflight", "tier": "normal", "argv": ["python3", "checks/vpro/milestone_check.py", "suite", "--id", "m3-profiles-preflight"],
+      "cwd": ".", "timeout_seconds": 1200, "inputs": ["checks/vpro/milestone_check.py", "src/valkey_scale_lab/cli.py", "src/valkey_scale_lab/config", "src/valkey_scale_lab/planner", "src/valkey_scale_lab/resource.py", "config", "templates", "tests/milestone3/test_profiles_preflight.py"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-scalable-orchestration", "tier": "normal", "argv": ["python3", "checks/vpro/milestone_check.py", "suite", "--id", "m3-scalable-orchestration"],
+      "cwd": ".", "timeout_seconds": 1800, "inputs": ["checks/vpro/milestone_check.py", "src/valkey_scale_lab/orchestrator", "src/valkey_scale_lab/runtime", "src/valkey_scale_lab/remote", "tests/milestone3/test_scalable_orchestration.py"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-telemetry-transfer", "tier": "normal", "argv": ["python3", "checks/vpro/milestone_check.py", "suite", "--id", "m3-telemetry-transfer"],
+      "cwd": ".", "timeout_seconds": 1800, "inputs": ["checks/vpro/milestone_check.py", "src/valkey_scale_lab/metrics", "src/valkey_scale_lab/evidence", "src/valkey_scale_lab/artifacts", "schemas/artifact", "tests/milestone3/test_telemetry_transfer.py"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-hierarchical-safety", "tier": "normal", "argv": ["python3", "checks/vpro/milestone_check.py", "suite", "--id", "m3-hierarchical-safety"],
+      "cwd": ".", "timeout_seconds": 1800, "inputs": ["checks/vpro/milestone_check.py", "src/valkey_scale_lab/gates", "src/valkey_scale_lab/fault", "src/valkey_scale_lab/runtime", "tests/milestone3/test_hierarchical_safety.py"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-comparison-report", "tier": "normal", "argv": ["python3", "checks/vpro/milestone_check.py", "suite", "--id", "m3-comparison-report"],
+      "cwd": ".", "timeout_seconds": 1800, "inputs": ["checks/vpro/milestone_check.py", "src/valkey_scale_lab/analysis", "src/valkey_scale_lab/report", "tests/milestone3/test_comparison_report.py"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-closure", "tier": "normal", "argv": ["python3", "checks/vpro/milestone_check.py", "closure"],
+      "cwd": ".", "timeout_seconds": 3600, "inputs": ["checks/vpro/milestone_check.py", "src", "scripts", "schemas", "config", "templates", "tests", "pyproject.toml", "requirements-dev.txt"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-evaluator-guard", "tier": "normal", "argv": ["python3", "checks/vpro/milestone_check.py", "evaluator-guard", "--milestone", "3"],
+      "cwd": ".", "timeout_seconds": 600, "inputs": ["checks/vpro/milestone_check.py", "evaluators/vpro/milestone3_evidence_policy.py", "tests/vpro_milestones/test_milestone3_evidence_policy.py"], "outputs": [],
+      "mode": "standard", "authority": "evaluator", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-500-preflight", "tier": "operator", "argv": ["python3", "checks/vpro/milestone_check.py", "preflight", "--milestone", "3", "--scale", "500", "--prerequisite", "milestones/prerequisites/milestone2-completion.json"],
+      "cwd": ".", "timeout_seconds": 1800, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_preflight.py", "checks/vpro/milestone3_prerequisite.py", "src", "config", "milestones/prerequisites/milestone2-completion.json"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": ["ecs_api", "high_cost", "host_resource", "network", "remote_process"], "cache": "never"
+    },
+    {
+      "id": "m3-500-capture", "tier": "operator", "argv": ["python3", "checks/vpro/milestone_check.py", "capture", "--milestone", "3", "--scale", "500", "--prerequisite", "milestones/prerequisites/milestone2-completion.json", "--output", "m3/scale-500/capture"],
+      "cwd": ".", "timeout_seconds": 43200, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_prerequisite.py", "src", "scripts", "schemas", "config", "templates", "milestones/prerequisites/milestone2-completion.json"],
+      "outputs": ["evidence/m3/scale-500/capture"], "mode": "capture", "authority": "bundle", "capabilities": ["ecs_api", "high_cost", "network", "remote_process"], "cache": "never"
+    },
+    {
+      "id": "m3-500-admission", "tier": "expensive", "argv": ["python3", "checks/vpro/milestone_check.py", "admission", "--milestone", "3", "--scale", "500", "--capture", "m3/scale-500/capture", "--prerequisite", "milestones/prerequisites/milestone2-completion.json", "--output", "m3/scale-500/admission"],
+      "cwd": ".", "timeout_seconds": 3600, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_prerequisite.py", "evaluators/vpro/milestone3_evidence_policy.py", "milestones/prerequisites/milestone2-completion.json", "evidence/m3/scale-500/capture"],
+      "outputs": ["evidence/m3/scale-500/admission"], "mode": "admission", "authority": "evaluator", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-1000-preflight", "tier": "operator", "argv": ["python3", "checks/vpro/milestone_check.py", "preflight", "--milestone", "3", "--scale", "1000", "--prior", "m3/scale-500/admission", "--prerequisite", "milestones/prerequisites/milestone2-completion.json"],
+      "cwd": ".", "timeout_seconds": 1800, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_preflight.py", "checks/vpro/milestone3_prerequisite.py", "src", "config", "milestones/prerequisites/milestone2-completion.json", "evidence/m3/scale-500/admission"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": ["ecs_api", "high_cost", "host_resource", "network", "remote_process"], "cache": "never"
+    },
+    {
+      "id": "m3-1000-capture", "tier": "operator", "argv": ["python3", "checks/vpro/milestone_check.py", "capture", "--milestone", "3", "--scale", "1000", "--prior", "m3/scale-500/admission", "--prerequisite", "milestones/prerequisites/milestone2-completion.json", "--output", "m3/scale-1000/capture"],
+      "cwd": ".", "timeout_seconds": 43200, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_prerequisite.py", "src", "scripts", "schemas", "config", "templates", "milestones/prerequisites/milestone2-completion.json", "evidence/m3/scale-500/admission"],
+      "outputs": ["evidence/m3/scale-1000/capture"], "mode": "capture", "authority": "bundle", "capabilities": ["ecs_api", "high_cost", "network", "remote_process"], "cache": "never"
+    },
+    {
+      "id": "m3-1000-admission", "tier": "expensive", "argv": ["python3", "checks/vpro/milestone_check.py", "admission", "--milestone", "3", "--scale", "1000", "--capture", "m3/scale-1000/capture", "--prior", "m3/scale-500/admission", "--prerequisite", "milestones/prerequisites/milestone2-completion.json", "--output", "m3/scale-1000/admission"],
+      "cwd": ".", "timeout_seconds": 3600, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_prerequisite.py", "evaluators/vpro/milestone3_evidence_policy.py", "milestones/prerequisites/milestone2-completion.json", "evidence/m3/scale-500/admission", "evidence/m3/scale-1000/capture"],
+      "outputs": ["evidence/m3/scale-1000/admission"], "mode": "admission", "authority": "evaluator", "capabilities": [], "cache": "by_input_digest"
+    },
+    {
+      "id": "m3-2000-preflight", "tier": "operator", "argv": ["python3", "checks/vpro/milestone_check.py", "preflight", "--milestone", "3", "--scale", "2000", "--prior", "m3/scale-1000/admission", "--prerequisite", "milestones/prerequisites/milestone2-completion.json"],
+      "cwd": ".", "timeout_seconds": 1800, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_preflight.py", "checks/vpro/milestone3_prerequisite.py", "src", "config", "milestones/prerequisites/milestone2-completion.json", "evidence/m3/scale-1000/admission"], "outputs": [],
+      "mode": "standard", "authority": "bundle", "capabilities": ["ecs_api", "high_cost", "host_resource", "network", "remote_process"], "cache": "never"
+    },
+    {
+      "id": "m3-2000-capture", "tier": "operator", "argv": ["python3", "checks/vpro/milestone_check.py", "capture", "--milestone", "3", "--scale", "2000", "--prior", "m3/scale-1000/admission", "--prerequisite", "milestones/prerequisites/milestone2-completion.json", "--output", "m3/scale-2000/capture"],
+      "cwd": ".", "timeout_seconds": 43200, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_prerequisite.py", "src", "scripts", "schemas", "config", "templates", "milestones/prerequisites/milestone2-completion.json", "evidence/m3/scale-1000/admission"],
+      "outputs": ["evidence/m3/scale-2000/capture"], "mode": "capture", "authority": "bundle", "capabilities": ["ecs_api", "high_cost", "network", "remote_process"], "cache": "never"
+    },
+    {
+      "id": "m3-2000-admission", "tier": "expensive", "argv": ["python3", "checks/vpro/milestone_check.py", "admission", "--milestone", "3", "--scale", "2000", "--capture", "m3/scale-2000/capture", "--prior", "m3/scale-1000/admission", "--prerequisite", "milestones/prerequisites/milestone2-completion.json", "--output", "m3/scale-2000/admission"],
+      "cwd": ".", "timeout_seconds": 3600, "inputs": ["checks/vpro/milestone_check.py", "checks/vpro/milestone3_prerequisite.py", "evaluators/vpro/milestone3_evidence_policy.py", "milestones/prerequisites/milestone2-completion.json", "evidence/m3/scale-1000/admission", "evidence/m3/scale-2000/capture"],
+      "outputs": ["evidence/m3/scale-2000/admission"], "mode": "admission", "authority": "evaluator", "capabilities": [], "cache": "by_input_digest"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "M3ProfilesAndPreflight", "title": "Explicit profiles and rung preflight", "depends_on": [],
+      "clause_ids": ["M3ExplicitProfiles", "M3RungPreflight", "M3SequentialPromotion"], "check_ids": ["m3-prerequisite", "m3-profiles-preflight"],
+      "context_paths": ["src/valkey_scale_lab/config", "src/valkey_scale_lab/planner", "config", "templates"],
+      "worker_write_paths": ["src/valkey_scale_lab/cli.py", "src/valkey_scale_lab/config", "src/valkey_scale_lab/planner", "src/valkey_scale_lab/resource.py", "config", "templates"], "required_for_milestone": true
+    },
+    {
+      "id": "M3ScalableOrchestration", "title": "Bounded scalable orchestration", "depends_on": ["M3ProfilesAndPreflight"],
+      "clause_ids": ["M3BoundedOrchestration"], "check_ids": ["m3-scalable-orchestration"],
+      "context_paths": ["src/valkey_scale_lab/orchestrator", "src/valkey_scale_lab/runtime", "src/valkey_scale_lab/remote"],
+      "worker_write_paths": ["src/valkey_scale_lab/orchestrator", "src/valkey_scale_lab/runtime", "src/valkey_scale_lab/remote"], "required_for_milestone": true
+    },
+    {
+      "id": "M3TelemetryTransfer", "title": "Scalable telemetry and artifact transfer", "depends_on": ["M3ScalableOrchestration"],
+      "clause_ids": ["M3ScalableTelemetry"], "check_ids": ["m3-telemetry-transfer"],
+      "context_paths": ["src/valkey_scale_lab/metrics", "src/valkey_scale_lab/evidence", "schemas/artifact"],
+      "worker_write_paths": ["src/valkey_scale_lab/metrics", "src/valkey_scale_lab/evidence", "src/valkey_scale_lab/artifacts", "schemas/artifact"], "required_for_milestone": true
+    },
+    {
+      "id": "M3HierarchicalVerification", "title": "Hierarchical lifecycle safety", "depends_on": ["M3TelemetryTransfer"],
+      "clause_ids": ["M3HierarchicalSafety", "M3LifecycleParity", "M3NoReduction"], "check_ids": ["m3-hierarchical-safety"],
+      "context_paths": ["src/valkey_scale_lab/gates", "src/valkey_scale_lab/fault", "src/valkey_scale_lab/runtime"],
+      "worker_write_paths": ["src/valkey_scale_lab/gates", "src/valkey_scale_lab/fault", "src/valkey_scale_lab/runtime"], "required_for_milestone": true
+    },
+    {
+      "id": "M3ComparisonReport", "title": "Scale comparison and cost report", "depends_on": ["M3HierarchicalVerification"],
+      "clause_ids": ["M3ScaleComparison"], "check_ids": ["m3-comparison-report"],
+      "context_paths": ["src/valkey_scale_lab/analysis", "src/valkey_scale_lab/report"],
+      "worker_write_paths": ["src/valkey_scale_lab/analysis", "src/valkey_scale_lab/report"], "required_for_milestone": true
+    }
+  ],
+  "profiles": [
+    {"id": "complete", "objective_ids": ["M3ComparisonReport"], "include_dependency_closure": true, "gate_ids": ["M3Exact500", "M3Exact1000", "M3Exact2000"], "claim": "MILESTONE_COMPLETE"}
+  ],
+  "gates": [
+    {
+      "id": "M3Exact500", "kind": "evidence",
+      "after_objective_ids": ["M3ProfilesAndPreflight", "M3ScalableOrchestration", "M3TelemetryTransfer", "M3HierarchicalVerification", "M3ComparisonReport"],
+      "preflight_check_ids": ["m3-500-preflight"], "capture_check_id": "m3-500-capture", "admission_check_ids": ["m3-500-admission"],
+      "operator_approval_required": true, "required_for_milestone": true
+    },
+    {
+      "id": "M3Exact1000", "kind": "evidence",
+      "after_objective_ids": ["M3ProfilesAndPreflight", "M3ScalableOrchestration", "M3TelemetryTransfer", "M3HierarchicalVerification", "M3ComparisonReport"],
+      "preflight_check_ids": ["m3-1000-preflight"], "capture_check_id": "m3-1000-capture", "admission_check_ids": ["m3-1000-admission"],
+      "operator_approval_required": true, "required_for_milestone": true
+    },
+    {
+      "id": "M3Exact2000", "kind": "evidence",
+      "after_objective_ids": ["M3ProfilesAndPreflight", "M3ScalableOrchestration", "M3TelemetryTransfer", "M3HierarchicalVerification", "M3ComparisonReport"],
+      "preflight_check_ids": ["m3-2000-preflight"], "capture_check_id": "m3-2000-capture", "admission_check_ids": ["m3-2000-admission"],
+      "operator_approval_required": true, "required_for_milestone": true
+    }
+  ],
+  "acceptance": {
+    "objective_rule": "CURRENT_PROGRAM_PASS_AND_BOUNDED_REVIEW", "milestone_rule": "ALL_SELECTED_REQUIRED_OBJECTIVES_GATES_AND_CLOSURE_CURRENT",
+    "common_check_ids": ["m3-static-safety"], "closure_check_ids": ["m3-closure"], "evaluator_guard_check_ids": ["m3-evaluator-guard"],
+    "max_attempts": 3, "stagnation_limit": 2, "max_replans": 1, "max_review_rounds": 2, "max_new_gaps_per_review": 1,
+    "max_context_bytes": 24000, "failure_excerpt_bytes": 4000, "cache_unchanged_results": true, "max_expensive_runs_per_input": 1
+  },
+  "integrity": {
+    "product_roots": ["src", "scripts", "schemas", "config", "templates", "pyproject.toml", "requirements-dev.txt"],
+    "evaluator_paths": ["evaluators/vpro/milestone3_evidence_policy.py"], "evaluator_repair_paths": ["evaluators/vpro"],
+    "authoritative_check_paths": ["checks/vpro", "tests", "milestones/prerequisites"], "evidence_roots": ["evidence"],
+    "allowed_tools": ["python3", "pytest", "ssh", "aws"]
+  }
+}

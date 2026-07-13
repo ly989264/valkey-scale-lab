@@ -123,3 +123,17 @@ bounded failure excerpt and paths/digests.
 - Never weaken or delete a failing check to obtain a pass. A missing evaluator
   check must use `EVALUATOR_GAP` and the controlled repair transition; Goal
   Contract or Kernel defects require a new controller version.
+
+
+Future milestone work must be supplied only through a new externally authored
+bundle outside the sealed framework roots and a new controller-owned run root.
+Milestone goals, objective selection, checks, gates, and acceptance policy must
+remain external to VPRO. Evaluator changes are allowed only through the fixed
+controller-issued `EVALUATOR_REPAIR` transition and the bundle's declared
+repair paths.
+
+The repository release receipt is not the production trust root. Before a real
+VPRO run, an external operator must copy it outside the worker workspace and
+use OS, container, or protected-CI controls to keep the framework, bundle,
+state, isolated launcher, anchor, approval identity, and signing material out
+of the worker's write authority.
